@@ -65,6 +65,7 @@ export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 
 // TODO: These should maybe be part of the env config?
 export const BOT_USERNAMES = [
+  'TenShino',
   'pos',
   'v',
   'acc',
@@ -140,6 +141,7 @@ export const MOD_IDS = [
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
+  'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
   '9dAaZrNSx5OT0su6rpusDoG9WPN2', // dglid
@@ -149,8 +151,10 @@ export const MOD_IDS = [
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
   'kbHiTAGBahXdX9Z4sW29JpNrB0l2', // Ernie
   'W4yEF6idSMcNWEVUquowziSCZFI3', // EvanDaniel
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Gen
+  'y1hb6k7txdZPV5mgyxPFApZ7nQl2', // IsaacKing
   'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
   'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
   'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
@@ -230,6 +234,7 @@ export const VERIFIED_USERNAMES = [
   'BTE',
   'LawrenceLessig',
   'NatFriedman',
+  'patrissimo',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -403,7 +408,6 @@ export const RESERVED_PATHS = [
   'help',
   'home',
   'jobs',
-  'latestposts',
   'leaderboard',
   'leaderboards',
   'league',

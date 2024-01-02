@@ -32,7 +32,7 @@ export const usePersistentQueriesState = <T extends UrlParams>(
     const newQ = Object.keys(query)
       .map((key) => `${key}=${query[key]}`)
       .join('&')
-    router.replace(pathName + '?' + newQ)
+    router.replace(pathName + '?' + encodeURI(newQ))
   }
 
   return [state, updateState, ready]

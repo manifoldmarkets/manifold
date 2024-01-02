@@ -1,12 +1,11 @@
 import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { redeemBoost } from 'web/lib/firebase/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button } from '../buttons/button'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 
 export function ClaimButton(props: {
   adId: string
@@ -18,17 +17,7 @@ export function ClaimButton(props: {
 
   const [claimed, setClaimed] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [canPay, setCanPay] = useState(true)
 
-  useEffect(() => {
-    getAdCanPayFunds(adId).then((canPay) => {
-      setCanPay(canPay)
-    })
-  }, [adId])
-
-  if (!canPay) {
-    return null
-  }
   return (
     <Button
       className={clsx(

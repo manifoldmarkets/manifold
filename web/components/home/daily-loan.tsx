@@ -8,7 +8,6 @@ import { requestLoan } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import Image from 'next/image'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
-import { DAY_MS } from 'common/util/time'
 import { Row } from 'web/components/layout/row'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -16,6 +15,7 @@ import utc from 'dayjs/plugin/utc'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { updateUser } from 'web/lib/firebase/users'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -28,8 +28,13 @@ export function DailyLoan(props: { user: User }) {
     false,
     `just-received-loan-${user.id}`
   )
+  const { receivedLoanToday: receivedTxnLoan, checkTxns } =
+    useHasReceivedLoanToday(user)
+  const notEligibleForLoan = user.nextLoanCached < 1
+  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
+
   const getLoan = async () => {
-    if (receivedLoanToday) {
+    if (receivedLoanToday || notEligibleForLoan) {
       setShowLoansModal(true)
       return
     }
@@ -55,36 +60,45 @@ export function DailyLoan(props: { user: User }) {
       updateUser(user.id, { hasSeenLoanModal: true })
   }, [showLoansModal])
 
-  const { receivedLoanToday: receivedTxnLoan, checkTxns } =
-    useHasReceivedLoanToday(user)
-  const receivedLoanToday = receivedTxnLoan || justReceivedLoan
-  if (
-    user.createdTime > Date.now() - DAY_MS ||
-    !user.lastBetTime ||
-    (user.nextLoanCached < 1 && !receivedLoanToday)
-  ) {
-    return <div />
-  }
-
   return (
-    <Col className={clsx(dailyStatsClass, '')}>
-      <button disabled={loaning} onClick={getLoan}>
-        <Row
-          className={clsx(
-            'items-center justify-center whitespace-nowrap px-1 pb-0.5',
-            receivedLoanToday ? '' : 'pt-1'
-          )}
-        >
-          <Image
-            className={receivedLoanToday ? '' : 'grayscale'}
-            height={20}
-            width={20}
-            src={receivedLoanToday ? '/open-chest.svg' : '/closed-chest.svg'}
-            alt={'treasure icon'}
-          />
-        </Row>
-        <div className="text-ink-600 text-xs">Loan</div>
-      </button>
+    <Col
+      className={clsx(
+        dailyStatsClass,
+        receivedLoanToday || notEligibleForLoan
+          ? ''
+          : 'hover:bg-canvas-100 ring-[1.7px] ring-amber-300'
+      )}
+    >
+      <Tooltip
+        text={
+          receivedLoanToday
+            ? 'Loan already collected'
+            : notEligibleForLoan
+            ? 'Daily loans'
+            : 'Collect a loan on your bets'
+        }
+        placement={'bottom'}
+      >
+        <button disabled={loaning} onClick={getLoan}>
+          <Row
+            className={clsx(
+              'items-center justify-center whitespace-nowrap px-1'
+            )}
+          >
+            <Image
+              height={25}
+              width={25}
+              src={
+                receivedLoanToday || notEligibleForLoan
+                  ? '/chest-empty.svg'
+                  : '/coins.svg'
+              }
+              alt={'treasure icon'}
+            />
+          </Row>
+          <div className="text-ink-600 text-xs">Loan</div>
+        </button>
+      </Tooltip>
       {showLoansModal && (
         <LoansModal
           isOpen={showLoansModal}

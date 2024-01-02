@@ -474,6 +474,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -498,6 +501,9 @@ export interface Database {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -522,6 +528,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2746,6 +2755,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -2769,6 +2781,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2792,6 +2807,9 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -3048,33 +3066,32 @@ export interface Database {
         }
         Returns: boolean
       }
-      closest_contract_embeddings:
-        | {
-            Args: {
-              input_contract_id: string
-              similarity_threshold: number
-              match_count: number
-            }
-            Returns: {
-              contract_id: string
-              similarity: number
-              data: Json
-            }[]
-          }
-        | {
-            Args: {
-              input_contract_id: string
-              similarity_threshold: number
-              match_count: number
-              is_admin?: boolean
-            }
-            Returns: {
-              contract_id: string
-              similarity: number
-              data: Json
-            }[]
-          }
-      closest_contract_embeddings2: {
+      close_contract_embeddings: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
+      }
+      closest_contract_embeddings: {
+        Args: {
+          input_contract_id: string
+          similarity_threshold: number
+          match_count: number
+          is_admin?: boolean
+        }
+        Returns: {
+          contract_id: string
+          similarity: number
+          data: Json
+        }[]
+      }
+      closest_contract_embeddings_2: {
         Args: {
           input_contract_id: string
           similarity_threshold: number
@@ -3395,6 +3412,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null

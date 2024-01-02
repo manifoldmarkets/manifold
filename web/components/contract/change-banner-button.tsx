@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import Image from 'next/image'
 import { useState } from 'react'
-import { buttonClass } from '../buttons/button'
+import { Button, buttonClass } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Tooltip } from '../widgets/tooltip'
 import { updateContract } from 'web/lib/firebase/contracts'
@@ -45,10 +45,9 @@ export function ChangeBannerButton(props: {
       >
         <button
           className={clsx(
-            'flex p-2 transition-colors',
             hasCoverImage
-              ? 'rounded-full bg-black/60 text-white hover:bg-black/80'
-              : 'text-ink-500 hover:text-ink-600'
+              ? 'flex rounded-full bg-black/60 p-2 text-white transition-colors hover:bg-black/80'
+              : buttonClass('sm', 'gray-white')
           )}
           onClick={() => setOpen(true)}
         >
@@ -56,7 +55,7 @@ export function ChangeBannerButton(props: {
             hasCoverImage ? (
               <CameraIcon className="h-5 w-5" />
             ) : (
-              <TbCameraPlus className="h-5 w-5" />
+              <TbCameraPlus className="h-5 w-5 stroke-[2.4]" />
             )
           ) : (
             <ArrowsExpandIcon className="h-5 w-5" />
@@ -86,29 +85,57 @@ const ChangeBannerModal = (props: {
   const src = contract.coverImageUrl
 
   return (
-    <Modal open={open} setOpen={setOpen}>
+    <Modal open={open} setOpen={setOpen} size="xl" className="!m-0">
       <div className="flex flex-col items-center gap-2">
-        <div className="bg-ink-100">
-          {src != undefined ? (
-            <Image src={src} width={400} height={400} alt="" />
-          ) : (
-            <div className="flex aspect-square w-[300px] shrink items-center justify-center sm:w-[400px]">
-              No image
+        {src != undefined ? (
+          <>
+            <Image
+              src={src}
+              width={600}
+              height={400}
+              alt=""
+              className="w-full"
+            />
+            {canEdit && (
+              <div className="mb-2 flex gap-2">
+                <ChangeCoverImageButton contract={contract}>
+                  Change
+                </ChangeCoverImageButton>
+                <Button
+                  onClick={() =>
+                    updateContract(contract.id, { coverImageUrl: null as any })
+                  }
+                >
+                  Remove
+                </Button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="bg-ink-100 text-ink-700 flex aspect-[1080/720] w-[600px] shrink items-center justify-center text-center italic">
+              A canvas awaits
+              <br />
+              Unseen art in dream's embrace,
+              <br />
+              Your banner raised.
             </div>
-          )}
-        </div>
-
-        {canEdit && (
-          <div className="mb-2 flex justify-end">
-            <ChangeCoverImageButton contract={contract} />
-          </div>
+            {canEdit && (
+              <ChangeCoverImageButton contract={contract}>
+                Upload
+              </ChangeCoverImageButton>
+            )}
+          </>
         )}
       </div>
     </Modal>
   )
 }
 
-const ChangeCoverImageButton = (props: { contract: Contract }) => {
+const ChangeCoverImageButton = (props: {
+  contract: Contract
+  children: string
+}) => {
   const uploadMutation = useMutation(fileHandler, {
     onSuccess(url) {
       updateContract(props.contract.id, { coverImageUrl: url })
@@ -127,7 +154,7 @@ const ChangeCoverImageButton = (props: { contract: Contract }) => {
       {uploadMutation.isLoading && (
         <LoadingIndicator size="md" className="mr-2" />
       )}
-      Change
+      {props.children}
     </FileUploadButton>
   )
 }

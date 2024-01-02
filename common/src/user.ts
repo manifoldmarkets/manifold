@@ -78,8 +78,11 @@ export type PrivateUser = {
   }
   destinySub2Claimed?: boolean
   pushToken?: string
+  // Set when the user rejects push notifications on the system modal (ie they said yes to our modal, no to the system modal)
   rejectedPushNotificationsOn?: number
+  // Set when the user dismisses our own modal asking if they're interested
   interestedInPushNotifications?: boolean
+  lastPromptedToEnablePushNotifications?: number
   blockedUserIds: string[]
   blockedByUserIds: string[]
   blockedContractIds: string[]

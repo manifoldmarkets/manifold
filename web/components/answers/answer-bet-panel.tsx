@@ -123,13 +123,11 @@ export function AnswerBetPanel(props: {
       </Row>
 
       <BuyAmountInput
-        inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={setBetAmount}
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        sliderOptions={{ show: true, wrap: false }}
         showBalance
       />
 

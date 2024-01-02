@@ -64,10 +64,11 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(10)
+  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
   // Expiring orders
   const [addExpiration, setAddExpiration] = useState(false)
   const timeInMs = Number(Date.now() + DAY_MS)
@@ -235,13 +236,11 @@ export default function LimitOrderPanel(props: {
       <span className="text-ink-800 mb-2 text-sm">Amount</span>
 
       <BuyAmountInput
-        inputClassName="w-full max-w-none"
         amount={betAmount}
         onChange={onBetChange}
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        sliderOptions={{ show: true, wrap: false }}
         showBalance
       />
 

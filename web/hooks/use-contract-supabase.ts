@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from 'react'
 import { getContractParams } from 'web/lib/firebase/api'
 import {
   getContract,
-  getContractFromSlug,
   getContracts,
   getIsPrivateContractMember,
   getPublicContractIdsInTopics,
@@ -15,7 +14,6 @@ import {
   getRecentPublicContractRows,
   getTrendingContracts,
 } from 'web/lib/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useIsAuthorized } from './use-user'
@@ -96,25 +94,12 @@ export const useContractParams = (contractSlug: string | undefined) => {
   return contractParams
 }
 
-export const useContractFromSlug = (contractSlug: string | undefined) => {
-  const [contract, setContract] = useState<Contract | undefined>(undefined)
-
-  useEffect(() => {
-    if (contractSlug) {
-      getContractFromSlug(contractSlug, db).then((result) => {
-        setContract(result)
-      })
-    }
-  }, [contractSlug])
-
-  return contract as Contract
-}
-
 export const useContracts = (
   contractIds: string[],
-  pk: 'id' | 'slug' = 'id'
+  pk: 'id' | 'slug' = 'id',
+  initial: Contract[] = []
 ) => {
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contracts, setContracts] = useState(initial)
 
   useEffectCheckEquality(() => {
     if (contractIds) {

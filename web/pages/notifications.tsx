@@ -245,6 +245,7 @@ export function NotificationsList(props: {
   } = props
   const isAuthorized = useIsAuthorized()
   const [page, setPage] = useState(0)
+  const user = useUser()
 
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
@@ -281,8 +282,9 @@ export function NotificationsList(props: {
           setPage={setPage}
         />
       )}
-      {privateUser && groupedNotifications && (
+      {privateUser && groupedNotifications && user && (
         <PushNotificationsModal
+          user={user}
           privateUser={privateUser}
           totalNotifications={
             groupedNotifications.map((ng) => ng.notifications).flat().length

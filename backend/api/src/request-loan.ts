@@ -11,7 +11,7 @@ import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 import { LoanTxn } from 'common/txn'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxnFromBankAsProfit } from 'shared/txn/run-txn'
 
 export const requestloan: APIHandler<'request-loan'> = async (
   _,
@@ -141,8 +141,15 @@ const payUserLoan = async (
       amount: payout,
       token: 'M$',
       category: 'LOAN',
+      data: {
+        // Distinguishes correct loans from erroneous old loans that were marked as deposits instead of profit.
+        countsAsProfit: true,
+      },
     }
-    const { message, txn, status } = await runTxnFromBank(trans, loanTxn)
+    const { message, txn, status } = await runTxnFromBankAsProfit(
+      trans,
+      loanTxn
+    )
     if (status !== 'success') {
       throw new APIError(500, message ?? 'Error creating loan txn')
     }

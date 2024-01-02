@@ -58,7 +58,7 @@ export const getContractParams = cache(async function (
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    getRelatedContracts(contract, 20, db, true),
+    getRelatedContracts(contract, 20, db),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {
@@ -95,6 +95,9 @@ export const getContractParams = cache(async function (
     totalPositions,
     totalBets,
     topContractMetrics,
+    // Not sure if these will be used on politics, if so will need to implement
+    relatedContractsByTopicSlug: {},
+    topics: [],
     relatedContracts,
     chartAnnotations,
   } as ContractParams

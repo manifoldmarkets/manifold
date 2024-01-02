@@ -2,13 +2,13 @@ import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
-import { BetSlider } from 'web/components/bet/bet-slider'
 import { useUser } from 'web/hooks/use-user'
 import { AddFundsModal } from '../add-funds-modal'
-import { BinaryOutcomes } from '../bet/bet-panel'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
+import { IncrementDecrementButton } from './increment-decrement-button'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 
 export function AmountInput(
   props: {
@@ -105,6 +105,7 @@ export function AmountInput(
 }
 export const quickAddMoreButtonClassName =
   'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
+
 export function BuyAmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
@@ -112,7 +113,6 @@ export function BuyAmountInput(props: {
   setError: (error: string | undefined) => void
   minimumAmount?: number
   maximumAmount?: number
-  quickAddAmount?: number
   disabled?: boolean
   showBalance?: boolean
   parentClassName?: string
@@ -120,16 +120,7 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  binaryOutcome?: BinaryOutcomes
-  sliderOptions?: {
-    show: boolean
-    wrap: boolean
-  }
   hideQuickAdd?: boolean
-  customRange?: {
-    rangeMin?: number
-    rangeMax?: number
-  }
   disregardUserBalance?: boolean
 }) {
   const {
@@ -137,23 +128,17 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
-    sliderOptions,
     disabled,
     showBalance,
     parentClassName,
     className,
     inputClassName,
     minimumAmount,
-    quickAddAmount = 10,
     inputRef,
-    binaryOutcome,
     maximumAmount,
-    customRange,
     disregardUserBalance,
     hideQuickAdd,
   } = props
-  const { show, wrap } = sliderOptions ?? {}
-
   const user = useUser()
 
   // Check for errors.
@@ -173,54 +158,74 @@ export function BuyAmountInput(props: {
     }
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
-  const quickAddButton = (
-    <button
-      className={clsx(
-        quickAddMoreButtonClassName,
-        binaryOutcome === 'YES'
-          ? 'text-teal-500 hover:bg-teal-100'
-          : binaryOutcome === 'NO'
-          ? 'text-scarlet-300 hover:bg-scarlet-50'
-          : 'text-ink-500 hover:bg-ink-200'
+  const increment = (interval: number) => {
+    let newAmount = (amount ?? 0) + interval
+
+    // Special case to have rounded numbers.
+    if (amount === 10 && interval > 10) newAmount = interval
+
+    if (maximumAmount && newAmount > maximumAmount) onChange(maximumAmount)
+    else onChange(newAmount)
+  }
+  const decrement = (interval: number) => {
+    const newAmount = (amount ?? 0) - interval
+    if (newAmount <= 0) onChange(undefined)
+    else if (minimumAmount && newAmount < minimumAmount) onChange(minimumAmount)
+    else onChange(newAmount)
+  }
+
+  const portfolio = useCurrentPortfolio(user?.id)
+  const hasLotsOfMana =
+    !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
+
+  const quickAddButtons = (
+    <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
+      {!hasLotsOfMana && (
+        <IncrementDecrementButton
+          amount={1}
+          onIncrement={() => increment(1)}
+          onDecrement={() => decrement(1)}
+        />
       )}
-      onClick={() => onChange((amount ?? 0) + quickAddAmount)}
-    >
-      +{quickAddAmount}
-    </button>
+      <IncrementDecrementButton
+        amount={10}
+        onIncrement={() => increment(10)}
+        onDecrement={() => decrement(10)}
+      />
+      <IncrementDecrementButton
+        amount={50}
+        onIncrement={() => increment(50)}
+        onDecrement={() => decrement(50)}
+      />
+      {hasLotsOfMana && (
+        <IncrementDecrementButton
+          amount={250}
+          onIncrement={() => increment(250)}
+          onDecrement={() => decrement(250)}
+        />
+      )}
+    </Row>
   )
 
   return (
     <>
       <Col className={parentClassName}>
-        <Row
-          className={clsx(
-            'items-center justify-between gap-x-4 gap-y-1 sm:justify-start',
-            wrap ? 'flex-wrap' : ''
-          )}
-        >
+        <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
+            className={className}
+            inputClassName={clsx(
+              '!h-16',
+              hideQuickAdd ? 'w-32' : 'w-[265px] pr-[148px]',
+              inputClassName
+            )}
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
             error={!!error}
             disabled={disabled}
-            className={className}
-            inputClassName={clsx('pr-12', inputClassName)}
             inputRef={inputRef}
-            quickAddMoreButton={
-              hideQuickAdd || maximumAmount ? undefined : quickAddButton
-            }
+            quickAddMoreButton={hideQuickAdd ? undefined : quickAddButtons}
           />
-          {show && (
-            <BetSlider
-              amount={amount}
-              onAmountChange={onChange}
-              binaryOutcome={binaryOutcome}
-              maximumAmount={maximumAmount}
-              customRange={customRange}
-              disabled={disabled}
-            />
-          )}
         </Row>
         {error ? (
           <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
@@ -229,7 +234,7 @@ export function BuyAmountInput(props: {
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 mt-0.5 whitespace-nowrap text-sm">
+            <div className="text-ink-500 mt-2 whitespace-nowrap text-sm">
               Balance{' '}
               <span className="text-ink-800">{formatMoney(user.balance)}</span>
             </div>

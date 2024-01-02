@@ -21,6 +21,7 @@ import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
+import { Headline } from 'common/news'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -338,6 +339,15 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
+        sort: z
+          .enum([
+            'created-time',
+            'updated-time',
+            'last-bet-time',
+            'last-comment-time',
+          ])
+          .optional(),
+        order: z.enum(['asc', 'desc']).optional(),
         before: z.string().optional(),
         userId: z.string().optional(),
         groupId: z.string().optional(),
@@ -474,6 +484,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  headlines: {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as Headline[],
+    props: z.object({}),
+  },
   'compatible-lovers': {
     method: 'GET',
     visibility: 'private',
@@ -520,6 +537,38 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
+  },
+  'get-related-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+      limit: z.coerce.number().gte(0).lte(100),
+      userId: z.string().optional(),
+    }),
+    returns: {} as {
+      marketsFromEmbeddings: Contract[]
+      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
+    },
+  },
+  'get-ad-analytics': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({
+      contractId: z.string(),
+    }),
+    returns: {} as {
+      uniqueViewers: number
+      totalViews: number
+      uniquePromotedViewers: number
+      totalPromotedViews: number
+      redeemCount: number
+      isBoosted: boolean
+      totalFunds: number
+      adCreatedTime: string
+    },
   },
 } as const)
 

@@ -1,14 +1,12 @@
 import Confetti, { Props as ConfettiProps } from 'react-confetti'
 import { sample, random } from 'lodash'
 import { useWindowSize } from 'web/hooks/use-window-size'
-import { useContext, useMemo } from 'react'
-import { ThemeContext } from 'web/hooks/theme-context'
+import { useMemo } from 'react'
 
 const NUM_VARIANTS = 20
 
 export function FullscreenConfetti(props: ConfettiProps) {
   const { height, width } = useWindowSize()
-  const { isActuallyDark } = useContext(ThemeContext)
 
   const flakeList = useMemo(generateFlakeList, [])
 
@@ -21,11 +19,14 @@ export function FullscreenConfetti(props: ConfettiProps) {
       numberOfPieces={300}
       tweenDuration={20_000}
       // draw a snowflake!
-      colors={
-        isActuallyDark
-          ? ['#ffffD0', '#fefeff', '#f0ffff', '#e6f8ff', '#e0f0ff', '#d0f0ff']
-          : ['#6d28d9', '#94a3b8', '#0891b2', '#0ea5e9', '#2563eb', '#60a5fa']
-      }
+      colors={[
+        '#6d28d9',
+        '#94a3b8',
+        '#0891b2',
+        '#0ea5e9',
+        '#2563eb',
+        '#60a5fa',
+      ]}
       drawShape={function (this: any, ctx) {
         this.rotateY -= this.rotationDirection * 0.07
 

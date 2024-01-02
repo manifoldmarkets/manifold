@@ -2,8 +2,9 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { PLURAL_BETS, User } from 'common/user'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { LOAN_DAILY_RATE } from 'common/loans'
+import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
+import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 
 export function LoansModal(props: {
   user: User
@@ -11,31 +12,53 @@ export function LoansModal(props: {
   setOpen: (open: boolean) => void
 }) {
   const { isOpen, user, setOpen } = props
-  const hasReceivedLoanToday = useHasReceivedLoanToday(user)
+  const { receivedLoanToday } = useHasReceivedLoanToday(user)
+  const { latestPortfolio, isEligible } = useIsEligibleForLoans(user?.id)
+
   return (
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
         <span className={'text-8xl'}>🏦</span>
         <span className="text-xl">Daily loans on your {PLURAL_BETS}</span>
-        {hasReceivedLoanToday && (
+        {receivedLoanToday ? (
           <span className={'text-ink-600 text-sm italic'}>
             You have already received your loan today. Come back tomorrow for
             {user.nextLoanCached > 0 &&
               ` ${ENV_CONFIG.moneyMoniker}${Math.floor(user.nextLoanCached)}!`}
           </span>
-        )}
+        ) : !isEligible || user.nextLoanCached < 1 ? (
+          <span className={'text-ink-600 text-sm italic'}>
+            You're not eligible for a loan right now.{' '}
+            {!user?.lastBetTime || !latestPortfolio
+              ? 'Make your first bet and come back in an hour to become eligible.'
+              : latestPortfolio.investmentValue <= 0
+              ? 'Your investment value is at or below 0. Place some bets to become eligible.'
+              : overLeveraged(
+                  latestPortfolio.loanTotal,
+                  latestPortfolio.investmentValue
+                )
+              ? 'You are over-leveraged. Sell some of your positions or place some good bets to become eligible.'
+              : latestPortfolio.loanTotal && user.nextLoanCached < 1
+              ? `We've already loaned you up to the current value of your bets. Place some more bets to become eligible again.`
+              : ''}
+          </span>
+        ) : null}
         <Col className={'gap-2'}>
-          <span className={'text-primary-700'}>• What are daily loans?</span>
+          <span className={'text-primary-700'}>• What are loans?</span>
           <span className={'ml-2'}>
-            Every day at midnight PT, you can get {LOAN_DAILY_RATE * 100}% of
-            your total bet amount back as a loan. If your bet has depreciated in
-            value, you will get {LOAN_DAILY_RATE * 100}% of the lower value.
+            When you bet on long-term markets, your funds (mana) are tied up
+            until the outcome is determined, which could take years. To let you
+            continue to place bets, we offer a unique solution: 0% interest
+            loans. Each day, you're eligible to receive a loan amounting to{' '}
+            {LOAN_DAILY_RATE * 100}% of your total bet value. If the value of
+            your bet decreases, the loan amount will be {LOAN_DAILY_RATE * 100}%
+            of the current, lower value.
           </span>
           <span className={'text-primary-700'}>
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
-            Yes, don't worry! You will automatically pay back loans when the
+            Yes, but don't worry! You will automatically pay back loans when the
             question resolves or you sell your bet.
           </span>
           <span className={'text-primary-700'}>

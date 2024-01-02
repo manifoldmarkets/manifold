@@ -71,7 +71,7 @@ export const resolveMarketHelper = async (
     answerId
   )
 
-  let updatedAttrs = removeUndefinedProps({
+  let updatedAttrs: Partial<Contract> | undefined = removeUndefinedProps({
     isResolved: true,
     resolution: outcome,
     resolutionValue: value,
@@ -81,6 +81,7 @@ export const resolveMarketHelper = async (
     resolutions,
     collectedFees,
     resolverId: resolver.id,
+    subsidyPool: 0,
   })
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
@@ -94,13 +95,12 @@ export const resolveMarketHelper = async (
         ...updatedAttrs,
         resolution: 'MKT',
       }
-    else updatedAttrs = {} as any
+    else updatedAttrs = undefined
   }
 
   const contract = {
     ...unresolvedContract,
     ...updatedAttrs,
-    subsidyPool: 0,
   } as Contract
 
   // handle exploit where users can get negative payouts
@@ -128,7 +128,16 @@ export const resolveMarketHelper = async (
 
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-  await payUsersTransactions(payouts, contractId, answerId)
+
+  if (updatedAttrs) {
+    log('updating contract', { updatedAttrs })
+    await contractDoc.update(updatedAttrs)
+    log('contract resolved')
+  }
+
+  log('processing payouts', { payouts })
+
+  await payUsersTransactions(log, payouts, contractId, answerId)
 
   if (answerId) {
     const answerDoc = firestore.doc(
@@ -147,15 +156,10 @@ export const resolveMarketHelper = async (
       })
     )
   }
-  await contractDoc.update(contract)
 
-  log('contract resolved', {
-    contractId,
-    outcome,
-  })
-
+  await updateContractMetricsForUsers(contract, bets)
+  // TODO: we may want to support clawing back trader bonuses on MC markets too
   if (!answerId) {
-    await updateContractMetricsForUsers(contract, bets)
     await undoUniqueBettorRewardsIfCancelResolution(contract, outcome, log)
   }
   await revalidateStaticProps(contractPath(contract))
@@ -174,7 +178,7 @@ export const resolveMarketHelper = async (
   await recordContractEdit(
     unresolvedContract,
     resolver.id,
-    Object.keys(updatedAttrs)
+    Object.keys(updatedAttrs ?? {})
   )
 
   await createContractResolvedNotifications(
@@ -343,6 +347,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
 }
 
 export const payUsersTransactions = async (
+  log: GCPLog,
   payouts: {
     userId: string
     payout: number
@@ -355,30 +360,38 @@ export const payUsersTransactions = async (
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 250)
   const payoutStartTime = Date.now()
+
   for (const payoutChunk of payoutChunks) {
-    await firestore.runTransaction(async (transaction) => {
-      payoutChunk.forEach(({ userId, payout, deposit }) => {
-        const payoutTxn: Omit<
-          ContractResolutionPayoutTxn,
-          'id' | 'createdTime'
-        > = {
-          category: 'CONTRACT_RESOLUTION_PAYOUT',
-          fromType: 'CONTRACT',
-          fromId: contractId,
-          toType: 'USER',
-          toId: userId,
-          amount: payout,
-          token: 'M$',
-          data: removeUndefinedProps({
-            deposit: deposit ?? 0,
-            payoutStartTime,
-            answerId,
-          }),
-          description: 'Contract payout for resolution: ' + contractId,
-        } as ContractResolutionPayoutTxn
-        runContractPayoutTxn(transaction, payoutTxn)
+    await firestore
+      .runTransaction(async (transaction) => {
+        payoutChunk.forEach(({ userId, payout, deposit }) => {
+          const payoutTxn: Omit<
+            ContractResolutionPayoutTxn,
+            'id' | 'createdTime'
+          > = {
+            category: 'CONTRACT_RESOLUTION_PAYOUT',
+            fromType: 'CONTRACT',
+            fromId: contractId,
+            toType: 'USER',
+            toId: userId,
+            amount: payout,
+            token: 'M$',
+            data: removeUndefinedProps({
+              deposit: deposit ?? 0,
+              payoutStartTime,
+              answerId,
+            }),
+            description: 'Contract payout for resolution: ' + contractId,
+          }
+
+          runContractPayoutTxn(transaction, payoutTxn)
+        })
       })
-    })
+      .catch((err) => {
+        log('Error running payout chunk transaction', err)
+        log('payoutChunk', payoutChunk)
+        // don't rethrow error without undoing previous payouts
+      })
   }
 }
 

@@ -13,6 +13,10 @@ const schema = z
 
 export const setnews = authEndpoint(async (req, auth) => {
   const { dashboardIds } = validate(schema, req.body)
+  if (!dashboardIds.length) {
+    return { success: true }
+  }
+
   if (!isAdminId(auth.uid) && !isModId(auth.uid)) {
     throw new APIError(403, 'You are not an admin or mod')
   }
@@ -20,26 +24,23 @@ export const setnews = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
   // update all dashboards to be important
 
-  await pg.tx(async (t) => {
+  const slugs: { slug: string }[] = await pg.tx(async (t) => {
     await t.none(`update dashboards set importance_score = 0`)
 
-    if (!dashboardIds.length) {
-      return
-    }
-
     const queries = dashboardIds.map((id, i) =>
-      t.none(`update dashboards set importance_score = $2 where id = $1`, [
-        id,
-        1 - i / dashboardIds.length,
-      ])
+      t.one(
+        `update dashboards set importance_score = $2 where id = $1 returning slug`,
+        [id, 1 - i / dashboardIds.length]
+      )
     )
 
     return t.batch(queries)
   })
 
   await Promise.all([
-    revalidateStaticProps(`/news`),
     revalidateStaticProps(`/home`),
+    revalidateStaticProps(`/news`),
+    ...slugs.map(({ slug }) => revalidateStaticProps(`/news/${slug}`)),
   ])
 
   track(auth.uid, 'set-news', { dashboardIds })

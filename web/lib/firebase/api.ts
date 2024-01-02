@@ -1,5 +1,5 @@
 import { auth } from './users'
-import { APIError, getApiUrl } from 'common/api/utils'
+import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, PrivacyStatusType } from 'common/group'
 import { Contract } from './contracts'
@@ -11,18 +11,9 @@ import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
-import { API, APIPath, APIParams, APIResponse } from 'common/api/schema'
-import { forEach } from 'lodash'
-import { removeUndefinedProps } from 'common/util/object'
-
+import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
+import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
 export { APIError } from 'common/api/utils'
-
-export function appendQuery(url: string, props: Record<string, any>) {
-  const [base, query] = url.split(/\?(.+)/)
-  const params = new URLSearchParams(query)
-  forEach(removeUndefinedProps(props ?? {}), (v, k) => params.set(k, v))
-  return `${base}?${params.toString()}`
-}
 
 export async function call(
   url: string,
@@ -33,49 +24,16 @@ export async function call(
   // if (user == null) {
   //   throw new Error('Must be signed in to make API calls.')
   // }
-  return maybeAuthedCall(url, method, params)
-}
-
-export async function maybeAuthedCall(
-  url: string,
-  method: 'POST' | 'PUT' | 'GET',
-  params?: any
-) {
-  const actualUrl = method === 'POST' ? url : appendQuery(url, params)
-  const user = auth.currentUser
-  const token = await user?.getIdToken()
-  const req = new Request(actualUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    method: method,
-    body:
-      params == null || method == 'GET' ? undefined : JSON.stringify(params),
-  })
-  return await fetch(req).then(async (resp) => {
-    const json = (await resp.json()) as { [k: string]: any }
-    if (!resp.ok) {
-      throw new APIError(resp.status as any, json?.message, json?.details)
-    }
-    return json
-  })
+  return baseApiCall(url, method, params, auth.currentUser)
 }
 
 // TODO: use this for all calls
 export function api<P extends APIPath>(path: P, params: APIParams<P>) {
-  const { method } = API[path]
-  // parse any params that should part of the path (like market/:id)
-  let url = getApiUrl(path)
-  forEach(params, (v, k) => {
-    url = url.replace(`:${k}`, v + '')
-  })
-
-  return call(url, method, params) as Promise<APIResponse<P>>
-}
-
-export function lootbox() {
-  return call(getApiUrl('lootbox'), 'POST')
+  return call(
+    formatApiUrlWithParams(path, params),
+    API[path].method,
+    params
+  ) as Promise<APIResponse<P>>
 }
 
 export function createAnswer(params: any) {
@@ -220,7 +178,7 @@ export function saveTopic(params: { topic: string }) {
 }
 
 export function getContractParams(params: { contractSlug: string }) {
-  return maybeAuthedCall(
+  return call(
     getApiUrl('getcontractparams'),
     'POST',
     params
@@ -249,11 +207,9 @@ export function searchGroups(params: {
   offset?: number
   addingToContract?: boolean
 }) {
-  return maybeAuthedCall(
-    getApiUrl('supabasesearchgroups'),
-    'POST',
-    params
-  ) as Promise<Group[]>
+  return call(getApiUrl('supabasesearchgroups'), 'POST', params) as Promise<
+    Group[]
+  >
 }
 
 export function leagueActivity(params: { season: number; cohort: string }) {
@@ -305,7 +261,7 @@ export function getUserContractsMetricsWithContracts(params: {
   offset: number
   limit: number
 }) {
-  return maybeAuthedCall(
+  return call(
     getApiUrl('get-user-contract-metrics-with-contracts'),
     'POST',
     params
@@ -362,15 +318,9 @@ export function supabaseSearchDashboards(params: {
   offset: number
   limit: number
 }) {
-  return maybeAuthedCall(
-    getApiUrl('supabasesearchdashboards'),
-    'POST',
-    params
-  ) as Promise<BaseDashboard[]>
-}
-
-export function getNewsDashboards() {
-  return maybeAuthedCall(getApiUrl('get-news-dashboards'), 'GET')
+  return call(getApiUrl('supabasesearchdashboards'), 'POST', params) as Promise<
+    BaseDashboard[]
+  >
 }
 
 export function setNewsDashboards(params: { dashboardIds: string[] }) {
@@ -395,7 +345,7 @@ export function deleteDashboard(params: { dashboardId: string }) {
 }
 
 export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return maybeAuthedCall(
+  return call(
     getApiUrl('getdashboardfromslug'),
     'POST',
     params
@@ -452,14 +402,14 @@ export function editAnswerCpmm(params: {
 }
 
 export function searchLocation(params: { term: string; limit?: number }) {
-  return maybeAuthedCall(getApiUrl('searchlocation'), 'POST', params)
+  return call(getApiUrl('searchlocation'), 'POST', params)
 }
 
 export function searchNearCity(params: { cityId: string; radius: number }) {
   if (params.radius < 1 || params.radius > 500) {
     throw new Error('Your radius is out of bounds!')
   }
-  return maybeAuthedCall(getApiUrl('searchnearcity'), 'POST', params)
+  return call(getApiUrl('searchnearcity'), 'POST', params)
 }
 
 // vercel api
@@ -479,6 +429,9 @@ export function createChartAnnotation(params: {
 
 export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
+}
+export function getAdAnalytics(params: { contractId: string }) {
+  return call(getApiUrl('get-ad-analytics'), 'POST', params)
 }
 
 export function requestLoan() {

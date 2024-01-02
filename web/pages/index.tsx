@@ -129,12 +129,10 @@ export default function LandingPage(props: {
                 Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
-                Compete with your friends by betting on literally anything.
-                Winnings go to{' '}
-                <Link href="/charity" className="hover:underline">
-                  charity
-                </Link>
-                . One-click sign up.
+                Compete with your friends by betting on literally anything. It's
+                play money,{' '}
+                <strong className="font-semibold">not crypto</strong>, and free
+                to play.
               </h1>
 
               <Button

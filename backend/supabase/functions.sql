@@ -300,6 +300,7 @@ limit match_count;
 end;
 $$;
 
+-- TODO: delete this function after 1/7/2024
 create
 or replace function closest_contract_embeddings (
   input_contract_id text,
@@ -334,6 +335,36 @@ where contract_id != input_contract_id
 order by similarity * similarity * importance_score desc
 limit match_count;
 $$;
+
+create
+    or replace function close_contract_embeddings (
+    input_contract_id text,
+    similarity_threshold float,
+    match_count int
+) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
+    SELECT embedding
+    FROM contract_embeddings
+    WHERE contract_id = input_contract_id
+)
+    SELECT contract_id,
+           similarity,
+           data
+    FROM search_contract_embeddings(
+                 (
+                     SELECT embedding
+                     FROM embedding
+                 ),
+                 similarity_threshold,
+                 match_count + 500
+         )
+             join contracts on contract_id = contracts.id
+    where contract_id != input_contract_id
+      and resolution_time is null
+      and contracts.visibility = 'public'
+    order by similarity * similarity * importance_score desc
+    limit match_count;
+$$;
+
 
 create
 or replace function get_top_market_ads (uid text, distance_threshold numeric) returns table (

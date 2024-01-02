@@ -20,7 +20,11 @@ create index if not exists contracts_volume_24_hours on contracts (
 
 create index if not exists contracts_elasticity on contracts (((data ->> 'elasticity')::numeric) desc);
 
-create index if not exists contracts_last_updated_time on contracts (((data ->> 'lastUpdatedTime')::numeric) desc);
+create index if not exists contracts_last_updated_time on contracts (last_updated_time desc nulls last);
+
+create index if not exists contracts_last_bet_time on contracts (last_bet_time desc nulls last);
+
+create index if not exists contracts_last_comment_time on contracts (last_comment_time desc nulls last);
 
 create index if not exists contracts_unique_bettor_count on contracts (((data ->> 'uniqueBettorCount')::integer) desc);
 

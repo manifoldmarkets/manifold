@@ -1,12 +1,13 @@
 import clsx from 'clsx'
+import Link from 'next/link'
+import Router from 'next/router'
+import { useEffect, useState } from 'react'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
   ContractStatusLabel,
@@ -40,6 +41,9 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Button } from 'web/components/buttons/button'
+import { useAdTimer } from 'web/hooks/use-ad-timer'
+import { AD_WAIT_SECONDS } from 'common/boost'
+import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -87,21 +91,40 @@ export function FeedContractCard(props: {
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
 
-  const router = useRouter()
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
+  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
-    () =>
+    () => {
       !DEBUG_FEED_CARDS &&
-      track('view market card', {
-        contractId: contract.id,
-        creatorId: contract.creatorId,
-        slug: contract.slug,
-        feedId: item?.id,
-        isPromoted: !!promotedData,
-      } as ContractCardView),
-    false
+        track('view market card', {
+          contractId: contract.id,
+          creatorId: contract.creatorId,
+          slug: contract.slug,
+          feedId: item?.id,
+          isPromoted: !!promotedData,
+        } as ContractCardView)
+      setVisible(true)
+    },
+    false,
+    true,
+    () => {
+      setVisible(false)
+    }
   )
+
+  const adSecondsLeft =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
+  const [canAdPay, setCanAdPay] = useState(true)
+  const adId = promotedData?.adId
+  useEffect(() => {
+    if (adId) {
+      getAdCanPayFunds(adId).then((canPay) => {
+        setCanAdPay(canPay)
+      })
+    }
+  }, [adId])
 
   const { probChange, startTime, ignore } = getMarketMovementInfo(
     contract,
@@ -131,7 +154,7 @@ export function FeedContractCard(props: {
       )}
       onClick={(e) => {
         trackClick()
-        router.push(path)
+        Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
       ref={ref}
@@ -155,7 +178,12 @@ export function FeedContractCard(props: {
             />
           </Row>
           {hide && (
-            <Row className="gap-1">
+            <Row className="gap-2">
+              {promotedData && canAdPay && (
+                <div className="text-ink-400 w-12 text-sm">
+                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
+                </div>
+              )}
               <CardReason
                 item={item}
                 contract={contract}
@@ -221,11 +249,16 @@ export function FeedContractCard(props: {
             addLeadingBetPoint={true}
           />
         )}
-        {promotedData && (
-          <Col className={'w-full items-center'}>
+        {promotedData && canAdPay && (
+          <Col
+            className={clsx(
+              'w-full items-center opacity-0 transition-opacity',
+              adSecondsLeft === 0 && 'opacity-100'
+            )}
+          >
             <ClaimButton
               {...promotedData}
-              onClaim={() => router.push(path)}
+              onClaim={() => Router.push(path)}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
@@ -242,7 +275,11 @@ export function FeedContractCard(props: {
           />
         )}
 
-        <CategoryTags categories={contract.groupLinks} />
+        <CategoryTags
+          categories={contract.groupLinks}
+          // hide tags after first line. (tags are 24 px tall)
+          className="h-6 flex-wrap overflow-hidden"
+        />
         {!hideBottomRow && (
           <Col>
             <BottomActionRow

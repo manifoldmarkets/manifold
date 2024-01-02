@@ -74,6 +74,7 @@ export type notification_source_types =
   | 'bet_reply'
   | 'new_message'
   | love_notification_source_types
+  | 'push_notification_bonus'
 
 export type love_notification_source_types =
   | 'love_contract'

@@ -205,6 +205,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     bets,
     highlightCommentId,
   } = props
+  const user = useUser()
 
   // Firebase useComments
   // const comments = (useComments(contract.id, 0) ?? props.comments).filter(
@@ -212,7 +213,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // )
 
   // Supabase use realtime comments
-  const { rows, loadNewer } = useRealtimeCommentsOnContract(contract.id)
+  const { rows, loadNewer } = useRealtimeCommentsOnContract(
+    contract.id,
+    user ? { userId: user.id } : undefined
+  )
   const comments = (rows ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
@@ -221,7 +225,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     props.comments.filter((c) => !c.replyToCommentId).length
   )
 
-  const user = useUser()
   const isBinary = contract.outcomeType === 'BINARY'
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
   const bestFirst =

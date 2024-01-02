@@ -459,13 +459,7 @@ export const PushNotificationsBanner = () => {
 
   const isNative = getIsNative()
 
-  if (
-    interestedInPushNotifications ||
-    pushToken ||
-    (interestedInPushNotifications === undefined && pushToken === undefined) ||
-    !isNative
-  )
-    return <div />
+  if (pushToken || !isNative) return <div />
 
   // If they only said they weren't interested in push notifications to our modal
   if (interestedInPushNotifications === false && !rejectedPushNotificationsOn) {
@@ -500,7 +494,10 @@ export const PushNotificationsBanner = () => {
         this button ➡️
       </span>
       <Button
-        onClick={() => postMessageToNative('promptEnablePushNotifications', {})}
+        onClick={() => {
+          postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
+          postMessageToNative('promptEnablePushNotifications', {})
+        }}
         className={'whitespace-nowrap'}
       >
         <RefreshIcon className={'h-4 w-4 '} />

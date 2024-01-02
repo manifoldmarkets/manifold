@@ -1,8 +1,7 @@
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
 import { XIcon } from '@heroicons/react/outline'
-import { PencilIcon } from '@heroicons/react/solid'
-import { BaseDashboard, Dashboard } from 'common/dashboard'
-import { uniq } from 'lodash'
+import { BaseDashboard } from 'common/dashboard'
+import { uniqBy } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 import {
   setNewsDashboards,
@@ -15,24 +14,21 @@ import { Avatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
-import { Tooltip } from '../widgets/tooltip'
+import { Headline } from 'common/news'
 
-export const EditNewsButton = (props: { defaultDashboards: Dashboard[] }) => {
+export const EditNewsButton = (props: { defaultDashboards: Headline[] }) => {
   const { defaultDashboards } = props
   const [open, setOpen] = useState(false)
 
   return (
     <>
-      <Tooltip text="Change pinned news" placement="right" noTap>
-        <Button
-          color="gray-white"
-          size="sm"
-          className="hidden sm:inline-flex"
-          onClick={() => setOpen(true)}
-        >
-          <PencilIcon className="h-6 w-6" />
-        </Button>
-      </Tooltip>
+      <button
+        // copy pasta'ed from header
+        className="outline-none' max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-900 dark:hover:text-purple-400"
+        onClick={() => setOpen(true)}
+      >
+        Edit
+      </button>
       {open && (
         <EditNewsModal
           setOpen={setOpen}
@@ -45,13 +41,11 @@ export const EditNewsButton = (props: { defaultDashboards: Dashboard[] }) => {
 
 const EditNewsModal = (props: {
   setOpen(open: boolean): void
-  defaultDashboards: Dashboard[]
+  defaultDashboards: Headline[]
 }) => {
   const { setOpen, defaultDashboards } = props
 
-  const [dashboards, setDashboards] = useState(
-    defaultDashboards.map((d) => ({ id: d.id, title: d.title }))
-  )
+  const [dashboards, setDashboards] = useState(defaultDashboards)
 
   const onDragEnd = (result: any) => {
     const { destination, source } = result
@@ -85,7 +79,12 @@ const EditNewsModal = (props: {
         {/* search */}
         <DashboardFinder
           onSelect={(d) => {
-            setDashboards(uniq([...dashboards, { id: d.id, title: d.title }]))
+            setDashboards((dashboards) =>
+              uniqBy(
+                [...dashboards, { id: d.id, title: d.title, slug: d.slug }],
+                'id'
+              )
+            )
           }}
           selected={dashboards.map((d) => d.id)}
         />

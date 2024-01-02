@@ -45,7 +45,7 @@ const description =
   'Sports betting but useful! Manifold is a prediction market where you can bet on the future of politics.'
 const title = 'Manifold Politics — sports betting for politics nerds!'
 const ogImageUrl = '/bet-on-politics.png'
-const url = 'https://manifoldpolitics.com/'
+const url = 'https://politifold.com/'
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title,

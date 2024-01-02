@@ -1,3 +1,29 @@
+
+create table if not exists
+    txns (
+             id text not null primary key,
+             data jsonb not null,
+             fs_updated_time timestamp not null
+);
+
+alter table txns enable row level security;
+
+drop policy if exists "public read" on txns;
+
+create policy "public read" on txns for
+    select
+    using (true);
+
+create index if not exists txns_data_gin on txns using GIN (data);
+
+alter table txns
+    cluster on txns_pkey;
+
+-- for querying top market_ads
+create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'toId'));
+
+
+
 create or replace function get_daily_claimed_boosts(user_id text)
     returns table (total numeric) as $$
 with daily_totals as (

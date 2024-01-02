@@ -15,7 +15,7 @@ select data, importance_score
 from public_contracts
 where (public_contracts.group_slugs && p_group_slugs)
   and not (public_contracts.group_slugs && ignore_slugs)
-order by ((data->>'lastUpdatedTime')::bigint) desc
+order by last_updated_time desc
 limit max
 $$;
 

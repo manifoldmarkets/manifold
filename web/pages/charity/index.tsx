@@ -122,7 +122,8 @@ export default function Charity(props: {
             </a>
           </span>
           <AlertBox title="2024 changes" className="mt-4 max-w-2xl">
-            Starting January 1st, 2024 Manifold user donations will be{' '}
+            Starting January 2nd, 2024 (Pacific time) Manifold user donations
+            will be{' '}
             <a
               href="https://manifoldmarkets.notion.site/The-New-Deal-for-Manifold-s-Charity-Program-1527421b89224370a30dc1c7820c23ec"
               target="_blank"

@@ -71,13 +71,13 @@ export default function CreateDashboard() {
       setSubmitState('DONE')
 
       try {
-        await router.push(`/dashboard/${newDashboard.slug}`)
+        await router.push(`/news/${newDashboard.slug}`)
       } catch (error) {
         console.error(error)
       }
     } catch (e) {
       console.error('error creating dashboard', e)
-      setErrorText((e as any).message || 'Error creating contract')
+      setErrorText((e as any).message || 'Error creating')
       setSubmitState('EDITING')
     }
   }
@@ -85,9 +85,9 @@ export default function CreateDashboard() {
   return (
     <Page trackPageView={'create dashboard page'}>
       <SEO
-        title="Create a dashboard"
+        title="Create a news dashboard"
         description="Create a collection of prediction markets."
-        url="/dashboard/create"
+        url="/news/create"
       />
       <Col
         className={clsx(
@@ -104,7 +104,7 @@ export default function CreateDashboard() {
           setText={setTitle}
           limit={MAX_DASHBOARD_TITLE_LENGTH}
           className="w-full !text-lg"
-          placeholder={'Dashboard Title'}
+          placeholder={'Title'}
         />
 
         <Spacer h={6} />

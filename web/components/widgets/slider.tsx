@@ -42,7 +42,8 @@ export function Slider(props: {
     <RxSlider.Root
       className={clsx(
         className,
-        'relative flex h-5 touch-none select-none items-center'
+        'relative flex touch-none select-none items-center',
+        marks ? 'h-[42px]' : 'h-5'
       )}
       value={[amount]}
       onValueChange={([val]) => onChange(val)}

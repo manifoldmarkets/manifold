@@ -40,15 +40,21 @@ export async function getCommentRows(contractId: string) {
   )
   return data
 }
-export async function getNewCommentRows(contractId: string, afterTime: string) {
-  const { data } = await run(
-    db
-      .from('contract_comments')
-      .select()
-      .eq('contract_id', contractId)
-      .gt('created_time', afterTime)
-      .order('created_time', { ascending: false })
-  )
+export async function getNewCommentRows(
+  contractId: string,
+  afterTime: string,
+  userId?: string
+) {
+  let q = db
+    .from('contract_comments')
+    .select()
+    .eq('contract_id', contractId)
+    .gt('created_time', afterTime)
+    .order('created_time', { ascending: false })
+
+  if (userId) q = q.eq('user_id', userId)
+
+  const { data } = await run(q)
   return data
 }
 

@@ -41,6 +41,7 @@ import { useBoosts } from 'web/hooks/use-boosts'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { convertContractComment } from 'common/supabase/comments'
 import { Json } from 'common/supabase/schema'
+import { getSeenContractIds } from 'web/lib/supabase/user-events'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -278,14 +279,9 @@ export const useFeedTimeline = (
               } as CreatorDetails)
           )
         ),
-      db
-        .from('user_seen_markets')
-        .select('contract_id')
-        .eq('user_id', userId)
-        .in('type', ['view market card']) // Could add 'view market' as well
-        .in('contract_id', newContractIds)
-        .gt('created_time', new Date(Date.now() - 3 * DAY_MS).toISOString())
-        .then((res) => res.data?.map((c) => c.contract_id)),
+      getSeenContractIds(userId, newContractIds, Date.now() - 5 * DAY_MS, [
+        'view market card',
+      ]),
     ])
 
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>

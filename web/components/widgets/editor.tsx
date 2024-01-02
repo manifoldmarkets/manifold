@@ -12,7 +12,7 @@ import {
 } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { ReactNode, useCallback, useMemo, useRef } from 'react'
+import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
@@ -100,8 +100,9 @@ export function useTextEditor(props: {
   size?: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `editor.commands.clearContent(true)` on submit to clear autosave
   extensions?: Extensions
+  className?: string
 }) {
-  const { placeholder, max, defaultValue, size = 'md', key } = props
+  const { placeholder, className, max, defaultValue, size = 'md', key } = props
   const simple = size === 'sm'
 
   const [content, saveContent] = usePersistentLocalState<
@@ -110,21 +111,23 @@ export function useTextEditor(props: {
   const fetchingLinks = useRef<boolean>(false)
 
   const save = useCallback(debounce(saveContent, 500), [])
-  const editorClass = clsx(
-    proseClass(size),
-    'outline-none py-[.5em] px-4',
-    'prose-img:select-auto',
-    '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-primary-300', // selected img, embeds
-    'dark:[&_.ProseMirror-gapcursor]:after:border-white' // gap cursor
-  )
+
+  const getEditorProps = () => ({
+    attributes: {
+      class: clsx(
+        proseClass(size),
+        'outline-none py-[.5em] px-4',
+        'prose-img:select-auto',
+        '[&_.ProseMirror-selectednode]:outline-dotted [&_*]:outline-primary-300', // selected img, embeds
+        'dark:[&_.ProseMirror-gapcursor]:after:border-white', // gap cursor
+        className
+      ),
+      style: `min-height: ${1 + 1.625 * (simple ? 2 : 3)}em`, // 1em padding + 1.625 lines per row
+    },
+  })
 
   const editor = useEditor({
-    editorProps: {
-      attributes: {
-        class: editorClass,
-        style: `min-height: ${1 + 1.625 * (simple ? 2 : 3)}em`, // 1em padding + 1.625 lines per row
-      },
-    },
+    editorProps: getEditorProps(),
     onUpdate: !key
       ? noop
       : ({ editor }) => {
@@ -143,6 +146,13 @@ export function useTextEditor(props: {
     ],
     content: defaultValue ?? (key && content ? content : ''),
   })
+
+  useEffect(() => {
+    // Using a dep array in the useEditor hook doesn't work, so we have to use a useEffect
+    editor?.setOptions({
+      editorProps: getEditorProps(),
+    })
+  }, [className])
 
   const debouncedAddPreviewIfLinkPresent = useCallback(
     debounce(() => addPreviewIfLinkPresent(), 500),
