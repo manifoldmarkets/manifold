@@ -12,10 +12,12 @@ ENV=${1:-dev}
 case $ENV in
     dev)
       ENVIRONMENT=DEV
-      GCLOUD_PROJECT=dev-mantic-markets ;;
+      GCLOUD_PROJECT=dev-mantic-markets
+      MACHINE_TYPE=n2-standard-2 ;;
     prod)
       ENVIRONMENT=PROD
-      GCLOUD_PROJECT=mantic-markets ;;
+      GCLOUD_PROJECT=mantic-markets
+      MACHINE_TYPE=n2-standard-4 ;;
     *)
       echo "Invalid environment; must be dev or prod."
       exit 1
@@ -40,7 +42,7 @@ if [ "${INITIALIZE}" = true ]; then
            --zone ${ZONE} \
            --address ${SERVICE_NAME} \
            --container-image ${IMAGE_URL} \
-           --machine-type n2-standard-4 \
+           --machine-type ${MACHINE_TYPE} \
            --container-env ENVIRONMENT=${ENVIRONMENT} \
            --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
            --scopes default,cloud-platform \
