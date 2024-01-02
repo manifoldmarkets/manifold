@@ -24,7 +24,6 @@ import { buildArray } from 'common/util/array'
 import { groupBy, orderBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
-import { unauthedApi } from './util/api'
 
 export async function getContractParams(
   contract: Contract,
@@ -74,10 +73,8 @@ export async function getContractParams(
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    unauthedApi('get-related-markets', {
-      contractId: contract.id,
-      limit: 4,
-    }),
+    // TEMPORARILY DISABLED, TODO: Renable
+    Promise.resolve({ marketsFromEmbeddings: [], marketsByTopicSlug: {} }),
     // getRelatedContracts(contract, 20, db),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
