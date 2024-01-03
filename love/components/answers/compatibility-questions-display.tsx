@@ -172,7 +172,7 @@ export function CompatibilityQuestionsDisplay(props: {
           />
         </Row>
       )}
-      {NUM_QUESTIONS_TO_SHOW < compatibilityAnswers.length && (
+      {NUM_QUESTIONS_TO_SHOW < answers.length && (
         <Pagination
           page={page}
           itemsPerPage={NUM_QUESTIONS_TO_SHOW}

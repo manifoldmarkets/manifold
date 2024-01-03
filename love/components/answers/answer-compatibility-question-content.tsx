@@ -165,7 +165,7 @@ export function AnswerCompatibilityQuestionContent(props: {
           'h-[20rem] w-full gap-4 sm:h-[30rem]'
         )}
       >
-        <Col className="gap-1">
+        <Col className="gap-2">
           <span className="text-ink-500 text-sm">Your answer</span>
           <RadioGroup
             className={
@@ -196,7 +196,7 @@ export function AnswerCompatibilityQuestionContent(props: {
               ))}
           </RadioGroup>
         </Col>
-        <Col className="gap-1">
+        <Col className="gap-2">
           <span className="text-ink-500 text-sm">Answers you'll accept</span>
           <Col
             className={
@@ -221,7 +221,7 @@ export function AnswerCompatibilityQuestionContent(props: {
               ))}
           </Col>
         </Col>
-        <Col className="gap-1">
+        <Col className="gap-2">
           <span className="text-ink-500 text-sm">Importance</span>
           <RadioToggleGroup
             currentChoice={answer.importance ?? -1}
@@ -232,8 +232,8 @@ export function AnswerCompatibilityQuestionContent(props: {
             indexColors={IMPORTANCE_RADIO_COLORS}
           />
         </Col>
-        <Col className="-mt-6 gap-1">
-          <span className="text-ink-500 text-sm">Explanation</span>
+        <Col className="-mt-6 gap-2">
+          <span className="text-ink-500 text-sm">Your thoughts (optional, but recommended)</span>
           <ExpandingInput
             className={'w-full'}
             rows={3}
