@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
@@ -36,14 +37,18 @@ export function HeadlineTabs(props: {
   )
 }
 
-const Tab = (props: { href: string; label: string; active?: boolean }) => (
-  <Link
-    href={props.href}
-    className={clsx(
-      'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
-      props.active && 'bg-primary-200 text-primary-900'
-    )}
-  >
-    {props.label}
-  </Link>
-)
+const Tab = (props: { href: string; label: string; active?: boolean }) => {
+  const { href, label, active } = props
+  return (
+    <Link
+      href={href}
+      onClick={() => track('news tabs', { tab: label, href })}
+      className={clsx(
+        'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
+        active && 'bg-primary-200 text-primary-900'
+      )}
+    >
+      {label}
+    </Link>
+  )
+}
