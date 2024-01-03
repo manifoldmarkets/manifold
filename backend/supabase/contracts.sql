@@ -78,8 +78,6 @@ create index if not exists contracts_on_importance_score_and_resolution_time_idx
 create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
 create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
 
-create index if not exists contracts_group_slugs on contracts (group_slugs);
-
 alter table contracts
     cluster on contracts_creator_id;
 
