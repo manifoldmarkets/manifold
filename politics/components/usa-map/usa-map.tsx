@@ -13,6 +13,7 @@ export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
 export type CustomizeObj = {
   fill?: string
   clickHandler?: ClickHandler
+  selected?: boolean
 }
 export interface Customize {
   [key: string]: CustomizeObj
@@ -22,11 +23,13 @@ export type StatesProps = {
   hideStateTitle?: boolean
   fillStateColor: (stateKey: string) => string
   stateClickHandler: GetClickHandler
+  selectedState: (state: string) => boolean
 }
 const States = ({
   hideStateTitle,
   fillStateColor,
   stateClickHandler,
+  selectedState,
 }: StatesProps) =>
   Object.entries(DATA).map(([stateKey, data]) => (
     <USAState
@@ -36,6 +39,7 @@ const States = ({
       dimensions={data.dimensions}
       state={stateKey}
       fill={fillStateColor(stateKey)}
+      selected={selectedState(stateKey)}
       onClickState={stateClickHandler(stateKey)}
     />
   ))
@@ -66,6 +70,8 @@ export const USAMap = ({
 
   const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
 
+  const selectedState = (state: string) => !!customize?.[state]?.selected
+
   return (
     <div
       className={clsx('relative w-full')}
@@ -83,6 +89,7 @@ export const USAMap = ({
             hideStateTitle,
             fillStateColor,
             stateClickHandler,
+            selectedState,
           })}
           <g className="DC state">
             <path

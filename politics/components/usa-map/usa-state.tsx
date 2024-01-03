@@ -8,6 +8,7 @@ type USAStateProps = {
   onClickState?: ClickHandler
   stateName: string
   hideStateTitle?: boolean
+  selected?: boolean
 }
 export const USAState = ({
   state,
@@ -16,6 +17,7 @@ export const USAState = ({
   onClickState,
   stateName,
   hideStateTitle,
+  selected,
 }: USAStateProps) => {
   return (
     <path
@@ -27,6 +29,8 @@ export const USAState = ({
       )}
       onClick={onClickState}
       id={state}
+      stroke={selected ? '#000' : undefined}
+      strokeWidth={selected ? 2 : undefined}
     >
       {hideStateTitle ? null : <title>{stateName}</title>}
     </path>

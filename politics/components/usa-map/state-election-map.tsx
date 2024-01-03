@@ -43,8 +43,13 @@ export function StateElectionMap(props: { markets: StateElectionMarket[] }) {
         market.isWinRepublican
       ),
       clickHandler: () => {
-        setTargetContract(contract)
+        if (targetContract && contract?.id == targetContract.id) {
+          setTargetContract(undefined)
+        } else {
+          setTargetContract(contract)
+        }
       },
+      selected: targetContract && contract && targetContract.id == contract.id,
     },
   ])
 
