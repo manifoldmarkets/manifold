@@ -90,9 +90,9 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                 {tab.stackedTabIcon && (
                   <Row className="justify-center">{tab.stackedTabIcon}</Row>
                 )}
-                <Row className={'items-center gap-1'}>
-                  {tab.inlineTabIcon}
+                <Row className={'items-center'}>
                   {tab.title}
+                  {tab.inlineTabIcon}
                 </Row>
               </Tooltip>
             </Col>
