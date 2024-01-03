@@ -11,6 +11,9 @@ alter role service_role
 set
   statement_timeout = '1h';
 
+/* multi-column GIN indexes */
+create extension if not exists btree_gin;
+
 /* for clustering without locks */
 create extension if not exists pg_repack;
 
