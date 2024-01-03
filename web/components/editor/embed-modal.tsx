@@ -6,6 +6,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
+import toast from 'react-hot-toast'
 
 type EmbedPattern = {
   // Regex should have a single capture group.
@@ -81,6 +82,12 @@ const embedPatterns: EmbedPattern[] = [
     rewrite: (id) =>
       `<iframe src="https://www.tiktok.com/embed/v2/${id}"></iframe>`,
   },
+  {
+    // FRED: https://fred.stlouisfed.org/graph/?g=1dyEg
+    regex: /^https?:\/\/fred\.stlouisfed\.org\/graph\/\?(\w+)/,
+    rewrite: (id) =>
+      `<iframe src="https://fred.stlouisfed.org/graph/graph-landing.php?g=${id}"></iframe>`,
+  },
 ]
 
 const allowedDomains: string[] = ['streamlit.app', 'wikipedia.org']
@@ -147,12 +154,17 @@ export function EmbedModal(props: {
 
         <Row className="gap-2">
           <Button
-            disabled={!embed}
+            color={embed ? 'indigo' : 'gray'}
+            style={{ cursor: embed ? 'pointer' : 'not-allowed' }}
             onClick={() => {
               if (editor && embed) {
                 editor.chain().insertContent(embed).run()
                 setInput('')
                 setOpen(false)
+              } else {
+                toast.error(
+                  'Your embed site is not allowlisted; please ask to enable it in Discord #api-and-bots.'
+                )
               }
             }}
           >
