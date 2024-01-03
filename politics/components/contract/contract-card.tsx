@@ -2,18 +2,33 @@ import clsx from 'clsx'
 
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { BetButton } from 'web/components/bet/feed-bet-button'
+import { Button } from 'web/components/buttons/button'
+import { CommentsButton } from 'web/components/comments/comments-button'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
+import { LikeButton } from 'web/components/contract/like-button'
+import { TradesButton } from 'web/components/contract/trades-button'
+import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import FeedContractCardDescription from 'web/components/feed/feed-contract-card-description'
+import { CategoryTags } from 'web/components/feed/feed-timeline-items'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { PollPanel } from 'web/components/poll/poll-panel'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -21,25 +36,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { BetButton } from 'web/components/bet/feed-bet-button'
-import { CommentsButton } from 'web/components/comments/comments-button'
-import { CardReason } from 'web/components/feed/card-reason'
-import { FeedBinaryChart } from 'web/components/feed/feed-chart'
-import FeedContractCardDescription from 'web/components/feed/feed-contract-card-description'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { PollPanel } from 'web/components/poll/poll-panel'
-import { ClickFrame } from 'web/components/widgets/click-frame'
-import { LikeButton } from 'web/components/contract/like-button'
-import { TradesButton } from 'web/components/contract/trades-button'
-import { FeedDropdown } from 'web/components/feed/card-dropdown'
-import { CategoryTags } from 'web/components/feed/feed-timeline-items'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Button } from 'web/components/buttons/button'
+import { ShadowFrame } from '../button/shadow-frame'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -120,14 +117,13 @@ export function FeedContractCard(props: {
   const nonTextDescription = !JSONEmpty(contract.description)
 
   return (
-    <ClickFrame
+    <ShadowFrame
       className={clsx(
         className,
-        'relative rounded-xl',
+        'relative',
         'cursor-pointer ',
-        'hover:ring-[1px]',
-        'flex w-full flex-col gap-0.5 px-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
+        'ring-ink-1000 ring-1',
+        'bg-canvas-0 flex w-full flex-col gap-0.5 px-4 py-2'
       )}
       onClick={(e) => {
         trackClick()
@@ -136,43 +132,7 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      <Col className={'w-full flex-col gap-1.5 pt-2'}>
-        <Row className="w-full justify-between">
-          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creatorName,
-                username: creatorUsername,
-              }}
-              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
-            />
-          </Row>
-          {hide && (
-            <Row className="gap-1">
-              <CardReason
-                item={item}
-                contract={contract}
-                probChange={probChange}
-                since={startTime}
-              />
-              <FeedDropdown
-                contract={contract}
-                item={item}
-                interesting={true}
-                toggleInteresting={hide}
-                importanceScore={props.contract.importanceScore}
-              />
-            </Row>
-          )}
-        </Row>
-
+      <Col className={'w-full flex-col gap-1.5'}>
         <div
           className={clsx(
             'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
@@ -180,7 +140,7 @@ export function FeedContractCard(props: {
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
-            className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
+            className="text-ink-1000 grow items-start font-serif transition-colors hover:underline sm:text-lg"
             href={path}
             onClick={trackClick}
           >
@@ -254,7 +214,7 @@ export function FeedContractCard(props: {
           </Col>
         )}
       </div>
-    </ClickFrame>
+    </ShadowFrame>
   )
 }
 

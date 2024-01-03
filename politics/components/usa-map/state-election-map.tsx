@@ -10,7 +10,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { Col } from 'web/components/layout/col'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { FeedContractCard } from '../contract/contract-card'
 
 export interface StateElectionMarket {
   creatorUsername: string
