@@ -103,7 +103,7 @@ export default async function Page() {
   return (
     <PoliticsPage trackPageView={'home'}>
       <StateElectionMap markets={senateMidterms} />
-      <FoundDashboardPage
+      {/* <FoundDashboardPage
         previews={previews}
         initialDashboard={dashboard}
         editByDefault={false}
@@ -111,7 +111,7 @@ export default async function Page() {
         // Not sure if these will be used on politics, if so will need to implement
         headlines={[]}
         initialContracts={[]}
-      />
+      /> */}
     </PoliticsPage>
   )
 }
