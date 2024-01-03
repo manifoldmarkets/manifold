@@ -13,7 +13,7 @@ export const getCompatibilityQuestions: APIHandler<
     `SELECT 
       love_questions.*,
       COUNT(love_compatibility_answers.question_id) as answer_count,
-      AVG(POWER(love_compatibility_answers.importance + 1 + CASE WHEN love_compatibility_answers.explanation IS NULL THEN 0 ELSE 0 END, 2)) as score
+      AVG(POWER(love_compatibility_answers.importance + 1 + CASE WHEN love_compatibility_answers.explanation IS NULL THEN 1 ELSE 0 END, 2)) as score
     FROM 
         love_questions
     LEFT JOIN 
