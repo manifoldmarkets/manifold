@@ -1,17 +1,12 @@
 'use client'
-import { zip } from 'lodash'
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
-import { getProbability } from 'common/calculate'
 import { Contract, CPMMBinaryContract } from 'common/contract'
-import { Customize, USAMap } from './usa-map'
-import { listenForContract } from 'web/lib/firebase/contracts'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { useContracts } from 'web/hooks/use-contract-supabase'
 import { Col } from 'web/components/layout/col'
+import { useContracts } from 'web/hooks/use-contract-supabase'
 import { FeedContractCard } from '../contract/contract-card'
 import { presidency2024 } from './election-contract-data'
+import { Customize, USAMap } from './usa-map'
 
 export interface StateElectionMarket {
   slug: string
