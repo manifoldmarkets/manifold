@@ -24,23 +24,19 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
     ),
     pg.map(
       `
-      with group_slug_array as (
-        select unnest(group_slugs) as slug
-        from contracts
-        where id = $1
+      with ranked_contracts as (
+        select gc.group_id, c.data, c.importance_score,
+          rank() over (partition by gc.group_id order by c.importance_score desc) as n
+        from contracts as c
+        join group_contracts as gc on c.id = gc.contract_id
+        where gc.group_id in (select group_id from group_contracts where contract_id = $1)
       )
-      select gsa.slug as group_slug, gc.data, gc.importance_score
-      from group_slug_array gsa
-      cross join lateral (
-          select *
-          from contracts
-          where gsa.slug = ANY(contracts.group_slugs)
-            and contracts.visibility = 'public'
-            and contracts.id != $1
-          order by contracts.importance_score desc
-          limit $2
-          ) gc
-        `,
+      select g.slug as group_slug, rc.data, rc.importance_score
+      from ranked_contracts as rc
+      join groups as g on rc.group_id = g.id
+      where rc.n <= $2
+      order by g.slug, rc.n
+      `,
       [contractId, (limit ?? 5) + 15],
       (row) => [row.group_slug, convertContract(row)] as [string, Contract]
     ),
