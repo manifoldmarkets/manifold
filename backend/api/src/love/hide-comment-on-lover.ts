@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'

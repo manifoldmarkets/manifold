@@ -6,7 +6,7 @@ import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
-import { APIError } from './helpers'
+import { APIError } from './helpers/endpoint'
 import { GCPLog } from 'shared/utils'
 
 export const redeemShares = async (

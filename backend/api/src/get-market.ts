@@ -1,5 +1,5 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError } from './helpers'
+import { APIError } from './helpers/endpoint'
 import { toFullMarket, toLiteMarket } from 'common/api/market-types'
 import { convertContract } from 'common/supabase/contracts'
 

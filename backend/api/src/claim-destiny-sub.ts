@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { FieldValue } from 'firebase-admin/firestore'
 
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { PrivateUser, User } from 'common/user'
 import { DestinySub, DESTINY_SUB_COST } from 'common/destiny-sub'
 

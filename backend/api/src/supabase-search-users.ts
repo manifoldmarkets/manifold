@@ -8,7 +8,7 @@ import {
   select,
   where,
 } from 'shared/supabase/sql-builder'
-import { type APIHandler } from './helpers'
+import { type APIHandler } from './helpers/endpoint'
 import { convertUser } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { toLiteUser } from 'common/api/user-types'

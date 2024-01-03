@@ -1,6 +1,6 @@
 import { createSupabaseClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
+import { APIError, MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 import { run } from 'common/supabase/utils'
 import { convertDashboardSqltoTS } from 'common/dashboard'
 

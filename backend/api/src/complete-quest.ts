@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
 import { completeSharingQuest } from 'shared/complete-quest-internal'

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,

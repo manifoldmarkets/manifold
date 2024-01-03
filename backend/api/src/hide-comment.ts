@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getUser, revalidateContractStaticProps } from 'shared/utils'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath },

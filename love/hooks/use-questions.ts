@@ -3,13 +3,13 @@ import { useEffect, useState } from 'react'
 import { Row } from 'common/supabase/utils'
 import {
   getAllQuestions,
-  getCompatibilityQuestionsWithAnswerCount,
   getFRQuestionsWithAnswerCount,
   getFreeResponseQuestions,
   getUserAnswers,
   getUserCompatibilityAnswers,
 } from 'love/lib/supabase/questions'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { api } from 'web/lib/firebase/api'
 
 export const useQuestions = () => {
   const [questions, setQuestions] = useState<Row<'love_questions'>[]>([])
@@ -76,6 +76,7 @@ export const useUserCompatibilityAnswers = (userId: string | undefined) => {
 
 export type QuestionWithCountType = Row<'love_questions'> & {
   answer_count: number
+  score: number
 }
 
 export const useFRQuestionsWithAnswerCount = () => {
@@ -92,24 +93,24 @@ export const useFRQuestionsWithAnswerCount = () => {
 }
 
 export const useCompatibilityQuestionsWithAnswerCount = () => {
-  const [compatibilityQuestionsWithCount, setCompatibilityQuestionsWithCount] =
-    usePersistentInMemoryState<any>([], `compatibility-questions-with-count`)
-
-  useEffect(() => {
-    getCompatibilityQuestionsWithAnswerCount().then((questions) => {
-      setCompatibilityQuestionsWithCount(questions)
-    })
-  }, [])
+  const [compatibilityQuestions, setCompatibilityQuestions] =
+    usePersistentInMemoryState<QuestionWithCountType[]>(
+      [],
+      `compatibility-questions-with-count`
+    )
 
   async function refreshCompatibilityQuestions() {
-    getCompatibilityQuestionsWithAnswerCount().then((questions) => {
-      setCompatibilityQuestionsWithCount(questions)
+    return api('get-compatibility-questions', {}).then((res) => {
+      setCompatibilityQuestions(res.questions)
     })
   }
 
+  useEffect(() => {
+    refreshCompatibilityQuestions()
+  }, [])
+
   return {
     refreshCompatibilityQuestions,
-    compatibilityQuestionsWithCount:
-      compatibilityQuestionsWithCount as QuestionWithCountType[],
+    compatibilityQuestions,
   }
 }

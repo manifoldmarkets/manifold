@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { isAdminId } from 'common/envs/constants'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { Group } from 'common/group'
 

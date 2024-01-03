@@ -1,7 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId } from 'common/envs/constants'
 import { contentSchema } from 'common/api/zod-types'
 import { MAX_ABOUT_LENGTH, MAX_GROUP_NAME_LENGTH } from 'common/group'

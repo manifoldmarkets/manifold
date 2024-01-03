@@ -1,4 +1,4 @@
-import { authEndpoint } from 'api/helpers'
+import { authEndpoint } from 'api/helpers/endpoint'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { z } from 'zod'
 import { MAX_QUESTION_LENGTH } from 'common/contract'

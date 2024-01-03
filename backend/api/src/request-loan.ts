@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { User } from 'common/user'

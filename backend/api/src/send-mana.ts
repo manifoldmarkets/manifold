@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { User } from 'common/user'
 import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'

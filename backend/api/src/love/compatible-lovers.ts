@@ -1,5 +1,5 @@
 import { groupBy, uniq, sortBy } from 'lodash'
-import { APIError, type APIHandler } from 'api/helpers'
+import { APIError, type APIHandler } from 'api/helpers/endpoint'
 import { getCompatibilityScore } from 'common/love/compatibility-score'
 import {
   getLover,
@@ -59,22 +59,25 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     (l) => !matchesSet.has(l.user_id)
   )
 
-  console.log(
-    'got matched',
-    matchedLovers.map((l) => ({
-      id: l.id,
-      username: l.user.username,
-      user_id: l.user.id,
-    }))
-  )
-  console.log(
-    'got compatible',
-    compatibleLovers.map((l) => ({
-      id: l.id,
-      username: l.user.username,
-      user_id: l.user.id,
-    }))
-  )
+  const debug = false
+  if (debug) {
+    console.log(
+      'got matched',
+      matchedLovers.map((l) => ({
+        id: l.id,
+        username: l.user.username,
+        user_id: l.user.id,
+      }))
+    )
+    console.log(
+      'got compatible',
+      compatibleLovers.map((l) => ({
+        id: l.id,
+        username: l.user.username,
+        user_id: l.user.id,
+      }))
+    )
+  }
 
   const lovers = [...compatibleLovers, ...matchedLovers]
   const loverAnswers = await getCompatibilityAnswers([
@@ -99,7 +102,7 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     )
   )
 
-  log('got lover compatibility scores', loverCompatibilityScores)
+  if (debug) log('got lover compatibility scores', loverCompatibilityScores)
 
   const filteredLoverContracts = loverContracts.filter((c) =>
     matchedLovers.some(

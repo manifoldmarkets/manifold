@@ -6,7 +6,7 @@ import { User } from 'common/user'
 import { getNewMultiBetInfo } from 'common/new-bet'
 import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { getValues } from 'shared/utils'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
 const bodySchema = z

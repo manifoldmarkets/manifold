@@ -41,3 +41,5 @@ where
 create index contracts_outcome_type_not_binary on contracts (outcome_type)
 where
   outcome_type <> 'BINARY';
+
+create index contracts_group_slugs_importance on contracts using gin (group_slugs, importance_score);

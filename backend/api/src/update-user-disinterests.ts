@@ -1,4 +1,4 @@
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 import { addContractToUserDisinterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'

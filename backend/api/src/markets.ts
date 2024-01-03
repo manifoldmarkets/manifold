@@ -1,7 +1,7 @@
 import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
 import { Column, Row, run, selectJson } from 'common/supabase/utils'
 import { toLiteMarket } from 'common/api/market-types'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 const SORT_COLUMNS = {
   'created-time': 'created_time',

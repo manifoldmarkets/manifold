@@ -22,6 +22,7 @@ import { searchProps } from './market-search-types'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
+import { Row } from 'common/supabase/utils'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -568,6 +569,19 @@ export const API = (_apiTypeCheck = {
       isBoosted: boolean
       totalFunds: number
       adCreatedTime: string
+    },
+  },
+  'get-compatibility-questions': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}),
+    returns: {} as {
+      status: 'success'
+      questions: (Row<'love_questions'> & {
+        answer_count: number
+        score: number
+      })[]
     },
   },
 } as const)

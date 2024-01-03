@@ -1,4 +1,4 @@
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 
 export const health = authEndpoint(async (_, auth) => {
   return {

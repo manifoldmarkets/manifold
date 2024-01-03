@@ -3,7 +3,7 @@ import { Contract } from 'common/contract'
 import { getUser } from 'shared/utils'
 
 import { isAdminId } from 'common/envs/constants'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const closeMarket: APIHandler<'market/:contractId/close'> = async (
   props,

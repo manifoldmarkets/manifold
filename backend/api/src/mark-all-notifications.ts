@@ -1,4 +1,4 @@
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const markallnotifications = authEndpoint(async (_req, auth) => {

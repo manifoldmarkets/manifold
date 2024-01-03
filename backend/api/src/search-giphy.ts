@@ -1,6 +1,6 @@
 import { GiphyFetch } from '@giphy/js-fetch-api'
 import { z } from 'zod'
-import { jsonEndpoint, validate } from './helpers'
+import { jsonEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
   .object({

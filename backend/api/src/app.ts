@@ -121,12 +121,13 @@ import {
 } from './supabase-search-contract'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
-import { type APIHandler, typedEndpoint } from './helpers'
+import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
+import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -232,6 +233,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getrelatedmarkets,
   'get-ad-analytics': getadanalytics,
+  'get-compatibility-questions': getCompatibilityQuestions,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

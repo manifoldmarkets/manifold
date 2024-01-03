@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { Bet } from 'common/bet'

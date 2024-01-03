@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MaybeAuthedEndpoint, validate } from './helpers'
+import { MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z.object({
   cityId: z.string(),

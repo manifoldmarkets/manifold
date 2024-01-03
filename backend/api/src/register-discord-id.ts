@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getPrivateUser } from 'shared/utils'
 import { z } from 'zod'

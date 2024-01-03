@@ -1,5 +1,5 @@
 import { run } from 'common/supabase/utils'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import type { ManaPayTxn } from 'common/txn'
 

@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
   .object({

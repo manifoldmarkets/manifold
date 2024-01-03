@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { MaybeAuthedEndpoint, type APIHandler } from './helpers'
+import { MaybeAuthedEndpoint, type APIHandler } from './helpers/endpoint'
 import {
   hasGroupAccess,
   getSearchContractSQL,

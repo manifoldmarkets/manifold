@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 import { z } from 'zod'
 import { contentSchema } from 'common/api/zod-types'

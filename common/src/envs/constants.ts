@@ -235,6 +235,8 @@ export const VERIFIED_USERNAMES = [
   'LawrenceLessig',
   'NatFriedman',
   'patrissimo',
+  'postjawline',
+  'MatthewYglesias',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

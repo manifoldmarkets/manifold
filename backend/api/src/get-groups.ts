@@ -1,5 +1,5 @@
 import { uniqBy } from 'lodash'
-import { type APIHandler } from './helpers'
+import { type APIHandler } from './helpers/endpoint'
 import { type SupabaseClient, run } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { createSupabaseClient } from 'shared/supabase/init'

@@ -1,5 +1,5 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, APIHandler } from './helpers'
+import { APIError, APIHandler } from './helpers/endpoint'
 
 export const getHeadlines: APIHandler<'headlines'> = async () => {
   const db = createSupabaseClient()

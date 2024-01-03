@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { z } from 'zod'
 import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'

@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { LimitBet } from 'common/bet'
 
 export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (

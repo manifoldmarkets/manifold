@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getComments as getCommentsSupabase } from 'shared/supabase/contract_comments'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'

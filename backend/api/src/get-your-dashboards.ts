@@ -1,5 +1,5 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 import { run } from 'common/supabase/utils'
 import { convertDashboardSqltoTS } from 'common/dashboard'
 

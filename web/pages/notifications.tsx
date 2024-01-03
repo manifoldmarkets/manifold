@@ -31,7 +31,7 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { CogIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -142,7 +142,7 @@ function NotificationsContent(props: {
                 unseenNewMarketNotifs > 0 ? (
                   <div
                     className={
-                      'text-ink-0 bg-primary-500 absolute -left-4 min-w-[15px] rounded-full p-[2px] text-center text-[10px] leading-3'
+                      'text-ink-0 bg-primary-400 ml-2 min-w-[15px] rounded-full px-2 text-xs'
                     }
                   >
                     {unseenNewMarketNotifs}
@@ -176,7 +176,6 @@ function NotificationsContent(props: {
             {
               queryString: 'Settings',
               title: 'Settings',
-              inlineTabIcon: <CogIcon className="text-ink-500 h-5 w-5" />,
               content: <NotificationSettings navigateToSection={section} />,
             },
           ]}

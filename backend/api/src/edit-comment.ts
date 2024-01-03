@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { validateComment } from 'api/create-comment'

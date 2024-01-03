@@ -1,5 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 import { convertDashboardSqltoTS } from 'common/dashboard'
 
 export const getyourfolloweddashboards = authEndpoint(async (_, auth) => {

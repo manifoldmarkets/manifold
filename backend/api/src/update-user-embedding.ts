@@ -1,4 +1,4 @@
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { generateNewUserFeedFromContracts } from 'shared/supabase/users'

@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from 'api/helpers'
+import { APIError, type APIHandler } from 'api/helpers/endpoint'
 import { getContractSupabase, getUser } from 'shared/utils'
 import {
   createSupabaseClient,

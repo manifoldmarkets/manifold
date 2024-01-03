@@ -1,5 +1,5 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError } from './helpers'
+import { APIError } from './helpers/endpoint'
 import { convertGroup } from 'common/supabase/groups'
 
 export const getGroup = async (props: { id: string } | { slug: string }) => {
