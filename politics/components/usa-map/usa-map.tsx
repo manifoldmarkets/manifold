@@ -65,7 +65,6 @@ export const USAMap = ({
   hideStateTitle,
   className,
 }: USAMapPropTypes) => {
-  console.log(customize)
   const fillStateColor = (state: string) =>
     customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
