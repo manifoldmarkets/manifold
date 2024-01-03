@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { Json, MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 import { convertGroup } from 'common/supabase/groups'
 import {
   renderSql,

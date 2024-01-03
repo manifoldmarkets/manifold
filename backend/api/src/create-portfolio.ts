@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto'
 import { getUser } from 'shared/utils'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import {
   MAX_PORTFOLIO_NAME_LENGTH,
   Portfolio,

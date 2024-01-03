@@ -1,6 +1,6 @@
-import { APIError } from 'api/helpers'
+import { APIError } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { type APIHandler } from 'api/helpers'
+import { type APIHandler } from 'api/helpers/endpoint'
 import { isAdminId } from 'common/envs/constants'
 
 export const removePinnedPhoto: APIHandler<'remove-pinned-photo'> = async (

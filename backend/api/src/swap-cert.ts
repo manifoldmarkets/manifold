@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
 import { User } from 'common/user'
 import { afterSwap } from 'common/calculate/uniswap2'

@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { FieldValue } from 'firebase-admin/firestore'
 import { MarketAdRedeemFeeTxn, MarketAdRedeemTxn } from 'common/txn'

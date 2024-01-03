@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { isAdminId, isModId } from 'common/envs/constants'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { track } from 'shared/analytics'
 

@@ -7,7 +7,7 @@ import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
-import { APIError, AuthedUser, type APIHandler } from './helpers'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 

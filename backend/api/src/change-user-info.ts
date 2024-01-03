@@ -14,7 +14,7 @@ import * as admin from 'firebase-admin'
 import { uniq } from 'lodash'
 import { getUser, getUserByUsername } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { GCPLog } from 'shared/utils'
 

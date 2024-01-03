@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { createBountyCanceledNotification } from 'shared/create-notification'
 import { runCancelBountyTxn } from 'shared/txn/run-bounty-txn'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { Contract } from 'common/contract'
 
 const bodySchema = z

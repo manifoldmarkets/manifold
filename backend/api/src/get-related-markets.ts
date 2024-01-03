@@ -1,4 +1,4 @@
-import { APIHandler } from 'api/helpers'
+import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'

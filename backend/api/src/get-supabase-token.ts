@@ -1,5 +1,5 @@
 import { sign } from 'jsonwebtoken'
-import { authEndpoint, APIError } from './helpers'
+import { authEndpoint, APIError } from './helpers/endpoint'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { getInstanceHostname } from 'common/supabase/utils'

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { MaybeAuthedEndpoint, validate } from './helpers'
+import { MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Dictionary } from 'lodash'

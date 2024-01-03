@@ -1,4 +1,4 @@
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { MAX_PORTFOLIO_NAME_LENGTH, convertPortfolio } from 'common/portfolio'

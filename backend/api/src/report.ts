@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { ReportProps } from 'common/src/report'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 
 const schema: z.ZodSchema<ReportProps> = z

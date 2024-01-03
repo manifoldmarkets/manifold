@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { MarketAdCreateTxn } from 'common/txn'
 import { getContractSupabase } from 'shared/utils'
 import { MIN_AD_COST_PER_VIEW } from 'common/boost'

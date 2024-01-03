@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { isAdminId, isModId } from 'common/envs/constants'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createGroupStatusChangeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 

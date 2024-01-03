@@ -1,4 +1,4 @@
-import { type APIHandler } from 'api/helpers'
+import { type APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row } from 'common/supabase/utils'
 

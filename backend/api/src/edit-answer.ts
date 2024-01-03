@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { Contract } from 'common/contract'
 import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'

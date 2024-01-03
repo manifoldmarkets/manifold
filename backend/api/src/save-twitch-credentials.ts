@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { type APIHandler } from './helpers'
+import { type APIHandler } from './helpers/endpoint'
 
 export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
   props,

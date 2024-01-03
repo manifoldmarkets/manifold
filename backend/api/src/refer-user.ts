@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'

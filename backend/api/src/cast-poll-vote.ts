@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
 import { PollContract } from 'common/contract'

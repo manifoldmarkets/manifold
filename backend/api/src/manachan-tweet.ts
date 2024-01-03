@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { User } from 'common/user'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { FieldValue } from 'firebase-admin/firestore'
 import { postTweet } from 'shared/twitter'
 import { MANACHAN_TWEET_COST } from 'common/economy'

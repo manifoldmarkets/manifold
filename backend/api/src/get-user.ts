@@ -1,7 +1,7 @@
 import type { User } from 'common/user'
 import { toLiteUser } from 'common/api/user-types'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError } from './helpers'
+import { APIError } from './helpers/endpoint'
 
 export const getUser = async (props: { id: string } | { username: string }) => {
   const db = createSupabaseClient()

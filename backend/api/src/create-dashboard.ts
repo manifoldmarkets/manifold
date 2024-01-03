@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 import { DashboardItemSchema } from 'common/api/zod-types'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'

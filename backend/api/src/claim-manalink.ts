@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { User } from 'common/user'
 import { canSendMana, Manalink } from 'common/manalink'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseClient } from 'shared/supabase/init'
 

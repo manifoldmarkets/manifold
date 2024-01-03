@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { getContractSupabase } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
@@ -23,10 +23,7 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
     req.body
   )
   if (!visibility && !closeTime && !addAnswersMode && !sort)
-    throw new APIError(
-      400,
-      'Must provide some change to the contract'
-    )
+    throw new APIError(400, 'Must provide some change to the contract')
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)

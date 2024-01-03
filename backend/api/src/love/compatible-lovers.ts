@@ -1,5 +1,5 @@
 import { groupBy, uniq, sortBy } from 'lodash'
-import { APIError, type APIHandler } from 'api/helpers'
+import { APIError, type APIHandler } from 'api/helpers/endpoint'
 import { getCompatibilityScore } from 'common/love/compatibility-score'
 import {
   getLover,

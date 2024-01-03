@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 const bodySchema = z
   .object({
     groupSlug: z.string(),

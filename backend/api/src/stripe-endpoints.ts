@@ -5,7 +5,7 @@ import { Request, Response } from 'express'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
-import { APIError } from './helpers'
+import { APIError } from './helpers/endpoint'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export type StripeSession = Stripe.Event.Data.Object & {

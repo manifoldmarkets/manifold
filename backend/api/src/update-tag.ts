@@ -1,5 +1,5 @@
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { convertContract } from 'common/supabase/contracts'
 import {
   addGroupToContract,

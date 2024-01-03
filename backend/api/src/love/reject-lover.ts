@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import * as admin from 'firebase-admin'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'

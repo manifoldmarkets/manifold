@@ -5,7 +5,7 @@ import { Contract, contractPath } from 'common/contract'
 import { revalidateStaticProps } from 'shared/utils'
 
 import { isAdminId } from 'common/envs/constants'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
   .object({

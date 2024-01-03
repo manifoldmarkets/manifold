@@ -1,4 +1,4 @@
-import { APIHandler } from 'api/helpers'
+import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { ContractCardView } from 'common/events'

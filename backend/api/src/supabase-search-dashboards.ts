@@ -1,7 +1,7 @@
 import { convertDashboardSqltoTS } from 'common/dashboard'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { Json, MaybeAuthedEndpoint, validate } from './helpers'
+import { Json, MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
   .object({

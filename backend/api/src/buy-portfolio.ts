@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPortfolio } from 'common/portfolio'

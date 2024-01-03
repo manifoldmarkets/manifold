@@ -1,7 +1,7 @@
 import { BetFilter } from 'common/bet'
 import { getBets as getBetsSupabase, getPublicBets } from 'common/supabase/bets'
 import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'

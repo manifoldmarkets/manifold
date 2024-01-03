@@ -1,7 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 
 const durationOptions = ['1 hour', '1 week', '1 month', '1 year']
 

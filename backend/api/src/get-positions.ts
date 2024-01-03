@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 import { ContractMetric } from 'common/contract-metric'
 import {

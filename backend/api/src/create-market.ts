@@ -28,7 +28,7 @@ import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
 import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
-import { APIError, AuthedUser, type APIHandler } from './helpers'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
   createSupabaseClient,

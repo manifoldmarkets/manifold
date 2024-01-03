@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import * as dayjs from 'dayjs'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,

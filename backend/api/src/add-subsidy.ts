@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { Contract, CPMMContract } from 'common/contract'
 import { User } from 'common/user'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
 
 export const addLiquidity: APIHandler<

@@ -1,6 +1,6 @@
 import { User } from 'common/user'
 import * as admin from 'firebase-admin'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const getCurrentUser: APIHandler<'me'> = async (_, auth) => {
   const userDoc = firestore.doc(`users/${auth.uid}`)

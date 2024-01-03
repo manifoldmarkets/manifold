@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, jsonEndpoint, validate } from 'api/helpers'
+import { APIError, jsonEndpoint, validate } from 'api/helpers/endpoint'
 import { getContractSupabase, getUserSupabase } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'

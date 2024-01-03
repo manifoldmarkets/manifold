@@ -1,7 +1,7 @@
 import { ContractComment } from 'common/comment'
 import * as admin from 'firebase-admin'
 import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { FieldValue } from 'firebase-admin/firestore'
 import { createBountyAwardedNotification } from 'shared/create-notification'
 import { getContract } from 'shared/utils'

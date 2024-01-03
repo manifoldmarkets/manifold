@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'

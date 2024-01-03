@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'

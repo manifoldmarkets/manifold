@@ -1,6 +1,6 @@
 import { convertDashboardSqltoTS } from 'common/dashboard'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError, jsonEndpoint } from './helpers'
+import { APIError, jsonEndpoint } from './helpers/endpoint'
 
 export const getnews = jsonEndpoint(async () => {
   const db = createSupabaseClient()

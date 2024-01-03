@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { z } from 'zod'
 

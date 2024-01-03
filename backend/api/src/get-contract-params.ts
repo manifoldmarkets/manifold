@@ -2,7 +2,7 @@ import { MaybeAuthedContractParams } from 'common/contract'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { APIError, MaybeAuthedEndpoint, validate } from './helpers'
+import { APIError, MaybeAuthedEndpoint, validate } from './helpers/endpoint'
 
 import { getContractParams } from 'common/contract-params'
 

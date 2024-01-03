@@ -1,5 +1,5 @@
 import { fetchLinkPreview as fetchLinkPreviewCore } from 'common/link-preview'
-import { APIError, type APIHandler } from './helpers'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const fetchLinkPreview: APIHandler<'fetch-link-preview'> = async (
   props

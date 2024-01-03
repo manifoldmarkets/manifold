@@ -2,7 +2,7 @@ import { getUserFollowsDashboard } from 'common/supabase/dashboard-follows'
 import { run } from 'common/supabase/utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { authEndpoint } from './helpers'
+import { authEndpoint } from './helpers/endpoint'
 
 const schema = z
   .object({

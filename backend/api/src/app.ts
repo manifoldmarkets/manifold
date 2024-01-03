@@ -121,7 +121,7 @@ import {
 } from './supabase-search-contract'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
-import { type APIHandler, typedEndpoint } from './helpers'
+import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines } from './get-headlines'

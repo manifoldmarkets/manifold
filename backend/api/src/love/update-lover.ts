@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from 'api/helpers'
+import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'

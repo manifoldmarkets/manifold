@@ -6,7 +6,7 @@ import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 
 import { getIp, track } from 'shared/analytics'
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { removeUndefinedProps } from 'common/util/object'

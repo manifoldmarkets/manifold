@@ -1,4 +1,4 @@
-import { APIError, authEndpoint, validate } from './helpers'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { trackPublicEvent } from 'shared/analytics'

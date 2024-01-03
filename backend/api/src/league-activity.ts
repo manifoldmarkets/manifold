@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { authEndpoint, validate } from './helpers'
+import { authEndpoint, validate } from './helpers/endpoint'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
