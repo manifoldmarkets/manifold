@@ -1,6 +1,6 @@
 'use client'
 import { zip } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 
 import { getProbability } from 'common/calculate'
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -30,34 +30,37 @@ export function StateElectionMap(props: { markets: StateElectionMarket[] }) {
   const [targetContract, setTargetContract] = useState<Contract | undefined>(
     undefined
   )
-  const marketsWithProbs = zip(markets, contracts) as [
-    StateElectionMarket,
-    Contract
-  ][]
 
-  const stateInfo = marketsWithProbs.map(([market, contract]) => [
-    market.state,
-    {
-      fill: probToColor(
-        contract ? getProbability(contract as CPMMBinaryContract) : 0.5,
-        market.isWinRepublican
-      ),
-      clickHandler: () => {
-        if (targetContract && contract?.id == targetContract.id) {
-          setTargetContract(undefined)
-        } else {
-          setTargetContract(contract)
-        }
-      },
-      selected: targetContract && contract && targetContract.id == contract.id,
-    },
-  ])
-
-  const config = Object.fromEntries(stateInfo) as Customize
+  const stateContractMap: Customize = useMemo(() => {
+    const map: Record<
+      string,
+      { fill: string; clickHandler: () => void; selected: boolean | undefined }
+    > = {}
+    markets.forEach((market) => {
+      const contract = contracts.find((c) => c.slug === market.slug) as
+        | CPMMBinaryContract
+        | undefined
+      map[market.state] = {
+        fill: probToColor(
+          contract ? getProbability(contract) : 0.5,
+          market.isWinRepublican
+        ),
+        clickHandler: () => {
+          if (targetContract && contract?.id === targetContract.id) {
+            setTargetContract(undefined)
+          } else {
+            setTargetContract(contract)
+          }
+        },
+        selected: targetContract?.id === contract?.id,
+      }
+    })
+    return map
+  }, [markets, contracts, targetContract])
 
   return (
     <Col>
-      <USAMap customize={config} />
+      <USAMap customize={stateContractMap} />
       {targetContract && <FeedContractCard contract={targetContract} />}
     </Col>
   )
