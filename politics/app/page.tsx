@@ -4,7 +4,7 @@ import { SenateDashboard } from 'politics/components/home-dashboard/senate-dashb
 import { PoliticsPage } from 'politics/components/politics-page'
 import { StateElectionMap } from 'politics/components/usa-map/state-election-map'
 import { useState } from 'react'
-import { UncontrolledTabs } from 'web/components/layout/tabs'
+import { UncontrolledTabs } from 'politics/components/layout/tabs'
 import { FaUserTie } from 'react-icons/fa'
 import { GiCongress } from 'react-icons/gi'
 
