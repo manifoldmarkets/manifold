@@ -74,7 +74,7 @@ export function CompatibilityQuestionsDisplay(props: {
 }) {
   const { isCurrentUser, user, fromSignup, fromLoverPage, lover } = props
 
-  const { refreshCompatibilityQuestions, compatibilityQuestionsWithCount } =
+  const { refreshCompatibilityQuestions, compatibilityQuestions } =
     useCompatibilityQuestionsWithAnswerCount()
 
   const { refreshCompatibilityAnswers, compatibilityAnswers } =
@@ -95,7 +95,7 @@ export function CompatibilityQuestionsDisplay(props: {
 
   const { skippedQuestions, answeredQuestions, otherQuestions } =
     separateQuestionsArray(
-      compatibilityQuestionsWithCount,
+      compatibilityQuestions,
       skippedAnswerQuestionIds,
       answeredQuestionIds
     )

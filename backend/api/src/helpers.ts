@@ -219,10 +219,25 @@ export const typedEndpoint = <N extends APIPath>(
         authUser as AuthedUser,
         logs
       )
-      res.status(200).json(result ?? { success: true })
+
+      // Convert bigint to number, b/c JSON doesn't support bigint.
+      const convertedResult = deepConvertBigIntToNumber(result)
+
+      res.status(200).json(convertedResult ?? { success: true })
     } catch (e) {
       logs.logError('Error in api endpoint', { error: e })
       next(e)
     }
   }
+}
+
+const deepConvertBigIntToNumber = (obj: any): any => {
+  if (typeof obj === 'bigint') {
+    return Number(obj)
+  } else if (obj && typeof obj === 'object') {
+    for (const [key, value] of Object.entries(obj)) {
+      obj[key] = deepConvertBigIntToNumber(value)
+    }
+  }
+  return obj
 }

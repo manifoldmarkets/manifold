@@ -156,7 +156,8 @@ export const convertSQLtoTS = <
 >(
   sqlData: Partial<Row<R> & { data: any }>,
   converters: TypeConverter<R, T>,
-  expandData = true
+  expandData = true,
+  shouldCamelize = true
 ) => {
   const { data = {}, ...rows } = sqlData
 
@@ -168,7 +169,7 @@ export const convertSQLtoTS = <
 
       const convert = converters[key]
       if (convert === false) return null
-      return [camelize(key), convert?.(val) ?? val]
+      return [shouldCamelize ? camelize(key) : key, convert?.(val) ?? val]
     })
     .filter((x) => x != null)
 
