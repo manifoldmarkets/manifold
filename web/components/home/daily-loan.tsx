@@ -16,6 +16,7 @@ import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { updateUser } from 'web/lib/firebase/users'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -85,16 +86,11 @@ export function DailyLoan(props: { user: User }) {
               'items-center justify-center whitespace-nowrap px-1'
             )}
           >
-            <Image
-              height={25}
-              width={25}
-              src={
-                receivedLoanToday || notEligibleForLoan
-                  ? '/chest-empty.svg'
-                  : '/coins.svg'
-              }
-              alt={'treasure icon'}
-            />
+            {receivedLoanToday || notEligibleForLoan ? (
+              <GiOpenChest className="h-6 w-6 text-yellow-900" />
+            ) : (
+              <GiTwoCoins className="h-6 w-6 text-yellow-300" />
+            )}
           </Row>
           <div className="text-ink-600 text-xs">Loan</div>
         </button>
