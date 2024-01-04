@@ -75,6 +75,9 @@ export function getAnswerColor(
   const index =
     'index' in answer ? answer.index : answerIdOrder.indexOf(answer.text)
 
+  if (answer.text === 'Democratic Party') return '#adc4e3'
+  if (answer.text === 'Republican Party') return '#ecbab5'
+
   return 'isOther' in answer && answer.isOther
     ? CHOICE_OTHER_COLOR
     : nthColor(index)

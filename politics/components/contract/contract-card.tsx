@@ -10,7 +10,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { Button } from 'web/components/buttons/button'
 import { CommentsButton } from 'web/components/comments/comments-button'
@@ -37,6 +36,7 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { ShadowFrame } from '../button/shadow-frame'
+import { SimpleAnswerBars } from '../answers/answers-panel'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -123,7 +123,7 @@ export function FeedContractCard(props: {
         'relative',
         'cursor-pointer ',
         'ring-ink-1000 ring-1',
-        'bg-canvas-0 flex w-full flex-col gap-0.5 px-4 py-2'
+        'bg-canvas-0 flex w-full flex-col gap-0.5 p-4'
       )}
       onClick={(e) => {
         trackClick()
@@ -201,9 +201,7 @@ export function FeedContractCard(props: {
             nonTextDescription={nonTextDescription}
           />
         )}
-
-        <CategoryTags categories={contract.groupLinks} />
-        {!hideBottomRow && (
+        {/* {!hideBottomRow && (
           <Col>
             <BottomActionRow
               contract={contract}
@@ -212,7 +210,7 @@ export function FeedContractCard(props: {
             />
             {children}
           </Col>
-        )}
+        )} */}
       </div>
     </ShadowFrame>
   )
