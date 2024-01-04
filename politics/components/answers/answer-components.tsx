@@ -28,7 +28,6 @@ import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
-import { Button } from 'web/components/buttons/button'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { SellSharesModal } from 'web/components/bet/sell-row'
 import {
@@ -37,6 +36,7 @@ import {
   ProbPercentLabel,
   YesLabel,
 } from 'web/components/outcome-label'
+import { Button } from '../button/button'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -295,7 +295,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="green-outline"
-        className="bg-primary-50"
+        className="bg-ink-100"
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -307,7 +307,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
-        className="bg-primary-50"
+        className="bg-ink-100"
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })

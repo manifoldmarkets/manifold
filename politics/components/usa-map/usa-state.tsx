@@ -25,12 +25,10 @@ export const USAState = ({
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(
-          !!onClickState && 'hover:cursor-pointer hover:contrast-125'
-        )}
+        className={clsx(!!onClickState && 'hover:cursor-pointer ')}
         onClick={onClickState}
         id={state}
-        stroke={!!selected ? '#000' : undefined}
+        stroke={!!selected ? '#FFF' : undefined}
         strokeWidth={!!selected ? 2 : undefined}
       >
         {hideStateTitle ? null : <title>{stateName}</title>}
