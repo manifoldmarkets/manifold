@@ -24,6 +24,7 @@ import { tsToMillis } from 'common/supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
 import { manifoldLoveUserId } from 'common/love/constants'
+import { track } from 'shared/analytics'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -93,6 +94,38 @@ export const createPrivateUserMessageMain = async (
     channel_id: channelId,
     user_id: creator.id,
   }
+
+  const otherUserIds = await pg.map<string>(
+    `select user_id from private_user_message_channel_members
+        where channel_id = $1 and user_id != $2
+        and status != 'left'
+        `,
+    [channelId, creator.id],
+    (r) => r.user_id
+  )
+
+  let bothHaveLoverProfiles = false
+  const hasLoverProfile = await pg.oneOrNone(
+    'select 1 from lovers where user_id = $1',
+    [creator.id]
+  )
+  if (hasLoverProfile) {
+    const otherUserId = first(otherUserIds)
+
+    if (otherUserId && otherUserIds.length === 1) {
+      const otherHasLoverProfile = await pg.oneOrNone(
+        'select 1 from lovers where user_id = $1',
+        [otherUserId]
+      )
+      bothHaveLoverProfiles = otherHasLoverProfile
+    }
+  }
+
+  track(creator.id, 'send private message', {
+    channelId,
+    otherUserIds,
+    bothHaveLoverProfiles,
+  })
 
   return { status: 'success', privateMessage }
 }
