@@ -83,6 +83,7 @@ export const PROD_CONFIG: EnvConfig = {
     'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
+    'vUks7InCtYhBFrdLQhqXFUBHD4D2', // Barak work account
   ],
   visibility: 'PUBLIC',
 

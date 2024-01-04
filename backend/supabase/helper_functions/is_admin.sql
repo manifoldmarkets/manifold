@@ -1,7 +1,7 @@
 create
 or replace function is_admin (input_string text) returns boolean immutable parallel SAFE as $$
 DECLARE
--- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics
+-- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics, @baraki
     strings TEXT[] := ARRAY[
         'igi2zGXsfxYPgB0DJTXVJVmwCOr2',
         '5LZ4LgYuySdL1huCWe7bti02ghx2', 
@@ -12,7 +12,8 @@ DECLARE
         'GRwzCexe5PM6ThrSsodKZT9ziln2',
         '62TNqzdBx7X2q621HltsJm8UFht2', 
         '0k1suGSJKVUnHbCPEhHNpgZPkUP2',
-        'vuI5upWB8yU00rP7yxj95J2zd952'
+        'vuI5upWB8yU00rP7yxj95J2zd952',
+        'vUks7InCtYhBFrdLQhqXFUBHD4D2',
         ];
 BEGIN
     RETURN input_string = ANY(strings);
