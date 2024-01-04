@@ -8,9 +8,7 @@ import { FaUserTie } from 'react-icons/fa'
 import { GiCongress } from 'react-icons/gi'
 import { useState } from 'react'
 
-export function PoliticsTabs(props: {}) {
-  const [mode, setMode] = useState<ElectionMode>('presidency')
-
+export function PoliticsTabs() {
   const tabs = [
     {
       title: 'Presidency',
