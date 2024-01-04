@@ -15,6 +15,7 @@ import { QuestionWithCountType } from 'love/hooks/use-questions'
 import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { shortenNumber } from 'web/lib/util/formatNumber'
+import { track } from 'web/lib/service/analytics'
 
 export type CompatibilityAnswerSubmitType = Omit<
   rowFor<'love_compatibility_answers'>,
@@ -58,7 +59,11 @@ export const submitCompatibilityAnswer = async (
     db.from('love_compatibility_answers').upsert(input, {
       onConflict: 'question_id,creator_id',
     })
-  )
+  ).then(() => {
+    track('answer compatibility question', {
+      ...newAnswer,
+    })
+  })
 }
 
 function getEmptyAnswer(userId: string, questionId: number) {
@@ -233,7 +238,9 @@ export function AnswerCompatibilityQuestionContent(props: {
           />
         </Col>
         <Col className="-mt-6 gap-2">
-          <span className="text-ink-500 text-sm">Your thoughts (optional, but recommended)</span>
+          <span className="text-ink-500 text-sm">
+            Your thoughts (optional, but recommended)
+          </span>
           <ExpandingInput
             className={'w-full'}
             rows={3}
