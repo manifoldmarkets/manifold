@@ -127,11 +127,10 @@ export const presidency2024: StateElectionMarket[] = [
     state: 'NJ',
     slug: 'which-party-will-win-the-us-preside-96f0176fbd5a',
   },
-  // TODO: New Mexico
-  // {
-  //   state: 'NM',
-  //   slug: 'which-party-will-win-the-us-preside-96f0176fbd5a',
-  // },
+  {
+    state: 'NM',
+    slug: 'which-party-will-win-the-us-preside-c98c13402468',
+  },
   {
     state: 'NV',
     slug: 'which-party-will-win-the-us-preside-5777ea10ce2a',
