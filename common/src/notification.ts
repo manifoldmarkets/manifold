@@ -93,7 +93,6 @@ export type notification_source_update_types =
 export type notification_reason_types =
   | 'on_new_follow'
   | 'contract_from_followed_user'
-  | 'contract_from_private_group'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
   | 'unique_bettors_on_your_contract'
@@ -124,8 +123,6 @@ export type notification_reason_types =
   | 'reply_to_users_comment'
   | 'your_contract_closed'
   | 'subsidized_your_market'
-  | 'group_role_changed'
-  | 'added_to_group'
   | 'bounty_awarded'
   | 'bounty_added'
   | 'bounty_canceled'
@@ -163,10 +160,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
     detailed: 'New questions from users you follow',
-  },
-  contract_from_private_group: {
-    simple: 'New questions from private groups',
-    detailed: 'New questions from private groups you are a member of',
   },
   limit_order_fills: {
     simple: 'Limit order fills',
@@ -277,14 +270,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   user_liked_your_content: {
     simple: 'A user liked your content',
     detailed: 'A user liked your comment, market, or other content',
-  },
-  group_role_changed: {
-    simple: 'Changes in group roles',
-    detailed: 'Changes to your role in groups you are a member of',
-  },
-  added_to_group: {
-    simple: 'Getting added to new groups',
-    detailed: 'When an admin adds you to their group',
   },
   bounty_awarded: {
     simple: 'Bounties you receive',

@@ -34,8 +34,6 @@ import {
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
-import { useContract } from 'web/hooks/use-contract-supabase'
-import { useGroupsWithContract } from 'web/hooks/use-group-supabase'
 import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
@@ -54,7 +52,6 @@ import { Modal } from '../layout/modal'
 import { Button } from '../buttons/button'
 import { StarIcon } from '@heroicons/react/solid'
 import { useReview } from 'web/hooks/use-review'
-import { groupPath } from 'common/group'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { ReferralsDialog } from 'web/components/buttons/referrals-button'
 import { useUser } from 'web/hooks/use-user'
@@ -182,15 +179,6 @@ export function NotificationItem(props: {
   } else if (reason === 'contract_from_followed_user') {
     return (
       <NewMarketNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (reason === 'contract_from_private_group') {
-    return (
-      <NewPrivateMarketNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -350,24 +338,6 @@ export function NotificationItem(props: {
   } else if (reason === 'subsidized_your_market') {
     return (
       <LiquidityNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (reason === 'group_role_changed') {
-    return (
-      <GroupRoleChangedNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (reason === 'added_to_group') {
-    return (
-      <GroupAddNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -905,58 +875,6 @@ function NewMarketNotification(props: {
   )
 }
 
-function NewPrivateMarketNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceContractTitle,
-    sourceId,
-    sourceUserName,
-    sourceUserUsername,
-    sourceContractId,
-  } = notification
-  const contract = useContract(sourceContractId)
-  const privateGroup = useGroupsWithContract(contract)
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'🌟'} />
-      }
-      link={getSourceUrl(notification)}
-    >
-      <div className="line-clamp-3">
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        <span>
-          asked <PrimaryNotificationLink text={sourceContractTitle} />
-        </span>{' '}
-        in private group,{' '}
-        {privateGroup && privateGroup.length > 0 ? (
-          <Link
-            className={clsx(linkClass, 'hover:text-primary-500 font-semibold')}
-            href={groupPath(privateGroup[0].slug)}
-          >
-            {privateGroup[0].name}
-          </Link>
-        ) : (
-          'a private group'
-        )}
-      </div>
-    </NotificationFrame>
-  )
-}
-
 function MarketUpdateNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1391,86 +1309,6 @@ function LiquidityNotification(props: {
           </span>
         )}
       </div>
-    </NotificationFrame>
-  )
-}
-
-function GroupAddNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
-    notification
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'👥'} />
-      }
-      link={getSourceUrl(notification)}
-    >
-      <div className="line-clamp-3">
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        added you{' '}
-        {!isChildOfGroup && (
-          <span>
-            to <PrimaryNotificationLink text={sourceTitle} />
-          </span>
-        )}
-      </div>
-    </NotificationFrame>
-  )
-}
-
-function GroupRoleChangedNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceId,
-    sourceUserName,
-    sourceUserUsername,
-    sourceText,
-    sourceTitle,
-  } = notification
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'👥'} />
-      }
-      link={getSourceUrl(notification)}
-    >
-      <>
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        {sourceText}{' '}
-        {!isChildOfGroup && (
-          <span>
-            in{' '}
-            <PrimaryNotificationLink text={sourceTitle} truncatedLength="xl" />{' '}
-          </span>
-        )}
-      </>
     </NotificationFrame>
   )
 }

@@ -2,7 +2,6 @@ import { z } from 'zod'
 
 import { isAdminId, isModId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createGroupStatusChangeNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z
@@ -68,15 +67,6 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
        returning *`,
       [role, memberId, groupId]
     )
-
-    if (requesterUser && auth.uid != memberId) {
-      await createGroupStatusChangeNotification(
-        requesterUser,
-        affectedMember,
-        group.data,
-        role
-      )
-    }
 
     return { status: 'success', member: ret }
   })

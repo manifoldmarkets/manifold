@@ -48,11 +48,6 @@ export type notification_preferences = {
   limit_order_fills: notification_destination_types[]
   quest_payout: notification_destination_types[]
 
-  // Groups
-  group_role_changed: notification_destination_types[]
-  added_to_group: notification_destination_types[]
-  contract_from_private_group: notification_destination_types[]
-
   // Leagues
   league_changed: notification_destination_types[]
 
@@ -155,11 +150,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     unique_bettors_on_your_contract: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, false),
     quest_payout: constructPref(true, false, false),
-
-    // Groups
-    group_role_changed: constructPref(true, false, false),
-    added_to_group: constructPref(true, false, false),
-    contract_from_private_group: constructPref(true, true, false),
 
     // Leagues
     league_changed: constructPref(true, false, false),

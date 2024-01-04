@@ -11,7 +11,6 @@ import {
   RefreshIcon,
   TrendingUpIcon,
   UserIcon,
-  UsersIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
@@ -66,7 +65,6 @@ const emailsEnabled: Array<notification_preference> = [
 
   'tagged_user', // missing tagged on contract description email
   'contract_from_followed_user',
-  'contract_from_private_group',
   'unique_bettors_on_your_contract',
   'profit_loss_updates',
   'opt_out_all',
@@ -175,14 +173,6 @@ const userInteractions: NotificationSectionData = {
     'user_liked_your_content',
   ],
 }
-const groups: NotificationSectionData = {
-  label: 'Groups',
-  subscriptionTypes: [
-    'group_role_changed',
-    'added_to_group',
-    'contract_from_private_group',
-  ],
-}
 const leagues: NotificationSectionData = {
   label: 'Leagues',
   subscriptionTypes: ['league_changed'],
@@ -265,10 +255,6 @@ export function NotificationSettings(props: {
         <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}
-        />
-        <NotificationSection
-          icon={<UsersIcon className={'h-6 w-6'} />}
-          data={groups}
         />
         <NotificationSection
           icon={<InboxInIcon className={'h-6 w-6'} />}

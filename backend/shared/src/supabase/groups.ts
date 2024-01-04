@@ -7,7 +7,6 @@ import { getPrivateUser } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { createAddedToGroupNotification } from 'shared/create-notification'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const getMemberGroupSlugs = async (
@@ -110,10 +109,6 @@ export async function addUserToTopic(
       returning *`,
       [member]
     )
-
-    if (requester && myId !== userId) {
-      await createAddedToGroupNotification(requester.data, userId, group.data)
-    }
 
     return { status: 'success', member: ret }
   })

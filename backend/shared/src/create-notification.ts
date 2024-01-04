@@ -35,7 +35,6 @@ import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
-import { Group } from 'common/group'
 import {
   sendMarketCloseEmail,
   sendMarketResolutionEmail,
@@ -53,7 +52,6 @@ import {
 } from 'common/user-notification-preferences'
 import { createPushNotification } from './create-push-notification'
 import { Reaction } from 'common/reaction'
-import { GroupMember } from 'common/group-member'
 import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { formatMoney, getMoneyNumber } from 'common/util/format'
@@ -1307,82 +1305,6 @@ export const createWeeklyPortfolioUpdateNotification = async (
       weeklyProfit,
       rangeEndDateSlug,
     },
-  }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
-}
-export const createGroupStatusChangeNotification = async (
-  initiator: User,
-  affectedMember: GroupMember,
-  group: Group,
-  newStatus: string
-) => {
-  const privateUser = await getPrivateUser(affectedMember.member_id)
-  if (!privateUser) return
-  let sourceText = `changed your role to ${newStatus}`
-  if (
-    (affectedMember.role == 'member' &&
-      (newStatus == 'admin' || newStatus == 'moderator')) ||
-    (affectedMember.role == 'moderator' && newStatus == 'admin')
-  ) {
-    sourceText = `promoted you from ${
-      affectedMember.role ?? 'member'
-    } to ${newStatus}`
-  } else if (
-    ((affectedMember.role == 'admin' || affectedMember.role == 'moderator') &&
-      newStatus == 'member') ||
-    (affectedMember.role == 'admin' && newStatus == 'moderator')
-  ) {
-    sourceText = `demoted you from ${
-      affectedMember.role ?? 'member'
-    } to ${newStatus}`
-  }
-
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: affectedMember.member_id,
-    reason: 'group_role_changed',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: group.id,
-    sourceType: 'group',
-    sourceUpdateType: 'updated',
-    sourceUserName: initiator.name,
-    sourceUserUsername: initiator.username,
-    sourceUserAvatarUrl: initiator.avatarUrl,
-    sourceText: sourceText,
-    sourceSlug: group.slug,
-    sourceTitle: group.name,
-    sourceContractId: 'group' + group.id,
-  }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
-}
-
-export const createAddedToGroupNotification = async (
-  initiator: User,
-  userId: string,
-  group: Group
-) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-
-  const notification: Notification = {
-    id: crypto.randomUUID(),
-    userId: userId,
-    reason: 'added_to_group',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: group.id,
-    sourceType: 'group',
-    sourceUpdateType: 'updated',
-    sourceUserName: initiator.name,
-    sourceUserUsername: initiator.username,
-    sourceUserAvatarUrl: initiator.avatarUrl,
-    sourceText: group.name,
-    sourceSlug: group.slug,
-    sourceTitle: group.name,
-    sourceContractId: 'group' + group.id,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
