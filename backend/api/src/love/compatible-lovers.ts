@@ -41,11 +41,9 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     uniq(loverContracts.flatMap((c) => [c.loverUserId1, c.loverUserId2]))
   ).filter((id) => id !== userId)
 
-  const radiusKm = 80
-
   const [matchedLoversPrefiltered, allCompatibleLovers] = await Promise.all([
     getLovers(matchedUserIds),
-    getCompatible(lover, radiusKm),
+    getCompatible(lover, undefined),
   ])
   const matchedLovers = matchedLoversPrefiltered.filter(
     (l) => !l.user.isBannedFromPosting

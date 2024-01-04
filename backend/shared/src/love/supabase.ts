@@ -56,7 +56,7 @@ export const getLoverContracts = async (userId: string) => {
 
 export const getCompatibleLovers = async (
   lover: LoverRow,
-  radiusKm: number
+  radiusKm: number | undefined
 ) => {
   const pg = createSupabaseDirectClient()
   return await pg.manyOrNone<Lover>(
@@ -84,7 +84,7 @@ export const getCompatibleLovers = async (
         -- Location
         and calculate_earth_distance_km($(city_latitude), $(city_longitude), lovers.city_latitude, lovers.city_longitude) < $(radiusKm)
       `,
-    { ...lover, radiusKm }
+    { ...lover, radiusKm: radiusKm ?? 40_000 }
   )
 }
 
