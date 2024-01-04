@@ -25,6 +25,7 @@ import {
   MAX_TRADERS_FOR_BONUS,
   SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
+  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
@@ -397,7 +398,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
         ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
         : contract.mechanism === 'cpmm-multi-1'
-        ? Math.ceil(UNIQUE_BETTOR_BONUS_AMOUNT / 2)
+        ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
     const bonusTxn: Omit<
