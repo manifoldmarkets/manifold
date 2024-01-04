@@ -6,6 +6,7 @@ import { PROD_CONFIG } from 'common/envs/prod'
 import { isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
+import { MINUTE_MS, HOUR_MS } from 'common/util/time'
 
 export const pgp = pgPromise()
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
@@ -62,6 +63,8 @@ export function createSupabaseDirectClient(
     port: 5432,
     user: 'postgres',
     password: password,
+    query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
+    connectionTimeoutMillis: MINUTE_MS, // mqp: debugging scheduled job behavior
   })
   return pgpDirect
 }
