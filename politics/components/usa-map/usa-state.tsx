@@ -30,8 +30,8 @@ export const USAState = ({
         )}
         onClick={onClickState}
         id={state}
-        stroke={selected ? '#000' : undefined}
-        strokeWidth={selected ? 2 : undefined}
+        stroke={!!selected ? '#000' : undefined}
+        strokeWidth={!!selected ? 2 : undefined}
       >
         {hideStateTitle ? null : <title>{stateName}</title>}
       </path>
