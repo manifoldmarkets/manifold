@@ -21,5 +21,5 @@ export function PoliticsTabs() {
       stackedTabIcon: <GiCongress className="h-5 w-5" />,
     },
   ]
-  return <UncontrolledTabs tabs={tabs} className="mb-3" />
+  return <UncontrolledTabs tabs={tabs} className="mx-auto mb-3" />
 }
