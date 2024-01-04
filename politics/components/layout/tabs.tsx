@@ -35,20 +35,10 @@ type TabProps = {
   renderAllTabs?: boolean
 }
 
-export function ControlledTabs(props: TabProps & { activeIndex: number }) {
-  const {
-    tabs,
-    activeIndex,
-    labelClassName,
-    onClick,
-    className,
-    renderAllTabs,
-    labelsParentClassName,
-    trackingName,
-  } = props
-
-  const hasRenderedIndexRef = useRef(new Set<number>())
-  hasRenderedIndexRef.current.add(activeIndex)
+export function CarouselControlledTabs(
+  props: TabProps & { activeIndex: number }
+) {
+  const { className, labelsParentClassName } = props
 
   return (
     <>
@@ -57,48 +47,33 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         labelsParentClassName={labelsParentClassName}
         aria-label="Tabs"
       >
-        {tabs.map((tab, i) => (
-          <a
-            href="#"
-            key={tab.queryString ?? tab.title}
-            onClick={(e) => {
-              e.preventDefault()
-
-              onClick?.(
-                tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
-                i
-              )
-
-              if (trackingName) {
-                track(trackingName, {
-                  tab: tab.title,
-                })
-              }
-            }}
-            className={clsx(
-              activeIndex === i
-                ? 'border-ink-1000 text-ink-1000'
-                : 'text-ink-500 hover:border-ink-300 hover:text-ink-700 border-transparent',
-              'mr-4 inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ',
-              labelClassName,
-              'flex-shrink-0'
-            )}
-            aria-current={activeIndex === i ? 'page' : undefined}
-          >
-            <Col>
-              <Tooltip text={tab.tooltip}>
-                {tab.stackedTabIcon && (
-                  <Row className="justify-center">{tab.stackedTabIcon}</Row>
-                )}
-                <Row className={'items-center'}>
-                  {tab.title}
-                  {tab.inlineTabIcon}
-                </Row>
-              </Tooltip>
-            </Col>
-          </a>
-        ))}
+        <Tabs {...props} />
       </Carousel>
+      <TabContent {...props} />
+    </>
+  )
+}
+
+export function ControlledTabs(props: TabProps & { activeIndex: number }) {
+  const { className } = props
+  return (
+    <>
+      <Row className={className}>
+        <Tabs {...props} />
+      </Row>
+      <TabContent {...props} />
+    </>
+  )
+}
+
+function TabContent(props: TabProps & { activeIndex: number }) {
+  const { tabs, activeIndex, renderAllTabs } = props
+
+  const hasRenderedIndexRef = useRef(new Set<number>())
+  hasRenderedIndexRef.current.add(activeIndex)
+
+  return (
+    <>
       {tabs
         .map((tab, i) => ({ tab, i }))
         .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
@@ -117,12 +92,77 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   )
 }
 
-export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
-  const { defaultIndex, onClick, ...rest } = props
+function Tabs(props: TabProps & { activeIndex: number }) {
+  const { tabs, activeIndex, labelClassName, onClick, trackingName } = props
+
+  return (
+    <>
+      {tabs.map((tab, i) => (
+        <a
+          href="#"
+          key={tab.queryString ?? tab.title}
+          onClick={(e) => {
+            e.preventDefault()
+
+            onClick?.(
+              tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
+              i
+            )
+
+            if (trackingName) {
+              track(trackingName, {
+                tab: tab.title,
+              })
+            }
+          }}
+          className={clsx(
+            activeIndex === i
+              ? 'border-ink-1000 text-ink-1000'
+              : 'text-ink-500 hover:border-ink-300 hover:text-ink-700 border-transparent',
+            'mr-4 inline-flex cursor-pointer flex-row gap-1 whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium ',
+            labelClassName,
+            'flex-shrink-0'
+          )}
+          aria-current={activeIndex === i ? 'page' : undefined}
+        >
+          <Col>
+            <Tooltip text={tab.tooltip}>
+              {tab.stackedTabIcon && (
+                <Row className="justify-center">{tab.stackedTabIcon}</Row>
+              )}
+              <Row className={'items-center'}>
+                {tab.title}
+                {tab.inlineTabIcon}
+              </Row>
+            </Tooltip>
+          </Col>
+        </a>
+      ))}
+    </>
+  )
+}
+
+export function UncontrolledTabs(
+  props: TabProps & { defaultIndex?: number; isCarousel?: boolean }
+) {
+  const { defaultIndex, onClick, isCarousel, className, ...rest } = props
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     defaultIndex ?? 0,
     `tab-${props.trackingName}-${props.tabs[0]?.title}`
   )
+  if (isCarousel) {
+    return (
+      <CarouselControlledTabs
+        {...rest}
+        activeIndex={activeIndex}
+        onClick={(titleOrQueryTitle, i) => {
+          setActiveIndex(i)
+          onClick?.(titleOrQueryTitle, i)
+        }}
+        className={className}
+      />
+    )
+  }
   return (
     <ControlledTabs
       {...rest}
@@ -131,6 +171,7 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
         setActiveIndex(i)
         onClick?.(titleOrQueryTitle, i)
       }}
+      className={className}
     />
   )
 }
@@ -183,6 +224,3 @@ export function QueryUncontrolledTabs(
     />
   )
 }
-
-// legacy code that didn't know about any other kind of tabs imports this
-export const Tabs = UncontrolledTabs
