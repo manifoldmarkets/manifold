@@ -22,7 +22,9 @@ export function LoverAnswers(props: {
         fromSignup={fromSignup}
         fromLoverPage={fromLoverPage}
       />
-      <FreeResponseDisplay isCurrentUser={isCurrentUser} user={user} />
+      <FreeResponseDisplay isCurrentUser={isCurrentUser} user={user} 
+        fromLoverPage={fromLoverPage}
+      />
     </Col>
   )
 }

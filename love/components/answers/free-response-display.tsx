@@ -26,12 +26,14 @@ import {
 import { partition } from 'lodash'
 import { shortenName } from 'web/components/widgets/user-link'
 import { AddQuestionButton } from './free-response-add-question'
+import { Lover } from 'common/love/lover'
 
 export function FreeResponseDisplay(props: {
   isCurrentUser: boolean
   user: User
+  fromLoverPage: Lover | undefined
 }) {
-  const { isCurrentUser, user } = props
+  const { isCurrentUser, user, fromLoverPage } = props
 
   const { refreshAnswers, answers: allAnswers } = useUserAnswers(user?.id)
 
@@ -51,7 +53,7 @@ export function FreeResponseDisplay(props: {
   const noAnswers = answers.length < 1
 
   if (noAnswers) {
-    if (isCurrentUser) {
+    if (isCurrentUser && !fromLoverPage) {
       return (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
@@ -87,7 +89,7 @@ export function FreeResponseDisplay(props: {
         })}
       </Col>
 
-      {isCurrentUser && (
+      {isCurrentUser && !fromLoverPage && (
         <AddQuestionButton
           isFirstQuestion={answers.length < 1}
           questions={otherFRQuestions}

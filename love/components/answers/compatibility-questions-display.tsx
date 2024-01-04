@@ -155,7 +155,7 @@ export function CompatibilityQuestionsDisplay(props: {
           })}
         </>
       )}
-      {otherQuestions.length >= 1 && isCurrentUser && (
+      {otherQuestions.length >= 1 && isCurrentUser && !fromLoverPage && (
         <AnswerCompatibilityQuestionButton
           user={user}
           otherQuestions={otherQuestions}
