@@ -200,6 +200,7 @@ function LoverContent(props: {
         isCurrentUser={isCurrentUser}
         lover={lover}
         refreshLover={refreshLover}
+        fromLoverPage={fromLoverPage}
       />
       <LoverAnswers
         isCurrentUser={isCurrentUser}

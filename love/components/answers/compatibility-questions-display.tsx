@@ -127,7 +127,7 @@ export function CompatibilityQuestionsDisplay(props: {
         </span>
       ) : (
         <>
-          {isCurrentUser && (
+          {isCurrentUser && !fromLoverPage && (
             <span>
               {otherQuestions.length < 1 && (
                 <span className="text-ink-600 text-sm">
