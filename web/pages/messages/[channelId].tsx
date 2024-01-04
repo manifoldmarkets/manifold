@@ -51,6 +51,7 @@ import { richTextToString } from 'common/util/parse'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export default function PrivateMessagesPage() {
   return (
@@ -101,6 +102,7 @@ export const PrivateChat = (props: {
   const isSafari =
     /^((?!chrome|android).)*safari/i.test(navigator.userAgent) ||
     getNativePlatform().platform === 'ios'
+  const isMobile = useIsMobile()
 
   const totalMessagesToLoad = 500
   const realtimeMessages = useRealtimePrivateMessagesPolling(
@@ -516,7 +518,7 @@ export const PrivateChat = (props: {
         user={user}
         submit={submitMessage}
         isSubmitting={isSubmitting}
-        submitOnEnter={true}
+        submitOnEnter={!isMobile}
         replyTo={replyToUserInfo}
       />
     </Col>
