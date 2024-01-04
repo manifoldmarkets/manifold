@@ -123,7 +123,7 @@ export function FeedContractCard(props: {
         'relative',
         'cursor-pointer ',
         'ring-ink-1000 ring-1',
-        'bg-canvas-0 flex w-full flex-col gap-0.5 px-4 py-2'
+        'bg-canvas-0 flex w-full flex-col gap-0.5 p-4'
       )}
       onClick={(e) => {
         trackClick()
@@ -201,7 +201,7 @@ export function FeedContractCard(props: {
             nonTextDescription={nonTextDescription}
           />
         )}
-        {!hideBottomRow && (
+        {/* {!hideBottomRow && (
           <Col>
             <BottomActionRow
               contract={contract}
@@ -210,7 +210,7 @@ export function FeedContractCard(props: {
             />
             {children}
           </Col>
-        )}
+        )} */}
       </div>
     </ShadowFrame>
   )
