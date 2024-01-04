@@ -209,17 +209,9 @@ const BrowseMatchesDialog = (props: {
                         </Button>
                       </Row>
                       <Col>
-                        {compatibility &&
-                          compatibility.confidence !== 'low' && (
-                            <div>
-                              Compatibility{' '}
-                              <span className="text-primary-600 font-semibold">
-                                {Math.round((compatibility.score ?? 0) * 100) /
-                                  10}{' '}
-                                out of 10
-                              </span>
-                            </div>
-                          )}
+                        <CompatibilityScoreDisplay
+                          compatibility={compatibility}
+                        />
                         <LoverProfile
                           lover={matchedLover}
                           user={matchedLover.user}
@@ -274,15 +266,9 @@ const BrowseMatchesDialog = (props: {
 
                   {potentialLovers.length > 0 && (
                     <>
-                      {compatibility && compatibility.confidence !== 'low' && (
-                        <div>
-                          Compatibility{' '}
-                          <span className="text-primary-600 font-semibold">
-                            {Math.round((compatibility.score ?? 0) * 100) / 10}{' '}
-                            out of 10
-                          </span>
-                        </div>
-                      )}
+                      <CompatibilityScoreDisplay
+                        compatibility={compatibility}
+                      />
                       <LoverProfile
                         lover={potentialLover}
                         user={potentialLover.user}
@@ -334,5 +320,27 @@ const BrowseMatchesDialog = (props: {
         />
       </Col>
     </Modal>
+  )
+}
+
+function CompatibilityScoreDisplay(props: {
+  compatibility: CompatibilityScore | undefined
+}) {
+  const { compatibility } = props
+
+  if (!compatibility || compatibility.confidence === 'low')
+    return (
+      <div className="text-ink-600">
+        Compatibility: Not enough questions answered
+      </div>
+    )
+
+  return (
+    <div>
+      Compatibility{' '}
+      <span className="text-primary-600 font-semibold">
+        {Math.round((compatibility.score ?? 0) * 100) / 10} out of 10
+      </span>
+    </div>
   )
 }
