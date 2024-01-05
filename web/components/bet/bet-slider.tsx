@@ -1,49 +1,51 @@
-import clsx from 'clsx'
-
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
-import { Row } from '../layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Col } from '../layout/col'
 
-const SCALE_VALUES = [100, 1000, 10000]
-
+const largerSliderAmounts = [
+  0, 1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 300, 500, 750,
+  1000,
+]
+const lowerManaSliderAmounts = [
+  0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
+]
 export const BetSlider = (props: {
   amount: number | undefined
   onAmountChange: (newAmount: number | undefined) => void
-  scale: number
-  setScale?: (newScale: number) => void
+  smallManaAmounts?: boolean
   binaryOutcome?: BinaryOutcomes
-  maximumAmount?: number
-  customRange?: { rangeMin?: number; rangeMax?: number }
   disabled?: boolean
 }) => {
-  const {
-    amount,
-    onAmountChange,
-    scale,
-    setScale,
-    binaryOutcome,
-    maximumAmount,
-    disabled,
-  } = props
-  const { rangeMin, rangeMax } = props.customRange ?? {}
+  const { amount, onAmountChange, smallManaAmounts, binaryOutcome, disabled } =
+    props
+  const sliderAmounts = smallManaAmounts
+    ? lowerManaSliderAmounts
+    : largerSliderAmounts
+  const maxSliderIndex = sliderAmounts.length - 1
+  const amountToSliderIndex = (amount: number) => {
+    const index = sliderAmounts.findIndex((a) => amount <= a)
+    return index === -1 ? maxSliderIndex : index
+  }
+
+  const sliderIndex = amountToSliderIndex(amount ?? 0)
 
   return (
     <Col className="w-full gap-4">
       <Slider
         min={0}
-        max={rangeMax ?? maximumAmount ?? scale}
-        marks={
-          maximumAmount || rangeMin || rangeMax
-            ? [{ value: 0, label: formatMoney(0) }]
-            : [
-                { value: 0, label: formatMoney(0) },
-                { value: 50, label: formatMoney(scale / 2) },
-                { value: 100, label: formatMoney(scale) },
-              ]
-        }
+        max={maxSliderIndex}
+        marks={[
+          { value: 0, label: formatMoney(sliderAmounts[0]) },
+          {
+            value: 50,
+            label: formatMoney(sliderAmounts[Math.floor(maxSliderIndex / 2)]),
+          },
+          {
+            value: 100,
+            label: formatMoney(sliderAmounts[maxSliderIndex]),
+          },
+        ]}
         color={
           binaryOutcome === 'YES'
             ? 'green'
@@ -51,30 +53,13 @@ export const BetSlider = (props: {
             ? 'red'
             : 'indigo'
         }
-        amount={amount ?? 0}
-        onChange={(value) => onAmountChange(value as number)}
-        step={scale / 20}
+        amount={sliderIndex}
+        onChange={(value) => {
+          onAmountChange(sliderAmounts[value])
+        }}
+        step={1}
         disabled={disabled}
       />
-
-      {setScale && (
-        <Row className="text-ink-400 items-center gap-2 self-center">
-          <div className="text-xs">Scale</div>
-          {SCALE_VALUES.map((scaleValue) => (
-            <div
-              key={scaleValue}
-              className={clsx(
-                'cursor-pointer text-xs hover:text-indigo-500 hover:underline ',
-                scale === scaleValue && 'font-bold underline'
-              )}
-              onClick={() => setScale(scaleValue)}
-            >
-              {ENV_CONFIG.moneyMoniker}
-              {scaleValue >= 1000 ? scaleValue / 1000 + 'k' : scaleValue}
-            </div>
-          ))}
-        </Row>
-      )}
     </Col>
   )
 }

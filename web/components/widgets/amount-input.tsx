@@ -7,8 +7,8 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
-import { IncrementDecrementButton } from './increment-decrement-button'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { BetSlider } from '../bet/bet-slider'
 
 export function AmountInput(
   props: {
@@ -116,6 +116,8 @@ export function BuyAmountInput(props: {
   disabled?: boolean
   showBalance?: boolean
   parentClassName?: string
+  binaryOutcome?: 'YES' | 'NO'
+  showSlider?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -129,7 +131,9 @@ export function BuyAmountInput(props: {
     error,
     setError,
     disabled,
+    binaryOutcome,
     showBalance,
+    showSlider,
     parentClassName,
     className,
     inputClassName,
@@ -158,75 +162,50 @@ export function BuyAmountInput(props: {
     }
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
-  const increment = (interval: number) => {
-    let newAmount = (amount ?? 0) + interval
-
-    // Special case to have rounded numbers.
-    if (amount === 10 && interval > 10) newAmount = interval
-
-    if (maximumAmount && newAmount > maximumAmount) onChange(maximumAmount)
-    else onChange(newAmount)
-  }
-  const decrement = (interval: number) => {
-    const newAmount = (amount ?? 0) - interval
-    if (newAmount <= 0) onChange(undefined)
-    else if (minimumAmount && newAmount < minimumAmount) onChange(minimumAmount)
-    else onChange(newAmount)
-  }
-
   const portfolio = useCurrentPortfolio(user?.id)
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
-  const quickAddButtons = (
-    <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
-      {!hasLotsOfMana && (
-        <IncrementDecrementButton
-          amount={1}
-          onIncrement={() => increment(1)}
-          onDecrement={() => decrement(1)}
-        />
-      )}
-      <IncrementDecrementButton
-        amount={10}
-        onIncrement={() => increment(10)}
-        onDecrement={() => decrement(10)}
-      />
-      <IncrementDecrementButton
-        amount={50}
-        onIncrement={() => increment(50)}
-        onDecrement={() => decrement(50)}
-      />
-      {hasLotsOfMana && (
-        <IncrementDecrementButton
-          amount={250}
-          onIncrement={() => increment(250)}
-          onDecrement={() => decrement(250)}
-        />
-      )}
-    </Row>
-  )
+  const quickAmounts = [10, 25, 50, 100]
 
   return (
     <>
-      <Col className={parentClassName}>
+      <Col className={clsx('gap-2', parentClassName)}>
         <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
             className={className}
-            inputClassName={clsx(
-              '!h-16',
-              hideQuickAdd ? 'w-32' : 'w-[265px] pr-[148px]',
-              inputClassName
-            )}
+            inputClassName={clsx('!h-14 w-32', inputClassName)}
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
             error={!!error}
             disabled={disabled}
             inputRef={inputRef}
-            quickAddMoreButton={hideQuickAdd ? undefined : quickAddButtons}
           />
+          {!hideQuickAdd && (
+            <Row className="gap-1">
+              {quickAmounts.map((quickAmount) => (
+                <QuickAmountButton
+                  key={quickAmount}
+                  amount={quickAmount}
+                  selected={amount === quickAmount}
+                  onClick={() => onChange(quickAmount)}
+                />
+              ))}
+            </Row>
+          )}
         </Row>
+
+        {showSlider && (
+          <BetSlider
+            amount={amount}
+            onAmountChange={onChange}
+            binaryOutcome={binaryOutcome}
+            disabled={disabled}
+            smallManaAmounts={!hasLotsOfMana}
+          />
+        )}
+
         {error ? (
           <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
@@ -258,5 +237,26 @@ const BuyMoreFunds = () => {
       </button>
       <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
+  )
+}
+
+const QuickAmountButton = (props: {
+  amount: number
+  selected: boolean
+  onClick: () => void
+  className?: string
+}) => {
+  const { amount, selected, onClick, className } = props
+  return (
+    <button
+      className={clsx(
+        'bg-canvas-0 active:bg-ink-50 text-ink-500 hover:decoration-ink-400 border-ink-300 h-14 w-12 rounded border text-sm font-semibold shadow-sm hover:underline',
+        selected && 'bg-ink-100',
+        className
+      )}
+      onClick={onClick}
+    >
+      <div className="pointer-events-none">{formatMoney(amount)}</div>
+    </button>
   )
 }

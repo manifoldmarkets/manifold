@@ -313,7 +313,9 @@ export function BuyPanel(props: {
             setError={setError}
             disabled={isSubmitting}
             inputRef={inputRef}
+            binaryOutcome={outcome}
             showBalance
+            showSlider
           />
 
           <Row className="mt-2 gap-8">

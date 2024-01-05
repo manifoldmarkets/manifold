@@ -129,6 +129,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         showBalance
+        showSlider
       />
 
       <Col className="mt-8 w-full gap-3">
