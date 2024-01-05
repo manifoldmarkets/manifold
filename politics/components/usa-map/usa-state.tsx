@@ -1,30 +1,26 @@
 import clsx from 'clsx'
 import { ClickHandler } from './usa-map'
+import { StateDataType } from './usa-map-data'
 
 type TextCoordinates = { x: number; y: number }
 
 type USAStateProps = {
   state: string
-  dimensions: string
+  stateData: StateDataType
   fill: string
-  stateAbbr: string
   onClickState?: ClickHandler
-  stateName: string
   hideStateTitle?: boolean
   selected?: boolean
-  textCoordinates?: TextCoordinates
 }
 export const USAState = ({
   state,
-  dimensions,
+  stateData,
   fill,
   onClickState,
-  stateName,
   hideStateTitle,
   selected,
-  stateAbbr,
-  textCoordinates,
 }: USAStateProps) => {
+  const { dimensions, textCoordinates, abbreviation, line } = stateData
   return (
     <>
       <path
@@ -37,16 +33,27 @@ export const USAState = ({
         stroke={!!selected ? '#FFF' : undefined}
         strokeWidth={!!selected ? 2 : undefined}
       />
-      {/* {textCoordinates && (
-        <text
-          key={state}
-          x={textCoordinates.x}
-          y={textCoordinates.y}
-          textAnchor="middle"
-        >
-          {stateAbbr}
-        </text>
-      )} */}
+      {textCoordinates && (
+        <>
+          <text
+            key={state}
+            x={textCoordinates.x}
+            y={textCoordinates.y}
+            textAnchor="middle"
+          >
+            {abbreviation}
+          </text>
+          {line && (
+            <line
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              stroke="#cec0ce"
+            />
+          )}
+        </>
+      )}
     </>
   )
 }
