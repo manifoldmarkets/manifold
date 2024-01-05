@@ -26,7 +26,7 @@ export const BetSlider = (props: {
   const maxSliderIndex = sliderAmounts.length - 1
   const amountToSliderIndex = (amount: number) => {
     const index = sliderAmounts.findLastIndex((a) => amount >= a)
-    return index === -1 ? maxSliderIndex : index
+    return index === -1 ? 0 : index
   }
 
   const sliderIndex = amountToSliderIndex(amount ?? 0)
