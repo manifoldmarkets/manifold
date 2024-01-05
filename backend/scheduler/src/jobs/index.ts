@@ -4,6 +4,7 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateContractViews } from 'shared/update-contract-views'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
+import { truncateIncomingWrites } from './truncate-incoming-writes'
 
 export function createJobs() {
   return [
@@ -27,6 +28,11 @@ export function createJobs() {
       'update-user-metrics',
       '0 */10 * * * *', // every 10 minutes
       updateUserMetricsCore
+    ),
+    createJob(
+      'truncate-incoming-writes',
+      '0 0 4 * * *', // 4 AM daily
+      truncateIncomingWrites
     ),
   ]
 }
