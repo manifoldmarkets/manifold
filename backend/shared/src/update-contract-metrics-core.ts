@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { GCPLog, log as oldLog } from 'shared/utils'
+import { JobContext } from 'shared/utils'
 import { getAll } from 'shared/supabase/utils'
 import { Answer } from 'common/answer'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -15,7 +15,7 @@ import { LimitBet } from 'common/bet'
 import { filterDefined } from 'common/util/array'
 import { replicateAnswers } from 'shared/supabase/answers'
 
-export async function updateContractMetricsCore(log: GCPLog = oldLog) {
+export async function updateContractMetricsCore({ log }: JobContext) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')

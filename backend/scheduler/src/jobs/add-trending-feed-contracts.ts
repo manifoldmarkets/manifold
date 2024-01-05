@@ -6,9 +6,9 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { GCPLog } from 'shared/utils'
+import { JobContext } from 'shared/utils'
 
-export async function addTrendingFeedContracts(log: GCPLog) {
+export async function addTrendingFeedContracts({ log }: JobContext) {
   const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
   const startTime = Date.now()

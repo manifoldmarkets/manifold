@@ -19,10 +19,10 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
-import { GCPLog, log as oldLog } from 'shared/utils'
+import { JobContext } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 
-export async function updateUserMetricsCore(log: GCPLog = oldLog) {
+export async function updateUserMetricsCore({ log }: JobContext) {
   const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS

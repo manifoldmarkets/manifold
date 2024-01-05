@@ -49,7 +49,11 @@
                 <input class="btn btn-resume" type="submit" value="Resume" />
               </form>
             {{else}}
-              <p>Next run: {{nextRunStart}} ({{nextRunInMins}}mins)</p>
+              {{#if nextRunStart}}
+                <p>Next run: {{nextRunStart}} ({{nextRunInMins}}mins)</p>
+              {{else}}
+                <p>Not scheduled to run automatically.</p>
+              {{/if}}
               <form action="/jobs/{{name}}/pause" method="post">
                 <input class="btn btn-pause" type="submit" value="Pause" />
               </form>

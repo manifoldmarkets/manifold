@@ -8,9 +8,9 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 if (require.main === module) {
   runScript(async () => {
     log('Updating user metrics...')
-    await updateUserMetricsCore()
+    await updateUserMetricsCore({ log })
     log('Updating contract metrics...')
-    await updateContractMetricsCore()
+    await updateContractMetricsCore({ log })
     log('Updating group metrics...')
     await updateGroupMetricsCore()
   })
