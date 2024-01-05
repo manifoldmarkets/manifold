@@ -1,4 +1,3 @@
-'use client'
 import { useMemo, useState } from 'react'
 
 import { Contract, CPMMBinaryContract } from 'common/contract'
@@ -7,6 +6,13 @@ import { useContracts } from 'web/hooks/use-contract-supabase'
 import { FeedContractCard } from '../contract/contract-card'
 import { presidency2024 } from './election-contract-data'
 import { Customize, USAMap } from './usa-map'
+
+export const DEM_LIGHT_HEX = '#6989c8'
+export const REP_LIGHT_HEX = '#d16762'
+export const DEM_DARK_HEX = '#42508b'
+export const REP_DARK_HEX = '#842d32'
+
+export const COLOR_MIXED_THRESHOLD = 0.3
 
 export interface StateElectionMarket {
   slug: string
@@ -75,17 +81,23 @@ const probToColor = (contract: Contract | undefined) => {
     // Convert RGB to Hex
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
   }
+
+  function hexToRgb(hex: string) {
+    // Convert hex to RGB
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return { r, g, b }
+  }
+
   if (!contract || contract.mechanism !== 'cpmm-multi-1') return undefined
   const answers = contract.answers
 
   // Base colors
-  const DEM_LIGHT = { r: 206, g: 220, b: 239 } // #cedcef
-  const REP_LIGHT = { r: 244, g: 218, b: 215 } // #f4dad7
-  const DEM_DARK = { r: 86, g: 113, b: 186 } // #5671ba
-  const REP_DARK = { r: 194, g: 85, b: 85 } // #c25555
-
-  // Difference threshold
-  const THRESHOLD = 0.05
+  const DEM_LIGHT = hexToRgb(DEM_LIGHT_HEX)
+  const REP_LIGHT = hexToRgb(REP_LIGHT_HEX)
+  const DEM_DARK = hexToRgb(DEM_DARK_HEX)
+  const REP_DARK = hexToRgb(REP_DARK_HEX)
 
   const probDemocratic = answers.find((a) => a.text == 'Democratic Party')?.prob
   const probRepublican = answers.find((a) => a.text == 'Republican Party')?.prob
@@ -101,27 +113,41 @@ const probToColor = (contract: Contract | undefined) => {
   // Calculate the difference
   const difference = Math.abs(probDemocratic - probRepublican)
 
-  if (difference < THRESHOLD) {
+  if (difference < COLOR_MIXED_THRESHOLD) {
     // Blend the light colors if difference is less than 5%
-    return interpolateColor(
-      DEM_LIGHT,
-      REP_LIGHT,
-      probDemocratic / (probDemocratic + probRepublican)
-    )
+    return getStripePattern(probDemocratic, probRepublican)
   } else {
     // Interpolate towards the darker shade based on the dominant side
     if (probDemocratic > probRepublican) {
       return interpolateColor(
         DEM_LIGHT,
         DEM_DARK,
-        (difference - THRESHOLD) / (1 - THRESHOLD)
+        (difference - COLOR_MIXED_THRESHOLD) / (1 - COLOR_MIXED_THRESHOLD)
       )
     } else {
       return interpolateColor(
         REP_LIGHT,
         REP_DARK,
-        (difference - THRESHOLD) / (1 - THRESHOLD)
+        (difference - COLOR_MIXED_THRESHOLD) / (1 - COLOR_MIXED_THRESHOLD)
       )
     }
   }
+}
+
+export const getStripePattern = (
+  probDemocratic: number,
+  probRepublican: number
+) => {
+  // The total width of the pattern (sum of red and blue stripes)
+  const difference = probDemocratic - probRepublican
+
+  const patternThreshold = COLOR_MIXED_THRESHOLD / 2
+
+  if (difference <= patternThreshold && difference >= -patternThreshold) {
+    return 'url(#patternEqual)'
+  } else if (difference < -patternThreshold) {
+    return 'url(#patternMoreRed)'
+  }
+
+  return 'url(#patternMoreBlue)'
 }
