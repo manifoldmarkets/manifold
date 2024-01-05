@@ -38,12 +38,31 @@ const States = ({
       hideStateTitle={hideStateTitle}
       stateName={data.name}
       dimensions={data.dimensions}
+      textCoordinates={data.textCoordinates}
+      stateAbbr={data.abbreviation}
       state={stateKey}
       fill={fillStateColor(stateKey)}
       selected={selectedState(stateKey)}
       onClickState={stateClickHandler(stateKey)}
     />
   ))
+
+const StateNames = () => {
+  return Object.entries(DATA).map(([stateKey, data]) => (
+    <>
+      {data.textCoordinates && (
+        <text
+          key={data.name}
+          x={data.textCoordinates.x}
+          y={data.textCoordinates.y}
+          textAnchor="middle"
+        >
+          {data.abbreviation}
+        </text>
+      )}
+    </>
+  ))
+}
 
 type USAMapPropTypes = {
   onClick?: ClickHandler
@@ -128,7 +147,8 @@ export const USAMap = ({
             fillStateColor,
             stateClickHandler,
             selectedState,
-          })}
+          })}{' '}
+          {StateNames()}
           <g className="DC state">
             <path
               className="DC1"
