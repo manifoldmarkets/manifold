@@ -1,8 +1,7 @@
 import { Cron, CronOptions } from 'croner'
-import { GCPLog, gLog as log, logMemory } from 'shared/utils'
+import { JobContext, gLog as log, logMemory } from 'shared/utils'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
-
 const DEFAULT_OPTS: CronOptions = {
   timezone: 'America/Los_Angeles',
   protect: (job) => {
@@ -21,11 +20,11 @@ const DEFAULT_OPTS: CronOptions = {
 
 export function createJob(
   name: string,
-  schedule: string,
-  fn: (log: GCPLog, lastEndTime?: number) => Promise<void>
+  schedule: string | null,
+  fn: (ctx: JobContext) => Promise<void>
 ) {
   const opts = { name, ...DEFAULT_OPTS }
-  return Cron(schedule, opts, async () => {
+  return Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
     const logWithDetails = (message: any, details?: object | null) =>
       log.debug(message, {
@@ -53,11 +52,14 @@ export function createJob(
         { onConflict: 'job_name' }
       )
     logWithDetails(`[${name}] Last end time: ${lastEndTimeStamp}`)
+
     // Run job
-    await fn(
-      logWithDetails,
-      lastEndTimeStamp ? new Date(lastEndTimeStamp).valueOf() : undefined
-    )
+    await fn({
+      log: logWithDetails,
+      lastEndTime: lastEndTimeStamp
+        ? new Date(lastEndTimeStamp).valueOf()
+        : undefined,
+    })
 
     // Update last end time
     await db

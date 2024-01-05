@@ -22,6 +22,12 @@ import { GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL } from 'common/envs/constants'
 import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 
+// type for scheduled job functions
+export type JobContext = {
+  log: GCPLog
+  lastEndTime?: number
+}
+
 export const log = (...args: unknown[]) => {
   console.log(`[${new Date().toISOString()}]`, ...args)
 }

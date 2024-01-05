@@ -3,13 +3,10 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { GCPLog, log as oldLog } from 'shared/utils'
+import { JobContext } from 'shared/utils'
 import { uniq } from 'lodash'
 
-export async function updateContractViews(
-  log: GCPLog = oldLog,
-  lastEndTime?: number
-) {
+export async function updateContractViews({ log, lastEndTime }: JobContext) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')

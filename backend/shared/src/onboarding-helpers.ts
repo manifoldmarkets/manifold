@@ -4,7 +4,7 @@ import * as dayjs from 'dayjs'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { STARTING_BONUS } from 'common/economy'
-import { GCPLog, getUser, log } from 'shared/utils'
+import { JobContext, getUser, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -29,7 +29,7 @@ const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 D1 send mana bonus email
 [deprecated] D2 send creator guide email
 */
-export async function sendOnboardingNotificationsInternal(log: GCPLog) {
+export async function sendOnboardingNotificationsInternal({ log }: JobContext) {
   const firestore = admin.firestore()
   const { recentUserIds } = await getRecentNonLoverUserIds()
 
