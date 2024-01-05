@@ -2,14 +2,15 @@ import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
+import { buildArray } from 'common/util/array'
 
 const largerSliderAmounts = [
-  0, 1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 300, 500, 750,
-  1000,
+  1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 300, 500, 750, 1000,
 ]
 const lowerManaSliderAmounts = [
-  0, 1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
+  1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
 ]
+
 export const BetSlider = (props: {
   amount: number | undefined
   onAmountChange: (newAmount: number | undefined) => void
@@ -31,22 +32,28 @@ export const BetSlider = (props: {
   const sliderIndex = amountToSliderIndex(amount ?? 0)
   const tenIndex = sliderAmounts.findIndex((a) => a === 10)
   const tenAmountDistance = (100 * tenIndex) / maxSliderIndex
+  const hundredIndex = sliderAmounts.findIndex((a) => a === 100)
+  const hundredAmountDistance = (100 * hundredIndex) / maxSliderIndex
 
   return (
     <Col className="w-full gap-4">
       <Slider
         min={0}
         max={maxSliderIndex}
-        marks={[
+        marks={buildArray(
           {
             value: tenAmountDistance,
             label: formatMoney(sliderAmounts[tenIndex]),
           },
+          hundredAmountDistance <= 100 && {
+            value: hundredAmountDistance,
+            label: formatMoney(sliderAmounts[hundredIndex]),
+          },
           {
             value: 100,
             label: formatMoney(sliderAmounts[maxSliderIndex]),
-          },
-        ]}
+          }
+        )}
         color={
           binaryOutcome === 'YES'
             ? 'green'
