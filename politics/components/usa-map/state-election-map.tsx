@@ -7,10 +7,10 @@ import { FeedContractCard } from '../contract/contract-card'
 import { presidency2024 } from './election-contract-data'
 import { Customize, USAMap } from './usa-map'
 
-export const DEM_LIGHT_HEX = '#6989c8'
-export const REP_LIGHT_HEX = '#d16762'
-export const DEM_DARK_HEX = '#42508b'
-export const REP_DARK_HEX = '#842d32'
+export const DEM_LIGHT_HEX = '#86a6d4'
+export const REP_LIGHT_HEX = '#e0928c'
+export const DEM_DARK_HEX = '#4a5fa8'
+export const REP_DARK_HEX = '#9d3336'
 
 export const COLOR_MIXED_THRESHOLD = 0.3
 
