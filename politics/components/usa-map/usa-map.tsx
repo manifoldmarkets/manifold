@@ -35,34 +35,14 @@ const States = ({
   Object.entries(DATA).map(([stateKey, data]) => (
     <USAState
       key={stateKey}
+      stateData={data}
       hideStateTitle={hideStateTitle}
-      stateName={data.name}
-      dimensions={data.dimensions}
-      textCoordinates={data.textCoordinates}
-      stateAbbr={data.abbreviation}
       state={stateKey}
       fill={fillStateColor(stateKey)}
       selected={selectedState(stateKey)}
       onClickState={stateClickHandler(stateKey)}
     />
   ))
-
-const StateNames = () => {
-  return Object.entries(DATA).map(([stateKey, data]) => (
-    <>
-      {data.textCoordinates && (
-        <text
-          key={data.name}
-          x={data.textCoordinates.x}
-          y={data.textCoordinates.y}
-          textAnchor="middle"
-        >
-          {data.abbreviation}
-        </text>
-      )}
-    </>
-  ))
-}
 
 type USAMapPropTypes = {
   onClick?: ClickHandler
@@ -186,7 +166,6 @@ export const USAMap = ({
             stateClickHandler,
             selectedState,
           })}{' '}
-          {StateNames()}
           <g className="DC state">
             <path
               className="DC1"
@@ -207,6 +186,10 @@ export const USAMap = ({
             />
           </g>
         </g>
+        <text key={'DC'} x={860} y={300} textAnchor="middle">
+          DC
+        </text>
+        <line x1={804} y1={255} x2={849} y2={295} stroke="#cec0ce" />
       </svg>
     </div>
   )
