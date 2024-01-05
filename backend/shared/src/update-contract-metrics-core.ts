@@ -12,8 +12,6 @@ import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
-import { filterDefined } from 'common/util/array'
-import { replicateAnswers } from 'shared/supabase/answers'
 
 export async function updateContractMetricsCore({ log }: JobContext) {
   const firestore = admin.firestore()
@@ -31,44 +29,6 @@ export async function updateContractMetricsCore({ log }: JobContext) {
   const dayAgo = now - DAY_MS
   const weekAgo = now - WEEK_MS
   const monthAgo = now - MONTH_MS
-
-  const allContractAnswerIds = answers.map((a) => a.id)
-  const recentBets = await pg.map(
-    `select distinct answer_id, contract_id from contract_bets
-            where created_time >= millis_to_ts($1)
-              and answer_id is not null
-              and answer_id != 'undefined'
-            `,
-    [now - MONTH_MS * 3],
-    (r) => ({
-      answerId: r.answer_id as string,
-      contractId: r.contract_id as string,
-    })
-  )
-  const recentBetOnAnswerIds = recentBets.map((b) => b.answerId)
-  const missingAnswerIds = recentBetOnAnswerIds.filter(
-    (id) => !allContractAnswerIds.includes(id)
-  )
-  if (missingAnswerIds.length > 0) {
-    log(`Missing ${missingAnswerIds.length} answers, fetching from Firebase...`)
-    const answersFromFirebaseSnap = await Promise.all(
-      missingAnswerIds.map((id) =>
-        firestore
-          .collection(
-            `contracts/${
-              recentBets.find((b) => b.answerId === id)?.contractId
-            }/answersCpmm`
-          )
-          .doc(id)
-          .get()
-      )
-    )
-    const answersFromFirebase = filterDefined(
-      answersFromFirebaseSnap.map((snap) => snap.data() as Answer)
-    )
-    await replicateAnswers(pg, answersFromFirebase)
-    answers.push(...answersFromFirebase)
-  }
 
   log('Loading current contract probabilities...')
   const currentContractProbs = await getCurrentProbs(pg)
