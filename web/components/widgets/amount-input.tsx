@@ -139,7 +139,6 @@ export function BuyAmountInput(props: {
   inputClassName?: string
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
-  hideQuickAdd?: boolean
   disregardUserBalance?: boolean
 }) {
   const {
@@ -158,7 +157,6 @@ export function BuyAmountInput(props: {
     inputRef,
     maximumAmount,
     disregardUserBalance,
-    hideQuickAdd,
   } = props
   const user = useUser()
 
@@ -215,8 +213,7 @@ export function BuyAmountInput(props: {
           <AmountInput
             className={className}
             inputClassName={clsx(
-              '!h-14',
-              hideQuickAdd ? 'w-32' : 'w-full pr-[178px] max-w-[340px]',
+              '!h-14 w-full pr-[178px] max-w-[340px]',
               inputClassName
             )}
             amount={amount}
