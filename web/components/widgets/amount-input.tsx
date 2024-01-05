@@ -240,7 +240,7 @@ export function BuyAmountInput(props: {
         )}
 
         {error ? (
-          <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
+          <div className="text-scarlet-500 mt-2 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
