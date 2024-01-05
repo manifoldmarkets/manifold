@@ -5,6 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { DATA } from './usa-map-data'
 import { USAState } from './usa-state'
 import clsx from 'clsx'
+import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
 
 export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
   e: React.MouseEvent<E, MouseEvent>
@@ -83,6 +84,43 @@ export const USAMap = ({
         viewBox="0 0 959 593"
         preserveAspectRatio="xMidYMid meet"
       >
+        <defs>
+          {/* Pattern with equal red and blue */}
+          <pattern
+            id="patternEqual"
+            patternUnits="userSpaceOnUse"
+            width="30"
+            height="30"
+            patternTransform="rotate(45)"
+          >
+            <rect x="0" y="0" width="15" height="30" fill={REP_LIGHT_HEX} />
+            <rect x="15" y="0" width="15" height="30" fill={DEM_LIGHT_HEX} />
+          </pattern>
+
+          {/* Pattern with 2x more blue */}
+          <pattern
+            id="patternMoreBlue"
+            patternUnits="userSpaceOnUse"
+            width="30"
+            height="30"
+            patternTransform="rotate(45)"
+          >
+            <rect x="0" y="0" width="10" height="30" fill={REP_LIGHT_HEX} />
+            <rect x="10" y="0" width="20" height="30" fill={DEM_LIGHT_HEX} />
+          </pattern>
+
+          {/* Pattern with 2x more red */}
+          <pattern
+            id="patternMoreRed"
+            patternUnits="userSpaceOnUse"
+            width="30"
+            height="30"
+            patternTransform="rotate(45)"
+          >
+            <rect x="0" y="0" width="20" height="30" fill={REP_LIGHT_HEX} />
+            <rect x="20" y="0" width="10" height="30" fill={DEM_LIGHT_HEX} />
+          </pattern>
+        </defs>
         <title>{title}</title>
         <g className="outlines">
           {States({
