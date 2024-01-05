@@ -16,19 +16,19 @@ function getDbHost() {
 
 // function execRepackAll(ctx: JobContext, auth: RepackAuth) {
 //   const { host, username } = auth
-//   const args = ['-h', host, '-d', username, '-c', 'public']
+//   const args = ['-h', host, '-d', username, '-c', 'public', '-k']
 //   return spawnRepack(ctx, args)
 // }
 
 function execRepackOne(ctx: JobContext, auth: RepackAuth, tableName: string) {
   const { host, username } = auth
-  const args = ['-h', host, '-d', username, '-t', tableName]
+  const args = ['-h', host, '-d', username, '-t', tableName, '-k']
   return spawnRepack(ctx, args)
 }
 
 function execReindex(ctx: JobContext, auth: RepackAuth, tableName: string) {
   const { host, username } = auth
-  const args = ['-h', host, '-d', username, '-t', tableName, '-x']
+  const args = ['-h', host, '-d', username, '-t', tableName, '-k', '-x']
   return spawnRepack(ctx, args)
 }
 
@@ -45,6 +45,7 @@ function spawnRepack({ log }: JobContext, args: string[]) {
     })
     proc.stdout.on('data', (data) => log(`[repack stdout] ${data}`))
     proc.stderr.on('data', (data) => log(`[repack stderr] ${data}`))
+    proc.on('error', reject)
     proc.on('close', (code) => {
       if (code === 0) {
         resolve()
