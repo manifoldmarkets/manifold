@@ -29,6 +29,8 @@ export const BetSlider = (props: {
   }
 
   const sliderIndex = amountToSliderIndex(amount ?? 0)
+  const tenIndex = sliderAmounts.findIndex((a) => a === 10)
+  const tenAmountDistance = (100 * tenIndex) / maxSliderIndex
 
   return (
     <Col className="w-full gap-4">
@@ -36,10 +38,9 @@ export const BetSlider = (props: {
         min={0}
         max={maxSliderIndex}
         marks={[
-          { value: 0, label: formatMoney(sliderAmounts[0]) },
           {
-            value: 50,
-            label: formatMoney(sliderAmounts[Math.floor(maxSliderIndex / 2)]),
+            value: tenAmountDistance,
+            label: formatMoney(sliderAmounts[tenIndex]),
           },
           {
             value: 100,
