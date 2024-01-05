@@ -38,12 +38,31 @@ const States = ({
       hideStateTitle={hideStateTitle}
       stateName={data.name}
       dimensions={data.dimensions}
+      textCoordinates={data.textCoordinates}
+      stateAbbr={data.abbreviation}
       state={stateKey}
       fill={fillStateColor(stateKey)}
       selected={selectedState(stateKey)}
       onClickState={stateClickHandler(stateKey)}
     />
   ))
+
+const StateNames = () => {
+  return Object.entries(DATA).map(([stateKey, data]) => (
+    <>
+      {data.textCoordinates && (
+        <text
+          key={data.name}
+          x={data.textCoordinates.x}
+          y={data.textCoordinates.y}
+          textAnchor="middle"
+        >
+          {data.abbreviation}
+        </text>
+      )}
+    </>
+  ))
+}
 
 type USAMapPropTypes = {
   onClick?: ClickHandler
@@ -73,6 +92,8 @@ export const USAMap = ({
 
   const selectedState = (state: string) => !!customize?.[state]?.selected
 
+  const totalWidth = 20
+
   return (
     <div
       className={clsx('relative w-full')}
@@ -89,36 +110,72 @@ export const USAMap = ({
           <pattern
             id="patternEqual"
             patternUnits="userSpaceOnUse"
-            width="30"
-            height="30"
+            width={totalWidth}
+            height={totalWidth}
             patternTransform="rotate(45)"
           >
-            <rect x="0" y="0" width="15" height="30" fill={REP_LIGHT_HEX} />
-            <rect x="15" y="0" width="15" height="30" fill={DEM_LIGHT_HEX} />
+            <rect
+              x="0"
+              y="0"
+              width={totalWidth / 2}
+              height={totalWidth}
+              fill={REP_LIGHT_HEX}
+            />
+            <rect
+              x={totalWidth / 2}
+              y="0"
+              width={totalWidth / 2}
+              height={totalWidth}
+              fill={DEM_LIGHT_HEX}
+            />
           </pattern>
 
           {/* Pattern with 2x more blue */}
           <pattern
             id="patternMoreBlue"
             patternUnits="userSpaceOnUse"
-            width="30"
-            height="30"
+            width={totalWidth}
+            height={totalWidth}
             patternTransform="rotate(45)"
           >
-            <rect x="0" y="0" width="10" height="30" fill={REP_LIGHT_HEX} />
-            <rect x="10" y="0" width="20" height="30" fill={DEM_LIGHT_HEX} />
+            <rect
+              x="0"
+              y="0"
+              width={(1 / 3) * totalWidth}
+              height={totalWidth}
+              fill={REP_LIGHT_HEX}
+            />
+            <rect
+              x={(1 / 3) * totalWidth}
+              y="0"
+              width={(2 / 3) * totalWidth}
+              height={totalWidth}
+              fill={DEM_LIGHT_HEX}
+            />
           </pattern>
 
           {/* Pattern with 2x more red */}
           <pattern
             id="patternMoreRed"
             patternUnits="userSpaceOnUse"
-            width="30"
-            height="30"
+            width={totalWidth}
+            height={totalWidth}
             patternTransform="rotate(45)"
           >
-            <rect x="0" y="0" width="20" height="30" fill={REP_LIGHT_HEX} />
-            <rect x="20" y="0" width="10" height="30" fill={DEM_LIGHT_HEX} />
+            <rect
+              x="0"
+              y="0"
+              width={(2 / 3) * totalWidth}
+              height={totalWidth}
+              fill={REP_LIGHT_HEX}
+            />
+            <rect
+              x={(2 / 3) * totalWidth}
+              y="0"
+              width={(1 / 3) * totalWidth}
+              height={totalWidth}
+              fill={DEM_LIGHT_HEX}
+            />
           </pattern>
         </defs>
         <title>{title}</title>
@@ -128,7 +185,8 @@ export const USAMap = ({
             fillStateColor,
             stateClickHandler,
             selectedState,
-          })}
+          })}{' '}
+          {StateNames()}
           <g className="DC state">
             <path
               className="DC1"
