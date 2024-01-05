@@ -313,11 +313,13 @@ export function BuyPanel(props: {
             setError={setError}
             disabled={isSubmitting}
             inputRef={inputRef}
+            binaryOutcome={outcome}
             showBalance
+            showSlider
           />
 
-          <Row className="mt-2 gap-8">
-            <Col>
+          <Row className="mt-2 flex-1 gap-2">
+            <Col className="min-w-[138px]">
               <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
                 {isPseudoNumeric || isStonk ? (
                   'Shares'
@@ -340,7 +342,7 @@ export function BuyPanel(props: {
                 </span>
               </div>
             </Col>
-            <Col className="text-sm">
+            <Col className="min-w-[138px] text-sm">
               <Row>
                 <span className="text-ink-700 whitespace-nowrap text-sm">
                   {isPseudoNumeric

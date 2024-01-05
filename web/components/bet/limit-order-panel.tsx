@@ -242,6 +242,7 @@ export default function LimitOrderPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         showBalance
+        showSlider
       />
 
       <div className="mb-4">

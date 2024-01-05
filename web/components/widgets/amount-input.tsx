@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { XIcon } from '@heroicons/react/solid'
+
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
@@ -7,8 +9,10 @@ import { AddFundsModal } from '../add-funds-modal'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
-import { IncrementDecrementButton } from './increment-decrement-button'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { BetSlider } from '../bet/bet-slider'
+import { IncrementButton } from './increment-button'
+import { buildArray } from 'common/util/array'
 
 export function AmountInput(
   props: {
@@ -96,15 +100,28 @@ export function AmountInput(
                 }
               }}
             />
-            {quickAddMoreButton}
+            <Row className="absolute right-[1px] top-[1px] gap-4">
+              <ClearInputButton onClick={() => onChangeAmount(undefined)} />
+              {quickAddMoreButton}
+            </Row>
           </div>
         </label>
       </Col>
     </>
   )
 }
-export const quickAddMoreButtonClassName =
-  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
+
+function ClearInputButton(props: { onClick: () => void }) {
+  const { onClick } = props
+  return (
+    <button
+      className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex items-center justify-center"
+      onClick={onClick}
+    >
+      <XIcon className="h-4 w-4" />
+    </button>
+  )
+}
 
 export function BuyAmountInput(props: {
   amount: number | undefined
@@ -116,6 +133,8 @@ export function BuyAmountInput(props: {
   disabled?: boolean
   showBalance?: boolean
   parentClassName?: string
+  binaryOutcome?: 'YES' | 'NO'
+  showSlider?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -129,7 +148,9 @@ export function BuyAmountInput(props: {
     error,
     setError,
     disabled,
+    binaryOutcome,
     showBalance,
+    showSlider,
     parentClassName,
     className,
     inputClassName,
@@ -158,64 +179,44 @@ export function BuyAmountInput(props: {
     }
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
-  const increment = (interval: number) => {
-    let newAmount = (amount ?? 0) + interval
-
-    // Special case to have rounded numbers.
-    if (amount === 10 && interval > 10) newAmount = interval
-
-    if (maximumAmount && newAmount > maximumAmount) onChange(maximumAmount)
-    else onChange(newAmount)
-  }
-  const decrement = (interval: number) => {
-    const newAmount = (amount ?? 0) - interval
-    if (newAmount <= 0) onChange(undefined)
-    else if (minimumAmount && newAmount < minimumAmount) onChange(minimumAmount)
-    else onChange(newAmount)
-  }
-
   const portfolio = useCurrentPortfolio(user?.id)
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
+  const incrementAmounts = buildArray(
+    !hasLotsOfMana && 1,
+    5,
+    50,
+    hasLotsOfMana && 250
+  )
   const quickAddButtons = (
-    <Row className="border-ink-300 divide-ink-300 absolute right-0 divide-x border-l">
-      {!hasLotsOfMana && (
-        <IncrementDecrementButton
-          amount={1}
-          onIncrement={() => increment(1)}
-          onDecrement={() => decrement(1)}
-        />
-      )}
-      <IncrementDecrementButton
-        amount={10}
-        onIncrement={() => increment(10)}
-        onDecrement={() => decrement(10)}
-      />
-      <IncrementDecrementButton
-        amount={50}
-        onIncrement={() => increment(50)}
-        onDecrement={() => decrement(50)}
-      />
-      {hasLotsOfMana && (
-        <IncrementDecrementButton
-          amount={250}
-          onIncrement={() => increment(250)}
-          onDecrement={() => decrement(250)}
-        />
-      )}
+    <Row className="border-ink-300 divide-ink-300 divide-x border-l">
+      {incrementAmounts.map((incrementAmount) => {
+        const amountWithDefault = amount ?? 0
+        const shouldSetAmount = amountWithDefault < incrementAmount
+        return (
+          <IncrementButton
+            key={incrementAmount}
+            amount={incrementAmount}
+            onIncrement={() => {
+              if (shouldSetAmount) onChange(incrementAmount)
+              else onChange(amountWithDefault + incrementAmount)
+            }}
+            hidePlus={shouldSetAmount}
+          />
+        )
+      })}
     </Row>
   )
-
   return (
     <>
-      <Col className={parentClassName}>
+      <Col className={clsx('gap-2', parentClassName)}>
         <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
             className={className}
             inputClassName={clsx(
-              '!h-16',
-              hideQuickAdd ? 'w-32' : 'w-[265px] pr-[148px]',
+              '!h-14',
+              hideQuickAdd ? 'w-32' : 'w-full pr-[178px] max-w-[340px]',
               inputClassName
             )}
             amount={amount}
@@ -224,11 +225,22 @@ export function BuyAmountInput(props: {
             error={!!error}
             disabled={disabled}
             inputRef={inputRef}
-            quickAddMoreButton={hideQuickAdd ? undefined : quickAddButtons}
+            quickAddMoreButton={quickAddButtons}
           />
         </Row>
+
+        {showSlider && (
+          <BetSlider
+            amount={amount}
+            onAmountChange={onChange}
+            binaryOutcome={binaryOutcome}
+            disabled={disabled}
+            smallManaAmounts={!hasLotsOfMana}
+          />
+        )}
+
         {error ? (
-          <div className="text-scarlet-500 mt-0.5 whitespace-nowrap text-sm">
+          <div className="text-scarlet-500 mt-2 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
