@@ -180,9 +180,8 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const hasLotsOfMana = !(
+  const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
-  )
 
   const incrementAmounts = buildArray(
     !hasLotsOfMana && 1,

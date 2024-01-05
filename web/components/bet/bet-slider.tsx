@@ -42,10 +42,14 @@ export const BetSlider = (props: {
         max={maxSliderIndex}
         marks={buildArray(
           {
+            value: 0,
+            label: formatMoney(sliderAmounts[0]),
+          },
+          {
             value: tenAmountDistance,
             label: formatMoney(sliderAmounts[tenIndex]),
           },
-          hundredAmountDistance <= 100 && {
+          !smallManaAmounts && {
             value: hundredAmountDistance,
             label: formatMoney(sliderAmounts[hundredIndex]),
           },
