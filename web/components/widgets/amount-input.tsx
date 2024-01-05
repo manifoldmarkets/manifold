@@ -216,7 +216,7 @@ export function BuyAmountInput(props: {
             className={className}
             inputClassName={clsx(
               '!h-14',
-              hideQuickAdd ? 'w-32' : 'w-full pr-[178px]',
+              hideQuickAdd ? 'w-32' : 'w-full pr-[178px] max-w-[340px]',
               inputClassName
             )}
             amount={amount}
