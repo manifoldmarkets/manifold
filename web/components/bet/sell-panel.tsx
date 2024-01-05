@@ -28,10 +28,7 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import {
-  AmountInput,
-  quickAddMoreButtonClassName,
-} from '../widgets/amount-input'
+import { AmountInput } from '../widgets/amount-input'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -314,6 +311,9 @@ export function SellPanel(props: {
     </>
   )
 }
+
+const quickAddMoreButtonClassName =
+  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
 
 const getSaleResult = (
   contract: CPMMContract | CPMMMultiContract,

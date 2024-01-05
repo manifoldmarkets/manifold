@@ -1,4 +1,6 @@
 import clsx from 'clsx'
+import { XIcon } from '@heroicons/react/solid'
+
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
@@ -9,6 +11,8 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
+import { IncrementButton } from './increment-button'
+import { buildArray } from 'common/util/array'
 
 export function AmountInput(
   props: {
@@ -96,15 +100,28 @@ export function AmountInput(
                 }
               }}
             />
-            {quickAddMoreButton}
+            <Row className="absolute right-[1px] top-[1px] gap-4">
+              <ClearInputButton onClick={() => onChangeAmount(undefined)} />
+              {quickAddMoreButton}
+            </Row>
           </div>
         </label>
       </Col>
     </>
   )
 }
-export const quickAddMoreButtonClassName =
-  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
+
+function ClearInputButton(props: { onClick: () => void }) {
+  const { onClick } = props
+  return (
+    <button
+      className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex items-center justify-center"
+      onClick={onClick}
+    >
+      <XIcon className="h-4 w-4" />
+    </button>
+  )
+}
 
 export function BuyAmountInput(props: {
   amount: number | undefined
@@ -166,34 +183,50 @@ export function BuyAmountInput(props: {
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
-  const quickAmounts = [10, 25, 50, 100]
-
+  const incrementAmounts = buildArray(
+    !hasLotsOfMana && 1,
+    10,
+    50,
+    hasLotsOfMana && 250
+  )
+  const quickAddButtons = (
+    <Row className="border-ink-300 divide-ink-300 divide-x border-l">
+      {incrementAmounts.map((incrementAmount) => {
+        const amountWithDefault = amount ?? 0
+        const shouldSetAmount = amountWithDefault < incrementAmount
+        return (
+          <IncrementButton
+            key={incrementAmount}
+            amount={incrementAmount}
+            onIncrement={() => {
+              if (shouldSetAmount) onChange(incrementAmount)
+              else onChange(amountWithDefault + incrementAmount)
+            }}
+            hidePlus={shouldSetAmount}
+          />
+        )
+      })}
+    </Row>
+  )
   return (
     <>
       <Col className={clsx('gap-2', parentClassName)}>
         <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
             className={className}
-            inputClassName={clsx('!h-14 w-32', inputClassName)}
+            inputClassName={clsx(
+              '!h-14',
+              hideQuickAdd ? 'w-32' : 'w-full pr-[178px]',
+              inputClassName
+            )}
             amount={amount}
             onChangeAmount={onChange}
             label={ENV_CONFIG.moneyMoniker}
             error={!!error}
             disabled={disabled}
             inputRef={inputRef}
+            quickAddMoreButton={quickAddButtons}
           />
-          {!hideQuickAdd && (
-            <Row className="gap-1">
-              {quickAmounts.map((quickAmount) => (
-                <QuickAmountButton
-                  key={quickAmount}
-                  amount={quickAmount}
-                  selected={amount === quickAmount}
-                  onClick={() => onChange(quickAmount)}
-                />
-              ))}
-            </Row>
-          )}
         </Row>
 
         {showSlider && (
@@ -237,26 +270,5 @@ const BuyMoreFunds = () => {
       </button>
       <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
-  )
-}
-
-const QuickAmountButton = (props: {
-  amount: number
-  selected: boolean
-  onClick: () => void
-  className?: string
-}) => {
-  const { amount, selected, onClick, className } = props
-  return (
-    <button
-      className={clsx(
-        'bg-canvas-0 active:bg-ink-50 text-ink-500 hover:decoration-ink-400 border-ink-300 h-14 w-12 rounded border text-sm font-semibold shadow-sm hover:underline',
-        selected && 'bg-ink-100',
-        className
-      )}
-      onClick={onClick}
-    >
-      <div className="pointer-events-none">{formatMoney(amount)}</div>
-    </button>
   )
 }
