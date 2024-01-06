@@ -5,7 +5,7 @@ import { Col } from 'web/components/layout/col'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { FeedContractCard } from '../contract/contract-card'
 import { presidency2024 } from './election-contract-data'
-import { Customize, USAMap } from './usa-map'
+import { ClickHandler, Customize, USAMap } from './usa-map'
 
 export const DEM_LIGHT_HEX = '#86a6d4'
 export const REP_LIGHT_HEX = '#e0928c'
@@ -40,7 +40,11 @@ export function StateElectionMap(props: { mode: ElectionMode }) {
   const stateContractMap: Customize = useMemo(() => {
     const map: Record<
       string,
-      { fill: string; clickHandler: () => void; selected: boolean | undefined }
+      {
+        fill: string
+        clickHandler: ClickHandler
+        selected: boolean | undefined
+      }
     > = {}
     markets.forEach((market) => {
       const contract = contracts.find((c) => c.slug === market.slug) as
@@ -50,7 +54,6 @@ export function StateElectionMap(props: { mode: ElectionMode }) {
       map[market.state] = {
         fill: probToColor(contract) ?? '#D6D1D3',
         clickHandler: () => {
-          console.log('CONSDF', contract)
           if (targetContract && contract?.id === targetContract.id) {
             setTargetContract(undefined)
           } else {

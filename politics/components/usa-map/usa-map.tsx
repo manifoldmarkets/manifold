@@ -10,9 +10,10 @@ import { useState } from 'react'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 
-export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
-  e: React.MouseEvent<E, MouseEvent>
-) => R
+export type ClickHandler<
+  E = SVGPathElement | SVGTextElement | SVGCircleElement,
+  R = any
+> = (e: React.MouseEvent<E, MouseEvent>) => R
 export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
 export type CustomizeObj = {
   fill?: string
