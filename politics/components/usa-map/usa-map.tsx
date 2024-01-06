@@ -3,7 +3,7 @@
 
 import { Col } from 'web/components/layout/col'
 import { DATA } from './usa-map-data'
-import { USAState } from './usa-state'
+import { StateText, USAState } from './usa-state'
 import clsx from 'clsx'
 import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
 
@@ -186,10 +186,11 @@ export const USAMap = ({
             />
           </g>
         </g>
-        <text key={'DC'} x={860} y={300} textAnchor="middle">
-          DC
-        </text>
-        <line x1={804} y1={255} x2={849} y2={295} stroke="#cec0ce" />
+        {/* {StateText(
+          { x1: 804, y1: 255, x2: 849, y2: 295 },
+          { x: 860, y: 300 },
+          'DC'
+        )} */}
       </svg>
     </div>
   )
