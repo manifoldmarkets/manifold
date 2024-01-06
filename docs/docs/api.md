@@ -21,11 +21,13 @@ Our API is still in alpha — things may change or break at any time!
 
 If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
 
+If you notice any errors or omissions in this documentation, please let us know on Discord, or fix it yourself by [submitting a pull request](https://github.com/manifoldmarkets/manifold/blob/main/docs/docs/api.md).
+
 :::
 
 # Get Started
 
-In your terminal
+In your terminal:
 
 ```bash
 curl "https://api.manifold.markets/v0/markets?limit=1" -X GET
@@ -46,7 +48,7 @@ GET requests with parameters should have the parameters in the query string. POS
 API responses should always either have a body with a JSON result object (if the response was a 200)
 or with a JSON object representing an error (if the response was a 4xx or 5xx).
 
-All times are UNIX timestamps in milliseconds since epoch.
+All times are UNIX timestamps in milliseconds since epoch. (Javascript timestamps.)
 
 As a point of naming, a topic (the tag on a question) is called a "group" in the code and in the api, and a question is called a "contract" in the code and sometimes a "market" in the api.
 
@@ -68,14 +70,11 @@ APIs that require authentication accept an `Authorization` header in one of two 
 
 ## Usage Guidelines
 
-Feel free to use the API for any purpose you'd like. We ask that you:
-
-- Keep your bets to less than 10 per minute, amortized (transient spikes of over 10/min are okay).
-- Keep your reads to less than 100 per second.
+Feel free to use the API for any purpose you'd like. There is a rate limit of 1000 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
 
 ## Fees
 
-- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot.
+- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. (The fee has been levied even if the returned "bet" object claims there was no fee; this is a known bug.)
 - Comments placed through the API will incur a $M1 transaction fee.
 
 ## Trade history dumps
@@ -164,7 +163,7 @@ _This api is deprecated in favor of the more versatile [/v0/bets/](#get-v0bets) 
 
 ### `GET /v0/groups`
 
-Get all topics, in order of descending creation time, 500 at a time.
+Get all topics, in order of descending creation time, 500 at a time. This endpoint returns only public topics, not curated or private ones.
 
 Parameters:
 
@@ -214,13 +213,13 @@ Parameters:
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/markets?limit=1" -X GET
 ```
 
-Example response
+Example response:
 
 ```json
 [
@@ -235,7 +234,7 @@ Example response
     "url":"https://manifold.markets/Austin/will-i-write-a-new-blog-post-today",
     "pool":146.73022894879944,
     "probability":0.8958175225896258,
-    "p":0.08281474972181882,
+    "p":0.08281474972181882,//This is the probability around which the market liquidity is "centered'.
     "totalLiquidity":102.65696071594805,
     "outcomeType":"BINARY",
     "mechanism":"cpmm-1",
@@ -307,13 +306,13 @@ comments.
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/market/3zspH9sSzMlbFQLn9GKR" -X GET
 ```
 
-Example response
+Example response:
 
 ```json
 {
@@ -421,13 +420,13 @@ Parameters:
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/market/kupKInoLsjMuiDiNfogm/positions?top=1&bottom=1" -X GET
 ```
 
-Example response
+Example response:
 
 ```json
 [
@@ -564,7 +563,7 @@ Get information about a single market by slug (the portion of the URL path after
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general" -X GET
@@ -591,7 +590,7 @@ Parameters:
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
@@ -613,13 +612,13 @@ Parameters:
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/users?limit=1" -X GET
 ```
 
-Example response
+Example response:
 
 ```json
 [
@@ -776,7 +775,7 @@ Response type: `Txn`
 
 ### `POST /v0/market/[marketId]/close`
 
-Set when trading halts on a market
+Set the close time of a market.
 
 Parameter:
 
@@ -786,7 +785,7 @@ Parameter:
 
 ### `POST /v0/market/[marketId]/group`
 
-Add or remove a topic tag from a market
+Add or remove a topic tag from a market.
 
 Parameters:
 
@@ -797,7 +796,7 @@ Parameters:
 
 ### `POST /v0/market/[marketId]/resolve`
 
-Resolve a market
+Resolve a market.
 
 Parameters:
 
@@ -824,7 +823,7 @@ For numeric markets:
 
 ### `POST /v0/market/[marketId]/sell`
 
-Sell shares in a market
+Sell shares in a market.
 
 Parameters:
 
@@ -894,7 +893,7 @@ Parameters:
 - `username`: Optional. Include only bets by the user with this username.
 - `contractId`: Optional. Include only bets on the market with this ID.
 - `contractSlug`: Optional. Include only bets on the market with this slug.
-- `limit`: Optional. How many bets to return.
+- `limit`: Optional. How many bets to return. The default and maximum are both 1000.
 - `before`: Optional. Include only bets created before the bet with this ID.
   - For
     example, if you ask for the most recent 10 bets, and then perform a second
@@ -902,10 +901,10 @@ Parameters:
     get bets 11 through 20.
 - `after`: Optional. Include only bets created after the bet with this ID.
   - For example, if you request the 10 most recent bets and then perform a second query with `after=[the id of the 1st bet]`, you will receive up to 10 new bets, if available.
-- `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders.)
+- `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders, including ones on closed and reolved markets).
 - `order`: Optional. `asc` or `desc` (default). The sorting order for returned bets.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/bets?username=Manifold&contractSlug=will-i-be-able-to-place-a-limit-ord" -X GET
@@ -913,14 +912,14 @@ curl "https://api.manifold.markets/v0/bets?username=Manifold&contractSlug=will-i
 
 Response type: An array of `Bet`.
 
-Example response
+Example response:
 
 ```json
 [
   // Limit bet, partially filled.
   {
     "isFilled": false,
-    "amount": 15.596681605353808,
+    "amount": 15.596681605353808,//The amount that has already been filled.
     "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
     "contractId": "Tz5dA01GkK5QKiQfZeDL",
     "probBefore": 0.5730753474948571,
@@ -931,7 +930,7 @@ Example response
     "limitProb": 0.5,
     "id": "yXB8lVbs86TKkhWA1FVi",
     "loanAmount": 0,
-    "orderAmount": 100,
+    "orderAmount": 100,//The original amount placed on the limit order when it was created. The amount remaining can be calulated as orderAmount - amount.
     "probAfter": 0.5730753474948571,
     "createdTime": 1659482775970,
     "fills": [
@@ -989,13 +988,13 @@ Parameters:
 
 Requires no auth.
 
-Example request
+Example request:
 
 ```bash
 curl "https://api.manifold.markets/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2" -X GET
 ```
 
-Example response
+Example response:
 
 ```json
 [
@@ -1041,6 +1040,18 @@ Parameters:
 - `cohort`: Optional. String. The snake-cased quirky name of a league - returns only this particular league
 
 Requires no auth.
+
+## Internal API
+
+Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implimented. These endpoints are not preceeded by `/v0` and are even more subject to sudden changes than the official API endpoints.
+
+### `POST /unresolve`
+
+Unresolves a market. Requires auth.
+
+Parameters:
+
+- `contractId`: The ID of the market to unresolve.
 
 ## Changelog
 
