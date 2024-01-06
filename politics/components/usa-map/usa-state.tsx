@@ -35,7 +35,7 @@ export const USAState = ({
         className={clsx(!!onClickState && 'group-hover:cursor-pointer ')}
         onClick={onClickState}
         id={state}
-        stroke={!!selected ? '#FFF' : undefined}
+        stroke={!!selected ? '#39FF14' : undefined}
         strokeWidth={!!selected ? 2 : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -101,13 +101,29 @@ export const StateText = (props: {
         {abbreviation}
       </text>
       {line && (
-        <line
-          x1={line.x1}
-          y1={line.y1}
-          x2={line.x2}
-          y2={line.y2}
-          stroke={isHovered ? fill : '#cec0ce'}
-        />
+        <>
+          {/* Outline Line - Only shown when hovered */}
+          {isHovered && (
+            <line
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              stroke={'#fff'}
+              strokeWidth={3}
+            />
+          )}
+
+          {/* Regular Line */}
+          <line
+            x1={line.x1}
+            y1={line.y1}
+            x2={line.x2}
+            y2={line.y2}
+            stroke={isHovered ? fill : '#cec0ce'}
+            strokeWidth={1} // Assuming the regular line is thinner
+          />
+        </>
       )}
     </>
   )

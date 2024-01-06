@@ -6,6 +6,7 @@ import { DATA } from './usa-map-data'
 import { StateText, USAState } from './usa-state'
 import clsx from 'clsx'
 import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
+import { useState } from 'react'
 
 export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
   e: React.MouseEvent<E, MouseEvent>
@@ -56,9 +57,6 @@ type USAMapPropTypes = {
 }
 
 export const USAMap = ({
-  onClick = (e) => {
-    console.log(e.currentTarget.dataset.name)
-  },
   title = 'US states map',
   defaultFill = '#d3d3d3',
   customize,
@@ -73,6 +71,15 @@ export const USAMap = ({
   const selectedState = (state: string) => !!customize?.[state]?.selected
 
   const totalWidth = 20
+
+  const [isDCHovered, setIsDCHovered] = useState(false)
+
+  const onDCClick = () => {
+    customize?.['DC']?.clickHandler
+  }
+
+  const onMouseEnterDC = () => setIsDCHovered(true)
+  const onMouseLeaveDC = () => setIsDCHovered(false)
 
   return (
     <div
@@ -166,31 +173,30 @@ export const USAMap = ({
             stateClickHandler,
             selectedState,
           })}{' '}
-          <g className="DC state">
-            <path
-              className="DC1"
-              fill={fillStateColor('DC1')}
-              d="M801.8,253.8 l-1.1-1.6 -1-0.8 1.1-1.6 2.2,1.5z"
-            />
-            <circle
-              className="DC2"
-              onClick={onClick}
-              data-name={'DC'}
-              fill={fillStateColor('DC2')}
-              stroke="#FFFFFF"
-              strokeWidth="1.5"
-              cx="801.3"
-              cy="251.8"
-              r="5"
-              opacity="1"
-            />
-          </g>
+          <circle
+            fill={fillStateColor('DC')}
+            stroke="#FFFFFF"
+            strokeWidth="1.5"
+            cx="801.3"
+            cy="251.8"
+            r="5"
+            opacity="1"
+            onClick={onDCClick}
+            onMouseEnter={onMouseEnterDC}
+            onMouseLeave={onMouseLeaveDC}
+          />
+          {StateText({
+            line: { x1: 804, y1: 255, x2: 849, y2: 295 },
+            textCoordinates: { x: 860, y: 300 },
+            abbreviation: 'DC',
+            onMouseEnter: onMouseEnterDC,
+            onMouseLeave: onMouseLeaveDC,
+            isHovered: isDCHovered,
+            fill: fillStateColor('DC'),
+            onClick: onDCClick,
+          })}
         </g>
-        {/* {StateText(
-          { x1: 804, y1: 255, x2: 849, y2: 295 },
-          { x: 860, y: 300 },
-          'DC'
-        )} */}
+        {/* </g> */}
       </svg>
     </div>
   )
