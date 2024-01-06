@@ -615,7 +615,6 @@ export interface Database {
           creator_id: string
           creator_name: string
           creator_username: string
-          description: Json | null
           id: string
           importance_score: number
           items: Json | null
@@ -630,7 +629,6 @@ export interface Database {
           creator_id: string
           creator_name: string
           creator_username: string
-          description?: Json | null
           id?: string
           importance_score?: number
           items?: Json | null
@@ -645,7 +643,6 @@ export interface Database {
           creator_id?: string
           creator_name?: string
           creator_username?: string
-          description?: Json | null
           id?: string
           importance_score?: number
           items?: Json | null
@@ -1265,6 +1262,36 @@ export interface Database {
         }
         Relationships: []
       }
+      manachan_tweets: {
+        Row: {
+          cost: number | null
+          created_time: number | null
+          id: string
+          tweet: string | null
+          tweet_id: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_time?: number | null
+          id?: string
+          tweet?: string | null
+          tweet_id?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_time?: number | null
+          id?: string
+          tweet?: string | null
+          tweet_id?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       manalink_claims: {
         Row: {
           manalink_id: string
@@ -1444,6 +1471,66 @@ export interface Database {
         }
         Relationships: []
       }
+      old_post_comments: {
+        Row: {
+          comment_id: string
+          created_time: string | null
+          data: Json
+          fs_updated_time: string | null
+          post_id: string
+          user_id: string | null
+          visibility: string | null
+        }
+        Insert: {
+          comment_id?: string
+          created_time?: string | null
+          data: Json
+          fs_updated_time?: string | null
+          post_id: string
+          user_id?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          comment_id?: string
+          created_time?: string | null
+          data?: Json
+          fs_updated_time?: string | null
+          post_id?: string
+          user_id?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      old_posts: {
+        Row: {
+          created_time: string | null
+          creator_id: string | null
+          data: Json
+          fs_updated_time: string | null
+          group_id: string | null
+          id: string
+          visibility: string | null
+        }
+        Insert: {
+          created_time?: string | null
+          creator_id?: string | null
+          data: Json
+          fs_updated_time?: string | null
+          group_id?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Update: {
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json
+          fs_updated_time?: string | null
+          group_id?: string | null
+          id?: string
+          visibility?: string | null
+        }
+        Relationships: []
+      }
       platform_calibration: {
         Row: {
           created_time: string
@@ -1489,33 +1576,36 @@ export interface Database {
         }
         Relationships: []
       }
-      old_posts: {
+      posts: {
         Row: {
-          created_time: string | null
-          creator_id: string | null
-          data: Json
-          fs_updated_time: string | null
-          group_id: string | null
-          id: string
-          visibility: string | null
+          contract_comment_id: string | null
+          contract_id: string | null
+          created_time: string
+          id: number
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
         }
         Insert: {
-          created_time?: string | null
-          creator_id?: string | null
-          data: Json
-          fs_updated_time?: string | null
-          group_id?: string | null
-          id?: string
-          visibility?: string | null
+          contract_comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          id?: never
+          user_avatar_url: string
+          user_id: string
+          user_name: string
+          user_username: string
         }
         Update: {
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json
-          fs_updated_time?: string | null
-          group_id?: string | null
-          id?: string
-          visibility?: string | null
+          contract_comment_id?: string | null
+          contract_id?: string | null
+          created_time?: string
+          id?: never
+          user_avatar_url?: string
+          user_id?: string
+          user_name?: string
+          user_username?: string
         }
         Relationships: []
       }
@@ -2075,6 +2165,7 @@ export interface Database {
           idempotency_key: string | null
           is_copied: boolean
           news_id: string | null
+          post_id: number | null
           reaction_id: string | null
           reason: string
           reasons: string[] | null
@@ -2098,6 +2189,7 @@ export interface Database {
           idempotency_key?: string | null
           is_copied?: boolean
           news_id?: string | null
+          post_id?: number | null
           reaction_id?: string | null
           reason: string
           reasons?: string[] | null
@@ -2121,6 +2213,7 @@ export interface Database {
           idempotency_key?: string | null
           is_copied?: boolean
           news_id?: string | null
+          post_id?: number | null
           reaction_id?: string | null
           reason?: string
           reasons?: string[] | null
@@ -2620,8 +2713,10 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          deleted: boolean | null
           description_fts: unknown | null
           fs_updated_time: string | null
+          group_slugs: string[] | null
           id: string | null
           importance_score: number | null
           mechanism: string | null
@@ -2634,6 +2729,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -2641,8 +2737,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
           mechanism?: string | null
@@ -2655,6 +2753,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -2662,8 +2761,10 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
           mechanism?: string | null
@@ -2676,6 +2777,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -2768,6 +2870,7 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -2794,6 +2897,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -2820,11 +2924,105 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          views?: number | null
           visibility?: string | null
         }
         Relationships: []
       }
       public_open_contracts: {
+        Row: {
+          close_time: string | null
+          created_time: string | null
+          creator_id: string | null
+          data: Json | null
+          deleted: boolean | null
+          description_fts: unknown | null
+          fs_updated_time: string | null
+          group_slugs: string[] | null
+          id: string | null
+          importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
+          mechanism: string | null
+          outcome_type: string | null
+          popularity_score: number | null
+          question: string | null
+          question_fts: unknown | null
+          question_nostop_fts: unknown | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          slug: string | null
+          views: number | null
+          visibility: string | null
+        }
+        Insert: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          deleted?: boolean | null
+          description_fts?: unknown | null
+          fs_updated_time?: string | null
+          group_slugs?: string[] | null
+          id?: string | null
+          importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          views?: number | null
+          visibility?: string | null
+        }
+        Update: {
+          close_time?: string | null
+          created_time?: string | null
+          creator_id?: string | null
+          data?: Json | null
+          deleted?: boolean | null
+          description_fts?: unknown | null
+          fs_updated_time?: string | null
+          group_slugs?: string[] | null
+          id?: string | null
+          importance_score?: number | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
+          mechanism?: string | null
+          outcome_type?: string | null
+          popularity_score?: number | null
+          question?: string | null
+          question_fts?: unknown | null
+          question_nostop_fts?: unknown | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          slug?: string | null
+          views?: number | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      related_contracts: {
+        Row: {
+          contract_id: string | null
+          data: Json | null
+          distance: number | null
+          from_contract_id: string | null
+        }
+        Relationships: []
+      }
+      trending_contracts: {
         Row: {
           close_time: string | null
           created_time: string | null
@@ -2882,69 +3080,6 @@ export interface Database {
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      related_contracts: {
-        Row: {
-          contract_id: string | null
-          data: Json | null
-          distance: number | null
-          from_contract_id: string | null
-        }
-        Relationships: []
-      }
-      trending_contracts: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          fs_updated_time: string | null
-          id: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
-          id?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
-          id?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
           resolution?: string | null
           resolution_probability?: number | null
           resolution_time?: string | null
@@ -3078,12 +3213,11 @@ export interface Database {
           data: Json
         }[]
       }
-      closest_contract_embeddings: {
+      close_contract_embeddings_1: {
         Args: {
           input_contract_id: string
           similarity_threshold: number
           match_count: number
-          is_admin?: boolean
         }
         Returns: {
           contract_id: string
@@ -3091,11 +3225,12 @@ export interface Database {
           data: Json
         }[]
       }
-      closest_contract_embeddings_2: {
+      closest_contract_embeddings: {
         Args: {
           input_contract_id: string
           similarity_threshold: number
           match_count: number
+          is_admin?: boolean
         }
         Returns: {
           contract_id: string
@@ -3118,6 +3253,9 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -3327,10 +3465,6 @@ export interface Database {
         Returns: string
       }
       get_fr_questions_with_answer_count: {
-        Args: Record<PropertyKey, never>
-        Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
-      }
-      get_free_response_questions_with_answer_count: {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
@@ -3840,15 +3974,6 @@ export interface Database {
         }
         Returns: boolean
       }
-      replicate_writes_process_since: {
-        Args: {
-          since: string
-        }
-        Returns: {
-          id: number
-          succeeded: boolean
-        }[]
-      }
       sample_resolved_bets: {
         Args: {
           trader_threshold: number
@@ -4053,6 +4178,10 @@ export interface Database {
           row2: unknown
         }
         Returns: number
+      }
+      test: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       test_empty_search_contracts: {
         Args: {

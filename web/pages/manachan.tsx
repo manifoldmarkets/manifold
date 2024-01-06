@@ -38,13 +38,14 @@ export default function ManachanPage() {
     setLoading(true)
 
     await tweetFromManaChan({ tweet })
-      .then(() => setSuccess(true))
+      .then(() => {
+        setSuccess(true)
+        track('buy manachan tweet', { tweet })
+        setTweet('')
+      })
       .catch(() => setError(true))
 
-    track('buy manachan tweet', { tweet })
-
     setLoading(false)
-    setTweet('')
   }
 
   return (
