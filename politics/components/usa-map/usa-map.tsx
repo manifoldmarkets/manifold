@@ -78,8 +78,6 @@ export const USAMap = ({
 
   const onDCClick = customize?.['DC']?.clickHandler
 
-  console.log('customize', customize?.['DC'])
-
   const onMouseEnterDC = () => setIsDCHovered(true)
   const onMouseLeaveDC = () => setIsDCHovered(false)
 
