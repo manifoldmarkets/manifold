@@ -4,6 +4,7 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateContractViews } from 'shared/update-contract-views'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
+import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
 
 export function createJobs() {
@@ -28,6 +29,11 @@ export function createJobs() {
       'update-user-metrics',
       '0 */10 * * * *', // every 10 minutes
       updateUserMetricsCore
+    ),
+    createJob(
+      'update-group-metrics',
+      '0 */15 * * * *', // every 15 minutes
+      updateGroupMetricsCore
     ),
     createJob(
       'truncate-incoming-writes',

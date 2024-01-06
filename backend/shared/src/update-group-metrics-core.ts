@@ -1,20 +1,11 @@
-import * as functions from 'firebase-functions'
 import { groupBy, mapValues, sortBy } from 'lodash'
 
-import { log } from 'shared/utils'
 import { getIds } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { secrets } from 'common/secrets'
 import { updateData } from 'shared/supabase/utils'
+import { JobContext } from 'shared/utils'
 
-export const updateGroupMetrics = functions
-  .runWith({ timeoutSeconds: 540, secrets })
-  .pubsub.schedule('every 15 minutes')
-  .onRun(async () => {
-    await updateGroupMetricsCore()
-  })
-
-export async function updateGroupMetricsCore() {
+export async function updateGroupMetricsCore({ log }: JobContext) {
   const pg = createSupabaseDirectClient()
   log('Loading group IDs...')
   const groupIds = await getIds(pg, 'groups')
@@ -78,6 +69,4 @@ export async function updateGroupMetricsCore() {
       },
     })
   }
-
-  log('Done.')
 }
