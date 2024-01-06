@@ -8,6 +8,8 @@ import clsx from 'clsx'
 import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
 import { useState } from 'react'
 
+export const SELECTED_OUTLINE_COLOR = '#00f7ff'
+
 export type ClickHandler<E = SVGPathElement | SVGCircleElement, R = any> = (
   e: React.MouseEvent<E, MouseEvent>
 ) => R
@@ -74,9 +76,9 @@ export const USAMap = ({
 
   const [isDCHovered, setIsDCHovered] = useState(false)
 
-  const onDCClick = () => {
-    customize?.['DC']?.clickHandler
-  }
+  const onDCClick = customize?.['DC']?.clickHandler
+
+  console.log('customize', customize?.['DC'])
 
   const onMouseEnterDC = () => setIsDCHovered(true)
   const onMouseLeaveDC = () => setIsDCHovered(false)
@@ -175,7 +177,7 @@ export const USAMap = ({
           })}{' '}
           <circle
             fill={fillStateColor('DC')}
-            stroke="#FFFFFF"
+            stroke={selectedState('DC') ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
             strokeWidth="1.5"
             cx="801.3"
             cy="251.8"
@@ -196,7 +198,6 @@ export const USAMap = ({
             onClick: onDCClick,
           })}
         </g>
-        {/* </g> */}
       </svg>
     </div>
   )

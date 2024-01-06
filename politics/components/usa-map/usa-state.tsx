@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ClickHandler } from './usa-map'
+import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
 import { StateDataType } from './usa-map-data'
 import { useState } from 'react'
 import { MouseEventHandler } from 'react'
@@ -35,7 +35,7 @@ export const USAState = ({
         className={clsx(!!onClickState && 'group-hover:cursor-pointer ')}
         onClick={onClickState}
         id={state}
-        stroke={!!selected ? '#39FF14' : undefined}
+        stroke={!!selected ? SELECTED_OUTLINE_COLOR : undefined}
         strokeWidth={!!selected ? 2 : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}

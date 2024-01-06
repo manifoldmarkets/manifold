@@ -50,7 +50,7 @@ export function StateElectionMap(props: { mode: ElectionMode }) {
       map[market.state] = {
         fill: probToColor(contract) ?? '#D6D1D3',
         clickHandler: () => {
-          console.log(contract)
+          console.log('CONSDF', contract)
           if (targetContract && contract?.id === targetContract.id) {
             setTargetContract(undefined)
           } else {
