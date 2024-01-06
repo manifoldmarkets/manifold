@@ -894,7 +894,7 @@ Parameters:
 - `username`: Optional. Include only bets by the user with this username.
 - `contractId`: Optional. Include only bets on the market with this ID.
 - `contractSlug`: Optional. Include only bets on the market with this slug.
-- `limit`: Optional. How many bets to return. The default and maximium are both 1000.
+- `limit`: Optional. How many bets to return. The default and maximum are both 1000.
 - `before`: Optional. Include only bets created before the bet with this ID.
   - For
     example, if you ask for the most recent 10 bets, and then perform a second
