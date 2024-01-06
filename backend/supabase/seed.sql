@@ -14,9 +14,6 @@ set
 /* multi-column GIN indexes */
 create extension if not exists btree_gin;
 
-/* for clustering without locks */
-create extension if not exists pg_repack;
-
 /* for fancy machine learning stuff */
 create extension if not exists vector;
 
