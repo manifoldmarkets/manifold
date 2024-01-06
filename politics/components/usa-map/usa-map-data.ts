@@ -3,7 +3,6 @@ export type StateDataType = {
   abbreviation: string
   name: string
   textCoordinates?: { x: number; y: number }
-  textOffsetFromState?: boolean
   line?: { x1: number; y1: number; x2: number; y2: number }
 }
 
@@ -50,14 +49,7 @@ export const DATA: Record<string, StateDataType> = {
     name: 'Colorado',
     textCoordinates: { x: 320, y: 280 },
   },
-  CT: {
-    dimensions:
-      'M852,190.9 l3.6,-3.2 1.9,-2.1 0.8,0.6 2.7,-1.5 5.2,-1.1 7,-3.5 -0.6,-4.2 -0.8,-4.4 -1.6,-6 -4.3,1.1 -21.8,4.7 0.6,3.1 1.5,7.3 v8.3 l-0.9,2.1 1.7,2.2z',
-    abbreviation: 'CT',
-    name: 'Connecticut',
-    textCoordinates: { x: 900, y: 220 },
-    line: { x1: 862, y1: 184, x2: 890, y2: 210 },
-  },
+
   DE: {
     dimensions:
       'M834.4,247.2 l-1,0.5 -3.6,-2.4 -1.8,-4.7 -1.9,-3.6 -2.3,-1 -2.1,-3.6 0.5,-2 0.5,-2.3 0.1,-1.1 -0.6,0.1 -1.7,1 -2,1.7 -0.2,0.3 1.4,4.1 2.3,5.6 3.7,16.1 5,-0.3 6,-1.1z',
@@ -365,5 +357,13 @@ export const DATA: Record<string, StateDataType> = {
     abbreviation: 'WY',
     name: 'Wyoming',
     textCoordinates: { x: 300, y: 185 },
+  },
+  CT: {
+    dimensions:
+      'M852,190.9 l3.6,-3.2 1.9,-2.1 0.8,0.6 2.7,-1.5 5.2,-1.1 7,-3.5 -0.6,-4.2 -0.8,-4.4 -1.6,-6 -4.3,1.1 -21.8,4.7 0.6,3.1 1.5,7.3 v8.3 l-0.9,2.1 1.7,2.2z',
+    abbreviation: 'CT',
+    name: 'Connecticut',
+    textCoordinates: { x: 900, y: 220 },
+    line: { x1: 862, y1: 184, x2: 890, y2: 210 },
   },
 }

@@ -30,6 +30,10 @@ export const presidency2024: StateElectionMarket[] = [
     slug: 'which-party-will-win-the-us-preside-12e8e8ae4aee',
   },
   {
+    state: 'DC',
+    slug: 'which-party-will-win-the-us-preside-11704714dec4',
+  },
+  {
     state: 'DE',
     slug: 'which-party-will-win-the-us-preside-86216dcc6ec8',
   },
