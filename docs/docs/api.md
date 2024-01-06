@@ -75,7 +75,7 @@ Feel free to use the API for any purpose you'd like. We ask that you:
 
 ## Fees
 
-- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot.
+- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. Note that the "fees" property of the returned bet object will currently always show 0 fees, even though a fee was levied.
 - Comments placed through the API will incur a $M1 transaction fee.
 
 ## Trade history dumps
@@ -894,7 +894,7 @@ Parameters:
 - `username`: Optional. Include only bets by the user with this username.
 - `contractId`: Optional. Include only bets on the market with this ID.
 - `contractSlug`: Optional. Include only bets on the market with this slug.
-- `limit`: Optional. How many bets to return.
+- `limit`: Optional. How many bets to return. The default and maximum are both 1000.
 - `before`: Optional. Include only bets created before the bet with this ID.
   - For
     example, if you ask for the most recent 10 bets, and then perform a second
