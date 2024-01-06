@@ -93,8 +93,6 @@ create index if not exists contract_bets_unexpired_limit_orders on contract_bets
 
 create index contract_bets_contract_id_user_id on contract_bets(contract_id, user_id);
 
-create index contract_bets_comment_reply_id on contract_bets((data ->> 'replyToCommentId'));
-
 alter table contract_bets
     cluster on contract_bets_created_time;
 
