@@ -16,6 +16,8 @@ create policy "public read" on user_notifications for
     select
     using (true);
 
+create index if not exists user_notifications_notification_id on user_notifications (notification_id, user_id);
+
 create index if not exists user_notifications_created_time on user_notifications (user_id, (to_jsonb(data) -> 'createdTime') desc);
 
 create index if not exists user_notifications_unseen_text_created_time_idx on user_notifications (
