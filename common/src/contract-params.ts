@@ -21,10 +21,11 @@ import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, orderBy } from 'lodash'
+import { groupBy, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
+import { MAX_ANSWERS } from './answer'
 
 export async function getContractParams(
   contract: Contract,
@@ -164,8 +165,14 @@ export const getMultiBetPoints = (
 
   const rawPointsByAns = groupBy(betPoints, 'answerId')
 
+  const subsetOfAnswers = sortBy(
+    answers,
+    (a) => (a.resolution ? 1 : 0),
+    (a) => -a.totalLiquidity
+  ).slice(0, MAX_ANSWERS)
+
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
-  answers.forEach((ans) => {
+  subsetOfAnswers.forEach((ans) => {
     const startY = getInitialAnswerProbability(contract, ans)
 
     const points = rawPointsByAns[ans.id] ?? []
