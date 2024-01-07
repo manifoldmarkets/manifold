@@ -6,6 +6,7 @@ import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { FieldValue } from 'firebase-admin/firestore'
 import { postTweet } from 'shared/twitter'
 import { MANACHAN_TWEET_COST } from 'common/economy'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 const bodySchema = z
   .object({
@@ -17,6 +18,7 @@ export const manachantweet = authEndpoint(async (req, auth) => {
   const { tweet } = validate(bodySchema, req.body)
 
   const firestore = admin.firestore()
+  const db = createSupabaseClient()
 
   const user = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
@@ -37,14 +39,20 @@ export const manachantweet = authEndpoint(async (req, auth) => {
 
   const result = await postTweet(tweet)
 
-  firestore.collection('manachan-tweets').add({
-    userId: auth.uid,
+  const { error } = await db.from('manachan_tweets').insert({
+    user_id: auth.uid,
     username: user.name,
-    tweetId: result.id,
+    tweet_id: result.id,
     tweet: result.text,
-    createdTime: Date.now(),
+    created_time: Date.now(),
     cost: MANACHAN_TWEET_COST,
   })
+
+  if (error)
+    throw new APIError(
+      500,
+      'Tweet succeeded but to log tweet to database: ' + error.message
+    )
 
   return { success: true, tweetId: result.id }
 })

@@ -257,20 +257,6 @@ create or replace view
       visibility = 'public'
   );
 
-create view
-  liked_sorted_comments as
-select
-  cc.contract_id,
-  cc.comment_id,
-  cc.data ->> 'userId' as user_id,
-  cc.data
-from
-  contract_comments cc
-where
-  (cc.data -> 'likes')::numeric >= 1
-order by
-  (cc.data ->> 'createdTime')::bigint desc;
-
 create or replace view
   user_league_info as (
     select

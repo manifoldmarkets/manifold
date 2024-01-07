@@ -3,7 +3,7 @@ export type StateDataType = {
   abbreviation: string
   name: string
   textCoordinates?: { x: number; y: number }
-  textOffsetFromState?: boolean
+  line?: { x1: number; y1: number; x2: number; y2: number }
 }
 
 export const DATA: Record<string, StateDataType> = {
@@ -49,21 +49,14 @@ export const DATA: Record<string, StateDataType> = {
     name: 'Colorado',
     textCoordinates: { x: 320, y: 280 },
   },
-  CT: {
-    dimensions:
-      'M852,190.9 l3.6,-3.2 1.9,-2.1 0.8,0.6 2.7,-1.5 5.2,-1.1 7,-3.5 -0.6,-4.2 -0.8,-4.4 -1.6,-6 -4.3,1.1 -21.8,4.7 0.6,3.1 1.5,7.3 v8.3 l-0.9,2.1 1.7,2.2z',
-    abbreviation: 'CT',
-    name: 'Connecticut',
-    textCoordinates: { x: 900, y: 200 },
-    textOffsetFromState: true,
-  },
+
   DE: {
     dimensions:
       'M834.4,247.2 l-1,0.5 -3.6,-2.4 -1.8,-4.7 -1.9,-3.6 -2.3,-1 -2.1,-3.6 0.5,-2 0.5,-2.3 0.1,-1.1 -0.6,0.1 -1.7,1 -2,1.7 -0.2,0.3 1.4,4.1 2.3,5.6 3.7,16.1 5,-0.3 6,-1.1z',
     abbreviation: 'DE',
     name: 'Delaware',
-    textCoordinates: { x: 850, y: 265 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 875, y: 260 },
+    line: { x1: 834, y1: 248, x2: 865, y2: 255 },
   },
   FL: {
     dimensions:
@@ -140,16 +133,16 @@ export const DATA: Record<string, StateDataType> = {
       'M887.5,172.5 l-0.5,-2.3 0.8,-1.5 2.9,-1.5 0.8,3.1 -0.5,1.8 -2.4,1.5 v1 l1.9,-1.5 3.9,-4.5 3.9,-1.9 4.2,-1.5 -0.3,-2.4 -1,-2.9 -1.9,-2.4 -1.8,-0.8 -2.1,0.2 -0.5,0.5 1,1.3 1.5,-0.8 2.1,1.6 0.8,2.7 -1.8,1.8 -2.3,1 -3.6,-0.5 -3.9,-6 -2.3,-2.6 h-1.8 l-1.1,0.8 -1.9,-2.6 0.3,-1.5 2.4,-5.2 -2.9,-4.4 -3.7,1.8 -1.8,2.9 -18.3,4.7 -13.8,2.5 -0.6,10.6 0.7,4.9 22,-4.8 11.2,-2.8 2,1.6 3.4,4.3 2.9,4.7z m12.5,1.4 2.2,-0.7 0.5,-1.7 1,0.1 1,2.3 -1.3,0.5 -3.9,0.1z m-9.4,0.8 2.3,-2.6 h1.6 l1.8,1.5 -2.4,1 -2.2,1z',
     abbreviation: 'MA',
     name: 'Massachusetts',
-    textCoordinates: { x: 920, y: 160 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 920, y: 150 },
+    line: { x1: 882, y1: 154, x2: 907, y2: 146 },
   },
   MD: {
     dimensions:
       'M834.8,264.1 l1.7,-3.8 0.5,-4.8 -6.3,1.1 -5.8,0.3 -3.8,-16.8 -2.3,-5.5 -1.5,-4.6 -22.2,4.3 -37.6,7.6 2,10.4 4.8,-4.9 2.5,-0.7 1.4,-1.5 1.8,-2.7 1.6,0.7 2.6,-0.2 2.6,-2.1 2,-1.5 2.1,-0.6 1.5,1.1 2.7,1.4 1.9,1.8 1.3,1.4 4.8,1.6 -0.6,2.9 5.8,2.1 2.1,-2.6 3.7,2.5 -2.1,3.3 -0.7,3.3 -1.8,2.6 v2.1 l0.3,0.8 2,1.3 3.4,1.1 4.3,-0.1 3.1,1 2.1,0.3 1,-2.1 -1.5,-2.1 v-1.8 l-2.4,-2.1 -2.1,-5.5 1.3,-5.3 -0.2,-2.1 -1.3,-1.3 c0,0 1.5,-1.6 1.5,-2.3 0,-0.6 0.5,-2.1 0.5,-2.1 l1.9,-1.3 1.9,-1.6 0.5,1 -1.5,1.6 -1.3,3.7 0.3,1.1 1.8,0.3 0.5,5.5 -2.1,1 0.3,3.6 0.5,-0.2 1.1,-1.9 1.6,1.8 -1.6,1.3 -0.3,3.4 2.6,3.4 3.9,0.5 1.6,-0.8 3.2,4.2 1,0.4z m-14.5,0.2 1.1,2.5 0.2,1.8 1.1,1.9 c0,0 0.9,-0.9 0.9,-1.2 0,-0.3 -0.7,-3.1 -0.7,-3.1 l-0.7,-2.3z',
     abbreviation: 'MD',
     name: 'Maryland',
-    textCoordinates: { x: 790, y: 260 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 875, y: 280 },
+    line: { x1: 836, y1: 260, x2: 863, y2: 275 },
   },
   ME: {
     dimensions:
@@ -219,16 +212,16 @@ export const DATA: Record<string, StateDataType> = {
       'M881.7,141.3 l1.1,-3.2 -2.7,-1.2 -0.5,-3.1 -4.1,-1.1 -0.3,-3 -11.7,-37.48 -0.7,0.08 -0.6,1.6 -0.6,-0.5 -1,-1 -1.5,1.9 -0.2,2.29 0.5,8.41 1.9,2.8 v4.3 l-3.9,4.8 -2.4,0.9 v0.7 l1.1,1.9 v8.6 l-0.8,9.2 -0.2,4.7 1,1.4 -0.2,4.7 -0.5,1.5 1,1.1 5.1,-1.2 13.8,-3.5 1.7,-2.9 4,-1.9z',
     abbreviation: 'NH',
     name: 'New Hampshire',
-    textCoordinates: { x: 900, y: 140 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 850, y: 60 },
+    line: { x1: 859, y1: 95, x2: 850, y2: 64 },
   },
   NJ: {
     dimensions:
       'M823.7,228.3 l0.1,-1.5 2.7,-1.3 1.7,-2.8 1.7,-2.4 3.3,-3.2 v-1.2 l-6.1,-4.1 -1,-2.7 -2.7,-0.3 -0.1,-0.9 -0.7,-2.2 2.2,-1.1 0.2,-2.9 -1.3,-1.3 0.2,-1.2 1.9,-3.1 v-3.1 l2.5,-3.1 5.6,2.5 6.4,1.9 2.5,1.2 0.1,1.8 -0.5,2.7 0.4,4.5 -2.1,1.9 -1.1,1 0.5,0.5 2.7,-0.3 1.1,-0.8 1.6,3.4 0.2,9.4 0.6,1.1 -1.1,5.5 -3.1,6.5 -2.7,4 -0.8,4.8 -2.1,2.4 h-0.8 l-0.3,-2.7 0.8,-1 -0.2,-1.5 -4,-0.6 -4.8,-2.3 -3.2,-2.9 -1,-2z',
     abbreviation: 'NJ',
     name: 'New Jersey',
-    textCoordinates: { x: 860, y: 230 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 880, y: 240 },
+    line: { x1: 845, y1: 224, x2: 870, y2: 235 },
   },
   NM: {
     dimensions:
@@ -284,8 +277,8 @@ export const DATA: Record<string, StateDataType> = {
       'M873.6,175.7 l-0.8,-4.4 -1.6,-6 5.7,-1.5 1.5,1.3 3.4,4.3 2.8,4.4 -2.8,1.4 -1.3,-0.2 -1.1,1.8 -2.4,1.9 -2.8,1.1z',
     abbreviation: 'RI',
     name: 'Rhode Island',
-    textCoordinates: { x: 920, y: 180 },
-    textOffsetFromState: true,
+    textCoordinates: { x: 913, y: 194 },
+    line: { x1: 880, y1: 176, x2: 906, y2: 188 },
   },
   SC: {
     dimensions:
@@ -334,7 +327,8 @@ export const DATA: Record<string, StateDataType> = {
       'M832.7,111.3 l2.4,6.5 0.8,5.3 -1,3.9 2.5,4.4 0.9,2.3 -0.7,2.6 3.3,1.5 2.9,10.8 v5.3 l11.5,-2.1 -1,-1.1 0.6,-1.9 0.2,-4.3 -1,-1.4 0.2,-4.7 0.8,-9.3 v-8.5 l-1.1,-1.8 v-1.6 l2.8,-1.1 3.5,-4.4 v-3.6 l-1.9,-2.7 -0.3,-5.79 -26.1,6.79z',
     abbreviation: 'VT',
     name: 'Vermont',
-    textCoordinates: { x: 845, y: 120 },
+    textCoordinates: { x: 820, y: 70 },
+    line: { x1: 849, y1: 102, x2: 825, y2: 73 },
   },
   WA: {
     dimensions:
@@ -363,5 +357,13 @@ export const DATA: Record<string, StateDataType> = {
     abbreviation: 'WY',
     name: 'Wyoming',
     textCoordinates: { x: 300, y: 185 },
+  },
+  CT: {
+    dimensions:
+      'M852,190.9 l3.6,-3.2 1.9,-2.1 0.8,0.6 2.7,-1.5 5.2,-1.1 7,-3.5 -0.6,-4.2 -0.8,-4.4 -1.6,-6 -4.3,1.1 -21.8,4.7 0.6,3.1 1.5,7.3 v8.3 l-0.9,2.1 1.7,2.2z',
+    abbreviation: 'CT',
+    name: 'Connecticut',
+    textCoordinates: { x: 900, y: 220 },
+    line: { x1: 862, y1: 184, x2: 890, y2: 210 },
   },
 }

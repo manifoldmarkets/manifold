@@ -14,9 +14,6 @@ set
 /* multi-column GIN indexes */
 create extension if not exists btree_gin;
 
-/* for clustering without locks */
-create extension if not exists pg_repack;
-
 /* for fancy machine learning stuff */
 create extension if not exists vector;
 
@@ -103,12 +100,6 @@ create table if not exists
   );
 
 alter table incoming_writes enable row level security;
-
-create index if not exists incoming_writes_ts on incoming_writes (ts desc);
-
-create index if not exists incoming_writes_table_id_ts on incoming_writes (table_id, ts desc);
-
-create index if not exists incoming_writes_event_id on incoming_writes (event_id);
 
 /* records all deletions of firestore documents, with the deletion timestamp */
 create table if not exists
@@ -301,24 +292,6 @@ begin
     return false;
   end if;
   return true;
-end
-$$;
-
-/* when processing batches of writes, we order by document ID to avoid deadlocks
-when incoming write batches hit the same documents with new writes in different
-sequences. */
-/* todo: we could process batches more efficiently by doing batch modifications for
-each destination table in the batch, but likely not important right now */
-create
-or replace function replicate_writes_process_since (since timestamp) returns table (id bigint, succeeded boolean) language plpgsql as $$
-begin
-  return query
-    select r.id,
-           replicate_writes_process_one(r) as succeeded
-    from incoming_writes as r
-    where r.ts >= since
-    order by r.parent_id,
-             r.doc_id;
 end
 $$;
 

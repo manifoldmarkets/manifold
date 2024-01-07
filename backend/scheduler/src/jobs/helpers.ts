@@ -34,7 +34,6 @@ export function createJob(
         traceId,
       })
     logWithDetails(`[${name}] Starting up.`)
-    logMemory()
     const db = createSupabaseClient()
 
     // Get last end time in case function wants to use it

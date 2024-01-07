@@ -4,12 +4,11 @@ import * as Handlebars from 'handlebars'
 import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
-import { gLog, isProd } from 'shared/utils'
+import { isProd } from 'shared/utils'
 import { initGoogleCredentialsAndSecrets } from './utils'
 import { gLog as log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -24,15 +23,6 @@ app.use(express.json())
 
 const server = app.listen(PORT, async () => {
   await initGoogleCredentialsAndSecrets()
-
-  // mqp -- making pgp spit out log messages to try to get info about whether
-  // queries are hanging and never resolving in some cases
-  const pg = createSupabaseDirectClient()
-  pg.$pool.log = (msg) => {
-    if (msg !== 'pulse queue' && msg !== 'no queued requests') {
-      gLog('DEBUG', `[pg-pool] ${msg}`)
-    }
-  }
 
   const prod = isProd()
   log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)

@@ -48,10 +48,6 @@ export async function updateContractMetricsCore({ log }: JobContext) {
   const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
     [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t))
   )
-  const [dayAgoAnswerProbs, weekAgoAnswerProbs, monthAgoAnswerProbs] =
-    await Promise.all(
-      [dayAgo, weekAgo, monthAgo].map((t) => getAnswerProbsAt(pg, t))
-    )
 
   log('Loading volume...')
   const volume = await getVolumeSince(pg, dayAgo)
@@ -66,9 +62,10 @@ export async function updateContractMetricsCore({ log }: JobContext) {
     if (contract.mechanism === 'cpmm-1') {
       const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
       const prob = resProb ?? poolProb
-      const dayAgoProb = dayAgoProbs[contract.id] ?? poolProb
-      const weekAgoProb = weekAgoProbs[contract.id] ?? poolProb
-      const monthAgoProb = monthAgoProbs[contract.id] ?? poolProb
+      const key = `${contract.id} _`
+      const dayAgoProb = dayAgoProbs[key] ?? poolProb
+      const weekAgoProb = weekAgoProbs[key] ?? poolProb
+      const monthAgoProb = monthAgoProbs[key] ?? poolProb
       cpmmFields = {
         prob,
         probChanges: {
@@ -84,9 +81,10 @@ export async function updateContractMetricsCore({ log }: JobContext) {
       for (const answer of contractAnswers) {
         const { poolProb, resProb, resTime } = currentAnswerProbs[answer.id]
         const prob = resProb ?? poolProb
-        const dayAgoProb = dayAgoAnswerProbs[answer.id] ?? poolProb
-        const weekAgoProb = weekAgoAnswerProbs[answer.id] ?? poolProb
-        const monthAgoProb = monthAgoAnswerProbs[answer.id] ?? poolProb
+        const key = `${contract.id} ${answer.id}`
+        const dayAgoProb = dayAgoProbs[key] ?? poolProb
+        const weekAgoProb = weekAgoProbs[key] ?? poolProb
+        const monthAgoProb = monthAgoProbs[key] ?? poolProb
         const answerCpmmFields = {
           probChanges: {
             day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
@@ -181,50 +179,31 @@ const getBetProbsAt = async (pg: SupabaseDirectClient, when: number) => {
   return Object.fromEntries(
     await pg.map(
       `with probs_before as (
-        select distinct on (contract_id) contract_id, prob_after as prob
+        select distinct on (contract_id, answer_id)
+          contract_id, answer_id, prob_after as prob
         from contract_bets
         where created_time < millis_to_ts($1)
-        order by contract_id, created_time desc
+        order by contract_id, answer_id, created_time desc
       ), probs_after as (
-        select distinct on (contract_id) contract_id, prob_before as prob
+        select distinct on (contract_id, answer_id)
+          contract_id, answer_id, prob_before as prob
         from contract_bets
         where created_time >= millis_to_ts($1)
-        order by contract_id, created_time asc
+        order by contract_id, answer_id, created_time asc
       )
       select
         coalesce(pa.contract_id, pb.contract_id) as contract_id,
-        coalesce(pa.prob, pb.prob) as prob
-      from probs_after as pa
-      full outer join probs_before as pb on pa.contract_id = pb.contract_id
-      `,
-      [when],
-      (r) => [r.contract_id as string, parseFloat(r.prob as string)]
-    )
-  )
-}
-
-const getAnswerProbsAt = async (pg: SupabaseDirectClient, when: number) => {
-  return Object.fromEntries(
-    await pg.map(
-      `with probs_before as (
-        select distinct on (answer_id) answer_id, prob_after as prob
-        from contract_bets
-        where created_time < millis_to_ts($1)
-        order by answer_id, created_time desc
-      ), probs_after as (
-        select distinct on (answer_id) answer_id, prob_before as prob
-        from contract_bets
-        where created_time >= millis_to_ts($1)
-        order by answer_id, created_time asc
-      )
-      select
         coalesce(pa.answer_id, pb.answer_id) as answer_id,
         coalesce(pa.prob, pb.prob) as prob
       from probs_after as pa
-      full outer join probs_before as pb on pa.answer_id = pb.answer_id
+      full outer join probs_before as pb
+        on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
       `,
       [when],
-      (r) => [r.answer_id as string, parseFloat(r.prob as string)]
+      (r) => [
+        `${r.contract_id} ${r.answer_id ?? '_'}`,
+        parseFloat(r.prob as string),
+      ]
     )
   )
 }

@@ -19,7 +19,6 @@ export {
   sendWeeklyPortfolioUpdate,
   saveWeeklyContractMetrics,
 } from './scheduled/weekly-portfolio-updates'
-export * from './scheduled/update-group-metrics'
 export * from './scheduled/update-stats'
 export * from './scheduled/backup-db'
 export * from './scheduled/market-close-notifications'
@@ -37,7 +36,6 @@ export * from './scheduled/update-view-embeddings'
 export * from './scheduled/update-league'
 export * from './scheduled/update-league-ranks'
 export * from './scheduled/streak-expiration-notification'
-export * from './scheduled/clean-old-rows'
 export * from './scheduled/denormalize-answers'
 export * from './scheduled/score-groups'
 export * from './scheduled/update-view-embeddings'

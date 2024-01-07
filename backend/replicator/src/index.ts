@@ -1,4 +1,3 @@
-import { spawn } from 'child_process'
 import * as express from 'express'
 import * as admin from 'firebase-admin'
 import { PubSub, Message } from '@google-cloud/pubsub'
@@ -11,7 +10,6 @@ import {
 import { log } from './utils'
 import { CONFIGS } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getInstanceHostname } from 'common/supabase/utils'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -46,44 +44,6 @@ app.post('/replay-failed', async (_req, res) => {
     return res.status(200).json({ success: true, n })
   } catch (e) {
     log('ERROR', 'Error replaying failed writes.', e)
-    return res.status(500).json({ error: (e as any).toString() })
-  }
-})
-
-app.post('/repack', async (req, res) => {
-  log('INFO', '[repack] Starting...')
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const { tableName } = req.body
-      const host = `db.${getInstanceHostname(SUPABASE_INSTANCE_ID)}`
-      const args = ['-h', host, '-p', '5432', '-d', 'postgres']
-      // If table name is provided, add it to the arguments
-      if (tableName) args.push('-t', tableName)
-      else args.push(...['-c', 'public'])
-
-      const proc = spawn('/usr/libexec/postgresql15/pg_repack', args, {
-        env: {
-          PGUSER: 'postgres',
-          PGPASSWORD: SUPABASE_PASSWORD,
-          PGOPTIONS:
-            // make sure that the TCP connection doesn't drop on long repack operations
-            '-c tcp_keepalives_idle=60 -c tcp_keepalives_interval=5 -c tcp_keepalives_count=4',
-        },
-      })
-      proc.stdout.on('data', (data) => log('INFO', `[repack] ${data}`))
-      proc.stderr.on('data', (data) => log('INFO', `[repack] ${data}`))
-      proc.on('close', (code) => {
-        if (code === 0) {
-          log('INFO', `[repack] Finished.`)
-          resolve()
-        } else {
-          reject(new Error(`pg_repack exited with code ${code}.`))
-        }
-      })
-    })
-    return res.status(200).json({ success: true })
-  } catch (e) {
-    log('ERROR', '[repack] Error running pg_repack.', e)
     return res.status(500).json({ error: (e as any).toString() })
   }
 })
