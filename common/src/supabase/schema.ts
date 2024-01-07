@@ -432,36 +432,6 @@ export interface Database {
         }
         Relationships: []
       }
-      contract_recommendation_features: {
-        Row: {
-          contract_id: string
-          f0: number
-          f1: number
-          f2: number
-          f3: number
-          f4: number
-          freshness_score: number | null
-        }
-        Insert: {
-          contract_id: string
-          f0: number
-          f1: number
-          f2: number
-          f3: number
-          f4: number
-          freshness_score?: number | null
-        }
-        Update: {
-          contract_id?: string
-          f0?: number
-          f1?: number
-          f2?: number
-          f3?: number
-          f4?: number
-          freshness_score?: number | null
-        }
-        Relationships: []
-      }
       contracts: {
         Row: {
           close_time: string | null
@@ -2335,33 +2305,6 @@ export interface Database {
         }
         Relationships: []
       }
-      user_recommendation_features: {
-        Row: {
-          f0: number
-          f1: number
-          f2: number
-          f3: number
-          f4: number
-          user_id: string
-        }
-        Insert: {
-          f0: number
-          f1: number
-          f2: number
-          f3: number
-          f4: number
-          user_id: string
-        }
-        Update: {
-          f0?: number
-          f1?: number
-          f2?: number
-          f3?: number
-          f4?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_seen_chats: {
         Row: {
           channel_id: string
@@ -4171,13 +4114,6 @@ export interface Database {
           '': string
         }
         Returns: unknown
-      }
-      squared_distance: {
-        Args: {
-          row1: unknown
-          row2: unknown
-        }
-        Returns: number
       }
       test: {
         Args: Record<PropertyKey, never>
