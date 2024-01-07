@@ -62,7 +62,7 @@ create index if not exists contract_bets_bet_id on contract_bets (bet_id);
 create index if not exists contract_bets_activity_feed on contract_bets (is_ante, is_redemption, created_time desc);
 
 /* serving update contract metrics */
-create index if not exists contract_bets_historical_probs on contract_bets (created_time) include (contract_id, prob_before, prob_after);
+create index if not exists contract_bets_historical_probs on contract_bets (created_time) include (contract_id, answer_id, prob_before, prob_after);
 
 /* serving e.g. the contract page recent bets and the "bets by contract" API */
 create index if not exists contract_bets_created_time on contract_bets (contract_id, created_time desc);
