@@ -47,7 +47,7 @@ export type DpmAnswer = {
 export const MAX_ANSWER_LENGTH = 240
 
 export const MAX_ANSWERS = 100
-export const MAX_INDEPENDENT_ANSWERS = 200
+export const MAX_INDEPENDENT_ANSWERS = 100
 
 export const isDpmAnswer = (answer: any): answer is DpmAnswer => {
   return answer && !('isOther' in answer)
