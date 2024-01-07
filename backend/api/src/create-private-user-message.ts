@@ -109,8 +109,6 @@ export const createPrivateUserMessageMain = async (
     'select 1 from lovers where user_id = $1',
     [creator.id]
   )
-  console.log('hasLoverProfile', hasLoverProfile)
-  console.log('otherUserIds', otherUserIds)
   if (hasLoverProfile) {
     const otherUserId = first(otherUserIds)
 
@@ -119,11 +117,9 @@ export const createPrivateUserMessageMain = async (
         'select 1 from lovers where user_id = $1',
         [otherUserId]
       )
-      console.log('otherHasLoverProfile', otherHasLoverProfile)
       bothHaveLoverProfiles = !!otherHasLoverProfile
     }
   }
-  console.log('bothHaveLoverProfiles', bothHaveLoverProfiles)
 
   track(creator.id, 'send private message', {
     channelId,
