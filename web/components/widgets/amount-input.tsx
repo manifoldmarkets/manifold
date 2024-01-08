@@ -194,7 +194,6 @@ export function BuyAmountInput(props: {
               if (shouldSetAmount) onChange(incrementAmount)
               else onChange(amountWithDefault + incrementAmount)
             }}
-            hidePlus={shouldSetAmount}
           />
         )
       })}

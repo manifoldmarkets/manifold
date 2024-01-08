@@ -3,9 +3,8 @@ import clsx from 'clsx'
 export const IncrementButton = (props: {
   amount: number
   onIncrement: () => void
-  hidePlus?: boolean
 }) => {
-  const { amount, onIncrement, hidePlus } = props
+  const { amount, onIncrement } = props
   return (
     <button
       className={clsx(
@@ -13,10 +12,7 @@ export const IncrementButton = (props: {
       )}
       onClick={onIncrement}
     >
-      <div className="pointer-events-none text-xs">
-        {!hidePlus && '+'}
-        {amount}
-      </div>
+      <div className="pointer-events-none text-xs">+{amount}</div>
     </button>
   )
 }
