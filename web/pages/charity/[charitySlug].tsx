@@ -1,4 +1,3 @@
-import { sumBy, uniqBy } from 'lodash'
 import { useCallback, useState } from 'react'
 import Image from 'next/legacy/image'
 
