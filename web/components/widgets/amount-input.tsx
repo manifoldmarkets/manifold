@@ -100,7 +100,13 @@ export function AmountInput(
               }}
             />
             <Row className="absolute right-[1px] top-[1px] gap-4">
-              <ClearInputButton onClick={() => onChangeAmount(undefined)} />
+              <ClearInputButton
+                className={clsx(
+                  'transition-opacity',
+                  amount === undefined && 'opacity-0'
+                )}
+                onClick={() => onChangeAmount(undefined)}
+              />
               {quickAddMoreButton}
             </Row>
           </div>
@@ -110,11 +116,14 @@ export function AmountInput(
   )
 }
 
-function ClearInputButton(props: { onClick: () => void }) {
-  const { onClick } = props
+function ClearInputButton(props: { onClick: () => void; className?: string }) {
+  const { onClick, className } = props
   return (
     <button
-      className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex items-center justify-center"
+      className={clsx(
+        className,
+        'text-ink-400 hover:text-ink-500 active:text-ink-500 flex items-center justify-center'
+      )}
       onClick={onClick}
     >
       <XIcon className="h-4 w-4" />
