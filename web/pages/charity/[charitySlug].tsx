@@ -71,7 +71,7 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
     charity.id,
   ])
 
-  const { pageItems, isStart, isEnd, getPrev, getNext, prepend } =
+  const { pageItems, isStart, isEnd, isLoading, getPrev, getNext, prepend } =
     usePagination({
       pageSize: PAGE_SIZE,
       q: paginationCallback,
@@ -116,6 +116,7 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
           <PaginationNextPrev
             showPrev={!isStart}
             showNext={!isEnd}
+            isLoadingNext={isLoading}
             onClickPrev={getPrev}
             onClickNext={getNext}
           />
