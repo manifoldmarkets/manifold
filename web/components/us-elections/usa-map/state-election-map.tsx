@@ -1,11 +1,4 @@
-import { useMemo, useState } from 'react'
-
-import { Contract, CPMMBinaryContract } from 'common/contract'
-import { Col } from 'web/components/layout/col'
-import { useContracts } from 'web/hooks/use-contract-supabase'
-import { FeedContractCard } from '../contract/contract-card'
-import { presidency2024 } from './election-contract-data'
-import { ClickHandler, Customize, USAMap } from './usa-map'
+import { Contract } from 'common/contract'
 
 export const DEM_LIGHT_HEX = '#86a6d4'
 export const REP_LIGHT_HEX = '#e0928c'
@@ -19,62 +12,7 @@ export interface StateElectionMarket {
   state: string
 }
 
-export type ElectionMode = 'presidency' | 'senate' | 'house'
-export function StateElectionMap(props: { mode: ElectionMode }) {
-  const { mode } = props
-  let markets: StateElectionMarket[] = []
-
-  if (mode === 'presidency') {
-    markets = presidency2024
-  }
-
-  const contracts = useContracts(
-    markets.map((m) => m.slug),
-    'slug'
-  )
-
-  const [targetContract, setTargetContract] = useState<Contract | undefined>(
-    undefined
-  )
-
-  const stateContractMap: Customize = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        fill: string
-        clickHandler: ClickHandler
-        selected: boolean | undefined
-      }
-    > = {}
-    markets.forEach((market) => {
-      const contract = contracts.find((c) => c.slug === market.slug) as
-        | CPMMBinaryContract
-        | undefined
-
-      map[market.state] = {
-        fill: probToColor(contract) ?? '#D6D1D3',
-        clickHandler: () => {
-          if (targetContract && contract?.id === targetContract.id) {
-            setTargetContract(undefined)
-          } else {
-            setTargetContract(contract)
-          }
-        },
-        selected: targetContract?.id === contract?.id,
-      }
-    })
-    return map
-  }, [markets, contracts, targetContract])
-
-  return (
-    <Col className="gap-3">
-      <USAMap customize={stateContractMap} />
-      {targetContract && <FeedContractCard contract={targetContract} />}
-    </Col>
-  )
-}
-
-const probToColor = (contract: Contract | undefined | null) => {
+export const probToColor = (contract: Contract | null) => {
   type Color = { r: number; g: number; b: number }
   function interpolateColor(color1: Color, color2: Color, factor: number) {
     // Linear interpolation between two colors
