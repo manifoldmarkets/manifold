@@ -11,31 +11,38 @@ export const PAGE_ELLIPSES = '...'
 
 export function PaginationNextPrev(props: {
   className?: string
-  prev?: ReactNode
-  next?: ReactNode
+  showPrev: boolean
+  showNext: boolean
   onClickPrev: () => void
   onClickNext: () => void
   scrollToTop?: boolean
 }) {
-  const { className, prev, next, onClickPrev, onClickNext, scrollToTop } = props
+  const {
+    className,
+    showPrev,
+    showNext,
+    onClickPrev,
+    onClickNext,
+    scrollToTop,
+  } = props
   return (
     <Row className={clsx(className, 'flex-1 justify-between sm:justify-end')}>
-      {prev != null && (
+      {showPrev && (
         <a
           href={scrollToTop ? '#' : undefined}
           className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickPrev}
         >
-          {prev ?? 'Previous'}
+          Previous
         </a>
       )}
-      {next != null && (
+      {showNext && (
         <a
           href={scrollToTop ? '#' : undefined}
           className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickNext}
         >
-          {next ?? 'Next'}
+          Next
         </a>
       )}
     </Row>
