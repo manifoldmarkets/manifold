@@ -5,8 +5,16 @@ import { filterDefined } from 'common/util/array'
 import { getUsers } from './user'
 
 export async function getDonationsByCharity() {
-  const { data } = await db.rpc('get_donations_by_charity')
-  return Object.fromEntries((data ?? []).map((r) => [r.charity_id, r.total]))
+  const { data, error } = await db.rpc('get_donations_by_charity')
+  return Object.fromEntries(
+    (data ?? []).map((r) => [
+      r.charity_id,
+      {
+        total: r.total,
+        numSupporters: r.num_supporters,
+      },
+    ])
+  )
 }
 
 export function getDonationsPageQuery(charityId: string) {

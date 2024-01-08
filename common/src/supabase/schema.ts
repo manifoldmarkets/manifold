@@ -3366,9 +3366,12 @@ export interface Database {
         Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_donations_by_charity: {
-        Args: Record<PropertyKey, never>
+        Args: {
+          cid?: string
+        }
         Returns: {
           charity_id: string
+          num_supporters: number
           total: number
         }[]
       }

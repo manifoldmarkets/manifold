@@ -15,7 +15,10 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
 import Custom404 from '../404'
-import { getDonationsPageQuery } from 'web/lib/supabase/txns'
+import {
+  getDonationsByCharity,
+  getDonationsPageQuery,
+} from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
@@ -38,13 +41,22 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   const charity = charities.find((c) => c.slug === charitySlug?.toLowerCase())
   if (!charity) {
     return {
-      props: { charity: null, donations: [] },
+      props: {
+        charity: null,
+        donations: [],
+        stats: { numSupporters: 0, total: 0 },
+      },
       revalidate: 60,
     }
   }
+  const stats = (await getDonationsByCharity())[charity.id] ?? {
+    numSupporters: 0,
+    total: 0,
+  }
+  console.log(charity.id, stats)
   const donations = await getDonationsPageQuery(charity.id)(PAGE_SIZE)
   return {
-    props: { charity, donations },
+    props: { charity, donations, stats },
     revalidate: 60,
   }
 }
@@ -52,16 +64,21 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
 export default function CharityPageWrapper(props: {
   charity: Charity | null
   donations: DonationItem[]
+  stats: { numSupporters: number; total: number }
 }) {
-  const { charity, donations } = props
+  const { charity, donations, stats } = props
   if (!charity) {
     return <Custom404 />
   }
-  return <CharityPage charity={charity} donations={donations} />
+  return <CharityPage charity={charity} donations={donations} stats={stats} />
 }
 
-function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
-  const { charity, donations } = props
+function CharityPage(props: {
+  charity: Charity
+  donations: DonationItem[]
+  stats: { numSupporters: number; total: number }
+}) {
+  const { charity, donations, stats } = props
   const { name, photo, description } = charity
   const user = useUser()
 
@@ -93,7 +110,7 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
                 <Image src={photo} alt="" layout="fill" objectFit="contain" />
               </div>
             )}
-            <Details charity={charity} donations={pagination.items} />
+            <Details charity={charity} stats={stats} />
           </Row>
           <DonationBox
             user={user}
@@ -120,27 +137,16 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
 
 function Details(props: {
   charity: Charity
-  donations: DonationItem[] | undefined
+  stats: { numSupporters: number; total: number }
 }) {
-  const { charity, donations } = props
+  const { charity, stats } = props
+  const { numSupporters, total } = stats
   const { website } = charity
-  const user = useUser()
-  const totalRaised = sumBy(donations ?? [], (txn) => txn.amount)
-  const numSupporters = uniqBy(donations ?? [], (d) => d.user.id).length
-  const fromYou = sumBy(
-    (donations ?? []).filter((txn) => txn.user.id === user?.id),
-    (txn) => txn.amount
-  )
   return (
     <Col className="gap-1 text-right">
       <div className="mb-2 text-4xl text-teal-500">
-        {manaToUSD(totalRaised ?? 0)} raised
+        {manaToUSD(total ?? 0)} raised
       </div>
-      {fromYou ? (
-        <div className="text-xl text-teal-500">
-          {manaToUSD(fromYou)} from you!
-        </div>
-      ) : null}
       {numSupporters && (
         <div className="text-ink-500">{numSupporters} supporters</div>
       )}

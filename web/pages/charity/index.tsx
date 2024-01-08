@@ -67,14 +67,14 @@ function DonatedStats(props: { stats: Stat[] }) {
 }
 
 export default function Charity(props: {
-  totalsByCharity: { [k: string]: number }
+  totalsByCharity: { [k: string]: { total: number; numSupporters: number } }
   mostRecentDonor?: User | null
   mostRecentCharityId?: string
 }) {
   const { totalsByCharity, mostRecentCharityId, mostRecentDonor } = props
 
   const [query, setQuery] = useState('')
-  const totalRaised = sum(Object.values(totalsByCharity))
+  const totalRaised = sum(Object.values(totalsByCharity).map((t) => t.total))
   const debouncedQuery = debounce(setQuery, 50)
   const recentCharityName =
     charities.find((charity) => charity.id === mostRecentCharityId)?.name ??
@@ -82,7 +82,7 @@ export default function Charity(props: {
 
   const filterCharities = useMemo(() => {
     const sortedCharities = sortBy(charities, [
-      (c) => -(totalsByCharity[c.id] ?? 0),
+      (c) => -(totalsByCharity[c.id]?.total ?? 0),
       (c) => c.name,
     ])
     return sortedCharities.filter(
@@ -153,7 +153,7 @@ export default function Charity(props: {
           {filterCharities.map((charity, i) => (
             <CharityCard
               charity={charity}
-              raised={totalsByCharity[charity.id]}
+              raised={totalsByCharity[charity.id]?.total ?? 0}
               key={charity.id}
             />
           ))}
