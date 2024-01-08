@@ -1,4 +1,5 @@
 import { Contract } from 'common/contract'
+import { ELECTION_ENABLED } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -12,6 +13,7 @@ import {
   USAMap,
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import Custom404 from './404'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -69,6 +71,10 @@ export default function USElectionsPage(props: {
     })
     return map
   }, [mapContracts, targetContract])
+
+  if (!ELECTION_ENABLED) {
+    return <Custom404 />
+  }
 
   return (
     <Page trackPageView="us elections page 2024">
