@@ -195,15 +195,18 @@ export function AddBountyButton(props: {
 }) {
   const { contract, buttonClassName } = props
   const [open, setOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
   const [amount, setAmount] = useState<number | undefined>(undefined)
 
   async function onAddBounty() {
     if (amount) {
+      setIsSubmitting(true)
       await api('market/:contractId/add-bounty', {
         contractId: contract.id,
         amount: amount,
       })
+      setIsSubmitting(false)
       setOpen(false)
     }
   }
@@ -230,7 +233,8 @@ export function AddBountyButton(props: {
           <Button
             size="lg"
             className="w-full"
-            disabled={!!error || !amount}
+            loading={isSubmitting}
+            disabled={isSubmitting || !!error || !amount}
             onClick={onAddBounty}
           >
             Add {amount ? formatMoney(amount) : ''}
