@@ -21,7 +21,7 @@ export async function insertUserEvent(
       db.from('user_seen_markets').insert({
         user_id: userId,
         contract_id: contractId,
-        data: removeUndefinedProps(data) as Record<string, Json>,
+        is_promoted: data?.isPromoted as boolean,
         type: name,
       })
     )
