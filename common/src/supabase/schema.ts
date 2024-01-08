@@ -2332,6 +2332,7 @@ export interface Database {
           created_time: string
           data: Json
           id: number
+          is_promoted: boolean | null
           type: string
           user_id: string
         }
@@ -2340,6 +2341,7 @@ export interface Database {
           created_time?: string
           data: Json
           id?: never
+          is_promoted?: boolean | null
           type?: string
           user_id: string
         }
@@ -2348,6 +2350,7 @@ export interface Database {
           created_time?: string
           data?: Json
           id?: never
+          is_promoted?: boolean | null
           type?: string
           user_id?: string
         }
