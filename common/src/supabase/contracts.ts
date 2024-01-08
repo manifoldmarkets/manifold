@@ -24,21 +24,6 @@ export const getContractFromSlug = async (
   return data[0].data as Contract
 }
 
-// export const getContractsFromSlug = async (
-//   slugIds: string[],
-//   db: SupabaseClient
-// ) => {
-//   if (slugIds.length === 0) {
-//     return [] as Contract[]
-//   }
-//   const chunks = chunk(slugIds, 300)
-//   const promises = chunks.map((chunk) =>
-//     run(selectJson(db, 'contracts').in('slug', chunk))
-//   )
-//   const results = await Promise.all(promises)
-//   return results.flatMap((result) => result.data.map((r) => r.data))
-// }
-
 export const getContracts = async (
   contractIds: string[],
   db: SupabaseClient
