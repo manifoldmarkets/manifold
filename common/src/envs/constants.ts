@@ -134,6 +134,7 @@ export const BOT_USERNAMES = [
   'FirstBot',
   'bawt',
   'FireTheCEO',
+  'JointBot',
 ]
 
 export const MOD_IDS = [
