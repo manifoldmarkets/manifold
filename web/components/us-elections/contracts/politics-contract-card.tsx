@@ -3,49 +3,38 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
+import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
-import { User } from 'common/user'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
+import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { SimpleAnswerBars } from '../answers/answers-panel'
-import { BetButton } from '../bet/feed-bet-button'
-import { CommentsButton } from '../comments/comments-button'
-import { CardReason } from '../feed/card-reason'
-import { FeedBinaryChart } from '../feed/feed-chart'
-import FeedContractCardDescription from '../feed/feed-contract-card-description'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { PollPanel } from '../poll/poll-panel'
-import { ClickFrame } from '../widgets/click-frame'
-import { LikeButton } from './like-button'
-import { TradesButton } from './trades-button'
-import { FeedDropdown } from '../feed/card-dropdown'
-import { CategoryTags } from '../feed/feed-timeline-items'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Button } from 'web/components/buttons/button'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
+import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { CardReason } from 'web/components/feed/card-reason'
+import { FeedDropdown } from 'web/components/feed/card-dropdown'
+import { BetButton } from 'web/components/bet/feed-bet-button'
+import { PollPanel } from 'web/components/poll/poll-panel'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 
-export function FeedContractCard(props: {
+export function PoliticsContractCard(props: {
   contract: Contract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
@@ -140,8 +129,6 @@ export function FeedContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const nonTextDescription = !JSONEmpty(contract.description)
-
   return (
     <ClickFrame
       className={clsx(
@@ -149,7 +136,7 @@ export function FeedContractCard(props: {
         'relative rounded-xl',
         'cursor-pointer ',
         'hover:ring-[1px]',
-        'flex w-full flex-col gap-0.5 px-4',
+        'flex w-full flex-col gap-0.5 px-4 py-4',
         small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
       )}
       onClick={(e) => {
@@ -159,24 +146,8 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      <Col className={'w-full flex-col gap-1.5 pt-2'}>
+      <Col className={'w-full flex-col gap-1.5 '}>
         <Row className="w-full justify-between">
-          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creatorName,
-                username: creatorUsername,
-              }}
-              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
-            />
-          </Row>
           {hide && (
             <Row className="gap-2">
               {promotedData && canAdPay && (
@@ -267,139 +238,7 @@ export function FeedContractCard(props: {
         {isBinaryCpmm && metrics && metrics.hasShares && (
           <YourMetricsFooter metrics={metrics} />
         )}
-
-        {!small && item?.dataType == 'new_contract' && nonTextDescription && (
-          <FeedContractCardDescription
-            contract={contract}
-            nonTextDescription={nonTextDescription}
-          />
-        )}
-
-        <CategoryTags
-          categories={contract.groupLinks}
-          // hide tags after first line. (tags are 24 px tall)
-          className="h-6 flex-wrap overflow-hidden"
-        />
-        {!hideBottomRow && (
-          <Col>
-            <BottomActionRow
-              contract={contract}
-              user={user}
-              underline={!!children}
-            />
-            {children}
-          </Col>
-        )}
       </div>
     </ClickFrame>
-  )
-}
-
-// ensures that the correct spacing is between buttons
-const BottomRowButtonWrapper = (props: { children: React.ReactNode }) => {
-  return (
-    <Row className="basis-10 justify-start whitespace-nowrap">
-      {props.children}
-    </Row>
-  )
-}
-
-const BottomActionRow = (props: {
-  contract: Contract
-  user: User | null | undefined
-  underline?: boolean
-}) => {
-  const { contract, user, underline } = props
-  const { question } = contract
-
-  return (
-    <Row
-      className={clsx(
-        'justify-between pt-2',
-        underline ? 'border-1 border-ink-200 border-b pb-3' : 'pb-2'
-      )}
-    >
-      <BottomRowButtonWrapper>
-        <TradesButton contract={contract} className={'h-full'} />
-      </BottomRowButtonWrapper>
-
-      {contract.outcomeType === 'BOUNTIED_QUESTION' && (
-        <BottomRowButtonWrapper>
-          <div className="text-ink-500 z-10 flex items-center gap-1.5 text-sm">
-            <TbMoneybag className="h-6 w-6 stroke-2" />
-            <div>
-              {ENV_CONFIG.moneyMoniker}
-              {shortFormatNumber(contract.bountyLeft)}
-            </div>
-          </div>
-        </BottomRowButtonWrapper>
-      )}
-
-      {/* cpmm markets */}
-      {'totalLiquidity' in contract && (
-        <BottomRowButtonWrapper>
-          <Button
-            disabled={true}
-            size={'2xs'}
-            color={'gray-white'}
-            className={'disabled:cursor-pointer'}
-          >
-            <Tooltip text={`Total liquidity`} placement="top" noTap>
-              <Row
-                className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
-              >
-                <TbDropletHeart className="h-6 w-6 stroke-2" />
-                <div>
-                  {ENV_CONFIG.moneyMoniker}
-                  {shortFormatNumber(contract.totalLiquidity)}
-                </div>
-              </Row>
-            </Tooltip>
-          </Button>
-        </BottomRowButtonWrapper>
-      )}
-
-      <BottomRowButtonWrapper>
-        <CommentsButton contract={contract} user={user} className={'h-full'} />
-      </BottomRowButtonWrapper>
-      <BottomRowButtonWrapper>
-        <LikeButton
-          contentId={contract.id}
-          contentCreatorId={contract.creatorId}
-          user={user}
-          contentType={'contract'}
-          totalLikes={contract.likedByUserCount ?? 0}
-          contract={contract}
-          contentText={question}
-          size={'2xs'}
-          trackingLocation={'contract card (feed)'}
-          placement="top"
-        />
-      </BottomRowButtonWrapper>
-    </Row>
-  )
-}
-export function YourMetricsFooter(props: { metrics: ContractMetric }) {
-  const { metrics } = props
-  const { totalShares, maxSharesOutcome, profit } = metrics
-  const { YES: yesShares, NO: noShares } = totalShares
-
-  return (
-    <Row className="bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm">
-      <Row className="items-center gap-2">
-        <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
-        <span className="text-ink-700 font-semibold">
-          {maxSharesOutcome === 'YES'
-            ? formatMoney(yesShares)
-            : formatMoney(noShares)}{' '}
-        </span>
-      </Row>
-      <Row className="items-center gap-2">
-        <div className="text-ink-500">Profit </div>
-        <div className={clsx('text-ink-700 font-semibold')}>
-          {profit ? formatMoney(profit) : '--'}
-        </div>
-      </Row>
-    </Row>
   )
 }

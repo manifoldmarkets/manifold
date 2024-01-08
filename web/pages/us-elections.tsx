@@ -3,6 +3,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { PoliticsContractCard } from 'web/components/us-elections/contracts/politics-contract-card'
 import { presidency2024 } from 'web/components/us-elections/usa-map/election-contract-data'
 import { probToColor } from 'web/components/us-elections/usa-map/state-election-map'
 import {
@@ -73,7 +74,7 @@ export default function USElectionsPage(props: {
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
         <USAMap customize={stateContractMap} />
-        {/* {targetContract && <FeedContractCard contract={targetContract} />} */}
+        {targetContract && <PoliticsContractCard contract={targetContract} />}
       </Col>
     </Page>
   )
