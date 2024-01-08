@@ -1,5 +1,5 @@
-import { sumBy, uniq, uniqBy } from 'lodash'
-import { useState } from 'react'
+import { sumBy, uniqBy } from 'lodash'
+import { useCallback, useState } from 'react'
 import Image from 'next/legacy/image'
 
 import { Col } from 'web/components/layout/col'
@@ -10,12 +10,12 @@ import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { Spacer } from 'web/components/layout/spacer'
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
+import { usePagination } from 'web/hooks/use-pagination'
 import { Linkify } from 'web/components/widgets/linkify'
 import { transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
 import Custom404 from '../404'
-import { getAllDonations } from 'web/lib/supabase/txns'
-import { getUsers } from 'web/lib/supabase/user'
+import { getDonationsPageQuery } from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
 import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
@@ -23,9 +23,11 @@ import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
-import { filterDefined } from 'common/util/array'
+import { PaginationNextPrev } from 'web/components/widgets/pagination'
 
 type DonationItem = { user: User; ts: number; amount: number }
+
+const PAGE_SIZE = 50
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -40,15 +42,7 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
       revalidate: 60,
     }
   }
-  const txns = await getAllDonations(charity.id)
-  const userIds = uniq(txns.map((t) => t.fromId))
-  const users = filterDefined(await getUsers(userIds))
-  const usersById = Object.fromEntries(users.map((u) => [u.id, u]))
-  const donations = txns.map((t) => ({
-    user: usersById[t.fromId],
-    ts: t.createdTime,
-    amount: t.amount,
-  }))
+  const donations = await getDonationsPageQuery(charity.id)(PAGE_SIZE)
   return {
     props: { charity, donations },
     revalidate: 60,
@@ -67,13 +61,21 @@ export default function CharityPageWrapper(props: {
 }
 
 function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
-  const { charity } = props
+  const { charity, donations } = props
   const { name, photo, description } = charity
   const user = useUser()
 
-  const [donations, setDonations] = useState<DonationItem[]>(props.donations)
   const [showConfetti, setShowConfetti] = useState(false)
 
+  const paginationCallback = useCallback(getDonationsPageQuery(charity.id), [
+    charity.id,
+  ])
+
+  const pagination = usePagination({
+    pageSize: PAGE_SIZE,
+    q: paginationCallback,
+    preload: donations,
+  })
   return (
     <Page
       trackPageView={'charity slug page'}
@@ -91,16 +93,13 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
                 <Image src={photo} alt="" layout="fill" objectFit="contain" />
               </div>
             )}
-            <Details charity={charity} donations={donations} />
+            <Details charity={charity} donations={pagination.items} />
           </Row>
           <DonationBox
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              setDonations((existing) => [
-                { user, ts, amount },
-                ...(existing ?? []),
-              ])
+              pagination.prepend({ user, ts, amount })
               setShowConfetti(true)
             }}
           />
@@ -109,10 +108,10 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {donations &&
-            donations.map((d, i) => (
-              <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
-            ))}
+          {(pagination.items ?? []).map((d, i) => (
+            <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
+          ))}
+          <PaginationNextPrev {...pagination} />
         </Col>
       </Col>
     </Page>
