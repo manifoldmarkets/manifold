@@ -181,12 +181,7 @@ export function BuyAmountInput(props: {
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
-  const incrementAmounts = buildArray(
-    !hasLotsOfMana && 1,
-    5,
-    50,
-    hasLotsOfMana && 250
-  )
+  const incrementAmounts = hasLotsOfMana ? [10, 50, 250] : [1, 5, 25]
   const quickAddButtons = (
     <Row className="border-ink-300 divide-ink-300 divide-x border-l">
       {incrementAmounts.map((incrementAmount) => {
