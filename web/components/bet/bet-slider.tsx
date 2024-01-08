@@ -5,7 +5,7 @@ import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
 
 const largerSliderAmounts = [
-  1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 300, 500, 750, 1000,
+  1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 350, 500, 750, 1000,
 ]
 const lowerManaSliderAmounts = [
   1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
