@@ -4,11 +4,23 @@ create table if not exists
                           id bigint generated always as identity primary key,
                           user_id text not null,
                           contract_id text not null,
+                          data jsonb null,
                           created_time timestamptz not null default now(),
                           -- so far we have: 'view market' or 'view market card'
                           type text not null default 'view market',
                           is_promoted boolean null
     );
+
+create or replace function user_seen_market_populate_cols () returns trigger language plpgsql as $$ begin
+    if new.data is not null then
+        new.is_promoted := ((new.data)->'isPromoted')::boolean;
+    end if;
+    return new;
+end $$;
+
+create trigger user_seen_market_populate before insert or update on user_seen_markets for each row
+execute function user_seen_market_populate_cols ();
+
 
 alter table user_seen_markets enable row level security;
 
