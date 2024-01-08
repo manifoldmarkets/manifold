@@ -12,7 +12,6 @@ import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementButton } from './increment-button'
-import { buildArray } from 'common/util/array'
 
 export function AmountInput(
   props: {
