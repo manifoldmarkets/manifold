@@ -17,7 +17,6 @@ export function PaginationNextPrev(props: {
   isLoadingNext: boolean
   onClickPrev: () => void
   onClickNext: () => void
-  scrollToTop?: boolean
 }) {
   const {
     className,
@@ -26,27 +25,25 @@ export function PaginationNextPrev(props: {
     isLoadingNext,
     onClickPrev,
     onClickNext,
-    scrollToTop,
   } = props
   return (
     <Row className={clsx(className, 'flex-1 justify-between sm:justify-end')}>
       {showPrev && (
-        <a
-          href={scrollToTop ? '#' : undefined}
+        <button
           className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickPrev}
         >
           Previous
-        </a>
+        </button>
       )}
       {showNext && (
-        <a
-          href={scrollToTop ? '#' : undefined}
+        <button
           className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
           onClick={onClickNext}
+          disabled={isLoadingNext}
         >
           {isLoadingNext ? <LoadingIndicator size="sm" /> : 'Next'}
-        </a>
+        </button>
       )}
     </Row>
   )
