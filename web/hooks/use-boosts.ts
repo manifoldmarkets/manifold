@@ -6,7 +6,7 @@ import { db } from 'web/lib/supabase/db'
 import { sum } from 'lodash'
 import { AD_REDEEM_REWARD } from 'common/boost'
 
-const TOTAL_BOOSTS_PER_DAY = 20
+const TOTAL_BOOSTS_PER_DAY = 40
 export const useBoosts = (
   privateUser: PrivateUser | null | undefined,
   key: string
