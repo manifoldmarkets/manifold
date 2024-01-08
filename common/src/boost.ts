@@ -6,6 +6,6 @@ export const AD_WAIT_SECONDS = 9 // Time with ad visible before allowing the use
 export const AD_RATE_LIMIT = 10 * 1000 // 10 seconds
 
 // cost in mana
-export const DEFAULT_AD_COST_PER_VIEW = 7
-export const MIN_AD_COST_PER_VIEW = 5
+export const DEFAULT_AD_COST_PER_VIEW = 10
+export const MIN_AD_COST_PER_VIEW = 10
 export const AD_REDEEM_REWARD = 3
