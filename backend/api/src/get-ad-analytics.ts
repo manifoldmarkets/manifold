@@ -1,7 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
-import { ContractCardView } from 'common/events'
 import { uniqBy } from 'lodash'
 
 export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
@@ -21,7 +20,7 @@ export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
     run(
       db
         .from('user_seen_markets')
-        .select('user_id, data')
+        .select('user_id, is_promoted')
         .eq('type', 'view market card')
         .eq('contract_id', contractId)
     ),
@@ -37,9 +36,7 @@ export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
       .eq('data->>category' as any, 'MARKET_BOOST_REDEEM')
       .eq('data->>fromId' as any, lastAdData?.id)
   )
-  const promotedViewData = viewData?.filter(
-    (v) => (v.data as ContractCardView).isPromoted
-  )
+  const promotedViewData = viewData?.filter((v) => v.is_promoted)
   const totalFunds = adData?.reduce((acc, v) => acc + v.funds, 0) ?? 0
   return {
     uniquePromotedViewers: uniqBy(promotedViewData, 'user_id').length,
