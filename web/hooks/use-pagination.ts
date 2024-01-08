@@ -16,7 +16,10 @@ type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V
 type Action<T> =
   | ActionBase<'INIT', { opts: PaginationOptions<T> }>
   | ActionBase<'PREPEND', { items: T[] }>
-  | ActionBase<'LOAD', { oldItems: T[]; newItems: T[] }>
+  | ActionBase<
+      'LOAD',
+      { at: number; oldItems: T[]; newItems: T[]; isComplete: boolean }
+    >
   | ActionBase<'PREV'>
   | ActionBase<'NEXT'>
 
@@ -30,20 +33,36 @@ function getReducer<T>() {
         return { ...state, allItems: [...action.items, ...state.allItems] }
       }
       case 'LOAD': {
+        // always keep the stuff we loaded
         const allItems = action.oldItems.concat(action.newItems)
-        const isComplete = action.newItems.length < state.pageSize
-        return { ...state, allItems, isComplete, isLoading: false }
+        const isLoading = false
+        const isComplete = action.isComplete
+        if (action.at < state.pageEnd) {
+          // they aren't looking at the end of the list right now, so don't
+          // mess with the page number
+          return { ...state, isComplete, isLoading, allItems }
+        }
+        // bump the page to show the new stuff
+        const pageStart = action.at
+        const pageEnd = action.at + state.pageSize
+        return { ...state, isComplete, isLoading, allItems, pageStart, pageEnd }
       }
       case 'PREV': {
         const pageStart = state.pageStart - state.pageSize
         const pageEnd = state.pageStart
-        return { ...state, pageStart, pageEnd, isLoading: false }
+        return { ...state, isLoading: false, pageStart, pageEnd }
       }
       case 'NEXT': {
-        const pageStart = state.pageEnd
-        const pageEnd = state.pageEnd + state.pageSize
-        const isLoading = !state.isComplete && state.allItems.length < pageEnd
-        return { ...state, pageStart, pageEnd, isLoading }
+        const shouldLoad =
+          !state.isComplete &&
+          state.allItems.length < state.pageEnd + state.pageSize
+        if (shouldLoad) {
+          return { ...state, isLoading: true }
+        } else {
+          const pageStart = state.pageEnd
+          const pageEnd = state.pageEnd + state.pageSize
+          return { ...state, isLoading: false, pageStart, pageEnd }
+        }
       }
       default:
         throw new Error('Invalid action.')
@@ -72,14 +91,26 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
   const [state, dispatch] = useReducer(getReducer<T>(), opts, getInitialState)
 
   useEffect(() => {
-    dispatch({ type: 'INIT', opts: { q: opts.q, pageSize: opts.pageSize } })
-  }, [opts.q, opts.pageSize])
+    console.log('Dispatching init: ', opts, state)
+    dispatch({
+      type: 'INIT',
+      opts: { q: opts.q, pageSize: opts.pageSize, preload: opts.preload },
+    })
+  }, [opts.q, opts.pageSize, opts.preload])
 
   useEffect(() => {
     if (state.isLoading) {
+      console.log('Dispatching load: ', state)
       const after = state.allItems[state.allItems.length - 1]
       opts.q(state.pageSize, after).then((newItems) => {
-        dispatch({ type: 'LOAD', oldItems: state.allItems, newItems })
+        const isComplete = newItems.length < state.pageSize
+        dispatch({
+          type: 'LOAD',
+          at: state.allItems.length,
+          oldItems: state.allItems,
+          newItems,
+          isComplete,
+        })
       })
     }
   }, [state.isLoading, opts.q, state.allItems, state.pageSize])
@@ -96,6 +127,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     [dispatch]
   )
 
+  console.log(state)
   return {
     ...state,
     isStart: state.pageStart === 0,
