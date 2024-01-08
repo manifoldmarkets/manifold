@@ -2330,7 +2330,6 @@ export interface Database {
         Row: {
           contract_id: string
           created_time: string
-          data: Json
           id: number
           is_promoted: boolean | null
           type: string
@@ -2339,7 +2338,6 @@ export interface Database {
         Insert: {
           contract_id: string
           created_time?: string
-          data: Json
           id?: never
           is_promoted?: boolean | null
           type?: string
@@ -2348,7 +2346,6 @@ export interface Database {
         Update: {
           contract_id?: string
           created_time?: string
-          data?: Json
           id?: never
           is_promoted?: boolean | null
           type?: string
