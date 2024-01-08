@@ -71,12 +71,11 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
     charity.id,
   ])
 
-  const { pageItems, isStart, isEnd, isLoading, getPrev, getNext, prepend } =
-    usePagination({
-      pageSize: PAGE_SIZE,
-      q: paginationCallback,
-      preload: donations,
-    })
+  const pagination = usePagination({
+    pageSize: PAGE_SIZE,
+    q: paginationCallback,
+    preload: donations,
+  })
   return (
     <Page
       trackPageView={'charity slug page'}
@@ -94,13 +93,13 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
                 <Image src={photo} alt="" layout="fill" objectFit="contain" />
               </div>
             )}
-            <Details charity={charity} donations={pageItems} />
+            <Details charity={charity} donations={pagination.items} />
           </Row>
           <DonationBox
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              prepend({ user, ts, amount })
+              pagination.prepend({ user, ts, amount })
               setShowConfetti(true)
             }}
           />
@@ -109,17 +108,10 @@ function CharityPage(props: { charity: Charity; donations: DonationItem[] }) {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {pageItems &&
-            pageItems.map((d, i) => (
-              <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
-            ))}
-          <PaginationNextPrev
-            showPrev={!isStart}
-            showNext={!isEnd}
-            isLoadingNext={isLoading}
-            onClickPrev={getPrev}
-            onClickNext={getNext}
-          />
+          {(pagination.items ?? []).map((d, i) => (
+            <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
+          ))}
+          <PaginationNextPrev {...pagination} />
         </Col>
       </Col>
     </Page>

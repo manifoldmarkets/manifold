@@ -7,44 +7,36 @@ import { range } from 'lodash'
 import { usePathname, useRouter } from 'next/navigation'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-
+import { buttonClass } from 'web/components/buttons/button'
 export const PAGE_ELLIPSES = '...'
 
 export function PaginationNextPrev(props: {
   className?: string
-  showPrev: boolean
-  showNext: boolean
-  isLoadingNext: boolean
-  onClickPrev: () => void
-  onClickNext: () => void
+  isStart: boolean
+  isEnd: boolean
+  isLoading: boolean
+  getPrev: () => void
+  getNext: () => void
 }) {
-  const {
-    className,
-    showPrev,
-    showNext,
-    isLoadingNext,
-    onClickPrev,
-    onClickNext,
-  } = props
+  const { className, isStart, isEnd, isLoading, getPrev, getNext } = props
   return (
-    <Row className={clsx(className, 'flex-1 justify-between sm:justify-end')}>
-      {showPrev && (
-        <button
-          className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
-          onClick={onClickPrev}
-        >
-          Previous
-        </button>
-      )}
-      {showNext && (
-        <button
-          className="border-ink-300 text-ink-700 hover:bg-canvas-50 bg-canvas-0 relative ml-3 inline-flex cursor-pointer select-none items-center rounded-md border px-4 py-2 text-sm font-medium"
-          onClick={onClickNext}
-          disabled={isLoadingNext}
-        >
-          {isLoadingNext ? <LoadingIndicator size="sm" /> : 'Next'}
-        </button>
-      )}
+    <Row
+      className={clsx(className, 'flex-1 justify-between gap-2 sm:justify-end')}
+    >
+      <button
+        className={buttonClass('lg', 'gray-outline')}
+        onClick={getPrev}
+        disabled={isStart}
+      >
+        Previous
+      </button>
+      <button
+        className={buttonClass('lg', 'gray-outline')}
+        onClick={getNext}
+        disabled={isLoading || isEnd}
+      >
+        {isLoading ? <LoadingIndicator size="sm" /> : 'Next'}
+      </button>
     </Row>
   )
 }

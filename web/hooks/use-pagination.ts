@@ -53,6 +53,7 @@ function getReducer<T>() {
         return { ...state, isLoading: false, pageStart, pageEnd }
       }
       case 'NEXT': {
+        // if it's not complete and the next page needs more items, load more
         const shouldLoad =
           !state.isComplete &&
           state.allItems.length < state.pageEnd + state.pageSize
@@ -91,7 +92,6 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
   const [state, dispatch] = useReducer(getReducer<T>(), opts, getInitialState)
 
   useEffect(() => {
-    console.log('Dispatching init: ', opts, state)
     dispatch({
       type: 'INIT',
       opts: { q: opts.q, pageSize: opts.pageSize, preload: opts.preload },
@@ -100,7 +100,6 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
 
   useEffect(() => {
     if (state.isLoading) {
-      console.log('Dispatching load: ', state)
       const after = state.allItems[state.allItems.length - 1]
       opts.q(state.pageSize, after).then((newItems) => {
         const isComplete = newItems.length < state.pageSize
@@ -115,7 +114,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     }
   }, [state.isLoading, opts.q, state.allItems, state.pageSize])
 
-  const pageItems = useMemo(
+  const items = useMemo(
     () => state.allItems.slice(state.pageStart, state.pageEnd),
     [state.allItems, state.pageStart, state.pageEnd]
   )
@@ -127,12 +126,11 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     [dispatch]
   )
 
-  console.log(state)
   return {
     ...state,
     isStart: state.pageStart === 0,
     isEnd: state.isComplete && state.pageEnd >= state.allItems.length,
-    pageItems,
+    items,
     getPrev,
     getNext,
     prepend,
