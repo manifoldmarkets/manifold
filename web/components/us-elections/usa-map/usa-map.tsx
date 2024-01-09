@@ -14,10 +14,14 @@ export type ClickHandler<
   R = any
 > = (e: React.MouseEvent<E, MouseEvent>) => R
 export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
+export type GetHoverHandler = (stateKey: string) => (() => void) | undefined
 export type CustomizeObj = {
   fill?: string
   clickHandler?: ClickHandler
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
   selected?: boolean
+  hovered?: boolean
 }
 export interface Customize {
   [key: string]: CustomizeObj
@@ -27,12 +31,16 @@ export type StatesProps = {
   hideStateTitle?: boolean
   fillStateColor: (stateKey: string) => string
   stateClickHandler: GetClickHandler
+  stateMouseEnterHandler: GetHoverHandler
+  stateMouseLeaveHandler: GetHoverHandler
   selectedState: (state: string) => boolean
 }
 const States = ({
   hideStateTitle,
   fillStateColor,
   stateClickHandler,
+  stateMouseEnterHandler,
+  stateMouseLeaveHandler,
   selectedState,
 }: StatesProps) =>
   Object.entries(DATA).map(([stateKey, data]) => (
@@ -42,8 +50,10 @@ const States = ({
       hideStateTitle={hideStateTitle}
       state={stateKey}
       fill={fillStateColor(stateKey)}
-      selected={selectedState(stateKey)}
       onClickState={stateClickHandler(stateKey)}
+      onMouseEnterState={stateMouseEnterHandler(stateKey)}
+      onMouseLeaveState={stateMouseLeaveHandler(stateKey)}
+      selected={selectedState(stateKey)}
     />
   ))
 
@@ -69,6 +79,10 @@ export const USAMap = ({
     customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
   const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
+  const stateMouseEnterHandler = (state: string) =>
+    customize?.[state]?.onMouseEnter
+  const stateMouseLeaveHandler = (state: string) =>
+    customize?.[state]?.onMouseLeave
 
   const selectedState = (state: string) => !!customize?.[state]?.selected
 
@@ -77,9 +91,21 @@ export const USAMap = ({
   const [isDCHovered, setIsDCHovered] = useState(false)
 
   const onDCClick = customize?.['DC']?.clickHandler
+  const onDCMouseEnter = customize?.['DC']?.onMouseEnter
+  const onDCMouseLeave = customize?.['DC']?.onMouseLeave
 
-  const onMouseEnterDC = () => setIsDCHovered(true)
-  const onMouseLeaveDC = () => setIsDCHovered(false)
+  const onMouseEnterDC = () => {
+    setIsDCHovered(true)
+    if (onDCMouseEnter) {
+      onDCMouseEnter()
+    }
+  }
+  const onMouseLeaveDC = () => {
+    setIsDCHovered(false)
+    if (onDCMouseLeave) {
+      onDCMouseLeave()
+    }
+  }
 
   return (
     <div
@@ -171,12 +197,14 @@ export const USAMap = ({
             hideStateTitle,
             fillStateColor,
             stateClickHandler,
+            stateMouseEnterHandler,
+            stateMouseLeaveHandler,
             selectedState,
           })}{' '}
           <circle
             fill={fillStateColor('DC')}
             stroke={selectedState('DC') ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
-            strokeWidth="1.5"
+            strokeWidth={isDCHovered || selectedState('DC') ? 2 : undefined}
             cx="801.3"
             cy="251.8"
             r="5"
