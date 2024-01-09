@@ -10,6 +10,8 @@ type USAStateProps = {
   stateData: StateDataType
   fill: string
   onClickState?: ClickHandler
+  onMouseEnterState?: () => void | undefined
+  onMouseLeaveState?: () => void | undefined
   hideStateTitle?: boolean
   selected?: boolean
 }
@@ -18,24 +20,40 @@ export const USAState = ({
   stateData,
   fill,
   onClickState,
+  onMouseEnterState,
+  onMouseLeaveState,
   hideStateTitle,
   selected,
 }: USAStateProps) => {
   const { dimensions, textCoordinates, abbreviation, line } = stateData
   const [isHovered, setIsHovered] = useState(false)
-  const onMouseEnter = () => setIsHovered(true)
-  const onMouseLeave = () => setIsHovered(false)
+  const onMouseEnter = () => {
+    setIsHovered(true)
+    if (onMouseEnterState) {
+      onMouseEnterState()
+    }
+  }
+  const onMouseLeave = () => {
+    setIsHovered(false)
+    if (onMouseLeaveState) {
+      onMouseLeaveState()
+    }
+  }
   return (
     <>
       <path
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(!!onClickState && 'group-hover:cursor-pointer ')}
+        className={clsx(
+          !!onClickState && 'transition-all group-hover:cursor-pointer'
+        )}
         onClick={onClickState}
         id={state}
-        stroke={!!selected ? SELECTED_OUTLINE_COLOR : undefined}
-        strokeWidth={!!selected ? 2 : undefined}
+        stroke={
+          !!selected ? SELECTED_OUTLINE_COLOR : isHovered ? '#fff' : undefined
+        }
+        strokeWidth={!!selected || !!isHovered ? 2 : undefined}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
       />

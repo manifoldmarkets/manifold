@@ -44,13 +44,20 @@ export default function USElectionsPage(props: {
     Contract | undefined | null
   >(undefined)
 
+  const [hoveredContract, setHoveredContract] = useState<
+    Contract | undefined | null
+  >(undefined)
+
   const stateContractMap: Customize = useMemo(() => {
     const map: Record<
       string,
       {
         fill: string
         clickHandler: ClickHandler
-        selected: boolean | undefined
+        onMouseEnter?: () => void
+        onMouseLeave?: () => void
+        selected: boolean
+        hovered: boolean
       }
     > = {}
     mapContracts.forEach((mapContract) => {
@@ -66,7 +73,16 @@ export default function USElectionsPage(props: {
             setTargetContract(mapContract.contract)
           }
         },
-        selected: targetContract?.id === mapContract.contract?.id,
+        onMouseEnter: () => {
+          setHoveredContract(mapContract.contract)
+        },
+        onMouseLeave: () => {
+          setHoveredContract(undefined)
+        },
+        selected:
+          !!targetContract && targetContract?.id === mapContract.contract?.id,
+        hovered:
+          !!hoveredContract && hoveredContract?.id === mapContract.contract?.id,
       }
     })
     return map
@@ -80,7 +96,11 @@ export default function USElectionsPage(props: {
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
         <USAMap customize={stateContractMap} />
-        {targetContract && <PoliticsContractCard contract={targetContract} />}
+        {hoveredContract ? (
+          <PoliticsContractCard contract={hoveredContract} />
+        ) : (
+          targetContract && <PoliticsContractCard contract={targetContract} />
+        )}
       </Col>
     </Page>
   )
