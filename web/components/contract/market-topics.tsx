@@ -49,7 +49,7 @@ const ContractTopicBreadcrumbs = (props: {
   const { contract, topics } = props
 
   return (
-    <span className="line-clamp-1 min-h-[24px]">
+    <span className="min-h-[24px]">
       {topics.map((topic, i) => (
         <span key={topic.id} className={'text-primary-700 text-sm'}>
           <Link
