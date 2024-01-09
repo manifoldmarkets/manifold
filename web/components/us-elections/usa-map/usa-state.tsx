@@ -45,7 +45,9 @@ export const USAState = ({
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(!!onClickState && 'group-hover:cursor-pointer ')}
+        className={clsx(
+          !!onClickState && 'transition-all group-hover:cursor-pointer'
+        )}
         onClick={onClickState}
         id={state}
         stroke={

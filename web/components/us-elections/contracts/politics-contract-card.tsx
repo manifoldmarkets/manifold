@@ -134,7 +134,8 @@ export function PoliticsContractCard(props: {
         'cursor-pointer ',
         'hover:ring-[1px]',
         'flex w-full flex-col gap-0.5 px-4 py-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
+        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
+        'fade-in'
       )}
       onClick={(e) => {
         trackClick()
