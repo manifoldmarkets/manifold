@@ -39,6 +39,9 @@ create policy "user can update" on user_feed
     for update
     using (true);
 
+
+create index if not exists user_feed_created_time_idx on user_feed (created_time);
+
 create index if not exists user_feed_created_time on user_feed (user_id, created_time desc);
 
 create index if not exists user_feed_contract_items on user_feed (data_type, contract_id, greatest(created_time, seen_time) desc) where contract_id is not null;
