@@ -1,7 +1,6 @@
 // https://github.com/jb-1980/usa-map-react
 // MIT License
 
-import { Col } from 'web/components/layout/col'
 import { DATA } from './usa-map-data'
 import { StateText, USAState } from './usa-state'
 import clsx from 'clsx'

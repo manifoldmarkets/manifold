@@ -7,14 +7,11 @@ import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
-import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
 import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
