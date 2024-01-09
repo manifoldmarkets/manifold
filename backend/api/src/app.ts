@@ -128,6 +128,7 @@ import { getHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
+import { addOrRemoveReaction } from './reaction'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -225,6 +226,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
+  react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
   headlines: getHeadlines,
   'compatible-lovers': getCompatibleLovers,

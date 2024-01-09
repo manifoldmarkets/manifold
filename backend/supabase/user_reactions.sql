@@ -1,31 +1,43 @@
-
 create table if not exists
-    user_reactions (
-                       user_id text not null,
-                       reaction_id text not null,
-                       data jsonb not null,
-                       fs_updated_time timestamp not null,
-                       primary key (user_id, reaction_id)
-);
+  user_reactions (
+    user_id text not null,
+    reaction_id text not null default random_alphanumeric (12),
+    content_id text,
+    content_type text,
+    content_owner_id text,
+    created_time timestamptz not null default now(),
+    -- deprecated
+    data jsonb,
+    fs_updated_time timestamp not null,
+    primary key (user_id, reaction_id)
+  );
 
 alter table user_reactions enable row level security;
 
 drop policy if exists "public read" on user_reactions;
 
 create policy "public read" on user_reactions for
-    select
-    using (true);
-
-create index if not exists user_reactions_data_gin on user_reactions using GIN (data);
-
--- useful for getting just 'likes', we may want to index contentType as well
-create index if not exists user_reactions_type on user_reactions (user_id, (to_jsonb(data) ->> 'type') desc);
+select
+  using (true);
 
 -- useful for getting all reactions for a given contentId recently
-create index if not exists user_reactions_content_id on user_reactions (
-                                                                        (to_jsonb(data) ->> 'contentId'),
-                                                                        (to_jsonb(data) ->> 'createdTime') desc
-    );
+create index if not exists user_reactions_content_id_raw on user_reactions (content_id created_time desc);
 
-alter table user_reactions
-    cluster on user_reactions_type;
+create
+or replace function user_reactions_populate_cols () returns trigger language plpgsql as $$
+begin
+  if new.data is not null then
+    new.content_id := (new.data) ->> 'contentId';
+    new.content_type := (new.data) ->> 'contentType';
+    new.content_owner_id := (new.data) ->> 'contentOwnerId';
+    new.created_time :=
+      case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
+  end if;
+  return new;
+end
+$$;
+
+create trigger user_reactions_populate before insert
+or
+update on user_reactions for each row
+execute function user_reactions_populate_cols ();

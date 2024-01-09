@@ -501,6 +501,16 @@ export const API = (_apiTypeCheck = {
     returns: [] as Headline[],
     props: z.object({}),
   },
+  react: {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contentId: z.string(),
+      contentType: z.enum(['comment', 'contract']),
+      remove: z.boolean().optional(),
+    }),
+  },
   'compatible-lovers': {
     method: 'GET',
     visibility: 'private',

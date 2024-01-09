@@ -24,6 +24,7 @@ import {
 } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
 import {
+  getContract,
   getPrivateUser,
   getUser,
   getUserSupabase,
@@ -56,6 +57,7 @@ import { QuestType } from 'common/quest'
 import { QuestRewardTxn } from 'common/txn'
 import { formatMoney, getMoneyNumber } from 'common/util/format'
 import {
+  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -72,6 +74,7 @@ import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { getComment } from './supabase/contract_comments'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -832,36 +835,74 @@ export const createLeagueChangedNotification = async (
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {
-  const privateUser = await getPrivateUser(reaction.contentOwnerId)
-  if (!privateUser) return
+  const { reaction_id, content_owner_id, content_id, content_type } = reaction
+  if (!content_id || !content_owner_id) return
+
+  const privateUser = await getPrivateUser(content_owner_id)
+  const user = await getUser(content_owner_id)
+
+  const db = createSupabaseClient()
+
+  let contractId
+  if (content_type === 'contract') {
+    contractId = content_id
+  } else {
+    const { data, error } = await db
+      .from('contract_comments')
+      .select('contract_id')
+      .eq('id', content_id)
+    if (error) {
+      log('Failed to get contract id: ' + error.message)
+      return
+    }
+    if (!data.length) {
+      log('Contract that comment belongs to not found')
+      return
+    }
+    contractId = data[0].contract_id
+  }
+
+  const contract = await getContract(contractId)
+
+  if (!privateUser || !user || !contract) return
+
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
     'user_liked_your_content'
   )
   if (!sendToBrowser) return
 
-  // Reaction ids are constructed via contentId-reactionType to ensure idempotency
-  const id = `${reaction.userId}-${reaction.id}`
+  const slug =
+    `/${contract.creatorUsername}/${contract.slug}` +
+    (content_type === 'comment' ? `#${content_id}` : '')
+
+  let text = ''
+  if (content_type === 'contract') {
+    text = contract.question
+  } else {
+    const comment = await getComment(db, content_id)
+    if (comment == null) return
+
+    text = richTextToString(comment?.content)
+  }
+
+  const id = `${reaction.user_id}-${reaction_id}`
   const notification: Notification = {
     id,
-    userId: reaction.contentOwnerId,
+    userId: content_owner_id,
     reason: 'user_liked_your_content',
     createdTime: Date.now(),
     isSeen: false,
-    sourceId: reaction.id,
-    sourceType:
-      reaction.contentType === 'contract' ? 'contract_like' : 'comment_like',
+    sourceId: reaction_id,
+    sourceType: content_type === 'contract' ? 'contract_like' : 'comment_like',
     sourceUpdateType: 'created',
-    sourceUserName: reaction.userDisplayName,
-    sourceUserUsername: reaction.userUsername,
-    sourceUserAvatarUrl: reaction.userAvatarUrl,
-    sourceContractId:
-      reaction.contentType === 'contract'
-        ? reaction.contentId
-        : reaction.contentParentId,
-    sourceText: reaction.text,
-    sourceSlug: reaction.slug,
-    sourceTitle: reaction.title,
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: user.avatarUrl,
+    sourceContractId: contractId,
+    sourceText: text,
+    sourceSlug: slug,
+    sourceTitle: contract.question,
   }
   const pg = createSupabaseDirectClient()
   return await insertNotificationToSupabase(notification, pg)

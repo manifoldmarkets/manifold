@@ -111,9 +111,8 @@ export const getContractLikerIds = async (
 ) => {
   const likedUserIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from user_reactions 
-               where (data->>'contentId') = $1
-               and (data->>'type') = 'like'
-               and (data->>'contentType') = 'contract'`,
+               where content_id = $1
+               and content_type = 'contract'`,
     [contractId]
   )
   return likedUserIds.map((r) => r.user_id)

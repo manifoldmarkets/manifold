@@ -38,7 +38,6 @@ import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
@@ -407,8 +406,6 @@ function ProfilePublicStats(props: {
         </span>{' '}
         Followers
       </TextButton>
-
-      {isCurrentUser && <UserLikedContractsButton user={user} />}
 
       {!isCurrentUser && leagueInfo && (
         <Link
