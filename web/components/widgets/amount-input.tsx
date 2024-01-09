@@ -210,7 +210,7 @@ export function BuyAmountInput(props: {
   )
   return (
     <>
-      <Col className={clsx('gap-2', parentClassName)}>
+      <Col className={clsx('', parentClassName)}>
         <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
           <AmountInput
             className={className}
@@ -230,6 +230,7 @@ export function BuyAmountInput(props: {
 
         {showSlider && (
           <BetSlider
+            className="px-2"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
@@ -239,13 +240,13 @@ export function BuyAmountInput(props: {
         )}
 
         {error ? (
-          <div className="text-scarlet-500 mt-2 whitespace-nowrap text-sm">
+          <div className="text-scarlet-500 mt-4 whitespace-nowrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
           </div>
         ) : (
           showBalance &&
           user && (
-            <div className="text-ink-500 mt-2 whitespace-nowrap text-sm">
+            <div className="text-ink-500 mt-4 whitespace-nowrap text-sm">
               Balance{' '}
               <span className="text-ink-800">{formatMoney(user.balance)}</span>
             </div>

@@ -3,6 +3,7 @@ import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
 import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
+import clsx from 'clsx'
 
 const largerSliderAmounts = [
   1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 350, 500, 750, 1000,
@@ -17,9 +18,16 @@ export const BetSlider = (props: {
   smallManaAmounts?: boolean
   binaryOutcome?: BinaryOutcomes
   disabled?: boolean
+  className?: string
 }) => {
-  const { amount, onAmountChange, smallManaAmounts, binaryOutcome, disabled } =
-    props
+  const {
+    amount,
+    onAmountChange,
+    smallManaAmounts,
+    binaryOutcome,
+    disabled,
+    className,
+  } = props
   const sliderAmounts = smallManaAmounts
     ? lowerManaSliderAmounts
     : largerSliderAmounts
@@ -36,7 +44,7 @@ export const BetSlider = (props: {
   const hundredAmountDistance = (100 * hundredIndex) / maxSliderIndex
 
   return (
-    <Col className="w-full gap-4">
+    <Col className={clsx('w-full gap-4', className)}>
       <Slider
         min={0}
         max={maxSliderIndex}
