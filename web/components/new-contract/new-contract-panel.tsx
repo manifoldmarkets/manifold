@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { ChevronRightIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
 import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
@@ -46,6 +46,15 @@ export function NewContractPanel(props: {
   const [state, setState] = useState<CreateContractStateType>(
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
   )
+
+  useEffect(() => {
+    if (outcomeType !== params?.outcomeType) {
+      setOutcomeType(params?.outcomeType)
+    }
+    if (params?.outcomeType) {
+      setState('filling contract params')
+    }
+  }, [params?.outcomeType])
 
   return (
     <Col
