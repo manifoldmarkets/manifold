@@ -121,8 +121,8 @@ function StateContract(props: { targetContract: Contract }) {
 }
 
 function extractStateFromSentence(sentence: string): string | undefined {
-  const regex = /US Presidency in (\w+)/
+  const regex = /US Presidency in ([\w\s,.()]+)\?/
   const match = sentence.match(regex)
 
-  return match ? match[1] : undefined
+  return match ? match[1].trim() : undefined
 }

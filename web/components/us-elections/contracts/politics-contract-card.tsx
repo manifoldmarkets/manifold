@@ -184,7 +184,7 @@ export function PoliticsContractCard(props: {
           <Link
             className={clsx(
               'hover:text-primary-700 grow items-start transition-colors sm:text-lg',
-              titleSize === 'lg' && 'text-lg sm:text-xl'
+              titleSize === 'lg' && ' sm:text-3xl'
             )}
             href={path}
             onClick={trackClick}
