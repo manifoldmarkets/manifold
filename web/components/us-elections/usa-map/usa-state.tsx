@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
 import { StateDataType } from './usa-map-data'
-import { use, useState } from 'react'
+import { useState } from 'react'
 
 type TextCoordinates = { x: number; y: number }
 
