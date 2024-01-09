@@ -30,6 +30,7 @@ import { BetButton } from 'web/components/bet/feed-bet-button'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import { title } from 'process'
 
 export function PoliticsContractCard(props: {
   contract: Contract
@@ -44,6 +45,8 @@ export function PoliticsContractCard(props: {
   hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
+  customTitle?: string
+  titleSize?: 'lg'
 }) {
   const {
     promotedData,
@@ -55,6 +58,8 @@ export function PoliticsContractCard(props: {
     hide,
     showGraph,
     hideBottomRow,
+    customTitle,
+    titleSize,
   } = props
   const user = useUser()
 
@@ -177,11 +182,15 @@ export function PoliticsContractCard(props: {
         >
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
-            className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
+            className={clsx(
+              'hover:text-primary-700 grow items-start transition-colors sm:text-lg',
+              titleSize === 'lg' && ' sm:text-3xl'
+            )}
             href={path}
             onClick={trackClick}
           >
-            <VisibilityIcon contract={contract} /> {contract.question}
+            <VisibilityIcon contract={contract} />{' '}
+            {customTitle ? customTitle : contract.question}
           </Link>
           <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
             {contract.outcomeType !== 'MULTIPLE_CHOICE' && (

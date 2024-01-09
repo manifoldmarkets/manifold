@@ -95,13 +95,34 @@ export default function USElectionsPage(props: {
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
+        <div className="mx-auto font-semibold sm:text-xl">
+          Which party will win the US Presidency?
+        </div>
         <USAMap customize={stateContractMap} />
-        {hoveredContract ? (
-          <PoliticsContractCard contract={hoveredContract} />
-        ) : (
-          targetContract && <PoliticsContractCard contract={targetContract} />
+        {(hoveredContract || targetContract) && (
+          <StateContract
+            targetContract={(hoveredContract ?? targetContract) as Contract}
+          />
         )}
       </Col>
     </Page>
   )
+}
+
+function StateContract(props: { targetContract: Contract }) {
+  const { targetContract } = props
+  return (
+    <PoliticsContractCard
+      contract={targetContract}
+      customTitle={extractStateFromSentence(targetContract.question)}
+      titleSize="lg"
+    />
+  )
+}
+
+function extractStateFromSentence(sentence: string): string | undefined {
+  const regex = /US Presidency in ([\w\s,.()]+)\?/
+  const match = sentence.match(regex)
+
+  return match ? match[1].trim() : undefined
 }
