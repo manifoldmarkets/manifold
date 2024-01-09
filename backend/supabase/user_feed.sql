@@ -49,4 +49,4 @@ create index if not exists user_feed_relevance_score_unseen on user_feed (user_i
 create index if not exists user_feed_user_id_contract_id_created_time on user_feed (user_id, contract_id, created_time desc);
 
 alter table user_feed
-    cluster on user_feed_created_time;
+    cluster on user_feed_created_time_idx;
