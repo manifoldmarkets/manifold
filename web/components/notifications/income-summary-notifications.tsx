@@ -498,14 +498,17 @@ function IncomeNotificationLabel(props: {
 
 const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
   const { bet, outcomeType, answerText } = props.uniqueBettorData
-  const { amount } = bet
+  const { amount, outcome } = bet
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
       props.uniqueBettorData.max !== undefined) ||
     outcomeType !== 'PSEUDO_NUMERIC'
+  const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
     <Row className={'line-clamp-1 gap-1'}>
-      <span className="text-ink-600">{formatMoney(amount)}</span> on{' '}
+      <span className="text-ink-600">{formatMoney(amount)}</span>{' '}
+      {showOutcome && `${outcome} `}
+      on{' '}
       <BetOutcomeLabel
         bet={bet}
         contractOutcomeType={outcomeType}
