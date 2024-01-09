@@ -23,16 +23,19 @@ import { OriginLocation } from './location-filter'
 import { Lover } from 'common/love/lover'
 import { filterDefined } from 'common/util/array'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { CompatibilityScore } from 'common/love/compatibility-score'
 
 export type FilterFields = {
-  orderBy: 'last_online_time' | 'created_time'
+  orderBy: 'last_online_time' | 'created_time' | 'compatibility_score'
   geodbCityIds: string[] | null
   genders: string[]
 } & rowFor<'lovers'> &
   User
 
 function isOrderBy(input: string): input is FilterFields['orderBy'] {
-  return ['last_online_time', 'created_time'].includes(input)
+  return ['last_online_time', 'created_time', 'compatibility_score'].includes(
+    input
+  )
 }
 
 const initialFilters: Partial<FilterFields> = {
@@ -52,8 +55,9 @@ export const Search = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
   youLover: Lover | undefined | null
+  loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
 }) => {
-  const { allLovers, setLovers, youLover } = props
+  const { allLovers, setLovers, youLover, loverCompatibilityScores } = props
   const [filters, setFilters] = usePersistentLocalState<Partial<FilterFields>>(
     initialFilters,
     'profile-filters'
@@ -169,6 +173,9 @@ export const Search = (props: {
             )
           case 'created_time':
             return new Date(lover.created_time).getTime()
+          case 'compatibility_score':
+            const score = loverCompatibilityScores?.[lover.user_id]?.score
+            return score ?? 0
         }
       },
       'desc'
@@ -263,6 +270,7 @@ export const Search = (props: {
           >
             <option value="last_online_time">Active</option>
             <option value="created_time">New</option>
+            <option value="compatibility_score">Compatible</option>
           </Select>
           <Button
             color="none"

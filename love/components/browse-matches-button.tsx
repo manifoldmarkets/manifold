@@ -18,6 +18,7 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import { createMatch } from 'web/lib/firebase/love/api'
 import { useUser } from 'web/hooks/use-user'
 import { CompatibilityScore } from 'common/love/compatibility-score'
+import { CompatibleBadge } from './widgets/compatible-badge'
 
 export const BrowseMatchesButton = (props: {
   lover: Lover
@@ -336,11 +337,12 @@ function CompatibilityScoreDisplay(props: {
     )
 
   return (
-    <div>
-      Compatibility{' '}
-      <span className="text-primary-600 font-semibold">
-        {Math.round((compatibility.score ?? 0) * 100) / 10} out of 10
-      </span>
-    </div>
+    <Row className="items-center gap-1">
+      <CompatibleBadge
+        className="text-primary-600 font-semibold"
+        compatibility={compatibility}
+      />
+      compatible
+    </Row>
   )
 }

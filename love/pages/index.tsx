@@ -1,16 +1,17 @@
 import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
+import Image from 'next/image'
+import Link from 'next/link'
+import Router from 'next/router'
+
 import { Search } from 'love/components/filters/search'
 import { Gender, convertGender } from 'love/components/gender-icon'
 import { LovePage } from 'love/components/love-page'
 import { SignUpAsMatchmaker } from 'love/components/nav/love-sidebar'
 import OnlineIcon from 'love/components/online-icon'
 import { useLover } from 'love/hooks/use-lover'
-import { useLovers } from 'love/hooks/use-lovers'
+import { useCompatibleLovers, useLovers } from 'love/hooks/use-lovers'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
-import Image from 'next/image'
-import Link from 'next/link'
-import Router from 'next/router'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -24,6 +25,8 @@ import { Lover } from 'common/love/lover'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
+import { CompatibilityScore } from 'common/love/compatibility-score'
+import { CompatibleBadge } from 'love/components/widgets/compatible-badge'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -38,6 +41,9 @@ export default function ProfilesPage() {
   useSaveCampaign()
   useCallReferUser()
   const lover = useLover()
+
+  const compatibleLovers = useCompatibleLovers(user?.id)
+  console.log('compatible lovers', compatibleLovers)
 
   if (user === undefined) return <div />
 
@@ -71,14 +77,23 @@ export default function ProfilesPage() {
             allLovers={allLovers}
             setLovers={setLovers}
             youLover={lover}
+            loverCompatibilityScores={
+              compatibleLovers?.loverCompatibilityScores
+            }
           />
 
-          {lovers === undefined ? (
+          {lovers === undefined || compatibleLovers === undefined ? (
             <LoadingIndicator />
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
               {lovers.map((lover) => (
-                <ProfilePreview key={lover.id} lover={lover} />
+                <ProfilePreview
+                  key={lover.id}
+                  lover={lover}
+                  compatibilityScore={
+                    compatibleLovers.loverCompatibilityScores[lover.user_id]
+                  }
+                />
               ))}
             </div>
           )}
@@ -88,8 +103,13 @@ export default function ProfilesPage() {
   )
 }
 
-function ProfilePreview(props: { lover: Lover }) {
-  const { user, gender, age, pinned_url, city, last_online_time } = props.lover
+function ProfilePreview(props: {
+  lover: Lover
+  compatibilityScore: CompatibilityScore | undefined
+}) {
+  const { lover, compatibilityScore } = props
+  const { user, gender, age, pinned_url, city, last_online_time } = lover
+
   return (
     <Link
       href={`/${user.username}`}
@@ -112,6 +132,13 @@ function ProfilePreview(props: { lover: Lover }) {
             <UserIcon className="h-20 w-20" />
           </Col>
         )}
+
+        {compatibilityScore && compatibilityScore.confidence !== 'low' && (
+          <Col className="absolute inset-x-0 right-0 top-0 bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-1">
+            <CompatibleBadge compatibility={compatibilityScore} />
+          </Col>
+        )}
+
         <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
           <div>
             <div className="flex flex-wrap items-center gap-x-1">
