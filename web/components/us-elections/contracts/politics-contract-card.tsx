@@ -30,7 +30,6 @@ import { BetButton } from 'web/components/bet/feed-bet-button'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
-import { title } from 'process'
 
 export function PoliticsContractCard(props: {
   contract: Contract
