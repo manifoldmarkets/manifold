@@ -129,7 +129,6 @@ export default function USElectionsPage(props: {
     return <Custom404 />
   }
 
-  console.log(electionCandidateContract)
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
