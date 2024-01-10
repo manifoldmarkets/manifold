@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { XIcon } from '@heroicons/react/solid'
+import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
@@ -10,8 +11,11 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { BetSlider } from '../bet/bet-slider'
-import { IncrementButton, IncrementDecrementButton } from './increment-button'
+import {
+  BetSlider,
+  largerSliderAmounts,
+  lowerManaSliderAmounts,
+} from '../bet/bet-slider'
 
 export function AmountInput(
   props: {
@@ -189,50 +193,69 @@ export function BuyAmountInput(props: {
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
-  const incrementAmounts = hasLotsOfMana ? [10, 50, 250] : [1, 5, 25]
-  const quickAddButtons = (
-    <Row className="border-ink-300 divide-ink-300 divide-x border-l">
-      {incrementAmounts.map((incrementAmount) => {
-        const amountWithDefault = amount ?? 0
-        const shouldSetAmount = amountWithDefault < incrementAmount
-        return (
-          <IncrementButton
-            key={incrementAmount}
-            amount={incrementAmount}
-            onIncrement={() => {
-              if (shouldSetAmount) onChange(incrementAmount)
-              else onChange(amountWithDefault + incrementAmount)
-            }}
-          />
-        )
-      })}
-    </Row>
-  )
-  const newIncrementDecrementButtons = (
-    <Col className="border-ink-300 border-l">
-      <IncrementDecrementButton
-        onIncrement={() => onChange((amount ?? 0) + 1)}
-        onDecrement={() => onChange(Math.max(0, (amount ?? 0) - 1))}
-      />
-    </Col>
-  )
+  const amountWithDefault = amount ?? 0
+  const sliderAmounts = hasLotsOfMana
+    ? largerSliderAmounts
+    : lowerManaSliderAmounts
+  const sliderIndex = sliderAmounts.findLastIndex((a) => amountWithDefault >= a)
+  const maxSliderAmount = sliderAmounts[sliderAmounts.length - 1]
+
+  const maxInterval = hasLotsOfMana ? 250 : 25
+  const increment = () => {
+    if (amountWithDefault >= maxSliderAmount) {
+      onChange((amount ?? 0) + maxInterval)
+    } else onChange(sliderAmounts[sliderIndex + 1])
+  }
+  const decrement = () => {
+    if (amountWithDefault >= maxSliderAmount) {
+      onChange((amount ?? 0) - maxInterval)
+    } else onChange(sliderAmounts[Math.max(0, sliderIndex - 1)])
+  }
+
   return (
     <>
-      <Col className={clsx('w-full gap-2', parentClassName)}>
-        <AmountInput
-          className={className}
-          inputClassName={clsx('!h-14 w-full pr-[78px]', inputClassName)}
-          amount={amount}
-          onChangeAmount={onChange}
-          label={ENV_CONFIG.moneyMoniker}
-          error={!!error}
-          disabled={disabled}
-          inputRef={inputRef}
-          quickAddMoreButton={undefined}
-        />
+      <Col className={clsx('max-w-sm gap-2', parentClassName)}>
+        <Row className="items-center gap-2">
+          <AmountInput
+            className={className}
+            inputClassName={clsx(
+              '!h-14 w-full max-w-[300px] pr-[44px]',
+              inputClassName
+            )}
+            amount={amount}
+            onChangeAmount={onChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={!!error}
+            disabled={disabled}
+            inputRef={inputRef}
+            quickAddMoreButton={undefined}
+          />
+
+          <Row>
+            <button
+              className={clsx(
+                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-r-none border',
+                'bg-canvas-0 active:bg-ink-100'
+              )}
+              onClick={increment}
+            >
+              <PlusIcon className="h-5 w-5" />
+            </button>
+            <button
+              className={clsx(
+                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-l-none border border-l-0',
+                'bg-canvas-0 active:bg-ink-100'
+              )}
+              onClick={decrement}
+            >
+              <MinusIcon className="h-5 w-5" />
+            </button>
+          </Row>
+        </Row>
 
         {showSlider && (
           <BetSlider
+            className="-mt-2"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
