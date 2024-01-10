@@ -23,6 +23,7 @@ import { Lover } from 'common/love/lover'
 import { filterDefined } from 'common/util/array'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { CompatibilityScore } from 'common/love/compatibility-score'
+import { useIsMatchmaker } from 'love/hooks/use-is-matchmaker'
 
 export type FilterFields = {
   orderBy: 'last_online_time' | 'created_time' | 'compatibility_score'
@@ -48,7 +49,7 @@ const initialFilters: Partial<FilterFields> = {
   is_smoker: undefined,
   pref_relation_styles: undefined,
   pref_gender: undefined,
-  orderBy: 'created_time',
+  orderBy: 'compatibility_score',
 }
 export const Search = (props: {
   allLovers: Lover[] | undefined
@@ -57,9 +58,12 @@ export const Search = (props: {
   loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
 }) => {
   const { allLovers, setLovers, youLover, loverCompatibilityScores } = props
+  const isMatchmaker = useIsMatchmaker()
   const [filters, setFilters] = usePersistentLocalState<Partial<FilterFields>>(
-    initialFilters,
-    'profile-filters'
+    isMatchmaker
+      ? { ...initialFilters, orderBy: 'created_time' }
+      : initialFilters,
+    'profile-filters-2'
   )
 
   const updateFilter = (newState: Partial<FilterFields>) => {
@@ -287,9 +291,9 @@ export const Search = (props: {
             value={filters.orderBy || 'created_time'}
             className={'w-18 border-ink-300 rounded-md'}
           >
-            <option value="last_online_time">Active</option>
-            <option value="created_time">New</option>
             <option value="compatibility_score">Compatible</option>
+            <option value="created_time">New</option>
+            <option value="last_online_time">Active</option>
           </Select>
           <Button
             color="none"

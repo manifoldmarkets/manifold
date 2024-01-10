@@ -43,7 +43,6 @@ export default function ProfilesPage() {
   const lover = useLover()
 
   const compatibleLovers = useCompatibleLovers(user?.id)
-  console.log('compatible lovers', compatibleLovers)
 
   if (user === undefined) return <div />
 
