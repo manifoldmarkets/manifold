@@ -11,18 +11,14 @@ import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { Contract, contractPath, CPMMBinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
-import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import {
-  ArrowRightIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '@heroicons/react/outline'
+import { ArrowRightIcon } from '@heroicons/react/outline'
 import { Topic, TOPIC_KEY } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { DAY_MS } from 'common/util/time'
 import { linkClass } from 'web/components/widgets/site-link'
 import { removeEmojis } from 'common/topics'
+import { ShowMoreLessButton } from 'web/components/buttons/show-more-less-button'
 
 export const RelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -384,20 +380,10 @@ export const RelatedContractsGrid = memo(function (props: {
         {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
       </Masonry>
       {!showAll && (
-        <Button
-          color={'gray-white'}
+        <ShowMoreLessButton
+          showMore={showMore}
           onClick={() => setShowMore(!showMore)}
-          className="mt-2"
-        >
-          <Row className={'items-center'}>
-            {showMore ? (
-              <ChevronUpIcon className="mr-1 h-4 w-4" />
-            ) : (
-              <ChevronDownIcon className="mr-1 h-4 w-4" />
-            )}
-            {showMore ? 'Show less' : 'Show more'}
-          </Row>
-        </Button>
+        />
       )}
     </Col>
   )
