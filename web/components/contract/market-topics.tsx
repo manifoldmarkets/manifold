@@ -4,7 +4,8 @@ import clsx from 'clsx'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useState } from 'react'
+import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
+import { useEffect, useState, useRef } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { Modal } from 'web/components/layout/modal'
@@ -48,26 +49,54 @@ const ContractTopicBreadcrumbs = (props: {
 }) => {
   const { contract, topics } = props
 
+  const spanRef = useRef<HTMLSpanElement>(null)
+  const [isClamped, setClamped] = useState(false)
+  const [showMore, setShowMore] = useState(false)
+
+  useEffect(() => {
+    function handleResize() {
+      if (spanRef.current) {
+        setClamped(spanRef.current.scrollHeight > spanRef.current.clientHeight)
+      }
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [topics])
+
   return (
-    <span className="min-h-[24px]">
-      {topics.map((topic, i) => (
-        <span key={topic.id} className={'text-primary-700 text-sm'}>
-          <Link
-            className={linkClass}
-            href={groupPath(topic.slug)}
-            onClick={() => {
-              track('click category pill on market', {
-                contractId: contract.id,
-                categoryName: topic.name,
-              })
-            }}
-          >
-            {removeEmojis(topic.name)}
-          </Link>
-          {i !== topics.length - 1 && <span className="mx-1.5">{'•'}</span>}
-        </span>
-      ))}
-    </span>
+    <Col>
+      <span
+        ref={spanRef}
+        className={clsx(['min-h-[24px]', { 'line-clamp-1': !showMore }])}
+      >
+        {topics.map((topic, i) => (
+          <span key={topic.id} className={'text-primary-700 text-sm'}>
+            <Link
+              className={linkClass}
+              href={groupPath(topic.slug)}
+              onClick={() => {
+                track('click category pill on market', {
+                  contractId: contract.id,
+                  categoryName: topic.name,
+                })
+              }}
+            >
+              {removeEmojis(topic.name)}
+            </Link>
+            {i !== topics.length - 1 && <span className="mx-1.5">{'•'}</span>}
+          </span>
+        ))}
+      </span>
+      {isClamped && (
+        <ShowMoreLessButton
+          isCollapsed={!showMore}
+          onClick={() => setShowMore(!showMore)}
+          moreWhat="topics"
+        />
+      )}
+    </Col>
   )
 }
 
