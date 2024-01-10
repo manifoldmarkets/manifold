@@ -11,7 +11,7 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
-import { IncrementButton } from './increment-button'
+import { IncrementButton, IncrementDecrementButton } from './increment-button'
 
 export function AmountInput(
   props: {
@@ -99,15 +99,15 @@ export function AmountInput(
                 }
               }}
             />
-            <Row className="absolute right-[1px] top-[1px] gap-4">
+            <Row className="absolute right-0 h-full divide-x">
+              {quickAddMoreButton}
               <ClearInputButton
                 className={clsx(
-                  'transition-opacity',
+                  'w-12 transition-opacity',
                   amount === undefined && 'opacity-0'
                 )}
                 onClick={() => onChangeAmount(undefined)}
               />
-              {quickAddMoreButton}
             </Row>
           </div>
         </label>
@@ -208,29 +208,31 @@ export function BuyAmountInput(props: {
       })}
     </Row>
   )
+  const newIncrementDecrementButtons = (
+    <Col className="border-ink-300 border-l">
+      <IncrementDecrementButton
+        onIncrement={() => onChange((amount ?? 0) + 1)}
+        onDecrement={() => onChange(Math.max(0, (amount ?? 0) - 1))}
+      />
+    </Col>
+  )
   return (
     <>
-      <Col className={clsx('', parentClassName)}>
-        <Row className={clsx('flex-wrap items-center gap-x-2 gap-y-1')}>
-          <AmountInput
-            className={className}
-            inputClassName={clsx(
-              '!h-14 w-full pr-[178px] max-w-[340px]',
-              inputClassName
-            )}
-            amount={amount}
-            onChangeAmount={onChange}
-            label={ENV_CONFIG.moneyMoniker}
-            error={!!error}
-            disabled={disabled}
-            inputRef={inputRef}
-            quickAddMoreButton={quickAddButtons}
-          />
-        </Row>
+      <Col className={clsx('w-full gap-2', parentClassName)}>
+        <AmountInput
+          className={className}
+          inputClassName={clsx('!h-14 w-full pr-[78px]', inputClassName)}
+          amount={amount}
+          onChangeAmount={onChange}
+          label={ENV_CONFIG.moneyMoniker}
+          error={!!error}
+          disabled={disabled}
+          inputRef={inputRef}
+          quickAddMoreButton={undefined}
+        />
 
         {showSlider && (
           <BetSlider
-            className="px-2"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
