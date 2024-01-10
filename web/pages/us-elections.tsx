@@ -14,7 +14,6 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
-import { WhichPartyCard } from 'web/components/us-elections/contracts/which-party-card'
 import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
 
 export async function getStaticProps() {

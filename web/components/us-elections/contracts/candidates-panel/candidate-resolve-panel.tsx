@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
@@ -18,15 +17,9 @@ import { getAnswerColor } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { Row } from '../../../layout/row'
 import { MiniResolutionPanel, ResolveHeader } from '../../../resolution-panel'
-import { AmountInput } from '../../../widgets/amount-input'
 import { GradientContainer } from '../../../widgets/gradient-container'
-import { InfoTooltip } from '../../../widgets/info-tooltip'
 import {
   CandidateBar,
-  AnswerStatus,
-  ClosedProb,
-  CreatorAndAnswerLabel,
-  OpenProb,
 } from './candidate-bar'
 
 function getAnswerResolveButtonColor(

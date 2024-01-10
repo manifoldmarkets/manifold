@@ -1,22 +1,19 @@
 import {
   ArrowRightIcon,
-  ChevronDownIcon,
   PencilIcon,
-  PresentationChartLineIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, MultiContract, SORTS, contractPath } from 'common/contract'
+import { Contract, MultiContract, contractPath } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
-import { groupBy, sortBy, sumBy } from 'lodash'
+import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
-import toast from 'react-hot-toast'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { TradesButton } from 'web/components/contract/trades-button'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
@@ -26,27 +23,18 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
+import { editAnswerCpmm } from 'web/lib/firebase/api'
 import {
   getAnswerColor,
   useChartAnswers,
 } from '../../../charts/contract/choice'
-import DropdownMenu from '../../../comments/dropdown-menu'
-import { MultiSort } from '../../../contract/contract-overview'
 import { Col } from '../../../layout/col'
-import generateFilterDropdownItems from '../../../search/search-dropdown-helpers'
-import { InfoTooltip } from '../../../widgets/info-tooltip'
 import {
   AddComment,
   CandidateBar,
   AnswerPosition,
-  AnswerStatus,
-  BetButtons,
-  CreatorAndAnswerLabel,
 } from './candidate-bar'
-import { SearchCreateAnswerPanel } from './create-answer-panel'
 
 const EditAnswerModal = (props: {
   open: boolean

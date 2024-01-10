@@ -1,6 +1,5 @@
 import { ChatIcon } from '@heroicons/react/outline'
 import {
-  ChevronDownIcon,
   PresentationChartLineIcon,
   SparklesIcon,
   UserIcon,
@@ -22,7 +21,7 @@ import { User } from 'common/user'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import { sumBy } from 'lodash'
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'

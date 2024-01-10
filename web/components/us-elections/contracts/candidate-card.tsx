@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { AD_WAIT_SECONDS } from 'common/boost'
-import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
+import { MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import {
   ContractStatusLabel,
