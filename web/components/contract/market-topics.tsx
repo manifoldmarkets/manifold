@@ -94,7 +94,6 @@ const ContractTopicBreadcrumbs = (props: {
           <ShowMoreLessButton
             isCollapsed={!showMore}
             onClick={() => setShowMore(!showMore)}
-            moreWhat="topics"
           />
         </Row>
       )}
