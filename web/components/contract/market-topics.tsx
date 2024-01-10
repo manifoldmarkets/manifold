@@ -90,11 +90,13 @@ const ContractTopicBreadcrumbs = (props: {
         ))}
       </span>
       {isClamped && (
-        <ShowMoreLessButton
-          isCollapsed={!showMore}
-          onClick={() => setShowMore(!showMore)}
-          moreWhat="topics"
-        />
+        <Row className="justify-end">
+          <ShowMoreLessButton
+            isCollapsed={!showMore}
+            onClick={() => setShowMore(!showMore)}
+            moreWhat="topics"
+          />
+        </Row>
       )}
     </Col>
   )
