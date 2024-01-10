@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { ELECTION_ENABLED } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { useMemo, useState } from 'react'
@@ -14,6 +14,8 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
+import { WhichPartyCard } from 'web/components/us-elections/contracts/which-party-card'
+import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -77,7 +79,7 @@ export default function USElectionsPage(props: {
   } = props
   const [targetContract, setTargetContract] = useState<
     Contract | undefined | null
-  >(undefined)
+  >(mapContracts.find((m) => m.state === 'GA')?.contract)
 
   const [hoveredContract, setHoveredContract] = useState<
     Contract | undefined | null
@@ -131,9 +133,11 @@ export default function USElectionsPage(props: {
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
         <PoliticsContractCard contract={electionPartyContract} />
-        <PoliticsContractCard contract={electionCandidateContract} />
-        <PoliticsContractCard contract={republicanCandidateContract} />
-        <PoliticsContractCard contract={democratCandidateContract} />
+        <CandidateCard contract={electionCandidateContract as MultiContract} />
+        <CandidateCard
+          contract={republicanCandidateContract as MultiContract}
+        />
+        <CandidateCard contract={democratCandidateContract as MultiContract} />
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
             Which party will win the US Presidency?
