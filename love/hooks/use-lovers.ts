@@ -52,9 +52,17 @@ export const useCompatibleLovers = (userId: string | null | undefined) => {
 
   useEffect(() => {
     if (userId) {
-      api('compatible-lovers', { userId }).then((result) => {
-        setData(result)
-      })
+      api('compatible-lovers', { userId })
+        .then((result) => {
+          setData(result)
+        })
+        .catch((e) => {
+          if (e.code === 404) {
+            setData(null)
+          } else {
+            throw e
+          }
+        })
     } else if (userId === null) setData(null)
   }, [userId])
 
