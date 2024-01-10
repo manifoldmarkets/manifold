@@ -1,7 +1,4 @@
-import {
-  ArrowRightIcon,
-  PencilIcon,
-} from '@heroicons/react/outline'
+import { ArrowRightIcon, PencilIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
@@ -30,11 +27,7 @@ import {
   useChartAnswers,
 } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
-import {
-  AddComment,
-  CandidateBar,
-  AnswerPosition,
-} from './candidate-bar'
+import { AddComment, CandidateBar, AnswerPosition } from './candidate-bar'
 
 const EditAnswerModal = (props: {
   open: boolean

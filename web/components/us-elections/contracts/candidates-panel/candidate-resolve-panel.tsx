@@ -18,9 +18,7 @@ import { Col } from '../../../layout/col'
 import { Row } from '../../../layout/row'
 import { MiniResolutionPanel, ResolveHeader } from '../../../resolution-panel'
 import { GradientContainer } from '../../../widgets/gradient-container'
-import {
-  CandidateBar,
-} from './candidate-bar'
+import { CandidateBar } from './candidate-bar'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
