@@ -50,7 +50,7 @@ const ContractTopicBreadcrumbs = (props: {
   const { contract, topics } = props
 
   const spanRef = useRef<HTMLSpanElement>(null)
-  const [isClamped, setClamped] = useState(false)
+  const [isClamped, setClamped] = useState(true)
   const [showMore, setShowMore] = useState(false)
 
   useEffect(() => {
