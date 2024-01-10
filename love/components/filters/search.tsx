@@ -54,10 +54,18 @@ const initialFilters: Partial<FilterFields> = {
 export const Search = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
+  setIsSearching: (isSearching: boolean) => void
   youLover: Lover | undefined | null
   loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
 }) => {
-  const { allLovers, setLovers, youLover, loverCompatibilityScores } = props
+  const {
+    allLovers,
+    setLovers,
+    youLover,
+    loverCompatibilityScores,
+    setIsSearching,
+  } = props
+
   const isMatchmaker = useIsMatchmaker()
   const [filters, setFilters] = usePersistentLocalState<Partial<FilterFields>>(
     isMatchmaker
@@ -276,7 +284,10 @@ export const Search = (props: {
           value={filters.name ?? ''}
           placeholder={'Search name'}
           className={'w-full max-w-xs'}
-          onChange={(e) => updateFilter({ name: e.target.value })}
+          onChange={(e) => {
+            updateFilter({ name: e.target.value })
+            setIsSearching(e.target.value.length > 0)
+          }}
         />
 
         <Row className="gap-2">
