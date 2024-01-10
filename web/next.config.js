@@ -189,4 +189,12 @@ module.exports = {
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/v0/:endpoint*',
+        destination: 'https://api.manifold.markets/v0/:endpoint*',
+      },
+    ]
+  },
 }
