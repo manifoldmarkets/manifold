@@ -54,6 +54,28 @@ export const getLoverContracts = async (userId: string) => {
   )
 }
 
+export const getGenderCompatibleLovers = async (lover: LoverRow) => {
+  const pg = createSupabaseDirectClient()
+  return await pg.manyOrNone<Lover>(
+    `
+      select 
+        *, users.data as user
+      from lovers
+      join
+        users on users.id = lovers.user_id
+      where
+        user_id != $(user_id)
+        and looking_for_matches
+        and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
+
+        -- Gender
+        and (lovers.gender = any($(pref_gender)) or lovers.gender = 'non-binary')
+        and ($(gender) = any(lovers.pref_gender) or $(gender) = 'non-binary')
+      `,
+    { ...lover }
+  )
+}
+
 export const getCompatibleLovers = async (
   lover: LoverRow,
   radiusKm: number | undefined

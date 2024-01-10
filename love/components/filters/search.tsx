@@ -1,7 +1,6 @@
-import { partition, zip, isEqual } from 'lodash'
+import { partition, zip, isEqual, orderBy, debounce } from 'lodash'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { debounce, orderBy } from 'lodash'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { useEffect, useState } from 'react'
 import { IoFilterSharp } from 'react-icons/io5'
@@ -159,11 +158,20 @@ export const Search = (props: {
     if (allLovers) {
       applyFilters()
     }
-  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
+  }, [
+    JSON.stringify(filters),
+    allLovers?.map((l) => l.id).join(','),
+    loverCompatibilityScores,
+  ])
 
   const applyFilters = () => {
-    const sortedLovers = orderBy(
+    const initialSort = orderBy(
       allLovers,
+      (lover) => new Date(lover.last_online_time).getTime(),
+      'desc'
+    )
+    const sortedLovers = orderBy(
+      initialSort,
       (lover) => {
         switch (filters.orderBy) {
           case 'last_online_time':
@@ -180,8 +188,12 @@ export const Search = (props: {
       },
       'desc'
     )
-    const modifiedSortedLovers = alternateWomenAndMen(sortedLovers)
-    const filteredLovers = modifiedSortedLovers?.filter((lover) => {
+    const modifiedSortedLovers =
+      filters.orderBy === 'compatibility_score'
+        ? sortedLovers
+        : alternateWomenAndMen(sortedLovers)
+
+    const filteredLovers = modifiedSortedLovers.filter((lover) => {
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
       if (filters.pref_age_min && lover.age < filters.pref_age_min) {
@@ -242,6 +254,13 @@ export const Search = (props: {
       ) {
         return false
       } else if (!lover.pinned_url) return false
+      else if (
+        loverCompatibilityScores &&
+        filters.orderBy === 'compatibility_score' &&
+        !loverCompatibilityScores[lover.user_id]
+      ) {
+        return false
+      }
       return true
     })
     setLovers(filteredLovers)

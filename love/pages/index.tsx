@@ -133,7 +133,7 @@ function ProfilePreview(props: {
           </Col>
         )}
 
-        {compatibilityScore && compatibilityScore.confidence !== 'low' && (
+        {compatibilityScore && (
           <Col className="absolute inset-x-0 right-0 top-0 bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-1">
             <CompatibleBadge compatibility={compatibilityScore} />
           </Col>

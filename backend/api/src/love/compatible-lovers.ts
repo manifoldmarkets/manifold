@@ -5,8 +5,8 @@ import {
   getLover,
   getLoverContracts,
   getLovers,
-  getCompatibleLovers as getCompatible,
   getCompatibilityAnswers,
+  getGenderCompatibleLovers,
 } from 'shared/love/supabase'
 import { filterDefined } from 'common/util/array'
 
@@ -43,7 +43,7 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
 
   const [matchedLoversPrefiltered, allCompatibleLovers] = await Promise.all([
     getLovers(matchedUserIds),
-    getCompatible(lover, undefined),
+    getGenderCompatibleLovers(lover),
   ])
   const matchedLovers = matchedLoversPrefiltered.filter(
     (l) => !l.user.isBannedFromPosting

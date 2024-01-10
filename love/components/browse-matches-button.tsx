@@ -329,20 +329,18 @@ function CompatibilityScoreDisplay(props: {
 }) {
   const { compatibility } = props
 
-  if (!compatibility || compatibility.confidence === 'low')
-    return (
-      <div className="text-ink-600">
-        Compatibility: Not enough questions answered
-      </div>
-    )
+  if (!compatibility) return null
+
+  const lowConfidence = compatibility.confidence === 'low'
 
   return (
-    <Row className="items-center gap-1">
+    <Row className="text-ink-600 items-center gap-1">
       <CompatibleBadge
         className="text-primary-600 font-semibold"
         compatibility={compatibility}
       />
       compatible
+      {lowConfidence && ' (low confidence)'}
     </Row>
   )
 }
