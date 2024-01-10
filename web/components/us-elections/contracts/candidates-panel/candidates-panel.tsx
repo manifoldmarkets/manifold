@@ -45,151 +45,8 @@ import {
   AnswerStatus,
   BetButtons,
   CreatorAndAnswerLabel,
-} from './answer-components'
+} from './candidate-bar'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-
-// full resorting, hover, clickiness, search and add
-export function CandidatesPanel(props: {
-  contract: MultiContract
-  answersToShow: (Answer | DpmAnswer)[]
-  selected: string[]
-  sort: MultiSort
-  setSort: (sort: MultiSort) => void
-  query: string
-  setQuery: (query: string) => void
-  setShowAll: (showAll: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
-  onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
-  onAnswerClick: (answer: Answer | DpmAnswer) => void
-  showSetDefaultSort?: boolean
-}) {
-  const {
-    contract,
-    onAnswerCommentClick,
-    onAnswerHover,
-    onAnswerClick,
-    answersToShow,
-    selected,
-    sort,
-    setSort,
-    query,
-    setQuery,
-    setShowAll,
-    showSetDefaultSort,
-  } = props
-  const { outcomeType, answers } = contract
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
-
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const user = useUser()
-
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
-
-  const moreCount = answers.length - answersToShow.length
-  // Note: Hide answers if there is just one "Other" answer.
-  const showNoAnswers =
-    answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-  const [expandedIds, setExpandedIds] = useState<string[]>([])
-  const setDefaultSort = async () => {
-    await toast.promise(updateMarket({ contractId: contract.id, sort }), {
-      loading: 'Updating sort order...',
-      success: 'Sort order updated for all users',
-      error: 'Failed to update sort order',
-    })
-  }
-  return (
-    <Col>
-      <SearchCreateAnswerPanel
-        contract={contract}
-        addAnswersMode={addAnswersMode}
-        text={query}
-        setText={setQuery}
-      >
-        <Row className={'mb-1 items-center gap-3'}>
-          <DropdownMenu
-            closeOnClick
-            items={generateFilterDropdownItems(SORTS, setSort)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  Sort: {SORTS.find((s) => s.value === sort)?.label}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-          />
-          {showSetDefaultSort && contract.sort !== sort && (
-            <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
-              Set default
-            </Button>
-          )}
-        </Row>
-      </SearchCreateAnswerPanel>
-
-      {showNoAnswers ? (
-        <div className="text-ink-500 p-4 text-center">No answers yet</div>
-      ) : (
-        <Col className="mx-[2px] mt-1 gap-2">
-          {answersToShow.map((answer) => (
-            <Answer
-              key={answer.id}
-              user={user}
-              answer={answer}
-              contract={contract}
-              onCommentClick={() => onAnswerCommentClick?.(answer)}
-              onHover={(hovering) =>
-                onAnswerHover?.(hovering ? answer : undefined)
-              }
-              onClick={() => {
-                onAnswerClick?.(answer)
-                if (!('poolYes' in answer) || !user) return
-                setExpandedIds((ids) =>
-                  ids.includes(answer.id)
-                    ? ids.filter((id) => id !== answer.id)
-                    : [...ids, answer.id]
-                )
-              }}
-              selected={selected?.includes(answer.id)}
-              color={getAnswerColor(answer, answersArray)}
-              userBets={userBetsByAnswer[answer.id]}
-              showAvatars={showAvatars}
-              expanded={expandedIds.includes(answer.id)}
-            />
-          ))}
-
-          {moreCount > 0 &&
-            (query ? (
-              <div className="text-ink-600 pb-4 text-center">
-                {moreCount} answers hidden by search
-              </div>
-            ) : (
-              <Button
-                color="gray-white"
-                onClick={() => setShowAll(true)}
-                size="xs"
-              >
-                <ChevronDownIcon className="mr-1 h-4 w-4" />
-                Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
-              </Button>
-            ))}
-        </Col>
-      )}
-    </Col>
-  )
-}
 
 const EditAnswerModal = (props: {
   open: boolean
@@ -308,7 +165,7 @@ export function CandidatePanel(props: {
       ) : (
         <>
           {displayedAnswers.map((answer) => (
-            <Answer
+            <CandidateAnswer
               user={user}
               key={answer.id}
               answer={answer}
@@ -334,7 +191,7 @@ export function CandidatePanel(props: {
   )
 }
 
-function Answer(props: {
+function CandidateAnswer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   color: string
@@ -395,57 +252,60 @@ function Answer(props: {
           'cursor-pointer',
           selected && 'ring-primary-600 rounded  ring-2'
         )}
-        label={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
-              <span className={textColorClass}>
-                Other{' '}
-                <InfoTooltip
-                  className="!text-ink-600 dark:!text-ink-700"
-                  text="Represents all answers not listed. New answers are split out of this answer."
-                />
-              </span>
-            ) : (
-              <CreatorAndAnswerLabel
-                text={answer.text}
-                createdTime={answer.createdTime}
-                className={clsx(
-                  'items-center text-sm !leading-none sm:text-base',
-                  textColorClass
-                )}
-              />
-            )}
-          </Row>
-        }
-        end={
-          <Row className={'items-center gap-1.5 sm:gap-2'}>
-            {selected && (
-              <PresentationChartLineIcon
-                className="h-5 w-5 text-black"
-                style={{ fill: color }}
-              />
-            )}
-            <BetButtons contract={contract} answer={answer} />
-            {onClick && (
-              <IconButton
-                className={'-ml-1 !px-1.5'}
-                size={'2xs'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onClick()
-                }}
-              >
-                <ChevronDownIcon
-                  className={clsx(
-                    'h-4 w-4',
-                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
-                  )}
-                />
-              </IconButton>
-            )}
-          </Row>
-        }
+        answer={answer}
+        selected={selected}
+        contract={contract}
+        // label={
+        //   <Row className={'items-center gap-1'}>
+        //     <AnswerStatus contract={contract} answer={answer} />
+        //     {isOther ? (
+        //       <span className={textColorClass}>
+        //         Other{' '}
+        //         <InfoTooltip
+        //           className="!text-ink-600 dark:!text-ink-700"
+        //           text="Represents all answers not listed. New answers are split out of this answer."
+        //         />
+        //       </span>
+        //     ) : (
+        //       <CreatorAndAnswerLabel
+        //         text={answer.text}
+        //         createdTime={answer.createdTime}
+        //         className={clsx(
+        //           'items-center text-sm !leading-none sm:text-base',
+        //           textColorClass
+        //         )}
+        //       />
+        //     )}
+        //   </Row>
+        // }
+        // end={
+        //   <Row className={'items-center gap-1.5 sm:gap-2'}>
+        //     {selected && (
+        //       <PresentationChartLineIcon
+        //         className="h-5 w-5 text-black"
+        //         style={{ fill: color }}
+        //       />
+        //     )}
+        //     <BetButtons contract={contract} answer={answer} />
+        //     {onClick && (
+        //       <IconButton
+        //         className={'-ml-1 !px-1.5'}
+        //         size={'2xs'}
+        //         onClick={(e) => {
+        //           e.stopPropagation()
+        //           onClick()
+        //         }}
+        //       >
+        //         <ChevronDownIcon
+        //           className={clsx(
+        //             'h-4 w-4',
+        //             expanded ? 'rotate-180 transform' : 'rotate-0 transform'
+        //           )}
+        //         />
+        //       </IconButton>
+        //     )}
+        //   </Row>
+        // }
       />
       {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition

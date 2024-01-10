@@ -27,7 +27,7 @@ import {
   ClosedProb,
   CreatorAndAnswerLabel,
   OpenProb,
-} from './answer-components'
+} from './candidate-bar'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -357,63 +357,11 @@ export function ResolutionAnswerItem(props: {
 
   return (
     <CandidateBar
+      answer={answer}
+      contract={contract}
       color={color}
       prob={prob}
       resolvedProb={chosenShare}
-      label={
-        <CreatorAndAnswerLabel
-          text={text}
-          createdTime={answer.createdTime}
-          creator={showAvatar ? user ?? false : undefined}
-        />
-      }
-      end={
-        <>
-          {chosenShare ? (
-            <ClosedProb prob={prob} resolvedProb={chosenShare} />
-          ) : (
-            <OpenProb contract={contract} answer={answer} />
-          )}
-
-          {showChoice === 'checkbox' && (
-            <AmountInput
-              inputClassName="w-16 h-7 !px-2"
-              label=""
-              amount={chosenProb ? Math.round(chosenProb) : undefined}
-              onChangeAmount={(value) =>
-                onChoose(answer.id, value ? value : undefined)
-              }
-            />
-          )}
-          <>
-            {showChoice === 'radio' && (
-              <input
-                className={clsx('checked:!bg-purple-500')}
-                type="radio"
-                name="opt"
-                checked={isChosen}
-                onChange={() => onChoose(answer.id, 1)}
-                value={answer.id}
-              />
-            )}
-            {showChoice === 'checkbox' && (
-              <input
-                className={clsx('checked:!bg-purple-500')}
-                type="checkbox"
-                name="opt"
-                checked={isChosen}
-                onChange={() => {
-                  if (isChosen) onDeselect(answer.id)
-                  else {
-                    onChoose(answer.id, Math.max(100 * prob, 1))
-                  }
-                }}
-                value={answer.id}
-              />
-            )}
-          </>
-        </>
-      }
     />
   )
 }
@@ -469,36 +417,10 @@ function IndependentResolutionAnswerItem(props: {
   return (
     <Col>
       <CandidateBar
-        color={color}
+         color={color}
         prob={prob}
-        label={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
-              <span>
-                Other{' '}
-                <InfoTooltip
-                  className="!text-ink-600"
-                  text="Represents all answers not listed. New answers are split out of this answer."
-                />
-              </span>
-            ) : (
-              <CreatorAndAnswerLabel
-                text={answer.text}
-                createdTime={answer.createdTime}
-                creator={
-                  addAnswersMode === 'ANYONE'
-                    ? answerCreator ?? false
-                    : undefined
-                }
-                className={clsx(
-                  'items-center text-sm !leading-none sm:text-base'
-                )}
-              />
-            )}
-          </Row>
-        }
-        end={null}
+        answer={answer}
+        contract={contract}
       />
       {!answer.resolution && (
         <MiniResolutionPanel

@@ -6,70 +6,70 @@ export type CandidateDataType = {
 export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
   'Joe Biden': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/biden.avif',
+    photo: '/political-candidates/biden.avif',
   },
   'Kamala Harris': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/harris.png',
+    photo: '/political-candidates/harris.png',
   },
   'Gretchen Whitmer': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/whitmer.png',
+    photo: '/political-candidates/whitmer.png',
   },
   'Gavin Newsom': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/newsom.png',
+    photo: '/political-candidates/newsom.png',
   },
   'Robert F. Kennedy': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/kennedy.png',
+    photo: '/political-candidates/kennedy.png',
   },
   'Dean Phillips': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/phillips.png',
+    photo: '/political-candidates/phillips.png',
   },
   'Donald Trump': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/trump.png',
+    photo: '/political-candidates/trump.png',
   },
   'Nikki Haley': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/haley.png',
+    photo: '/political-candidates/haley.png',
   },
   'Ron DeSantis': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/desantis.png',
+    photo: '/political-candidates/desantis.png',
   },
   'Vivek Ramaswamy': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/ramaswamy.png',
+    photo: '/political-candidates/ramaswamy.png',
   },
   'Hillary Clinton': {
     party: 'Democrat',
-    photo: 'web/components/us-elections/candidates/photos/clinton.png',
+    photo: '/political-candidates/clinton.png',
   },
   'Chris Christie': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/christie.png',
+    photo: '/political-candidates/christie.png',
   },
   'Mike Pence': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/pence.avif',
+    photo: '/political-candidates/pence.avif',
   },
   'Tucker Carlson': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/carlson.png',
+    photo: '/political-candidates/carlson.png',
   },
   'Tim Scott': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/scott.png',
+    photo: '/political-candidates/scott.png',
   },
   'Asa Hutchinson': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/hutchinson.png',
+    photo: '/political-candidates/hutchinson.png',
   },
   'Ted Cruz': {
     party: 'Republican',
-    photo: 'web/components/us-elections/candidates/photos/cruz.png',
+    photo: '/political-candidates/cruz.png',
   },
 }

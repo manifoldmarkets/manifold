@@ -1,5 +1,10 @@
 import { ChatIcon } from '@heroicons/react/outline'
-import { SparklesIcon } from '@heroicons/react/solid'
+import {
+  ChevronDownIcon,
+  PresentationChartLineIcon,
+  SparklesIcon,
+  UserIcon,
+} from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -23,7 +28,7 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { formatTimeShort } from 'web/lib/util/time'
 import { SellSharesModal } from '../../../bet/sell-row'
-import { Button } from '../../../buttons/button'
+import { Button, IconButton } from '../../../buttons/button'
 import { Col } from '../../../layout/col'
 import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
@@ -36,31 +41,39 @@ import {
 import { Avatar, EmptyAvatar } from '../../../widgets/avatar'
 import { Linkify } from '../../../widgets/linkify'
 import { Tooltip } from '../../../widgets/tooltip'
-import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
+import Image from 'next/image'
+import {
+  AnswerBetPanel,
+  AnswerCpmmBetPanel,
+} from 'web/components/answers/answer-bet-panel'
+import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 
 export const CandidateBar = (props: {
   color: string // 6 digit hex
   prob: number // 0 - 1
   resolvedProb?: number // 0 - 1
-  label: ReactNode
-  end: ReactNode
   className?: string
   hideBar?: boolean
   onHover?: (hovering: boolean) => void
   onClick?: () => void
+  answer: Answer | DpmAnswer
+  selected?: boolean
+  contract: MultiContract
 }) => {
   const {
     color,
     prob,
     resolvedProb,
-    label,
-    end,
     className,
     hideBar,
     onHover,
     onClick,
+    answer,
+    selected,
+    contract,
   } = props
 
+  const candidateImage = CANDIDATE_DATA[answer.text]?.photo
   return (
     <Col
       className={clsx('relative isolate h-full w-full', className)}
@@ -68,9 +81,41 @@ export const CandidateBar = (props: {
       onPointerLeave={onHover && (() => onHover(false))}
       onClick={onClick}
     >
-      <Row className="my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
-        <div className="flex-grow">{label}</div>
-        <Row className="relative  items-center justify-end gap-2">{end}</Row>
+      <Row className="min-h-16 my-auto h-full items-center justify-between gap-x-4 px-4 leading-none">
+        {!candidateImage ? (
+          <UserIcon className="text-ink-600 h-16 w-16" />
+        ) : (
+          <Image
+            src={candidateImage}
+            alt={answer.text}
+            width={64}
+            height={64}
+            className="object-fill"
+          />
+        )}
+        <Col className="flex-grow">
+          <OpenProb contract={contract} answer={answer} />
+          <div>{answer.text}</div>
+        </Col>
+        <Row className={'items-center gap-1.5 sm:gap-2'}>
+          {selected && (
+            <PresentationChartLineIcon
+              className="h-5 w-5 text-black"
+              style={{ fill: color }}
+            />
+          )}
+          <BetButtons contract={contract} answer={answer} />
+          {onClick && (
+            <IconButton
+              className={'-ml-1 !px-1.5'}
+              size={'2xs'}
+              onClick={(e) => {
+                e.stopPropagation()
+                onClick()
+              }}
+            />
+          )}
+        </Row>
       </Row>
       <div
         className={clsx(

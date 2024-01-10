@@ -24,7 +24,7 @@ import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 
-export function WhichPartyCard(props: {
+export function CandidateCard(props: {
   contract: MultiContract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
@@ -128,9 +128,11 @@ export function WhichPartyCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'relative',
+        'relative rounded-xl',
         'cursor-pointer ',
+        'hover:ring-[1px]',
         'flex w-full flex-col gap-0.5 px-4 py-4',
+        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
         'fade-in'
       )}
       onClick={(e) => {
