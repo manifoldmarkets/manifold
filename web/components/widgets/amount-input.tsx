@@ -237,18 +237,18 @@ export function BuyAmountInput(props: {
                 'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-r-none border',
                 'bg-canvas-0 active:bg-ink-100'
               )}
-              onClick={increment}
+              onClick={decrement}
             >
-              <PlusIcon className="h-5 w-5" />
+              <MinusIcon className="h-5 w-5" />
             </button>
             <button
               className={clsx(
                 'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-l-none border border-l-0',
                 'bg-canvas-0 active:bg-ink-100'
               )}
-              onClick={decrement}
+              onClick={increment}
             >
-              <MinusIcon className="h-5 w-5" />
+              <PlusIcon className="h-5 w-5" />
             </button>
           </Row>
         </Row>
