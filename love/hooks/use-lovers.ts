@@ -45,9 +45,9 @@ export const useLovers = () => {
   return lovers
 }
 
-export const useCompatibleLovers = (userId: string | undefined) => {
+export const useCompatibleLovers = (userId: string | null | undefined) => {
   const [data, setData] = usePersistentInMemoryState<
-    (typeof API)['compatible-lovers']['returns'] | undefined
+    (typeof API)['compatible-lovers']['returns'] | undefined | null
   >(undefined, `compatible-lovers-${userId}`)
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export const useCompatibleLovers = (userId: string | undefined) => {
       api('compatible-lovers', { userId }).then((result) => {
         setData(result)
       })
-    }
+    } else if (userId === null) setData(null)
   }, [userId])
 
   return data

@@ -42,7 +42,7 @@ export default function ProfilesPage() {
   useCallReferUser()
   const lover = useLover()
 
-  const compatibleLovers = useCompatibleLovers(user?.id)
+  const compatibleLovers = useCompatibleLovers(user ? user.id : user)
 
   if (user === undefined) return <div />
 
@@ -90,7 +90,9 @@ export default function ProfilesPage() {
                   key={lover.id}
                   lover={lover}
                   compatibilityScore={
-                    compatibleLovers.loverCompatibilityScores[lover.user_id]
+                    compatibleLovers
+                      ? compatibleLovers.loverCompatibilityScores[lover.user_id]
+                      : undefined
                   }
                 />
               ))}
