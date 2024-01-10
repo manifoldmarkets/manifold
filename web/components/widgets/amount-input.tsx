@@ -199,12 +199,20 @@ export function BuyAmountInput(props: {
     : lowerManaSliderAmounts
   const sliderIndex = sliderAmounts.findLastIndex((a) => amountWithDefault >= a)
   const maxSliderAmount = sliderAmounts[sliderAmounts.length - 1]
+  const penultimateSliderAmount = sliderAmounts[sliderAmounts.length - 2]
 
   const maxInterval = hasLotsOfMana ? 250 : 25
   const increment = () => {
     if (amountWithDefault >= maxSliderAmount) {
       onChange((amount ?? 0) + maxInterval)
     } else onChange(sliderAmounts[sliderIndex + 1])
+  }
+  const doubleIncrement = () => {
+    if (amountWithDefault >= penultimateSliderAmount) {
+      if (amountWithDefault >= maxSliderAmount)
+        onChange(amountWithDefault + maxInterval * 2)
+      else onChange(maxSliderAmount + maxInterval)
+    } else onChange(sliderAmounts[sliderIndex + 2])
   }
   const decrement = () => {
     if (amountWithDefault >= maxSliderAmount) {
@@ -243,12 +251,22 @@ export function BuyAmountInput(props: {
             </button>
             <button
               className={clsx(
-                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-l-none border border-l-0',
+                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-l-none rounded-r-none border border-l-0 border-r-0',
                 'bg-canvas-0 active:bg-ink-100'
               )}
               onClick={increment}
             >
               <PlusIcon className="h-5 w-5" />
+            </button>
+            <button
+              className={clsx(
+                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border',
+                'bg-canvas-0 active:bg-ink-100'
+              )}
+              onClick={doubleIncrement}
+            >
+              <PlusIcon className="h-4 w-4" />
+              <PlusIcon className="h-4 w-4" />
             </button>
           </Row>
         </Row>
