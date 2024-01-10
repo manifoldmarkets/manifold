@@ -14,6 +14,7 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
+import { WhichPartyCard } from 'web/components/us-elections/contracts/which-party-card'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -77,7 +78,7 @@ export default function USElectionsPage(props: {
   } = props
   const [targetContract, setTargetContract] = useState<
     Contract | undefined | null
-  >(undefined)
+  >(mapContracts.find((m) => m.state === 'GA')?.contract)
 
   const [hoveredContract, setHoveredContract] = useState<
     Contract | undefined | null
@@ -127,6 +128,7 @@ export default function USElectionsPage(props: {
     return <Custom404 />
   }
 
+  console.log(electionCandidateContract)
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-3">
