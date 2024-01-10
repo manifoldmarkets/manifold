@@ -693,7 +693,10 @@ const ChoiceOverview = (props: {
       ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-          <IndependentAnswersResolvePanel contract={contract} />
+          <IndependentAnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
         ) : (
           <AnswersResolvePanel
             contract={contract}
