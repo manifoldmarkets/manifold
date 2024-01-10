@@ -417,7 +417,7 @@ function IndependentResolutionAnswerItem(props: {
   return (
     <Col>
       <CandidateBar
-         color={color}
+        color={color}
         prob={prob}
         answer={answer}
         contract={contract}
