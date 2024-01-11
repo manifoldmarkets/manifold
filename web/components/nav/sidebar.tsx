@@ -184,7 +184,7 @@ const bottomNav = (
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name: theme === 'loading' ? '' : capitalize(theme),
+      name: theme === 'loading' ? 'Auto' : capitalize(theme),
       icon:
         theme === 'light'
           ? SunIcon
