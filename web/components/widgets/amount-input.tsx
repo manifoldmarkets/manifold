@@ -218,7 +218,8 @@ export function BuyAmountInput(props: {
   }
 
   const doubleIncrement = () => {
-    if (amountWithDefault >= penultimateSliderAmount) {
+    if (amountWithDefault === 0) onChange(10)
+    else if (amountWithDefault >= penultimateSliderAmount) {
       if (amountWithDefault >= maxSliderAmount)
         onChange(amountWithDefault + maxInterval * 2)
       else onChange(maxSliderAmount)
