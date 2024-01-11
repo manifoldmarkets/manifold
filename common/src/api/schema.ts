@@ -546,6 +546,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       contractId: z.string(),
       limit: z.coerce.number().gte(0).lte(100),
+      limitTopics: z.coerce.number().gte(0).lte(10),
       userId: z.string().optional(),
     }),
     returns: {} as {

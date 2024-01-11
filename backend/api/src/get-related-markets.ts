@@ -9,7 +9,7 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
   _,
   { log }
 ) => {
-  const { contractId, limit } = body
+  const { contractId, limit, limitTopics } = body
   const pg = createSupabaseDirectClient()
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
@@ -48,8 +48,10 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       `select slug,importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
-              where id = $1
-          )`,
+              where id = $1 
+              ) 
+              order by importance_score desc
+          `,
       [contractId],
       (row) => ({
         slug: row.slug as string,
@@ -74,11 +76,20 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
     if (!addedMarketIds.includes(contract.id))
       marketsByTopicSlug[slug].push(contract)
   }
+
   // Return only the limit for each topic
+  let topicCount = 0
   for (const slug of topics.map((t) => t.slug)) {
-    marketsByTopicSlug[slug] = (marketsByTopicSlug[slug] ?? []).slice(0, limit)
+    if (topicCount > limitTopics) delete marketsByTopicSlug[slug]
+    else
+      marketsByTopicSlug[slug] = (marketsByTopicSlug[slug] ?? []).slice(
+        0,
+        limit
+      )
+    topicCount++
   }
-  log('topic slugs found:', Object.keys(marketsByTopicSlug))
+  log('returning topic slugs', Object.keys(marketsByTopicSlug))
+  log('topics to importance scores', topics)
   return {
     marketsFromEmbeddings,
     marketsByTopicSlug,
