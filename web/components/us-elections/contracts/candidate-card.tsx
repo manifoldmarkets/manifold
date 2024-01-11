@@ -1,27 +1,18 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import Router from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import {
-  ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { ClickFrame } from 'web/components/widgets/click-frame'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 
 export function CandidateCard(props: {
