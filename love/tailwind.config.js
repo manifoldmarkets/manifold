@@ -408,6 +408,7 @@ module.exports = {
           },
         },
         '.break-anywhere': {
+          'line-break': 'anywhere',
           'overflow-wrap': 'anywhere',
           'word-break': 'break-word', // for Safari
         },
