@@ -3,12 +3,15 @@ import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
 import { buildArray } from 'common/util/array'
 
-export const largerSliderAmounts = [
+// Note: large slider values are calibrated for also using the double-plus button,
+// which jumps several increments at a time.
+export const DOUBLE_INCREMENT_COUNT = 6
+export const LARGE_SLIDER_VALUES = [
   1, 2, 3, 5, 10, 15, 20, 25, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100, 110, 120,
   130, 140, 150, 165, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500, 550,
   600, 650, 700, 800, 900, 1000,
 ]
-export const lowerManaSliderAmounts = [
+export const LOW_MANA_SLIDER_VALUES = [
   1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100,
 ]
 
@@ -29,8 +32,8 @@ export const BetSlider = (props: {
     className,
   } = props
   const sliderAmounts = smallManaAmounts
-    ? lowerManaSliderAmounts
-    : largerSliderAmounts
+    ? LOW_MANA_SLIDER_VALUES
+    : LARGE_SLIDER_VALUES
   const maxSliderIndex = sliderAmounts.length - 1
   const amountToSliderIndex = (amount: number) => {
     const index = sliderAmounts.findLastIndex((a) => amount >= a)

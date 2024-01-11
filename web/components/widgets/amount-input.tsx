@@ -13,8 +13,9 @@ import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import {
   BetSlider,
-  largerSliderAmounts,
-  lowerManaSliderAmounts,
+  DOUBLE_INCREMENT_COUNT,
+  LARGE_SLIDER_VALUES,
+  LOW_MANA_SLIDER_VALUES,
 } from '../bet/bet-slider'
 
 export function AmountInput(
@@ -195,11 +196,13 @@ export function BuyAmountInput(props: {
 
   const amountWithDefault = amount ?? 0
   const sliderAmounts = hasLotsOfMana
-    ? largerSliderAmounts
-    : lowerManaSliderAmounts
+    ? LARGE_SLIDER_VALUES
+    : LOW_MANA_SLIDER_VALUES
   const sliderIndex = sliderAmounts.findLastIndex((a) => amountWithDefault >= a)
   const maxSliderAmount = sliderAmounts[sliderAmounts.length - 1]
-  const penultimateSliderAmount = sliderAmounts[sliderAmounts.length - 4]
+
+  const penultimateSliderAmount =
+    sliderAmounts[sliderAmounts.length - DOUBLE_INCREMENT_COUNT]
 
   const maxInterval = hasLotsOfMana ? 250 : 25
   const decrement = () => {
@@ -218,7 +221,7 @@ export function BuyAmountInput(props: {
       if (amountWithDefault >= maxSliderAmount)
         onChange(amountWithDefault + maxInterval * 2)
       else onChange(maxSliderAmount)
-    } else onChange(sliderAmounts[sliderIndex + 4])
+    } else onChange(sliderAmounts[sliderIndex + DOUBLE_INCREMENT_COUNT])
   }
   const buttonClasses =
     'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border bg-canvas-0 active:bg-ink-100'
