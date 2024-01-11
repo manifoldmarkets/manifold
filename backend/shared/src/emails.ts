@@ -24,6 +24,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getLoveOgImageUrl } from 'common/love/og-image'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { getLoverRow } from 'common/love/lover'
+import { HOUR_MS } from 'common/util/time'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -210,6 +211,7 @@ export const sendWelcomeEmail = async (
     },
     {
       from: 'David from Manifold <david@manifold.markets>',
+      'o:deliverytime': new Date(Date.now() + 2 * HOUR_MS).toUTCString(),
     }
   )
 }
