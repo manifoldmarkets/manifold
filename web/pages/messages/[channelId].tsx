@@ -432,7 +432,7 @@ export const PrivateChat = (props: {
       <Col className="relative h-[calc(100dvh-213px)]  lg:h-[calc(100dvh-184px)] xl:px-0">
         <div
           ref={outerDiv}
-          className={clsx('relative h-full overflow-y-scroll ')}
+          className="relative h-full overflow-y-auto"
           style={{
             transform: isSafari ? 'translate3d(0, 0, 0)' : 'none',
           }}
