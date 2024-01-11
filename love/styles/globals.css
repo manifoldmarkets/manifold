@@ -62,6 +62,8 @@
     --color-yes-950: 4 47 46;
   }
   .dark {
+    color-scheme: dark;
+
     --color-ink-1000: 255 255 255;
     --color-ink-950: 249 245 249;
     --color-ink-900: 231 223 230;
@@ -198,4 +200,3 @@
 text {
   font-family: icomoon, var(--font-main), emoji, sans-serif;
 }
-
