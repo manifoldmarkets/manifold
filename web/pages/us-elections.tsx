@@ -128,9 +128,20 @@ export default function USElectionsPage(props: {
     return <Custom404 />
   }
 
+  function extractPhrase(inputString: string): string | null {
+    const regex = /Who will win the (.+?)\?/
+    const match = regex.exec(inputString)
+
+    if (match && match[1]) {
+      return match[1] // This is the extracted phrase.
+    } else {
+      return null // No match found.
+    }
+  }
+
   return (
     <Page trackPageView="us elections page 2024">
-      <Col className="gap-3">
+      <Col className="gap-8 px-4">
         <PoliticsContractCard contract={electionPartyContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard

@@ -1,23 +1,19 @@
-import { ArrowRightIcon, PencilIcon } from '@heroicons/react/outline'
+import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { Contract, MultiContract, contractPath } from 'common/contract'
-import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { TradesButton } from 'web/components/contract/trades-button'
 import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
-import { UserLink } from 'web/components/widgets/user-link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
@@ -27,68 +23,10 @@ import {
   useChartAnswers,
 } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
-import { AddComment, CandidateBar, AnswerPosition } from './candidate-bar'
-
-const EditAnswerModal = (props: {
-  open: boolean
-  setOpen: (show: boolean) => void
-  contract: Contract
-  answer: Answer
-}) => {
-  const { answer, contract, open, setOpen } = props
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [text, setText] = useState(answer.text)
-  const [error, setError] = useState<string | null>(null)
-  const editAnswer = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-
-    const res = await editAnswerCpmm({
-      answerId: answer.id,
-      contractId: contract.id,
-      text,
-    })
-      .catch((e) => {
-        console.error(e)
-        setError(e.message)
-        return null
-      })
-      .finally(() => {
-        setIsSubmitting(false)
-      })
-    if (!res) return
-
-    setOpen(false)
-  }
-
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <Title>Edit answer</Title>
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full"
-        />
-        {error ? <span className="text-red-500">{error}</span> : null}
-
-        <Row className={'mt-2 justify-between'}>
-          <Button
-            color={'gray-outline'}
-            disabled={isSubmitting}
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button color={'indigo'} loading={isSubmitting} onClick={editAnswer}>
-            Submit
-          </Button>
-        </Row>
-      </Col>
-    </Modal>
-  )
-}
+import { CandidateBar } from './candidate-bar'
+import { AnswerPosition } from 'web/components/answers/answer-components'
+import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
+import { Carousel } from 'web/components/widgets/carousel'
 
 // just the bars
 export function CandidatePanel(props: {
@@ -117,7 +55,7 @@ export function CandidatePanel(props: {
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
 
-  const sortByProb = answers.length > maxAnswers
+  const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
@@ -145,41 +83,54 @@ export function CandidatePanel(props: {
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          {displayedAnswers.map((answer) => (
-            <CandidateAnswer
-              user={user}
-              key={answer.id}
-              answer={answer}
-              contract={contract}
-              color={getAnswerColor(answer, answersArray)}
-              showAvatars={showAvatars}
-            />
-          ))}
-          {moreCount > 0 && (
-            <Row className="w-full justify-end">
-              <Link
-                className="text-ink-500 hover:text-primary-500 text-sm"
-                href={contractPath(contract)}
-              >
-                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-                <ArrowRightIcon className="inline h-4 w-4" />
+          <Carousel labelsParentClassName="gap-2">
+            {displayedAnswers.map((answer) => (
+              <CandidateAnswer
+                user={user}
+                key={answer.id}
+                answer={answer as Answer}
+                contract={contract}
+                color={getCandidateColor(answer.text)}
+                showAvatars={showAvatars}
+              />
+            ))}
+            {moreCount > 0 && (
+              <Link href={contractPath(contract)}>
+                <Col
+                  className={clsx(
+                    'border-ink-200 hover:border-primary-600 border-1 text-ink-800 hover:text-primary-600 bg-canvas-0 sm:text-md h-[68px] w-[11rem] items-center justify-center overflow-hidden rounded-md border-2 text-sm transition-all sm:h-[83px] sm:w-[220px]'
+                  )}
+                >
+                  <Row className="gap-1">
+                    See {moreCount} more{' '}
+                    <span>
+                      <ArrowRightIcon className="h-5 w-5" />
+                    </span>
+                  </Row>
+                </Col>
               </Link>
-            </Row>
-          )}
+            )}
+          </Carousel>
         </>
       )}
     </Col>
   )
 }
 
+function getCandidateColor(name: string) {
+  // return 'bg-primary-500'
+  if (!CANDIDATE_DATA[name]) return '#9E9FBD'
+  if (CANDIDATE_DATA[name]?.party === 'Democrat') return '#adc4e3'
+  return '#ecbab5'
+}
+
 function CandidateAnswer(props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
-  onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
   showAvatars?: boolean
@@ -190,7 +141,6 @@ function CandidateAnswer(props: {
     contract,
     onCommentClick,
     onHover,
-    onClick,
     selected,
     color,
     userBets,
@@ -218,9 +168,6 @@ function CandidateAnswer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const isMobile = useIsMobile()
-
-  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={'w-full'}>
       <CandidateBar
@@ -228,65 +175,13 @@ function CandidateAnswer(props: {
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
-        onClick={onClick}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded  ring-2'
+          selected && 'ring-primary-600 rounded ring-2'
         )}
         answer={answer}
         selected={selected}
         contract={contract}
-        // label={
-        //   <Row className={'items-center gap-1'}>
-        //     <AnswerStatus contract={contract} answer={answer} />
-        //     {isOther ? (
-        //       <span className={textColorClass}>
-        //         Other{' '}
-        //         <InfoTooltip
-        //           className="!text-ink-600 dark:!text-ink-700"
-        //           text="Represents all answers not listed. New answers are split out of this answer."
-        //         />
-        //       </span>
-        //     ) : (
-        //       <CreatorAndAnswerLabel
-        //         text={answer.text}
-        //         createdTime={answer.createdTime}
-        //         className={clsx(
-        //           'items-center text-sm !leading-none sm:text-base',
-        //           textColorClass
-        //         )}
-        //       />
-        //     )}
-        //   </Row>
-        // }
-        // end={
-        //   <Row className={'items-center gap-1.5 sm:gap-2'}>
-        //     {selected && (
-        //       <PresentationChartLineIcon
-        //         className="h-5 w-5 text-black"
-        //         style={{ fill: color }}
-        //       />
-        //     )}
-        //     <BetButtons contract={contract} answer={answer} />
-        //     {onClick && (
-        //       <IconButton
-        //         className={'-ml-1 !px-1.5'}
-        //         size={'2xs'}
-        //         onClick={(e) => {
-        //           e.stopPropagation()
-        //           onClick()
-        //         }}
-        //       >
-        //         <ChevronDownIcon
-        //           className={clsx(
-        //             'h-4 w-4',
-        //             expanded ? 'rotate-180 transform' : 'rotate-0 transform'
-        //           )}
-        //         />
-        //       </IconButton>
-        //     )}
-        //   </Row>
-        // }
       />
       {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
@@ -295,60 +190,6 @@ function CandidateAnswer(props: {
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
-        />
-      )}
-
-      {expanded && (
-        <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
-          {showAvatars && answerCreator && (
-            <Row className={'items-center self-start'}>
-              <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
-              <UserLink
-                user={answerCreator}
-                noLink={false}
-                className="ml-1 text-sm"
-                short={isMobile}
-              />
-            </Row>
-          )}
-          <Row className={'w-full justify-end gap-2'}>
-            {user &&
-              'isOther' in answer &&
-              !answer.isOther &&
-              (isAdminId(user.id) ||
-                isModId(user.id) ||
-                user.id === contract.creatorId ||
-                user.id === answer.userId) && (
-                <Button
-                  color={'gray-outline'}
-                  size="2xs"
-                  onClick={() =>
-                    'poolYes' in answer && !answer.isOther
-                      ? setEditAnswer(answer)
-                      : null
-                  }
-                >
-                  <PencilIcon className="mr-1 h-4 w-4" />
-                  Edit
-                </Button>
-              )}
-            {'poolYes' in answer && (
-              <TradesButton
-                contract={contract}
-                answer={answer}
-                color={'gray-outline'}
-              />
-            )}
-            {onCommentClick && <AddComment onClick={onCommentClick} />}
-          </Row>
-        </Row>
-      )}
-      {editAnswer && (
-        <EditAnswerModal
-          open={!!editAnswer}
-          setOpen={() => setEditAnswer(undefined)}
-          contract={contract}
-          answer={editAnswer}
         />
       )}
     </Col>

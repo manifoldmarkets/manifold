@@ -32,28 +32,10 @@ export function CandidateCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  /** whether this card is small, like in card grids.*/
-  small?: boolean
-  hide?: () => void
-  showGraph?: boolean
-  hideBottomRow?: boolean
   customTitle?: string
   titleSize?: 'lg'
 }) {
-  const {
-    promotedData,
-    trackingPostfix,
-    item,
-    className,
-    children,
-    small,
-    hide,
-    showGraph,
-    hideBottomRow,
-    customTitle,
-    titleSize,
-  } = props
-  const user = useUser()
+  const { promotedData, trackingPostfix, item, customTitle, titleSize } = props
 
   const contract =
     (useFirebasePublicContract(
@@ -61,15 +43,7 @@ export function CandidateCard(props: {
       props.contract.id
     ) as MultiContract) ?? props.contract
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
+  const { closeTime } = contract
 
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
@@ -97,24 +71,6 @@ export function CandidateCard(props: {
     }
   )
 
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
-
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
-  )
-
   const trackClick = () =>
     track(('click market card ' + trackingPostfix).trim(), {
       contractId: contract.id,
@@ -124,56 +80,38 @@ export function CandidateCard(props: {
       isPromoted: !!promotedData,
     })
 
-  return (
-    <ClickFrame
-      className={clsx(
-        className,
-        'relative rounded-xl',
-        'cursor-pointer ',
-        'hover:ring-[1px]',
-        'flex w-full flex-col gap-0.5 px-4 py-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
-        'fade-in'
-      )}
-      onClick={(e) => {
-        trackClick()
-        Router.push(path)
-        e.currentTarget.focus() // focus the div like a button, for style
-      }}
-      ref={ref}
-    >
-      <Col className={'w-full flex-col gap-1.5 '}>
-        <div
-          className={clsx(
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-          )}
-        >
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Link
-            className={clsx(
-              'hover:text-primary-700 grow items-start transition-colors sm:text-lg',
-              titleSize === 'lg' && ' sm:text-3xl'
-            )}
-            href={path}
-            onClick={trackClick}
-          >
-            <VisibilityIcon contract={contract} />{' '}
-            {customTitle ? customTitle : contract.question}
-          </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-          </Row>
-        </div>
-      </Col>
+  function extractPhrase(inputString: string): string | null {
+    const regex = /Who will win the (.+?)\?/
+    const match = regex.exec(inputString)
 
-      <div className="w-full overflow-hidden pt-2">
-        <CandidatePanel contract={contract} maxAnswers={4} />
+    if (match && match[1]) {
+      return match[1] // This is the extracted phrase.
+    } else {
+      return null // No match found.
+    }
+  }
+
+  return (
+    <Col className={'w-full flex-col gap-1.5 '}>
+      <div
+        className={clsx(
+          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+        )}
+      >
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Link
+          className={clsx(
+            'hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+            titleSize === 'lg' && ' sm:text-3xl'
+          )}
+          href={path}
+          onClick={trackClick}
+        >
+          <VisibilityIcon contract={contract} />{' '}
+          {customTitle ? customTitle : extractPhrase(contract.question)}
+        </Link>
       </div>
-    </ClickFrame>
+      <CandidatePanel contract={contract} maxAnswers={6} />
+    </Col>
   )
 }
