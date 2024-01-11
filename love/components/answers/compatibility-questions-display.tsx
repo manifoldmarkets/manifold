@@ -279,7 +279,7 @@ function CompatibilityAnswerBlock(props: {
           )}
         </Row>
       </Row>
-      <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
+      <Row className="bg-canvas-50 w-fit gap-1 rounded px-2 py-1 text-sm">
         {answerText}
       </Row>
       {distinctPreferredAnswersText.length > 0 && (
@@ -293,7 +293,7 @@ function CompatibilityAnswerBlock(props: {
             {distinctPreferredAnswersText.map((text) => (
               <Row
                 key={text}
-                className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm"
+                className="bg-canvas-50 w-fit gap-1 rounded px-2 py-1 text-sm"
               >
                 {text}
               </Row>
