@@ -220,9 +220,12 @@ export function BuyAmountInput(props: {
     } else onChange(sliderAmounts[Math.max(0, sliderIndex - 1)])
   }
 
+  const buttonClasses =
+    'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border bg-canvas-0 active:bg-ink-100'
+
   return (
     <>
-      <Col className={clsx('max-w-sm gap-2', parentClassName)}>
+      <Col className={clsx('max-w-[350px] gap-2', parentClassName)}>
         <Row className="items-center gap-2">
           <AmountInput
             className={className}
@@ -241,28 +244,19 @@ export function BuyAmountInput(props: {
 
           <Row>
             <button
-              className={clsx(
-                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-r-none border',
-                'bg-canvas-0 active:bg-ink-100'
-              )}
+              className={clsx(buttonClasses, 'rounded-l')}
               onClick={decrement}
             >
               <MinusIcon className="h-5 w-5" />
             </button>
             <button
-              className={clsx(
-                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center rounded rounded-l-none rounded-r-none border border-l-0 border-r-0',
-                'bg-canvas-0 active:bg-ink-100'
-              )}
+              className={clsx(buttonClasses, 'border-l-0 border-r-0')}
               onClick={increment}
             >
               <PlusIcon className="h-5 w-5" />
             </button>
             <button
-              className={clsx(
-                'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border',
-                'bg-canvas-0 active:bg-ink-100'
-              )}
+              className={clsx(buttonClasses, 'rounded-r')}
               onClick={doubleIncrement}
             >
               <PlusIcon className="h-4 w-4" />
