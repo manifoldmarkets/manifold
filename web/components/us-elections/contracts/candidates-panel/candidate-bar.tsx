@@ -68,7 +68,7 @@ export const CandidateBar = (props: {
               className="object-fill"
             />
           )}
-          <Col className="gap-1">
+          <Col>
             <Row className="w-full justify-end">
               <CandidateProb contract={contract} answer={answer} />
             </Row>
