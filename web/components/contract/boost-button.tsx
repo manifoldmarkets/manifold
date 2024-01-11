@@ -60,7 +60,7 @@ export function BoostDialog(props: {
   const [index, setIndex] = useState(0)
   const [showTabs, setShowTabs] = useState(false)
 
-  const [amount, setAmount] = useState<number | undefined>(100)
+  const [amount, setAmount] = useState<number | undefined>(200)
 
   const subsidyDisabled =
     contract.isResolved ||
