@@ -49,7 +49,7 @@ export const CandidateBar = (props: {
     <>
       <Col
         className={clsx(
-          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden rounded border-2 transition-all sm:w-[220px]',
+          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden rounded-md border-2 transition-all sm:w-[220px]',
           className
         )}
         onPointerOver={onHover && (() => onHover(true))}

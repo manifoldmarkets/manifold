@@ -98,7 +98,7 @@ export function CandidatePanel(props: {
               <Link href={contractPath(contract)}>
                 <Col
                   className={clsx(
-                    'text-ink-800 hover:text-ink-1000 hover:bg-canvas-100 bg-canvas-0 sm:text-md h-16 w-[11rem] items-center justify-center overflow-hidden rounded text-sm transition-all sm:h-20 sm:w-[220px]'
+                    'border-ink-200 hover:border-primary-600 border-1 text-ink-800 hover:text-primary-600 bg-canvas-0 sm:text-md h-[68px] w-[11rem] items-center justify-center overflow-hidden rounded-md border-2 text-sm transition-all sm:h-[83px] sm:w-[220px]'
                   )}
                 >
                   <Row className="gap-1">
@@ -168,9 +168,6 @@ function CandidateAnswer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const isMobile = useIsMobile()
-
-  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={'w-full'}>
       <CandidateBar

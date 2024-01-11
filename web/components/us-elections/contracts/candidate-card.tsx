@@ -32,28 +32,10 @@ export function CandidateCard(props: {
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  /** whether this card is small, like in card grids.*/
-  small?: boolean
-  hide?: () => void
-  showGraph?: boolean
-  hideBottomRow?: boolean
   customTitle?: string
   titleSize?: 'lg'
 }) {
-  const {
-    promotedData,
-    trackingPostfix,
-    item,
-    className,
-    children,
-    small,
-    hide,
-    showGraph,
-    hideBottomRow,
-    customTitle,
-    titleSize,
-  } = props
-  const user = useUser()
+  const { promotedData, trackingPostfix, item, customTitle, titleSize } = props
 
   const contract =
     (useFirebasePublicContract(
@@ -61,15 +43,7 @@ export function CandidateCard(props: {
       props.contract.id
     ) as MultiContract) ?? props.contract
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
+  const { closeTime } = contract
 
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
@@ -95,24 +69,6 @@ export function CandidateCard(props: {
     () => {
       setVisible(false)
     }
-  )
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
-
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
   )
 
   const trackClick = () =>
