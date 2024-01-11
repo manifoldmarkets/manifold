@@ -124,15 +124,24 @@ export function CandidateCard(props: {
       isPromoted: !!promotedData,
     })
 
+  function extractPhrase(inputString: string): string | null {
+    const regex = /Who will win the (.+?)\?/
+    const match = regex.exec(inputString)
+
+    if (match && match[1]) {
+      return match[1] // This is the extracted phrase.
+    } else {
+      return null // No match found.
+    }
+  }
+
   return (
     <ClickFrame
       className={clsx(
         className,
-        'relative rounded-xl',
+        'group relative',
         'cursor-pointer ',
-        'hover:ring-[1px]',
         'flex w-full flex-col gap-0.5 px-4 py-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
         'fade-in'
       )}
       onClick={(e) => {
@@ -151,14 +160,14 @@ export function CandidateCard(props: {
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className={clsx(
-              'hover:text-primary-700 grow items-start transition-colors sm:text-lg',
+              'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
               titleSize === 'lg' && ' sm:text-3xl'
             )}
             href={path}
             onClick={trackClick}
           >
             <VisibilityIcon contract={contract} />{' '}
-            {customTitle ? customTitle : contract.question}
+            {customTitle ? customTitle : extractPhrase(contract.question)}
           </Link>
           <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
             {contract.outcomeType !== 'MULTIPLE_CHOICE' && (

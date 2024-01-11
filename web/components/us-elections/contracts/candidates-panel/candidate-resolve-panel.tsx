@@ -348,7 +348,7 @@ export function ResolutionAnswerItem(props: {
 
   return (
     <CandidateBar
-      answer={answer}
+      answer={answer as Answer}
       contract={contract}
       color={color}
       prob={prob}
