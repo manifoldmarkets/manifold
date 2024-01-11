@@ -381,8 +381,8 @@ export const RelatedContractsGrid = memo(function (props: {
               twoLines
             />
           ))}
-        {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
       </Masonry>
+      {loadMore && showAll && <LoadMoreUntilNotVisible loadMore={loadMore} />}
       {!showAll && (
         <Button
           color={'gray-white'}
