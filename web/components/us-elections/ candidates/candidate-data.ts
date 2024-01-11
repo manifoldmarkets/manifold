@@ -6,7 +6,7 @@ export type CandidateDataType = {
 export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
   'Joe Biden': {
     party: 'Democrat',
-    photo: '/political-candidates/biden.avif',
+    photo: '/political-candidates/biden.png',
   },
   'Kamala Harris': {
     party: 'Democrat',

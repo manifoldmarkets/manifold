@@ -25,6 +25,8 @@ import {
 import { Col } from '../../../layout/col'
 import { CandidateBar } from './candidate-bar'
 import { AnswerPosition } from 'web/components/answers/answer-components'
+import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
+import { Carousel } from 'web/components/widgets/carousel'
 
 const EditAnswerModal = (props: {
   open: boolean
@@ -114,7 +116,7 @@ export function CandidatePanel(props: {
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
 
-  const sortByProb = answers.length > maxAnswers
+  const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
@@ -142,18 +144,18 @@ export function CandidatePanel(props: {
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          <Row className="gap-3">
+          <Carousel>
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 user={user}
                 key={answer.id}
                 answer={answer as Answer}
                 contract={contract}
-                color={getAnswerColor(answer, answersArray)}
+                color={getCandidateColor(answer.text)}
                 showAvatars={showAvatars}
               />
             ))}
-          </Row>
+          </Carousel>
           {moreCount > 0 && (
             <Row className="w-full justify-end">
               <Link
@@ -169,6 +171,13 @@ export function CandidatePanel(props: {
       )}
     </Col>
   )
+}
+
+function getCandidateColor(name: string) {
+  // return 'bg-primary-500'
+  if (!CANDIDATE_DATA[name]) return '#9E9FBD'
+  if (CANDIDATE_DATA[name]?.party === 'Democrat') return '#adc4e3'
+  return '#ecbab5'
 }
 
 function CandidateAnswer(props: {
@@ -230,7 +239,7 @@ function CandidateAnswer(props: {
         onClick={onClick}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded  ring-2'
+          selected && 'ring-primary-600 rounded ring-2'
         )}
         answer={answer}
         selected={selected}

@@ -181,7 +181,7 @@ export function CandidateCard(props: {
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <CandidatePanel contract={contract} maxAnswers={4} />
+        <CandidatePanel contract={contract} />
       </div>
     </ClickFrame>
   )
