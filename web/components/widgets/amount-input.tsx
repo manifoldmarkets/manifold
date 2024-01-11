@@ -199,7 +199,7 @@ export function BuyAmountInput(props: {
     : lowerManaSliderAmounts
   const sliderIndex = sliderAmounts.findLastIndex((a) => amountWithDefault >= a)
   const maxSliderAmount = sliderAmounts[sliderAmounts.length - 1]
-  const penultimateSliderAmount = sliderAmounts[sliderAmounts.length - 2]
+  const penultimateSliderAmount = sliderAmounts[sliderAmounts.length - 4]
 
   const maxInterval = hasLotsOfMana ? 250 : 25
   const increment = () => {
@@ -211,8 +211,8 @@ export function BuyAmountInput(props: {
     if (amountWithDefault >= penultimateSliderAmount) {
       if (amountWithDefault >= maxSliderAmount)
         onChange(amountWithDefault + maxInterval * 2)
-      else onChange(maxSliderAmount + maxInterval)
-    } else onChange(sliderAmounts[sliderIndex + 2])
+      else onChange(maxSliderAmount)
+    } else onChange(sliderAmounts[sliderIndex + 4])
   }
   const decrement = () => {
     if (amountWithDefault >= maxSliderAmount) {
