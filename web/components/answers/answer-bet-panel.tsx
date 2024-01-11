@@ -233,7 +233,7 @@ export function AnswerCpmmBetPanel(props: {
       <BuyPanel
         contract={contract}
         multiProps={{
-          answers: contract.answers as Answer[],
+          answers: contract.answers,
           answerToBuy: answer as Answer,
         }}
         user={me}
