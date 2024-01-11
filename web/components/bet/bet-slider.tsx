@@ -1,15 +1,18 @@
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
-import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
-import clsx from 'clsx'
 
-const largerSliderAmounts = [
-  1, 2, 5, 10, 15, 20, 25, 35, 50, 75, 100, 150, 200, 250, 350, 500, 750, 1000,
+// Note: large slider values are calibrated for also using the double-plus button,
+// which jumps several increments at a time.
+export const DOUBLE_INCREMENT_COUNT = 6
+export const LARGE_SLIDER_VALUES = [
+  1, 2, 3, 5, 7, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
+  110, 120, 135, 150, 165, 180, 200, 225, 250, 275, 300, 350, 400, 450, 500,
+  550, 600, 650, 700, 800, 900, 1000,
 ]
-const lowerManaSliderAmounts = [
-  1, 2, 3, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100,
+export const LOW_MANA_SLIDER_VALUES = [
+  1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100,
 ]
 
 export const BetSlider = (props: {
@@ -29,8 +32,8 @@ export const BetSlider = (props: {
     className,
   } = props
   const sliderAmounts = smallManaAmounts
-    ? lowerManaSliderAmounts
-    : largerSliderAmounts
+    ? LOW_MANA_SLIDER_VALUES
+    : LARGE_SLIDER_VALUES
   const maxSliderIndex = sliderAmounts.length - 1
   const amountToSliderIndex = (amount: number) => {
     const index = sliderAmounts.findLastIndex((a) => amount >= a)
@@ -44,42 +47,41 @@ export const BetSlider = (props: {
   const hundredAmountDistance = (100 * hundredIndex) / maxSliderIndex
 
   return (
-    <Col className={clsx('w-full gap-4', className)}>
-      <Slider
-        min={0}
-        max={maxSliderIndex}
-        marks={buildArray(
-          {
-            value: 0,
-            label: formatMoney(sliderAmounts[0]),
-          },
-          {
-            value: tenAmountDistance,
-            label: formatMoney(sliderAmounts[tenIndex]),
-          },
-          !smallManaAmounts && {
-            value: hundredAmountDistance,
-            label: formatMoney(sliderAmounts[hundredIndex]),
-          },
-          {
-            value: 100,
-            label: formatMoney(sliderAmounts[maxSliderIndex]),
-          }
-        )}
-        color={
-          binaryOutcome === 'YES'
-            ? 'green'
-            : binaryOutcome === 'NO'
-            ? 'red'
-            : 'indigo'
+    <Slider
+      className={className}
+      min={0}
+      max={maxSliderIndex}
+      marks={buildArray(
+        {
+          value: 0,
+          label: formatMoney(sliderAmounts[0]),
+        },
+        {
+          value: tenAmountDistance,
+          label: formatMoney(sliderAmounts[tenIndex]),
+        },
+        !smallManaAmounts && {
+          value: hundredAmountDistance,
+          label: formatMoney(sliderAmounts[hundredIndex]),
+        },
+        {
+          value: 100,
+          label: formatMoney(sliderAmounts[maxSliderIndex]),
         }
-        amount={sliderIndex}
-        onChange={(value) => {
-          onAmountChange(sliderAmounts[value])
-        }}
-        step={1}
-        disabled={disabled}
-      />
-    </Col>
+      )}
+      color={
+        binaryOutcome === 'YES'
+          ? 'green'
+          : binaryOutcome === 'NO'
+          ? 'red'
+          : 'indigo'
+      }
+      amount={sliderIndex}
+      onChange={(value) => {
+        onAmountChange(sliderAmounts[value])
+      }}
+      step={1}
+      disabled={disabled}
+    />
   )
 }
