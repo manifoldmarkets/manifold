@@ -17,6 +17,7 @@ import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
 import { Tooltip } from '../../../widgets/tooltip'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { IoIosPerson } from 'react-icons/io'
 
 export const CandidateBar = (props: {
   color: string // 6 digit hex
@@ -58,7 +59,7 @@ export const CandidateBar = (props: {
       >
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
           {!candidateImage ? (
-            <UserIcon className="text-ink-600 h-16 w-16 sm:h-20 sm:w-20" />
+            <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
           ) : (
             <Image
               src={candidateImage}
