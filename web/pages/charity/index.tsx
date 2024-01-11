@@ -23,7 +23,7 @@ export async function getStaticProps() {
   const [totalsByCharity, mostRecentDonation] = await Promise.all([
     getDonationsByCharity(),
     getMostRecentDonation(),
-  ])
+  ]).catch(() => [{}, { toId: '', fromId: '' }] as const)
   return {
     props: {
       totalsByCharity,
