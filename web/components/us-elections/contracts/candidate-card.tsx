@@ -136,53 +136,26 @@ export function CandidateCard(props: {
   }
 
   return (
-    <ClickFrame
-      className={clsx(
-        className,
-        'group relative',
-        'cursor-pointer ',
-        'flex w-full flex-col gap-0.5 px-4 py-4',
-        'fade-in'
-      )}
-      onClick={(e) => {
-        trackClick()
-        Router.push(path)
-        e.currentTarget.focus() // focus the div like a button, for style
-      }}
-      ref={ref}
-    >
-      <Col className={'w-full flex-col gap-1.5 '}>
-        <div
+    <Col className={'w-full flex-col gap-1.5 '}>
+      <div
+        className={clsx(
+          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+        )}
+      >
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Link
           className={clsx(
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+            'hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+            titleSize === 'lg' && ' sm:text-3xl'
           )}
+          href={path}
+          onClick={trackClick}
         >
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Link
-            className={clsx(
-              'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
-              titleSize === 'lg' && ' sm:text-3xl'
-            )}
-            href={path}
-            onClick={trackClick}
-          >
-            <VisibilityIcon contract={contract} />{' '}
-            {customTitle ? customTitle : extractPhrase(contract.question)}
-          </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-          </Row>
-        </div>
-      </Col>
-
-      <div className="w-full overflow-hidden pt-2">
-        <CandidatePanel contract={contract} />
+          <VisibilityIcon contract={contract} />{' '}
+          {customTitle ? customTitle : extractPhrase(contract.question)}
+        </Link>
       </div>
-    </ClickFrame>
+      <CandidatePanel contract={contract} maxAnswers={6} />
+    </Col>
   )
 }

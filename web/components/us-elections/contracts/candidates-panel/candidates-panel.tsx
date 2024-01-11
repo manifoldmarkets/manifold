@@ -28,67 +28,6 @@ import { AnswerPosition } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 
-const EditAnswerModal = (props: {
-  open: boolean
-  setOpen: (show: boolean) => void
-  contract: Contract
-  answer: Answer
-}) => {
-  const { answer, contract, open, setOpen } = props
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [text, setText] = useState(answer.text)
-  const [error, setError] = useState<string | null>(null)
-  const editAnswer = async () => {
-    if (isSubmitting) return
-    setIsSubmitting(true)
-
-    const res = await editAnswerCpmm({
-      answerId: answer.id,
-      contractId: contract.id,
-      text,
-    })
-      .catch((e) => {
-        console.error(e)
-        setError(e.message)
-        return null
-      })
-      .finally(() => {
-        setIsSubmitting(false)
-      })
-    if (!res) return
-
-    setOpen(false)
-  }
-
-  return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <Title>Edit answer</Title>
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full"
-        />
-        {error ? <span className="text-red-500">{error}</span> : null}
-
-        <Row className={'mt-2 justify-between'}>
-          <Button
-            color={'gray-outline'}
-            disabled={isSubmitting}
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </Button>
-          <Button color={'indigo'} loading={isSubmitting} onClick={editAnswer}>
-            Submit
-          </Button>
-        </Row>
-      </Col>
-    </Modal>
-  )
-}
-
 // just the bars
 export function CandidatePanel(props: {
   contract: MultiContract
@@ -144,7 +83,7 @@ export function CandidatePanel(props: {
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          <Carousel>
+          <Carousel labelsParentClassName="gap-2">
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 user={user}
@@ -155,18 +94,23 @@ export function CandidatePanel(props: {
                 showAvatars={showAvatars}
               />
             ))}
-          </Carousel>
-          {moreCount > 0 && (
-            <Row className="w-full justify-end">
-              <Link
-                className="text-ink-500 hover:text-primary-500 text-sm"
-                href={contractPath(contract)}
-              >
-                See {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}{' '}
-                <ArrowRightIcon className="inline h-4 w-4" />
+            {moreCount > 0 && (
+              <Link href={contractPath(contract)}>
+                <Col
+                  className={clsx(
+                    'text-ink-800 hover:text-ink-1000 hover:bg-canvas-100 bg-canvas-0 sm:text-md h-16 w-[11rem] items-center justify-center overflow-hidden rounded text-sm transition-all sm:h-20 sm:w-[220px]'
+                  )}
+                >
+                  <Row className="gap-1">
+                    See {moreCount} more{' '}
+                    <span>
+                      <ArrowRightIcon className="h-5 w-5" />
+                    </span>
+                  </Row>
+                </Col>
               </Link>
-            </Row>
-          )}
+            )}
+          </Carousel>
         </>
       )}
     </Col>
@@ -187,7 +131,6 @@ function CandidateAnswer(props: {
   user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
-  onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
   showAvatars?: boolean
@@ -198,7 +141,6 @@ function CandidateAnswer(props: {
     contract,
     onCommentClick,
     onHover,
-    onClick,
     selected,
     color,
     userBets,
@@ -236,7 +178,6 @@ function CandidateAnswer(props: {
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
-        onClick={onClick}
         className={clsx(
           'cursor-pointer',
           selected && 'ring-primary-600 rounded ring-2'
@@ -252,15 +193,6 @@ function CandidateAnswer(props: {
           userBets={userBets}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
-        />
-      )}
-
-      {editAnswer && (
-        <EditAnswerModal
-          open={!!editAnswer}
-          setOpen={() => setEditAnswer(undefined)}
-          contract={contract}
-          answer={editAnswer}
         />
       )}
     </Col>

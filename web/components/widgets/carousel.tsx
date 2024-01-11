@@ -44,7 +44,9 @@ export function Carousel(props: {
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onClick={(e) => {
+            console.log('clicked')
             e.stopPropagation()
+            console.log('propagation stopped')
             scrollLeft()
           }}
         >
@@ -55,7 +57,9 @@ export function Carousel(props: {
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onClick={(e) => {
+            console.log('clicked')
             e.stopPropagation()
+            console.log('propagation stopped')
             scrollRight()
           }}
         >
