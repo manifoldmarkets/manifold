@@ -9,8 +9,7 @@ export const largerSliderAmounts = [
   600, 650, 700, 800, 900, 1000,
 ]
 export const lowerManaSliderAmounts = [
-  1, 2, 3, 5, 7, 10, 12, 15, 17, 20, 22, 25, 27, 30, 35, 40, 45, 50, 55, 60, 65,
-  70, 75, 80, 85, 90, 95, 100,
+  1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100,
 ]
 
 export const BetSlider = (props: {

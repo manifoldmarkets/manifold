@@ -202,6 +202,12 @@ export function BuyAmountInput(props: {
   const penultimateSliderAmount = sliderAmounts[sliderAmounts.length - 4]
 
   const maxInterval = hasLotsOfMana ? 250 : 25
+  const decrement = () => {
+    if (amountWithDefault >= maxSliderAmount) {
+      onChange((amount ?? 0) - maxInterval)
+    } else onChange(sliderAmounts[Math.max(0, sliderIndex - 1)])
+  }
+
   const increment = () => {
     if (amountWithDefault >= maxSliderAmount) {
       onChange((amount ?? 0) + maxInterval)
@@ -214,12 +220,6 @@ export function BuyAmountInput(props: {
       else onChange(maxSliderAmount)
     } else onChange(sliderAmounts[sliderIndex + 4])
   }
-  const decrement = () => {
-    if (amountWithDefault >= maxSliderAmount) {
-      onChange((amount ?? 0) - maxInterval)
-    } else onChange(sliderAmounts[Math.max(0, sliderIndex - 1)])
-  }
-
   const buttonClasses =
     'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border bg-canvas-0 active:bg-ink-100'
 
@@ -250,18 +250,24 @@ export function BuyAmountInput(props: {
               <MinusIcon className="h-5 w-5" />
             </button>
             <button
-              className={clsx(buttonClasses, 'border-l-0 border-r-0')}
+              className={clsx(
+                buttonClasses,
+                'border-l-0',
+                hasLotsOfMana ? 'border-r-0' : 'rounded-r'
+              )}
               onClick={increment}
             >
               <PlusIcon className="h-5 w-5" />
             </button>
-            <button
-              className={clsx(buttonClasses, 'rounded-r')}
-              onClick={doubleIncrement}
-            >
-              <PlusIcon className="h-4 w-4" />
-              <PlusIcon className="h-4 w-4" />
-            </button>
+            {hasLotsOfMana && (
+              <button
+                className={clsx(buttonClasses, 'rounded-r')}
+                onClick={doubleIncrement}
+              >
+                <PlusIcon className="h-4 w-4" />
+                <PlusIcon className="h-4 w-4" />
+              </button>
+            )}
           </Row>
         </Row>
 
