@@ -4,9 +4,7 @@ import { useState } from 'react'
 
 import { MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import {
-  VisibilityIcon,
-} from 'web/components/contract/contracts-table'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'

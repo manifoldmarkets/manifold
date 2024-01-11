@@ -12,9 +12,7 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import {
-  useChartAnswers,
-} from '../../../charts/contract/choice'
+import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { CandidateBar } from './candidate-bar'
 import { AnswerPosition } from 'web/components/answers/answer-components'
