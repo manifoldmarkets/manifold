@@ -150,7 +150,7 @@ export const MultiBettor = (props: {
       >
         <AnswerCpmmBetPanel
           answer={answer}
-          contract={contract}
+          contract={contract as CPMMMultiContract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
           me={user}

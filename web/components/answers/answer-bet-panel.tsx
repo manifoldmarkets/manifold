@@ -218,7 +218,7 @@ const getSimulatedBetInfo = (
 
 export function AnswerCpmmBetPanel(props: {
   answer: Answer
-  contract: MultiContract
+  contract: CPMMMultiContract
   closePanel: () => void
   outcome: 'YES' | 'NO' | 'LIMIT' | undefined
   me: User | null | undefined
@@ -231,7 +231,7 @@ export function AnswerCpmmBetPanel(props: {
         <div className="text-xl">{formatPercent(answer.prob)}</div>
       </Row>
       <BuyPanel
-        contract={contract as CPMMMultiContract}
+        contract={contract}
         multiProps={{
           answers: contract.answers as Answer[],
           answerToBuy: answer as Answer,
