@@ -105,7 +105,6 @@ export function AmountInput(
               }}
             />
             <Row className="absolute right-0 h-full divide-x">
-              {quickAddMoreButton}
               <ClearInputButton
                 className={clsx(
                   'w-12 transition-opacity',
@@ -113,6 +112,7 @@ export function AmountInput(
                 )}
                 onClick={() => onChangeAmount(undefined)}
               />
+              {quickAddMoreButton}
             </Row>
           </div>
         </label>
