@@ -1,4 +1,4 @@
-import { SparklesIcon, UserIcon } from '@heroicons/react/solid'
+import { SparklesIcon } from '@heroicons/react/solid'
 import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
