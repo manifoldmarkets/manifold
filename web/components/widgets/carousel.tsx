@@ -43,12 +43,7 @@ export function Carousel(props: {
       {!atFront && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
-          onClick={(e) => {
-            console.log('clicked')
-            e.stopPropagation()
-            console.log('propagation stopped')
-            scrollLeft()
-          }}
+          onClick={scrollLeft}
         >
           <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
@@ -56,12 +51,7 @@ export function Carousel(props: {
       {!atBack && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
-          onClick={(e) => {
-            console.log('clicked')
-            e.stopPropagation()
-            console.log('propagation stopped')
-            scrollRight()
-          }}
+          onClick={scrollRight}
         >
           <ChevronRightIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
