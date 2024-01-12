@@ -6,12 +6,9 @@ import { useEffect, useState } from 'react'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
-  ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
-import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
@@ -23,13 +20,7 @@ import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { CardReason } from 'web/components/feed/card-reason'
-import { FeedDropdown } from 'web/components/feed/card-dropdown'
-import { BetButton } from 'web/components/bet/feed-bet-button'
-import { PollPanel } from 'web/components/poll/poll-panel'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 
 export function PoliticsContractCard(props: {
   contract: Contract
