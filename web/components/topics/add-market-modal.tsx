@@ -32,6 +32,14 @@ export function AddMarketToGroupModal(props: {
         <div className="bg-primary-100 text-primary-800 px-8 py-2">
           Add questions to {group.name}
         </div>
+        {addPermission === 'none' && (
+          <Col className="w-full">
+            <div className="px-2 pb-4">
+              Sorry, you don't have permission to add questions to this{' '}
+              <span className={'font-bold'}>{group.privacyStatus}</span> group.
+            </div>
+          </Col>
+        )}
         {addPermission == 'private' && (
           <Col className="w-full">
             <NewContractFromGroup group={group} user={user} />
