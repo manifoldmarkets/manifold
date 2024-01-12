@@ -70,7 +70,7 @@ const ContractTopicBreadcrumbs = (props: {
     <Col>
       <span
         ref={spanRef}
-        className={clsx(['min-h-[24px]', { 'line-clamp-1': !showMore }])}
+        className={clsx('min-h-[24px]', !showMore && 'line-clamp-1 break-all')}
       >
         {topics.map((topic, i) => (
           <span key={topic.id} className={'text-primary-700 text-sm'}>
