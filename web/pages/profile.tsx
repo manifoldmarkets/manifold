@@ -1,5 +1,9 @@
 import { RefreshIcon } from '@heroicons/react/outline'
-import { TrashIcon } from '@heroicons/react/solid'
+import {
+  ChevronUpIcon,
+  ChevronDownIcon,
+  TrashIcon,
+} from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -32,6 +36,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { AiOutlineCopy } from 'react-icons/ai'
+import clsx from 'clsx'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -83,7 +88,7 @@ export default function ProfilePage(props: {
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
-
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
   const {
@@ -225,6 +230,10 @@ export default function ProfilePage(props: {
               label={<label className="mb-1 block">{label}</label>}
             />
           ))}
+          <div className={'mt-2'}>
+            <label className="mb-1 block">Email</label>
+            <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
+          </div>
 
           <Link
             href={`/${user.username}`}
@@ -233,139 +242,149 @@ export default function ProfilePage(props: {
             Done
           </Link>
 
-          <div className={'mt-8'}>
-            <label className="mb-1 block">Email</label>
-            <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
-          </div>
-          <div>
-            <label className="mb-1 block">
-              Bet warnings{' '}
-              <InfoTooltip
-                text={
-                  'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
-                }
-              />
-            </label>
-            <ShortToggle
-              on={betWarnings}
-              setOn={(enabled) => {
-                setBetWarnings(enabled)
-                updateUser(user.id, { optOutBetWarnings: !enabled })
-              }}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block">API key</label>
-            <Row className="items-stretch gap-3">
-              <Input
-                type="text"
-                placeholder="Click refresh to generate key"
-                value={apiKey}
-                readOnly
-                className={'w-24'}
-              />
-              <Button
-                color={'indigo'}
-                onClick={() => {
-                  copyToClipboard(apiKey)
-                  toast.success('Copied to clipboard')
-                }}
-              >
-                <AiOutlineCopy className="h-5 w-5" />
-              </Button>
-              <ConfirmationButton
-                openModalBtn={{
-                  className: 'p-2',
-                  label: '',
-                  icon: <RefreshIcon className="h-5 w-5" />,
-                  color: 'red',
-                }}
-                submitBtn={{
-                  label: 'Update key',
-                }}
-                onSubmitWithSuccess={async () => {
-                  updateApiKey()
-                  return true
-                }}
-              >
-                <Col>
-                  <Title>Are you sure?</Title>
-                  <div>
-                    Updating your API key will break any existing applications
-                    connected to your account, <b>including the Twitch bot</b>.
-                    You will need to go to the{' '}
-                    <Link
-                      href="/twitch"
-                      className="underline focus:outline-none"
-                    >
-                      Twitch page
-                    </Link>{' '}
-                    to relink your account.
-                  </div>
-                </Col>
-              </ConfirmationButton>
-            </Row>
-          </div>
-          <div>
-            <label className="mb-1 block">Delete Account</label>
-            <div className="flex w-full items-stretch space-x-1">
-              <ConfirmationButton
-                openModalBtn={{
-                  className: 'p-2',
-                  label: 'Permanently delete this account',
-                  icon: <TrashIcon className="mr-1 h-5 w-5" />,
-                  color: 'red',
-                }}
-                submitBtn={{
-                  label: 'Delete account',
-                  color:
-                    deleteAccountConfirmation == 'delete my account'
-                      ? 'red'
-                      : 'gray',
-                }}
-                onSubmitWithSuccess={async () => {
-                  if (deleteAccountConfirmation == 'delete my account') {
-                    toast
-                      .promise(deleteAccount(), {
-                        loading: 'Deleting account...',
-                        success: () => {
-                          router.push('/')
-                          return 'Account deleted'
-                        },
-                        error: () => {
-                          return 'Failed to delete account'
-                        },
-                      })
-                      .then(() => {
-                        return true
-                      })
-                      .catch(() => {
-                        return false
-                      })
+          <Button
+            color={'gray-white'}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            {showAdvanced ? 'Hide' : 'Show'} advanced
+            {showAdvanced ? (
+              <ChevronUpIcon className="ml-1 h-5 w-5" />
+            ) : (
+              <ChevronDownIcon className="ml-1 h-5 w-5" />
+            )}
+          </Button>
+          <Col className={clsx('gap-2', showAdvanced ? '' : 'hidden')}>
+            <div>
+              <label className="mb-1 block">
+                Bet warnings{' '}
+                <InfoTooltip
+                  text={
+                    'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
                   }
-                  return false
+                />
+              </label>
+              <ShortToggle
+                on={betWarnings}
+                setOn={(enabled) => {
+                  setBetWarnings(enabled)
+                  updateUser(user.id, { optOutBetWarnings: !enabled })
                 }}
-              >
-                <Col>
-                  <Title>Are you sure?</Title>
-                  <div>
-                    Deleting your account means you will no longer be able to
-                    use your account. You will lose access to all of your data.
-                  </div>
-                  <Input
-                    type="text"
-                    placeholder="Type 'delete my account' to confirm"
-                    className="w-full"
-                    value={deleteAccountConfirmation}
-                    onChange={(e) =>
-                      setDeleteAccountConfirmation(e.target.value)
-                    }
-                  />
-                </Col>
-              </ConfirmationButton>
+              />
             </div>
-          </div>
+
+            <div>
+              <label className="mb-1 block">API key</label>
+              <Row className="items-stretch gap-3">
+                <Input
+                  type="text"
+                  placeholder="Click refresh to generate key"
+                  value={apiKey}
+                  readOnly
+                  className={'w-24'}
+                />
+                <Button
+                  color={'indigo'}
+                  onClick={() => {
+                    copyToClipboard(apiKey)
+                    toast.success('Copied to clipboard')
+                  }}
+                >
+                  <AiOutlineCopy className="h-5 w-5" />
+                </Button>
+                <ConfirmationButton
+                  openModalBtn={{
+                    className: 'p-2',
+                    label: '',
+                    icon: <RefreshIcon className="h-5 w-5" />,
+                    color: 'red',
+                  }}
+                  submitBtn={{
+                    label: 'Update key',
+                  }}
+                  onSubmitWithSuccess={async () => {
+                    updateApiKey()
+                    return true
+                  }}
+                >
+                  <Col>
+                    <Title>Are you sure?</Title>
+                    <div>
+                      Updating your API key will break any existing applications
+                      connected to your account, <b>including the Twitch bot</b>
+                      . You will need to go to the{' '}
+                      <Link
+                        href="/twitch"
+                        className="underline focus:outline-none"
+                      >
+                        Twitch page
+                      </Link>{' '}
+                      to relink your account.
+                    </div>
+                  </Col>
+                </ConfirmationButton>
+              </Row>
+            </div>
+            <div>
+              <label className="mb-1 block">Delete Account</label>
+              <div className="flex w-full items-stretch space-x-1">
+                <ConfirmationButton
+                  openModalBtn={{
+                    className: 'p-2',
+                    label: 'Permanently delete this account',
+                    icon: <TrashIcon className="mr-1 h-5 w-5" />,
+                    color: 'red',
+                  }}
+                  submitBtn={{
+                    label: 'Delete account',
+                    color:
+                      deleteAccountConfirmation == 'delete my account'
+                        ? 'red'
+                        : 'gray',
+                  }}
+                  onSubmitWithSuccess={async () => {
+                    if (deleteAccountConfirmation == 'delete my account') {
+                      toast
+                        .promise(deleteAccount(), {
+                          loading: 'Deleting account...',
+                          success: () => {
+                            router.push('/')
+                            return 'Account deleted'
+                          },
+                          error: () => {
+                            return 'Failed to delete account'
+                          },
+                        })
+                        .then(() => {
+                          return true
+                        })
+                        .catch(() => {
+                          return false
+                        })
+                    }
+                    return false
+                  }}
+                >
+                  <Col>
+                    <Title>Are you sure?</Title>
+                    <div>
+                      Deleting your account means you will no longer be able to
+                      use your account. You will lose access to all of your
+                      data.
+                    </div>
+                    <Input
+                      type="text"
+                      placeholder="Type 'delete my account' to confirm"
+                      className="w-full"
+                      value={deleteAccountConfirmation}
+                      onChange={(e) =>
+                        setDeleteAccountConfirmation(e.target.value)
+                      }
+                    />
+                  </Col>
+                </ConfirmationButton>
+              </div>
+            </div>
+          </Col>
         </Col>
       </Col>
     </Page>
