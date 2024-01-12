@@ -6,9 +6,7 @@ import { useEffect, useState } from 'react'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import {
-  VisibilityIcon,
-} from 'web/components/contract/contracts-table'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
