@@ -26,6 +26,7 @@ export function CandidatePanel(props: {
 }) {
   const { contract, maxAnswers = Infinity } = props
   const { resolutions, outcomeType } = contract
+  console.log(contract.answers.find((a) => a.text === 'Joe Biden'))
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true

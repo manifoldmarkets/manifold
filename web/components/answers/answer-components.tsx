@@ -48,6 +48,7 @@ export const AnswerBar = (props: {
   hideBar?: boolean
   onHover?: (hovering: boolean) => void
   onClick?: () => void
+  barColor?: string
 }) => {
   const {
     color,
@@ -75,7 +76,7 @@ export const AnswerBar = (props: {
       <div
         className={clsx(
           'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
-          hideBar ? 'bg-ink-200' : 'bg-canvas-50'
+          hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
         {/* bar outline if resolved */}

@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
 import { AD_WAIT_SECONDS } from 'common/boost'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
@@ -46,6 +46,7 @@ export function PoliticsContractCard(props: {
   hideBottomRow?: boolean
   customTitle?: string
   titleSize?: 'lg'
+  barColor?: string
 }) {
   const {
     promotedData,
@@ -136,10 +137,7 @@ export function PoliticsContractCard(props: {
         className,
         'relative rounded-xl',
         'cursor-pointer ',
-        'hover:ring-[1px]',
-        'flex w-full flex-col gap-0.5 px-4 py-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
-        'fade-in'
+        'fade-in group'
       )}
       onClick={(e) => {
         trackClick()
@@ -149,31 +147,6 @@ export function PoliticsContractCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 '}>
-        <Row className="w-full justify-between">
-          {hide && (
-            <Row className="gap-2">
-              {promotedData && canAdPay && (
-                <div className="text-ink-400 w-12 text-sm">
-                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-                </div>
-              )}
-              <CardReason
-                item={item}
-                contract={contract}
-                probChange={probChange}
-                since={startTime}
-              />
-              <FeedDropdown
-                contract={contract}
-                item={item}
-                interesting={true}
-                toggleInteresting={hide}
-                importanceScore={props.contract.importanceScore}
-              />
-            </Row>
-          )}
-        </Row>
-
         <div
           className={clsx(
             'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
@@ -182,7 +155,7 @@ export function PoliticsContractCard(props: {
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className={clsx(
-              'hover:text-primary-700 grow items-start transition-colors sm:text-lg',
+              'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg ',
               titleSize === 'lg' && ' sm:text-3xl'
             )}
             href={path}
@@ -191,59 +164,15 @@ export function PoliticsContractCard(props: {
             <VisibilityIcon contract={contract} />{' '}
             {customTitle ? customTitle : contract.question}
           </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-            {isBinaryCpmm && !isClosed && (
-              <BetButton
-                feedId={item?.id}
-                contract={contract}
-                user={user}
-                className="h-min"
-              />
-            )}
-          </Row>
         </div>
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        {contract.outcomeType === 'POLL' && (
-          <PollPanel contract={contract} maxOptions={4} />
-        )}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-          <SimpleAnswerBars contract={contract} maxAnswers={4} />
-        )}
-
-        {isBinaryCpmm && (showGraph || !ignore) && (
-          <FeedBinaryChart
-            contract={contract}
-            className="my-4"
-            startDate={startTime ? startTime : contract.createdTime}
-            addLeadingBetPoint={true}
-          />
-        )}
-        {promotedData && canAdPay && (
-          <Col
-            className={clsx(
-              'w-full items-center opacity-0 transition-opacity',
-              adSecondsLeft === 0 && 'opacity-100'
-            )}
-          >
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              className={'z-10 my-2 whitespace-nowrap'}
-            />
-          </Col>
-        )}
-
-        {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
-        )}
+        <SimpleAnswerBars
+          contract={contract as MultiContract}
+          maxAnswers={4}
+          barColor={props.barColor}
+        />
       </div>
     </ClickFrame>
   )

@@ -142,7 +142,10 @@ export default function USElectionsPage(props: {
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-8 px-4">
-        <PoliticsContractCard contract={electionPartyContract} />
+        <PoliticsContractCard
+          contract={electionPartyContract}
+          barColor={'bg-canvas-0'}
+        />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard
           contract={republicanCandidateContract as MultiContract}
