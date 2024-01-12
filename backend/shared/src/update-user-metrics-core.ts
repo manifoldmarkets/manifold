@@ -221,7 +221,7 @@ const getMetricRelevantUserBets = async (
     where
       cb.user_id in ($1:list)
       and (c.resolution_time is null or c.resolution_time > $2)
-      and (a is null or a.data->'resolution' is null)
+      and (a is null or a.data->'resolution' is null or millis_to_ts(coalesce(((a.data->'resolutionTime')::bigint),0)) > $2)
     order by cb.created_time`,
     [userIds, new Date(since).toISOString()]
   )
