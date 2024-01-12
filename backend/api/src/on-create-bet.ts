@@ -63,7 +63,7 @@ export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
     [bet.bet_id, bet.contract_id]
   )
   log('bet exists: ' + !!betExists)
-  if (!betExists) throw new APIError(400, 'Bet already exists')
+  if (!betExists) throw new APIError(400, 'Bet not found')
 
   const idempotentId = bet.bet_id + bet.contract_id + '-limit-fill'
   const previousEventExists = await pg.oneOrNone(
