@@ -328,7 +328,7 @@ export function ContractPageContent(props: ContractParams) {
       parseJsonContentToText(contract.description).trim().length < 200
     )
       return
-    setJustBet(user.lastBetTime > Date.now() - 1000)
+    setJustBet(user.lastBetTime > Date.now() - 3000)
   }, [user?.lastBetTime])
 
   return (
