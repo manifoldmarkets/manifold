@@ -48,29 +48,10 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, description, groupLinks } = contract
+    const { closeTime, question, groupLinks } = contract
 
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-
-    if (
-      !isEqual(previousContract.description, description) ||
-      !isEqual(previousContract.question, question)
-    ) {
-      await run(
-        db.from('contract_edits').insert({
-          contract_id: contract.id,
-          editor_id: contract.creatorId,
-          data: previousContract,
-          idempotency_key: eventId,
-          updated_keys: buildArray([
-            !isEqual(previousContract.description, description) &&
-              'description',
-            !isEqual(previousContract.question, question) && 'question',
-          ]),
-        })
-      )
-    }
 
     // Update group embeddings if group links changed
     const previousGroupIds = (previousContract.groupLinks ?? []).map(

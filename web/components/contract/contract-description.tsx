@@ -2,14 +2,13 @@ import { useState } from 'react'
 import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
-import { updateContract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { Button } from '../buttons/button'
 import { CollapsibleContent } from '../widgets/collapsible-content'
-
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
+import { updateMarket } from 'web/lib/firebase/api'
 
 export function ContractDescription(props: { contract: Contract }) {
   const { contract } = props
@@ -46,7 +45,10 @@ function EditableDescription(props: { contract: Contract }) {
 
   async function saveDescription() {
     if (!editor) return
-    await updateContract(contract.id, { description: editor.getJSON() })
+    await updateMarket({
+      contractId: contract.id,
+      descriptionJson: JSON.stringify(editor.getJSON()),
+    })
   }
 
   return editing ? (

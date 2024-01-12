@@ -15,7 +15,7 @@ import { richTextToString } from 'common/util/parse'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
 import { MAX_ID_LENGTH } from 'common/group'
-import { contentSchema } from 'common/api/zod-types'
+import { contentSchema } from './zod-types'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -329,10 +329,17 @@ export const createMarketProps = z
 export const updateMarketProps = z
   .object({
     contractId: z.string(),
+    question: z.string().min(1).max(MAX_QUESTION_LENGTH).optional(),
     visibility: z.enum(['unlisted', 'public']).optional(),
     closeTime: z.number().optional(),
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
+    coverImageUrl: z.string().or(z.null()).optional(),
     sort: z.string().optional(),
+
+    description: z.string().optional(),
+    descriptionHtml: z.string().optional(),
+    descriptionMarkdown: z.string().optional(),
+    descriptionJson: z.string().optional(),
   })
   .strict()
 

@@ -8,6 +8,7 @@ import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { anythingToRichText } from 'shared/tiptap'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -132,15 +133,7 @@ export const validateComment = async (
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  let contentJson = null
-  if (content) {
-    contentJson = content
-  } else if (html) {
-    contentJson = htmlToRichText(html)
-  } else if (markdown) {
-    const markedParse = marked.parse(markdown)
-    contentJson = htmlToRichText(markedParse)
-  }
+  const contentJson = content || anythingToRichText({ html, markdown })
 
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')
