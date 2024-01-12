@@ -3,10 +3,9 @@ import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group, PrivacyStatusType } from 'common/group'
 import { Contract } from './contracts'
-import { ContractTypeType, Filter, Sort } from 'web/components/supabase-search'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
-import { MaybeAuthedContractParams, SortType } from 'common/contract'
+import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
@@ -27,13 +26,18 @@ export async function call(
   return baseApiCall(url, method, params, auth.currentUser)
 }
 
-// TODO: use this for all calls
+// this is the preferred way of using the api going forward
 export function api<P extends APIPath>(path: P, params: APIParams<P>) {
   return call(
     formatApiUrlWithParams(path, params),
     API[path].method,
     params
   ) as Promise<APIResponse<P>>
+}
+
+// helper function for the old apis so we don't have to migrate them
+function curriedAPI<P extends APIPath>(path: P) {
+  return (params: APIParams<P>) => api(path, params)
 }
 
 export function createAnswer(params: any) {
@@ -151,19 +155,7 @@ export function updateUserDisinterestEmbedding(params: {
   return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
 }
 
-export function searchContracts(params: {
-  term: string
-  filter?: Filter
-  sort?: Sort
-  contractType?: ContractTypeType
-  offset?: number
-  limit?: number
-  fuzzy?: boolean
-  topicSlug?: string
-  creatorId?: string
-}) {
-  return api('search-markets-full', params)
-}
+export const searchContracts = curriedAPI('search-markets-full')
 
 export function deleteMarket(params: { contractId: string }) {
   return call(getApiUrl('delete-market'), 'POST', params) as Promise<{
@@ -359,15 +351,7 @@ export function referUser(params: {
   return call(getApiUrl('refer-user'), 'POST', params)
 }
 
-export function updateMarket(params: {
-  contractId: string
-  visibility?: 'public' | 'unlisted'
-  closeTime?: number
-  addAnswersMode?: 'ONLY_CREATOR' | 'ANYONE'
-  sort?: SortType
-}) {
-  return call(getApiUrl('update-market'), 'POST', params)
-}
+export const updateMarket = curriedAPI('update-market')
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)

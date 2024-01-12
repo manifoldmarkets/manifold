@@ -1,27 +1,18 @@
-import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getContractSupabase } from 'shared/utils'
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
 import { recordContractEdit } from 'shared/record-contract-edit'
 
-const bodySchema = z
-  .object({
-    contractId: z.string(),
-    visibility: z.enum(['unlisted', 'public']).optional(),
-    closeTime: z.number().optional(),
-    addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
-    sort: z.string().optional(),
-  })
-  .strict()
+export const updatemarket: APIHandler<'update-market'> = async (
+  body,
+  auth,
+  { log }
+) => {
+  const { contractId, visibility, addAnswersMode, closeTime, sort } = body
 
-export const updatemarket = authEndpoint(async (req, auth, log) => {
-  const { contractId, visibility, addAnswersMode, closeTime, sort } = validate(
-    bodySchema,
-    req.body
-  )
   if (!visibility && !closeTime && !addAnswersMode && !sort)
     throw new APIError(400, 'Must provide some change to the contract')
   const contract = await getContractSupabase(contractId)
@@ -67,7 +58,6 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
     })
     log('updated sort')
   }
+}
 
-  return { success: true }
-})
 const firestore = admin.firestore()

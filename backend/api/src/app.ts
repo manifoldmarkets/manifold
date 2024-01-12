@@ -196,6 +196,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'hide-comment': hideComment,
   comments: getComments,
   market: createMarket,
+  'update-market': updatemarket,
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -366,7 +367,6 @@ app.post('/set-news-dashboards', ...apiRoute(setnews))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
-app.post('/update-market', ...apiRoute(updatemarket))
 app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
 app.post(
   '/create-private-user-message-channel',

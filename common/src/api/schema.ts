@@ -5,6 +5,7 @@ import {
   resolveMarketProps,
   type LiteMarket,
   FullMarket,
+  updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
 import type { User } from 'common/user'
@@ -237,6 +238,14 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as LiteMarket,
     props: createMarketProps,
+  },
+  // TODO: maybe this should be made consistent with the endpoints below and turned into a PUT
+  // but this is backwards compatible with the old clients
+  'update-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: updateMarketProps,
   },
   'market/:contractId/close': {
     method: 'POST',

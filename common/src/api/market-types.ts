@@ -326,6 +326,16 @@ export const createMarketProps = z
     ])
   )
 
+export const updateMarketProps = z
+  .object({
+    contractId: z.string(),
+    visibility: z.enum(['unlisted', 'public']).optional(),
+    closeTime: z.number().optional(),
+    addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
+    sort: z.string().optional(),
+  })
+  .strict()
+
 // resolve market
 
 export const resolveBinarySchema = z
