@@ -104,7 +104,7 @@ export function AmountInput(
                 }
               }}
             />
-            <Row className="absolute right-0 h-full divide-x">
+            <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
               <ClearInputButton
                 className={clsx(
                   'w-12 transition-opacity',
@@ -225,56 +225,66 @@ export function BuyAmountInput(props: {
       else onChange(maxSliderAmount)
     } else onChange(sliderAmounts[sliderIndex + DOUBLE_INCREMENT_COUNT])
   }
+
+  const doubleDecrement = () => {
+    if (amountWithDefault > maxSliderAmount) {
+      onChange(Math.max(maxSliderAmount, amountWithDefault - maxInterval * 2))
+    } else {
+      const newIndex = Math.max(0, sliderIndex - DOUBLE_INCREMENT_COUNT)
+      onChange(sliderAmounts[newIndex])
+    }
+  }
   const buttonClasses =
-    'text-ink-400 border-ink-300 flex h-14 w-12 flex-row items-center justify-center border bg-canvas-0 active:bg-ink-100'
+    'text-ink-400 flex h-[31px] w-12 flex-row items-center justify-center active:bg-ink-100'
 
   return (
     <>
-      <Col className={clsx('max-w-[350px] gap-2', parentClassName)}>
-        <Row className="items-center gap-2">
-          <AmountInput
-            className={className}
-            inputClassName={clsx(
-              '!h-14 w-full max-w-[300px] pr-[44px]',
-              inputClassName
-            )}
-            amount={amount}
-            onChangeAmount={onChange}
-            label={ENV_CONFIG.moneyMoniker}
-            error={!!error}
-            disabled={disabled}
-            inputRef={inputRef}
-            quickAddMoreButton={undefined}
-          />
+      <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
+        <AmountInput
+          className={className}
+          inputClassName={clsx(
+            '!h-16 w-full',
+            hasLotsOfMana ? 'pr-[134px]' : 'pr-[84px]',
+            inputClassName
+          )}
+          amount={amount}
+          onChangeAmount={onChange}
+          label={ENV_CONFIG.moneyMoniker}
+          error={!!error}
+          disabled={disabled}
+          inputRef={inputRef}
+          quickAddMoreButton={
+            <Row className="divide-ink-300 divide-x">
+              <Col className="divide-ink-300 mt-[1px] divide-y">
+                <button className={clsx(buttonClasses, '')} onClick={increment}>
+                  <PlusIcon className="h-5 w-5" />
+                </button>
+                <button className={clsx(buttonClasses, '')} onClick={decrement}>
+                  <MinusIcon className="h-5 w-5" />
+                </button>
+              </Col>
 
-          <Row>
-            <button
-              className={clsx(buttonClasses, 'rounded-l')}
-              onClick={decrement}
-            >
-              <MinusIcon className="h-5 w-5" />
-            </button>
-            <button
-              className={clsx(
-                buttonClasses,
-                'border-l-0',
-                hasLotsOfMana ? 'border-r-0' : 'rounded-r'
+              {hasLotsOfMana && (
+                <Col className="divide-ink-300 mt-[1px] divide-y">
+                  <button
+                    className={clsx(buttonClasses, '')}
+                    onClick={doubleIncrement}
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    <PlusIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    className={clsx(buttonClasses, '')}
+                    onClick={doubleDecrement}
+                  >
+                    <MinusIcon className="h-4 w-4" />
+                    <MinusIcon className="h-4 w-4" />
+                  </button>
+                </Col>
               )}
-              onClick={increment}
-            >
-              <PlusIcon className="h-5 w-5" />
-            </button>
-            {hasLotsOfMana && (
-              <button
-                className={clsx(buttonClasses, 'rounded-r')}
-                onClick={doubleIncrement}
-              >
-                <PlusIcon className="h-4 w-4" />
-                <PlusIcon className="h-4 w-4" />
-              </button>
-            )}
-          </Row>
-        </Row>
+            </Row>
+          }
+        />
 
         {showSlider && (
           <BetSlider
