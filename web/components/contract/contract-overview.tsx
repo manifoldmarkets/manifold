@@ -544,14 +544,15 @@ const ChoiceOverview = (props: {
   const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
   useEffect(() => {
     if (
-      sort !== contract.sort &&
+      ((contract.sort && sort !== contract.sort) ||
+        (!contract.sort && sort !== defaultSort)) &&
       currentUserId &&
       (isModId(currentUserId) ||
         isAdminId(currentUserId) ||
         contract.creatorId === currentUserId)
     )
       setShowSetDefaultSort(true)
-  }, [sort])
+  }, [sort, contract.sort])
 
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
