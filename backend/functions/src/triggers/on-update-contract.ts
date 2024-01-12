@@ -11,13 +11,11 @@ import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { difference, isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
-import { run } from 'common/supabase/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
-import { buildArray } from 'common/util/array'
 import { addContractToFeed } from 'shared/create-feed'
 import { DAY_MS } from 'common/util/time'
 
