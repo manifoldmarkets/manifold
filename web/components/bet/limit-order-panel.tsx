@@ -17,7 +17,7 @@ import {
 import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { APIError, api } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'
@@ -214,6 +214,7 @@ export default function LimitOrderPanel(props: {
           Outcome
           <YesNoSelector
             selected={outcome}
+            btnClassName={'!rounded-full'}
             onSelect={(selected) => setOutcome(selected)}
             disabled={isSubmitting}
             yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
@@ -255,7 +256,7 @@ export default function LimitOrderPanel(props: {
           {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
         </Button>
         {addExpiration && (
-          <Row className="mt-4 gap-2">
+          <Row className="mt-4 flex-wrap gap-2">
             <Input
               type={'date'}
               className="dark:date-range-input-white"
@@ -283,13 +284,51 @@ export default function LimitOrderPanel(props: {
               color={'indigo-outline'}
               size={'sm'}
               onClick={() => {
+                const num =
+                  dayjs(
+                    `${expirationDate}T${expirationHoursMinutes}`
+                  ).valueOf() + MINUTE_MS
+                const addTime = dayjs(num).format('HH:mm')
+                setExpirationHoursMinutes(addTime)
+              }}
+            >
+              + 1Min
+            </Button>{' '}
+            <Button
+              color={'indigo-outline'}
+              size={'sm'}
+              onClick={() => {
+                const num =
+                  dayjs(
+                    `${expirationDate}T${expirationHoursMinutes}`
+                  ).valueOf() + HOUR_MS
+                const addTime = dayjs(num).format('HH:mm')
+                setExpirationHoursMinutes(addTime)
+              }}
+            >
+              + 1Hr
+            </Button>
+            <Button
+              color={'indigo-outline'}
+              size={'sm'}
+              onClick={() => {
                 const num = dayjs(expirationDate).valueOf() + DAY_MS
                 const addDay = dayjs(num).format('YYYY-MM-DD')
-                console.log('addDay', addDay)
                 setExpirationDate(addDay)
               }}
             >
               + 1D
+            </Button>
+            <Button
+              color={'indigo-outline'}
+              size={'sm'}
+              onClick={() => {
+                const num = dayjs(expirationDate).valueOf() + WEEK_MS
+                const addDay = dayjs(num).format('YYYY-MM-DD')
+                setExpirationDate(addDay)
+              }}
+            >
+              + 1W
             </Button>
           </Row>
         )}
@@ -341,12 +380,22 @@ export default function LimitOrderPanel(props: {
         <Button
           size="xl"
           disabled={betDisabled || inputError}
-          color={'indigo'}
+          color={outcome === 'YES' ? 'green' : 'red'}
           loading={isSubmitting}
           className="flex-1"
           onClick={submitBet}
         >
-          {isSubmitting ? 'Submitting...' : `Submit order`}
+          {isSubmitting
+            ? 'Submitting...'
+            : !outcome
+            ? 'Choose YES or NO'
+            : !limitProb
+            ? 'Enter a probability'
+            : !betAmount
+            ? 'Enter an amount'
+            : `Submit ${outcome} order for ${formatMoney(
+                betAmount
+              )} at ${formatPercent(limitProb)}`}
         </Button>
       )}
     </Col>
@@ -366,7 +415,7 @@ const getBetReturns = (
   }
 ) => {
   const orderAmount = betAmount
-  let amount = 0
+  let amount: number
   let shares: number
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps

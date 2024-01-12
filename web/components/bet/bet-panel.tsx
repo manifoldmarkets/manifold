@@ -25,7 +25,7 @@ import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
 import { useFocus } from 'web/hooks/use-focus'
-import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { YourOrders } from './order-book'
 import { track, withTracking } from 'web/lib/service/analytics'
@@ -113,7 +113,7 @@ export function BuyPanel(props: {
       setOption(undefined)
     } else {
       // Skip for modals, we are tracking intent at the trigger call sites
-      if (inModal === false) {
+      if (!inModal) {
         track('bet intent', { location, option })
       }
       setOption(choice)
@@ -282,7 +282,10 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
-            className="px-2 text-lg sm:px-6"
+            className={clsx(
+              'px-2 text-lg sm:px-6',
+              selected !== undefined ? '!rounded-full' : ''
+            )}
             size="lg"
           >
             %
@@ -412,7 +415,7 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : 'Bet'
+                : `Bet ${formatMoney(betAmount)} on ${outcome}`
             }
             inModal={inModal}
           />
