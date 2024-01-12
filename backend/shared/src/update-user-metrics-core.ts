@@ -67,6 +67,9 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   log(`Loaded portfolio historical profits.`)
 
   log('Loading bets...')
+
+  // We need to update metrics for contracts that resolved up through a month ago,
+  // for the purposes of computing the daily/weekly/monthly profit on them
   const metricRelevantBets = await getMetricRelevantUserBets(
     pg,
     userIds,
@@ -97,13 +100,6 @@ export async function updateUserMetricsCore({ log }: JobContext) {
 
   log(`Loaded ${contracts.length} contracts.`)
 
-  // We need to update metrics for contracts that resolved up through a month ago,
-  // for the purposes of computing the daily/weekly/monthly profit on them
-  const metricEligibleContracts = contracts.filter(
-    (c) => c.resolutionTime == null || c.resolutionTime > monthAgo
-  )
-  log(`${metricEligibleContracts.length} contracts need metrics updates.`)
-
   log('Computing metric updates...')
   const userUpdates = []
   const portfolioUpdates = []
@@ -116,10 +112,16 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       monthly: monthlyTraders[user.id] ?? 0,
       allTime: allTimeTraders[user.id] ?? 0,
     }
+    const unresolvedBetsOnly = userMetricRelevantBets.filter((b) =>
+      b.answerId
+        ? !answersByContractId[b.contractId].find((a) => a.id === b.answerId)
+            ?.resolution
+        : !contractsById[b.contractId].resolution
+    )
     const newPortfolio = calculateNewPortfolioMetrics(
       user,
       contractsById,
-      userMetricRelevantBets
+      unresolvedBetsOnly
     )
     const didPortfolioChange =
       currPortfolio === undefined ||
