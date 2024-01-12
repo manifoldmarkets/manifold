@@ -71,9 +71,9 @@ export default function LimitOrderPanel(props: {
 
   // Expiring orders
   const [addExpiration, setAddExpiration] = useState(false)
-  const timeInMs = Number(Date.now() + DAY_MS)
-  const initDate = dayjs(timeInMs).format('YYYY-MM-DD')
-  const initTime = dayjs(timeInMs).format('HH:mm')
+  const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
+  const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
+  const initTime = dayjs(initTimeInMs).format('HH:mm')
   const [expirationDate, setExpirationDate] = useState<string>(initDate)
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     useState<string>(initTime)
