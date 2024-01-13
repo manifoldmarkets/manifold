@@ -205,6 +205,35 @@ export function BuyAmountInput(props: {
     sliderAmounts[sliderAmounts.length - DOUBLE_INCREMENT_COUNT]
 
   const maxInterval = hasLotsOfMana ? 250 : 25
+
+  const getNewAmount = (amount: number, modifier: '--' | '-' | '+' | '++') => {
+    switch (modifier) {
+      case '--':
+        if (amount > maxSliderAmount) {
+          return Math.max(maxSliderAmount, amountWithDefault - maxInterval * 2)
+        }
+        const newIndex = Math.max(0, sliderIndex - DOUBLE_INCREMENT_COUNT)
+        return sliderAmounts[newIndex]
+      case '-':
+        if (amount >= maxSliderAmount) {
+          return amount - maxInterval
+        }
+        return sliderAmounts[Math.max(0, sliderIndex - 1)]
+      case '+':
+        if (amount >= maxSliderAmount) {
+          return amount + maxInterval
+        }
+        return sliderAmounts[sliderIndex + 1]
+      case '++':
+        if (amount === 0) return 10
+        if (amount >= penultimateSliderAmount) {
+          if (amount >= maxSliderAmount) return amount + maxInterval * 2
+          return maxSliderAmount
+        }
+        return sliderAmounts[sliderIndex + DOUBLE_INCREMENT_COUNT]
+    }
+  }
+
   const decrement = () => {
     if (amountWithDefault >= maxSliderAmount) {
       onChange((amount ?? 0) - maxInterval)
@@ -235,56 +264,61 @@ export function BuyAmountInput(props: {
     }
   }
   const buttonClasses =
-    'text-ink-400 flex h-[31px] w-12 flex-row items-center justify-center active:bg-ink-100'
+    'bg-canvas-0 active:bg-canvas-100 text-ink-400 flex h-[31px] w-14 flex-row items-center justify-center'
 
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
-        <AmountInput
-          className={className}
-          inputClassName={clsx(
-            '!h-16 w-full',
-            hasLotsOfMana ? 'pr-[134px]' : 'pr-[84px]',
-            inputClassName
-          )}
-          amount={amount}
-          onChangeAmount={onChange}
-          label={ENV_CONFIG.moneyMoniker}
-          error={!!error}
-          disabled={disabled}
-          inputRef={inputRef}
-          quickAddMoreButton={
-            <Row className="divide-ink-300 divide-x">
-              <Col className="divide-ink-300 mt-[1px] divide-y">
-                <button className={clsx(buttonClasses, '')} onClick={increment}>
-                  <PlusIcon className="h-5 w-5" />
+        <Row className="gap-2">
+          <AmountInput
+            className={className}
+            inputClassName={clsx(
+              '!h-16 w-full',
+              hasLotsOfMana ? 'pr-[134px]' : 'pr-[84px]',
+              inputClassName
+            )}
+            amount={amount}
+            onChangeAmount={onChange}
+            label={ENV_CONFIG.moneyMoniker}
+            error={!!error}
+            disabled={disabled}
+            inputRef={inputRef}
+            quickAddMoreButton={undefined}
+          />
+          <Row className="divide-ink-300 border-ink-300 divide-x rounded border text-sm">
+            <Col className="divide-ink-300 divide-y">
+              <button
+                className={clsx(buttonClasses, 'rounded-tl')}
+                onClick={doubleDecrement}
+              >
+                <div>{getNewAmount(amountWithDefault, '--')}</div>
+              </button>
+              <button
+                className={clsx(buttonClasses, 'rounded-bl')}
+                onClick={increment}
+              >
+                <div>{getNewAmount(amountWithDefault, '+')}</div>
+              </button>
+            </Col>
+
+            {hasLotsOfMana && (
+              <Col className="divide-ink-300 divide-y">
+                <button
+                  className={clsx(buttonClasses, 'rounded-tr')}
+                  onClick={decrement}
+                >
+                  <div>{getNewAmount(amountWithDefault, '-')}</div>
                 </button>
-                <button className={clsx(buttonClasses, '')} onClick={decrement}>
-                  <MinusIcon className="h-5 w-5" />
+                <button
+                  className={clsx(buttonClasses, 'rounded-br')}
+                  onClick={doubleIncrement}
+                >
+                  <div>{getNewAmount(amountWithDefault, '++')}</div>
                 </button>
               </Col>
-
-              {hasLotsOfMana && (
-                <Col className="divide-ink-300 mt-[1px] divide-y">
-                  <button
-                    className={clsx(buttonClasses, '')}
-                    onClick={doubleIncrement}
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    <PlusIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    className={clsx(buttonClasses, '')}
-                    onClick={doubleDecrement}
-                  >
-                    <MinusIcon className="h-4 w-4" />
-                    <MinusIcon className="h-4 w-4" />
-                  </button>
-                </Col>
-              )}
-            </Row>
-          }
-        />
+            )}
+          </Row>
+        </Row>
 
         {showSlider && (
           <BetSlider
