@@ -86,17 +86,13 @@ export type CreatorDetails = {
   avatarUrl: string
 }
 
-export const INTEREST_DISTANCE_THRESHOLDS: Record<
-  FEED_DATA_TYPES | 'ad',
-  number
-> = {
+export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   contract_probability_changed: 0.13,
   trending_contract: 0.15,
   new_contract: 0.125,
   new_comment: 0.115,
   new_subsidy: 0.15,
   user_position_changed: 1, // only targets followed users,
-  ad: 0.175,
   repost: 0.125,
 }
 

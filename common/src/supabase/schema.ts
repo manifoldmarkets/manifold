@@ -2330,7 +2330,7 @@ export interface Database {
         Row: {
           contract_id: string
           created_time: string
-          data: Json
+          data: Json | null
           id: number
           is_promoted: boolean | null
           type: string
@@ -2339,7 +2339,7 @@ export interface Database {
         Insert: {
           contract_id: string
           created_time?: string
-          data: Json
+          data?: Json | null
           id?: never
           is_promoted?: boolean | null
           type?: string
@@ -2348,7 +2348,7 @@ export interface Database {
         Update: {
           contract_id?: string
           created_time?: string
-          data?: Json
+          data?: Json | null
           id?: never
           is_promoted?: boolean | null
           type?: string
@@ -3369,9 +3369,7 @@ export interface Database {
         Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_donations_by_charity: {
-        Args: {
-          cid?: string
-        }
+        Args: Record<PropertyKey, never>
         Returns: {
           charity_id: string
           num_supporters: number
@@ -3427,6 +3425,18 @@ export interface Database {
           p_question_id: number
         }
         Returns: Database["public"]["CompositeTypes"]["other_lover_answers_type"][]
+      }
+      get_market_ads: {
+        Args: {
+          uid: string
+        }
+        Returns: {
+          ad_id: string
+          market_id: string
+          ad_funds: number
+          ad_cost_per_view: number
+          market_data: Json
+        }[]
       }
       get_monthly_bet_count_and_amount: {
         Args: {

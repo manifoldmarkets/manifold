@@ -367,7 +367,7 @@ $$;
 
 
 create
-or replace function get_top_market_ads (uid text, distance_threshold numeric) returns table (
+or replace function get_market_ads (uid text) returns table (
   ad_id text,
   market_id text,
   ad_funds numeric,
@@ -405,8 +405,7 @@ unredeemed_market_ads as (
     )
     and market_ads.funds >= cost_per_view
     and coalesce(embedding <=> (select disinterest_embedding from user_embedding), 1) > 0.125
-  and (embedding <=> (select interest_embedding from user_embedding))  < distance_threshold
-  order by cost_per_view * (1 - (embedding <=> (
+    order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
   ))) desc
