@@ -186,6 +186,7 @@ export function FeedContractCard(props: {
             <ClaimButton
               {...promotedData}
               onClaim={() => router.push(path)}
+              disabled={false}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
