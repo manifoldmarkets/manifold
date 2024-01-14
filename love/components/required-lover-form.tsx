@@ -44,10 +44,12 @@ export const RequiredLoveUserForm = (props: {
   user: User
   lover: rowFor<'lovers'>
   setLover: (key: keyof rowFor<'lovers'>, value: any) => void
+  isSubmitting: boolean
   onSubmit?: () => void
   loverCreatedAlready?: boolean
 }) => {
-  const { user, onSubmit, loverCreatedAlready, setLover, lover } = props
+  const { user, onSubmit, loverCreatedAlready, setLover, lover, isSubmitting } =
+    props
   const [trans, setTrans] = useState<boolean | undefined>(
     lover['gender'].includes('trans')
   )
@@ -330,7 +332,11 @@ export const RequiredLoveUserForm = (props: {
 
         {onSubmit && (
           <Row className={'justify-end'}>
-            <Button disabled={!canContinue} onClick={onSubmit}>
+            <Button
+              disabled={!canContinue || isSubmitting}
+              loading={isSubmitting}
+              onClick={onSubmit}
+            >
               Next
             </Button>
           </Row>
