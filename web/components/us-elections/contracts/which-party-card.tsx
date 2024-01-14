@@ -225,15 +225,11 @@ export function WhichPartyCard(props: {
           />
         )}
         {promotedData && canAdPay && (
-          <Col
-            className={clsx(
-              'w-full items-center opacity-0 transition-opacity',
-              adSecondsLeft === 0 && 'opacity-100'
-            )}
-          >
+          <Col className={clsx('w-full items-center')}>
             <ClaimButton
               {...promotedData}
               onClaim={() => Router.push(path)}
+              disabled={adSecondsLeft !== 0}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
