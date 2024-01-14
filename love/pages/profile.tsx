@@ -42,6 +42,7 @@ function ProfilePageInner(props: { user: User; lover: Lover }) {
           setLover={setLoverState}
           lover={lover}
           loverCreatedAlready={true}
+          isSubmitting={false}
         />
         <div className={'h-4'} />
         <OptionalLoveUserForm
