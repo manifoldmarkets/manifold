@@ -20,8 +20,7 @@ create policy "public read" on user_reactions for
 select
   using (true);
 
--- useful for getting all reactions for a given contentId recently
-create index if not exists user_reactions_content_id_raw on user_reactions (content_id created_time desc);
+create index if not exists user_reactions_content_id_raw on user_reactions (content_id);
 
 create
 or replace function user_reactions_populate_cols () returns trigger language plpgsql as $$

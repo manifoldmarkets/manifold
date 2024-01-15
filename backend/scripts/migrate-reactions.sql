@@ -36,8 +36,7 @@ update user_reactions
 set
   reaction_id = reaction_id;
 
--- useful for getting all reactions for a given contentId recently
-create index if not exists user_reactions_content_id_raw on user_reactions (content_id created_time desc);
+create index if not exists user_reactions_content_id_raw on user_reactions (content_id);
 
 commit;
 
