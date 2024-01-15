@@ -191,9 +191,10 @@ export function BuyAmountInput(props: {
 
   const amountWithDefault = amount ?? 0
 
-  const incrementBy = (amount: number) => {
-    const newAmount = amountWithDefault + amount
+  const incrementBy = (increment: number) => {
+    const newAmount = amountWithDefault + increment
     if (newAmount <= 0) onChange(undefined)
+    else if (amountWithDefault < increment) onChange(increment)
     else onChange(newAmount)
   }
 
