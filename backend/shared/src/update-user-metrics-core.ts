@@ -113,23 +113,23 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       allTime: allTimeTraders[user.id] ?? 0,
     }
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
-      // We're assuming if there's no answer found, it's not resolved
-      if (b.answerId) {
-        const answers = answersByContractId[b.contractId]
-        if (!answers) {
-          log(
-            `All answers missing for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
-          )
-          return true
-        }
+      const answers = answersByContractId[b.contractId]
+      if (b.answerId === 'undefined' || !b.answerId) {
+        return !contractsById[b.contractId].resolution
+      } else if (b.answerId && answers) {
         const answer = answers.find((a) => a.id === b.answerId)
         if (!answer) {
           log(
             `Answer not found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
           )
+          // We're assuming if there's no answer found, it's not resolved
           return true
         }
         return !answer.resolution
+      } else if (b.answerId && !answers) {
+        log(
+          `No answers found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
+        )
       }
       return !contractsById[b.contractId].resolution
     })
