@@ -112,12 +112,27 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       monthly: monthlyTraders[user.id] ?? 0,
       allTime: allTimeTraders[user.id] ?? 0,
     }
-    const unresolvedBetsOnly = userMetricRelevantBets.filter((b) =>
-      b.answerId
-        ? !answersByContractId[b.contractId].find((a) => a.id === b.answerId)
-            ?.resolution
-        : !contractsById[b.contractId].resolution
-    )
+    const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
+      // We're assuming if there's no answer found, it's not resolved
+      if (b.answerId) {
+        const answers = answersByContractId[b.contractId]
+        if (!answers) {
+          log(
+            `All answers missing for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
+          )
+          return true
+        }
+        const answer = answers.find((a) => a.id === b.answerId)
+        if (!answer) {
+          log(
+            `Answer not found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
+          )
+          return true
+        }
+        return !answer.resolution
+      }
+      return !contractsById[b.contractId].resolution
+    })
     const newPortfolio = calculateNewPortfolioMetrics(
       user,
       contractsById,
