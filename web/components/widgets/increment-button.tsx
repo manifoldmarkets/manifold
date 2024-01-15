@@ -45,3 +45,29 @@ export const IncrementDecrementButton = (props: {
     </Col>
   )
 }
+
+const buttonClasses =
+  'text-ink-400 flex h-[35px] w-12 flex-row items-center justify-center active:bg-ink-100'
+export const IncrementDecrementAmountButton = (props: {
+  amount: number
+  incrementBy: (amount: number) => void
+}) => {
+  const { amount, incrementBy } = props
+
+  return (
+    <Col className="divide-ink-300 mt-[1px] divide-y text-xs">
+      <button
+        className={clsx(buttonClasses, '')}
+        onClick={() => incrementBy(amount)}
+      >
+        +{amount}
+      </button>
+      <button
+        className={clsx(buttonClasses, '')}
+        onClick={() => incrementBy(-amount)}
+      >
+        -{amount}
+      </button>
+    </Col>
+  )
+}

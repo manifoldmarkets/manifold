@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { XIcon } from '@heroicons/react/solid'
-import { MinusIcon, PlusIcon } from '@heroicons/react/solid'
 
 import { ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
@@ -11,12 +10,8 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import {
-  BetSlider,
-  DOUBLE_INCREMENT_COUNT,
-  LARGE_SLIDER_VALUES,
-  LOW_MANA_SLIDER_VALUES,
-} from '../bet/bet-slider'
+import { BetSlider } from '../bet/bet-slider'
+import { IncrementDecrementAmountButton } from './increment-button'
 
 export function AmountInput(
   props: {
@@ -195,47 +190,12 @@ export function BuyAmountInput(props: {
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
   const amountWithDefault = amount ?? 0
-  const sliderAmounts = hasLotsOfMana
-    ? LARGE_SLIDER_VALUES
-    : LOW_MANA_SLIDER_VALUES
-  const sliderIndex = sliderAmounts.findLastIndex((a) => amountWithDefault >= a)
-  const maxSliderAmount = sliderAmounts[sliderAmounts.length - 1]
 
-  const penultimateSliderAmount =
-    sliderAmounts[sliderAmounts.length - DOUBLE_INCREMENT_COUNT]
-
-  const maxInterval = hasLotsOfMana ? 250 : 25
-  const decrement = () => {
-    if (amountWithDefault >= maxSliderAmount) {
-      onChange((amount ?? 0) - maxInterval)
-    } else onChange(sliderAmounts[Math.max(0, sliderIndex - 1)])
+  const incrementBy = (amount: number) => {
+    const newAmount = amountWithDefault + amount
+    if (newAmount <= 0) onChange(undefined)
+    else onChange(newAmount)
   }
-
-  const increment = () => {
-    if (amountWithDefault >= maxSliderAmount) {
-      onChange((amount ?? 0) + maxInterval)
-    } else onChange(sliderAmounts[sliderIndex + 1])
-  }
-
-  const doubleIncrement = () => {
-    if (amountWithDefault === 0) onChange(10)
-    else if (amountWithDefault >= penultimateSliderAmount) {
-      if (amountWithDefault >= maxSliderAmount)
-        onChange(amountWithDefault + maxInterval * 2)
-      else onChange(maxSliderAmount)
-    } else onChange(sliderAmounts[sliderIndex + DOUBLE_INCREMENT_COUNT])
-  }
-
-  const doubleDecrement = () => {
-    if (amountWithDefault > maxSliderAmount) {
-      onChange(Math.max(maxSliderAmount, amountWithDefault - maxInterval * 2))
-    } else {
-      const newIndex = Math.max(0, sliderIndex - DOUBLE_INCREMENT_COUNT)
-      onChange(sliderAmounts[newIndex])
-    }
-  }
-  const buttonClasses =
-    'text-ink-400 flex h-[31px] w-12 flex-row items-center justify-center active:bg-ink-100'
 
   return (
     <>
@@ -243,8 +203,8 @@ export function BuyAmountInput(props: {
         <AmountInput
           className={className}
           inputClassName={clsx(
-            '!h-16 w-full',
-            hasLotsOfMana ? 'pr-[134px]' : 'pr-[84px]',
+            '!h-[72px] w-full',
+            hasLotsOfMana ? 'pr-[154px]' : 'pr-[84px]',
             inputClassName
           )}
           amount={amount}
@@ -254,35 +214,33 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           quickAddMoreButton={
-            <Row className="divide-ink-300 divide-x">
-              <Col className="divide-ink-300 mt-[1px] divide-y">
-                <button className={clsx(buttonClasses, '')} onClick={increment}>
-                  <PlusIcon className="h-5 w-5" />
-                </button>
-                <button className={clsx(buttonClasses, '')} onClick={decrement}>
-                  <MinusIcon className="h-5 w-5" />
-                </button>
-              </Col>
-
-              {hasLotsOfMana && (
-                <Col className="divide-ink-300 mt-[1px] divide-y">
-                  <button
-                    className={clsx(buttonClasses, '')}
-                    onClick={doubleIncrement}
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    <PlusIcon className="h-4 w-4" />
-                  </button>
-                  <button
-                    className={clsx(buttonClasses, '')}
-                    onClick={doubleDecrement}
-                  >
-                    <MinusIcon className="h-4 w-4" />
-                    <MinusIcon className="h-4 w-4" />
-                  </button>
-                </Col>
-              )}
-            </Row>
+            hasLotsOfMana ? (
+              <Row className="divide-ink-300 divide-x text-sm">
+                <IncrementDecrementAmountButton
+                  amount={10}
+                  incrementBy={incrementBy}
+                />
+                <IncrementDecrementAmountButton
+                  amount={50}
+                  incrementBy={incrementBy}
+                />
+                <IncrementDecrementAmountButton
+                  amount={250}
+                  incrementBy={incrementBy}
+                />
+              </Row>
+            ) : (
+              <Row className="divide-ink-300 divide-x text-sm">
+                <IncrementDecrementAmountButton
+                  amount={1}
+                  incrementBy={incrementBy}
+                />
+                <IncrementDecrementAmountButton
+                  amount={10}
+                  incrementBy={incrementBy}
+                />
+              </Row>
+            )
           }
         />
 
