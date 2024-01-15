@@ -148,6 +148,7 @@ export function BuyAmountInput(props: {
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   disregardUserBalance?: boolean
+  quickButtonValues?: number[]
 }) {
   const {
     amount,
@@ -165,6 +166,7 @@ export function BuyAmountInput(props: {
     inputRef,
     maximumAmount,
     disregardUserBalance,
+    quickButtonValues,
   } = props
   const user = useUser()
 
@@ -198,6 +200,9 @@ export function BuyAmountInput(props: {
     else onChange(newAmount)
   }
 
+  const incrementValues =
+    quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
+
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
@@ -215,33 +220,15 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           quickAddMoreButton={
-            hasLotsOfMana ? (
-              <Row className="divide-ink-300 divide-x text-sm">
+            <Row className="divide-ink-300 divide-x text-sm">
+              {incrementValues.map((increment) => (
                 <IncrementDecrementAmountButton
-                  amount={10}
+                  key={increment}
+                  amount={increment}
                   incrementBy={incrementBy}
                 />
-                <IncrementDecrementAmountButton
-                  amount={50}
-                  incrementBy={incrementBy}
-                />
-                <IncrementDecrementAmountButton
-                  amount={250}
-                  incrementBy={incrementBy}
-                />
-              </Row>
-            ) : (
-              <Row className="divide-ink-300 divide-x text-sm">
-                <IncrementDecrementAmountButton
-                  amount={1}
-                  incrementBy={incrementBy}
-                />
-                <IncrementDecrementAmountButton
-                  amount={10}
-                  incrementBy={incrementBy}
-                />
-              </Row>
-            )
+              ))}
+            </Row>
           }
         />
 
