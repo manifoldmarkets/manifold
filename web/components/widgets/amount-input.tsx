@@ -205,7 +205,7 @@ export function BuyAmountInput(props: {
           className={className}
           inputClassName={clsx(
             '!h-[72px] w-full',
-            hasLotsOfMana ? 'pr-[154px]' : 'pr-[84px]',
+            hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]',
             inputClassName
           )}
           amount={amount}
