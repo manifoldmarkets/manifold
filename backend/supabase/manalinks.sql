@@ -1,25 +1,23 @@
-
 create table if not exists
-    manalinks (
-                  id text not null primary key,
-                  amount numeric null,
-                  created_time timestamptz null,
-                  expires_time timestamptz null,
-                  creator_id text null,
-                  max_uses int null,
-                  message text null,
-                  data jsonb not null,
-                  fs_updated_time timestamp not null
-);
+  manalinks (
+    id text not null primary key,
+    amount numeric null,
+    created_time timestamptz null,
+    expires_time timestamptz null,
+    creator_id text null,
+    max_uses int null,
+    message text null,
+    data jsonb not null,
+    fs_updated_time timestamp not null
+  );
 
 create index if not exists manalinks_creator_id on manalinks (creator_id);
 
-alter table manalinks cluster on manalinks_creator_id;
+alter table manalinks
+cluster on manalinks_creator_id;
 
-create or replace function manalinks_populate_cols()
-    returns trigger
-    language plpgsql
-as $$ begin
+create
+or replace function manalinks_populate_cols () returns trigger language plpgsql as $$ begin
     if new.data is not null then
         new.amount := ((new.data)->>'amount')::numeric;
         new.created_time :=
@@ -39,14 +37,18 @@ as $$ begin
 end $$;
 
 drop trigger manalinks_populate on manalinks;
-create trigger manalinks_populate before insert or update on manalinks
-    for each row execute function manalinks_populate_cols();
+
+create trigger manalinks_populate before insert
+or
+update on manalinks for each row
+execute function manalinks_populate_cols ();
 
 create table if not exists
-    manalink_claims (
-                        manalink_id text not null,
-                        txn_id text not null,
-                        primary key (manalink_id, txn_id)
-);
+  manalink_claims (
+    manalink_id text not null,
+    txn_id text not null,
+    primary key (manalink_id, txn_id)
+  );
 
-alter table manalink_claims cluster on manalink_claims_pkey;
+alter table manalink_claims
+cluster on manalink_claims_pkey;
