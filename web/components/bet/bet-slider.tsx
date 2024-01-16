@@ -3,11 +3,8 @@ import { Slider } from 'web/components/widgets/slider'
 import { formatMoney } from 'common/util/format'
 import { buildArray } from 'common/util/array'
 
-// Note: large slider values are calibrated for also using the double-plus button,
-// which jumps several increments at a time.
-export const DOUBLE_INCREMENT_COUNT = 5
 export const LARGE_SLIDER_VALUES = [
-  1, 2, 3, 5, 7, 10, 12, 15, 17, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90,
+  1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90,
   100, 125, 150, 175, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900,
   1000,
 ]
