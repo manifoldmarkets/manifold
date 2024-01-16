@@ -39,7 +39,6 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -54,9 +53,6 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { Answer } from 'common/answer'
-import { getUserMostChangedPosition } from 'common/supabase/bets'
-import { addBetDataToUsersFeeds } from 'shared/create-feed'
-import { MINUTE_MS } from 'common/util/time'
 import { ContractComment } from 'common/comment'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 
@@ -146,16 +142,8 @@ export const onCreateBet = functions
         firestore
           .doc(`users/${bettor.id}`)
           .update({ lastBetTime: bet.createdTime }),
-
-      addBetToFollowersFeeds(bettor, contract, bet),
     ])
   })
-
-const MED_BALANCE_PERCENTAGE_FOR_FEED = 0.005
-const MED_BET_SIZE_FOR_FEED = 100
-
-const MIN_BALANCE_PERCENTAGE_FOR_FEED = 0.05
-const MIN_BET_SIZE_GIVEN_PERCENTAGE = 20
 
 const handleBetReplyToComment = async (
   bet: Bet,
@@ -192,38 +180,6 @@ const handleBetReplyToComment = async (
     comment,
     pg
   )
-}
-
-const addBetToFollowersFeeds = async (
-  bettor: User,
-  contract: Contract,
-  bet: Bet
-) => {
-  if (contract.mechanism === 'dpm-2') return
-  const positionChange = await getUserMostChangedPosition(
-    bettor,
-    contract,
-    bet.createdTime - 10 * MINUTE_MS,
-    createSupabaseClient()
-  )
-  if (!positionChange) return
-  const percentUsersBalance = positionChange.change / bettor.balance
-  if (
-    // For shrimp
-    (percentUsersBalance > MIN_BALANCE_PERCENTAGE_FOR_FEED &&
-      positionChange.change >= MIN_BET_SIZE_GIVEN_PERCENTAGE) ||
-    // For dolphins/whales
-    (percentUsersBalance > MED_BALANCE_PERCENTAGE_FOR_FEED &&
-      positionChange.change >= MED_BET_SIZE_FOR_FEED)
-  )
-    await addBetDataToUsersFeeds(
-      contract.id,
-      bettor,
-      positionChange,
-      `${contract.id}-${bettor.id}-${
-        positionChange.change
-      }-${new Date().toLocaleDateString()}`
-    )
 }
 
 const updateBettingStreak = async (

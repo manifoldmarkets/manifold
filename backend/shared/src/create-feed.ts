@@ -4,28 +4,17 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { Comment, ContractComment } from 'common/comment'
-import {
-  getUsersWithSimilarInterestVectorsToContract,
-  getUserToReasonsInterestedInContractAndUser,
-} from 'shared/supabase/contracts'
+import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
   ALL_FEED_USER_ID,
   CONTRACT_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
-  getRelevanceScore,
-  INTEREST_DISTANCE_THRESHOLDS,
 } from 'common/feed'
-import { getContractSupabase, log } from 'shared/utils'
-import { getUserFollowerIds } from 'shared/supabase/users'
+import { log } from 'shared/utils'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
-import { User } from 'common/user'
-import { fromPairs, groupBy, maxBy, uniq } from 'lodash'
-import { removeUndefinedProps } from 'common/util/object'
-import { PositionChangeData } from 'common/supabase/bets'
-import { filterDefined } from 'common/util/array'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -373,87 +362,6 @@ export const insertTrendingContractToUsersFeeds = async (
     unseenNewerThanTime,
     data,
     trendingContractType
-  )
-}
-
-export const addBetDataToUsersFeeds = async (
-  contractId: string,
-  bettor: User,
-  betData: PositionChangeData,
-  idempotencyKey: string
-) => {
-  const pg = createSupabaseDirectClient()
-  // Need contract from supabase for importance score
-  const contract = await getContractSupabase(contractId)
-  if (!contract) return
-  const now = Date.now()
-  let followerIds = await getUserFollowerIds(bettor.id, pg)
-  // let followerIds = ['mwaVAaKkabODsH8g5VrtbshsXz03']
-  const oldMatchingPositionChangedRows = await matchingFeedRows(
-    contract.id,
-    followerIds,
-    now - DAY_MS,
-    ['user_position_changed'],
-    pg
-  )
-  const oldRowsByUserId = groupBy(oldMatchingPositionChangedRows, 'user_id')
-  const feedRowIdsToDelete: number[] = []
-  Object.entries(oldRowsByUserId).forEach(([userId, rows]) => {
-    const oldMaxChange = maxBy(rows, (r) =>
-      r.bet_data ? Math.abs((r.bet_data as PositionChangeData).change) : 0
-    )
-    // No old row
-    if (!oldMaxChange) return
-    // Old row is more important, or has already been seen
-    if (
-      Math.abs((oldMaxChange.bet_data as PositionChangeData).change) >=
-        Math.abs(betData.change) ||
-      oldMaxChange.seen_time
-    ) {
-      followerIds = followerIds.filter((id) => id !== userId)
-    }
-    // New row is more important
-    else {
-      feedRowIdsToDelete.push(...rows.map((r) => r.id))
-    }
-  })
-  await deleteRowsFromUserFeed(feedRowIdsToDelete, pg)
-  const usersToDistances = await getUsersWithSimilarInterestVectorsToContract(
-    contract.id,
-    pg,
-    INTEREST_DISTANCE_THRESHOLDS.user_position_changed,
-    20,
-    followerIds
-  )
-
-  await bulkInsertDataToUserFeed(
-    fromPairs(
-      followerIds.map((id) => [
-        id,
-        {
-          reasons: ['follow_user'],
-          relevanceScore: getRelevanceScore(
-            'user_position_changed',
-            ['follow_user'],
-            contract.importanceScore,
-            usersToDistances[id] ?? 1
-          ),
-        },
-      ])
-    ),
-    now,
-    'user_position_changed',
-    [],
-    removeUndefinedProps({
-      contractId: contract.id,
-      creatorId: bettor.id,
-      betData: removeUndefinedProps(betData),
-      answerIds: filterDefined(
-        uniq([betData.current?.answerId, betData.previous?.answerId])
-      ),
-      idempotencyKey,
-    }),
-    pg
   )
 }
 
