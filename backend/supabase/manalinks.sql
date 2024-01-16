@@ -1,14 +1,14 @@
 create table if not exists
   manalinks (
-    id text not null primary key,
-    amount numeric null,
-    created_time timestamptz null,
+    id text not null primary key default random_alphanumeric (8),
+    amount numeric not null,
+    created_time timestamptz default now(),
     expires_time timestamptz null,
-    creator_id text null,
+    creator_id text not null,
     max_uses int null,
     message text null,
-    data jsonb not null,
-    fs_updated_time timestamp not null
+    data jsonb null,
+    fs_updated_time timestamp null
   );
 
 create index if not exists manalinks_creator_id on manalinks (creator_id);
@@ -43,6 +43,12 @@ or
 update on manalinks for each row
 execute function manalinks_populate_cols ();
 
+drop policy if exists "public read" on manalinks;
+
+create policy "public read" on manalinks for
+select
+  using (true);
+
 create table if not exists
   manalink_claims (
     manalink_id text not null,
@@ -52,3 +58,11 @@ create table if not exists
 
 alter table manalink_claims
 cluster on manalink_claims_pkey;
+
+alter table manalink_claims enable row level security;
+
+drop policy if exists "public read" on manalink_claims;
+
+create policy "public read" on manalink_claims for
+select
+  using (true);

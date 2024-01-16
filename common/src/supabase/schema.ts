@@ -1279,34 +1279,34 @@ export interface Database {
       }
       manalinks: {
         Row: {
-          amount: number | null
+          amount: number
           created_time: string | null
-          creator_id: string | null
-          data: Json
+          creator_id: string
+          data: Json | null
           expires_time: string | null
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
           max_uses: number | null
           message: string | null
         }
         Insert: {
-          amount?: number | null
+          amount: number
           created_time?: string | null
-          creator_id?: string | null
-          data: Json
+          creator_id: string
+          data?: Json | null
           expires_time?: string | null
-          fs_updated_time: string
-          id: string
+          fs_updated_time?: string | null
+          id?: string
           max_uses?: number | null
           message?: string | null
         }
         Update: {
-          amount?: number | null
+          amount?: number
           created_time?: string | null
-          creator_id?: string | null
-          data?: Json
+          creator_id?: string
+          data?: Json | null
           expires_time?: string | null
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
           max_uses?: number | null
           message?: string | null

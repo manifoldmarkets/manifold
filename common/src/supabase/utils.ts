@@ -93,7 +93,6 @@ type JsonTypes = {
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet
-  manalinks: Manalink
   public_contract_bets: Bet
   groups: Group
   txns: Txn
