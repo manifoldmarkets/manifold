@@ -15,6 +15,9 @@ import {
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
 import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { a } from '@react-spring/web'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()

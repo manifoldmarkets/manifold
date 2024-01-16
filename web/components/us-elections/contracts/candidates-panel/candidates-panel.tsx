@@ -18,6 +18,7 @@ import { CandidateBar, CandidateProb } from './candidate-bar'
 import { AnswerPosition } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 // just the bars
 export function CandidatePanel(props: {
@@ -36,6 +37,7 @@ export function CandidatePanel(props: {
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
@@ -138,13 +140,6 @@ function CandidateAnswer(props: {
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
-
-  if (
-    answer.text === 'Joe Biden' &&
-    contract.slug == 'who-will-win-the-2024-us-presidenti-8c1c8b2f8964'
-  ) {
-    console.log(prob)
-  }
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
@@ -160,7 +155,6 @@ function CandidateAnswer(props: {
         answer={answer}
         selected={selected}
         contract={contract}
-        child={<CandidateProb contract={contract} answer={answer} />}
       />
       {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition

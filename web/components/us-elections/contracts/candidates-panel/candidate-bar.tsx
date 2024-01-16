@@ -30,7 +30,6 @@ export const CandidateBar = (props: {
   answer: Answer
   selected?: boolean
   contract: MultiContract
-  child: ReactNode
 }) => {
   const {
     color,
@@ -41,7 +40,6 @@ export const CandidateBar = (props: {
     onHover,
     answer,
     selected,
-    child,
     contract,
   } = props
 
@@ -75,9 +73,7 @@ export const CandidateBar = (props: {
           )}
           <Col>
             <Row className="w-full justify-end">
-              {/* <CandidateProb contract={contract} answer={answer} />
-               */}
-              {child}
+              <CandidateProb contract={contract} answer={answer} />
             </Row>
             <Row className="w-full justify-end text-sm sm:text-lg">
               {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
