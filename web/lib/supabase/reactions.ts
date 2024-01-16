@@ -33,6 +33,7 @@ export async function getLikedContractsCount(userId: string) {
       .from('user_reactions')
       .select('*', { head: true, count: 'exact' })
       .eq('user_id', userId)
+      .eq('content_type', 'contract')
   )
   return count
 }
