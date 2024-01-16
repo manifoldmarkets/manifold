@@ -684,8 +684,6 @@ function CommentActions(props: {
         contentId={comment.id}
         user={user}
         contentType={'comment'}
-        totalLikes={comment.likes ?? 0}
-        contract={contract}
         size={'xs'}
         contentText={richTextToString(comment.content)}
         disabled={isBlocked(privateUser, comment.userId)}

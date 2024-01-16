@@ -2286,19 +2286,31 @@ export interface Database {
       }
       user_reactions: {
         Row: {
-          data: Json
+          content_id: string | null
+          content_owner_id: string | null
+          content_type: string | null
+          created_time: string
+          data: Json | null
           fs_updated_time: string
           reaction_id: string
           user_id: string
         }
         Insert: {
-          data: Json
+          content_id?: string | null
+          content_owner_id?: string | null
+          content_type?: string | null
+          created_time?: string
+          data?: Json | null
           fs_updated_time: string
-          reaction_id: string
+          reaction_id?: string
           user_id: string
         }
         Update: {
-          data?: Json
+          content_id?: string | null
+          content_owner_id?: string | null
+          content_type?: string | null
+          created_time?: string
+          data?: Json | null
           fs_updated_time?: string
           reaction_id?: string
           user_id?: string

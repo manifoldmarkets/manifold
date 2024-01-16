@@ -1,67 +1,27 @@
-import { collection, collectionGroup, query, where } from 'firebase/firestore'
-import { users } from 'web/lib/firebase/users'
-import { listenForValues } from 'web/lib/firebase/utils'
 import { Reaction, ReactionContentTypes } from 'common/reaction'
-import { useStore } from 'web/hooks/use-store'
-import { db } from 'web/lib/firebase/init'
-
-export const useUserLikes = (
-  userId: string | undefined,
-  contentType: ReactionContentTypes
-) => {
-  return useStore<Reaction[] | undefined>(
-    `user-likes-${userId}-${contentType}`,
-    (_, setReactions) => {
-      return listenForLikes(userId ?? '_', contentType, setReactions)
-    }
-  )
-}
+import { db } from 'web/lib/supabase/db'
+import { useEffect } from 'react'
+import { run } from 'common/supabase/utils'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useLikesOnContent = (
   contentType: ReactionContentTypes,
   contentId: string
 ) => {
-  return useStore<Reaction[] | undefined>(
-    `${contentType}-likes-on-${contentId}`,
-    (_, setReactions) => {
-      return listenForLikesOnContent(contentType, contentId, setReactions)
-    }
+  const [likes, setLikes] = usePersistentInMemoryState<Reaction[] | undefined>(
+    undefined,
+    `${contentType}-likes-on-${contentId}`
   )
-}
 
-export const useIsLiked = (
-  userId: string | undefined,
-  contentType: ReactionContentTypes,
-  contentId: string
-) => {
-  const likes = useUserLikes(userId, contentType)
+  useEffect(() => {
+    run(
+      db
+        .from('user_reactions')
+        .select()
+        .eq('content_type', contentType)
+        .eq('content_id', contentId)
+    ).then(({ data }) => setLikes(data))
+  }, [contentType, contentId])
 
-  return likes?.some((like) => like.contentId === contentId) ?? false
-}
-
-function listenForLikes(
-  userId: string,
-  contentType: ReactionContentTypes,
-  setLikes: (likes: Reaction[]) => void
-) {
-  const likes = query(
-    collection(users, userId, 'reactions'),
-    where('type', '==', 'like'),
-    where('contentType', '==', contentType)
-  )
-  return listenForValues<Reaction>(likes, (docs) => setLikes(docs))
-}
-
-function listenForLikesOnContent(
-  contentType: ReactionContentTypes,
-  contentId: string,
-  setLikes: (likes: Reaction[]) => void
-) {
-  const likes = query(
-    collectionGroup(db, 'reactions'),
-    where('type', '==', 'like'),
-    where('contentType', '==', contentType),
-    where('contentId', '==', contentId)
-  )
-  return listenForValues<Reaction>(likes, (docs) => setLikes(docs))
+  return likes
 }

@@ -39,7 +39,6 @@ import { UserCommentsList } from 'web/components/comments/comments-list'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { TextButton } from 'web/components/buttons/text-button'
-import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { linkClass } from 'web/components/widgets/site-link'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -299,8 +298,6 @@ function ProfilePublicStats(props: {
         </span>{' '}
         Followers
       </TextButton>
-
-      {isCurrentUser && <UserLikedContractsButton user={user} />}
 
       {!isCurrentUser && leagueInfo && (
         <Link

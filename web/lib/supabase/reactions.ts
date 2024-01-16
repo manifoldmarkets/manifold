@@ -1,31 +1,30 @@
-import { run, selectFrom } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { Reaction } from 'common/reaction'
-
-export type SearchLikedContent = Pick<
-  Reaction,
-  'id' | 'title' | 'slug' | 'contentId' | 'contentType' | 'text'
->
 
 export async function getLikedContracts(userId: string) {
-  // The best way to do this would be to join the matching table via contentId and contentType
-  // but not sure if people even use this button, so we'll wait until someone complains
-  const { data } = await run(
-    selectFrom(
-      db,
-      'user_reactions',
-      'title',
-      'slug',
-      'contentId',
-      'contentType',
-      'text'
-    )
+  // TODO: The best way to do this would be to join the matching table via contentId and type
+
+  const reacts = await run(
+    db
+      .from('user_reactions')
+      .select('reaction_id, content_id, created_time')
+      .eq('content_type', 'contract')
       .eq('user_id', userId)
-      .eq('data->>type', 'like')
-      .contains('data', { contentType: 'contract' })
-      .order('data->>createdTime' as any, { ascending: false })
+      .order('created_time', { ascending: false })
+      .limit(1000)
   )
-  return data as SearchLikedContent[]
+
+  const contracts = await run(
+    db
+      .from('contracts')
+      .select('id, question, slug')
+      .in(
+        'id',
+        reacts.data.map((r: any) => r.content_id)
+      )
+  )
+
+  return contracts.data
 }
 
 export async function getLikedContractsCount(userId: string) {
@@ -34,8 +33,6 @@ export async function getLikedContractsCount(userId: string) {
       .from('user_reactions')
       .select('*', { head: true, count: 'exact' })
       .eq('user_id', userId)
-      .eq('data->>type', 'like')
-      .contains('data', { contentType: 'contract' })
   )
   return count
 }

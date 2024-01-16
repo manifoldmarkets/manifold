@@ -22,6 +22,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userName: string
   userUsername: string
   userAvatarUrl?: string
+  /** @deprecated out of date */
   likes?: number
 
   hidden?: boolean
