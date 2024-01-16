@@ -106,7 +106,6 @@ export function getAnswerProbability(
       if (resolution === 'YES') return 1
       if (resolution === 'NO') return 0
     }
-
     const pool = { YES: poolYes, NO: poolNo }
     return getCpmmProbability(pool, 0.5)
   }
