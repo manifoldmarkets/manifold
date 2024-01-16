@@ -255,7 +255,29 @@ const getMetricRelevantUserBets = async (
   )
 }
 
+// Chatgpt said this would be faster. Will let it run a few dozen times and compare
+// with the version below. Dubious, looks almost the same.
 const getPortfolioSnapshot = async (
+  pg: SupabaseDirectClient,
+  userIds: string[]
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `
+    select uph.user_id, uph.investment_value, uph.balance, uph.total_deposits, uph.loan_total
+       from (select user_id, max(ts) as max_ts
+             from user_portfolio_history
+             where user_id in ($1:list)
+             group by user_id) as latest
+      inner join user_portfolio_history uph on latest.user_id = uph.user_id and latest.max_ts = uph.ts
+       `,
+      [userIds],
+      (r) => [r.user_id as string, convertPortfolioHistory(r)]
+    )
+  )
+}
+
+const getPortfolioSnapshotAlt = async (
   pg: SupabaseDirectClient,
   userIds: string[]
 ) => {
