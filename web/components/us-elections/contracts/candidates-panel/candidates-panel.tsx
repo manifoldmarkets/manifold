@@ -8,17 +8,13 @@ import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
-import { CandidateBar, CandidateProb } from './candidate-bar'
-import { AnswerPosition } from 'web/components/answers/answer-components'
+import { CandidateBar } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 // just the bars
 export function CandidatePanel(props: {
