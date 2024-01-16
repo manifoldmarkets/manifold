@@ -196,23 +196,20 @@ export function BuyAmountInput(props: {
   const incrementBy = (increment: number) => {
     const newAmount = amountWithDefault + increment
     if (newAmount <= 0) onChange(undefined)
-    else if (amountWithDefault < increment) onChange(increment)
-    else onChange(newAmount)
+    else {
+      onChange(increment * (Math.floor(amountWithDefault / increment) + 1))
+    }
   }
 
   const incrementValues =
-    quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
+    quickButtonValues ?? (hasLotsOfMana ? [10, 100] : [1, 10])
 
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
         <AmountInput
           className={className}
-          inputClassName={clsx(
-            '!h-[72px] w-full',
-            hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]',
-            inputClassName
-          )}
+          inputClassName={clsx('!h-[72px] w-full pr-[134px]', inputClassName)}
           amount={amount}
           onChangeAmount={onChange}
           label={ENV_CONFIG.moneyMoniker}
