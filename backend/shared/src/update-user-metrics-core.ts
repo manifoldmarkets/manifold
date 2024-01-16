@@ -194,7 +194,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       },
     })
   }
-  log(`Computed ${userUpdates.length} metric updates.`)
+  log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
   log('Writing user updates...')
   for (const { user, fields } of filterDefined(userUpdates)) {
