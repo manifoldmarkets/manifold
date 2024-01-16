@@ -31,10 +31,11 @@ import { CompatibleBadge } from 'love/components/widgets/compatible-badge'
 export default function ProfilesPage() {
   const allLovers = useLovers()
 
-  const [lovers, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
+  const [lovers1, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
     undefined,
     'profile-lovers'
   )
+  const lovers = lovers1?.filter((l) => l.referred_by_username === 'Gen')
   const [isSearching, setIsSearching] = usePersistentInMemoryState<boolean>(
     false,
     'profile-is-searching'
