@@ -33,11 +33,11 @@ export function createJobs() {
       '0 */3 * * * *', // every 3 minutes
       updateUserMetricsCore
     ),
-    createJob(
-      'update-user-metrics-2',
-      '59 */3 * * * *', // every 3 minutes w/ 59 second offset
-      updateUserMetricsCore
-    ),
+    // createJob(
+    //   'update-user-metrics-2',
+    //   '59 */3 * * * *', // every 3 minutes w/ 59 second offset
+    //   updateUserMetricsCore
+    // ),
     createJob(
       'update-group-metrics',
       '0 */15 * * * *', // every 15 minutes
