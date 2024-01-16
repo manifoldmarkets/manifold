@@ -141,15 +141,6 @@ service cloud.firestore {
       allow read;
     }
 
-    function commentMatchesUser(userId, comment) {
-      // it's a bad look if someone can impersonate other ids/names/avatars so check everything
-      let user = get(/databases/$(database)/documents/users/$(userId));
-      return comment.userId == userId
-        && comment.userName == user.data.name
-        && comment.userUsername == user.data.username
-        && comment.userAvatarUrl == user.data.avatarUrl;
-    }
-
     match /{somePath=**}/comments/{commentId} {
       allow read;
     }
@@ -174,8 +165,6 @@ service cloud.firestore {
 
     // Note: `resource` = existing doc, `request.resource` = incoming doc
     match /manalinks/{slug} {
-      // Anyone can view any manalink
-      allow get;
       // Only you can create a manalink with your fromId
       allow create: if request.auth.uid == request.resource.data.fromId;
       // Only you can list and change your own manalinks
