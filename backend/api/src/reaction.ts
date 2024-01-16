@@ -85,7 +85,6 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
         content_type: contentType,
         content_owner_id: ownerId,
         user_id: userId,
-        fs_updated_time: new Date().toISOString(),
       })
       .select()
       .single()

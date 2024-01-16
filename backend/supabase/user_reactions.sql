@@ -8,7 +8,7 @@ create table if not exists
     created_time timestamptz not null default now(),
     -- deprecated
     data jsonb,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     primary key (user_id, reaction_id)
   );
 
