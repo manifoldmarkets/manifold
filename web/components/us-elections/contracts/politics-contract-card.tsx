@@ -19,6 +19,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export function PoliticsContractCard(props: {
   contract: Contract
@@ -56,6 +57,14 @@ export function PoliticsContractCard(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+
   const {
     closeTime,
     creatorId,
@@ -91,24 +100,6 @@ export function PoliticsContractCard(props: {
     () => {
       setVisible(false)
     }
-  )
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
-
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
   )
 
   const trackClick = () =>

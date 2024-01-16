@@ -12,6 +12,7 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export function CandidateCard(props: {
   contract: MultiContract
@@ -32,6 +33,13 @@ export function CandidateCard(props: {
       props.contract.id
     ) as MultiContract) ?? props.contract
 
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
   const { closeTime } = contract
 
   const isClosed = closeTime && closeTime < Date.now()

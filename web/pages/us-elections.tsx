@@ -4,6 +4,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
 import { PoliticsContractCard } from 'web/components/us-elections/contracts/politics-contract-card'
 import { presidency2024 } from 'web/components/us-elections/usa-map/election-contract-data'
 import { probToColor } from 'web/components/us-elections/usa-map/state-election-map'
@@ -14,7 +15,6 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
-import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -126,17 +126,6 @@ export default function USElectionsPage(props: {
 
   if (!ELECTION_ENABLED) {
     return <Custom404 />
-  }
-
-  function extractPhrase(inputString: string): string | null {
-    const regex = /Who will win the (.+?)\?/
-    const match = regex.exec(inputString)
-
-    if (match && match[1]) {
-      return match[1] // This is the extracted phrase.
-    } else {
-      return null // No match found.
-    }
   }
 
   return (
