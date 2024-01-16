@@ -22,12 +22,7 @@ export function GenderFilterText(props: {
     <Row className="items-center gap-0.5 font-semibold">
       {gender.map((g) => {
         return (
-          <GenderIcon
-            key={g}
-            gender={g}
-            className={clsx('h-4 w-4')}
-            hasColor
-          />
+          <GenderIcon key={g} gender={g} className={clsx('h-4 w-4')} hasColor />
         )
       })}{' '}
       <span className="hidden sm:inline">
@@ -51,8 +46,8 @@ export function GenderFilter(props: {
             Women: 'female',
             Men: 'male',
             'Non-binary': 'non-binary',
-            'Trans-women': 'trans-female',
-            'Trans-men': 'trans-male',
+            'Trans women': 'trans-female',
+            'Trans men': 'trans-male',
           } as any
         }
         onChange={(c) => {

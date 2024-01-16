@@ -236,8 +236,8 @@ export const RequiredLoveUserForm = (props: {
                   Women: 'female',
                   Men: 'male',
                   'Non-binary': 'non-binary',
-                  'Trans-women': 'trans-female',
-                  'Trans-men': 'trans-male',
+                  'Trans women': 'trans-female',
+                  'Trans men': 'trans-male',
                 }}
                 selected={lover['pref_gender']}
                 onChange={(selected) => setLover('pref_gender', selected)}
