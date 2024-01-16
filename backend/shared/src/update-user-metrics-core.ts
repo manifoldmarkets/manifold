@@ -103,6 +103,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   log('Computing metric updates...')
   const userUpdates = []
   const portfolioUpdates = []
+  const contractMetricUpdates = []
   for (const user of users) {
     const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
     const currPortfolio = currPortfolios[user.id]
@@ -167,10 +168,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       user,
       answersByContractId
     ).flat()
-
-    await bulkUpdateContractMetrics(metricsByContract).catch((e) => {
-      log('Error upserting contract metrics', e)
-    })
+    contractMetricUpdates.push(...metricsByContract)
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
@@ -196,12 +194,21 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       },
     })
   }
+  log(`Computed ${userUpdates.length} metric updates.`)
 
+  log('Writing user updates...')
   for (const { user, fields } of filterDefined(userUpdates)) {
     if (hasChanges(user, fields)) {
       writer.update(firestore.collection('users').doc(user.id), fields)
     }
   }
+  log('Finished user updates.')
+
+  log('Updating contract metrics...')
+  await bulkUpdateContractMetrics(contractMetricUpdates).catch((e) => {
+    log('Error upserting contract metrics', e)
+  })
+  log('Finished updating contract metrics.')
 
   log('Inserting Supabase portfolio history entries...')
   if (portfolioUpdates.length > 0) {
