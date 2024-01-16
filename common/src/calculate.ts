@@ -106,6 +106,13 @@ export function getAnswerProbability(
       if (resolution === 'YES') return 1
       if (resolution === 'NO') return 0
     }
+
+    if (
+      answer.text == 'Joe Biden' &&
+      contract.slug == 'who-will-win-the-2024-us-presidenti-8c1c8b2f8964'
+    ) {
+      console.log(poolYes, poolNo)
+    }
     const pool = { YES: poolYes, NO: poolNo }
     return getCpmmProbability(pool, 0.5)
   }

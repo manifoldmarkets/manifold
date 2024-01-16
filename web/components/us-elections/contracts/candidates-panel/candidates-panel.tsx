@@ -14,7 +14,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
-import { CandidateBar } from './candidate-bar'
+import { CandidateBar, CandidateProb } from './candidate-bar'
 import { AnswerPosition } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -77,12 +77,11 @@ export function CandidatePanel(props: {
           <Carousel labelsParentClassName="gap-2">
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
-                user={user}
                 key={answer.id}
                 answer={answer as Answer}
                 contract={contract}
                 color={getCandidateColor(answer.text)}
-                showAvatars={showAvatars}
+                user={user}
               />
             ))}
             {moreCount > 0 && (
@@ -119,33 +118,14 @@ function CandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
   color: string
-  user: User | undefined | null
-  onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   selected?: boolean
   userBets?: Bet[]
-  showAvatars?: boolean
-  expanded?: boolean
+  user?: User | null
 }) {
-  const {
-    answer,
-    contract,
-    onCommentClick,
-    onHover,
-    selected,
-    color,
-    userBets,
-    showAvatars,
-    expanded,
-    user,
-  } = props
+  const { answer, contract, onHover, selected, color, userBets, user } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
-  const [editAnswer, setEditAnswer] = useState<Answer>()
-
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isOther = 'isOther' in answer && answer.isOther
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -158,6 +138,13 @@ function CandidateAnswer(props: {
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
+
+  if (
+    answer.text === 'Joe Biden' &&
+    contract.slug == 'who-will-win-the-2024-us-presidenti-8c1c8b2f8964'
+  ) {
+    console.log(prob)
+  }
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
@@ -173,8 +160,9 @@ function CandidateAnswer(props: {
         answer={answer}
         selected={selected}
         contract={contract}
+        child={<CandidateProb contract={contract} answer={answer} />}
       />
-      {!resolution && hasBets && isCpmm && user && (
+      {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
           answer={answer as Answer}
@@ -182,7 +170,7 @@ function CandidateAnswer(props: {
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
         />
-      )}
+      )} */}
     </Col>
   )
 }

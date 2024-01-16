@@ -7,7 +7,7 @@ import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import Image from 'next/image'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
@@ -18,6 +18,7 @@ import { Row } from '../../../layout/row'
 import { Tooltip } from '../../../widgets/tooltip'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { IoIosPerson } from 'react-icons/io'
+import { AnswerStatus } from 'web/components/answers/answer-components'
 
 export const CandidateBar = (props: {
   color: string // 6 digit hex
@@ -29,6 +30,7 @@ export const CandidateBar = (props: {
   answer: Answer
   selected?: boolean
   contract: MultiContract
+  child: ReactNode
 }) => {
   const {
     color,
@@ -39,6 +41,7 @@ export const CandidateBar = (props: {
     onHover,
     answer,
     selected,
+    child,
     contract,
   } = props
 
@@ -46,6 +49,7 @@ export const CandidateBar = (props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const isMobile = useIsMobile()
+
   return (
     <>
       <Col
@@ -71,7 +75,9 @@ export const CandidateBar = (props: {
           )}
           <Col>
             <Row className="w-full justify-end">
-              <CandidateProb contract={contract} answer={answer} />
+              {/* <CandidateProb contract={contract} answer={answer} />
+               */}
+              {child}
             </Row>
             <Row className="w-full justify-end text-sm sm:text-lg">
               {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
@@ -116,7 +122,9 @@ export const CandidateBar = (props: {
           answer={answer}
           contract={contract as CPMMMultiContract}
           outcome={'YES'}
-          closePanel={() => {}}
+          closePanel={() => {
+            setOpen(false)
+          }}
           me={user}
         />
       </Modal>
@@ -130,9 +138,7 @@ export const CandidateProb = (props: {
 }) => {
   const { contract, answer } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
-  const cutoffTime = Date.now() - 6 * HOUR_MS
-  const isNew =
-    contract.createdTime < cutoffTime && answer.createdTime > cutoffTime
+
   return (
     <Row className={'items-center'}>
       <span
@@ -142,11 +148,6 @@ export const CandidateProb = (props: {
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
       </span>
-      {isNew && (
-        <Tooltip text={'Recently submitted'}>
-          <SparklesIcon className="h-4 w-4 text-green-500" />
-        </Tooltip>
-      )}
     </Row>
   )
 }
