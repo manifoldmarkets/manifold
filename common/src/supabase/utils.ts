@@ -43,9 +43,6 @@ export type SubcollectionTableMapping = {
   [parent: string]: { [child: string]: TableName }
 }
 export const subcollectionTables: SubcollectionTableMapping = {
-  users: {
-    reactions: 'user_reactions',
-  },
   contracts: {
     answers: 'contract_answers',
     answersCpmm: 'answers',
