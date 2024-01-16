@@ -57,13 +57,13 @@ export function PoliticsContractCard(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
-  // if (contract.mechanism === 'cpmm-multi-1') {
-  //   // eslint-disable-next-line react-hooks/rules-of-hooks
-  //   const answers = useAnswersCpmm(contract.id)
-  //   if (answers) {
-  //     contract.answers = answers
-  //   }
-  // }
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
 
   const {
     closeTime,

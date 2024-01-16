@@ -28,16 +28,18 @@ export function CandidateCard(props: {
   const { promotedData, trackingPostfix, item, customTitle, titleSize } = props
 
   const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+    (useFirebasePublicContract(
+      props.contract.visibility,
+      props.contract.id
+    ) as MultiContract) ?? props.contract
 
-  // if (contract.mechanism === 'cpmm-multi-1') {
-  //   // eslint-disable-next-line react-hooks/rules-of-hooks
-  //   const answers = useAnswersCpmm(contract.id)
-  //   if (answers) {
-  //     contract.answers = answers
-  //   }
-  // }
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
   const { closeTime } = contract
 
   const isClosed = closeTime && closeTime < Date.now()
