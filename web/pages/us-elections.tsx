@@ -150,7 +150,7 @@ export default function USElectionsPage(props: {
               targetContract={(hoveredContract ?? targetContract) as Contract}
             />
           ) : (
-            <div className="bg-canvas-100 h-[224px] w-full animate-pulse" />
+            <div className=" h-[183px] w-full" />
           )}
         </Col>
       </Col>
