@@ -14,7 +14,6 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
-import { Title } from 'web/components/widgets/title'
 import { Spacer } from 'web/components/layout/spacer'
 
 export async function getStaticProps() {
