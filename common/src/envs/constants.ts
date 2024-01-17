@@ -2,8 +2,6 @@ import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 
-export const ELECTION_ENABLED = false
-
 // Valid in web client & Vercel deployments only.
 export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
