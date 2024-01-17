@@ -105,6 +105,7 @@ export default function USElectionsPage(props: {
         hovered: boolean
       }
     > = {}
+    
     mapContracts.forEach((mapContract) => {
       map[mapContract.state] = {
         fill: probToColor(mapContract.contract) ?? '#D6D1D3',
