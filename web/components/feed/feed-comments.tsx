@@ -997,7 +997,7 @@ export function CommentReplyHeader(props: {
     betOrderAmount,
     betLimitProb,
   } = comment
-  if (bettorUsername && bettorName && betOutcome && betAmount) {
+  if (bettorUsername && bettorName && betOutcome && betAmount !== undefined) {
     return (
       <CommentOnBetRow
         betOutcome={betOutcome}
@@ -1058,7 +1058,7 @@ export function CommentOnBetRow(props: {
         <UserLink
           user={{ id: '', name: bettorName, username: bettorUsername }}
         />
-        {!!betOrderAmount && !!betLimitProb ? (
+        {betOrderAmount !== undefined && betLimitProb !== undefined ? (
           <>
             {betAmount === betOrderAmount ? 'filled' : 'opened'} a
             <span className="text-ink-1000">{formatMoney(betOrderAmount)}</span>{' '}
