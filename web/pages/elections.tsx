@@ -15,6 +15,10 @@ import {
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
 import { Spacer } from 'web/components/layout/spacer'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useUser } from 'web/hooks/use-user'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -69,6 +73,11 @@ export default function USElectionsPage(props: {
   republicanCandidateContract: Contract
   democratCandidateContract: Contract
 }) {
+  useSaveCampaign()
+  useTracking('view elections')
+  const user = useUser()
+  useSaveReferral(user)
+
   const {
     mapContracts,
     electionCandidateContract,
