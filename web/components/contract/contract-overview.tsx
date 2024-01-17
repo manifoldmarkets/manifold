@@ -606,6 +606,10 @@ const ChoiceOverview = (props: {
     )
   }, [sortedAnswers, query])
 
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => 'resolution' in a)
+
   const answersToShow = query
     ? searchedAnswers
     : showAll
@@ -616,9 +620,7 @@ const ChoiceOverview = (props: {
             return true
           }
 
-          if (resolutions?.[answer.id]) {
-            return true
-          }
+          if (allResolved) return true
           if (sort === 'prob-asc') {
             return answer.prob < 0.99
           } else if (sort === 'prob-desc') {
