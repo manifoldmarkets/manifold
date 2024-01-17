@@ -11,8 +11,7 @@ import {
   WeeklyPortfolioUpdate,
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
-import { query, where } from 'firebase/firestore'
-import { chunk, orderBy, sortBy, sum } from 'lodash'
+import { chunk, sortBy, sum } from 'lodash'
 import { useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -28,7 +27,7 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { coll, getValues } from 'web/lib/firebase/utils'
+import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
@@ -40,20 +39,22 @@ export async function getStaticProps(props: {
   const { username, rangeEndDateSlug } = props.params
 
   const user = (await getUserByUsername(username)) ?? null
+
   const weeklyPortfolioUpdates = user
-    ? await getValues<WeeklyPortfolioUpdate>(
-        query(
-          coll<WeeklyPortfolioUpdate>(`users/${user.id}/weekly-update`),
-          where('rangeEndDateSlug', '==', rangeEndDateSlug)
-        )
-      )
+    ? (
+        await db
+          .from('weekly_update')
+          .select()
+          .eq('user_id', user?.id)
+          .eq('range_end', rangeEndDateSlug)
+          .order('created_time', { ascending: false })
+          .limit(1)
+      ).data
     : null
-  const weeklyPortfolioUpdate = weeklyPortfolioUpdates
-    ? orderBy(weeklyPortfolioUpdates, (u) => -(u.createdTime ?? 0))[0]
-    : null
-  const end = weeklyPortfolioUpdate?.createdTime
-    ? weeklyPortfolioUpdate?.createdTime
-    : new Date(rangeEndDateSlug).valueOf()
+
+  const weeklyPortfolioUpdate = weeklyPortfolioUpdates?.[0]
+  const end =
+    weeklyPortfolioUpdate?.created_time ?? new Date(rangeEndDateSlug).valueOf()
   const start = end - 7 * DAY_MS
   const profitPoints =
     weeklyPortfolioUpdate && user

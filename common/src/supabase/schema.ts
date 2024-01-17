@@ -2437,6 +2437,62 @@ export interface Database {
         }
         Relationships: []
       }
+      weekly_update: {
+        Row: {
+          contract_metrics: Json
+          created_time: string
+          id: string
+          profit: number
+          range_end: string
+          user_id: string
+        }
+        Insert: {
+          contract_metrics: Json
+          created_time?: string
+          id?: string
+          profit: number
+          range_end: string
+          user_id: string
+        }
+        Update: {
+          contract_metrics?: Json
+          created_time?: string
+          id?: string
+          profit?: number
+          range_end?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       contract_bets_rbac: {
