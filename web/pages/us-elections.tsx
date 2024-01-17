@@ -124,7 +124,12 @@ export default function USElectionsPage(props: {
     return map
   }, [mapContracts, targetContract])
 
-  if (!ELECTION_ENABLED) {
+  if (
+    !ELECTION_ENABLED ||
+    !electionPartyContract ||
+    !republicanCandidateContract ||
+    !democratCandidateContract
+  ) {
     return <Custom404 />
   }
 
