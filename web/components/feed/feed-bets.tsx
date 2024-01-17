@@ -274,7 +274,7 @@ function BetActions(props: {
 }) {
   const { onReply, bet, contract } = props
   const user = useUser()
-  if (!user || bet.amount === 0) return null
+  if (!user) return null
   return (
     <Col className="ml-1 sm:justify-center">
       {user && onReply && (

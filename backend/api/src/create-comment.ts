@@ -1,12 +1,11 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
-import { marked } from 'marked'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser, htmlToRichText } from 'shared/utils'
+import { getContract, getUser } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 
@@ -101,6 +100,8 @@ export const createCommentOnContractInternal = async (
     betAnswerId: bet?.answerId,
     bettorName: bet?.userName,
     bettorUsername: bet?.userUsername,
+    betOrderAmount: bet?.orderAmount,
+    betLimitProb: bet?.limitProb,
     isApi,
     isRepost,
   } as ContractComment)

@@ -19,7 +19,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
 import { buildArray } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { toast } from 'react-hot-toast'
 import { ReportModal } from 'web/components/buttons/report-button'
@@ -836,9 +836,10 @@ export function ContractCommentInput(props: {
           betOutcome={replyTo.outcome}
           bettorName={replyTo.userName}
           bettorUsername={replyTo.userUsername}
+          betOrderAmount={replyTo.orderAmount}
+          betLimitProb={replyTo.limitProb}
           contract={contract}
           clearReply={clearReply}
-          className={'ml-10 mt-6 w-full'}
         />
       ) : replyTo ? (
         <CommentOnAnswerRow
@@ -993,6 +994,8 @@ export function CommentReplyHeader(props: {
     betAnswerId,
     betAmount,
     answerOutcome,
+    betOrderAmount,
+    betLimitProb,
   } = comment
   if (bettorUsername && bettorName && betOutcome && betAmount) {
     return (
@@ -1002,6 +1005,8 @@ export function CommentReplyHeader(props: {
         betAmount={betAmount}
         bettorName={bettorName}
         bettorUsername={bettorUsername}
+        betOrderAmount={betOrderAmount}
+        betLimitProb={betLimitProb}
         contract={contract}
       />
     )
@@ -1023,9 +1028,10 @@ export function CommentOnBetRow(props: {
   betAmount: number
   bettorName: string
   bettorUsername: string
+  betOrderAmount?: number
+  betLimitProb?: number
   betAnswerId?: string
   clearReply?: () => void
-  className?: string
 }) {
   const {
     betOutcome,
@@ -1035,6 +1041,8 @@ export function CommentOnBetRow(props: {
     betAnswerId,
     contract,
     clearReply,
+    betLimitProb,
+    betOrderAmount,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
 
@@ -1050,13 +1058,29 @@ export function CommentOnBetRow(props: {
         <UserLink
           user={{ id: '', name: bettorName, username: bettorUsername }}
         />
-        {bought} <span className="text-ink-1000">{money}</span> of
-        <OutcomeLabel
-          outcome={betOutcome ? betOutcome : ''}
-          answerId={betAnswerId}
-          contract={contract}
-          truncate="short"
-        />
+        {!!betOrderAmount && !!betLimitProb ? (
+          <>
+            {betAmount === betOrderAmount ? 'filled' : 'opened'} a
+            <span className="text-ink-1000">{formatMoney(betOrderAmount)}</span>{' '}
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              answerId={betAnswerId}
+              contract={contract}
+              truncate="short"
+            />{' '}
+            order at {formatPercent(betLimitProb)}
+          </>
+        ) : (
+          <>
+            {bought} <span className="text-ink-1000">{money}</span> of
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              answerId={betAnswerId}
+              contract={contract}
+              truncate="short"
+            />
+          </>
+        )}
         {clearReply && (
           <button
             onClick={clearReply}
