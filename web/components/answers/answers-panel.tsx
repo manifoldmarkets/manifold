@@ -359,6 +359,7 @@ function Answer(props: {
     showAvatars,
     expanded,
     user,
+    barColor,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
@@ -395,7 +396,7 @@ function Answer(props: {
           'cursor-pointer',
           selected && 'ring-primary-600 rounded  ring-2'
         )}
-        barColor={props.barColor}
+        barColor={barColor}
         label={
           <Row className={'items-center gap-1'}>
             <AnswerStatus contract={contract} answer={answer} />
@@ -427,7 +428,11 @@ function Answer(props: {
                 style={{ fill: color }}
               />
             )}
-            <BetButtons contract={contract} answer={answer} />
+            <BetButtons
+              contract={contract}
+              answer={answer}
+              fillColor={barColor}
+            />
             {onClick && (
               <IconButton
                 className={'-ml-1 !px-1.5'}

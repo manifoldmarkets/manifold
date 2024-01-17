@@ -124,7 +124,12 @@ export default function USElectionsPage(props: {
     return map
   }, [mapContracts, targetContract])
 
-  if (!ELECTION_ENABLED) {
+  if (
+    !ELECTION_ENABLED ||
+    !electionPartyContract ||
+    !republicanCandidateContract ||
+    !democratCandidateContract
+  ) {
     return <Custom404 />
   }
 
@@ -150,7 +155,7 @@ export default function USElectionsPage(props: {
               targetContract={(hoveredContract ?? targetContract) as Contract}
             />
           ) : (
-            <div className="bg-canvas-100 h-[224px] w-full animate-pulse" />
+            <div className=" h-[183px] w-full" />
           )}
         </Col>
       </Col>

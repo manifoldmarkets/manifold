@@ -89,7 +89,7 @@ export function CandidateCard(props: {
   }
 
   return (
-    <Col className={'w-full flex-col gap-1.5 '}>
+    <Col className={'group w-full flex-col gap-1.5 '}>
       <div
         className={clsx(
           'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
@@ -98,7 +98,7 @@ export function CandidateCard(props: {
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
           className={clsx(
-            'hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+            'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
