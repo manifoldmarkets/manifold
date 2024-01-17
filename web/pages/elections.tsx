@@ -1,5 +1,4 @@
 import { Contract, MultiContract } from 'common/contract'
-import { ELECTION_ENABLED } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -15,6 +14,8 @@ import {
 } from 'web/components/us-elections/usa-map/usa-map'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
+import { Title } from 'web/components/widgets/title'
+import { Spacer } from 'web/components/layout/spacer'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -125,7 +126,6 @@ export default function USElectionsPage(props: {
   }, [mapContracts, targetContract])
 
   if (
-    !ELECTION_ENABLED ||
     !electionPartyContract ||
     !republicanCandidateContract ||
     !democratCandidateContract
@@ -135,7 +135,10 @@ export default function USElectionsPage(props: {
 
   return (
     <Page trackPageView="us elections page 2024">
-      <Col className="gap-8 px-4">
+      <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
+        <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
+          US 2024 Elections
+        </div>
         <PoliticsContractCard
           contract={electionPartyContract}
           barColor={'bg-canvas-0'}
@@ -159,6 +162,7 @@ export default function USElectionsPage(props: {
           )}
         </Col>
       </Col>
+      <Spacer h={4} />
     </Page>
   )
 }
