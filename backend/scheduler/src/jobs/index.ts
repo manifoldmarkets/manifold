@@ -29,15 +29,10 @@ export function createJobs() {
     ),
     createJob('update-contract-views', '0 0 * * * *', updateContractViews),
     createJob(
-      'update-user-metrics-1',
-      '0 */3 * * * *', // every 3 minutes
+      'update-user-metrics',
+      '0 * * * * *', // every minute
       updateUserMetricsCore
     ),
-    // createJob(
-    //   'update-user-metrics-2',
-    //   '59 */3 * * * *', // every 3 minutes w/ 59 second offset
-    //   updateUserMetricsCore
-    // ),
     createJob(
       'update-group-metrics',
       '0 */15 * * * *', // every 15 minutes
