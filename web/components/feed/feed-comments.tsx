@@ -68,6 +68,7 @@ import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
 import { AnnotateChartModal } from 'web/components/annotate-chart'
 import { BiRepost } from 'react-icons/bi'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -1045,7 +1046,8 @@ export function CommentOnBetRow(props: {
     betOrderAmount,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
-
+  const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
+  const isMobile = useIsMobile()
   return (
     <Row className="ml-4 items-end text-sm">
       <div
@@ -1056,9 +1058,10 @@ export function CommentOnBetRow(props: {
       />
       <Row className="bg-ink-100 text-ink-600 relative items-center gap-1 whitespace-nowrap px-4 py-1">
         <UserLink
+          short={isLimitBet && isMobile}
           user={{ id: '', name: bettorName, username: bettorUsername }}
         />
-        {betOrderAmount !== undefined && betLimitProb !== undefined ? (
+        {isLimitBet ? (
           <>
             {betAmount === betOrderAmount ? 'filled' : 'opened'} a
             <span className="text-ink-1000">{formatMoney(betOrderAmount)}</span>{' '}
