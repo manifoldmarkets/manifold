@@ -835,11 +835,12 @@ export const createLeagueChangedNotification = async (
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {
-  const { reaction_id, content_owner_id, content_id, content_type } = reaction
+  const { reaction_id, content_owner_id, user_id, content_id, content_type } =
+    reaction
   if (!content_id || !content_owner_id) return
 
-  const privateUser = await getPrivateUser(content_owner_id)
-  const user = await getUser(content_owner_id)
+  const creatorPrivateUser = await getPrivateUser(content_owner_id)
+  const user = await getUser(user_id)
 
   const db = createSupabaseClient()
 
@@ -864,10 +865,10 @@ export const createLikeNotification = async (reaction: Reaction) => {
 
   const contract = await getContract(contractId)
 
-  if (!privateUser || !user || !contract) return
+  if (!creatorPrivateUser || !user || !contract) return
 
   const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
+    creatorPrivateUser,
     'user_liked_your_content'
   )
   if (!sendToBrowser) return
