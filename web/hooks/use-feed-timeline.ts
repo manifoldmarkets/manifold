@@ -41,6 +41,7 @@ import { useBoosts } from 'web/hooks/use-boosts'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { convertContractComment } from 'common/supabase/comments'
 import { Json } from 'common/supabase/schema'
+import { Bet } from 'common/bet'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
 
 export const DEBUG_FEED_CARDS =
@@ -65,6 +66,7 @@ export type FeedTimelineItem = {
   seenTime: string | null
   seenDuration: number | null
   postId: number | null
+  betId: string | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
   creatorDetails?: CreatorDetails
@@ -73,6 +75,7 @@ export type FeedTimelineItem = {
   comments?: ContractComment[]
   groups?: Group[]
   answers?: Answer[]
+  bet?: Bet
   reasonDescription?: string
   isCopied?: boolean
   data?: Json
@@ -207,6 +210,7 @@ export const useFeedTimeline = (
       potentiallySeenCommentIds,
       answerIds,
       userIds,
+      betIds,
     } = getOnePerCreatorContentIds(newFeedRows, followedIds)
 
     const [
@@ -218,6 +222,7 @@ export const useFeedTimeline = (
       answers,
       users,
       recentlySeenContractCards,
+      bets,
     ] = await Promise.all([
       db
         .from('contract_comments')
@@ -282,6 +287,11 @@ export const useFeedTimeline = (
       getSeenContractIds(userId, newContractIds, Date.now() - 5 * DAY_MS, [
         'view market card',
       ]),
+      db
+        .from('contract_bets')
+        .select('data')
+        .in('bet_id', betIds)
+        .then((res) => res.data?.map((b) => b.data as Bet)),
     ])
 
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>
@@ -327,12 +337,12 @@ export const useFeedTimeline = (
     )
 
     setSeenFeedItems(contractFeedIdsToIgnore.concat(commentFeedIdsToIgnore))
-
     const timelineItems = createFeedTimelineItems(
       newFeedRows,
       freshAndInterestingContracts,
       unseenUnhiddenLikedOrFollowedComments,
       answers,
+      bets,
       users
     )
     return { timelineItems }
@@ -421,6 +431,7 @@ function createFeedTimelineItems(
   contracts: Contract[] | undefined,
   allComments: ContractComment[] | undefined,
   allAnswers: Answer[] | undefined,
+  allBets: Bet[] | undefined,
   creators: CreatorDetails[] | undefined
 ): FeedTimelineItem[] {
   const timelineItems = uniqBy(
@@ -448,7 +459,7 @@ function createFeedTimelineItems(
       if (item.comment_id && !comments?.length) return
       const creatorDetails = creators?.find((u) => u.id === item.creator_id)
       const answers = allAnswers?.filter((a) => item.answer_ids?.includes(a.id))
-
+      const bet = allBets?.find((b) => item.bet_id === b.id)
       return {
         ...getBaseTimelineItem(item),
         avatarUrl: item.comment_id
@@ -457,6 +468,7 @@ function createFeedTimelineItems(
         contract,
         comments,
         answers,
+        bet,
         creatorDetails,
       } as FeedTimelineItem
     }),
@@ -577,10 +589,13 @@ const getOnePerCreatorContentIds = (
   const answerIds = uniq(
     filterDefined(data.map((item) => item.answer_ids))
   ).flat()
-  // At the moment, we only care about users with bet_data
+
+  // At the moment, we only care about users with bet_ids
   const userIds = uniq(
-    filterDefined(data.map((item) => (item.bet_data ? item.creator_id : null)))
+    filterDefined(data.map((item) => (item.bet_id ? item.creator_id : null)))
   )
+
+  const betIds = uniq(filterDefined(data.map((item) => item.bet_id)))
 
   return {
     newContractIds,
@@ -589,6 +604,7 @@ const getOnePerCreatorContentIds = (
     potentiallySeenCommentIds,
     answerIds,
     userIds,
+    betIds,
   }
 }
 

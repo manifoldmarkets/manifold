@@ -38,6 +38,7 @@ export const bulkInsertDataToUserFeed = async (
     idempotencyKey?: string
     betData?: any
     postId?: number
+    betId?: string
   },
   pg: SupabaseDirectClient
 ) => {
@@ -201,7 +202,7 @@ export const repostContractToFeed = async (
   comment: Comment,
   postId: number,
   userIdsToExclude: string[],
-  idempotencyKey?: string
+  betId?: string
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -227,7 +228,7 @@ export const repostContractToFeed = async (
       contractId: contract.id,
       commentId: comment.id,
       creatorId: comment.userId,
-      idempotencyKey,
+      betId,
       postId,
     },
     pg

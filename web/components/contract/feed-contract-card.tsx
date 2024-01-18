@@ -58,6 +58,7 @@ export function FeedContractCard(props: {
   hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
+  hideAvatar?: boolean
 }) {
   const {
     promotedData,
@@ -69,6 +70,7 @@ export function FeedContractCard(props: {
     hide,
     showGraph,
     hideBottomRow,
+    hideAvatar,
   } = props
   const user = useUser()
 
@@ -162,12 +164,14 @@ export function FeedContractCard(props: {
       <Col className={'w-full flex-col gap-1.5 pt-2'}>
         <Row className="w-full justify-between">
           <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
+            {!hideAvatar && (
+              <Avatar
+                size={'xs'}
+                className={'mr-0.5'}
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
+              />
+            )}
             <UserLink
               user={{
                 id: creatorId,
@@ -270,14 +274,13 @@ export function FeedContractCard(props: {
             nonTextDescription={nonTextDescription}
           />
         )}
-
-        <CategoryTags
-          categories={contract.groupLinks}
-          // hide tags after first line. (tags are 24 px tall)
-          className="h-6 flex-wrap overflow-hidden"
-        />
         {!hideBottomRow && (
           <Col>
+            <CategoryTags
+              categories={contract.groupLinks}
+              // hide tags after first line. (tags are 24 px tall)
+              className="h-6 flex-wrap overflow-hidden"
+            />
             <BottomActionRow
               contract={contract}
               user={user}

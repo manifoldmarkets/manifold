@@ -548,6 +548,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
+        betId: z.string().optional(),
         commentId: z.string().optional(),
         content: contentSchema.optional(),
       })

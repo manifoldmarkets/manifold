@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
-import { CommentReplyHeader, FeedCommentHeader } from './feed-comments'
+import { CommentReplyHeaderWithBet, FeedCommentHeader } from './feed-comments'
 import { Col } from '../layout/col'
 import clsx from 'clsx'
 import { memo, useState } from 'react'
@@ -52,7 +52,13 @@ export const FeedRepost = memo(function (props: {
           router.push(`${contractPath(contract)}#${topLevelComment.id}`)
         }}
       >
-        <CommentReplyHeader comment={topLevelComment} contract={contract} />
+        {item.bet && item.bet.userUsername !== topLevelComment.userUsername && (
+          <CommentReplyHeaderWithBet
+            comment={topLevelComment}
+            contract={contract}
+            bet={item.bet}
+          />
+        )}
         <Row className={'w-full gap-2'}>
           <Col className={'w-full px-3  transition-colors'}>
             <Row className="justify-between gap-2">
@@ -92,9 +98,10 @@ export const FeedRepost = memo(function (props: {
                 contract={contract}
                 trackingPostfix="feed"
                 item={item}
-                className="!bg-canvas-0 border-ink-200 max-w-full"
+                className="!bg-canvas-0 border-ink-200 ml-2 max-w-full"
                 small={true}
                 hideBottomRow={true}
+                hideAvatar={true}
               />
               <Col>
                 <BottomActionRow
