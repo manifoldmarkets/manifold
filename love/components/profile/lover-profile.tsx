@@ -1,5 +1,5 @@
 import { LoverCommentSection } from 'love/components/lover-comment-section'
-import LoverProfileHeader from 'love/components/lover-profile-header'
+import LoverProfileHeader from 'love/components/profile/lover-profile-header'
 import { Matches } from 'love/components/matches/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { Col } from 'web/components/layout/col'
