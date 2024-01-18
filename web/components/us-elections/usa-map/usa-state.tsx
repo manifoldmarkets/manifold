@@ -12,7 +12,6 @@ type TextCoordinates = { x: number; y: number }
 type USAStateProps = {
   state: string
   stateData: StateDataType
-  // fill: string
   stateContract: MultiContract
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
@@ -23,7 +22,6 @@ type USAStateProps = {
 export const USAState = ({
   state,
   stateData,
-  // fill,
   stateContract,
   onClickState,
   onMouseEnterState,
@@ -59,7 +57,7 @@ export const USAState = ({
       contract.answers = answers
     }
   }
-  const fill = probToColor(contract)
+  const fill = probToColor(contract) ?? ''
   return (
     <>
       <path

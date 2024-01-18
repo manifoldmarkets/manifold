@@ -95,14 +95,14 @@ export default function USElectionsPage(props: {
     republicanCandidateContract,
     democratCandidateContract,
   } = props
-  const [targetContract, setTargetContract] = useState<
-    Contract | undefined | null
-  >(mapContractsDictionary['GA'])
+  const [targetState, setTargetState] = useState<string | undefined | null>(
+    'GA'
+  )
 
-  const [hoveredContract, setHoveredContract] = useState<
-    Contract | undefined | null
-  >(undefined)
-
+  const [hoveredState, setHoveredState] = useState<string | undefined | null>(
+    undefined
+  )
+  console.log('HOVERED', hoveredState, 'TARGET', targetState)
   if (
     !electionPartyContract ||
     !republicanCandidateContract ||
@@ -110,7 +110,6 @@ export default function USElectionsPage(props: {
   ) {
     return <Custom404 />
   }
-  console.log(mapContractsDictionary)
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
@@ -133,14 +132,16 @@ export default function USElectionsPage(props: {
           <USAMap
             // customize={stateContractMap}
             mapContractsDictionary={mapContractsDictionary}
-            targetContract={targetContract}
-            setTargetContract={setTargetContract}
-            hoveredContract={hoveredContract}
-            setHoveredContract={setHoveredContract}
+            targetState={targetState}
+            setTargetState={setTargetState}
+            hoveredState={hoveredState}
+            setHoveredState={setHoveredState}
           />
-          {hoveredContract || targetContract ? (
+          {!!hoveredState || !!targetState ? (
             <StateContract
-              targetContract={(hoveredContract ?? targetContract) as Contract}
+              targetContract={
+                mapContractsDictionary[hoveredState ?? targetState] as Contract
+              }
             />
           ) : (
             <div className=" h-[183px] w-full" />

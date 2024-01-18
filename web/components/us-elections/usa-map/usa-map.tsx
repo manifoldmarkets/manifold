@@ -75,43 +75,34 @@ export const USAMap = (props: {
   hideStateTitle?: boolean
   // className,
   mapContractsDictionary: MapContractsDictionary[]
-  targetContract: Contract | null | undefined
-  setTargetContract: (targetContract: Contract | null | undefined) => void
-  hoveredContract: Contract | null | undefined
-  setHoveredContract: (hoveredContract: Contract | null | undefined) => void
+  targetState: string | null | undefined
+  setTargetState: (targetState: string | null | undefined) => void
+  hoveredState: string | null | undefined
+  setHoveredState: (hoveredState: string | null | undefined) => void
 }) => {
   const {
     hideStateTitle,
     mapContractsDictionary,
-    targetContract,
-    setTargetContract,
-    hoveredContract,
-    setHoveredContract,
+    targetState,
+    setTargetState,
+    hoveredState,
+    setHoveredState,
   } = props
-  // const fillStateColor = (state: string) =>
-  //   customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
-  // const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
-  // const stateMouseEnterHandler = (state: string) =>
-  //   customize?.[state]?.onMouseEnter
-  // const stateMouseLeaveHandler = (state: string) =>
-  //   customize?.[state]?.onMouseLeave
-
-  // const selectedState = (state: string) => !!customize?.[state]?.selected
-  function handleClick(newTargetContract: Contract) {
-    if (targetContract && newTargetContract.id === targetContract.id) {
-      setTargetContract(undefined)
+  function handleClick(newTargetState: string | undefined) {
+    if (targetState && newTargetState == targetState) {
+      setTargetState(undefined)
     } else {
-      setTargetContract(newTargetContract)
+      setTargetState(newTargetState)
     }
   }
 
-  function onMouseEnter(hoverContract: Contract) {
-    setHoveredContract(hoverContract)
+  function onMouseEnter(hoverState: string) {
+    setHoveredState(hoverState)
   }
 
-  function onMouseLeave(hoverContract: Contract) {
-    setHoveredContract(undefined)
+  function onMouseLeave() {
+    setHoveredState(undefined)
   }
 
   const totalWidth = 20
@@ -120,15 +111,15 @@ export const USAMap = (props: {
 
   const onMouseEnterDC = () => {
     setIsDCHovered(true)
-    onMouseEnter(mapContractsDictionary['DC'])
+    onMouseEnter('DC')
   }
   const onMouseLeaveDC = () => {
     setIsDCHovered(false)
-    onMouseLeave(mapContractsDictionary['DC'])
+    onMouseLeave()
   }
 
   const isDCSelected =
-    targetContract && targetContract.id == mapContractsDictionary['DC'].id
+    targetState && targetState.id == mapContractsDictionary['DC'].id
 
   return (
     <div
@@ -230,20 +221,16 @@ export const USAMap = (props: {
               stateContract={mapContractsDictionary[stateKey]}
               hideStateTitle={hideStateTitle}
               state={stateKey}
-              // fill={probToColor(mapContractsDictionary[stateKey]) ?? '#D6D1D3'}
               onClickState={() => {
-                handleClick(mapContractsDictionary[stateKey])
+                handleClick(stateKey)
               }}
               onMouseEnterState={() => {
-                onMouseEnter(mapContractsDictionary[stateKey])
+                onMouseEnter(stateKey)
               }}
               onMouseLeaveState={() => {
-                onMouseLeave(mapContractsDictionary[stateKey])
+                onMouseLeave()
               }}
-              selected={
-                targetContract &&
-                targetContract.id == mapContractsDictionary[stateKey].id
-              }
+              selected={!!targetState && targetState == stateKey}
             />
           ))}
           <circle
