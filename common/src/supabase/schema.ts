@@ -2290,8 +2290,6 @@ export interface Database {
           content_owner_id: string | null
           content_type: string | null
           created_time: string
-          data: Json | null
-          fs_updated_time: string | null
           reaction_id: string
           user_id: string
         }
@@ -2300,8 +2298,6 @@ export interface Database {
           content_owner_id?: string | null
           content_type?: string | null
           created_time?: string
-          data?: Json | null
-          fs_updated_time?: string | null
           reaction_id?: string
           user_id: string
         }
@@ -2310,8 +2306,6 @@ export interface Database {
           content_owner_id?: string | null
           content_type?: string | null
           created_time?: string
-          data?: Json | null
-          fs_updated_time?: string | null
           reaction_id?: string
           user_id?: string
         }
