@@ -520,11 +520,12 @@ export function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Repost',
-            icon: <BiRepost className="h-5 w-5" />,
-            onClick: () => setReposting(true),
-          },
+          user &&
+            comment.userId === user.id && {
+              name: 'Repost',
+              icon: <BiRepost className="h-5 w-5" />,
+              onClick: () => setReposting(true),
+            },
           user &&
             comment.userId !== user.id && {
               name: 'Tip',

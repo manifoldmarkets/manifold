@@ -200,6 +200,7 @@ export const addCommentOnContractToFeed = async (
 export const repostContractToFeed = async (
   contract: Contract,
   comment: Comment,
+  creatorId: string,
   postId: number,
   userIdsToExclude: string[],
   betId?: string
@@ -208,7 +209,7 @@ export const repostContractToFeed = async (
   const usersToReasonsInterestedInContract =
     await getUserToReasonsInterestedInContractAndUser(
       contract,
-      comment.userId,
+      creatorId,
       pg,
       [
         'follow_user',
@@ -227,7 +228,7 @@ export const repostContractToFeed = async (
     {
       contractId: contract.id,
       commentId: comment.id,
-      creatorId: comment.userId,
+      creatorId,
       betId,
       postId,
     },

@@ -70,7 +70,14 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
       creator.avatarUrl,
     ]
   )
-  await repostContractToFeed(contract, comment, res.id, [auth.uid], betId)
+  await repostContractToFeed(
+    contract,
+    comment,
+    creator.id,
+    res.id,
+    [auth.uid],
+    betId
+  )
 
   return comment
 }
