@@ -4,8 +4,10 @@
 import { DATA } from './usa-map-data'
 import { StateText, USAState } from './usa-state'
 import clsx from 'clsx'
-import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
+import { DEM_LIGHT_HEX, REP_LIGHT_HEX, probToColor } from './state-election-map'
 import { useState } from 'react'
+import { MapContracts, MapContractsDictionary } from 'web/pages/elections'
+import { Contract } from 'common/contract'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 
@@ -57,55 +59,76 @@ const States = ({
     />
   ))
 
-type USAMapPropTypes = {
-  onClick?: ClickHandler
-  width?: number
-  height?: number
-  title?: string
-  defaultFill?: string
-  customize?: Customize
+// type USAMapPropTypes = {
+//   onClick?: ClickHandler
+//   width?: number
+//   height?: number
+//   title?: string
+//   defaultFill?: string
+//   customize?: Customize
+//   hideStateTitle?: boolean
+//   className?: string
+// }
+
+export const USAMap = (props: {
+  // customize,
   hideStateTitle?: boolean
-  className?: string
-}
+  // className,
+  mapContractsDictionary: MapContractsDictionary[]
+  targetContract: Contract | null | undefined
+  setTargetContract: (targetContract: Contract | null | undefined) => void
+  hoveredContract: Contract | null | undefined
+  setHoveredContract: (hoveredContract: Contract | null | undefined) => void
+}) => {
+  const {
+    hideStateTitle,
+    mapContractsDictionary,
+    targetContract,
+    setTargetContract,
+    hoveredContract,
+    setHoveredContract,
+  } = props
+  // const fillStateColor = (state: string) =>
+  //   customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
 
-export const USAMap = ({
-  title = 'US states map',
-  defaultFill = '#d3d3d3',
-  customize,
-  hideStateTitle,
-  className,
-}: USAMapPropTypes) => {
-  const fillStateColor = (state: string) =>
-    customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
+  // const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
+  // const stateMouseEnterHandler = (state: string) =>
+  //   customize?.[state]?.onMouseEnter
+  // const stateMouseLeaveHandler = (state: string) =>
+  //   customize?.[state]?.onMouseLeave
 
-  const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
-  const stateMouseEnterHandler = (state: string) =>
-    customize?.[state]?.onMouseEnter
-  const stateMouseLeaveHandler = (state: string) =>
-    customize?.[state]?.onMouseLeave
+  // const selectedState = (state: string) => !!customize?.[state]?.selected
+  function handleClick(newTargetContract: Contract) {
+    if (targetContract && newTargetContract.id === targetContract.id) {
+      setTargetContract(undefined)
+    } else {
+      setTargetContract(newTargetContract)
+    }
+  }
 
-  const selectedState = (state: string) => !!customize?.[state]?.selected
+  function onMouseEnter(hoverContract: Contract) {
+    setHoveredContract(hoverContract)
+  }
+
+  function onMouseLeave(hoverContract: Contract) {
+    setHoveredContract(undefined)
+  }
 
   const totalWidth = 20
 
   const [isDCHovered, setIsDCHovered] = useState(false)
 
-  const onDCClick = customize?.['DC']?.clickHandler
-  const onDCMouseEnter = customize?.['DC']?.onMouseEnter
-  const onDCMouseLeave = customize?.['DC']?.onMouseLeave
-
   const onMouseEnterDC = () => {
     setIsDCHovered(true)
-    if (onDCMouseEnter) {
-      onDCMouseEnter()
-    }
+    onMouseEnter(mapContractsDictionary['DC'])
   }
   const onMouseLeaveDC = () => {
     setIsDCHovered(false)
-    if (onDCMouseLeave) {
-      onDCMouseLeave()
-    }
+    onMouseLeave(mapContractsDictionary['DC'])
   }
+
+  const isDCSelected =
+    targetContract && targetContract.id == mapContractsDictionary['DC'].id
 
   return (
     <div
@@ -191,25 +214,47 @@ export const USAMap = ({
             />
           </pattern>
         </defs>
-        <title>{title}</title>
         <g className="outlines">
-          {States({
+          {/* {States({
             hideStateTitle,
             fillStateColor,
             stateClickHandler,
             stateMouseEnterHandler,
             stateMouseLeaveHandler,
             selectedState,
-          })}{' '}
+          })}{' '} */}
+          {Object.entries(DATA).map(([stateKey, data]) => (
+            <USAState
+              key={stateKey}
+              stateData={data}
+              stateContract={mapContractsDictionary[stateKey]}
+              hideStateTitle={hideStateTitle}
+              state={stateKey}
+              // fill={probToColor(mapContractsDictionary[stateKey]) ?? '#D6D1D3'}
+              onClickState={() => {
+                handleClick(mapContractsDictionary[stateKey])
+              }}
+              onMouseEnterState={() => {
+                onMouseEnter(mapContractsDictionary[stateKey])
+              }}
+              onMouseLeaveState={() => {
+                onMouseLeave(mapContractsDictionary[stateKey])
+              }}
+              selected={
+                targetContract &&
+                targetContract.id == mapContractsDictionary[stateKey].id
+              }
+            />
+          ))}
           <circle
-            fill={fillStateColor('DC')}
-            stroke={selectedState('DC') ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
-            strokeWidth={isDCHovered || selectedState('DC') ? 2 : undefined}
+            fill={probToColor(mapContractsDictionary['DC']) ?? '#D6D1D3'}
+            stroke={isDCSelected ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
+            strokeWidth={isDCHovered || isDCSelected ? 2 : undefined}
             cx="801.3"
             cy="251.8"
             r="5"
             opacity="1"
-            onClick={onDCClick}
+            onClick={() => handleClick(mapContractsDictionary['DC'])}
             onMouseEnter={onMouseEnterDC}
             onMouseLeave={onMouseLeaveDC}
           />
@@ -220,8 +265,8 @@ export const USAMap = ({
             onMouseEnter: onMouseEnterDC,
             onMouseLeave: onMouseLeaveDC,
             isHovered: isDCHovered,
-            fill: fillStateColor('DC'),
-            onClick: onDCClick,
+            fill: probToColor(mapContractsDictionary['DC']) ?? '#D6D1D3',
+            onClick: () => handleClick(mapContractsDictionary['DC']),
           })}
         </g>
       </svg>

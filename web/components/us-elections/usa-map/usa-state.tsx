@@ -2,13 +2,18 @@ import clsx from 'clsx'
 import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
 import { StateDataType } from './usa-map-data'
 import { useState } from 'react'
+import { MultiContract } from 'common/contract'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
 type USAStateProps = {
   state: string
   stateData: StateDataType
-  fill: string
+  // fill: string
+  stateContract: MultiContract
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
@@ -18,7 +23,8 @@ type USAStateProps = {
 export const USAState = ({
   state,
   stateData,
-  fill,
+  // fill,
+  stateContract,
   onClickState,
   onMouseEnterState,
   onMouseLeaveState,
@@ -39,6 +45,21 @@ export const USAState = ({
       onMouseLeaveState()
     }
   }
+
+  const contract =
+    (useFirebasePublicContract(
+      stateContract.visibility,
+      stateContract.id
+    ) as MultiContract) ?? stateContract
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+  const fill = probToColor(contract)
   return (
     <>
       <path

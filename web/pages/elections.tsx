@@ -20,6 +20,10 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 
+export interface MapContractsDictionary {
+  [key: string]: Contract | null
+}
+
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
 
@@ -28,6 +32,15 @@ export async function getStaticProps() {
       return { state: m.state, contract: contract }
     })
   )
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  // Convert array to dictionary
+  const mapContractsDictionary: MapContractsDictionary =
+    mapContractsArray.reduce((acc, mapContract) => {
+      acc[mapContract.state] = mapContract.contract
+      return acc
+    }, {} as MapContractsDictionary)
 
   const electionPartyContract = await getContractFromSlug(
     'which-party-will-win-the-2024-us-pr-f4158bf9278a',
@@ -49,12 +62,9 @@ export async function getStaticProps() {
     adminDb
   )
 
-  // Wait for all promises to resolve
-  const mapContracts = await Promise.all(mapContractsPromises)
-
   return {
     props: {
-      mapContracts: mapContracts,
+      mapContractsDictionary: mapContractsDictionary,
       electionPartyContract: electionPartyContract,
       electionCandidateContract: electionCandidateContract,
       republicanCandidateContract: republicanCandidateContract,
@@ -67,7 +77,7 @@ export async function getStaticProps() {
 export type MapContracts = { state: string; contract: Contract | null }
 
 export default function USElectionsPage(props: {
-  mapContracts: MapContracts[]
+  mapContractsDictionary: MapContractsDictionary[]
   electionPartyContract: Contract
   electionCandidateContract: Contract
   republicanCandidateContract: Contract
@@ -79,7 +89,7 @@ export default function USElectionsPage(props: {
   useSaveReferral(user)
 
   const {
-    mapContracts,
+    mapContractsDictionary,
     electionCandidateContract,
     electionPartyContract,
     republicanCandidateContract,
@@ -87,51 +97,11 @@ export default function USElectionsPage(props: {
   } = props
   const [targetContract, setTargetContract] = useState<
     Contract | undefined | null
-  >(mapContracts.find((m) => m.state === 'GA')?.contract)
+  >(mapContractsDictionary['GA'])
 
   const [hoveredContract, setHoveredContract] = useState<
     Contract | undefined | null
   >(undefined)
-
-  const stateContractMap: Customize = useMemo(() => {
-    const map: Record<
-      string,
-      {
-        fill: string
-        clickHandler: ClickHandler
-        onMouseEnter?: () => void
-        onMouseLeave?: () => void
-        selected: boolean
-        hovered: boolean
-      }
-    > = {}
-    mapContracts.forEach((mapContract) => {
-      map[mapContract.state] = {
-        fill: probToColor(mapContract.contract) ?? '#D6D1D3',
-        clickHandler: () => {
-          if (
-            targetContract &&
-            mapContract.contract?.id === targetContract.id
-          ) {
-            setTargetContract(undefined)
-          } else {
-            setTargetContract(mapContract.contract)
-          }
-        },
-        onMouseEnter: () => {
-          setHoveredContract(mapContract.contract)
-        },
-        onMouseLeave: () => {
-          setHoveredContract(undefined)
-        },
-        selected:
-          !!targetContract && targetContract?.id === mapContract.contract?.id,
-        hovered:
-          !!hoveredContract && hoveredContract?.id === mapContract.contract?.id,
-      }
-    })
-    return map
-  }, [mapContracts, targetContract])
 
   if (
     !electionPartyContract ||
@@ -140,7 +110,7 @@ export default function USElectionsPage(props: {
   ) {
     return <Custom404 />
   }
-
+  console.log(mapContractsDictionary)
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
@@ -160,7 +130,14 @@ export default function USElectionsPage(props: {
           <div className="mx-auto font-semibold sm:text-xl">
             Which party will win the US Presidency?
           </div>
-          <USAMap customize={stateContractMap} />
+          <USAMap
+            // customize={stateContractMap}
+            mapContractsDictionary={mapContractsDictionary}
+            targetContract={targetContract}
+            setTargetContract={setTargetContract}
+            hoveredContract={hoveredContract}
+            setHoveredContract={setHoveredContract}
+          />
           {hoveredContract || targetContract ? (
             <StateContract
               targetContract={(hoveredContract ?? targetContract) as Contract}
