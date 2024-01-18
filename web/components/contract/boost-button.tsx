@@ -124,8 +124,6 @@ export function BoostDialog(props: {
   )
 }
 
-const BOOST_INCREMENT_VALUES = [100, 500]
-
 function SimpleBoostRow(props: {
   contract: Contract
   subsidyDisabled: boolean
@@ -206,7 +204,7 @@ function SimpleBoostRow(props: {
           error={error}
           setError={setError}
           disabled={isLoading}
-          quickButtonValues={BOOST_INCREMENT_VALUES}
+          quickButtonValues="large"
         />
       </Row>
 
@@ -301,7 +299,7 @@ function BoostFormRow(props: {
           error={error}
           setError={(_e) => {}}
           disabled={false}
-          quickButtonValues={BOOST_INCREMENT_VALUES}
+          quickButtonValues="large"
         />
       </Row>
 

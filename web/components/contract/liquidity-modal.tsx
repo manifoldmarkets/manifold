@@ -95,6 +95,7 @@ export function AddLiquidityPanel(props: {
           error={error}
           setError={(_e) => {}}
           disabled={false}
+          quickButtonValues="large"
         />
       </Row>
       <Button

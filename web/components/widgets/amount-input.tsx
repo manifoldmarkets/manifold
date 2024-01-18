@@ -148,7 +148,7 @@ export function BuyAmountInput(props: {
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   disregardUserBalance?: boolean
-  quickButtonValues?: number[]
+  quickButtonValues?: number[] | 'large'
 }) {
   const {
     amount,
@@ -201,7 +201,9 @@ export function BuyAmountInput(props: {
   }
 
   const incrementValues =
-    quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
+    quickButtonValues === 'large'
+      ? [100, 500]
+      : quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
 
   return (
     <>
