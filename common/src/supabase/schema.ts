@@ -3751,20 +3751,9 @@ export interface Database {
           id: number
         }[]
       }
-      get_your_contract_ids:
-        | {
+      get_your_contract_ids: {
             Args: {
               uid: string
-            }
-            Returns: {
-              contract_id: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              n: number
-              start: number
             }
             Returns: {
               contract_id: string
