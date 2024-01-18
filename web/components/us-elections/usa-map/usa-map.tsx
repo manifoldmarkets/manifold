@@ -17,28 +17,6 @@ export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,
   R = any
 > = (e: React.MouseEvent<E, MouseEvent>) => R
-export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
-export type GetHoverHandler = (stateKey: string) => (() => void) | undefined
-export type CustomizeObj = {
-  fill?: string
-  clickHandler?: ClickHandler
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  selected?: boolean
-  hovered?: boolean
-}
-export interface Customize {
-  [key: string]: CustomizeObj
-}
-
-export type StatesProps = {
-  hideStateTitle?: boolean
-  fillStateColor: (stateKey: string) => string
-  stateClickHandler: GetClickHandler
-  stateMouseEnterHandler: GetHoverHandler
-  stateMouseLeaveHandler: GetHoverHandler
-  selectedState: (state: string) => boolean
-}
 
 export const USAMap = (props: {
   hideStateTitle?: boolean
