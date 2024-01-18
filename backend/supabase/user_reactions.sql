@@ -21,22 +21,3 @@ select
   using (true);
 
 create index if not exists user_reactions_content_id_raw on user_reactions (content_id);
-
-create
-or replace function user_reactions_populate_cols () returns trigger language plpgsql as $$
-begin
-  if new.data is not null then
-    new.content_id := (new.data) ->> 'contentId';
-    new.content_type := (new.data) ->> 'contentType';
-    new.content_owner_id := (new.data) ->> 'contentOwnerId';
-    new.created_time :=
-      case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
-  end if;
-  return new;
-end
-$$;
-
-create trigger user_reactions_populate before insert
-or
-update on user_reactions for each row
-execute function user_reactions_populate_cols ();
