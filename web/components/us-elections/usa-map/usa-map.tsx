@@ -178,7 +178,7 @@ export const USAMap = (props: {
             <DCState
               cachedContract={cachedDCContract}
               isDCHovered={hoveredState == 'DC'}
-              isDCSelected={false}
+              isDCSelected={isDCSelected}
               onMouseEnterDC={onMouseEnterDC}
               onMouseLeaveDC={onMouseLeaveDC}
               handleClick={() => handleClick('DC')}
@@ -246,6 +246,7 @@ export function DCState(props: {
         isHovered: isDCHovered,
         fill: DCFill ?? OFFSET_TEXT_COLOR,
         onClick: handleClick,
+        selected: isDCSelected,
       })}
     </>
   )

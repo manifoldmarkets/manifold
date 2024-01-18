@@ -88,6 +88,7 @@ export function USAState(props: {
         isHovered,
         fill,
         onClick: line ? onClickState : undefined,
+        selected,
       })}
     </>
   )
@@ -109,6 +110,7 @@ export const StateText = (props: {
   isHovered: boolean
   fill: string
   onClick?: ClickHandler
+  selected?: boolean
 }) => {
   const {
     line,
@@ -118,14 +120,33 @@ export const StateText = (props: {
     onMouseLeave,
     isHovered,
     fill,
+    selected,
     onClick,
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
-  const textColor = !!line ? (isHovered ? fill : OFFSET_TEXT_COLOR) : '#FFF'
+  const textColor = !!line
+    ? isHovered || selected
+      ? fill
+      : OFFSET_TEXT_COLOR
+    : '#FFF'
 
   return (
     <>
+      {line && (!!isHovered || !!selected) && (
+        <text
+          key={`${abbreviation}-outline`}
+          x={textCoordinates.x}
+          y={textCoordinates.y}
+          textAnchor="middle"
+          fill={'#ffff'}
+          stroke={'#ffff'}
+          strokeWidth={2}
+        >
+          {abbreviation}
+        </text>
+      )}
+
       <text
         key={abbreviation}
         x={textCoordinates.x}
@@ -142,7 +163,7 @@ export const StateText = (props: {
       {line && (
         <>
           {/* Outline Line - Only shown when hovered */}
-          {isHovered && (
+          {(isHovered || selected) && (
             <line
               x1={line.x1}
               y1={line.y1}
@@ -159,7 +180,7 @@ export const StateText = (props: {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke={isHovered ? fill : OFFSET_TEXT_COLOR}
+            stroke={isHovered || selected ? fill : OFFSET_TEXT_COLOR}
             strokeWidth={1} // Assuming the regular line is thinner
           />
         </>
