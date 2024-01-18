@@ -102,7 +102,7 @@ export default function USElectionsPage(props: {
   const [hoveredState, setHoveredState] = useState<string | undefined | null>(
     undefined
   )
-  console.log('HOVERED', hoveredState, 'TARGET', targetState)
+
   if (
     !electionPartyContract ||
     !republicanCandidateContract ||

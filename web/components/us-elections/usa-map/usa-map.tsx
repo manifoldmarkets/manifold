@@ -37,43 +37,9 @@ export type StatesProps = {
   stateMouseLeaveHandler: GetHoverHandler
   selectedState: (state: string) => boolean
 }
-const States = ({
-  hideStateTitle,
-  fillStateColor,
-  stateClickHandler,
-  stateMouseEnterHandler,
-  stateMouseLeaveHandler,
-  selectedState,
-}: StatesProps) =>
-  Object.entries(DATA).map(([stateKey, data]) => (
-    <USAState
-      key={stateKey}
-      stateData={data}
-      hideStateTitle={hideStateTitle}
-      state={stateKey}
-      fill={fillStateColor(stateKey)}
-      onClickState={stateClickHandler(stateKey)}
-      onMouseEnterState={stateMouseEnterHandler(stateKey)}
-      onMouseLeaveState={stateMouseLeaveHandler(stateKey)}
-      selected={selectedState(stateKey)}
-    />
-  ))
-
-// type USAMapPropTypes = {
-//   onClick?: ClickHandler
-//   width?: number
-//   height?: number
-//   title?: string
-//   defaultFill?: string
-//   customize?: Customize
-//   hideStateTitle?: boolean
-//   className?: string
-// }
 
 export const USAMap = (props: {
-  // customize,
   hideStateTitle?: boolean
-  // className,
   mapContractsDictionary: MapContractsDictionary[]
   targetState: string | null | undefined
   setTargetState: (targetState: string | null | undefined) => void
@@ -118,8 +84,7 @@ export const USAMap = (props: {
     onMouseLeave()
   }
 
-  const isDCSelected =
-    targetState && targetState.id == mapContractsDictionary['DC'].id
+  const isDCSelected = !!targetState && targetState == 'DC'
 
   return (
     <div
@@ -241,7 +206,7 @@ export const USAMap = (props: {
             cy="251.8"
             r="5"
             opacity="1"
-            onClick={() => handleClick(mapContractsDictionary['DC'])}
+            onClick={() => handleClick('DC')}
             onMouseEnter={onMouseEnterDC}
             onMouseLeave={onMouseLeaveDC}
           />
@@ -253,7 +218,7 @@ export const USAMap = (props: {
             onMouseLeave: onMouseLeaveDC,
             isHovered: isDCHovered,
             fill: probToColor(mapContractsDictionary['DC']) ?? '#D6D1D3',
-            onClick: () => handleClick(mapContractsDictionary['DC']),
+            onClick: () => handleClick('DC'),
           })}
         </g>
       </svg>
