@@ -11,7 +11,7 @@ type TextCoordinates = { x: number; y: number }
 
 export const OFFSET_TEXT_COLOR = '#bd9e9f'
 
-type USAStateProps = {
+export function USAState(props: {
   state: string
   stateData: StateDataType
   stateContract: MultiContract
@@ -20,17 +20,18 @@ type USAStateProps = {
   onMouseLeaveState?: () => void | undefined
   hideStateTitle?: boolean
   selected?: boolean
-}
-export const USAState = ({
-  state,
-  stateData,
-  stateContract,
-  onClickState,
-  onMouseEnterState,
-  onMouseLeaveState,
-  hideStateTitle,
-  selected,
-}: USAStateProps) => {
+}) {
+  const {
+    state,
+    stateData,
+    stateContract,
+    onClickState,
+    onMouseEnterState,
+    onMouseLeaveState,
+    hideStateTitle,
+    selected,
+  } = props
+
   const { dimensions, textCoordinates, abbreviation, line } = stateData
   const [isHovered, setIsHovered] = useState(false)
   const onMouseEnter = () => {
