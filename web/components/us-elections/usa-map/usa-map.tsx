@@ -111,14 +111,14 @@ export const USAMap = (props: {
             <rect
               x="0"
               y="0"
-              width={(1 / 3) * totalWidth}
+              width={(1 / 5) * totalWidth}
               height={totalWidth}
               fill={REP_LIGHT_HEX}
             />
             <rect
-              x={(1 / 3) * totalWidth}
+              x={(1 / 5) * totalWidth}
               y="0"
-              width={(2 / 3) * totalWidth}
+              width={(4 / 5) * totalWidth}
               height={totalWidth}
               fill={DEM_LIGHT_HEX}
             />
@@ -135,14 +135,14 @@ export const USAMap = (props: {
             <rect
               x="0"
               y="0"
-              width={(2 / 3) * totalWidth}
+              width={(4 / 5) * totalWidth}
               height={totalWidth}
               fill={REP_LIGHT_HEX}
             />
             <rect
-              x={(2 / 3) * totalWidth}
+              x={(4 / 5) * totalWidth}
               y="0"
-              width={(1 / 3) * totalWidth}
+              width={(1 / 5) * totalWidth}
               height={totalWidth}
               fill={DEM_LIGHT_HEX}
             />
