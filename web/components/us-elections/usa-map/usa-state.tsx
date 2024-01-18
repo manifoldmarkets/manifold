@@ -70,7 +70,7 @@ export function USAState(props: {
         className={clsx(
           !!onClickState && 'transition-all group-hover:cursor-pointer'
         )}
-        onClick={onClickState}
+        onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
           !!selected ? SELECTED_OUTLINE_COLOR : isHovered ? '#fff' : undefined
@@ -135,7 +135,7 @@ export const StateText = (props: {
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         className={line ? 'cursor-pointer' : 'pointer-events-none'}
-        onClick={onClick}
+        onClick={onClick as MouseEventHandler<SVGTextElement> | undefined}
       >
         {abbreviation}
       </text>
