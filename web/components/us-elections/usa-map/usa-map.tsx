@@ -2,10 +2,14 @@
 // MIT License
 
 import { DATA } from './usa-map-data'
-import { StateText, USAState } from './usa-state'
+import { OFFSET_TEXT_COLOR, StateText, USAState } from './usa-state'
 import clsx from 'clsx'
-import { DEM_LIGHT_HEX, REP_LIGHT_HEX } from './state-election-map'
-import { useState } from 'react'
+import { DEM_LIGHT_HEX, REP_LIGHT_HEX, probToColor } from './state-election-map'
+import { MouseEvent, useState } from 'react'
+import { MapContracts, MapContractsDictionary } from 'web/pages/elections'
+import { Contract, MultiContract } from 'common/contract'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 
@@ -13,99 +17,52 @@ export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,
   R = any
 > = (e: React.MouseEvent<E, MouseEvent>) => R
-export type GetClickHandler = (stateKey: string) => ClickHandler | undefined
-export type GetHoverHandler = (stateKey: string) => (() => void) | undefined
-export type CustomizeObj = {
-  fill?: string
-  clickHandler?: ClickHandler
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  selected?: boolean
-  hovered?: boolean
-}
-export interface Customize {
-  [key: string]: CustomizeObj
-}
 
-export type StatesProps = {
+export const USAMap = (props: {
   hideStateTitle?: boolean
-  fillStateColor: (stateKey: string) => string
-  stateClickHandler: GetClickHandler
-  stateMouseEnterHandler: GetHoverHandler
-  stateMouseLeaveHandler: GetHoverHandler
-  selectedState: (state: string) => boolean
-}
-const States = ({
-  hideStateTitle,
-  fillStateColor,
-  stateClickHandler,
-  stateMouseEnterHandler,
-  stateMouseLeaveHandler,
-  selectedState,
-}: StatesProps) =>
-  Object.entries(DATA).map(([stateKey, data]) => (
-    <USAState
-      key={stateKey}
-      stateData={data}
-      hideStateTitle={hideStateTitle}
-      state={stateKey}
-      fill={fillStateColor(stateKey)}
-      onClickState={stateClickHandler(stateKey)}
-      onMouseEnterState={stateMouseEnterHandler(stateKey)}
-      onMouseLeaveState={stateMouseLeaveHandler(stateKey)}
-      selected={selectedState(stateKey)}
-    />
-  ))
+  mapContractsDictionary: MapContractsDictionary
+  targetState: string | null | undefined
+  setTargetState: (targetState: string | null | undefined) => void
+  hoveredState: string | null | undefined
+  setHoveredState: (hoveredState: string | null | undefined) => void
+}) => {
+  const {
+    hideStateTitle,
+    mapContractsDictionary,
+    targetState,
+    setTargetState,
+    hoveredState,
+    setHoveredState,
+  } = props
 
-type USAMapPropTypes = {
-  onClick?: ClickHandler
-  width?: number
-  height?: number
-  title?: string
-  defaultFill?: string
-  customize?: Customize
-  hideStateTitle?: boolean
-  className?: string
-}
+  function handleClick(newTargetState: string | undefined) {
+    if (targetState && newTargetState == targetState) {
+      setTargetState(undefined)
+    } else {
+      setTargetState(newTargetState)
+    }
+  }
 
-export const USAMap = ({
-  title = 'US states map',
-  defaultFill = '#d3d3d3',
-  customize,
-  hideStateTitle,
-  className,
-}: USAMapPropTypes) => {
-  const fillStateColor = (state: string) =>
-    customize?.[state]?.fill ? (customize[state].fill as string) : defaultFill
+  function onMouseEnter(hoverState: string) {
+    setHoveredState(hoverState)
+  }
 
-  const stateClickHandler = (state: string) => customize?.[state]?.clickHandler
-  const stateMouseEnterHandler = (state: string) =>
-    customize?.[state]?.onMouseEnter
-  const stateMouseLeaveHandler = (state: string) =>
-    customize?.[state]?.onMouseLeave
-
-  const selectedState = (state: string) => !!customize?.[state]?.selected
+  function onMouseLeave() {
+    setHoveredState(undefined)
+  }
 
   const totalWidth = 20
 
-  const [isDCHovered, setIsDCHovered] = useState(false)
-
-  const onDCClick = customize?.['DC']?.clickHandler
-  const onDCMouseEnter = customize?.['DC']?.onMouseEnter
-  const onDCMouseLeave = customize?.['DC']?.onMouseLeave
-
   const onMouseEnterDC = () => {
-    setIsDCHovered(true)
-    if (onDCMouseEnter) {
-      onDCMouseEnter()
-    }
+    onMouseEnter('DC')
   }
   const onMouseLeaveDC = () => {
-    setIsDCHovered(false)
-    if (onDCMouseLeave) {
-      onDCMouseLeave()
-    }
+    onMouseLeave()
   }
+
+  const cachedDCContract = mapContractsDictionary['DC']
+
+  const isDCSelected = !!targetState && targetState == 'DC'
 
   return (
     <div
@@ -191,40 +148,105 @@ export const USAMap = ({
             />
           </pattern>
         </defs>
-        <title>{title}</title>
         <g className="outlines">
-          {States({
-            hideStateTitle,
-            fillStateColor,
-            stateClickHandler,
-            stateMouseEnterHandler,
-            stateMouseLeaveHandler,
-            selectedState,
-          })}{' '}
-          <circle
-            fill={fillStateColor('DC')}
-            stroke={selectedState('DC') ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
-            strokeWidth={isDCHovered || selectedState('DC') ? 2 : undefined}
-            cx="801.3"
-            cy="251.8"
-            r="5"
-            opacity="1"
-            onClick={onDCClick}
-            onMouseEnter={onMouseEnterDC}
-            onMouseLeave={onMouseLeaveDC}
-          />
-          {StateText({
-            line: { x1: 804, y1: 255, x2: 849, y2: 295 },
-            textCoordinates: { x: 860, y: 300 },
-            abbreviation: 'DC',
-            onMouseEnter: onMouseEnterDC,
-            onMouseLeave: onMouseLeaveDC,
-            isHovered: isDCHovered,
-            fill: fillStateColor('DC'),
-            onClick: onDCClick,
+          {Object.entries(DATA).map(([stateKey, data]) => {
+            const stateContract = mapContractsDictionary[stateKey]
+            if (!!stateContract) {
+              return (
+                <USAState
+                  key={stateKey}
+                  stateData={data}
+                  stateContract={stateContract as MultiContract}
+                  hideStateTitle={hideStateTitle}
+                  state={stateKey}
+                  onClickState={() => {
+                    handleClick(stateKey)
+                  }}
+                  onMouseEnterState={() => {
+                    onMouseEnter(stateKey)
+                  }}
+                  onMouseLeaveState={() => {
+                    onMouseLeave()
+                  }}
+                  selected={!!targetState && targetState == stateKey}
+                />
+              )
+            }
+            return <></>
           })}
+          {cachedDCContract ? (
+            <DCState
+              cachedContract={cachedDCContract}
+              isDCHovered={hoveredState == 'DC'}
+              isDCSelected={false}
+              onMouseEnterDC={onMouseEnterDC}
+              onMouseLeaveDC={onMouseLeaveDC}
+              handleClick={() => handleClick('DC')}
+            />
+          ) : (
+            <></>
+          )}
         </g>
       </svg>
     </div>
+  )
+}
+
+export function DCState(props: {
+  cachedContract: Contract
+  isDCSelected: boolean
+  isDCHovered: boolean
+  onMouseEnterDC: (() => void) | undefined
+  onMouseLeaveDC: (() => void) | undefined
+  handleClick: (() => void) | undefined
+}) {
+  const {
+    cachedContract,
+    isDCSelected,
+    isDCHovered,
+    onMouseEnterDC,
+    onMouseLeaveDC,
+    handleClick,
+  } = props
+  const DCContract =
+    (useFirebasePublicContract(
+      cachedContract.visibility,
+      cachedContract.id
+    ) as MultiContract) ?? cachedContract
+
+  if (DCContract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(DCContract.id)
+    if (answers) {
+      DCContract.answers = answers
+    }
+  }
+
+  const DCFill = probToColor(DCContract)
+  return (
+    <>
+      <circle
+        fill={DCFill ?? '#D6D1D3'}
+        stroke={isDCSelected ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
+        strokeWidth={isDCHovered || isDCSelected ? 2 : undefined}
+        cx="801.3"
+        cy="251.8"
+        r="5"
+        opacity="1"
+        onClick={handleClick}
+        onMouseEnter={onMouseEnterDC}
+        onMouseLeave={onMouseLeaveDC}
+      />
+      {StateText({
+        line: { x1: 804, y1: 255, x2: 849, y2: 295 },
+        textCoordinates: { x: 860, y: 300 },
+        abbreviation: 'DC',
+        onMouseEnter: onMouseEnterDC,
+        onMouseLeave: onMouseLeaveDC,
+        isHovered: isDCHovered,
+        fill: DCFill ?? OFFSET_TEXT_COLOR,
+        onClick: handleClick,
+      })}
+    </>
   )
 }
