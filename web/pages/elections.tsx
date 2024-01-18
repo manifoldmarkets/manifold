@@ -125,7 +125,6 @@ export default function USElectionsPage(props: {
             Which party will win the US Presidency?
           </div>
           <USAMap
-            // customize={stateContractMap}
             mapContractsDictionary={mapContractsDictionary}
             targetState={targetState}
             setTargetState={setTargetState}
