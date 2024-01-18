@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
 import { Lover } from 'common/love/lover'
-import { LoverProfile } from 'love/pages/[username]'
 import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Col } from 'web/components/layout/col'
@@ -19,6 +18,7 @@ import { createMatch } from 'web/lib/firebase/love/api'
 import { useUser } from 'web/hooks/use-user'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import { CompatibleBadge } from './widgets/compatible-badge'
+import { LoverProfile } from './profile/lover-profile'
 
 export const BrowseMatchesButton = (props: {
   lover: Lover
