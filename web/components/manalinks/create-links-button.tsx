@@ -5,7 +5,6 @@ import { Title } from '../widgets/title'
 import { User } from 'common/user'
 import { ManalinkInfo } from 'web/lib/supabase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
-import { createManalink } from 'web/lib/firebase/manalinks'
 import { Modal } from 'web/components/layout/modal'
 import dayjs from 'dayjs'
 import { Button } from '../buttons/button'
@@ -17,6 +16,7 @@ import { Select } from '../widgets/select'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from '../buttons/copy-link-button'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
+import { api } from 'web/lib/firebase/api'
 
 export function CreateLinksButton(props: {
   user: User
@@ -36,11 +36,10 @@ export function CreateLinksButton(props: {
             highlightedSlug={highlightedSlug}
             user={user}
             onCreate={async (newManalink) => {
-              const slug = await createManalink({
-                fromId: user.id,
+              const { slug } = await api('manalink', {
                 amount: newManalink.amount,
-                expiresTime: newManalink.expiresTime,
-                maxUses: newManalink.maxUses,
+                expiresTime: newManalink.expiresTime ?? undefined,
+                maxUses: newManalink.maxUses ?? undefined,
                 message: newManalink.message,
               })
               setHighlightedSlug(slug || '')
