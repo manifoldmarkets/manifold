@@ -837,7 +837,6 @@ export const createLeagueChangedNotification = async (
 export const createLikeNotification = async (reaction: Reaction) => {
   const { reaction_id, content_owner_id, user_id, content_id, content_type } =
     reaction
-  if (!content_id || !content_owner_id) return
 
   const creatorPrivateUser = await getPrivateUser(content_owner_id)
   const user = await getUser(user_id)

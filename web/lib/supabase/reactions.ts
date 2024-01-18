@@ -20,7 +20,7 @@ export async function getLikedContracts(userId: string) {
       .select('id, question, slug')
       .in(
         'id',
-        reacts.data.map((r: any) => r.content_id)
+        reacts.data.map((r) => r.content_id)
       )
   )
 

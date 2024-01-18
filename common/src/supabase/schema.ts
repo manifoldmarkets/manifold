@@ -2286,25 +2286,25 @@ export interface Database {
       }
       user_reactions: {
         Row: {
-          content_id: string | null
-          content_owner_id: string | null
-          content_type: string | null
+          content_id: string
+          content_owner_id: string
+          content_type: string
           created_time: string
           reaction_id: string
           user_id: string
         }
         Insert: {
-          content_id?: string | null
-          content_owner_id?: string | null
-          content_type?: string | null
+          content_id: string
+          content_owner_id: string
+          content_type: string
           created_time?: string
           reaction_id?: string
           user_id: string
         }
         Update: {
-          content_id?: string | null
-          content_owner_id?: string | null
-          content_type?: string | null
+          content_id?: string
+          content_owner_id?: string
+          content_type?: string
           created_time?: string
           reaction_id?: string
           user_id?: string
