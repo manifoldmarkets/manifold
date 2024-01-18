@@ -9,6 +9,8 @@ import { probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
+export const OFFSET_TEXT_COLOR = '#bd9e9f'
+
 type USAStateProps = {
   state: string
   stateData: StateDataType
@@ -119,7 +121,7 @@ export const StateText = (props: {
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
-  const textColor = !!line ? (isHovered ? fill : '#000') : '#FFF'
+  const textColor = !!line ? (isHovered ? fill : OFFSET_TEXT_COLOR) : '#FFF'
 
   return (
     <>
@@ -156,7 +158,7 @@ export const StateText = (props: {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke={isHovered ? fill : '#cec0ce'}
+            stroke={isHovered ? fill : OFFSET_TEXT_COLOR}
             strokeWidth={1} // Assuming the regular line is thinner
           />
         </>

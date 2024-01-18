@@ -20,7 +20,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 
-export interface MapContractsDictionary {
+export type MapContractsDictionary = {
   [key: string]: Contract | null
 }
 
@@ -77,7 +77,7 @@ export async function getStaticProps() {
 export type MapContracts = { state: string; contract: Contract | null }
 
 export default function USElectionsPage(props: {
-  mapContractsDictionary: MapContractsDictionary[]
+  mapContractsDictionary: MapContractsDictionary
   electionPartyContract: Contract
   electionCandidateContract: Contract
   republicanCandidateContract: Contract
@@ -140,7 +140,7 @@ export default function USElectionsPage(props: {
           {!!hoveredState || !!targetState ? (
             <StateContract
               targetContract={
-                mapContractsDictionary[hoveredState ?? targetState] as Contract
+                mapContractsDictionary[hoveredState! ?? targetState] as Contract
               }
             />
           ) : (

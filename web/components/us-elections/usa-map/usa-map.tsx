@@ -2,12 +2,14 @@
 // MIT License
 
 import { DATA } from './usa-map-data'
-import { StateText, USAState } from './usa-state'
+import { OFFSET_TEXT_COLOR, StateText, USAState } from './usa-state'
 import clsx from 'clsx'
 import { DEM_LIGHT_HEX, REP_LIGHT_HEX, probToColor } from './state-election-map'
-import { useState } from 'react'
+import { MouseEvent, useState } from 'react'
 import { MapContracts, MapContractsDictionary } from 'web/pages/elections'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 
@@ -40,7 +42,7 @@ export type StatesProps = {
 
 export const USAMap = (props: {
   hideStateTitle?: boolean
-  mapContractsDictionary: MapContractsDictionary[]
+  mapContractsDictionary: MapContractsDictionary
   targetState: string | null | undefined
   setTargetState: (targetState: string | null | undefined) => void
   hoveredState: string | null | undefined
@@ -54,8 +56,6 @@ export const USAMap = (props: {
     hoveredState,
     setHoveredState,
   } = props
-
-  console.log(mapContractsDictionary[targetState])
 
   function handleClick(newTargetState: string | undefined) {
     if (targetState && newTargetState == targetState) {
@@ -75,16 +75,14 @@ export const USAMap = (props: {
 
   const totalWidth = 20
 
-  const [isDCHovered, setIsDCHovered] = useState(false)
-
   const onMouseEnterDC = () => {
-    setIsDCHovered(true)
     onMouseEnter('DC')
   }
   const onMouseLeaveDC = () => {
-    setIsDCHovered(false)
     onMouseLeave()
   }
+
+  const cachedDCContract = mapContractsDictionary['DC']
 
   const isDCSelected = !!targetState && targetState == 'DC'
 
@@ -173,49 +171,104 @@ export const USAMap = (props: {
           </pattern>
         </defs>
         <g className="outlines">
-          {Object.entries(DATA).map(([stateKey, data]) => (
-            <USAState
-              key={stateKey}
-              stateData={data}
-              stateContract={mapContractsDictionary[stateKey]}
-              hideStateTitle={hideStateTitle}
-              state={stateKey}
-              onClickState={() => {
-                handleClick(stateKey)
-              }}
-              onMouseEnterState={() => {
-                onMouseEnter(stateKey)
-              }}
-              onMouseLeaveState={() => {
-                onMouseLeave()
-              }}
-              selected={!!targetState && targetState == stateKey}
-            />
-          ))}
-          <circle
-            fill={probToColor(mapContractsDictionary['DC']) ?? '#D6D1D3'}
-            stroke={isDCSelected ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
-            strokeWidth={isDCHovered || isDCSelected ? 2 : undefined}
-            cx="801.3"
-            cy="251.8"
-            r="5"
-            opacity="1"
-            onClick={() => handleClick('DC')}
-            onMouseEnter={onMouseEnterDC}
-            onMouseLeave={onMouseLeaveDC}
-          />
-          {StateText({
-            line: { x1: 804, y1: 255, x2: 849, y2: 295 },
-            textCoordinates: { x: 860, y: 300 },
-            abbreviation: 'DC',
-            onMouseEnter: onMouseEnterDC,
-            onMouseLeave: onMouseLeaveDC,
-            isHovered: isDCHovered,
-            fill: probToColor(mapContractsDictionary['DC']) ?? '#D6D1D3',
-            onClick: () => handleClick('DC'),
+          {Object.entries(DATA).map(([stateKey, data]) => {
+            const stateContract = mapContractsDictionary[stateKey]
+            if (!!stateContract) {
+              return (
+                <USAState
+                  key={stateKey}
+                  stateData={data}
+                  stateContract={stateContract as MultiContract}
+                  hideStateTitle={hideStateTitle}
+                  state={stateKey}
+                  onClickState={() => {
+                    handleClick(stateKey)
+                  }}
+                  onMouseEnterState={() => {
+                    onMouseEnter(stateKey)
+                  }}
+                  onMouseLeaveState={() => {
+                    onMouseLeave()
+                  }}
+                  selected={!!targetState && targetState == stateKey}
+                />
+              )
+            }
+            return <></>
           })}
+          {cachedDCContract ? (
+            <DCState
+              cachedContract={cachedDCContract}
+              isDCHovered={hoveredState == 'DC'}
+              isDCSelected={false}
+              onMouseEnterDC={onMouseEnterDC}
+              onMouseLeaveDC={onMouseLeaveDC}
+              handleClick={() => handleClick('DC')}
+            />
+          ) : (
+            <></>
+          )}
         </g>
       </svg>
     </div>
+  )
+}
+
+export function DCState(props: {
+  cachedContract: Contract
+  isDCSelected: boolean
+  isDCHovered: boolean
+  onMouseEnterDC: (() => void) | undefined
+  onMouseLeaveDC: (() => void) | undefined
+  handleClick: (() => void) | undefined
+}) {
+  const {
+    cachedContract,
+    isDCSelected,
+    isDCHovered,
+    onMouseEnterDC,
+    onMouseLeaveDC,
+    handleClick,
+  } = props
+  const DCContract =
+    (useFirebasePublicContract(
+      cachedContract.visibility,
+      cachedContract.id
+    ) as MultiContract) ?? cachedContract
+
+  if (DCContract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(DCContract.id)
+    if (answers) {
+      DCContract.answers = answers
+    }
+  }
+
+  const DCFill = probToColor(DCContract)
+  return (
+    <>
+      <circle
+        fill={DCFill ?? '#D6D1D3'}
+        stroke={isDCSelected ? SELECTED_OUTLINE_COLOR : '#FFFFFF'}
+        strokeWidth={isDCHovered || isDCSelected ? 2 : undefined}
+        cx="801.3"
+        cy="251.8"
+        r="5"
+        opacity="1"
+        onClick={handleClick}
+        onMouseEnter={onMouseEnterDC}
+        onMouseLeave={onMouseLeaveDC}
+      />
+      {StateText({
+        line: { x1: 804, y1: 255, x2: 849, y2: 295 },
+        textCoordinates: { x: 860, y: 300 },
+        abbreviation: 'DC',
+        onMouseEnter: onMouseEnterDC,
+        onMouseLeave: onMouseLeaveDC,
+        isHovered: isDCHovered,
+        fill: DCFill ?? OFFSET_TEXT_COLOR,
+        onClick: handleClick,
+      })}
+    </>
   )
 }
