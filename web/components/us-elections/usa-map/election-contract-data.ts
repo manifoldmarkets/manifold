@@ -55,7 +55,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'ID',
-    slug: 'which-party-will-win-the-us-preside-5414030a4a48',
+    slug: 'which-party-will-win-the-us-preside-e762820f4b34',
   },
   {
     state: 'IL',

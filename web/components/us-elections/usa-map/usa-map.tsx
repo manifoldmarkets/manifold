@@ -55,6 +55,8 @@ export const USAMap = (props: {
     setHoveredState,
   } = props
 
+  console.log(mapContractsDictionary[targetState])
+
   function handleClick(newTargetState: string | undefined) {
     if (targetState && newTargetState == targetState) {
       setTargetState(undefined)
@@ -171,14 +173,6 @@ export const USAMap = (props: {
           </pattern>
         </defs>
         <g className="outlines">
-          {/* {States({
-            hideStateTitle,
-            fillStateColor,
-            stateClickHandler,
-            stateMouseEnterHandler,
-            stateMouseLeaveHandler,
-            selectedState,
-          })}{' '} */}
           {Object.entries(DATA).map(([stateKey, data]) => (
             <USAState
               key={stateKey}
