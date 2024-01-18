@@ -9,7 +9,7 @@ import { probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
-export const OFFSET_TEXT_COLOR = '#bd9e9f'
+export const OFFSET_TEXT_COLOR = '#9E9FBD'
 
 export function USAState(props: {
   state: string
