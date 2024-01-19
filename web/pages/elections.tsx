@@ -1,4 +1,6 @@
+import clsx from 'clsx'
 import { Contract, MultiContract } from 'common/contract'
+import { LinkPreviews, fetchLinkPreviews } from 'common/link-preview'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -14,10 +16,16 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
+import { PoliticsArticle } from 'web/components/us-elections/article'
+import { Carousel } from 'web/components/widgets/carousel'
+import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
 }
+
+const NH_LINK =
+  'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
@@ -57,6 +65,12 @@ export async function getStaticProps() {
     adminDb
   )
 
+  const newHampshireContract = await getContractFromSlug(
+    'who-will-win-the-new-hampshire-repu',
+    adminDb
+  )
+
+  const linkPreviews = await fetchLinkPreviews([NH_LINK])
   return {
     props: {
       mapContractsDictionary: mapContractsDictionary,
@@ -64,6 +78,8 @@ export async function getStaticProps() {
       electionCandidateContract: electionCandidateContract,
       republicanCandidateContract: republicanCandidateContract,
       democratCandidateContract: democratCandidateContract,
+      newHampshireContract: newHampshireContract,
+      linkPreviews: linkPreviews,
     },
     revalidate: 60,
   }
@@ -77,6 +93,8 @@ export default function USElectionsPage(props: {
   electionCandidateContract: Contract
   republicanCandidateContract: Contract
   democratCandidateContract: Contract
+  newHampshireContract: Contract
+  linkPreviews: LinkPreviews
 }) {
   useSaveCampaign()
   useTracking('view elections')
@@ -89,6 +107,8 @@ export default function USElectionsPage(props: {
     electionPartyContract,
     republicanCandidateContract,
     democratCandidateContract,
+    newHampshireContract,
+    linkPreviews,
   } = props
   const [targetState, setTargetState] = useState<string | undefined | null>(
     'GA'
@@ -105,6 +125,8 @@ export default function USElectionsPage(props: {
   ) {
     return <Custom404 />
   }
+
+  console.log('linkPreviews', linkPreviews, linkPreviews[NH_LINK])
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
@@ -120,6 +142,24 @@ export default function USElectionsPage(props: {
           contract={republicanCandidateContract as MultiContract}
         />
         <CandidateCard contract={democratCandidateContract as MultiContract} />
+        <Col className={'group w-full flex-col gap-1.5 '}>
+          {/* Title is link to contract for open in new tab and a11y */}
+          <div
+            className={clsx(
+              'text-ink-700 grow items-start font-semibold transition-colors sm:text-lg'
+            )}
+          >
+            NH Primaries
+          </div>
+          <Carousel>
+            <PoliticsArticle {...linkPreviews[NH_LINK]} />
+            <SmallCandidateCard
+              contract={newHampshireContract as MultiContract}
+              className="bg-canvas-0 w-64 min-w-[16rem] px-4 py-2 sm:w-80 sm:min-w-[20rem]"
+              maxAnswers={3}
+            />
+          </Carousel>
+        </Col>
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
             Which party will win the US Presidency?
