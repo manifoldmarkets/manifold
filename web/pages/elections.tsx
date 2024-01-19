@@ -20,7 +20,6 @@ import { PoliticsArticle } from 'web/components/us-elections/article'
 import { Carousel } from 'web/components/widgets/carousel'
 import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Link } from 'd3-shape'
 import { Row } from 'web/components/layout/row'
 
 export type MapContractsDictionary = {
