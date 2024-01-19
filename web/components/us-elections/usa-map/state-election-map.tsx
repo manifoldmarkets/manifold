@@ -1,11 +1,11 @@
 import { Contract } from 'common/contract'
 
-export const DEM_LIGHT_HEX = '#86a6d4'
-export const REP_LIGHT_HEX = '#e0928c'
+export const DEM_LIGHT_HEX = '#cedcef'
+export const REP_LIGHT_HEX = '#f4dad7'
 export const DEM_DARK_HEX = '#4a5fa8'
 export const REP_DARK_HEX = '#9d3336'
 
-export const COLOR_MIXED_THRESHOLD = 0.3
+export const COLOR_MIXED_THRESHOLD = 0.1
 
 export interface StateElectionMarket {
   slug: string
@@ -53,43 +53,32 @@ export const probToColor = (contract: Contract | null) => {
     return undefined
 
   // Calculate the difference
-  const difference = Math.abs(probDemocratic - probRepublican)
+  const repOverDem = probRepublican - probDemocratic
+  const absoluteDifference = Math.abs(repOverDem)
 
-  if (difference < COLOR_MIXED_THRESHOLD) {
+  if (absoluteDifference < COLOR_MIXED_THRESHOLD / 2) {
     // Blend the light colors if difference is less than 5%
-    return getStripePattern(probDemocratic, probRepublican)
+    return interpolateColor(
+      DEM_LIGHT,
+      REP_LIGHT,
+      (repOverDem + COLOR_MIXED_THRESHOLD / 2) / COLOR_MIXED_THRESHOLD
+    )
   } else {
     // Interpolate towards the darker shade based on the dominant side
-    if (probDemocratic > probRepublican) {
+    if (repOverDem < 0) {
       return interpolateColor(
         DEM_LIGHT,
         DEM_DARK,
-        (difference - COLOR_MIXED_THRESHOLD) / (1 - COLOR_MIXED_THRESHOLD)
+        (absoluteDifference - COLOR_MIXED_THRESHOLD) /
+          (1 - COLOR_MIXED_THRESHOLD)
       )
     } else {
       return interpolateColor(
         REP_LIGHT,
         REP_DARK,
-        (difference - COLOR_MIXED_THRESHOLD) / (1 - COLOR_MIXED_THRESHOLD)
+        (absoluteDifference - COLOR_MIXED_THRESHOLD) /
+          (1 - COLOR_MIXED_THRESHOLD)
       )
     }
   }
-}
-
-export const getStripePattern = (
-  probDemocratic: number,
-  probRepublican: number
-) => {
-  // The total width of the pattern (sum of red and blue stripes)
-  const difference = probDemocratic - probRepublican
-
-  const patternThreshold = COLOR_MIXED_THRESHOLD / 2
-
-  if (difference <= patternThreshold && difference >= -patternThreshold) {
-    return 'url(#patternEqual)'
-  } else if (difference < -patternThreshold) {
-    return 'url(#patternMoreRed)'
-  }
-
-  return 'url(#patternMoreBlue)'
 }
