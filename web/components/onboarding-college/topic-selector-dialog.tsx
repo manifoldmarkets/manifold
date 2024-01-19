@@ -5,11 +5,7 @@ import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
-import {
-  getSubtopics,
-  TOPICS_TO_SUBTOPICS,
-} from './topics-college'
-
+import { getSubtopics, TOPICS_TO_SUBTOPICS } from './topics-college'
 
 import { followTopic, updateUserEmbedding } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'

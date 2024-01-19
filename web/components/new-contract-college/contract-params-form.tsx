@@ -5,9 +5,7 @@ import { XIcon } from '@heroicons/react/outline'
 import { uniqBy } from 'lodash'
 import { generateJSON } from '@tiptap/core'
 import clsx from 'clsx'
-import {
-  TOPICS_TO_SUBTOPICS,
-} from 'web/components/onboarding-college/topics-college'
+import { TOPICS_TO_SUBTOPICS } from 'web/components/onboarding-college/topics-college'
 import {
   Contract,
   MAX_QUESTION_LENGTH,

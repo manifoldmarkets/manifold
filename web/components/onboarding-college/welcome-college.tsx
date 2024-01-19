@@ -36,8 +36,6 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 
-
-
 export default function Welcome() {
   const user = useUser()
   const authed = useIsAuthorized()

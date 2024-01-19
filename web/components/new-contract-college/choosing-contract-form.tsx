@@ -3,9 +3,7 @@ import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import {
-  PREDICTIVE_CONTRACT_TYPES,
-} from './create-contract-types'
+import { PREDICTIVE_CONTRACT_TYPES } from './create-contract-types'
 import { CreateContractStateType } from 'web/components/new-contract/new-contract-panel'
 import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
