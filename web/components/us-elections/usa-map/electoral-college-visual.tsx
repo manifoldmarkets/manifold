@@ -6,6 +6,7 @@ import { probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { SELECTED_OUTLINE_COLOR } from './usa-map'
+import clsx from 'clsx'
 
 export function ElectoralCollegeVisual(props: {
   mapContractsDictionary: MapContractsDictionary
@@ -28,7 +29,7 @@ export function ElectoralCollegeVisual(props: {
       </Col>
       <Row className="overflow-none relative gap-[1px] rounded sm:gap-0.5">
         {Object.entries(sortedContractsDictionary).map(
-          ([stateKey, contract]) => {
+          ([stateKey, contract], index) => {
             const fill = probToColor(contract) ?? ''
             const isHovered = hoveredState === stateKey
             const selected = targetState === stateKey
@@ -51,14 +52,23 @@ export function ElectoralCollegeVisual(props: {
                 onMouseLeave={onMouseLeave}
               >
                 {(isHovered || (selected && !hoveredState)) && (
-                  <Col className="bg-canvas-50 0 absolute top-6 z-20 rounded px-4 py-2 transition-all">
+                  <Row
+                    className={clsx(
+                      '0 text-ink-700 absolute top-6 z-20 gap-1 rounded py-1 transition-all',
+                      index < 5
+                        ? 'left-0'
+                        : index > 45
+                        ? 'right-0'
+                        : '-left-[2rem]'
+                    )}
+                  >
                     <div className="whitespace-nowrap font-semibold">
-                      {DATA[stateKey].name}
+                      {DATA[stateKey].abbreviation},
                     </div>
                     <div className="whitespace-nowrap">
                       {DATA[stateKey].electoralVotes} votes
                     </div>
-                  </Col>
+                  </Row>
                 )}
               </div>
             )
