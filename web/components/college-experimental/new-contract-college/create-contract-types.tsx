@@ -1,5 +1,5 @@
 import { BsUiChecks } from 'react-icons/bs'
-import { Col } from '../layout/col'
+import { Col } from '../../layout/col'
 
 export const PREDICTIVE_CONTRACT_TYPES = {
   // binary: {

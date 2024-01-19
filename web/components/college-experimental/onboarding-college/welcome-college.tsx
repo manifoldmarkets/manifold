@@ -14,9 +14,9 @@ import {
   updateUser,
 } from 'web/lib/firebase/users'
 
-import { Col } from '../layout/col'
-import { Modal } from '../layout/modal'
-import { Row } from '../layout/row'
+import { Col } from '../../layout/col'
+import { Modal } from '../../layout/modal'
+import { Row } from '../../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
@@ -31,7 +31,7 @@ import {
 import { orderBy, uniqBy } from 'lodash'
 import { track } from 'web/lib/service/analytics'
 import { PencilIcon } from '@heroicons/react/outline'
-import { Input } from '../widgets/input'
+import { Input } from '../../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'

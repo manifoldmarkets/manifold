@@ -5,7 +5,7 @@ import { XIcon } from '@heroicons/react/outline'
 import { uniqBy } from 'lodash'
 import { generateJSON } from '@tiptap/core'
 import clsx from 'clsx'
-import { TOPICS_TO_SUBTOPICS } from 'web/components/onboarding-college/topics-college'
+import { TOPICS_TO_SUBTOPICS } from 'web/components/college-experimental/onboarding-college/topics-college'
 import {
   Contract,
   MAX_QUESTION_LENGTH,
@@ -59,8 +59,8 @@ import {
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { Col } from '../layout/col'
-import { BuyAmountInput } from '../widgets/amount-input'
+import { Col } from '../../layout/col'
+import { BuyAmountInput } from '../../widgets/amount-input'
 import { getContractTypeThingFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
 import { getContractWithFields } from 'web/lib/supabase/contracts'

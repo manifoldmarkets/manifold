@@ -7,12 +7,12 @@ import clsx from 'clsx'
 import {
   NewContractPanel,
   NewQuestionParams,
-} from 'web/components/new-contract-college/new-contract-panel'
+} from 'web/components/college-experimental/new-contract-college/new-contract-panel'
 import { db } from 'web/lib/supabase/db'
 import { Group } from 'common/group'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import Welcome from 'web/components/onboarding-college/welcome-college'
+import Welcome from 'web/components/college-experimental/onboarding-college/welcome-college'
 import { getGroupBySlug } from 'web/lib/supabase/groups'
 import { useEffect, useState, memo } from 'react'
 import { CPMMBinaryContract, Contract } from 'common/contract'
