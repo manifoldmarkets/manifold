@@ -14,11 +14,8 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  getDocs,
-  limit,
   onSnapshot,
   query,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
