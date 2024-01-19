@@ -494,6 +494,7 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
     'contract_probability_changed',
     'new_comment',
     'user_position_changed',
+    'repost',
   ]
 
   const compareSlugs = (s1: string[], s2: string[]) => {
