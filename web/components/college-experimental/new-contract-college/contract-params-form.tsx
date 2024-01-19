@@ -259,9 +259,9 @@ export function ContractParamsForm(props: {
     ? dec15CurrentYear.add(1, 'year')
     : dec15CurrentYear
   const closeDateMap: { [key: string]: number | string } = {
-    'Early Descision/Action I': nextDec15.diff(dayjs(), 'day'),
-    'Early Descision/Action II': nextFeb15.diff(dayjs(), 'day'),
-    'Regular descision': nextApril1.diff(dayjs(), 'day'),
+    'Early Decision/Action I': nextDec15.diff(dayjs(), 'day'),
+    'Early Decision/Action II': nextFeb15.diff(dayjs(), 'day'),
+    'Regular decision': nextApril1.diff(dayjs(), 'day'),
   }
   const NEVER = 'Never'
   if (outcomeType == 'POLL') {
