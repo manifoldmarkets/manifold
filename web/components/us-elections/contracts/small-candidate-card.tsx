@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useState } from 'react'
-
+import Router from 'next/router'
 import { MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -13,8 +13,11 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { Spacer } from 'web/components/layout/spacer'
 
-export function CandidateCard(props: {
+export function SmallCandidateCard(props: {
   contract: MultiContract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
@@ -24,8 +27,17 @@ export function CandidateCard(props: {
   className?: string
   customTitle?: string
   titleSize?: 'lg'
+  maxAnswers?: number
 }) {
-  const { promotedData, trackingPostfix, item, customTitle, titleSize } = props
+  const {
+    promotedData,
+    trackingPostfix,
+    item,
+    customTitle,
+    titleSize,
+    className,
+    maxAnswers,
+  } = props
 
   const contract =
     (useFirebasePublicContract(
@@ -89,20 +101,32 @@ export function CandidateCard(props: {
   }
 
   return (
-    <Col className={'group w-full flex-col gap-1.5 '}>
-      {/* Title is link to contract for open in new tab and a11y */}
+    <ClickFrame
+      className={clsx(
+        className,
+        'relative rounded-xl',
+        'cursor-pointer ',
+        'fade-in group'
+      )}
+      onClick={(e) => {
+        trackClick()
+        Router.push(path)
+        e.currentTarget.focus() // focus the div like a button, for style
+      }}
+      ref={ref}
+    >
       <Link
         className={clsx(
-          'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+          'group-hover:text-primary-700 grow items-start text-sm font-semibold transition-colors sm:text-lg',
           titleSize === 'lg' && ' sm:text-3xl'
         )}
         href={path}
         onClick={trackClick}
       >
-        <VisibilityIcon contract={contract} />{' '}
-        {customTitle ? customTitle : extractPhrase(contract.question)}
+        {contract.question}
       </Link>
-      <CandidatePanel contract={contract} maxAnswers={6} />
-    </Col>
+      <Spacer h={4} />
+      <SmallCandidatePanel contract={contract} maxAnswers={maxAnswers ?? 6} />
+    </ClickFrame>
   )
 }

@@ -15,9 +15,11 @@ import { Col } from '../../../layout/col'
 import { CandidateBar } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
+import { SmallCandidateBar } from './small-candidate-bar'
+import { getCandidateColor } from './candidates-panel'
 
 // just the bars
-export function CandidatePanel(props: {
+export function SmallCandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
 }) {
@@ -72,47 +74,32 @@ export function CandidatePanel(props: {
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          <Carousel labelsParentClassName="gap-2">
-            {displayedAnswers.map((answer) => (
-              <CandidateAnswer
-                key={answer.id}
-                answer={answer as Answer}
-                contract={contract}
-                color={getCandidateColor(answer.text)}
-                user={user}
-              />
-            ))}
-            {moreCount > 0 && (
-              <Link href={contractPath(contract)}>
-                <Col
-                  className={clsx(
-                    'border-ink-200 hover:border-primary-600 border-1 text-ink-800 hover:text-primary-600 bg-canvas-0 sm:text-md h-[68px] w-[11rem] items-center justify-center overflow-hidden rounded-md border-2 text-sm transition-all sm:h-[83px] sm:w-[220px]'
-                  )}
-                >
-                  <Row className="gap-1">
-                    See {moreCount} more{' '}
-                    <span>
-                      <ArrowRightIcon className="h-5 w-5" />
-                    </span>
-                  </Row>
-                </Col>
-              </Link>
-            )}
-          </Carousel>
+          {displayedAnswers.map((answer) => (
+            <SmallCandidateAnswer
+              key={answer.id}
+              answer={answer as Answer}
+              contract={contract}
+              color={getCandidateColor(answer.text)}
+              user={user}
+            />
+          ))}
+          {moreCount > 0 && (
+            <Link href={contractPath(contract)} className="group">
+              <Row className="sm:text-md group-hover:text-primary-700 text-ink-700 w-full items-center justify-end gap-1 text-sm">
+                See {moreCount} more{' '}
+                <span>
+                  <ArrowRightIcon className="h-5 w-5" />
+                </span>
+              </Row>
+            </Link>
+          )}
         </>
       )}
     </Col>
   )
 }
 
-export function getCandidateColor(name: string) {
-  // return 'bg-primary-500'
-  if (!CANDIDATE_DATA[name]) return '#9E9FBD'
-  if (CANDIDATE_DATA[name]?.party === 'Democrat') return '#adc4e3'
-  return '#ecbab5'
-}
-
-function CandidateAnswer(props: {
+function SmallCandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
   color: string
@@ -139,7 +126,7 @@ function CandidateAnswer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
-      <CandidateBar
+      <SmallCandidateBar
         color={color}
         prob={prob}
         resolvedProb={resolvedProb}
@@ -152,15 +139,6 @@ function CandidateAnswer(props: {
         selected={selected}
         contract={contract}
       />
-      {/* {!resolution && hasBets && isCpmm && user && (
-        <AnswerPosition
-          contract={contract}
-          answer={answer as Answer}
-          userBets={userBets}
-          className="mt-0.5 self-end sm:mx-3 sm:mt-0"
-          user={user}
-        />
-      )} */}
     </Col>
   )
 }

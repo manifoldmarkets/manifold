@@ -17,7 +17,7 @@ import { Col } from '../../../layout/col'
 import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
 
-export const CandidateBar = (props: {
+export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
   prob: number // 0 - 1
   resolvedProb?: number // 0 - 1
@@ -47,77 +47,65 @@ export const CandidateBar = (props: {
 
   return (
     <>
-      <Link
-        className={clsx(
-          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden rounded-md border-2 transition-all sm:w-[220px]',
-          className
-        )}
-        href={contractPath(contract)}
-        onPointerOver={onHover && (() => onHover(true))}
-        onPointerLeave={onHover && (() => onHover(false))}
-      >
+      <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
-          {!candidateImage ? (
-            <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
-          ) : (
-            <Image
-              src={candidateImage}
-              alt={answer.text}
-              width={isMobile ? 64 : 80}
-              height={isMobile ? 64 : 80}
-              className="object-fill"
-            />
-          )}
-          <Col>
-            <Row className="w-full justify-end">
-              <CandidateProb
-                contract={contract}
-                answer={answer}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  setOpen(true)
-                }}
+          <Row className="w-full items-center gap-2 text-sm sm:text-lg">
+            {!candidateImage ? (
+              <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
+            ) : (
+              <Image
+                src={candidateImage}
+                alt={answer.text}
+                width={isMobile ? 40 : 60}
+                height={isMobile ? 40 : 60}
+                className="object-fill"
               />
-            </Row>
-            <Row className="w-full justify-end text-sm sm:text-lg">
-              {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
-            </Row>
-          </Col>
+            )}
+
+            {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
+          </Row>
+          <CandidateProb
+            contract={contract}
+            answer={answer}
+            onClick={(e) => {
+              e.stopPropagation()
+              e.preventDefault()
+              setOpen(true)
+            }}
+          />
         </Row>
         <div
           className={clsx(
-            'bg-canvas-0 absolute bottom-0 left-0 right-0 top-0 -z-10 rounded transition-all'
+            'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
+            hideBar ? 'bg-ink-200' : 'bg-canvas-50'
           )}
         >
           {/* bar outline if resolved */}
           {!!resolvedProb && !hideBar && (
             <div
               className={clsx(
-                'absolute bottom-0 w-full rounded ring-1 ring-purple-500 sm:ring-2',
+                'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
                 resolvedProb > prob
                   ? 'bg-purple-100 dark:bg-purple-900'
                   : 'z-10'
               )}
               style={{
-                height: `${resolvedProb * 100}%`,
+                width: `${resolvedProb * 100}%`,
               }}
             />
           )}
           {/* main bar */}
           {!hideBar && (
-            <Col className="h-full w-full justify-end">
-              <div
-                className="w-full dark:brightness-75"
-                style={{
-                  height: `max(1px, ${prob * 100}%)`,
-                  background: color,
-                }}
-              />
-            </Col>
+            <div
+              className="isolate h-full rounded dark:brightness-75"
+              style={{
+                width: `max(8px, ${prob * 100}%)`,
+                background: color,
+              }}
+            />
           )}
         </div>
-      </Link>
+      </Col>
       <Modal open={open} setOpen={setOpen} className={MODAL_CLASS}>
         <AnswerCpmmBetPanel
           answer={answer}
