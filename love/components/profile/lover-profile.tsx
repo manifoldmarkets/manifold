@@ -12,6 +12,7 @@ import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
 import {
+  LikeData,
   useLikesGivenByUser,
   useLikesReceivedByUser,
 } from 'love/hooks/use-likes'
@@ -64,8 +65,8 @@ function LoverContent(props: {
   refreshLover: () => void
   fromLoverPage?: Lover
   fromSignup?: boolean
-  likesGiven: string[]
-  likesReceived: string[]
+  likesGiven: LikeData[]
+  likesReceived: LikeData[]
 }) {
   const {
     user,

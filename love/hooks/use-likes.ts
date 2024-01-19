@@ -3,23 +3,47 @@ import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
+export type LikeData = {
+  userId: string
+  createdTime: number
+}
+
 const getLikesGivenByUser = async (creatorId: string) => {
   const { data } = await run(
-    db.from('love_likes').select('target_id').eq('creator_id', creatorId)
+    db
+      .from('love_likes')
+      .select('target_id, created_time')
+      .eq('creator_id', creatorId)
   )
-  return data ? data.map((like) => like.target_id) : []
+  return data
+    ? data.map(
+        (like) =>
+          ({
+            userId: like.target_id,
+            createdTime: new Date(like.created_time).getTime(),
+          } as LikeData)
+      )
+    : []
 }
 
 const getLikesReceivedByUser = async (targetId: string) => {
   const { data } = await run(
-    db.from('love_likes').select('creator_id').eq('target_id', targetId)
+    db
+      .from('love_likes')
+      .select('creator_id, created_time')
+      .eq('target_id', targetId)
   )
-  return data ? data.map((like) => like.creator_id) : []
+  return data
+    ? data.map((like) => ({
+        userId: like.creator_id,
+        createdTime: new Date(like.created_time).getTime(),
+      }))
+    : []
 }
 
 export const useLikesGivenByUser = (creatorId: string | undefined) => {
   const [likesGiven, setLikesGiven] = usePersistentInMemoryState<
-    string[] | undefined
+    LikeData[] | undefined
   >(undefined, `likes-given-by-${creatorId}`)
 
   const refresh = () => {
@@ -36,7 +60,7 @@ export const useLikesGivenByUser = (creatorId: string | undefined) => {
 
 export const useLikesReceivedByUser = (targetId: string | undefined) => {
   const [likesReceived, setLikesReceived] = usePersistentInMemoryState<
-    string[] | undefined
+    LikeData[] | undefined
   >(undefined, `likes-received-by-${targetId}`)
 
   const refresh = () => {

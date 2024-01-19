@@ -20,12 +20,13 @@ import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
 import { LikeButton } from '../widgets/like-button'
+import { LikeData } from 'love/hooks/use-likes'
 
 export default function LoverProfileHeader(props: {
   user: User
   lover: Lover
   simpleView?: boolean
-  likesReceived: string[]
+  likesReceived: LikeData[]
   refreshLikes: () => void
 }) {
   const { user, lover, simpleView, likesReceived, refreshLikes } = props
@@ -39,7 +40,10 @@ export default function LoverProfileHeader(props: {
           <LikeButton
             className=""
             targetId={user.id}
-            liked={!!currentUser && likesReceived.includes(currentUser.id)}
+            liked={
+              !!currentUser &&
+              likesReceived.map((l) => l.userId).includes(currentUser.id)
+            }
             refresh={refreshLikes}
           />
           <Col className="gap-1">
