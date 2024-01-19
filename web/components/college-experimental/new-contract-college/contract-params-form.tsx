@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
@@ -23,7 +29,7 @@ import {
 import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
-import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers-college'
+import { MultipleChoiceAnswers } from 'web/components/college-experimental/new-contract-college/multiple-choice-answers-college'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { Row } from 'web/components/layout/row'

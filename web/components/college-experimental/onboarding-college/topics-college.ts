@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 export type TopicInfo = { name: string; groupId: string }
 
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {

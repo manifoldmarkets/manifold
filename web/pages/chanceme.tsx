@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 'use client'
 import { getIsNative } from 'web/lib/native/is-native'
 import { Page } from 'web/components/layout/page'

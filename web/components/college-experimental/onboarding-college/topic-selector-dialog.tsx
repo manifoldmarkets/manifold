@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 import { useState } from 'react'
 import { noop, uniq } from 'lodash'
 import { Col } from 'web/components/layout/col'

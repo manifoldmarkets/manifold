@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 import clsx from 'clsx'
 import { ReactNode, useState } from 'react'
 import { ChevronRightIcon } from '@heroicons/react/solid'

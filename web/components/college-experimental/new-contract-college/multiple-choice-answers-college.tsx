@@ -1,10 +1,16 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 import { XIcon } from '@heroicons/react/solid'
 
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { ExpandingInput } from '../widgets/expanding-input'
-import { InfoTooltip } from '../widgets/info-tooltip'
+import { Col } from '../../layout/col'
+import { Row } from '../../layout/row'
+import { ExpandingInput } from '../../widgets/expanding-input'
+import { InfoTooltip } from '../../widgets/info-tooltip'
 import { OutcomeType } from 'common/contract'
 
 export function MultipleChoiceAnswers(props: {

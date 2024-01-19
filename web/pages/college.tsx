@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 import { memo, useState } from 'react'
 import clsx from 'clsx'
 import { Page } from 'web/components/layout/page'

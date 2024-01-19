@@ -1,3 +1,9 @@
+/**
+ * EXPERIMENTAL
+ * This file is experimental and contributed by @chcl6.
+ * https://github.com/manifoldmarkets/manifold/pull/2310
+ */
+
 /* eslint-disable react/jsx-key */
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
