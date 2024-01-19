@@ -25,7 +25,7 @@ export const PoliticsArticle = (props: {
       rel="noreferrer"
       target="_blank"
       className={clsx(
-        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex w-64 min-w-[16rem] flex-col overflow-hidden rounded-xl border transition-colors sm:w-80 sm:min-w-[20rem]',
+        'border-canvas-0 bg-canvas-0 hover:border-primary-300 focus:border-primary-300 relative flex flex-col overflow-hidden rounded-xl border transition-colors ',
         className
       )}
     >

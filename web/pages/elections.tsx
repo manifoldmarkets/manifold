@@ -19,6 +19,9 @@ import Custom404 from './404'
 import { PoliticsArticle } from 'web/components/us-elections/article'
 import { Carousel } from 'web/components/widgets/carousel'
 import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Link } from 'd3-shape'
+import { Row } from 'web/components/layout/row'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
@@ -118,6 +121,8 @@ export default function USElectionsPage(props: {
     undefined
   )
 
+  const isMobile = useIsMobile()
+
   if (
     !electionPartyContract ||
     !republicanCandidateContract ||
@@ -126,7 +131,6 @@ export default function USElectionsPage(props: {
     return <Custom404 />
   }
 
-  console.log('linkPreviews', linkPreviews, linkPreviews[NH_LINK])
   return (
     <Page trackPageView="us elections page 2024">
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
@@ -144,21 +148,43 @@ export default function USElectionsPage(props: {
         <CandidateCard contract={democratCandidateContract as MultiContract} />
         <Col className={'group w-full flex-col gap-1.5 '}>
           {/* Title is link to contract for open in new tab and a11y */}
-          <div
-            className={clsx(
-              'text-ink-700 grow items-start font-semibold transition-colors sm:text-lg'
-            )}
-          >
-            NH Primaries
-          </div>
-          <Carousel>
-            <PoliticsArticle {...linkPreviews[NH_LINK]} />
-            <SmallCandidateCard
-              contract={newHampshireContract as MultiContract}
-              className="bg-canvas-0 w-64 min-w-[16rem] px-4 py-2 sm:w-80 sm:min-w-[20rem]"
-              maxAnswers={3}
-            />
-          </Carousel>
+
+          {isMobile ? (
+            <>
+              <div
+                className={clsx(
+                  'text-ink-700 grow items-start font-semibold transition-colors sm:text-lg'
+                )}
+              >
+                NH Primaries
+              </div>
+
+              <Carousel>
+                <NHPrimaries
+                  linkPreviews={linkPreviews}
+                  newHampshireContract={newHampshireContract}
+                  cardClassName={'sm:w-80 sm:min-w-[20rem] w-64 min-w-[16rem]'}
+                />
+              </Carousel>
+            </>
+          ) : (
+            <div className="relative">
+              <div
+                className={clsx(
+                  'text-ink-700 absolute -top-4 left-[calc(50%-50px)] mx-auto grow items-start font-semibold transition-colors sm:text-lg'
+                )}
+              >
+                <div className="bg-canvas-50 px-4">NH Primaries</div>
+              </div>
+              <Row className="border-ink-300 w-full gap-4 rounded-xl border-2 p-4">
+                <NHPrimaries
+                  linkPreviews={linkPreviews}
+                  newHampshireContract={newHampshireContract}
+                  cardClassName="w-1/2"
+                />
+              </Row>
+            </div>
+          )}
         </Col>
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
@@ -203,4 +229,22 @@ function extractStateFromSentence(sentence: string): string | undefined {
   const match = sentence.match(regex)
 
   return match ? match[1].trim() : undefined
+}
+
+function NHPrimaries(props: {
+  linkPreviews: LinkPreviews
+  newHampshireContract: Contract
+  cardClassName?: string
+}) {
+  const { linkPreviews, newHampshireContract, cardClassName } = props
+  return (
+    <>
+      <PoliticsArticle {...linkPreviews[NH_LINK]} className={cardClassName} />
+      <SmallCandidateCard
+        contract={newHampshireContract as MultiContract}
+        className={clsx('bg-canvas-0 px-4 py-2 ', cardClassName)}
+        maxAnswers={3}
+      />
+    </>
+  )
 }
