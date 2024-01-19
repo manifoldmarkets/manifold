@@ -11,6 +11,11 @@ import { LoverAnswers } from 'love/components/answers/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
+import {
+  useLikesGivenByUser,
+  useLikesReceivedByUser,
+} from 'love/hooks/use-likes'
+import { LikesDisplay } from '../widgets/likes-display'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -21,6 +26,15 @@ export function LoverProfile(props: {
 }) {
   const { lover, user, refreshLover, fromLoverPage, fromSignup } = props
 
+  const { likesGiven, refreshLikesGiven } = useLikesGivenByUser(user.id)
+  const { likesReceived, refreshLikesReceived } = useLikesReceivedByUser(
+    user.id
+  )
+  const refreshLikes = () => {
+    refreshLikesGiven()
+    refreshLikesReceived()
+  }
+
   return (
     <>
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
@@ -28,6 +42,8 @@ export function LoverProfile(props: {
         user={user}
         lover={lover}
         simpleView={!!fromLoverPage}
+        likesReceived={likesReceived ?? []}
+        refreshLikes={refreshLikes}
       />
       <LoverContent
         user={user}
@@ -35,6 +51,8 @@ export function LoverProfile(props: {
         refreshLover={refreshLover}
         fromLoverPage={fromLoverPage}
         fromSignup={fromSignup}
+        likesGiven={likesGiven ?? []}
+        likesReceived={likesReceived ?? []}
       />
     </>
   )
@@ -46,8 +64,18 @@ function LoverContent(props: {
   refreshLover: () => void
   fromLoverPage?: Lover
   fromSignup?: boolean
+  likesGiven: string[]
+  likesReceived: string[]
 }) {
-  const { user, lover, refreshLover, fromLoverPage, fromSignup } = props
+  const {
+    user,
+    lover,
+    refreshLover,
+    fromLoverPage,
+    fromSignup,
+    likesGiven,
+    likesReceived,
+  } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -68,6 +96,9 @@ function LoverContent(props: {
   }
   return (
     <>
+      {likesGiven && likesReceived && (
+        <LikesDisplay likesGiven={likesGiven} likesReceived={likesReceived} />
+      )}
       {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
       )}
