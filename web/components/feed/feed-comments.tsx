@@ -947,12 +947,6 @@ export function FeedCommentHeader(props: {
               marketCreator={inTimeline ? false : marketCreator}
               className={'font-semibold'}
             />
-            {isRepost && !isReplyToBet && (
-              <span className="text-ink-500 ml-1">
-                <BiRepost className="mr-1 inline h-4 w-4" />
-                reposted
-              </span>
-            )}
             {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
               <span className={'ml-1'}>
                 {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
@@ -979,8 +973,13 @@ export function FeedCommentHeader(props: {
                 />
               </>
             )}
-            {isRepost && isReplyToBet && (
-              <span className="ml-1">(reposted)</span>
+            {isRepost && (
+              <span className="ml-1">
+                <Tooltip text={'Reposted to followers'}>
+                  <BiRepost className=" inline h-4 w-4" />
+                  {commenterIsBettor ? '' : ' reposted'}
+                </Tooltip>
+              </span>
             )}
             {/* Hide my status if replying to a bet, it's too much clutter*/}
             {bettorUsername == undefined && !inTimeline && (
