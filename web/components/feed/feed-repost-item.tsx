@@ -60,7 +60,7 @@ export const FeedRepost = memo(function (props: {
           />
         )}
         <Row className={'w-full gap-2'}>
-          <Col className={'w-full px-3  transition-colors'}>
+          <Col className={'w-full px-2 transition-colors'}>
             <Row className="justify-between gap-2">
               <Row className="gap-2">
                 <Avatar
@@ -90,7 +90,7 @@ export const FeedRepost = memo(function (props: {
               </Col>
             </Row>
             <Col
-              className={'ml-4 mt-2'}
+              className={'ml-6 mt-2'}
               onMouseEnter={() => setHoveringChildContract(true)}
               onMouseLeave={() => setHoveringChildContract(false)}
             >
@@ -98,19 +98,19 @@ export const FeedRepost = memo(function (props: {
                 contract={contract}
                 trackingPostfix="feed"
                 item={item}
-                className="!bg-canvas-0 border-ink-200 ml-2 max-w-full"
-                small={true}
+                className="border-ink-200 max-w-full border-[.1rem] pb-2 "
                 hideBottomRow={true}
-                hideAvatar={true}
+                size={'xs'}
               />
-              <Col>
-                <BottomActionRow
-                  contract={contract}
-                  user={user}
-                  comment={topLevelComment}
-                  privateUser={privateUser}
-                />
-              </Col>
+            </Col>
+            <Col>
+              <BottomActionRow
+                className={'ml-4'}
+                contract={contract}
+                user={user}
+                comment={topLevelComment}
+                privateUser={privateUser}
+              />
             </Col>
           </Col>
         </Row>
@@ -124,11 +124,12 @@ const BottomActionRow = (props: {
   comment: ContractComment
   user: User | null | undefined
   privateUser: PrivateUser | null | undefined
+  className?: string
 }) => {
-  const { contract, comment, privateUser, user } = props
+  const { contract, className, comment, privateUser, user } = props
 
   return (
-    <Row className={clsx('justify-between pt-2', 'pb-2')}>
+    <Row className={clsx('justify-between pt-2', 'pb-2', className)}>
       <BottomRowButtonWrapper>
         <TradesButton contract={contract} className={'h-full'} />
       </BottomRowButtonWrapper>

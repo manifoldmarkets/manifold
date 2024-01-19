@@ -964,7 +964,7 @@ export function FeedCommentHeader(props: {
                   contract={contract}
                   truncate="short"
                 />{' '}
-                order at {formatPercent(betLimitProb)}
+                at {formatPercent(betLimitProb)} order
               </span>
             ) : (
               <>
