@@ -520,12 +520,11 @@ export function DotMenu(props: {
               )
             },
           },
-          user &&
-            comment.userId === user.id && {
-              name: 'Repost',
-              icon: <BiRepost className="h-5 w-5" />,
-              onClick: () => setReposting(true),
-            },
+          user && {
+            name: 'Repost',
+            icon: <BiRepost className="h-5 w-5" />,
+            onClick: () => setReposting(true),
+          },
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
@@ -973,7 +972,7 @@ export function FeedCommentHeader(props: {
                 />
               </>
             )}
-            {isRepost && (
+            {isRepost && !inTimeline && (
               <span className="ml-1">
                 <Tooltip text={'Reposted to followers'}>
                   <BiRepost className=" inline h-4 w-4" />
@@ -1154,16 +1153,16 @@ export function ReplyToBetRow(props: {
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   const isMobile = useIsMobile()
   return (
-    <Row className="ml-4 items-end text-sm">
+    <Row className="mb-1 ml-4 items-end pr-2 text-sm">
       <div
         className={clsx(
           roundThreadColor,
-          'h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0'
+          '-mb-1 h-5 w-6 rounded-tl-xl border-2 border-b-0 border-r-0'
         )}
       />
       <Row
         className={clsx(
-          'bg-ink-100 text-ink-600 relative items-center gap-1 px-2 py-1',
+          'bg-canvas-50 text-ink-600 relative items-center gap-1 px-2 py-1',
           isLimitBet ? 'flex-wrap' : 'whitespace-nowrap'
         )}
       >
@@ -1190,7 +1189,7 @@ export function ReplyToBetRow(props: {
               contract={contract}
               truncate="short"
             />{' '}
-            order at {formatPercent(betLimitProb)}
+            at {formatPercent(betLimitProb)} order
           </>
         ) : (
           <>

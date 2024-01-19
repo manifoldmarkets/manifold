@@ -9,6 +9,7 @@ import { createCommentOnContractInternal } from 'api/create-comment'
 import { repostContractToFeed } from 'shared/create-feed'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
+import { trackPublicEvent } from 'shared/analytics'
 
 export const post: APIHandler<'post'> = async (props, auth, { log }) => {
   const { contractId, content, betId: passedBetId, commentId } = props
@@ -49,6 +50,14 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
     commentId,
     betId,
     content,
+  })
+
+  await trackPublicEvent(auth.uid, 'repost', {
+    contractId,
+    commentId,
+    betId,
+    content: !!content,
+    isContentOwner: comment.userId === auth.uid,
   })
 
   const pg = createSupabaseDirectClient()

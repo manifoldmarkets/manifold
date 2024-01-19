@@ -5,15 +5,11 @@ import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
-import { groupCommentsByContractsAndParents } from 'web/hooks/use-additional-feed-items'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { db } from 'web/lib/supabase/db'
 import { ContractsTable } from '../contract/contracts-table'
-import { FeedBetsItem } from './feed-bet-item'
-import { FeedCommentItem } from './feed-comment-item'
 import { Contract } from 'common/contract'
-import { ContractComment } from 'common/comment'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
@@ -23,27 +19,17 @@ import { TopicTag } from 'web/components/topics/topic-tag'
 import { BoostsType } from 'web/lib/supabase/ads'
 import { FeedRepost } from 'web/components/feed/feed-repost-item'
 
-const MAX_PARENT_COMMENTS_PER_FEED_ITEM = 1
-export const MIN_BET_AMOUNT = 20
-
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
   boosts?: BoostsType
   user: User | null | undefined
 }) => {
   const { user, boosts, feedTimelineItems: savedFeedTimelineItems } = props
-  const savedFeedComments = filterDefined(
-    savedFeedTimelineItems.map((item) => item.comments)
-  ).flat()
-
   const boostedContractItems =
     boosts?.map((boost) => {
       const { market_data, ...rest } = boost
       return { contract: { ...market_data }, ...rest }
     }) ?? []
-
-  const { parentCommentsByContractId, childCommentsByParentCommentId } =
-    groupCommentsByContractsAndParents(savedFeedComments)
 
   const feedTimelineItems = mergePeriodic(
     savedFeedTimelineItems,
@@ -59,8 +45,6 @@ export const FeedTimelineItems = (props: {
             <FeedContractAndRelatedItems
               user={user}
               contract={item.contract}
-              parentComments={[]}
-              childCommentsByParentCommentId={{}}
               key={item.contract.id}
             />
           )
@@ -75,8 +59,6 @@ export const FeedTimelineItems = (props: {
                 adId: item.ad_id,
                 reward: AD_REDEEM_REWARD,
               }}
-              parentComments={[]}
-              childCommentsByParentCommentId={{}}
               key={item.ad_id}
             />
           )
@@ -110,17 +92,10 @@ export const FeedTimelineItems = (props: {
         } else if (item.contract) {
           // Organic contract
           const { contract } = item
-          const parentComments = (
-            item.comments ??
-            parentCommentsByContractId[contract.id] ??
-            []
-          ).slice(0, MAX_PARENT_COMMENTS_PER_FEED_ITEM)
           return (
             <FeedContractAndRelatedItems
               user={user}
               contract={contract}
-              parentComments={parentComments}
-              childCommentsByParentCommentId={childCommentsByParentCommentId}
               item={item}
               key={item.id}
             />
@@ -150,20 +125,10 @@ export function CategoryTags(props: {
 const FeedContractAndRelatedItems = (props: {
   contract: Contract
   user: User | null | undefined
-  parentComments: ContractComment[]
-  childCommentsByParentCommentId: Record<string, ContractComment[]>
   item?: FeedTimelineItem
   promotedData?: { adId: string; reward: number }
 }) => {
-  const {
-    contract,
-    promotedData,
-    item,
-    childCommentsByParentCommentId,
-    parentComments,
-    user,
-  } = props
-  const hasComments = parentComments && parentComments.length > 0
+  const { contract, promotedData, item, user } = props
   const [hidden, setHidden] = useState(false)
 
   return (
@@ -178,10 +143,10 @@ const FeedContractAndRelatedItems = (props: {
             <i>Market hidden</i>
           </Row>
         </Col>
-      ) : item?.postId ? (
+      ) : item?.postId && item.comment ? (
         <FeedRepost
           contract={contract}
-          topLevelComment={parentComments[0]}
+          comment={item.comment}
           hide={() => setHidden(true)}
           trackingLocation={'feed'}
           inTimeline={true}
@@ -196,28 +161,7 @@ const FeedContractAndRelatedItems = (props: {
           hide={() => setHidden(true)}
           item={item}
           className="max-w-full"
-        >
-          {hasComments ? (
-            <FeedCommentItem
-              contract={contract}
-              commentThreads={parentComments.map((parentComment) => ({
-                parentComment,
-                childComments:
-                  childCommentsByParentCommentId[parentComment.id] ?? [],
-              }))}
-            />
-          ) : (
-            item?.betData &&
-            item?.creatorDetails && (
-              <FeedBetsItem
-                contract={contract}
-                betData={item.betData}
-                creatorDetails={item.creatorDetails}
-                answers={item.answers}
-              />
-            )
-          )}
-        </FeedContractCard>
+        ></FeedContractCard>
       )}
     </FeedItemFrame>
   )

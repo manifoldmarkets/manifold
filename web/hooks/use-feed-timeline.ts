@@ -72,7 +72,7 @@ export type FeedTimelineItem = {
   creatorDetails?: CreatorDetails
   contract?: Contract
   contracts?: Contract[]
-  comments?: ContractComment[]
+  comment?: ContractComment
   groups?: Group[]
   answers?: Answer[]
   bet?: Bet
@@ -447,26 +447,25 @@ function createFeedTimelineItems(
       )
         return
 
-      // Let's stick with one comment per feed item for now
-      const comments = allComments
-        ?.filter((comment) => comment.id === item.comment_id)
-        .filter(
+      const comment = allComments
+        ?.filter(
           (ct) =>
             !ct.content?.content?.some((c) =>
               IGNORE_COMMENT_FEED_CONTENT.includes(c.type ?? '')
             )
         )
-      if (item.comment_id && !comments?.length) return
+        ?.find((comment) => comment.id === item.comment_id)
+      if (item.comment_id && !comment) return
       const creatorDetails = creators?.find((u) => u.id === item.creator_id)
       const answers = allAnswers?.filter((a) => item.answer_ids?.includes(a.id))
       const bet = allBets?.find((b) => item.bet_id === b.id)
       return {
         ...getBaseTimelineItem(item),
         avatarUrl: item.comment_id
-          ? comments?.[0]?.userAvatarUrl
+          ? comment?.userAvatarUrl
           : contract?.creatorAvatarUrl,
         contract,
-        comments,
+        comment,
         answers,
         bet,
         creatorDetails,
