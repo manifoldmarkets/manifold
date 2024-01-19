@@ -18,6 +18,7 @@ import { Content } from 'web/components/widgets/editor'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from '../layout/row'
 import { api } from 'web/lib/firebase/api'
+import { toast } from 'react-hot-toast'
 
 export const RepostButton = (props: {
   contract: Contract
@@ -59,14 +60,13 @@ export const RepostModal = (props: {
   setOpen: (open: boolean) => void
 }) => {
   const { contract, comment, bet, open, setOpen } = props
-  console.log('bet', bet)
   const [loading, setLoading] = useState(false)
   const repost = async () =>
     api('post', {
       contractId: contract.id,
       commentId: comment?.id,
       betId: bet?.id,
-    })
+    }).then(() => toast.success('Reposted to your followers!'))
 
   const commenterIsBettor = comment?.userUsername === bet?.userUsername
   return (

@@ -840,6 +840,7 @@ export function ContractCommentInput(props: {
           content: editor.getJSON(),
           betId: isReplyToBet ? replyTo.id : undefined,
         })
+        if (comment) toast.success('Reposted to your followers!')
       }
       clearReply?.()
       onSubmit?.(comment)
@@ -977,6 +978,9 @@ export function FeedCommentHeader(props: {
                   truncate="short"
                 />
               </>
+            )}
+            {isRepost && isReplyToBet && (
+              <span className="ml-1">(reposted)</span>
             )}
             {/* Hide my status if replying to a bet, it's too much clutter*/}
             {bettorUsername == undefined && !inTimeline && (
