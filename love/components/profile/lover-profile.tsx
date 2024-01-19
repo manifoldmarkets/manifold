@@ -98,7 +98,11 @@ function LoverContent(props: {
   return (
     <>
       {likesGiven && likesReceived && (
-        <LikesDisplay likesGiven={likesGiven} likesReceived={likesReceived} />
+        <LikesDisplay
+          likesGiven={likesGiven}
+          likesReceived={likesReceived}
+          profileLover={lover}
+        />
       )}
       {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
