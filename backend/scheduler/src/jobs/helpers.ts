@@ -33,12 +33,7 @@ export function createJob(
         job: name,
         traceId,
       })
-    const logErrorWithDetails = (message: any, details?: object | null) =>
-      log.error(message, {
-        ...details,
-        job: name,
-        traceId,
-      })
+
     logWithDetails(`[${name}] Starting up.`)
     const db = createSupabaseClient()
 
@@ -65,10 +60,6 @@ export function createJob(
       lastEndTime: lastEndTimeStamp
         ? new Date(lastEndTimeStamp).valueOf()
         : undefined,
-    }).catch((err) => {
-      logErrorWithDetails(`[${name}] Error during job execution.`, {
-        err,
-      })
     })
 
     // Update last end time
