@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { noop, uniq } from 'lodash'
-import { getGroupBySlug } from 'web/lib/supabase/groups'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
 import { Modal } from 'web/components/layout/modal'
@@ -8,15 +7,11 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import {
   getSubtopics,
-  removeEmojis,
   TOPICS_TO_SUBTOPICS,
 } from './topics-college'
-import {
-  NewContractPanel,
-  NewQuestionParams,
-} from 'web/components/new-contract-college/new-contract-panel'
+
+
 import { followTopic, updateUserEmbedding } from 'web/lib/firebase/api'
-import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
 import { unfollowTopic } from 'web/lib/supabase/groups'

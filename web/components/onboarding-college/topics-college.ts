@@ -1,5 +1,4 @@
 export type TopicInfo = { name: string; groupId: string }
-import { getGroupBySlug } from 'web/lib/supabase/groups'
 
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🎓 General College Topics': [

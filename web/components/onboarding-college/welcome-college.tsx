@@ -1,5 +1,4 @@
 /* eslint-disable react/jsx-key */
-import { getGroupBySlug } from 'web/lib/supabase/groups'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
@@ -36,10 +35,8 @@ import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
-import {
-  NewContractPanel,
-  NewQuestionParams,
-} from 'web/components/new-contract-college/new-contract-panel'
+
+
 
 export default function Welcome() {
   const user = useUser()

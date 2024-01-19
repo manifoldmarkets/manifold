@@ -6,7 +6,6 @@ import { Row } from '../layout/row'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { OutcomeType } from 'common/contract'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]

@@ -6,10 +6,7 @@ import { uniqBy } from 'lodash'
 import { generateJSON } from '@tiptap/core'
 import clsx from 'clsx'
 import {
-  getSubtopics,
-  removeEmojis,
   TOPICS_TO_SUBTOPICS,
-  TopicInfo,
 } from 'web/components/onboarding-college/topics-college'
 import {
   Contract,

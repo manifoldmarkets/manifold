@@ -3,9 +3,7 @@ import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import {
-  NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
 } from './create-contract-types'
 import { CreateContractStateType } from 'web/components/new-contract/new-contract-panel'
