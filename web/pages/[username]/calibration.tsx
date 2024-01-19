@@ -3,7 +3,6 @@ import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Dictionary, mapValues, range, sortBy } from 'lodash'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -15,6 +14,8 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { CalibrationChart } from 'web/components/charts/calibration'
 import { SizedContainer } from 'web/components/sized-container'
+import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
+import Custom404 from '../404'
 
 export const getStaticProps = async (props: {
   params: {
@@ -53,7 +54,7 @@ export async function getStaticPaths() {
 }
 
 export default function CalibrationPage(props: {
-  user: User | null
+  user: DisplayUser | null
   yesPoints: { x: number; y: number }[]
   noPoints: { x: number; y: number }[]
   yesBetsBuckets: Record<number, [Contract, Bet][]>
@@ -62,18 +63,22 @@ export default function CalibrationPage(props: {
 }) {
   const { user, yesPoints, noPoints, score } = props
 
+  if (!user) {
+    return <Custom404 />
+  }
+
   return (
     <Page
       trackPageView={'user calibration page'}
-      trackPageProps={{ username: user?.username }}
+      trackPageProps={{ username: user.username }}
     >
       <SEO
-        title={`${user?.name}'s calibration`}
+        title={`${user.name}'s calibration`}
         description="Personal calibration results"
       />
       <Col className="w-full rounded px-4 py-6 sm:px-8 xl:w-[125%]">
         <Col className="max-w-[800px]">
-          <Title>{user?.name}'s calibration</Title>
+          <Title>{user.name}'s calibration</Title>
 
           {score !== undefined && (
             <div className="mb-4 text-center text-lg">
@@ -106,7 +111,7 @@ export default function CalibrationPage(props: {
             <b>Interpretation</b>
             <ul>
               <li>
-                The green dot at (x%, y%) means when {user?.name} bet YES at x%,
+                The green dot at (x%, y%) means when {user.name} bet YES at x%,
                 the question resolved YES y% of the time on average.
               </li>
 

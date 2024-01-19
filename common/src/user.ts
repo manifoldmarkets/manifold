@@ -33,7 +33,8 @@ export type User = {
     allTime: number
   }
 
-  fractionResolvedCorrectly?: number // Deprecated as of 2023-01-05
+  /**@deprecated 2023-01-015 */
+  fractionResolvedCorrectly?: number
 
   nextLoanCached: number
   /** @deprecated */
