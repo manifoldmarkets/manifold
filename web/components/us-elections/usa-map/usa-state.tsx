@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
+import {
+  ClickHandler,
+  HIGHLIGHTED_OUTLINE_COLOR,
+  SELECTED_OUTLINE_COLOR,
+} from './usa-map'
 import { StateDataType } from './usa-map-data'
 import { MouseEventHandler } from 'react'
 import { MultiContract } from 'common/contract'
@@ -48,7 +52,11 @@ export function USAState(props: {
         onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
-          !!selected ? SELECTED_OUTLINE_COLOR : hovered ? '#fff' : undefined
+          !!selected
+            ? SELECTED_OUTLINE_COLOR
+            : hovered
+            ? HIGHLIGHTED_OUTLINE_COLOR
+            : undefined
         }
         strokeWidth={!!selected || !!hovered ? 2 : undefined}
         onMouseEnter={onMouseEnterState}
