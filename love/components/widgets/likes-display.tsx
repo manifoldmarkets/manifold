@@ -85,7 +85,11 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
       {sortedLikes.length > 0 ? (
         <Carousel className="w-full" labelsParentClassName="gap-0">
           {sortedLikes.map((like) => (
-            <UserAvatar key={like.userId} userId={like.userId} />
+            <UserAvatar
+              className="-ml-1 first:ml-0"
+              key={like.userId}
+              userId={like.userId}
+            />
           ))}
         </Carousel>
       ) : (
@@ -95,13 +99,20 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
   )
 }
 
-const UserAvatar = (props: { userId: string }) => {
-  const { userId } = props
+const UserAvatar = (props: { userId: string; className?: string }) => {
+  const { userId, className } = props
   const lover = useLoverByUserId(userId)
   const user = useUserById(userId)
 
-  if (!lover || !lover.pinned_url) return <EmptyAvatar size={10} />
-  return <Avatar avatarUrl={lover.pinned_url} username={user?.username} />
+  if (!lover || !lover.pinned_url)
+    return <EmptyAvatar className={className} size={10} />
+  return (
+    <Avatar
+      className={className}
+      avatarUrl={lover.pinned_url}
+      username={user?.username}
+    />
+  )
 }
 
 export const MatchTile = (props: {

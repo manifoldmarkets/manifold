@@ -1,35 +1,31 @@
 import clsx from 'clsx'
 import { Editor } from '@tiptap/react'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 
 import { MAX_COMMENT_LENGTH } from 'common/comment'
-import { MIN_BET_AMOUNT_FOR_NEW_MATCH } from 'common/love/constants'
 import { Lover } from 'common/love/lover'
 import { Button } from 'web/components/buttons/button'
-import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Col } from 'web/components/layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { ControlledTabs } from 'web/components/layout/tabs'
-import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useTextEditor } from 'web/components/widgets/editor'
-import { createMatch } from 'web/lib/firebase/love/api'
 import { useUser } from 'web/hooks/use-user'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import { CompatibleBadge } from './widgets/compatible-badge'
 import { LoverProfile } from './profile/lover-profile'
+import { Pagination } from 'web/components/widgets/pagination'
+import { Title } from 'web/components/widgets/title'
+import { Input } from 'web/components/widgets/input'
 
 export const BrowseMatchesButton = (props: {
   lover: Lover
-  matchedLovers: Lover[]
   potentialLovers: Lover[]
   compatibilityScores: Record<string, CompatibilityScore>
   className?: string
 }) => {
   const {
     lover,
-    matchedLovers,
     potentialLovers,
     compatibilityScores,
     className,
@@ -39,10 +35,6 @@ export const BrowseMatchesButton = (props: {
   const isCurrentUser = currentUser?.id === lover.user_id
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
-  const [betAmount, setBetAmount] = useState<number | undefined>(
-    MIN_BET_AMOUNT_FOR_NEW_MATCH
-  )
   const key = `comment ${potentialLovers.map((l) => l.id).join(',')}`
   const editor = useTextEditor({
     key,
@@ -54,27 +46,25 @@ export const BrowseMatchesButton = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const submit = async () => {
-    if (!selectedMatchId || !betAmount) return
-
     const introduction =
       (editor?.getCharacterCount() ?? 0) > 0 ? editor?.getJSON() : undefined
 
-    setIsSubmitting(true)
-    const result = await createMatch({
-      userId1: lover.user_id,
-      userId2: selectedMatchId,
-      betAmount,
-      introduction,
-    }).finally(() => {
-      setIsSubmitting(false)
-    })
+    // setIsSubmitting(true)
+    // const result = await createMatch({
+    //   userId1: lover.user_id,
+    //   userId2: selectedMatchId,
+    //   betAmount,
+    //   introduction,
+    // }).finally(() => {
+    //   setIsSubmitting(false)
+    // })
     setDialogOpen(false)
 
-    console.log('result', result)
+    // console.log('result', result)
 
-    if (result.success) {
-      window.location.reload()
-    }
+    // if (result.success) {
+    //   window.location.reload()
+    // }
   }
   if (!lover.looking_for_matches)
     return (
@@ -97,13 +87,8 @@ export const BrowseMatchesButton = (props: {
       {dialogOpen && (
         <BrowseMatchesDialog
           lover={lover}
-          matchedLovers={matchedLovers}
           potentialLovers={potentialLovers}
           compatibilityScores={compatibilityScores}
-          selectedMatchId={selectedMatchId}
-          setSelectedMatchId={setSelectedMatchId}
-          betAmount={betAmount}
-          setBetAmount={setBetAmount}
           isSubmitting={isSubmitting}
           setOpen={setDialogOpen}
           submit={submit}
@@ -116,13 +101,8 @@ export const BrowseMatchesButton = (props: {
 
 const BrowseMatchesDialog = (props: {
   lover: Lover
-  matchedLovers: Lover[]
   potentialLovers: Lover[]
   compatibilityScores: Record<string, CompatibilityScore>
-  selectedMatchId: string | null
-  setSelectedMatchId: (matchId: string | null) => void
-  betAmount: number | undefined
-  setBetAmount: (betAmount: number | undefined) => void
   isSubmitting: boolean
   setOpen: (open: boolean) => void
   submit: () => void
@@ -130,135 +110,99 @@ const BrowseMatchesDialog = (props: {
 }) => {
   const {
     lover,
-    matchedLovers,
     potentialLovers,
     compatibilityScores,
-    selectedMatchId,
-    setSelectedMatchId,
-    betAmount,
-    setBetAmount,
     isSubmitting,
     setOpen,
     submit,
     editor,
   } = props
 
+  const [query, setQuery] = useState('')
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const [matchedIndex, setMatchedIndex] = useState(0)
+  const filteredLovers = potentialLovers.filter((lover) =>
+    lover.user.name.toLowerCase().includes(query.toLowerCase())
+  )
   const [potentialIndex, setPotentialIndex] = useState(0)
-  const matchedLover = matchedLovers[matchedIndex]
-  const potentialLover = potentialLovers[potentialIndex]
-  const [tab, setTab] = useState<number>(0)
+  const index = Math.min(potentialIndex, filteredLovers.length - 1)
+  const potentialLover = filteredLovers[index]
 
-  const compatibility =
-    tab === 0
-      ? matchedLover
-        ? compatibilityScores[matchedLover.user_id]
-        : undefined
-      : potentialLover
-      ? compatibilityScores[potentialLover.user_id]
-      : undefined
-
-  const user = useUser()
-
-  useEffect(() => {
-    if (tab === 0 && matchedLover) {
-      setSelectedMatchId(matchedLover.user.id)
-    } else if (tab === 1 && potentialLover) {
-      setSelectedMatchId(potentialLover.user.id)
-    }
-  }, [tab, matchedLover, potentialLover])
+  const compatibility = potentialLover
+    ? compatibilityScores[potentialLover.user_id]
+    : undefined
 
   return (
-    <Modal className={SCROLLABLE_MODAL_CLASS} size="lg" open setOpen={setOpen}>
-      <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
-        <ControlledTabs
-          activeIndex={0}
-          onClick={(_title, index) => setTab(index)}
-          tabs={[
-            {
-              title: `Compatible ${potentialLovers.length}`,
-              content: (
-                <Col>
-                  {potentialLovers.length === 0 ? (
-                    <Col className="gap-4">
-                      <div>No remaining compatible matches.</div>
-                      <Link href="/referrals">
-                        <Button color="indigo">Refer friends</Button>
-                      </Link>
-                    </Col>
-                  ) : (
-                    <Row className="mb-2 items-center gap-4">
-                      <Button
-                        color="gray-outline"
-                        onClick={() =>
-                          setPotentialIndex(
-                            (potentialIndex - 1 + potentialLovers.length) %
-                              potentialLovers.length
-                          )
-                        }
-                      >
-                        Previous
-                      </Button>
-                      <div>
-                        {potentialIndex + 1} / {potentialLovers.length}
-                      </div>
-                      <Button
-                        color="gray-outline"
-                        onClick={() =>
-                          setPotentialIndex(
-                            (potentialIndex + 1) % potentialLovers.length
-                          )
-                        }
-                      >
-                        Next
-                      </Button>
-                    </Row>
-                  )}
+    <Modal
+      className={clsx(SCROLLABLE_MODAL_CLASS, '!min-h-full')}
+      size="lg"
+      open
+      setOpen={setOpen}
+    >
+      <Col className="bg-canvas-0 min-h-full gap-2 rounded p-4 pb-8">
+        <Row className="justify-between">
+          <Title className="!mb-0">Browse</Title>
+          <Input
+            className={'!h-10 max-w-[200px] self-end text-sm'}
+            value={query}
+            placeholder={'Search name'}
+            onChange={(e) => {
+              setQuery(e.target.value)
+            }}
+          />
+        </Row>
+        {filteredLovers.length === 0 ? (
+          <Col className="gap-4">
+            <div>No remaining compatible matches.</div>
+            <Link href="/referrals">
+              <Button color="indigo">Refer friends</Button>
+            </Link>
+          </Col>
+        ) : (
+          <Pagination
+            className="self-start"
+            page={index}
+            setPage={setPotentialIndex}
+            totalItems={filteredLovers.length}
+            itemsPerPage={1}
+          />
+        )}
 
-                  {potentialLovers.length > 0 && (
-                    <>
-                      <CompatibilityScoreDisplay
-                        compatibility={compatibility}
-                      />
-                      <LoverProfile
-                        lover={potentialLover}
-                        user={potentialLover.user}
-                        refreshLover={() => window.location.reload()}
-                        fromLoverPage={lover}
-                      />
+        {potentialLover && (
+          <>
+            <CompatibilityScoreDisplay compatibility={compatibility} />
+            <LoverProfile
+              lover={potentialLover}
+              user={potentialLover.user}
+              refreshLover={() => window.location.reload()}
+              fromLoverPage={lover}
+            />
 
-                      <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>
-                        <CommentInputTextArea
-                          isSubmitting={isSubmitting}
-                          editor={editor}
-                          user={user}
-                          hideToolbar={true}
-                        />
+            {/* <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>
+              <CommentInputTextArea
+                isSubmitting={isSubmitting}
+                editor={editor}
+                user={user}
+                hideToolbar={true}
+              />
 
-                        <Button
-                          className="font-semibold"
-                          color="green"
-                          onClick={() => submit()}
-                          disabled={
-                            !selectedMatchId ||
-                            isSubmitting ||
-                            !betAmount ||
-                            betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
-                          }
-                          loading={isSubmitting}
-                        >
-                          Submit match
-                        </Button>
-                      </Col>
-                    </>
-                  )}
-                </Col>
-              ),
-            },
-          ]}
-        />
+              <Button
+                className="font-semibold"
+                color="green"
+                onClick={() => submit()}
+                disabled={
+                  !selectedMatchId ||
+                  isSubmitting ||
+                  !betAmount ||
+                  betAmount < MIN_BET_AMOUNT_FOR_NEW_MATCH
+                }
+                loading={isSubmitting}
+              >
+                Submit match
+              </Button>
+            </Col> */}
+          </>
+        )}
       </Col>
     </Modal>
   )
