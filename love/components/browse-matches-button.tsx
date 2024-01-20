@@ -35,6 +35,9 @@ export const BrowseMatchesButton = (props: {
     className,
   } = props
 
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === lover.user_id
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null)
   const [betAmount, setBetAmount] = useState<number | undefined>(
@@ -89,7 +92,7 @@ export const BrowseMatchesButton = (props: {
         disabled={isSubmitting}
         loading={isSubmitting}
       >
-        Browse matches
+        Browse matches {!isCurrentUser && `for ${lover.user.name}`}
       </Button>
       {dialogOpen && (
         <BrowseMatchesDialog
@@ -146,7 +149,7 @@ const BrowseMatchesDialog = (props: {
   const [potentialIndex, setPotentialIndex] = useState(0)
   const matchedLover = matchedLovers[matchedIndex]
   const potentialLover = potentialLovers[potentialIndex]
-  const [tab, setTab] = useState<number>(matchedLover ? 0 : 1)
+  const [tab, setTab] = useState<number>(0)
 
   const compatibility =
     tab === 0
@@ -171,60 +174,9 @@ const BrowseMatchesDialog = (props: {
     <Modal className={SCROLLABLE_MODAL_CLASS} size="lg" open setOpen={setOpen}>
       <Col className="bg-canvas-0 rounded p-4 pb-8 sm:gap-4">
         <ControlledTabs
-          activeIndex={tab}
+          activeIndex={0}
           onClick={(_title, index) => setTab(index)}
           tabs={[
-            {
-              title: `Matches ${matchedLovers.length}`,
-              content: (
-                <Col>
-                  {matchedLovers.length === 0 ? (
-                    <div>No current matches.</div>
-                  ) : (
-                    <>
-                      <Row className="mb-2 items-center gap-4">
-                        <Button
-                          color="gray-outline"
-                          onClick={() => {
-                            setMatchedIndex(
-                              (matchedIndex - 1 + matchedLovers.length) %
-                                matchedLovers.length
-                            )
-                            setSelectedMatchId(matchedLover.user.id)
-                          }}
-                        >
-                          Previous
-                        </Button>
-                        <div>
-                          {matchedIndex + 1} / {matchedLovers.length}
-                        </div>
-                        <Button
-                          color="gray-outline"
-                          onClick={() =>
-                            setMatchedIndex(
-                              (matchedIndex + 1) % matchedLovers.length
-                            )
-                          }
-                        >
-                          Next
-                        </Button>
-                      </Row>
-                      <Col>
-                        <CompatibilityScoreDisplay
-                          compatibility={compatibility}
-                        />
-                        <LoverProfile
-                          lover={matchedLover}
-                          user={matchedLover.user}
-                          refreshLover={() => window.location.reload()}
-                          fromLoverPage={lover}
-                        />
-                      </Col>
-                    </>
-                  )}
-                </Col>
-              ),
-            },
             {
               title: `Compatible ${potentialLovers.length}`,
               content: (
@@ -278,18 +230,6 @@ const BrowseMatchesDialog = (props: {
                       />
 
                       <Col key={lover.id} className={clsx('gap-4 px-3 py-2')}>
-                        <Col className="gap-1">
-                          <div>Choose bet amount (required)</div>
-                          <BuyAmountInput
-                            amount={betAmount}
-                            onChange={setBetAmount}
-                            minimumAmount={MIN_BET_AMOUNT_FOR_NEW_MATCH}
-                            error={error}
-                            setError={setError}
-                            showBalance
-                          />
-                        </Col>
-
                         <CommentInputTextArea
                           isSubmitting={isSubmitting}
                           editor={editor}
