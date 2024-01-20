@@ -46,9 +46,10 @@ export const useLikesGivenByUser = (creatorId: string | undefined) => {
     LikeData[] | undefined
   >(undefined, `likes-given-by-${creatorId}`)
 
-  const refresh = () => {
+  const refresh = async () => {
     if (creatorId === undefined) return
-    getLikesGivenByUser(creatorId).then(setLikesGiven)
+    const data = await getLikesGivenByUser(creatorId)
+    setLikesGiven(data)
   }
 
   useEffect(() => {
@@ -63,9 +64,10 @@ export const useLikesReceivedByUser = (targetId: string | undefined) => {
     LikeData[] | undefined
   >(undefined, `likes-received-by-${targetId}`)
 
-  const refresh = () => {
+  const refresh = async () => {
     if (targetId === undefined) return
-    getLikesReceivedByUser(targetId).then(setLikesReceived)
+    const data = await getLikesReceivedByUser(targetId)
+    setLikesReceived(data)
   }
 
   useEffect(() => {

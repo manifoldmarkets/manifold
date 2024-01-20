@@ -19,7 +19,6 @@ import { ShareProfileButton } from '../widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
-import { LikeButton } from '../widgets/like-button'
 import { LikeData } from 'love/hooks/use-likes'
 
 export default function LoverProfileHeader(props: {
@@ -29,7 +28,7 @@ export default function LoverProfileHeader(props: {
   likesReceived: LikeData[]
   refreshLikes: () => void
 }) {
-  const { user, lover, simpleView, likesReceived, refreshLikes } = props
+  const { user, lover, simpleView } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -37,15 +36,6 @@ export default function LoverProfileHeader(props: {
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
         <Row className="items-center gap-1">
-          <LikeButton
-            className=""
-            targetId={user.id}
-            liked={
-              !!currentUser &&
-              likesReceived.map((l) => l.userId).includes(currentUser.id)
-            }
-            refresh={refreshLikes}
-          />
           <Col className="gap-1">
             <Row className="items-center gap-1 text-xl">
               <OnlineIcon last_online_time={lover.last_online_time} />

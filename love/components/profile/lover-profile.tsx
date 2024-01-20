@@ -17,6 +17,7 @@ import {
   useLikesReceivedByUser,
 } from 'love/hooks/use-likes'
 import { LikesDisplay } from '../widgets/likes-display'
+import { LikeButton } from '../widgets/like-button'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -27,13 +28,15 @@ export function LoverProfile(props: {
 }) {
   const { lover, user, refreshLover, fromLoverPage, fromSignup } = props
 
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
+
   const { likesGiven, refreshLikesGiven } = useLikesGivenByUser(user.id)
   const { likesReceived, refreshLikesReceived } = useLikesReceivedByUser(
     user.id
   )
-  const refreshLikes = () => {
-    refreshLikesGiven()
-    refreshLikesReceived()
+  const refreshLikes = async () => {
+    await Promise.all([refreshLikesGiven(), refreshLikesReceived()])
   }
 
   return (
@@ -55,6 +58,20 @@ export function LoverProfile(props: {
         likesGiven={likesGiven ?? []}
         likesReceived={likesReceived ?? []}
       />
+      {!fromLoverPage && !isCurrentUser && (
+        <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
+          <LikeButton
+            className="shadow"
+            targetId={user.id}
+            liked={
+              !!currentUser &&
+              !!likesReceived &&
+              likesReceived.map((l) => l.userId).includes(currentUser.id)
+            }
+            refresh={refreshLikes}
+          />
+        </Row>
+      )}
     </>
   )
 }

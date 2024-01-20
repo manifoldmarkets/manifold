@@ -37,6 +37,7 @@ export const LikesDisplay = (props: {
     )
     return { userId, createdTime }
   })
+  const sortedMutualLikes = orderBy(mutualLikes, 'createdTime', 'desc')
   const onlyLikesGiven = likesGiven.filter(
     (l) => !likesRecievedByUserId[l.userId]
   )
@@ -46,11 +47,11 @@ export const LikesDisplay = (props: {
 
   return (
     <Col className="gap-2">
-      {mutualLikes.length > 0 && (
+      {sortedMutualLikes.length > 0 && (
         <Col className="gap-2">
           <div className="text-lg">Mutual likes</div>
           <Carousel>
-            {mutualLikes.map((like) => {
+            {sortedMutualLikes.map((like) => {
               return (
                 <MatchTile
                   key={like.userId}

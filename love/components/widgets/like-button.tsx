@@ -1,47 +1,51 @@
 import clsx from 'clsx'
 import { HeartIcon } from '@heroicons/react/outline'
+import { useState } from 'react'
 
 import { api } from 'web/lib/firebase/api'
-import { Button } from 'web/components/buttons/button'
+import { buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
 export const LikeButton = (props: {
   targetId: string
   liked: boolean
-  refresh: () => void
+  refresh: () => Promise<void>
   className?: string
 }) => {
   const { targetId, liked, refresh, className } = props
+  const [isLoading, setIsLoading] = useState(false)
+
   const like = async () => {
+    setIsLoading(true)
     await api('like-lover', { targetUserId: targetId, remove: liked })
-    refresh()
     track('like lover', {
       targetId,
       remove: liked,
     })
+    await refresh()
+    setIsLoading(false)
   }
 
   return (
     <Tooltip text={liked ? 'Unlike' : 'Send like'} noTap>
-      <Button
-        color={'gray-white'}
-        disabled={false}
-        size="xs"
+      <button
+        disabled={isLoading}
         className={clsx(
-          'text-ink-500 disabled:text-ink-500 disabled:cursor-not-allowed',
+          buttonClass('md', 'none'),
+          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 !rounded-full disabled:cursor-not-allowed',
           className
         )}
         onClick={like}
       >
         <HeartIcon
           className={clsx(
-            'h-8 w-8',
+            'h-12 w-12',
             liked &&
-              'fill-primary-300 stroke-primary-400 dark:stroke-primary-600'
+              'fill-scarlet-400 stroke-scarlet-500 dark:stroke-primary-600'
           )}
         />
-      </Button>
+      </button>
     </Tooltip>
   )
 }
