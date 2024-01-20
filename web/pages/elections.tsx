@@ -152,8 +152,10 @@ export default function USElectionsPage(props: {
 
   if (
     !electionPartyContract ||
+    !electionCandidateContract ||
     !republicanCandidateContract ||
-    !democratCandidateContract
+    !democratCandidateContract ||
+    !newHampshireContract
   ) {
     return <Custom404 />
   }
@@ -183,7 +185,7 @@ export default function USElectionsPage(props: {
                   'text-ink-700 grow items-start font-semibold transition-colors sm:text-lg'
                 )}
               >
-                NH Primaries
+                New Hampshire Primaries
               </div>
 
               <Carousel>
