@@ -1,5 +1,5 @@
 import * as pgPromise from 'pg-promise'
-import { createClient, getInstanceHostname } from 'common/supabase/utils'
+import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
@@ -59,9 +59,9 @@ export function createSupabaseDirectClient(
     )
   }
   pgpDirect = pgp({
-    host: `db.${getInstanceHostname(instanceId)}`,
-    port: 5432,
-    user: 'postgres',
+    host: 'aws-0-us-east-1.pooler.supabase.com',
+    port: 6543,
+    user: `postgres.${instanceId}`,
     password: password,
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
