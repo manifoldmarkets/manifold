@@ -200,10 +200,10 @@ export default function USElectionsPage(props: {
             <div className="relative">
               <div
                 className={clsx(
-                  'text-ink-700 absolute -top-4 left-[calc(50%-50px)] mx-auto grow items-start font-semibold transition-colors sm:text-lg'
+                  'text-ink-700 absolute -top-4 left-[calc(50%-120px)] mx-auto grow items-start font-semibold transition-colors sm:text-lg'
                 )}
               >
-                <div className="bg-canvas-50 px-4">NH Primaries</div>
+                <div className="bg-canvas-50 px-4">New Hampshire Primaries</div>
               </div>
               <Row className="border-ink-300 w-full gap-4 rounded-xl border-2 p-4">
                 <NHPrimaries
