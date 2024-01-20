@@ -12,6 +12,7 @@ import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { Spacer } from 'web/components/layout/spacer'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
+export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
 
 export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,

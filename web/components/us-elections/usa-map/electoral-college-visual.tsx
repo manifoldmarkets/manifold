@@ -4,7 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
-import { SELECTED_OUTLINE_COLOR } from './usa-map'
+import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
@@ -45,7 +45,9 @@ export function ElectoralCollegeVisual(props: {
                   outline:
                     isHovered || selected
                       ? `${isMobile ? '1px' : '2px'} solid ${
-                          selected ? SELECTED_OUTLINE_COLOR : '#fff'
+                          selected
+                            ? SELECTED_OUTLINE_COLOR
+                            : HIGHLIGHTED_OUTLINE_COLOR
                         }`
                       : 'none',
                 }}
