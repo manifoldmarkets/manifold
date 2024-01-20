@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { Contract, MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
@@ -15,7 +14,6 @@ import { track } from 'web/lib/service/analytics'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {

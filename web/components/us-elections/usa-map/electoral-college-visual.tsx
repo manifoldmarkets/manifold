@@ -1,4 +1,3 @@
-import { Contract } from 'common/contract'
 import { MapContractsDictionary } from 'web/pages/elections'
 import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'

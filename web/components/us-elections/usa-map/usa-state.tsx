@@ -1,10 +1,8 @@
 import clsx from 'clsx'
 import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
 import { StateDataType } from './usa-map-data'
-import { MouseEventHandler, useState } from 'react'
+import { MouseEventHandler } from 'react'
 import { MultiContract } from 'common/contract'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
