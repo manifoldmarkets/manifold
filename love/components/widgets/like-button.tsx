@@ -42,7 +42,7 @@ export const LikeButton = (props: {
           className={clsx(
             'h-12 w-12',
             liked &&
-              'fill-scarlet-400 stroke-scarlet-500 dark:stroke-primary-600'
+              'fill-primary-400 stroke-primary-500 dark:stroke-primary-600'
           )}
         />
       </button>

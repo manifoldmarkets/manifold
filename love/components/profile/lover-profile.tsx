@@ -58,7 +58,8 @@ export function LoverProfile(props: {
         likesGiven={likesGiven ?? []}
         likesReceived={likesReceived ?? []}
       />
-      {!fromLoverPage && !isCurrentUser && (
+      {((!fromLoverPage && !isCurrentUser) ||
+        (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
         <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
           <LikeButton
             className="shadow"
