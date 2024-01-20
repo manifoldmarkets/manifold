@@ -5,7 +5,7 @@ import { MouseEventHandler, useState } from 'react'
 import { MultiContract } from 'common/contract'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { probToColor } from './state-election-map'
+import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
@@ -14,53 +14,30 @@ export const OFFSET_TEXT_COLOR = '#9E9FBD'
 export function USAState(props: {
   state: string
   stateData: StateDataType
-  stateContract: MultiContract
+  contract: MultiContract
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
   hideStateTitle?: boolean
   selected?: boolean
+  hovered?: boolean
 }) {
   const {
     state,
     stateData,
-    stateContract,
+    contract,
     onClickState,
     onMouseEnterState,
     onMouseLeaveState,
     hideStateTitle,
     selected,
+    hovered,
   } = props
 
   const { dimensions, textCoordinates, abbreviation, line } = stateData
-  const [isHovered, setIsHovered] = useState(false)
-  const onMouseEnter = () => {
-    setIsHovered(true)
-    if (onMouseEnterState) {
-      onMouseEnterState()
-    }
-  }
-  const onMouseLeave = () => {
-    setIsHovered(false)
-    if (onMouseLeaveState) {
-      onMouseLeaveState()
-    }
-  }
 
-  const contract =
-    (useFirebasePublicContract(
-      stateContract.visibility,
-      stateContract.id
-    ) as MultiContract) ?? stateContract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
   const fill = probToColor(contract) ?? ''
+
   return (
     <>
       <path
@@ -73,19 +50,19 @@ export function USAState(props: {
         onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
-          !!selected ? SELECTED_OUTLINE_COLOR : isHovered ? '#fff' : undefined
+          !!selected ? SELECTED_OUTLINE_COLOR : hovered ? '#fff' : undefined
         }
-        strokeWidth={!!selected || !!isHovered ? 2 : undefined}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+        strokeWidth={!!selected || !!hovered ? 2 : undefined}
+        onMouseEnter={onMouseEnterState}
+        onMouseLeave={onMouseLeaveState}
       />
       {StateText({
         line,
         textCoordinates,
         abbreviation,
-        onMouseEnter: line ? onMouseEnter : undefined,
-        onMouseLeave: line ? onMouseLeave : undefined,
-        isHovered,
+        onMouseEnter: line ? onMouseEnterState : undefined,
+        onMouseLeave: line ? onMouseLeaveState : undefined,
+        isHovered: !!hovered,
         fill,
         onClick: line ? onClickState : undefined,
         selected,
@@ -125,10 +102,13 @@ export const StateText = (props: {
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
+  const isFillLight = isColorLight(fill)
   const textColor = !!line
     ? isHovered || selected
       ? fill
       : OFFSET_TEXT_COLOR
+    : isFillLight
+    ? '#1e293b'
     : '#FFF'
 
   return (
@@ -153,6 +133,7 @@ export const StateText = (props: {
         y={textCoordinates.y}
         textAnchor="middle"
         fill={textColor}
+        fontWeight={isFillLight ? 600 : 'normal'}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         className={line ? 'cursor-pointer' : 'pointer-events-none'}

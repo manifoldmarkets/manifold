@@ -21,6 +21,9 @@ import { Carousel } from 'web/components/widgets/carousel'
 import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Row } from 'web/components/layout/row'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
@@ -75,7 +78,7 @@ export async function getStaticProps() {
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
   return {
     props: {
-      mapContractsDictionary: mapContractsDictionary,
+      rawMapContractsDictionary: mapContractsDictionary,
       electionPartyContract: electionPartyContract,
       electionCandidateContract: electionCandidateContract,
       republicanCandidateContract: republicanCandidateContract,
@@ -87,10 +90,25 @@ export async function getStaticProps() {
   }
 }
 
+function useLiveContract(inputContract: Contract): Contract {
+  const contract =
+    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
+    inputContract
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+  return contract
+}
+
 export type MapContracts = { state: string; contract: Contract | null }
 
 export default function USElectionsPage(props: {
-  mapContractsDictionary: MapContractsDictionary
+  rawMapContractsDictionary: MapContractsDictionary
   electionPartyContract: Contract
   electionCandidateContract: Contract
   republicanCandidateContract: Contract
@@ -104,7 +122,7 @@ export default function USElectionsPage(props: {
   useSaveReferral(user)
 
   const {
-    mapContractsDictionary,
+    rawMapContractsDictionary,
     electionCandidateContract,
     electionPartyContract,
     republicanCandidateContract,
@@ -121,6 +139,16 @@ export default function USElectionsPage(props: {
   )
 
   const isMobile = useIsMobile()
+
+  const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
+    (acc, key) => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const contract = useLiveContract(rawMapContractsDictionary[key]!)
+      acc[key] = contract
+      return acc
+    },
+    {} as MapContractsDictionary
+  )
 
   if (
     !electionPartyContract ||
@@ -215,7 +243,7 @@ export default function USElectionsPage(props: {
 function StateContract(props: { targetContract: Contract }) {
   const { targetContract } = props
   return (
-    <PoliticsContractCard
+    <StateContractCard
       contract={targetContract}
       customTitle={extractStateFromSentence(targetContract.question)}
       titleSize="lg"
