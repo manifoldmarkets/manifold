@@ -4,7 +4,7 @@ export type StateDataType = {
   name: string
   textCoordinates: { x: number; y: number }
   line?: { x1: number; y1: number; x2: number; y2: number }
-  electoralVotes?: number
+  electoralVotes: number
 }
 
 export const DATA: Record<string, StateDataType> = {
