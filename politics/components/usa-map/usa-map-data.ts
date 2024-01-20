@@ -423,5 +423,6 @@ export const DATA: Record<string, StateDataType> = {
     name: 'District of Columbia',
     line: { x1: 804, y1: 255, x2: 849, y2: 295 },
     textCoordinates: { x: 860, y: 300 },
+    electoralVotes: 3,
   },
 }
