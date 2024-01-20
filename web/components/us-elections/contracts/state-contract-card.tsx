@@ -17,7 +17,6 @@ import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 
-
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {
   contract: Contract
