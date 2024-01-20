@@ -7,7 +7,6 @@ import { Lover } from 'common/love/lover'
 import { LikeData } from 'love/hooks/use-likes'
 import { useLoverByUserId } from 'love/hooks/use-lover'
 import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -63,8 +62,13 @@ export const LikesDisplay = (props: {
           </Carousel>
         </Col>
       )}
-      <LikesList label="Likes given" likes={onlyLikesGiven} />
-      <LikesList label="Likes received" likes={onlyLikesReceived} />
+
+      {(onlyLikesGiven.length > 0 || onlyLikesReceived.length > 0) && (
+        <>
+          <LikesList label="Likes given" likes={onlyLikesGiven} />
+          <LikesList label="Likes received" likes={onlyLikesReceived} />
+        </>
+      )}
     </Col>
   )
 }
@@ -75,22 +79,18 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
   const maxShown = 10
   const sortedLikes = orderBy(likes, 'createdTime', 'desc').slice(0, maxShown)
 
-  if (sortedLikes.length === 0)
-    return (
-      <Row className="gap-2">
-        <div className="whitespace-nowrap text-lg">{label}</div>
-        <div className="text-ink-500 text-lg">none</div>
-      </Row>
-    )
-
   return (
-    <Col className="gap-2">
+    <Col className="gap-1">
       <div className="whitespace-nowrap text-lg">{label}</div>
-      <Carousel className="w-full" labelsParentClassName="gap-0">
-        {sortedLikes.map((like) => (
-          <UserAvatar key={like.userId} userId={like.userId} />
-        ))}
-      </Carousel>
+      {sortedLikes.length > 0 ? (
+        <Carousel className="w-full" labelsParentClassName="gap-0">
+          {sortedLikes.map((like) => (
+            <UserAvatar key={like.userId} userId={like.userId} />
+          ))}
+        </Carousel>
+      ) : (
+        <div className="text-ink-500">None</div>
+      )}
     </Col>
   )
 }
