@@ -7,6 +7,7 @@ import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function ElectoralCollegeVisual(props: {
   mapContractsDictionary: MapContractsDictionary
@@ -21,10 +22,12 @@ export function ElectoralCollegeVisual(props: {
   )
   const { handleClick, onMouseEnter, onMouseLeave, targetState, hoveredState } =
     props
+
+  const isMobile = useIsMobile()
   return (
-    <Col className="w-full">
-      <Col className="text-ink-700 -gap-2 mx-auto items-center">
-        <div>270 to win</div>
+    <Col className="mt-2 w-full text-xs sm:text-base">
+      <Col className="text-ink-700 mx-auto items-center">
+        <div className="-mb-1">270 to win</div>
         <ChevronDownIcon className="h-5 w-5" />
       </Col>
       <Row className="overflow-none relative gap-[1px] rounded sm:gap-0.5">
@@ -42,7 +45,7 @@ export function ElectoralCollegeVisual(props: {
                   width: `${(DATA[stateKey].electoralVotes / 538) * 100}%`,
                   outline:
                     isHovered || selected
-                      ? `2px solid ${
+                      ? `${isMobile ? '1px' : '2px'} solid ${
                           selected ? SELECTED_OUTLINE_COLOR : '#fff'
                         }`
                       : 'none',

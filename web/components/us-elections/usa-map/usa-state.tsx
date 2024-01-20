@@ -5,7 +5,7 @@ import { MouseEventHandler, useState } from 'react'
 import { MultiContract } from 'common/contract'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { probToColor } from './state-election-map'
+import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
@@ -102,10 +102,13 @@ export const StateText = (props: {
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
+  const isFillLight = isColorLight(fill)
   const textColor = !!line
     ? isHovered || selected
       ? fill
       : OFFSET_TEXT_COLOR
+    : isFillLight
+    ? '#1e293b'
     : '#FFF'
 
   return (
@@ -130,6 +133,7 @@ export const StateText = (props: {
         y={textCoordinates.y}
         textAnchor="middle"
         fill={textColor}
+        fontWeight={isFillLight ? 600 : 'normal'}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         className={line ? 'cursor-pointer' : 'pointer-events-none'}

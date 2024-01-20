@@ -12,6 +12,14 @@ export interface StateElectionMarket {
   state: string
 }
 
+function hexToRgb(hex: string) {
+  // Convert hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return { r, g, b }
+}
+
 export const probToColor = (contract: Contract | null) => {
   type Color = { r: number; g: number; b: number }
   function interpolateColor(color1: Color, color2: Color, factor: number) {
@@ -22,14 +30,6 @@ export const probToColor = (contract: Contract | null) => {
 
     // Convert RGB to Hex
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
-  }
-
-  function hexToRgb(hex: string) {
-    // Convert hex to RGB
-    const r = parseInt(hex.slice(1, 3), 16)
-    const g = parseInt(hex.slice(3, 5), 16)
-    const b = parseInt(hex.slice(5, 7), 16)
-    return { r, g, b }
   }
 
   if (!contract || contract.mechanism !== 'cpmm-multi-1') return undefined
@@ -81,4 +81,19 @@ export const probToColor = (contract: Contract | null) => {
       )
     }
   }
+}
+
+// Calculates the luminance of an RGB color
+function calculateLuminance(rgb: { r: number; g: number; b: number }): number {
+  const { r, g, b } = rgb
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255
+}
+
+// Determines if the color is light
+export function isColorLight(colorHex: string): boolean {
+  const rgb = hexToRgb(colorHex)
+  if (!rgb) return false // or handle error
+
+  const luminance = calculateLuminance(rgb)
+  return luminance > 0.75 // Adjust threshold as needed
 }
