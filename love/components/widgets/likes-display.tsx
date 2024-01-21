@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { UserIcon } from '@heroicons/react/solid'
 
 import { Lover } from 'common/love/lover'
-import { LikeData } from 'love/hooks/use-likes'
 import { useLoverByUserId } from 'love/hooks/use-lover'
 import { Col } from 'web/components/layout/col'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
@@ -13,6 +12,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { LikeData } from 'love/lib/supabase/likes'
 
 export const LikesDisplay = (props: {
   likesGiven: LikeData[]
@@ -65,8 +65,8 @@ export const LikesDisplay = (props: {
 
       {(onlyLikesGiven.length > 0 || onlyLikesReceived.length > 0) && (
         <>
-          <LikesList label="Likes given" likes={onlyLikesGiven} />
           <LikesList label="Likes received" likes={onlyLikesReceived} />
+          <LikesList label="Likes given" likes={onlyLikesGiven} />
         </>
       )}
     </Col>

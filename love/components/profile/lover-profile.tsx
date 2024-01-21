@@ -12,12 +12,14 @@ import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
 import {
-  LikeData,
   useLikesGivenByUser,
   useLikesReceivedByUser,
 } from 'love/hooks/use-likes'
 import { LikesDisplay } from '../widgets/likes-display'
 import { LikeButton } from '../widgets/like-button'
+import { ShipButton } from '../widgets/ship-button'
+import { LikeData } from 'love/lib/supabase/likes'
+import { useShips } from 'love/hooks/use-ships'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -38,6 +40,22 @@ export function LoverProfile(props: {
   const refreshLikes = async () => {
     await Promise.all([refreshLikesGiven(), refreshLikesReceived()])
   }
+  const liked =
+    !!currentUser &&
+    !!likesReceived &&
+    likesReceived.map((l) => l.userId).includes(currentUser.id)
+
+  const { ships, refreshShips } = useShips(user.id)
+  const shipped =
+    !!currentUser &&
+    !!fromLoverPage &&
+    !!ships &&
+    ships.some(
+      (s) =>
+        s.creator_id === currentUser.id &&
+        ((s.target1_id === fromLoverPage.user_id && s.target2_id === user.id) ||
+          (s.target1_id === user.id && s.target2_id === fromLoverPage.user_id))
+    )
 
   return (
     <>
@@ -64,12 +82,18 @@ export function LoverProfile(props: {
           <LikeButton
             className="shadow"
             targetId={user.id}
-            liked={
-              !!currentUser &&
-              !!likesReceived &&
-              likesReceived.map((l) => l.userId).includes(currentUser.id)
-            }
+            liked={liked}
             refresh={refreshLikes}
+          />
+        </Row>
+      )}
+      {fromLoverPage && fromLoverPage.user_id !== currentUser?.id && (
+        <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
+          <ShipButton
+            shipped={shipped}
+            targetId1={fromLoverPage.user_id}
+            targetId2={user.id}
+            refresh={refreshShips}
           />
         </Row>
       )}

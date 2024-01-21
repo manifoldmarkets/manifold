@@ -130,6 +130,7 @@ import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
+import { shipLovers } from './love/ship-lovers'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -239,6 +240,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
+  'ship-lovers': shipLovers,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
