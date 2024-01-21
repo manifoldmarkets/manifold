@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getUserSupabase } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   insertPrivateMessage,
@@ -17,7 +17,7 @@ export const leaveprivateusermessagechannel = authEndpoint(
   async (req, auth, log) => {
     const { channelId } = validate(postSchema, req.body)
     const pg = createSupabaseDirectClient()
-    const user = await getUserSupabase(auth.uid)
+    const user = await getUser(auth.uid)
     if (!user) throw new APIError(401, 'Your account was not found')
 
     const membershipStatus = await pg.oneOrNone(

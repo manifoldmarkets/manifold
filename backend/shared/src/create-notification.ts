@@ -27,7 +27,6 @@ import {
   getContract,
   getPrivateUser,
   getUser,
-  getUserSupabase,
   getValues,
   log,
 } from 'shared/utils'
@@ -1784,7 +1783,7 @@ export const createFollowSuggestionNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const contractCreator = await getUserSupabase(contract.creatorId)
+  const contractCreator = await getUser(contract.creatorId)
   if (!contractCreator) return
 
   if (!userOptedOutOfBrowserNotifications(privateUser)) {

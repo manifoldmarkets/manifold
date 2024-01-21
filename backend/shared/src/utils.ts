@@ -21,6 +21,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL } from 'common/envs/constants'
 import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
+import { Row } from 'common/supabase/utils'
 
 // type for scheduled job functions
 export type JobContext = {
@@ -275,11 +276,11 @@ export const getContractSupabase = async (contractId: string) => {
   return first(res)
 }
 
-export const getUser = (userId: string) => {
+export const getUserFirebase = (userId: string) => {
   return getDoc<User>('users', userId)
 }
 
-export const getUserSupabase = async (userId: string) => {
+export const getUser = async (userId: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
     `select * from users where id = $1`,
@@ -289,7 +290,7 @@ export const getUserSupabase = async (userId: string) => {
   return first(res)
 }
 
-export const getUsersSupabase = async (userIds: string[]) => {
+export const getUsers = async (userIds: string[]) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
     `select * from users where id = any($1)`,
@@ -324,13 +325,13 @@ export const getAllPrivateUsersNotSent = async (
 }
 
 export const getUserByUsername = async (username: string) => {
-  const firestore = admin.firestore()
-  const snap = await firestore
-    .collection('users')
-    .where('username', '==', username)
-    .get()
+  const pg = createSupabaseDirectClient()
+  const res = await pg.oneOrNone<Row<'users'>>(
+    `select * from users where username = $1`,
+    username
+  )
 
-  return snap.empty ? undefined : (snap.docs[0].data() as User)
+  return res ? convertUser(res) : null
 }
 
 const updateUserBalance = (
