@@ -24,12 +24,7 @@ export const BrowseMatchesButton = (props: {
   compatibilityScores: Record<string, CompatibilityScore>
   className?: string
 }) => {
-  const {
-    lover,
-    potentialLovers,
-    compatibilityScores,
-    className,
-  } = props
+  const { lover, potentialLovers, compatibilityScores, className } = props
 
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === lover.user_id
@@ -121,6 +116,9 @@ const BrowseMatchesDialog = (props: {
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | undefined>(undefined)
 
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === lover.user_id
+
   const filteredLovers = potentialLovers.filter((lover) =>
     lover.user.name.toLowerCase().includes(query.toLowerCase())
   )
@@ -141,7 +139,9 @@ const BrowseMatchesDialog = (props: {
     >
       <Col className="bg-canvas-0 min-h-full gap-2 rounded p-4 pb-8">
         <Row className="justify-between">
-          <Title className="!mb-0">Browse</Title>
+          <Title className="!mb-0">
+            Browse {!isCurrentUser && `for ${lover.user.name}`}
+          </Title>
           <Input
             className={'!h-10 max-w-[200px] self-end text-sm'}
             value={query}

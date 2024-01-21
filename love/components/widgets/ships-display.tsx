@@ -1,0 +1,155 @@
+import { useState } from 'react'
+import { orderBy, groupBy, max } from 'lodash'
+import clsx from 'clsx'
+
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { MatchAvatars } from '../matches/match-avatars'
+import { Row } from 'web/components/layout/row'
+import { Lover } from 'common/love/lover'
+import { useLoverByUserId } from 'love/hooks/use-lover'
+import { ShipData } from 'love/lib/supabase/ships'
+import { Col } from 'web/components/layout/col'
+import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
+import { Carousel } from 'web/components/widgets/carousel'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useUserById } from 'web/hooks/use-user'
+import { Subtitle } from './lover-subtitle'
+
+export const ShipsList = (props: {
+  label: string
+  ships: ShipData[]
+  profileLover: Lover
+}) => {
+  const { label, ships, profileLover } = props
+
+  const shipsWithTargetId = ships.map(
+    ({ target1_id, target2_id, ...other }) => ({
+      ...other,
+      target1_id,
+      target2_id,
+      targetId: target1_id === profileLover.user_id ? target2_id : target1_id,
+    })
+  )
+  const shipsByTargetId = groupBy(shipsWithTargetId, (s) => s.targetId)
+  const sortedTargetIds = orderBy(
+    Object.keys(shipsByTargetId),
+    (targetId) => max(shipsByTargetId[targetId].map((s) => s.created_time)),
+    'desc'
+  )
+
+  return (
+    <Col className="gap-1">
+      <Subtitle>{label}</Subtitle>
+      {sortedTargetIds.length > 0 ? (
+        <Carousel className="w-full" labelsParentClassName="gap-0">
+          {sortedTargetIds.map((targetId) => {
+            return (
+              <ShipsTargetDisplay
+                key={targetId}
+                ships={shipsByTargetId[targetId]}
+                profileLover={profileLover}
+              />
+            )
+          })}
+        </Carousel>
+      ) : (
+        <div className="text-ink-500">None</div>
+      )}
+    </Col>
+  )
+}
+
+const ShipsTargetDisplay = (props: {
+  ships: (ShipData & { targetId: string })[]
+  profileLover: Lover
+  className?: string
+}) => {
+  const { ships, profileLover } = props
+  const { targetId } = ships[0]
+
+  const targetLover = useLoverByUserId(targetId)
+  const targetUser = useUserById(targetId)
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        className={clsx('className, group flex flex-col items-center gap-1')}
+        onClick={() => setOpen(!open)}
+      >
+        <UserAvatar className="-ml-1 first:ml-0" userId={targetId} />
+        <div className="text-ink-500 group-hover:underline group-active:underline">
+          x {ships.length}
+        </div>
+      </button>
+
+      {open && (
+        <Modal open={open} setOpen={setOpen}>
+          <Col className={MODAL_CLASS}>
+            {targetLover && targetUser && (
+              <>
+                <MatchAvatars
+                  profileLover={profileLover}
+                  matchedLover={{ ...targetLover, user: targetUser }}
+                />
+                <Row className="w-full items-baseline justify-stretch gap-2 text-lg font-semibold">
+                  <Row className="flex-1 justify-end">
+                    <UserLink hideBadge user={profileLover.user} noLink />
+                  </Row>
+                  &
+                  <Row className="flex-1 justify-start">
+                    <UserLink hideBadge user={targetUser} />
+                  </Row>
+                </Row>
+              </>
+            )}
+            <Col className="gap-2 self-start">
+              <div className="text-ink-600 text-lg font-semibold">
+                Shipping them ({ships.length})
+              </div>
+              <Col className="gap-2">
+                {ships.map((ship) => (
+                  <UserInfoRow key={ship.creator_id} userId={ship.creator_id} />
+                ))}
+              </Col>
+            </Col>
+          </Col>
+        </Modal>
+      )}
+    </>
+  )
+}
+
+const UserAvatar = (props: { userId: string; className?: string }) => {
+  const { userId, className } = props
+  const lover = useLoverByUserId(userId)
+  const user = useUserById(userId)
+
+  if (!lover || !lover.pinned_url)
+    return <EmptyAvatar className={className} size={10} />
+  return (
+    <Avatar
+      className={className}
+      avatarUrl={lover.pinned_url}
+      username={user?.username}
+      noLink
+    />
+  )
+}
+
+const UserInfoRow = (props: { userId: string }) => {
+  const { userId } = props
+  const user = useUserById(userId)
+  const lover = useLoverByUserId(userId)
+
+  return (
+    <Row className="items-center gap-2">
+      {!lover || !lover.pinned_url ? (
+        <EmptyAvatar size={10} />
+      ) : (
+        <Avatar avatarUrl={lover.pinned_url} username={user?.username} />
+      )}
+      {user && <UserLink user={user} hideBadge />}
+    </Row>
+  )
+}

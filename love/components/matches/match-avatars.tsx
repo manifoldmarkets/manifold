@@ -1,6 +1,4 @@
-import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
 import { HeartIcon } from '@heroicons/react/solid'
 import { Lover } from 'common/love/lover'
 import Image from 'next/image'

@@ -13,13 +13,17 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { LikeData } from 'love/lib/supabase/likes'
+import { ShipData } from 'love/lib/supabase/ships'
+import { ShipsList } from './ships-display'
+import { Subtitle } from './lover-subtitle'
 
 export const LikesDisplay = (props: {
   likesGiven: LikeData[]
   likesReceived: LikeData[]
+  ships: ShipData[]
   profileLover: Lover
 }) => {
-  const { likesGiven, likesReceived, profileLover } = props
+  const { likesGiven, likesReceived, ships, profileLover } = props
 
   const likesGivenByUserId = keyBy(likesGiven, (l) => l.userId)
   const likesRecievedByUserId = keyBy(likesReceived, (l) => l.userId)
@@ -45,10 +49,10 @@ export const LikesDisplay = (props: {
   )
 
   return (
-    <Col className="gap-2">
+    <Col className="gap-4">
       {sortedMutualLikes.length > 0 && (
         <Col className="gap-2">
-          <div className="text-lg">Mutual likes</div>
+          <Subtitle>Mutual likes</Subtitle>
           <Carousel>
             {sortedMutualLikes.map((like) => {
               return (
@@ -63,11 +67,18 @@ export const LikesDisplay = (props: {
         </Col>
       )}
 
-      {(onlyLikesGiven.length > 0 || onlyLikesReceived.length > 0) && (
-        <>
-          <LikesList label="Likes received" likes={onlyLikesReceived} />
-          <LikesList label="Likes given" likes={onlyLikesGiven} />
-        </>
+      {onlyLikesReceived.length > 0 && (
+        <LikesList label="Likes received" likes={onlyLikesReceived} />
+      )}
+      {onlyLikesGiven.length > 0 && (
+        <LikesList label="Likes given" likes={onlyLikesGiven} />
+      )}
+      {ships.length > 0 && (
+        <ShipsList
+          label="Shipped with"
+          ships={ships}
+          profileLover={profileLover}
+        />
       )}
     </Col>
   )
@@ -76,12 +87,12 @@ export const LikesDisplay = (props: {
 const LikesList = (props: { label: string; likes: LikeData[] }) => {
   const { label, likes } = props
 
-  const maxShown = 10
+  const maxShown = 50
   const sortedLikes = orderBy(likes, 'createdTime', 'desc').slice(0, maxShown)
 
   return (
     <Col className="gap-1">
-      <div className="whitespace-nowrap text-lg">{label}</div>
+      <Subtitle>{label}</Subtitle>
       {sortedLikes.length > 0 ? (
         <Carousel className="w-full" labelsParentClassName="gap-0">
           {sortedLikes.map((like) => (
