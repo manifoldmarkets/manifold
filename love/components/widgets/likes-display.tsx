@@ -49,6 +49,15 @@ export const LikesDisplay = (props: {
     (l) => !likesGivenByUserId[l.userId]
   )
 
+  if (
+    sortedMutualLikes.length === 0 &&
+    onlyLikesReceived.length === 0 &&
+    onlyLikesGiven.length === 0 &&
+    ships.length === 0
+  ) {
+    return null
+  }
+
   return (
     <Col className="gap-4">
       {sortedMutualLikes.length > 0 && (
