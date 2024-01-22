@@ -27,7 +27,6 @@ import {
   getContract,
   getPrivateUser,
   getUser,
-  getUserSupabase,
   getValues,
   log,
 } from 'shared/utils'
@@ -837,7 +836,6 @@ export const createLeagueChangedNotification = async (
 export const createLikeNotification = async (reaction: Reaction) => {
   const { reaction_id, content_owner_id, user_id, content_id, content_type } =
     reaction
-  if (!content_id || !content_owner_id) return
 
   const creatorPrivateUser = await getPrivateUser(content_owner_id)
   const user = await getUser(user_id)
@@ -1785,7 +1783,7 @@ export const createFollowSuggestionNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const contractCreator = await getUserSupabase(contract.creatorId)
+  const contractCreator = await getUser(contract.creatorId)
   if (!contractCreator) return
 
   if (!userOptedOutOfBrowserNotifications(privateUser)) {

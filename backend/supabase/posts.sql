@@ -7,7 +7,8 @@ create table if not exists
     user_username text not null,
     user_avatar_url text not null,
     contract_id text null,
-    contract_comment_id text null
+    contract_comment_id text null,
+    bet_id text null
 );
 
 alter table posts enable row level security;

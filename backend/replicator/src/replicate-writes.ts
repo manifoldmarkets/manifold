@@ -2,6 +2,7 @@ import { Firestore, DocumentData } from 'firebase-admin/firestore'
 import { log } from './utils'
 import { bulkInsert } from 'shared/supabase/utils'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 export type WriteMessage<T extends DocumentData = DocumentData> = {
   ts: number
@@ -22,7 +23,7 @@ export async function createFailedWrites(
     .collection('replicationState')
     .doc('supabase')
     .collection('failedWrites')
-  const creator = firestore.bulkWriter({ throttling: false })
+  const creator = new SafeBulkWriter({ throttling: false })
   for (const entry of entries) {
     creator.create(coll.doc(), entry)
   }
@@ -45,7 +46,7 @@ export async function replayFailedWrites(
   }
 
   log('INFO', `Attempting to replay ${failedWrites.size} write(s)...`)
-  const deleter = firestore.bulkWriter({ throttling: false })
+  const deleter = new SafeBulkWriter({ throttling: false })
   const entries = failedWrites.docs.map((d) => d.data() as WriteMessage)
   await replicateWrites(supabase, ...entries)
   for (const doc of failedWrites.docs) {

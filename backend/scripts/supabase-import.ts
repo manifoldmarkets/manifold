@@ -13,6 +13,7 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { TableName } from 'common/supabase/utils'
 import { Command } from 'commander'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 // strategy for live importing collection C without dropping data (times are firestore server times)
 // 1. optional - clear supabase table for collection C
@@ -147,7 +148,7 @@ async function clearFailedWrites() {
     .doc('supabase')
     .collection('failedWrites')
     .listDocuments()
-  const deleter = firestore.bulkWriter({ throttling: false })
+  const deleter = new SafeBulkWriter({ throttling: false })
   for (const ref of refs) {
     deleter.delete(ref)
   }

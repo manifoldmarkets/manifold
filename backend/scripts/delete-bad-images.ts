@@ -1,5 +1,6 @@
 import { runScript } from './run-script'
 import { FieldValue } from 'firebase-admin/firestore'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -10,7 +11,7 @@ if (require.main === module) {
     )
 
     console.log('Got', contractIds.length, 'contractIds')
-    const writer = firestore.bulkWriter()
+    const writer = new SafeBulkWriter()
 
     for (const contractId of contractIds) {
       writer.update(firestore.doc(`contracts/${contractId}`), {

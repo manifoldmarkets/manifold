@@ -188,8 +188,8 @@ async function getInterestedContractIds(
       limit 1000
      ) as bet_on_contract_ids
      union
-     select distinct data->>'contentId' as contract_id from user_reactions
-     where user_id = $1 and data->>'type' = 'like' and data->>'contentId' is not null
+     select distinct content_id as contract_id from user_reactions
+     where user_id = $1 and user_reactions.content_type = 'contract'
      limit 1000
     `,
     [userId],

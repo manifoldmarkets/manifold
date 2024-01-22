@@ -1,6 +1,5 @@
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { getUser, User } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
@@ -27,6 +26,7 @@ import {
   probColumn,
   traderColumn,
 } from 'web/components/contract/contract-table-col-formats'
+import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps(props: {
   params: { portfolioSlug: string }
@@ -34,7 +34,7 @@ export async function getStaticProps(props: {
   const { portfolioSlug } = props.params
 
   const portfolio = await getPortfolioBySlug(portfolioSlug)
-  const creator = portfolio ? await getUser(portfolio.creatorId) : null
+  const creator = portfolio ? await getUserById(portfolio.creatorId) : null
 
   const contractIds = portfolio?.items.map((item) => item.contractId) ?? []
   const contracts = await getContracts(contractIds)
@@ -55,13 +55,13 @@ export async function getStaticPaths() {
 
 export default function PortfolioPage(props: {
   portfolio: Portfolio | null
-  creator: User
+  creator: DisplayUser | null
   contracts: Contract[]
 }) {
   const { creator, portfolio, contracts } = props
   const user = useUser()
 
-  if (!portfolio) {
+  if (!portfolio || !creator) {
     return <Custom404 />
   }
 

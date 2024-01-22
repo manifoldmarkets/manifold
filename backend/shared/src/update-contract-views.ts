@@ -5,6 +5,7 @@ import {
 } from 'shared/supabase/init'
 import { JobContext } from 'shared/utils'
 import { uniq } from 'lodash'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 export async function updateContractViews({ log, lastEndTime }: JobContext) {
   const firestore = admin.firestore()
@@ -26,7 +27,7 @@ export async function updateContractViews({ log, lastEndTime }: JobContext) {
   let writes = 0
   const addViews = (lastEndTime ?? 0) > 0
   log(`Adding views: ${addViews}. If false, then setting views.`)
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter()
   for (const contractId of contractIds) {
     let totalViews = contractsToViews[contractId] ?? 0
     if (addViews) totalViews += views[contractId] ?? 0

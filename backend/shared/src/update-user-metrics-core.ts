@@ -22,6 +22,7 @@ import * as admin from 'firebase-admin'
 import { JobContext } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -40,7 +41,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   const weekAgo = now - DAY_MS * 7
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading users...')
   const users = await pg.map(
@@ -81,10 +82,12 @@ export async function updateUserMetricsCore({ log }: JobContext) {
         Object.keys(userToPortfolioMetrics).length
       } users.`
     )
-    log('Loading current portfolio snapshot...')
     const userIdsMissingPortfolio = users
       .filter((u) => !userToPortfolioMetrics[u.id]?.currentPortfolio)
       .map((u) => u.id)
+    log(
+      `Loading current portfolio snapshot for ${userIdsMissingPortfolio.length} users...`
+    )
     // We recalculate the portfolio every run per user, so we don't need to ever query it more than once
     const currentPortfolios = await getPortfolioSnapshot(
       pg,
@@ -312,6 +315,9 @@ const getPortfolioSnapshot = async (
   pg: SupabaseDirectClient,
   userIds: string[]
 ) => {
+  if (userIds.length === 0) {
+    return {}
+  }
   return Object.fromEntries(
     await pg.map(
       `select distinct on (user_id) user_id, investment_value, balance, total_deposits, loan_total

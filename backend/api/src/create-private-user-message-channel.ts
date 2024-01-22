@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getPrivateUser, getUserSupabase } from 'shared/utils'
+import { getPrivateUser, getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -31,7 +31,7 @@ export const createPrivateUserMessageChannelMain = async (
   userIds: string[],
   pg: SupabaseDirectClient
 ) => {
-  const creator = await getUserSupabase(creatorId)
+  const creator = await getUser(creatorId)
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
   const creatorShouldJoinChannel = userIds.includes(creatorId)

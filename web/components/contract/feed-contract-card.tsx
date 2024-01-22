@@ -54,7 +54,7 @@ export function FeedContractCard(props: {
   item?: FeedTimelineItem
   className?: string
   /** whether this card is small, like in card grids.*/
-  small?: boolean
+  size?: 'md' | 'sm' | 'xs'
   hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
@@ -65,10 +65,10 @@ export function FeedContractCard(props: {
     item,
     className,
     children,
-    small,
     hide,
     showGraph,
     hideBottomRow,
+    size = 'md',
   } = props
   const user = useUser()
 
@@ -150,7 +150,11 @@ export function FeedContractCard(props: {
         'cursor-pointer ',
         'hover:ring-[1px]',
         'flex w-full flex-col gap-0.5 px-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6'
+        size === 'sm'
+          ? 'bg-canvas-50'
+          : size === 'md'
+          ? 'bg-canvas-0 shadow-md sm:px-6'
+          : 'bg-canvas-0'
       )}
       onClick={(e) => {
         trackClick()
@@ -159,11 +163,16 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      <Col className={'w-full flex-col gap-1.5 pt-2'}>
+      <Col
+        className={clsx(
+          'w-full flex-col pt-2',
+          size === 'xs' ? '' : 'gap-1.5 '
+        )}
+      >
         <Row className="w-full justify-between">
           <Row className={'text-ink-500 items-center gap-1 text-sm'}>
             <Avatar
-              size={'xs'}
+              size={size === 'xs' ? '2xs' : 'xs'}
               className={'mr-0.5'}
               avatarUrl={creatorAvatarUrl}
               username={creatorUsername}
@@ -203,7 +212,8 @@ export function FeedContractCard(props: {
 
         <div
           className={clsx(
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+            'flex flex-col sm:flex-row sm:justify-between sm:gap-4',
+            size === 'xs' ? '' : 'gap-1'
           )}
         >
           {/* Title is link to contract for open in new tab and a11y */}
@@ -233,7 +243,12 @@ export function FeedContractCard(props: {
         </div>
       </Col>
 
-      <div className="w-full overflow-hidden pt-2">
+      <div
+        className={clsx(
+          'w-full overflow-hidden',
+          size === 'xs' ? 'pt-0.5' : 'pt-2'
+        )}
+      >
         {contract.outcomeType === 'POLL' && (
           <PollPanel contract={contract} maxOptions={4} />
         )}
@@ -264,20 +279,21 @@ export function FeedContractCard(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {!small && item?.dataType == 'new_contract' && nonTextDescription && (
-          <FeedContractCardDescription
-            contract={contract}
-            nonTextDescription={nonTextDescription}
-          />
-        )}
-
-        <CategoryTags
-          categories={contract.groupLinks}
-          // hide tags after first line. (tags are 24 px tall)
-          className="h-6 flex-wrap overflow-hidden"
-        />
+        {size === 'md' &&
+          item?.dataType == 'new_contract' &&
+          nonTextDescription && (
+            <FeedContractCardDescription
+              contract={contract}
+              nonTextDescription={nonTextDescription}
+            />
+          )}
         {!hideBottomRow && (
           <Col>
+            <CategoryTags
+              categories={contract.groupLinks}
+              // hide tags after first line. (tags are 24 px tall)
+              className="h-6 flex-wrap overflow-hidden"
+            />
             <BottomActionRow
               contract={contract}
               user={user}

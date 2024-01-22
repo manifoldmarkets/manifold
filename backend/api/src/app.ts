@@ -131,6 +131,7 @@ import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
 import { shipLovers } from './love/ship-lovers'
+import { createManalink } from './create-manalink'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -221,6 +222,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-markets-full': searchMarketsFull,
   managram: sendMana,
   managrams: getManagrams,
+  manalink: createManalink,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
   'user/:username': getUser,

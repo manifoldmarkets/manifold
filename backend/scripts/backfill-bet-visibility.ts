@@ -1,13 +1,14 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
-import { log, processPartitioned } from 'shared/utils'
+import { processPartitioned } from 'shared/utils'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 initAdmin()
 
 const firestore = admin.firestore()
 
 async function processGroup(group: admin.firestore.CollectionGroup) {
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter()
   await processPartitioned(group, 100, async (docs) => {
     for (const doc of docs) {
       const betVisibility = await doc.get('visibility')

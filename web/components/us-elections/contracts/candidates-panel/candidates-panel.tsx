@@ -105,7 +105,7 @@ export function CandidatePanel(props: {
   )
 }
 
-function getCandidateColor(name: string) {
+export function getCandidateColor(name: string) {
   // return 'bg-primary-500'
   if (!CANDIDATE_DATA[name]) return '#9E9FBD'
   if (CANDIDATE_DATA[name]?.party === 'Democrat') return '#adc4e3'

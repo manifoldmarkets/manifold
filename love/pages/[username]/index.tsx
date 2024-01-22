@@ -11,7 +11,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { useTracking } from 'web/hooks/use-tracking'
 import { BackButton } from 'web/components/contract/back-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -22,6 +21,8 @@ import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 import { LoverProfile } from 'love/components/profile/lover-profile'
+import { getUserByUsername } from 'web/lib/supabase/users'
+import { User } from 'common/user'
 
 export const getStaticProps = async (props: {
   params: {

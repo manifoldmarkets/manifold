@@ -1,43 +1,54 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-
 import { User } from 'common/user'
-import { canSendMana, Manalink } from 'common/manalink'
+import { canSendMana } from 'common/manalink'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { Row, tsToMillis } from 'common/supabase/utils'
 
-const bodySchema = z
-  .object({
-    slug: z.string(),
-  })
-  .strict()
+const bodySchema = z.object({ slug: z.string() }).strict()
+
+// don't tell the users but you can double redeem via race conditions.
+// the money still gets taken from the creator correctly though so no money is created
 
 export const claimmanalink = authEndpoint(async (req, auth) => {
   const { slug } = validate(bodySchema, req.body)
 
+  const pg = createSupabaseDirectClient()
+
   // Run as transaction to prevent race conditions.
   return await firestore.runTransaction(async (transaction) => {
     // Look up the manalink
-    const manalinkDoc = firestore.doc(`manalinks/${slug}`)
-    const manalinkSnap = await transaction.get(manalinkDoc)
-    if (!manalinkSnap.exists) {
+    const manalink = await pg.oneOrNone<Row<'manalinks'>>(
+      `select * from manalinks where id = $1`,
+      [slug]
+    )
+
+    if (!manalink) {
       throw new APIError(404, 'Manalink not found')
     }
-    const manalink = manalinkSnap.data() as Manalink
 
-    const { amount, fromId, claimedUserIds } = manalink
+    const { amount, creator_id, expires_time, max_uses } = manalink
 
-    if (amount <= 0 || isNaN(amount) || !isFinite(amount))
-      throw new APIError(500, 'Invalid amount')
+    const claimedUserIds = await pg.map(
+      `select txns.data from manalink_claims
+         join txns on txns.id = manalink_claims.txn_id
+         where manalink_id = $1`,
+      [slug],
+      (r) => r.data.toId as string
+    )
 
-    if (auth.uid === fromId)
+    if (auth.uid === creator_id)
       throw new APIError(403, `You can't claim your own manalink`)
 
-    const fromDoc = firestore.doc(`users/${fromId}`)
+    const fromDoc = firestore.doc(`users/${creator_id}`)
     const fromSnap = await transaction.get(fromDoc)
     if (!fromSnap.exists) {
-      throw new APIError(500, `User ${fromId} not found`)
+      throw new APIError(500, `User ${creator_id} not found`)
     }
     const fromUser = fromSnap.data() as User
     const db = createSupabaseClient()
@@ -56,21 +67,16 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     }
 
     // Disallow expired or maxed out links
-    if (manalink.expiresTime != null && manalink.expiresTime < Date.now()) {
+    if (expires_time != null && tsToMillis(expires_time) < Date.now()) {
       throw new APIError(
         403,
-        `Manalink ${slug} expired on ${new Date(
-          manalink.expiresTime
-        ).toLocaleString()}`
+        `Manalink ${slug} expired on ${new Date(expires_time).toLocaleString()}`
       )
     }
-    if (
-      manalink.maxUses != null &&
-      manalink.maxUses <= manalink.claims.length
-    ) {
+    if (max_uses != null && max_uses <= claimedUserIds.length) {
       throw new APIError(
         403,
-        `Manalink ${slug} has reached its max uses of ${manalink.maxUses}`
+        `Manalink ${slug} has reached its max uses of ${max_uses}`
       )
     }
 
@@ -83,7 +89,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
     // Actually execute the txn
     const data = {
-      fromId,
+      fromId: creator_id,
       fromType: 'USER',
       toId: auth.uid,
       toType: 'USER',
@@ -92,6 +98,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       category: 'MANALINK',
       description: `Manalink ${slug} claimed: ${amount} from ${fromUser.username} to ${auth.uid}`,
     } as const
+
     const result = await runTxn(transaction, data)
     const txnId = result.txn?.id
     if (!txnId) {
@@ -101,16 +108,10 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       )
     }
 
-    // Update the manalink object with this info
-    const claim = {
-      toId: auth.uid,
-      txnId,
-      claimedTime: Date.now(),
-    }
-    transaction.update(manalinkDoc, {
-      claimedUserIds: [...claimedUserIds, auth.uid],
-      claims: [...manalink.claims, claim],
-    })
+    await pg.none(
+      `insert into manalink_claims (txn_id, manalink_id) values ($1, $2)`,
+      [txnId, slug]
+    )
 
     return { message: 'Manalink claimed' }
   })

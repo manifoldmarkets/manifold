@@ -90,24 +90,18 @@ export function CandidateCard(props: {
 
   return (
     <Col className={'group w-full flex-col gap-1.5 '}>
-      <div
+      {/* Title is link to contract for open in new tab and a11y */}
+      <Link
         className={clsx(
-          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+          'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+          titleSize === 'lg' && ' sm:text-3xl'
         )}
+        href={path}
+        onClick={trackClick}
       >
-        {/* Title is link to contract for open in new tab and a11y */}
-        <Link
-          className={clsx(
-            'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
-            titleSize === 'lg' && ' sm:text-3xl'
-          )}
-          href={path}
-          onClick={trackClick}
-        >
-          <VisibilityIcon contract={contract} />{' '}
-          {customTitle ? customTitle : extractPhrase(contract.question)}
-        </Link>
-      </div>
+        <VisibilityIcon contract={contract} />{' '}
+        {customTitle ? customTitle : extractPhrase(contract.question)}
+      </Link>
       <CandidatePanel contract={contract} maxAnswers={6} />
     </Col>
   )

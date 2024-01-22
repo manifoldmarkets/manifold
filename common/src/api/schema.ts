@@ -393,6 +393,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  manalink: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { slug: string },
+    props: z
+      .object({
+        amount: z.number().positive().finite().safe(),
+        expiresTime: z.number().optional(),
+        maxUses: z.number().optional(),
+        message: z.string().optional(),
+      })
+      .strict(),
+  },
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',
@@ -534,6 +548,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
+        betId: z.string().optional(),
         commentId: z.string().optional(),
         content: contentSchema.optional(),
       })

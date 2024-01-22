@@ -5,11 +5,11 @@ $$;
 
 create
 or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) stable parallel safe language sql as $$
-select data->>'contentId' as contract_id,
+select content_id as contract_id,
   count(*) as n
 from user_reactions
-where data->>'contentType' = 'contract'
-  and data->>'createdTime' > since::text
+where content_type = 'contract'
+  and ts_to_millis(created_time) > since
 group by contract_id $$;
 
 create
@@ -187,7 +187,7 @@ alter table discord_messages_markets enable row level security;
 
 create
 or replace function get_your_contract_ids (uid text) returns table (contract_id text) stable parallel safe language sql as $$ with your_liked_contracts as (
-    select (data->>'contentId') as contract_id
+    select content_id as contract_id
     from user_reactions
     where user_id = uid
   ),
@@ -224,11 +224,11 @@ or replace function get_your_recent_contracts (uid text, n int, start int) retur
         order by ((data -> 'lastBetTime')::bigint) desc
         limit n),
     your_liked_contracts as (
-         select (data->>'contentId') as contract_id,
-                (data->>'createdTime')::bigint as ts
+         select content_id as contract_id,
+               ts_to_millis(created_time) as ts
          from user_reactions
          where user_id = uid
-         order by ((data->'createdTime')::bigint) desc
+         order by created_time desc
          limit n
     ),
      your_viewed_contracts as (
@@ -337,10 +337,10 @@ limit match_count;
 $$;
 
 create
-    or replace function close_contract_embeddings (
-    input_contract_id text,
-    similarity_threshold float,
-    match_count int
+or replace function close_contract_embeddings (
+  input_contract_id text,
+  similarity_threshold float,
+  match_count int
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
@@ -364,7 +364,6 @@ create
     order by similarity * similarity * importance_score desc
     limit match_count;
 $$;
-
 
 create
 or replace function get_market_ads (uid text) returns table (

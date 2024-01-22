@@ -145,7 +145,7 @@ export const CandidateProb = (props: {
     <button className={'items-center'} onClick={onClick}>
       <span
         className={clsx(
-          ' min-w-[2.5rem] whitespace-nowrap text-lg font-bold hover:text-indigo-700 sm:text-2xl'
+          ' hover:text-primary-700 min-w-[2.5rem] whitespace-nowrap text-lg font-bold sm:text-2xl'
         )}
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>

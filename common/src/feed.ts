@@ -36,7 +36,7 @@ export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
     new_comment: 0.05,
     new_contract: 0.25,
-    repost: 0.4,
+    repost: 0.5,
     new_subsidy: 0.1,
     user_position_changed: 0.02,
     contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
