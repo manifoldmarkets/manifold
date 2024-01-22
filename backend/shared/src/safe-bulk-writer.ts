@@ -10,14 +10,20 @@ import WithFieldValue = firestore.WithFieldValue
 
 export class SafeBulkWriter {
   writer: BulkWriter
-  promises: Promise<WriteResult>[]
+  errors: Error[]
+  record = async (p: Promise<WriteResult>) => {
+    return p.catch((e) => {
+      this.errors.push(e)
+      return e
+    })
+  }
 
   constructor(
     options?: BulkWriterOptions,
     firestore: admin.firestore.Firestore = admin.firestore()
   ) {
     this.writer = firestore.bulkWriter(options)
-    this.promises = []
+    this.errors = []
   }
 
   async update<T>(
@@ -29,8 +35,7 @@ export class SafeBulkWriter {
     const p = precondition
       ? this.writer.update<T>(documentRef, data, precondition)
       : this.writer.update<T>(documentRef, data)
-    this.promises.push(p)
-    return p
+    return this.record(p)
   }
 
   async create<T>(
@@ -38,8 +43,7 @@ export class SafeBulkWriter {
     data: WithFieldValue<T>
   ): Promise<WriteResult> {
     const p = this.writer.create<T>(documentRef, data)
-    this.promises.push(p)
-    return p
+    return this.record(p)
   }
 
   async delete(
@@ -49,8 +53,7 @@ export class SafeBulkWriter {
     const p = precondition
       ? this.writer.delete(documentRef, precondition)
       : this.writer.delete(documentRef)
-    this.promises.push(p)
-    return p
+    return this.record(p)
   }
 
   async set<T>(
@@ -58,17 +61,16 @@ export class SafeBulkWriter {
     data: WithFieldValue<T>
   ): Promise<WriteResult> {
     const p = this.writer.set<T>(documentRef, data)
-    this.promises.push(p)
-    return p
+    return this.record(p)
   }
 
   async close() {
     await this.writer.close()
-    return await Promise.all(this.promises)
+    if (this.errors.length > 0) throw this.errors[0]
   }
 
   async flush() {
     await this.writer.flush()
-    return await Promise.all(this.promises)
+    if (this.errors.length > 0) throw this.errors[0]
   }
 }
