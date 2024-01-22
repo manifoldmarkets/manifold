@@ -92,6 +92,7 @@ export async function getStaticProps() {
 
 function useLiveContract(inputContract: Contract): Contract {
   const contract =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
     inputContract
 
@@ -142,9 +143,13 @@ export default function USElectionsPage(props: {
 
   const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
     (acc, key) => {
-      // eslint-disable-next-line react-hooks/rules-of-hooks
-      const contract = useLiveContract(rawMapContractsDictionary[key]!)
-      acc[key] = contract
+      // Check if rawMapContractsDictionary[key] is not undefined
+      if (rawMapContractsDictionary[key] !== undefined) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const contract = useLiveContract(rawMapContractsDictionary[key]!)
+
+        acc[key] = contract
+      }
       return acc
     },
     {} as MapContractsDictionary
