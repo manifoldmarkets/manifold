@@ -849,7 +849,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     const { data, error } = await db
       .from('contract_comments')
       .select('contract_id')
-      .eq('id', content_id)
+      .eq('comment_id', content_id)
     if (error) {
       log('Failed to get contract id: ' + error.message)
       return
