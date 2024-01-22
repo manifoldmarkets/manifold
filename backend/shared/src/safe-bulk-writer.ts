@@ -33,27 +33,33 @@ export class SafeBulkWriter {
     return p
   }
 
-  create<T>(
+  async create<T>(
     documentRef: DocumentReference<T>,
     data: WithFieldValue<T>
   ): Promise<WriteResult> {
-    return this.writer.create<T>(documentRef, data)
+    const p = this.writer.create<T>(documentRef, data)
+    this.promises.push(p)
+    return p
   }
 
-  delete(
+  async delete(
     documentRef: DocumentReference<any>,
     precondition?: Precondition
   ): Promise<WriteResult> {
-    return precondition
+    const p = precondition
       ? this.writer.delete(documentRef, precondition)
       : this.writer.delete(documentRef)
+    this.promises.push(p)
+    return p
   }
 
-  set<T>(
+  async set<T>(
     documentRef: DocumentReference<T>,
     data: WithFieldValue<T>
   ): Promise<WriteResult> {
-    return this.writer.set<T>(documentRef, data)
+    const p = this.writer.set<T>(documentRef, data)
+    this.promises.push(p)
+    return p
   }
 
   async close() {
