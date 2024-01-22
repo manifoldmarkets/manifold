@@ -29,6 +29,16 @@ export type MapContractsDictionary = {
   [key: string]: Contract | null
 }
 
+export type ElectionsPageProps = {
+  rawMapContractsDictionary: MapContractsDictionary
+  electionPartyContract: Contract
+  electionCandidateContract: Contract
+  republicanCandidateContract: Contract
+  democratCandidateContract: Contract
+  newHampshireContract: Contract
+  linkPreviews: LinkPreviews
+}
+
 const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
 
@@ -107,15 +117,7 @@ function useLiveContract(inputContract: Contract): Contract {
 
 export type MapContracts = { state: string; contract: Contract | null }
 
-export default function USElectionsPage(props: {
-  rawMapContractsDictionary: MapContractsDictionary
-  electionPartyContract: Contract
-  electionCandidateContract: Contract
-  republicanCandidateContract: Contract
-  democratCandidateContract: Contract
-  newHampshireContract: Contract
-  linkPreviews: LinkPreviews
-}) {
+export default function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
   useTracking('view elections')
   const user = useUser()
@@ -130,6 +132,35 @@ export default function USElectionsPage(props: {
     newHampshireContract,
     linkPreviews,
   } = props
+
+  if (
+    !electionPartyContract ||
+    !electionCandidateContract ||
+    !republicanCandidateContract ||
+    !democratCandidateContract ||
+    !newHampshireContract
+  ) {
+    return <Custom404 />
+  }
+
+  return (
+    <Page trackPageView="us elections page 2024">
+      <ElectionContent {...props} />
+    </Page>
+  )
+}
+
+function ElectionContent(props: ElectionsPageProps) {
+  const {
+    rawMapContractsDictionary,
+    electionCandidateContract,
+    electionPartyContract,
+    republicanCandidateContract,
+    democratCandidateContract,
+    newHampshireContract,
+    linkPreviews,
+  } = props
+
   const [targetState, setTargetState] = useState<string | undefined | null>(
     'GA'
   )
@@ -150,18 +181,8 @@ export default function USElectionsPage(props: {
     {} as MapContractsDictionary
   )
 
-  if (
-    !electionPartyContract ||
-    !electionCandidateContract ||
-    !republicanCandidateContract ||
-    !democratCandidateContract ||
-    !newHampshireContract
-  ) {
-    return <Custom404 />
-  }
-
   return (
-    <Page trackPageView="us elections page 2024">
+    <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
           US 2024 Elections
@@ -238,7 +259,7 @@ export default function USElectionsPage(props: {
         </Col>
       </Col>
       <Spacer h={4} />
-    </Page>
+    </>
   )
 }
 
