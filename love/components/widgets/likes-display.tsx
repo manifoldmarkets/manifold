@@ -21,9 +21,10 @@ export const LikesDisplay = (props: {
   likesGiven: LikeData[]
   likesReceived: LikeData[]
   ships: ShipData[]
+  refreshShips: () => Promise<void>
   profileLover: Lover
 }) => {
-  const { likesGiven, likesReceived, ships, profileLover } = props
+  const { likesGiven, likesReceived, ships, refreshShips, profileLover } = props
 
   const likesGivenByUserId = keyBy(likesGiven, (l) => l.userId)
   const likesRecievedByUserId = keyBy(likesReceived, (l) => l.userId)
@@ -78,6 +79,7 @@ export const LikesDisplay = (props: {
           label="Shipped with"
           ships={ships}
           profileLover={profileLover}
+          refreshShips={refreshShips}
         />
       )}
     </Col>

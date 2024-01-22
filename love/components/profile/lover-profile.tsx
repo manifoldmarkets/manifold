@@ -21,6 +21,7 @@ import { ShipButton } from '../widgets/ship-button'
 import { LikeData } from 'love/lib/supabase/likes'
 import { useShips } from 'love/hooks/use-ships'
 import { ShipData } from 'love/lib/supabase/ships'
+import { hasShipped } from 'love/lib/util/ship-util'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -48,15 +49,7 @@ export function LoverProfile(props: {
 
   const { ships, refreshShips } = useShips(user.id)
   const shipped =
-    !!currentUser &&
-    !!fromLoverPage &&
-    !!ships &&
-    ships.some(
-      (s) =>
-        s.creator_id === currentUser.id &&
-        ((s.target1_id === fromLoverPage.user_id && s.target2_id === user.id) ||
-          (s.target1_id === user.id && s.target2_id === fromLoverPage.user_id))
-    )
+    !!ships && hasShipped(currentUser, fromLoverPage?.user_id, user.id, ships)
 
   return (
     <>
@@ -77,6 +70,7 @@ export function LoverProfile(props: {
         likesGiven={likesGiven ?? []}
         likesReceived={likesReceived ?? []}
         ships={ships ?? []}
+        refreshShips={refreshShips}
       />
       {((!fromLoverPage && !isCurrentUser) ||
         (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
@@ -114,6 +108,7 @@ function LoverContent(props: {
   likesGiven: LikeData[]
   likesReceived: LikeData[]
   ships: ShipData[]
+  refreshShips: () => Promise<void>
 }) {
   const {
     user,
@@ -124,6 +119,7 @@ function LoverContent(props: {
     likesGiven,
     likesReceived,
     ships,
+    refreshShips,
   } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
@@ -149,6 +145,7 @@ function LoverContent(props: {
         likesGiven={likesGiven}
         likesReceived={likesReceived}
         ships={ships}
+        refreshShips={refreshShips}
         profileLover={lover}
       />
       {!fromLoverPage && lover.looking_for_matches && (

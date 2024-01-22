@@ -12,15 +12,18 @@ import { Col } from 'web/components/layout/col'
 import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useUserById } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Subtitle } from './lover-subtitle'
+import { ShipButton } from './ship-button'
+import { hasShipped } from 'love/lib/util/ship-util'
 
 export const ShipsList = (props: {
   label: string
   ships: ShipData[]
   profileLover: Lover
+  refreshShips: () => Promise<void>
 }) => {
-  const { label, ships, profileLover } = props
+  const { label, ships, profileLover, refreshShips } = props
 
   const shipsWithTargetId = ships.map(
     ({ target1_id, target2_id, ...other }) => ({
@@ -48,6 +51,7 @@ export const ShipsList = (props: {
                 key={targetId}
                 ships={shipsByTargetId[targetId]}
                 profileLover={profileLover}
+                refreshShips={refreshShips}
               />
             )
           })}
@@ -61,20 +65,24 @@ export const ShipsList = (props: {
 
 const ShipsTargetDisplay = (props: {
   ships: (ShipData & { targetId: string })[]
+  refreshShips: () => Promise<void>
   profileLover: Lover
   className?: string
 }) => {
-  const { ships, profileLover } = props
+  const { ships, refreshShips, profileLover, className } = props
   const { targetId } = ships[0]
 
   const targetLover = useLoverByUserId(targetId)
   const targetUser = useUserById(targetId)
   const [open, setOpen] = useState(false)
 
+  const currentUser = useUser()
+  const shipped = hasShipped(currentUser, profileLover.user_id, targetId, ships)
+
   return (
     <>
       <button
-        className={clsx('className, group flex flex-col items-center gap-1')}
+        className={clsx(className, 'group flex flex-col items-center gap-1')}
         onClick={() => setOpen(!open)}
       >
         <UserAvatar className="-ml-1 first:ml-0" userId={targetId} />
@@ -85,7 +93,7 @@ const ShipsTargetDisplay = (props: {
 
       {open && (
         <Modal open={open} setOpen={setOpen}>
-          <Col className={MODAL_CLASS}>
+          <Col className={clsx(MODAL_CLASS, 'relative')}>
             {targetLover && targetUser && (
               <>
                 <MatchAvatars
@@ -113,6 +121,18 @@ const ShipsTargetDisplay = (props: {
                 ))}
               </Col>
             </Col>
+            {currentUser &&
+              profileLover.user_id !== currentUser?.id &&
+              targetId !== currentUser?.id && (
+                <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
+                  <ShipButton
+                    shipped={shipped}
+                    targetId1={profileLover.user_id}
+                    targetId2={targetId}
+                    refresh={refreshShips}
+                  />
+                </Row>
+              )}
           </Col>
         </Modal>
       )}
@@ -137,13 +157,13 @@ const UserAvatar = (props: { userId: string; className?: string }) => {
   )
 }
 
-const UserInfoRow = (props: { userId: string }) => {
-  const { userId } = props
+const UserInfoRow = (props: { userId: string; className?: string }) => {
+  const { userId, className } = props
   const user = useUserById(userId)
   const lover = useLoverByUserId(userId)
 
   return (
-    <Row className="items-center gap-2">
+    <Row className={clsx(className, 'items-center gap-2')}>
       {!lover || !lover.pinned_url ? (
         <EmptyAvatar size={10} />
       ) : (
