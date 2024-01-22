@@ -77,7 +77,7 @@ export const BrowseMatchesButton = (props: {
         disabled={isSubmitting}
         loading={isSubmitting}
       >
-        Browse matches {!isCurrentUser && `for ${lover.user.name}`}
+        Browse {isCurrentUser ? 'compatible' : `for ${lover.user.name}`}
       </Button>
       {dialogOpen && (
         <BrowseMatchesDialog

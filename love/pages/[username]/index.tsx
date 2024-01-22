@@ -99,6 +99,7 @@ export default function UserPage(props: {
         <Col className={'gap-4'}>
           {lover ? (
             <LoverProfile
+              key={lover.user_id}
               lover={lover}
               user={user}
               refreshLover={refreshLover}

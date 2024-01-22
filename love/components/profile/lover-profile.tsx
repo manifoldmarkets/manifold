@@ -89,16 +89,18 @@ export function LoverProfile(props: {
           />
         </Row>
       )}
-      {fromLoverPage && fromLoverPage.user_id !== currentUser?.id && (
-        <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
-          <ShipButton
-            shipped={shipped}
-            targetId1={fromLoverPage.user_id}
-            targetId2={user.id}
-            refresh={refreshShips}
-          />
-        </Row>
-      )}
+      {fromLoverPage &&
+        fromLoverPage.user_id !== currentUser?.id &&
+        user.id !== currentUser?.id && (
+          <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
+            <ShipButton
+              shipped={shipped}
+              targetId1={fromLoverPage.user_id}
+              targetId2={user.id}
+              refresh={refreshShips}
+            />
+          </Row>
+        )}
     </>
   )
 }
