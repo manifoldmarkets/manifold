@@ -29,6 +29,16 @@ export type MapContractsDictionary = {
   [key: string]: Contract | null
 }
 
+export type ElectionsPageProps = {
+  rawMapContractsDictionary: MapContractsDictionary
+  electionPartyContract: Contract
+  electionCandidateContract: Contract
+  republicanCandidateContract: Contract
+  democratCandidateContract: Contract
+  newHampshireContract: Contract
+  linkPreviews: LinkPreviews
+}
+
 const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
 
@@ -107,15 +117,7 @@ function useLiveContract(inputContract: Contract): Contract {
 
 export type MapContracts = { state: string; contract: Contract | null }
 
-export default function USElectionsPage(props: {
-  rawMapContractsDictionary: MapContractsDictionary
-  electionPartyContract: Contract
-  electionCandidateContract: Contract
-  republicanCandidateContract: Contract
-  democratCandidateContract: Contract
-  newHampshireContract: Contract
-  linkPreviews: LinkPreviews
-}) {
+export default function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
   useTracking('view elections')
   const user = useUser()
@@ -130,29 +132,6 @@ export default function USElectionsPage(props: {
     newHampshireContract,
     linkPreviews,
   } = props
-  const [targetState, setTargetState] = useState<string | undefined | null>(
-    'GA'
-  )
-
-  const [hoveredState, setHoveredState] = useState<string | undefined | null>(
-    undefined
-  )
-
-  const isMobile = useIsMobile()
-
-  const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
-    (acc, key) => {
-      // Check if rawMapContractsDictionary[key] is not undefined
-      if (rawMapContractsDictionary[key] !== undefined) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const contract = useLiveContract(rawMapContractsDictionary[key]!)
-
-        acc[key] = contract
-      }
-      return acc
-    },
-    {} as MapContractsDictionary
-  )
 
   if (
     !electionPartyContract ||
@@ -166,6 +145,44 @@ export default function USElectionsPage(props: {
 
   return (
     <Page trackPageView="us elections page 2024">
+      <ElectionContent {...props} />
+    </Page>
+  )
+}
+
+function ElectionContent(props: ElectionsPageProps) {
+  const {
+    rawMapContractsDictionary,
+    electionCandidateContract,
+    electionPartyContract,
+    republicanCandidateContract,
+    democratCandidateContract,
+    newHampshireContract,
+    linkPreviews,
+  } = props
+
+  const [targetState, setTargetState] = useState<string | undefined | null>(
+    'GA'
+  )
+
+  const [hoveredState, setHoveredState] = useState<string | undefined | null>(
+    undefined
+  )
+
+  const isMobile = useIsMobile()
+
+  const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
+    (acc, key) => {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      const contract = useLiveContract(rawMapContractsDictionary[key]!)
+      acc[key] = contract
+      return acc
+    },
+    {} as MapContractsDictionary
+  )
+
+  return (
+    <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
           US 2024 Elections
@@ -242,7 +259,7 @@ export default function USElectionsPage(props: {
         </Col>
       </Col>
       <Spacer h={4} />
-    </Page>
+    </>
   )
 }
 
