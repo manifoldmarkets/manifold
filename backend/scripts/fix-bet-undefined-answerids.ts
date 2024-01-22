@@ -2,9 +2,10 @@ import { runScript } from './run-script'
 import { FieldValue } from 'firebase-admin/firestore'
 import { Bet } from 'common/bet'
 import { log } from 'shared/utils'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 runScript(async ({ firestore }) => {
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = new SafeBulkWriter({ throttling: false })
   let updated = 0
   const limitBets = firestore
     .collectionGroup('bets')
