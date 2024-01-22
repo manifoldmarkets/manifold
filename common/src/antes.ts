@@ -23,7 +23,8 @@ export function getCpmmInitialLiquidity(
   contract: CPMMBinaryContract | CPMMMultiContract,
   anteId: string,
   amount: number,
-  createdTime: number
+  createdTime: number,
+  answerId?: string
 ) {
   const { mechanism } = contract
 
@@ -34,8 +35,10 @@ export function getCpmmInitialLiquidity(
     userId: providerId,
     contractId: contract.id,
     isAnte: true,
-    // Unfortunately, createdTime is only properly set for MC answers after this commit
+    // Unfortunately, createdTime is only properly set for MC answers after this commit.
     createdTime,
+    // answerId is only properly set for MC answers after this commit AND answers added after the question is created.
+    answerId,
     amount: amount,
     liquidity: amount,
     pool,

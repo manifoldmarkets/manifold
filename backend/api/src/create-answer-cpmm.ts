@@ -134,7 +134,8 @@ export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
         contract,
         liquidityDoc.id,
         ANSWER_COST,
-        createdTime
+        createdTime,
+        newAnswer.id
       )
       transaction.create(liquidityDoc, lp)
 
