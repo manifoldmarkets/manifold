@@ -52,7 +52,7 @@ async function getMostRecentCommentableBet(
       order by created_time desc
       limit 1
     )
-    select id, outcome, answer_id, amount
+    select bet_id, outcome, answer_id, amount
     from prior_user_bets as b
     where not b.is_redemption
     and $4 is null or b.id = $4
@@ -104,10 +104,10 @@ export const onCreateCommentOnContract = functions
         comment.answerOutcome
       )
       if (bet) {
-        const { id, outcome, amount, answer_id } = bet
+        const { bet_id, outcome, amount, answer_id } = bet
         await change.ref.update(
           removeUndefinedProps({
-            betId: id,
+            betId: bet_id,
             betOutcome: outcome,
             betAmount: amount,
             betAnswerId: answer_id,
@@ -159,7 +159,7 @@ const getReplyInfo = async (
   ) {
     const answer = contract.answers.find((a) => a.id === comment.answerOutcome)
     const comments = await pg.manyOrNone(
-      `select id, user_id
+      `select comment_id, user_id
       from contract_comments
       where contract_id = $1 and coalesce(data->>'answerOutcome', '') = $2`,
       [contract.id, answer?.id ?? '']
@@ -172,15 +172,16 @@ const getReplyInfo = async (
     } as const
   } else if (comment.replyToCommentId) {
     const comments = await pg.manyOrNone(
-      `select id, user_id, data->>'replyToCommentId' as reply_to_id
+      `select comment_id, user_id, data->>'replyToCommentId' as reply_to_id
       from contract_comments where contract_id = $1`,
       [contract.id]
     )
     return {
       repliedToAnswer: null,
       repliedToType: 'comment',
-      repliedUserId: comments.find((c) => c.id === comment.replyToCommentId)
-        ?.user_id,
+      repliedUserId: comments.find(
+        (c) => c.comment_id === comment.replyToCommentId
+      )?.user_id,
       commentsInSameReplyChain: comments.filter(
         (c) => c.reply_to_id === comment.replyToCommentId
       ),
