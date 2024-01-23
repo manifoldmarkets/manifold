@@ -86,6 +86,7 @@ function ProfileItem(props: {
   const { user, item, touched, setTouched, currentPage, track } = props
   const balance = useAnimatedNumber(user?.balance ?? 0)
   const lover = useLover()
+  const manaEnabled = false
   return (
     <Link
       href={item.href ?? '#'}
@@ -101,13 +102,15 @@ function ProfileItem(props: {
       <Col>
         <div className="mx-auto my-1">
           <Avatar
-            size="xs"
+            size={manaEnabled ? 'xs' : 'md'}
             username={user.username}
             avatarUrl={lover?.pinned_url ?? user.avatarUrl}
             noLink
           />
         </div>
-        <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+        {manaEnabled && (
+          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+        )}
       </Col>
     </Link>
   )

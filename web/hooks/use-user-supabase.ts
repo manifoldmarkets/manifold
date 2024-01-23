@@ -6,9 +6,13 @@ import { Answer, DpmAnswer } from 'common/answer'
 import { uniqBy, uniq } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { filterDefined } from 'common/util/array'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export function useUserById(userId: string | undefined) {
-  const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [user, setUser] = usePersistentInMemoryState<User | null | undefined>(
+    undefined,
+    `user-${userId}`
+  )
   useEffect(() => {
     if (userId) {
       getUser(userId).then((result) => {

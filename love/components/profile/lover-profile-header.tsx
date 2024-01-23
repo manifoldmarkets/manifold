@@ -11,19 +11,22 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import LoverPrimaryInfo from './lover-primary-info'
-import OnlineIcon from './online-icon'
+import OnlineIcon from '../online-icon'
 import { track } from 'web/lib/service/analytics'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { deleteLover } from 'love/lib/supabase/lovers'
-import { ShareProfileButton } from './widgets/share-profile-button'
+import { ShareProfileButton } from '../widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
+import { LikeData } from 'love/lib/supabase/likes'
 
 export default function LoverProfileHeader(props: {
   user: User
   lover: Lover
   simpleView?: boolean
+  likesReceived: LikeData[]
+  refreshLikes: () => void
 }) {
   const { user, lover, simpleView } = props
   const currentUser = useUser()
@@ -32,22 +35,24 @@ export default function LoverProfileHeader(props: {
   return (
     <Col className="w-full">
       <Row className={clsx('flex-wrap justify-between gap-2 py-1')}>
-        <Col className="gap-1">
-          <Row className="items-center gap-1 text-xl">
-            <OnlineIcon last_online_time={lover.last_online_time} />
-            <span>
-              {simpleView ? (
-                <Link className={linkClass} href={`/${user.username}`}>
+        <Row className="items-center gap-1">
+          <Col className="gap-1">
+            <Row className="items-center gap-1 text-xl">
+              <OnlineIcon last_online_time={lover.last_online_time} />
+              <span>
+                {simpleView ? (
+                  <Link className={linkClass} href={`/${user.username}`}>
+                    <span className="font-semibold">{user.name}</span>
+                  </Link>
+                ) : (
                   <span className="font-semibold">{user.name}</span>
-                </Link>
-              ) : (
-                <span className="font-semibold">{user.name}</span>
-              )}
-              , {lover.age}
-            </span>
-          </Row>
-          <LoverPrimaryInfo lover={lover} />
-        </Col>
+                )}
+                , {lover.age}
+              </span>
+            </Row>
+            <LoverPrimaryInfo lover={lover} />
+          </Col>
+        </Row>
         {currentUser && isCurrentUser ? (
           <Row className={'items-center gap-1 sm:gap-2'}>
             <ShareProfileButton
@@ -89,7 +94,7 @@ export default function LoverProfileHeader(props: {
             />
           </Row>
         ) : (
-          <Row className="items-center gap-1 self-end sm:gap-2">
+          <Row className="items-center gap-1 sm:gap-2">
             <ShareProfileButton
               className="hidden sm:flex"
               username={user.username}

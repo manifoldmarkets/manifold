@@ -135,7 +135,7 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
   })
 
   const [atFront, setAtFront] = useState(true)
-  const [atBack, setAtBack] = useState(false)
+  const [atBack, setAtBack] = useState(true)
   const onScroll = throttle(() => {
     if (carouselRef) {
       const { scrollLeft, clientWidth, scrollWidth } = carouselRef

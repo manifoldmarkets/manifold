@@ -104,7 +104,7 @@ export default function ProfileCarousel(props: { lover: Lover }) {
         {isCurrentUser && (
           <div
             className={clsx(
-              'absolute top-2 z-[100] transition-opacity sm:opacity-0 sm:group-hover:opacity-100',
+              'absolute top-2 z-[10] transition-opacity sm:opacity-0 sm:group-hover:opacity-100',
               !lover.photo_urls || lover.photo_urls.length < 1
                 ? 'left-[200px]'
                 : 'right-2'

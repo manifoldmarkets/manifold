@@ -1010,6 +1010,27 @@ export interface Database {
         }
         Relationships: []
       }
+      love_likes: {
+        Row: {
+          created_time: string
+          creator_id: string
+          like_id: string
+          target_id: string
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          like_id?: string
+          target_id: string
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          like_id?: string
+          target_id?: string
+        }
+        Relationships: []
+      }
       love_questions: {
         Row: {
           answer_type: string
@@ -1037,6 +1058,30 @@ export interface Database {
           importance_score?: number
           multiple_choice_options?: Json | null
           question?: string
+        }
+        Relationships: []
+      }
+      love_ships: {
+        Row: {
+          created_time: string
+          creator_id: string
+          ship_id: string
+          target1_id: string
+          target2_id: string
+        }
+        Insert: {
+          created_time?: string
+          creator_id: string
+          ship_id?: string
+          target1_id: string
+          target2_id: string
+        }
+        Update: {
+          created_time?: string
+          creator_id?: string
+          ship_id?: string
+          target1_id?: string
+          target2_id?: string
         }
         Relationships: []
       }

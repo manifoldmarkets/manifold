@@ -80,6 +80,8 @@ export type love_notification_source_types =
   | 'love_contract'
   | 'love_comment'
   | 'love_answer'
+  | 'love_like'
+  | 'love_ship'
 
 export type notification_source_update_types =
   | 'created'
@@ -314,6 +316,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   new_endorsement: {
     simple: 'New endorsements',
     detailed: 'When another user endorses you',
+  },
+  new_love_like: {
+    simple: 'New likes',
+    detailed: 'When another user likes you',
+  },
+  new_love_ship: {
+    simple: 'New ships',
+    detailed: 'When another user supports a relationship between you and someone else',
   },
 }
 

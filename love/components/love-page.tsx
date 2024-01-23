@@ -179,8 +179,8 @@ const getDesktopNav = (user: User | null | undefined) => {
         icon: PrivateMessagesIcon,
       },
       {
-        name: 'Portfolio',
-        href: '/portfolio',
+        name: 'Markets',
+        href: '/markets',
         icon: ChartBarIcon,
       }
     )
@@ -192,9 +192,10 @@ const getDesktopNav = (user: User | null | undefined) => {
 }
 
 // No sidebar when signed out
-const getSidebarNavigation = (toggleModal: () => void) => {
+const getSidebarNavigation = (_toggleModal: () => void) => {
   return buildArray(
-    { name: 'Portfolio', icon: ChartBarIcon, href: '/portfolio' },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
+    { name: 'Markets', icon: ChartBarIcon, href: '/markets' }
+    // TODO: Renable get mana dialog once we add back prediction markets.
+    // { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
   )
 }

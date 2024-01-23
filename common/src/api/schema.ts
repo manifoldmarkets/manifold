@@ -619,6 +619,31 @@ export const API = (_apiTypeCheck = {
       })[]
     },
   },
+  'like-lover': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({
+      targetUserId: z.string(),
+      remove: z.boolean().optional(),
+    }),
+    returns: {} as {
+      status: 'success'
+    },
+  },
+  'ship-lovers': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({
+      targetUserId1: z.string(),
+      targetUserId2: z.string(),
+      remove: z.boolean().optional(),
+    }),
+    returns: {} as {
+      status: 'success'
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
