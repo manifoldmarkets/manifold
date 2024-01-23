@@ -55,7 +55,7 @@ async function getMostRecentCommentableBet(
     select bet_id, outcome, answer_id, amount
     from prior_user_bets as b
     where not b.is_redemption
-    and $4 is null or b.id = $4
+    and $4 is null or b.answer_id = $4
     and b.created_time > (select created_time from cutoff_time)
     and b.bet_id not in (select bet_id from prior_user_comments_with_bets)
     order by created_time desc
