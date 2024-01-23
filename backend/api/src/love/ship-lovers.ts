@@ -3,6 +3,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
+import { createLoveShipNotification } from 'shared/create-love-notification'
 
 export const shipLovers: APIHandler<'ship-lovers'> = async (
   props,
@@ -44,7 +45,7 @@ export const shipLovers: APIHandler<'ship-lovers'> = async (
   }
 
   // Insert the new ship
-  const { data: _, error } = await db
+  const { data, error } = await db
     .from('love_ships')
     .insert({
       creator_id: creatorId,
@@ -58,7 +59,10 @@ export const shipLovers: APIHandler<'ship-lovers'> = async (
     throw new APIError(500, 'Failed to create ship: ' + error.message)
   }
 
-  // TODO: Add any post-creation logic here (e.g., notifications)
+  await Promise.all([
+    createLoveShipNotification(data, data.target1_id),
+    createLoveShipNotification(data, data.target2_id),
+  ])
 
   return { status: 'success' }
 }

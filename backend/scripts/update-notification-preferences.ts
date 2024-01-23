@@ -9,8 +9,10 @@ import {
   notification_preference,
 } from 'common/user-notification-preferences'
 
-const key: notification_preference = 'new_love_like'
+const key: notification_preference = 'new_love_ship'
 const destinationToAdd: notification_destination_types = 'browser'
+// const key: notification_preference = 'new_love_like'
+// const destinationToAdd: notification_destination_types = 'browser'
 
 async function main() {
   const firestore = admin.firestore()

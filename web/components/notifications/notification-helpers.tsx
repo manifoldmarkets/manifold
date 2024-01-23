@@ -30,15 +30,16 @@ export function NotificationUserLink(props: {
   name?: string
   username?: string
   className?: string
-  short?: string
+  hideBadge?: boolean
 }) {
-  const { userId, name, username, className } = props
+  const { userId, name, username, className, hideBadge } = props
   return (
     <UserLink
       user={{ id: userId || '', name: name || '', username: username || '' }}
       className={clsx(
         className ?? 'hover:text-primary-500 relative flex-shrink-0'
       )}
+      hideBadge={hideBadge}
     />
   )
 }

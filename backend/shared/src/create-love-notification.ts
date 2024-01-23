@@ -44,3 +44,57 @@ export const createLoveLikeNotification = async (like: Row<'love_likes'>) => {
   const pg = createSupabaseDirectClient()
   return await insertNotificationToSupabase(notification, pg)
 }
+
+export const createLoveShipNotification = async (
+  ship: Row<'love_ships'>,
+  recipientId: string
+) => {
+  const { creator_id, target1_id, target2_id, ship_id } = ship
+  const otherTargetId = target1_id === recipientId ? target2_id : target1_id
+
+  const db = createSupabaseClient()
+
+  const creator = await getUser(creator_id)
+  const targetPrivateUser = await getPrivateUser(recipientId)
+  const user = await getUser(otherTargetId)
+  const lover = await getLoverRow(otherTargetId, db)
+
+  if (!creator || !targetPrivateUser || !user) {
+    console.error('Could not load user object', {
+      creator,
+      targetPrivateUser,
+      user,
+    })
+    return
+  }
+
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    targetPrivateUser,
+    'new_love_ship'
+  )
+  if (!sendToBrowser) return
+
+  const id = `${creator_id}-${ship_id}`
+  const notification: Notification = {
+    id,
+    userId: recipientId,
+    reason: 'new_love_ship',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: ship_id,
+    sourceType: 'love_ship',
+    sourceUpdateType: 'created',
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: lover.pinned_url ?? user.avatarUrl,
+    sourceText: '',
+    data: {
+      creatorId: creator_id,
+      creatorName: creator.name,
+      creatorUsername: creator.username,
+      otherTargetId,
+    },
+  }
+  const pg = createSupabaseDirectClient()
+  return await insertNotificationToSupabase(notification, pg)
+}

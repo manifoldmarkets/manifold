@@ -38,6 +38,7 @@ export const NOTIFICATION_TYPES_TO_SELECT: notification_source_types[] = [
   'love_answer', // not used yet
   'love_contract', // match market resolutions, updates
   'love_like',
+  'love_ship',
 ]
 export const NOTIFICATION_REASONS_TO_SELECT: NotificationReason[] = []
 

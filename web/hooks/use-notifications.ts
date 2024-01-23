@@ -191,6 +191,8 @@ function groupGeneralNotifications(
         ? 'quest_payout'
         : n.sourceType === 'love_like'
         ? 'love_like'
+        : n.sourceType === 'love_ship'
+        ? 'love_ship'
         : `${n.sourceTitle}${n.sourceContractId}`)
   )
   const mostRecentNotification = first(sortedNotifications)
