@@ -5,25 +5,25 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { PoliticsArticle } from 'web/components/us-elections/article'
 import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
-import { PoliticsContractCard } from 'web/components/us-elections/contracts/politics-contract-card'
+import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
+import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
 import { presidency2024 } from 'web/components/us-elections/usa-map/election-contract-data'
 import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
+import { Carousel } from 'web/components/widgets/carousel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
-import { PoliticsArticle } from 'web/components/us-elections/article'
-import { Carousel } from 'web/components/widgets/carousel'
-import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Row } from 'web/components/layout/row'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
+import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
@@ -187,10 +187,7 @@ function ElectionContent(props: ElectionsPageProps) {
         <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
           US 2024 Elections
         </div>
-        <PoliticsContractCard
-          contract={electionPartyContract}
-          barColor={'bg-canvas-0'}
-        />
+        <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard
           contract={republicanCandidateContract as MultiContract}
