@@ -35,7 +35,7 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       cross join lateral (
         select c.data, c.importance_score
         from contracts as c
-        where c.id != $1 and c.group_slugs @> array[gs.slug]
+        where c.id != $1 and c.visibility = 'public' and c.deleted = FALSE and c.group_slugs @> array[gs.slug]
         order by c.importance_score desc
         limit $2
       ) as c

@@ -5,28 +5,38 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { PoliticsArticle } from 'web/components/us-elections/article'
 import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
-import { PoliticsContractCard } from 'web/components/us-elections/contracts/politics-contract-card'
+import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
+import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
 import { presidency2024 } from 'web/components/us-elections/usa-map/election-contract-data'
 import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
+import { Carousel } from 'web/components/widgets/carousel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
-import { PoliticsArticle } from 'web/components/us-elections/article'
-import { Carousel } from 'web/components/widgets/carousel'
-import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Row } from 'web/components/layout/row'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
+import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
+}
+
+export type ElectionsPageProps = {
+  rawMapContractsDictionary: MapContractsDictionary
+  electionPartyContract: Contract
+  electionCandidateContract: Contract
+  republicanCandidateContract: Contract
+  democratCandidateContract: Contract
+  newHampshireContract: Contract
+  linkPreviews: LinkPreviews
 }
 
 const NH_LINK =
@@ -107,15 +117,7 @@ function useLiveContract(inputContract: Contract): Contract {
 
 export type MapContracts = { state: string; contract: Contract | null }
 
-export default function USElectionsPage(props: {
-  rawMapContractsDictionary: MapContractsDictionary
-  electionPartyContract: Contract
-  electionCandidateContract: Contract
-  republicanCandidateContract: Contract
-  democratCandidateContract: Contract
-  newHampshireContract: Contract
-  linkPreviews: LinkPreviews
-}) {
+export default function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
   useTracking('view elections')
   const user = useUser()
@@ -130,6 +132,35 @@ export default function USElectionsPage(props: {
     newHampshireContract,
     linkPreviews,
   } = props
+
+  if (
+    !electionPartyContract ||
+    !electionCandidateContract ||
+    !republicanCandidateContract ||
+    !democratCandidateContract ||
+    !newHampshireContract
+  ) {
+    return <Custom404 />
+  }
+
+  return (
+    <Page trackPageView="us elections page 2024">
+      <ElectionContent {...props} />
+    </Page>
+  )
+}
+
+function ElectionContent(props: ElectionsPageProps) {
+  const {
+    rawMapContractsDictionary,
+    electionCandidateContract,
+    electionPartyContract,
+    republicanCandidateContract,
+    democratCandidateContract,
+    newHampshireContract,
+    linkPreviews,
+  } = props
+
   const [targetState, setTargetState] = useState<string | undefined | null>(
     'GA'
   )
@@ -150,26 +181,13 @@ export default function USElectionsPage(props: {
     {} as MapContractsDictionary
   )
 
-  if (
-    !electionPartyContract ||
-    !electionCandidateContract ||
-    !republicanCandidateContract ||
-    !democratCandidateContract ||
-    !newHampshireContract
-  ) {
-    return <Custom404 />
-  }
-
   return (
-    <Page trackPageView="us elections page 2024">
+    <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
           US 2024 Elections
         </div>
-        <PoliticsContractCard
-          contract={electionPartyContract}
-          barColor={'bg-canvas-0'}
-        />
+        <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard
           contract={republicanCandidateContract as MultiContract}
@@ -238,7 +256,7 @@ export default function USElectionsPage(props: {
         </Col>
       </Col>
       <Spacer h={4} />
-    </Page>
+    </>
   )
 }
 

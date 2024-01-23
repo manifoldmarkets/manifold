@@ -849,7 +849,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     const { data, error } = await db
       .from('contract_comments')
       .select('contract_id')
-      .eq('id', content_id)
+      .eq('comment_id', content_id)
     if (error) {
       log('Failed to get contract id: ' + error.message)
       return
@@ -1219,13 +1219,8 @@ export const createContractResolvedNotifications = async (
 
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
-      const {
-        userPayout,
-        profitRank,
-
-        userInvestment,
-        totalShareholders,
-      } = notification.data as ContractResolutionData
+      const { userPayout, profitRank, userInvestment, totalShareholders } =
+        notification.data as ContractResolutionData
       const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
       const comparison =
         profitRank && totalShareholders && betterThan > 0

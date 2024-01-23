@@ -531,7 +531,8 @@ async function generateAntes(
       providerId,
       contract as CPMMBinaryContract | CPMMMultiContract,
       liquidityDoc.id,
-      ante
+      ante,
+      contract.createdTime
     )
 
     await liquidityDoc.set(lp)

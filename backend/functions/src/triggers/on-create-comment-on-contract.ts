@@ -1,10 +1,9 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact, first } from 'lodash'
-import { getUser, getValues, revalidateStaticProps } from 'shared/utils'
+import { getUser, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
-import { getLargestPosition } from 'common/calculate'
 import {
   createCommentOrAnswerOrUpdatedContractNotification,
   replied_users_info,
@@ -14,70 +13,55 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'
-import { MINUTE_MS } from 'common/util/time'
+
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 
 const firestore = admin.firestore()
 
-export function getMostRecentCommentableBet(
+async function getMostRecentCommentableBet(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string,
   commentCreatedTime: number,
-  betsByCurrentUser: Bet[],
-  commentsByCurrentUser: ContractComment[],
   answerOutcome?: string
 ) {
-  const mostRecentCommentedOnBet = commentsByCurrentUser
-    .filter((c) => c.betId)
-    .sort((a, b) => b.createdTime - a.createdTime)[0]
-  const fiveMinutesAgo = commentCreatedTime - 5 * MINUTE_MS
-  const cutoffTime =
-    mostRecentCommentedOnBet &&
-    mostRecentCommentedOnBet.createdTime > fiveMinutesAgo
-      ? mostRecentCommentedOnBet.createdTime
-      : fiveMinutesAgo
-  const mostRecentCommentableBets = betsByCurrentUser
-    .sort((a, b) => b.createdTime - a.createdTime)
-    .filter(
-      (bet) =>
-        !bet.isRedemption &&
-        (answerOutcome ? bet.outcome === answerOutcome : true) &&
-        bet.createdTime > cutoffTime &&
-        !commentsByCurrentUser.some((comment) => comment.betId === bet.id)
+  return await pg.oneOrNone(
+    `with prior_user_comments_with_bets as (
+      select created_time, data->>'betId' as bet_id from contract_comments
+      where contract_id = $1 and user_id = $2
+      and created_time < millis_to_ts($3)
+      and data ->> 'betId' is not null
+    ), prior_user_bets as (
+      select * from contract_bets
+      where contract_id = $1 and user_id = $2
+      and created_time < millis_to_ts($3)
+      and not is_ante
+    ), cutoff_time as (
+      select *
+      from (
+        select created_time from prior_user_comments_with_bets
+        union all
+        select (millis_to_ts($3) - interval '5 minutes') as created_time
+      ) as t
+      order by created_time desc
+      limit 1
     )
-  return mostRecentCommentableBets[0]
-}
-
-export async function getPriorUserComments(
-  contractId: string,
-  userId: string,
-  before: number
-) {
-  const priorCommentsQuery = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .collection('comments')
-    .where('createdTime', '<', before)
-    .where('userId', '==', userId)
-    .get()
-  return priorCommentsQuery.docs.map((d) => d.data() as ContractComment)
-}
-
-export async function getPriorContractBets(
-  contractId: string,
-  userId: string,
-  before: number
-) {
-  const priorBetsQuery = await firestore
-    .collection('contracts')
-    .doc(contractId)
-    .collection('bets')
-    .where('createdTime', '<', before)
-    .where('userId', '==', userId)
-    .where('isAnte', '==', false)
-    .get()
-  return priorBetsQuery.docs.map((d) => d.data() as Bet)
+    select bet_id, outcome, answer_id, amount
+    from prior_user_bets as b
+    where not b.is_redemption
+    and $4 is null or b.answer_id = $4
+    and b.created_time > (select created_time from cutoff_time)
+    and b.bet_id not in (select bet_id from prior_user_comments_with_bets)
+    order by created_time desc
+    limit 1`,
+    [contractId, userId, commentCreatedTime, answerOutcome]
+  )
 }
 
 export const onCreateCommentOnContract = functions
@@ -88,11 +72,9 @@ export const onCreateCommentOnContract = functions
       contractId: string
     }
     const { eventId } = context
+    const pg = createSupabaseDirectClient()
 
-    const contracts = await getContractsDirect(
-      [contractId],
-      createSupabaseDirectClient()
-    )
+    const contracts = await getContractsDirect([contractId], pg)
     const contract = first(contracts)
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
@@ -114,48 +96,43 @@ export const onCreateCommentOnContract = functions
 
     let bet: Bet | undefined
     if (!comment.betId) {
-      const priorUserBets = await getPriorContractBets(
-        contractId,
+      const bet = await getMostRecentCommentableBet(
+        pg,
+        contract.id,
         comment.userId,
-        comment.createdTime
-      )
-      const priorUserComments = await getPriorUserComments(
-        contractId,
-        comment.userId,
-        comment.createdTime
-      )
-      bet = getMostRecentCommentableBet(
         comment.createdTime,
-        priorUserBets,
-        priorUserComments,
         comment.answerOutcome
       )
-      if (bet)
+      if (bet) {
+        const { bet_id, outcome, amount, answer_id } = bet
         await change.ref.update(
           removeUndefinedProps({
-            betId: bet.id,
-            betOutcome: bet.outcome,
-            betAmount: bet.amount,
-            betAnswerId: bet.answerId,
+            betId: bet_id,
+            betOutcome: outcome,
+            betAmount: amount,
+            betAnswerId: answer_id,
           })
         )
-      const position = getLargestPosition(contract, priorUserBets)
-      if (position) {
-        const fields: { [k: string]: unknown } = {
-          commenterPositionShares: position.shares,
-          commenterPositionOutcome: position.outcome,
-        }
-        if (position.answerId) {
-          fields.commenterPositionAnswerId = position.answerId
-        }
-        if (contract.mechanism === 'cpmm-1') {
-          fields.commenterPositionProb = contract.prob
-        }
-        await change.ref.update(fields)
       }
     }
 
+    const position = await getLargestPosition(pg, contract.id, comment.userId)
+    if (position && position.shares >= 1) {
+      const fields: { [k: string]: unknown } = {
+        commenterPositionShares: position.shares,
+        commenterPositionOutcome: position.outcome,
+      }
+      if (position.answer_id) {
+        fields.commenterPositionAnswerId = position.answer_id
+      }
+      if (contract.mechanism === 'cpmm-1') {
+        fields.commenterPositionProb = contract.prob
+      }
+      await change.ref.update(fields)
+    }
+
     const repliedOrMentionedUserIds = await handleCommentNotifications(
+      pg,
       comment,
       contract,
       commentCreator,
@@ -170,35 +147,43 @@ export const onCreateCommentOnContract = functions
     )
   })
 
-const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
+const getReplyInfo = async (
+  pg: SupabaseDirectClient,
+  comment: ContractComment,
+  contract: Contract
+) => {
   if (
     comment.answerOutcome &&
     contract.outcomeType === 'FREE_RESPONSE' &&
     contract.answers
   ) {
-    const comments = await getValues<ContractComment>(
-      firestore.collection('contracts').doc(contract.id).collection('comments')
-    )
     const answer = contract.answers.find((a) => a.id === comment.answerOutcome)
+    const comments = await pg.manyOrNone(
+      `select comment_id, user_id
+      from contract_comments
+      where contract_id = $1 and coalesce(data->>'answerOutcome', '') = $2`,
+      [contract.id, answer?.id ?? '']
+    )
     return {
       repliedToAnswer: answer,
       repliedToType: 'answer',
       repliedUserId: answer?.userId,
-      commentsInSameReplyChain: comments.filter(
-        (c) => c.answerOutcome === answer?.id
-      ),
+      commentsInSameReplyChain: comments,
     } as const
   } else if (comment.replyToCommentId) {
-    const comments = await getValues<ContractComment>(
-      firestore.collection('contracts').doc(contract.id).collection('comments')
+    const comments = await pg.manyOrNone(
+      `select comment_id, user_id, data->>'replyToCommentId' as reply_to_id
+      from contract_comments where contract_id = $1`,
+      [contract.id]
     )
     return {
       repliedToAnswer: null,
       repliedToType: 'comment',
-      repliedUserId: comments.find((c) => c.id === comment.replyToCommentId)
-        ?.userId,
+      repliedUserId: comments.find(
+        (c) => c.comment_id === comment.replyToCommentId
+      )?.user_id,
       commentsInSameReplyChain: comments.filter(
-        (c) => c.replyToCommentId === comment.replyToCommentId
+        (c) => c.reply_to_id === comment.replyToCommentId
       ),
     } as const
   } else {
@@ -207,13 +192,14 @@ const getReplyInfo = async (comment: ContractComment, contract: Contract) => {
 }
 
 export const handleCommentNotifications = async (
+  pg: SupabaseDirectClient,
   comment: ContractComment,
   contract: Contract,
   commentCreator: User,
   bet: Bet | undefined,
   eventId: string
 ) => {
-  const replyInfo = await getReplyInfo(comment, contract)
+  const replyInfo = await getReplyInfo(pg, comment, contract)
 
   const mentionedUsers = compact(parseMentions(comment.content))
   const repliedUsers: replied_users_info = {}
@@ -237,7 +223,7 @@ export const handleCommentNotifications = async (
     if (commentsInSameReplyChain) {
       // The rest of the children in the chain are always comments
       commentsInSameReplyChain.forEach((c) => {
-        if (c.userId !== comment.userId && c.userId !== repliedUserId) {
+        if (c.user_id !== comment.userId && c.user_id !== repliedUserId) {
           repliedUsers[c.userId] = {
             repliedToType: 'comment',
             repliedToAnswerText: undefined,
@@ -263,4 +249,23 @@ export const handleCommentNotifications = async (
     }
   )
   return [...mentionedUsers, ...Object.keys(repliedUsers)]
+}
+
+async function getLargestPosition(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string
+) {
+  // mqp: should probably use user_contract_metrics for this, i am just lazily porting
+  return await pg.oneOrNone(
+    `with user_positions as (
+      select answer_id, outcome, sum(shares) as shares
+      from contract_bets
+      where contract_id = $1
+      and user_id = $2
+      group by answer_id, outcome
+    )
+    select * from user_positions order by shares desc limit 1`,
+    [contractId, userId]
+  )
 }
