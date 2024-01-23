@@ -138,6 +138,7 @@ export const BOT_USERNAMES = [
   'JointBot',
   'WrenTec',
   'TigerMcBot',
+  'Euclidean',
 ]
 
 export const MOD_IDS = [
