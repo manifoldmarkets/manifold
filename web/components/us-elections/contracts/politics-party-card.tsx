@@ -1,57 +1,47 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import Router from 'next/router'
 import { useState } from 'react'
-
-import { Contract, MultiContract, contractPath } from 'common/contract'
+import Router from 'next/router'
+import { MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { ClickFrame } from 'web/components/widgets/click-frame'
-import { Col } from 'web/components/layout/col'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { Spacer } from 'web/components/layout/spacer'
+import { PartyPanel } from './party-panel/party-panel'
 
-export function PoliticsContractCard(props: {
-  contract: Contract
+export function PoliticsPartyCard(props: {
+  contract: MultiContract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   item?: FeedTimelineItem
   className?: string
-  /** whether this card is small, like in card grids.*/
-  small?: boolean
-  hide?: () => void
-  showGraph?: boolean
-  hideBottomRow?: boolean
   customTitle?: string
   titleSize?: 'lg'
-  barColor?: string
+  maxAnswers?: number
 }) {
   const {
     promotedData,
     trackingPostfix,
     item,
-    className,
-    children,
-    small,
-    hide,
-    showGraph,
-    hideBottomRow,
     customTitle,
     titleSize,
+    className,
+    maxAnswers,
   } = props
-  const user = useUser()
 
   const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+    (useFirebasePublicContract(
+      props.contract.visibility,
+      props.contract.id
+    ) as MultiContract) ?? props.contract
 
   if (contract.mechanism === 'cpmm-multi-1') {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -60,18 +50,8 @@ export function PoliticsContractCard(props: {
       contract.answers = answers
     }
   }
+  const { closeTime } = contract
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
-
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -107,6 +87,17 @@ export function PoliticsContractCard(props: {
       isPromoted: !!promotedData,
     })
 
+  function extractPhrase(inputString: string): string | null {
+    const regex = /Who will win the (.+?)\?/
+    const match = regex.exec(inputString)
+
+    if (match && match[1]) {
+      return match[1] // This is the extracted phrase.
+    } else {
+      return null // No match found.
+    }
+  }
+
   return (
     <ClickFrame
       className={clsx(
@@ -122,34 +113,18 @@ export function PoliticsContractCard(props: {
       }}
       ref={ref}
     >
-      <Col className={'w-full flex-col gap-1.5 '}>
-        <div
-          className={clsx(
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-          )}
-        >
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Link
-            className={clsx(
-              'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg ',
-              titleSize === 'lg' && ' sm:text-3xl'
-            )}
-            href={path}
-            onClick={trackClick}
-          >
-            <VisibilityIcon contract={contract} />{' '}
-            {customTitle ? customTitle : contract.question}
-          </Link>
-        </div>
-      </Col>
-
-      <div className="w-full overflow-hidden pt-2">
-        <SimpleAnswerBars
-          contract={contract as MultiContract}
-          maxAnswers={4}
-          barColor={props.barColor}
-        />
-      </div>
+      <Link
+        className={clsx(
+          'group-hover:text-primary-700 grow items-start text-sm font-semibold transition-colors sm:text-lg',
+          titleSize === 'lg' && ' sm:text-3xl'
+        )}
+        href={path}
+        onClick={trackClick}
+      >
+        {contract.question}
+      </Link>
+      <Spacer h={4} />
+      <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 6} />
     </ClickFrame>
   )
 }
