@@ -11,6 +11,7 @@ import {
   calculateCpmmMultiArbitrageSellYes,
 } from './calculate-cpmm-arbitrage'
 import { Answer } from './answer'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
 
 export type CpmmState = {
   pool: { [outcome: string]: number }
@@ -310,6 +311,47 @@ export function calculateAmountToBuyShares(
     const totalShares = sumBy(takers, (taker) => taker.shares)
     return totalShares - shares
   })
+}
+
+export function calculateCpmmAmountToBuyShares(
+  contract: CPMMContract | CPMMMultiContract,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  allUnfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  answer?: Answer
+) {
+  const startCpmmState =
+    contract.mechanism === 'cpmm-1'
+      ? contract
+      : {
+          pool: { YES: answer!.poolYes, NO: answer!.poolNo },
+          p: 0.5,
+        }
+
+  const unfilledBets = answer?.id
+    ? allUnfilledBets.filter((b) => b.answerId === answer.id)
+    : allUnfilledBets
+
+  if (contract.mechanism === 'cpmm-1') {
+    return calculateAmountToBuyShares(
+      startCpmmState,
+      shares,
+      outcome,
+      unfilledBets,
+      balanceByUserId
+    )
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    return calculateAmountToBuySharesFixedP(
+      startCpmmState,
+      shares,
+      outcome,
+      unfilledBets,
+      balanceByUserId
+    )
+  } else {
+    throw new Error('Only works for cpmm-1 and cpmm-multi-1')
+  }
 }
 
 export function calculateCpmmSale(

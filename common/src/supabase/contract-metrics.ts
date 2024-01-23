@@ -42,14 +42,19 @@ export async function getRanking(
 export async function getUserContractMetrics(
   userId: string,
   contractId: string,
-  db: SupabaseClient
+  db: SupabaseClient,
+  answerId?: string
 ) {
-  const { data } = await run(
-    selectJson(db, 'user_contract_metrics')
-      .eq('user_id', userId)
-      .eq('contract_id', contractId)
-      .is('answer_id', null)
-  )
+  let q = selectJson(db, 'user_contract_metrics')
+    .eq('user_id', userId)
+    .eq('contract_id', contractId)
+
+  if (answerId) {
+    q = q.eq('answer_id', answerId)
+  } else {
+    q = q.is('answer_id', null)
+  }
+  const { data } = await run(q)
   return data.map((r) => r.data) as ContractMetric[]
 }
 
