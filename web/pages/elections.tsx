@@ -187,7 +187,7 @@ function ElectionContent(props: ElectionsPageProps) {
         <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
           US 2024 Elections
         </div>
-        {/* <PoliticsPartyCard contract={electionPartyContract as MultiContract} /> */}
+        <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard
           contract={republicanCandidateContract as MultiContract}
