@@ -1,10 +1,12 @@
 import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
 import { CPMMBinaryContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getContracts } from 'common/supabase/contracts'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { tsToMillis } from 'common/supabase/utils'
 import { formatMoney, formatMoneyNumber } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -27,7 +29,6 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
@@ -53,8 +54,10 @@ export async function getStaticProps(props: {
     : null
 
   const weeklyPortfolioUpdate = weeklyPortfolioUpdates?.[0]
-  const end =
-    weeklyPortfolioUpdate?.created_time ?? new Date(rangeEndDateSlug).valueOf()
+  const { created_time, contract_metrics } = weeklyPortfolioUpdate ?? {}
+  const end = created_time
+    ? tsToMillis(created_time)
+    : new Date(rangeEndDateSlug).valueOf()
   const start = end - 7 * DAY_MS
   const profitPoints =
     weeklyPortfolioUpdate && user
@@ -70,7 +73,7 @@ export async function getStaticProps(props: {
       : []
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
-        weeklyPortfolioUpdate.contractMetrics.map((c) => c.contractId),
+        (contract_metrics as ContractMetric[]).map((c) => c.contractId),
         db
       )
     : null

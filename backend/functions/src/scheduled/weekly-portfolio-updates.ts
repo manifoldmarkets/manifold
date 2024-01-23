@@ -10,7 +10,6 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getUser, log } from 'shared/utils'
-import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { PrivateUser } from 'common/user'
 import { secrets } from 'common/secrets'
 import { bulkInsert } from 'shared/supabase/utils'
@@ -176,5 +175,5 @@ const getUsersWeeklyUpdate = async (
   }
 
   const update = data[0]
-  return update as WeeklyPortfolioUpdate
+  return update
 }
