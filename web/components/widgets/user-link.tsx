@@ -24,7 +24,7 @@ export const isFresh = (createdTime: number) =>
 
 export function shortenName(name: string) {
   const firstName = name.split(' ')[0]
-  const maxLength = 11
+  const maxLength = 10
   const shortName =
     firstName.length >= 3 && name.length > maxLength
       ? firstName.length < maxLength

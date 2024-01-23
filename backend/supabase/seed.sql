@@ -41,7 +41,6 @@ $$;
 /******************************************/
 /* 1. tables containing firestore content */
 /******************************************/
-
 begin;
 
 drop publication if exists supabase_realtime;
@@ -132,7 +131,6 @@ begin
     table_id
            when 'users' then cast((null, 'id') as table_spec)
            when 'private_users' then cast((null, 'id') as table_spec)
-           when 'user_reactions' then cast(('user_id', 'reaction_id') as table_spec)
            when 'contracts' then cast((null, 'id') as table_spec)
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
            when 'answers' then cast((null, 'id') as table_spec)

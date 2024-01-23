@@ -12,6 +12,7 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export function CandidateCard(props: {
   contract: MultiContract
@@ -32,6 +33,13 @@ export function CandidateCard(props: {
       props.contract.id
     ) as MultiContract) ?? props.contract
 
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
   const { closeTime } = contract
 
   const isClosed = closeTime && closeTime < Date.now()
@@ -81,25 +89,19 @@ export function CandidateCard(props: {
   }
 
   return (
-    <Col className={'w-full flex-col gap-1.5 '}>
-      <div
+    <Col className={'group w-full flex-col gap-1.5 '}>
+      {/* Title is link to contract for open in new tab and a11y */}
+      <Link
         className={clsx(
-          'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
+          'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+          titleSize === 'lg' && ' sm:text-3xl'
         )}
+        href={path}
+        onClick={trackClick}
       >
-        {/* Title is link to contract for open in new tab and a11y */}
-        <Link
-          className={clsx(
-            'hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
-            titleSize === 'lg' && ' sm:text-3xl'
-          )}
-          href={path}
-          onClick={trackClick}
-        >
-          <VisibilityIcon contract={contract} />{' '}
-          {customTitle ? customTitle : extractPhrase(contract.question)}
-        </Link>
-      </div>
+        <VisibilityIcon contract={contract} />{' '}
+        {customTitle ? customTitle : extractPhrase(contract.question)}
+      </Link>
       <CandidatePanel contract={contract} maxAnswers={6} />
     </Col>
   )

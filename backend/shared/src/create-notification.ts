@@ -27,7 +27,6 @@ import {
   getContract,
   getPrivateUser,
   getUser,
-  getUserSupabase,
   getValues,
   log,
 } from 'shared/utils'
@@ -835,11 +834,11 @@ export const createLeagueChangedNotification = async (
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {
-  const { reaction_id, content_owner_id, content_id, content_type } = reaction
-  if (!content_id || !content_owner_id) return
+  const { reaction_id, content_owner_id, user_id, content_id, content_type } =
+    reaction
 
-  const privateUser = await getPrivateUser(content_owner_id)
-  const user = await getUser(content_owner_id)
+  const creatorPrivateUser = await getPrivateUser(content_owner_id)
+  const user = await getUser(user_id)
 
   const db = createSupabaseClient()
 
@@ -850,7 +849,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     const { data, error } = await db
       .from('contract_comments')
       .select('contract_id')
-      .eq('id', content_id)
+      .eq('comment_id', content_id)
     if (error) {
       log('Failed to get contract id: ' + error.message)
       return
@@ -864,10 +863,10 @@ export const createLikeNotification = async (reaction: Reaction) => {
 
   const contract = await getContract(contractId)
 
-  if (!privateUser || !user || !contract) return
+  if (!creatorPrivateUser || !user || !contract) return
 
   const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
+    creatorPrivateUser,
     'user_liked_your_content'
   )
   if (!sendToBrowser) return
@@ -1784,7 +1783,7 @@ export const createFollowSuggestionNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const contractCreator = await getUserSupabase(contract.creatorId)
+  const contractCreator = await getUser(contract.creatorId)
   if (!contractCreator) return
 
   if (!userOptedOutOfBrowserNotifications(privateUser)) {

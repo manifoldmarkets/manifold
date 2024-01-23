@@ -525,7 +525,7 @@ export function ContractParamsForm(props: {
               onChange={(newAmount) => setBountyAmount(newAmount)}
               error={bountyError}
               setError={setBountyError}
-              quickButtonValues={[100, 500]}
+              quickButtonValues="large"
             />
           ) : (
             <div className="text-ink-700 pl-1 text-sm">

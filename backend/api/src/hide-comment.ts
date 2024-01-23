@@ -8,11 +8,6 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath },
   auth
 ) => {
-  const user = await getUser(auth.uid)
-  if (!user) {
-    throw new APIError(401, 'User not found')
-  }
-
   // Extract contractId from commentPath
   const contractId = commentPath.split('/')[1]
   const contractDoc = await firestore.doc(`contracts/${contractId}`).get()

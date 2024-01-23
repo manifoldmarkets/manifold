@@ -14,7 +14,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'
-import { HOUR_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
@@ -31,12 +31,12 @@ export function getMostRecentCommentableBet(
   const mostRecentCommentedOnBet = commentsByCurrentUser
     .filter((c) => c.betId)
     .sort((a, b) => b.createdTime - a.createdTime)[0]
-  const oneHourAgo = commentCreatedTime - HOUR_MS
+  const fiveMinutesAgo = commentCreatedTime - 5 * MINUTE_MS
   const cutoffTime =
     mostRecentCommentedOnBet &&
-    mostRecentCommentedOnBet.createdTime > oneHourAgo
+    mostRecentCommentedOnBet.createdTime > fiveMinutesAgo
       ? mostRecentCommentedOnBet.createdTime
-      : oneHourAgo
+      : fiveMinutesAgo
   const mostRecentCommentableBets = betsByCurrentUser
     .sort((a, b) => b.createdTime - a.createdTime)
     .filter(
@@ -112,18 +112,18 @@ export const onCreateCommentOnContract = functions
       .doc(contract.id)
       .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
-    const priorUserBets = await getPriorContractBets(
-      contractId,
-      comment.userId,
-      comment.createdTime
-    )
-    const priorUserComments = await getPriorUserComments(
-      contractId,
-      comment.userId,
-      comment.createdTime
-    )
     let bet: Bet | undefined
     if (!comment.betId) {
+      const priorUserBets = await getPriorContractBets(
+        contractId,
+        comment.userId,
+        comment.createdTime
+      )
+      const priorUserComments = await getPriorUserComments(
+        contractId,
+        comment.userId,
+        comment.createdTime
+      )
       bet = getMostRecentCommentableBet(
         comment.createdTime,
         priorUserBets,
@@ -139,21 +139,20 @@ export const onCreateCommentOnContract = functions
             betAnswerId: bet.answerId,
           })
         )
-    }
-
-    const position = getLargestPosition(contract, priorUserBets)
-    if (position) {
-      const fields: { [k: string]: unknown } = {
-        commenterPositionShares: position.shares,
-        commenterPositionOutcome: position.outcome,
+      const position = getLargestPosition(contract, priorUserBets)
+      if (position) {
+        const fields: { [k: string]: unknown } = {
+          commenterPositionShares: position.shares,
+          commenterPositionOutcome: position.outcome,
+        }
+        if (position.answerId) {
+          fields.commenterPositionAnswerId = position.answerId
+        }
+        if (contract.mechanism === 'cpmm-1') {
+          fields.commenterPositionProb = contract.prob
+        }
+        await change.ref.update(fields)
       }
-      if (position.answerId) {
-        fields.commenterPositionAnswerId = position.answerId
-      }
-      if (contract.mechanism === 'cpmm-1') {
-        fields.commenterPositionProb = contract.prob
-      }
-      await change.ref.update(fields)
     }
 
     const repliedOrMentionedUserIds = await handleCommentNotifications(

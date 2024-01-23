@@ -37,7 +37,6 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { FaFlagUsa } from 'react-icons/fa6'
-import { ELECTION_ENABLED } from 'common/envs/constants'
 
 export default function Sidebar(props: {
   className?: string
@@ -130,6 +129,11 @@ const getDesktopNav = (
           }
         : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
+        name: 'US Elections',
+        href: '/elections',
+        icon: FaFlagUsa,
+      },
+      {
         name: 'Notifications',
         href: `/notifications`,
         icon: NotificationsIcon,
@@ -139,14 +143,9 @@ const getDesktopNav = (
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
-      ELECTION_ENABLED && {
-        name: 'US Elections',
-        href: '/us-elections',
-        icon: FaFlagUsa,
-      }
     )
 
   return buildArray(
@@ -160,15 +159,15 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray(
+    {
+      name: 'US Elections',
+      href: '/elections',
+      icon: FaFlagUsa,
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    ELECTION_ENABLED && {
-      name: 'US Elections',
-      href: '/us-elections',
-      icon: FaFlagUsa,
-    },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )

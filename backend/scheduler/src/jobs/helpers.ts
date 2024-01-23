@@ -1,5 +1,5 @@
 import { Cron, CronOptions } from 'croner'
-import { JobContext, gLog as log, logMemory } from 'shared/utils'
+import { JobContext, gLog as log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 
@@ -33,6 +33,7 @@ export function createJob(
         job: name,
         traceId,
       })
+
     logWithDetails(`[${name}] Starting up.`)
     const db = createSupabaseClient()
 

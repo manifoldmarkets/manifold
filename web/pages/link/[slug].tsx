@@ -10,7 +10,7 @@ import {
 } from 'web/lib/supabase/manalinks'
 import { ManalinkCard } from 'web/components/manalink-card'
 import { useUser } from 'web/hooks/use-user'
-import { firebaseLogin, getUser } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -21,6 +21,7 @@ import { formatMoney } from 'common/util/format'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getUserById } from 'web/lib/supabase/users'
 
 export const getServerSideProps = redirectIfLoggedOut(
   '/',
@@ -113,11 +114,13 @@ export default function ClaimPage(props: {
 }
 
 const useReferral = (user: User | undefined | null, link: ManalinkInfo) => {
-  const [creator, setCreator] = useState<User | undefined>(undefined)
+  const [creatorUsername, setCreatorUsername] = useState<string | undefined>(
+    undefined
+  )
 
   useEffect(() => {
-    getUser(link.creatorId).then(setCreator)
+    getUserById(link.creatorId).then((c) => setCreatorUsername(c?.username))
   }, [link])
 
-  useSaveReferral(user, { defaultReferrerUsername: creator?.username })
+  useSaveReferral(user, { defaultReferrerUsername: creatorUsername })
 }

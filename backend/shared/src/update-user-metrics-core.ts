@@ -1,4 +1,4 @@
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -21,6 +21,18 @@ import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
 import { JobContext } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+
+const userToPortfolioMetrics: {
+  [userId: string]: {
+    currentPortfolio: Omit<PortfolioMetrics, 'userId'> | undefined
+    dayAgoProfit: number
+    weekAgoProfit: number
+    monthAgoProfit: number
+    timeCachedPeriodProfits: number
+  }
+} = {}
 
 export async function updateUserMetricsCore({ log }: JobContext) {
   const firestore = admin.firestore()
@@ -29,12 +41,12 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   const weekAgo = now - DAY_MS * 7
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading users...')
   const users = await pg.map(
     `select data from users 
-            order by data->'metricsLastUpdated' nulls first limit 5000`,
+            order by data->'metricsLastUpdated' nulls first limit 2000`,
     [],
     (r) => r.data as User
   )
@@ -54,17 +66,54 @@ export async function updateUserMetricsCore({ log }: JobContext) {
     )
   log(`Loaded creator trader counts.`)
 
-  log('Loading current portfolio snapshot...')
-  const currPortfolios = await getPortfolioSnapshot(pg, userIds)
-  log(`Loaded current portfolio snapshot.`)
-
-  log('Loading portfolio historical profits...')
-  const [yesterdayProfits, weeklyProfits, monthlyProfits] = await Promise.all(
-    [yesterday, weekAgo, monthAgo].map((t) =>
-      getPortfolioHistoricalProfits(pg, userIds, t)
+  const userIdsNeedingUpdate = users
+    .filter(
+      (u) =>
+        !userToPortfolioMetrics[u.id]?.currentPortfolio ||
+        (userToPortfolioMetrics[u.id]?.timeCachedPeriodProfits ?? 0) <
+          now - 6 * HOUR_MS
     )
-  )
-  log(`Loaded portfolio historical profits.`)
+    .map((u) => u.id)
+  if (userIdsNeedingUpdate.length > 0) {
+    log(
+      `Fetching portfolio metrics for ${
+        userIdsNeedingUpdate.length
+      } users. Already have metrics for ${
+        Object.keys(userToPortfolioMetrics).length
+      } users.`
+    )
+    const userIdsMissingPortfolio = users
+      .filter((u) => !userToPortfolioMetrics[u.id]?.currentPortfolio)
+      .map((u) => u.id)
+    log(
+      `Loading current portfolio snapshot for ${userIdsMissingPortfolio.length} users...`
+    )
+    // We recalculate the portfolio every run per user, so we don't need to ever query it more than once
+    const currentPortfolios = await getPortfolioSnapshot(
+      pg,
+      userIdsMissingPortfolio
+    )
+    log(`Loaded current portfolio snapshot.`)
+
+    log('Loading historical profits...')
+    const [dayAgoProfits, weekAgoProfits, monthAgoProfits] = await Promise.all(
+      [yesterday, weekAgo, monthAgo].map((t) =>
+        getPortfolioHistoricalProfits(pg, userIdsNeedingUpdate, t)
+      )
+    )
+    log(`Loaded historical profits.`)
+    for (const userId of userIdsNeedingUpdate) {
+      userToPortfolioMetrics[userId] = {
+        currentPortfolio:
+          currentPortfolios[userId] ??
+          userToPortfolioMetrics[userId]?.currentPortfolio,
+        dayAgoProfit: dayAgoProfits[userId],
+        weekAgoProfit: weekAgoProfits[userId],
+        monthAgoProfit: monthAgoProfits[userId],
+        timeCachedPeriodProfits: Date.now(),
+      }
+    }
+  }
 
   log('Loading bets...')
 
@@ -106,7 +155,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   const contractMetricUpdates = []
   for (const user of users) {
     const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
-    const currPortfolio = currPortfolios[user.id]
+    const { currentPortfolio } = userToPortfolioMetrics[user.id]
     const creatorTraders = {
       daily: yesterdayTraders[user.id] ?? 0,
       weekly: weeklyTraders[user.id] ?? 0,
@@ -140,20 +189,26 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       unresolvedBetsOnly
     )
     const didPortfolioChange =
-      currPortfolio === undefined ||
-      currPortfolio.balance !== newPortfolio.balance ||
-      currPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currPortfolio.investmentValue !== newPortfolio.investmentValue ||
-      currPortfolio.loanTotal !== newPortfolio.loanTotal
+      currentPortfolio === undefined ||
+      currentPortfolio.balance !== newPortfolio.balance ||
+      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
+      currentPortfolio.loanTotal !== newPortfolio.loanTotal
 
     const allTimeProfit =
       newPortfolio.balance +
       newPortfolio.investmentValue -
       newPortfolio.totalDeposits
     const newProfit = {
-      daily: allTimeProfit - (yesterdayProfits[user.id] ?? allTimeProfit),
-      weekly: allTimeProfit - (weeklyProfits[user.id] ?? allTimeProfit),
-      monthly: allTimeProfit - (monthlyProfits[user.id] ?? allTimeProfit),
+      daily:
+        allTimeProfit -
+        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
+      weekly:
+        allTimeProfit -
+        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
+      monthly:
+        allTimeProfit -
+        (userToPortfolioMetrics[user.id].monthAgoProfit ?? allTimeProfit),
       allTime: allTimeProfit,
     }
 
@@ -183,6 +238,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
         total_deposits: newPortfolio.totalDeposits,
         loan_total: newPortfolio.loanTotal,
       })
+      userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
     }
 
     userUpdates.push({
@@ -255,32 +311,13 @@ const getMetricRelevantUserBets = async (
   )
 }
 
-// Chatgpt said this would be faster. Will let it run a few dozen times and compare
-// with the version below. Dubious, looks almost the same.
 const getPortfolioSnapshot = async (
   pg: SupabaseDirectClient,
   userIds: string[]
 ) => {
-  return Object.fromEntries(
-    await pg.map(
-      `
-    select uph.user_id, uph.investment_value, uph.balance, uph.total_deposits, uph.loan_total
-       from (select user_id, max(ts) as max_ts
-             from user_portfolio_history
-             where user_id in ($1:list)
-             group by user_id) as latest
-      inner join user_portfolio_history uph on latest.user_id = uph.user_id and latest.max_ts = uph.ts
-       `,
-      [userIds],
-      (r) => [r.user_id as string, convertPortfolioHistory(r)]
-    )
-  )
-}
-
-const getPortfolioSnapshotAlt = async (
-  pg: SupabaseDirectClient,
-  userIds: string[]
-) => {
+  if (userIds.length === 0) {
+    return {}
+  }
   return Object.fromEntries(
     await pg.map(
       `select distinct on (user_id) user_id, investment_value, balance, total_deposits, loan_total

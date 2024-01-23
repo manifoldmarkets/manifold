@@ -8,14 +8,11 @@ import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { CandidateBar } from './candidate-bar'
-import { AnswerPosition } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 
@@ -36,6 +33,7 @@ export function CandidatePanel(props: {
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
@@ -77,12 +75,11 @@ export function CandidatePanel(props: {
           <Carousel labelsParentClassName="gap-2">
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
-                user={user}
                 key={answer.id}
                 answer={answer as Answer}
                 contract={contract}
                 color={getCandidateColor(answer.text)}
-                showAvatars={showAvatars}
+                user={user}
               />
             ))}
             {moreCount > 0 && (
@@ -108,7 +105,7 @@ export function CandidatePanel(props: {
   )
 }
 
-function getCandidateColor(name: string) {
+export function getCandidateColor(name: string) {
   // return 'bg-primary-500'
   if (!CANDIDATE_DATA[name]) return '#9E9FBD'
   if (CANDIDATE_DATA[name]?.party === 'Democrat') return '#adc4e3'
@@ -119,33 +116,14 @@ function CandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
   color: string
-  user: User | undefined | null
-  onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   selected?: boolean
   userBets?: Bet[]
-  showAvatars?: boolean
-  expanded?: boolean
+  user?: User | null
 }) {
-  const {
-    answer,
-    contract,
-    onCommentClick,
-    onHover,
-    selected,
-    color,
-    userBets,
-    showAvatars,
-    expanded,
-    user,
-  } = props
+  const { answer, contract, onHover, selected, color, userBets, user } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
-  const [editAnswer, setEditAnswer] = useState<Answer>()
-
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isOther = 'isOther' in answer && answer.isOther
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -174,7 +152,7 @@ function CandidateAnswer(props: {
         selected={selected}
         contract={contract}
       />
-      {!resolution && hasBets && isCpmm && user && (
+      {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
           contract={contract}
           answer={answer as Answer}
@@ -182,7 +160,7 @@ function CandidateAnswer(props: {
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
         />
-      )}
+      )} */}
     </Col>
   )
 }

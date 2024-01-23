@@ -51,6 +51,8 @@ export type OnContract = {
   // Used to respond to another user's bet
   bettorUsername?: string
   bettorName?: string
+  betLimitProb?: number
+  betOrderAmount?: number
 
   // denormalized based on betting history
   commenterPositionProb?: number // binary only

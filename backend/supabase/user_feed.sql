@@ -15,6 +15,7 @@ create table if not exists
                   news_id text null,
                   group_id text null,
                   reaction_id text null,
+                  bet_id text null,
                   idempotency_key text null,
                   is_copied boolean not null default false,
                   bet_data jsonb null,

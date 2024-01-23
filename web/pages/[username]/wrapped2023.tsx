@@ -1,7 +1,6 @@
 import { removeUndefinedProps } from 'common/util/object'
 import { usePrivateUser } from 'web/hooks/use-user'
-
-import { User, getUserByUsername } from 'web/lib/firebase/users'
+import { type User } from 'web/lib/firebase/users'
 import Custom404 from '../404'
 import { DeletedUser } from '.'
 import { BlockedUser } from 'web/components/profile/blocked-user'
@@ -18,6 +17,7 @@ import { Row } from 'web/components/layout/row'
 import { TheEnd } from 'web/components/wrapped/TheEnd'
 import { MaxMinProfit } from 'web/components/wrapped/MaxMinProfit'
 import { SEO } from 'web/components/SEO'
+import { getFullUserByUsername } from 'web/lib/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -25,7 +25,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getUserByUsername(username)
+  const user = await getFullUserByUsername(username)
 
   return {
     props: removeUndefinedProps({

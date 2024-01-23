@@ -73,7 +73,7 @@ export const UserLikedContractsButton = memo(
                 >
                   <Col className={'w-full'}>
                     <Link
-                      href={contract.slug ?? ''}
+                      href={`/market/${contract.slug}`}
                       className={'text-primary-700 line-clamp-2 text-sm'}
                     >
                       {contract.question}

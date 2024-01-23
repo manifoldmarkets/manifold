@@ -15,7 +15,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { useUser } from 'web/hooks/use-user'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import LoverAbout from 'love/components/lover-about'
 import { useTracking } from 'web/hooks/use-tracking'
 import { LoverAnswers } from 'love/components/answers/lover-answers'
@@ -29,6 +29,7 @@ import Custom404 from '../404'
 import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
+import { getUserByUsername } from 'web/lib/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {

@@ -14,11 +14,8 @@ import {
   deleteDoc,
   doc,
   getDoc,
-  getDocs,
-  limit,
   onSnapshot,
   query,
-  setDoc,
   updateDoc,
   where,
 } from 'firebase/firestore'
@@ -42,13 +39,7 @@ export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 export const auth = getAuth(app)
 
-export async function getUser(userId: string) {
-  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
-  return (await getDoc(doc(users, userId))).data()!
-}
-
 export async function getPrivateUser(userId: string) {
-  // TODO: are we recreating these users a la Polaris or continuing to delete them a la Fede?
   /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
   return (await getDoc(doc(privateUsers, userId))).data()!
 }
@@ -61,17 +52,6 @@ export async function getUserAndPrivateUser(userId: string) {
     ])
   ).map((d) => d.data()) as [User, PrivateUser]
   return { user, privateUser } as UserAndPrivateUser
-}
-
-export async function getUserByUsername(username: string) {
-  // Find a user whose username matches the given username, or null if no such user exists.
-  const q = query(users, where('username', '==', username), limit(1))
-  const docs = (await getDocs(q)).docs
-  return docs.length > 0 ? docs[0].data() : null
-}
-
-export async function setUser(userId: string, user: User) {
-  await setDoc(doc(users, userId), user)
 }
 
 export async function updateUser(userId: string, update: Partial<User>) {

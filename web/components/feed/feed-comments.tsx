@@ -19,7 +19,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { CommentView } from 'common/events'
 import { buildArray } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { richTextToString } from 'common/util/parse'
 import { toast } from 'react-hot-toast'
 import { ReportModal } from 'web/components/buttons/report-button'
@@ -68,6 +68,8 @@ import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { last, orderBy } from 'lodash'
 import { AnnotateChartModal } from 'web/components/annotate-chart'
 import { BiRepost } from 'react-icons/bi'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { RepostModal } from 'web/components/comments/repost-modal'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -273,7 +275,11 @@ export const FeedComment = memo(function FeedComment(props: {
 
   return (
     <Col className="group">
-      <CommentReplyHeader comment={comment} contract={contract} />
+      <CommentReplyHeader
+        hideBetHeader={comment.bettorUsername === comment.userUsername}
+        comment={comment}
+        contract={contract}
+      />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
           {/*// Curved reply line*/}
@@ -478,6 +484,7 @@ export function DotMenu(props: {
   const isContractCreator = privateUser?.id === contract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
+  const [reposting, setReposting] = useState(false)
   const [annotating, setAnnotating] = useState(false)
   return (
     <>
@@ -512,6 +519,11 @@ export function DotMenu(props: {
                 comment.id
               )
             },
+          },
+          user && {
+            name: 'Repost',
+            icon: <BiRepost className="h-5 w-5" />,
+            onClick: () => setReposting(true),
           },
           user &&
             comment.userId !== user.id && {
@@ -567,6 +579,27 @@ export function DotMenu(props: {
           contractId={contract.id}
           atTime={comment.createdTime}
           comment={comment}
+        />
+      )}
+      {user && reposting && (
+        <RepostModal
+          contract={contract}
+          open={reposting}
+          setOpen={setReposting}
+          comment={comment}
+          bet={
+            comment.betId
+              ? ({
+                  amount: comment.betAmount,
+                  outcome: comment.betOutcome,
+                  limitProb: comment.betLimitProb,
+                  orderAmount: comment.betOrderAmount,
+                  userUsername: comment.bettorUsername,
+                  userName: comment.bettorName,
+                  id: comment.betId,
+                } as Bet)
+              : undefined
+          }
         />
       )}
       {user && editingComment && (
@@ -801,17 +834,12 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        comment = await toast.promise(
-          api('post', {
-            contractId: contract.id,
-            content: editor.getJSON(),
-          }),
-          {
-            loading: 'Reposting question & comment to your followers...',
-            success: 'Question & comment posted to your followers!',
-            error: 'Error posting',
-          }
-        )
+        comment = await api('post', {
+          contractId: contract.id,
+          content: editor.getJSON(),
+          betId: isReplyToBet ? replyTo.id : undefined,
+        })
+        if (comment) toast.success('Reposted to your followers!')
       }
       clearReply?.()
       onSubmit?.(comment)
@@ -831,14 +859,17 @@ export function ContractCommentInput(props: {
   return (
     <>
       {isReplyToBet ? (
-        <CommentOnBetRow
+        <ReplyToBetRow
+          commenterIsBettor={replyTo?.userId === user?.id}
           betAmount={replyTo.amount}
           betOutcome={replyTo.outcome}
           bettorName={replyTo.userName}
           bettorUsername={replyTo.userUsername}
+          betOrderAmount={replyTo.orderAmount}
+          betLimitProb={replyTo.limitProb}
+          betAnswerId={replyTo.answerId}
           contract={contract}
           clearReply={clearReply}
-          className={'ml-10 mt-6 w-full'}
         />
       ) : replyTo ? (
         <CommentOnAnswerRow
@@ -852,7 +883,7 @@ export function ContractCommentInput(props: {
         replyToUserInfo={replyToUserInfo}
         parentCommentId={parentCommentId}
         onSubmitComment={onSubmitComment}
-        pageId={contract.id}
+        pageId={contract.id + commentTypes.join(', ')}
         className={className}
         blocked={isBlocked(privateUser, contract.creatorId)}
         placeholder={
@@ -891,11 +922,16 @@ export function FeedCommentHeader(props: {
     isApi,
     bountyAwarded,
     isRepost,
+    betOrderAmount,
+    betLimitProb,
   } = comment
 
   const marketCreator = contract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
+  const isReplyToBet = betAmount !== undefined
+  const commenterIsBettor = bettorUsername === userUsername
+  const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   return (
     <Col className={clsx('text-ink-600 text-sm ')}>
       <Row className="justify-between">
@@ -907,13 +943,41 @@ export function FeedCommentHeader(props: {
                 name: userName,
                 username: userUsername,
               }}
-              marketCreator={marketCreator}
+              marketCreator={inTimeline ? false : marketCreator}
               className={'font-semibold'}
             />
-            {isRepost && (
-              <span className="text-ink-500 ml-1">
-                <BiRepost className="mr-1 inline h-4 w-4" />
-                reposted
+            {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
+              <span className={'ml-1'}>
+                {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
+                <span className="text-ink-1000">
+                  {formatMoney(betOrderAmount)}
+                </span>{' '}
+                <OutcomeLabel
+                  outcome={betOutcome ? betOutcome : ''}
+                  answerId={betAnswerId}
+                  contract={contract}
+                  truncate="short"
+                />{' '}
+                at {formatPercent(betLimitProb)} order
+              </span>
+            ) : (
+              <>
+                {' '}
+                {bought} <span className="text-ink-1000">{money}</span>{' '}
+                <OutcomeLabel
+                  outcome={betOutcome ? betOutcome : ''}
+                  answerId={betAnswerId}
+                  contract={contract}
+                  truncate="short"
+                />
+              </>
+            )}
+            {isRepost && !inTimeline && (
+              <span className="ml-1">
+                <Tooltip text={'Reposted to followers'}>
+                  <BiRepost className=" inline h-4 w-4" />
+                  {commenterIsBettor ? '' : ' reposted'}
+                </Tooltip>
               </span>
             )}
             {/* Hide my status if replying to a bet, it's too much clutter*/}
@@ -981,11 +1045,44 @@ const getBoughtMoney = (betAmount: number | undefined) => {
   return { bought, money }
 }
 
+export function CommentReplyHeaderWithBet(props: {
+  comment: ContractComment
+  bet: Bet
+  contract: Contract
+}) {
+  const { comment, bet, contract } = props
+  const {
+    outcome,
+    answerId,
+    amount,
+    userName,
+    userUsername,
+    orderAmount,
+    limitProb,
+  } = bet
+  return (
+    <CommentReplyHeader
+      comment={{
+        ...comment,
+        bettorName: userName,
+        bettorUsername: userUsername,
+        betOutcome: outcome,
+        betAmount: amount,
+        betOrderAmount: orderAmount,
+        betLimitProb: limitProb,
+        answerOutcome: answerId,
+      }}
+      contract={contract}
+    />
+  )
+}
+
 export function CommentReplyHeader(props: {
   comment: ContractComment
   contract: Contract
+  hideBetHeader?: boolean
 }) {
-  const { comment, contract } = props
+  const { comment, contract, hideBetHeader } = props
   const {
     bettorName,
     bettorUsername,
@@ -993,15 +1090,26 @@ export function CommentReplyHeader(props: {
     betAnswerId,
     betAmount,
     answerOutcome,
+    betOrderAmount,
+    betLimitProb,
   } = comment
-  if (bettorUsername && bettorName && betOutcome && betAmount) {
+  if (
+    bettorUsername &&
+    bettorName &&
+    betOutcome &&
+    betAmount !== undefined &&
+    !hideBetHeader
+  ) {
     return (
-      <CommentOnBetRow
+      <ReplyToBetRow
+        commenterIsBettor={comment.userUsername === bettorUsername}
         betOutcome={betOutcome}
         betAnswerId={betAnswerId}
         betAmount={betAmount}
         bettorName={bettorName}
         bettorUsername={bettorUsername}
+        betOrderAmount={betOrderAmount}
+        betLimitProb={betLimitProb}
         contract={contract}
       />
     )
@@ -1017,46 +1125,84 @@ export function CommentReplyHeader(props: {
   return null
 }
 
-export function CommentOnBetRow(props: {
+export function ReplyToBetRow(props: {
   contract: Contract
+  commenterIsBettor: boolean
   betOutcome: string
   betAmount: number
   bettorName: string
   bettorUsername: string
+  betOrderAmount?: number
+  betLimitProb?: number
   betAnswerId?: string
   clearReply?: () => void
-  className?: string
 }) {
   const {
     betOutcome,
+    commenterIsBettor,
     betAmount,
     bettorName,
     bettorUsername,
     betAnswerId,
     contract,
     clearReply,
+    betLimitProb,
+    betOrderAmount,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
-
+  const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
+  const isMobile = useIsMobile()
   return (
-    <Row className="ml-4 items-end text-sm">
+    <Row className="mb-1 ml-4 items-end pr-2 text-sm">
       <div
         className={clsx(
           roundThreadColor,
-          'h-4 w-6 rounded-tl-xl border-2 border-b-0 border-r-0'
+          '-mb-1 h-5 w-6 rounded-tl-xl border-2 border-b-0 border-r-0'
         )}
       />
-      <Row className="bg-ink-100 text-ink-600 relative items-center gap-1 whitespace-nowrap px-4 py-1">
-        <UserLink
-          user={{ id: '', name: bettorName, username: bettorUsername }}
-        />
-        {bought} <span className="text-ink-1000">{money}</span> of
-        <OutcomeLabel
-          outcome={betOutcome ? betOutcome : ''}
-          answerId={betAnswerId}
-          contract={contract}
-          truncate="short"
-        />
+      <Row
+        className={clsx(
+          'bg-canvas-50 text-ink-600 relative items-center gap-1 px-2 py-1',
+          isLimitBet ? 'flex-wrap' : 'whitespace-nowrap'
+        )}
+      >
+        {!commenterIsBettor && (
+          <UserLink
+            short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+            user={{ id: '', name: bettorName, username: bettorUsername }}
+          />
+        )}
+        {isLimitBet ? (
+          <>
+            {betAmount === betOrderAmount
+              ? commenterIsBettor
+                ? 'Filled'
+                : 'filled'
+              : commenterIsBettor
+              ? 'Opened'
+              : 'opened'}{' '}
+            a
+            <span className="text-ink-1000">{formatMoney(betOrderAmount)}</span>{' '}
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              answerId={betAnswerId}
+              contract={contract}
+              truncate="short"
+            />{' '}
+            at {formatPercent(betLimitProb)} order
+          </>
+        ) : (
+          <>
+            {bought}
+            <span className="text-ink-1000">{money}</span>
+            <OutcomeLabel
+              outcome={betOutcome ? betOutcome : ''}
+              answerId={betAnswerId}
+              contract={contract}
+              truncate="short"
+            />
+          </>
+        )}
         {clearReply && (
           <button
             onClick={clearReply}

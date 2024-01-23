@@ -34,6 +34,8 @@ const reRenderTheme = () => {
 
   const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 
+  document.documentElement.classList.remove('no-js')
+
   if (theme === 'dark' || (theme === 'auto' && autoDark)) {
     document.documentElement.classList.add('dark')
   } else {

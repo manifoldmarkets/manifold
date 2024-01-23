@@ -1,26 +1,22 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, MultiContract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
-import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 
-export function PoliticsContractCard(props: {
+// This is not live updated from the object, so expects to be passed a contract with updated stuff
+export function StateContractCard(props: {
   contract: Contract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
@@ -49,12 +45,9 @@ export function PoliticsContractCard(props: {
     hideBottomRow,
     customTitle,
     titleSize,
+    contract,
   } = props
   const user = useUser()
-
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
 
   const {
     closeTime,
@@ -91,24 +84,6 @@ export function PoliticsContractCard(props: {
     () => {
       setVisible(false)
     }
-  )
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
-
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
   )
 
   const trackClick = () =>

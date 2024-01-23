@@ -302,7 +302,9 @@ export const Search = (props: {
             value={filters.orderBy || 'created_time'}
             className={'w-18 border-ink-300 rounded-md'}
           >
-            <option value="compatibility_score">Compatible</option>
+            {youLover && (
+              <option value="compatibility_score">Compatible</option>
+            )}
             <option value="created_time">New</option>
             <option value="last_online_time">Active</option>
           </Select>

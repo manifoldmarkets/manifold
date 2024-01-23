@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 
 import { Contract } from 'common/contract'
-import { getPrivateUser, getUserByUsername, isProd } from 'shared/utils'
+import { getPrivateUser, getUser, isProd } from 'shared/utils'
 import { createMarketClosedNotification } from 'shared/create-notification'
 import { DAY_MS } from 'common/util/time'
 import { secrets } from 'common/secrets'
@@ -51,7 +51,7 @@ export async function sendMarketCloseEmails() {
       contract.closeTime
     )
 
-    const user = await getUserByUsername(contract.creatorUsername)
+    const user = await getUser(contract.creatorId)
     if (!user) continue
 
     const privateUser = await getPrivateUser(user.id)

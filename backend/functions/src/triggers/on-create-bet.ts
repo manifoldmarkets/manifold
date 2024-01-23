@@ -6,7 +6,7 @@ import { Bet } from 'common/bet'
 import {
   getBettingStreakResetTimeBeforeNow,
   getContract,
-  getUser,
+  getUserFirebase,
   isProd,
   log,
 } from 'shared/utils'
@@ -86,7 +86,7 @@ export const onCreateBet = functions
       lastUpdatedTime: Date.now(),
     })
 
-    const bettor = await getUser(bet.userId)
+    const bettor = await getUserFirebase(bet.userId)
     if (!bettor) {
       log(
         `No user:${bet.userId} found for bet: ${bet.id} on contract: ${contract.id}`

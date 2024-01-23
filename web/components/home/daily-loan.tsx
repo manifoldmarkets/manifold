@@ -16,6 +16,7 @@ import { updateUser } from 'web/lib/firebase/users'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { track } from 'web/lib/service/analytics'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -53,6 +54,9 @@ export function DailyLoan(props: { user: User }) {
     toast.dismiss(id)
     if (!user.hasSeenLoanModal) setTimeout(() => setShowLoansModal(true), 1000)
     setLoaning(false)
+    track('request loan', {
+      amount: res?.payout,
+    })
   }
 
   useEffect(() => {
