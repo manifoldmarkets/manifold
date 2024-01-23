@@ -1,5 +1,6 @@
 import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
+import { createLoveLikeNotification } from 'shared/create-love-notification'
 
 export const likeLover: APIHandler<'like-lover'> = async (
   props,
@@ -48,8 +49,7 @@ export const likeLover: APIHandler<'like-lover'> = async (
       throw new APIError(500, 'Failed to add like: ' + error.message)
     }
 
-    // TODO: Make this work.
-    // await createLikeNotification(data)
+    await createLoveLikeNotification(data)
   }
 
   return { status: 'success' }

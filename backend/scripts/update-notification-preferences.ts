@@ -3,13 +3,15 @@ import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
 initAdmin()
 import { getAllPrivateUsers } from 'shared/utils'
-import { uniq } from 'lodash'
+import { chunk, uniq } from 'lodash'
 import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-const key: notification_preference = 'betting_streaks'
-const destinationToAdd: notification_destination_types = 'mobile'
+
+const key: notification_preference = 'new_love_like'
+const destinationToAdd: notification_destination_types = 'browser'
+
 async function main() {
   const firestore = admin.firestore()
   const privateUsers = await getAllPrivateUsers()
@@ -25,25 +27,27 @@ async function main() {
   console.log(
     `Opting in ${privateUsersToOptIn.length} users to ${destinationToAdd} ${key} notifications`
   )
-  // TODO: this seems to only be capable of updating a few thousand users at a time and must be rerun multiple times
-  await Promise.all(
-    privateUsersToOptIn.map((privateUser) => {
-      if (!privateUser.id) return
-      const previousPrefs = privateUser.notificationPreferences[key] ?? []
-      return firestore
-        .collection('private-users')
-        .doc(privateUser.id)
-        .update({
-          notificationPreferences: {
-            ...privateUser.notificationPreferences,
-            [key]: uniq([
-              ...previousPrefs,
-              destinationToAdd,
-            ]) as notification_destination_types[],
-          },
-        })
-    })
-  )
+  const chunks = chunk(privateUsersToOptIn, 500)
+  for (const chunk of chunks) {
+    await Promise.all(
+      chunk.map((privateUser) => {
+        if (!privateUser.id) return
+        const previousPrefs = privateUser.notificationPreferences[key] ?? []
+        return firestore
+          .collection('private-users')
+          .doc(privateUser.id)
+          .update({
+            notificationPreferences: {
+              ...privateUser.notificationPreferences,
+              [key]: uniq([
+                ...previousPrefs,
+                destinationToAdd,
+              ]) as notification_destination_types[],
+            },
+          })
+      })
+    )
+  }
 }
 
 if (require.main === module) main().then(() => process.exit())

@@ -1,4 +1,8 @@
-import { LikeData, getLikesGivenByUser, getLikesReceivedByUser } from 'love/lib/supabase/likes'
+import {
+  LikeData,
+  getLikesGivenByUser,
+  getLikesReceivedByUser,
+} from 'love/lib/supabase/likes'
 import { useEffect } from 'react'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 

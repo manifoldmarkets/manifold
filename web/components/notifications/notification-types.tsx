@@ -75,7 +75,6 @@ export function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-
   if (reason === 'unique_bettors_on_your_contract') {
     return (
       <UniqueBettorBonusIncomeNotification
@@ -395,6 +394,15 @@ export function NotificationItem(props: {
         highlighted={highlighted}
         setHighlighted={setHighlighted}
         isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (reason === 'new_love_like') {
+    return (
+      <LoveLikeNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   }
@@ -1748,6 +1756,51 @@ function PollClosedNotification(props: {
           has autoclosed!
         </span>
       </>
+    </NotificationFrame>
+  )
+}
+
+function LoveLikeNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const [open, setOpen] = useState(false)
+  const { sourceUserName, sourceUserUsername } = notification
+  const relatedNotifications: Notification[] = notification.data
+    ?.relatedNotifications ?? [notification]
+  const reactorsText =
+    relatedNotifications.length > 1
+      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
+          relatedNotifications.length > 2 ? 's' : ''
+        }`
+      : sourceUserName
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <MultipleAvatarIcons
+          notification={notification}
+          symbol={'💖'}
+          setOpen={setOpen}
+        />
+      }
+      link={`/${sourceUserUsername}`}
+      subtitle={<></>}
+    >
+      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
+      you!
+      <MultiUserReactionModal
+        similarNotifications={relatedNotifications}
+        modalLabel={'Who liked it?'}
+        open={open}
+        setOpen={setOpen}
+      />
     </NotificationFrame>
   )
 }

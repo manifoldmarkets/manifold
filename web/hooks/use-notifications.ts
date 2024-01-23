@@ -189,6 +189,8 @@ function groupGeneralNotifications(
       new Date(n.createdTime).toDateString() +
       (n.sourceType === 'betting_streak_bonus' || n.reason === 'quest_payout'
         ? 'quest_payout'
+        : n.sourceType === 'love_like'
+        ? 'love_like'
         : `${n.sourceTitle}${n.sourceContractId}`)
   )
   const mostRecentNotification = first(sortedNotifications)
