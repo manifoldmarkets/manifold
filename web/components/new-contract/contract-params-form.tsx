@@ -71,7 +71,10 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { compareTwoStrings } from 'string-similarity'
 import { toast } from 'react-hot-toast'
+
 const DUPES_TO_SHOW = 3
+const MAX_TOPICS_ALLOWED = 5
+
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
@@ -655,13 +658,17 @@ export function ContractParamsForm(props: {
         )}
         <TopicSelector
           setSelectedGroup={(group) => {
-            if (group.privacyStatus === 'private') {
+            if (selectedGroups.length >= MAX_TOPICS_ALLOWED) {
+              toast.error(
+                `You can only choose up to ${MAX_TOPICS_ALLOWED} topics.`
+              )
+            } else if (group.privacyStatus === 'private') {
               toast.error('You cannot use private groups.')
-              return
+            } else {
+              setSelectedGroups((groups) =>
+                uniqBy([...(groups ?? []), group], 'id')
+              )
             }
-            setSelectedGroups((groups) =>
-              uniqBy([...(groups ?? []), group], 'id')
-            )
             setHasChosenCategory(true)
           }}
           ignoreGroupIds={selectedGroups.map((g) => g.id)}
