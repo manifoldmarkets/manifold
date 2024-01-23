@@ -88,6 +88,12 @@ function getResolutionParams(
         'answerId field is only allowed for multiple choice markets'
       )
     }
+    if (outcomeType === 'MULTIPLE_CHOICE' && !binaryParams.answerId) {
+      throw new APIError(
+        400,
+        'answerId field is required for multiple choice markets'
+      )
+    }
     if (binaryParams.answerId && outcomeType === 'MULTIPLE_CHOICE')
       validateAnswerCpmm(contract, binaryParams.answerId)
     return {

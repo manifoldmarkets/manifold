@@ -3,7 +3,6 @@ import { ExclamationIcon } from '@heroicons/react/solid'
 
 import { Row } from '../layout/row'
 import { ConfirmationButton } from './confirmation-button'
-import { formatMoney } from 'common/util/format'
 import { Button, ColorType, SizeType } from './button'
 import { Ref, useEffect, useState } from 'react'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -56,7 +55,7 @@ export function WarningConfirmationButton(props: {
   const buttonText = isSubmitting
     ? 'Submitting...'
     : amount && !disabled
-    ? `${actionLabel} ${formatMoney(amount)}`
+    ? `${actionLabel}`
     : disabled && !amount
     ? 'Enter an amount'
     : actionLabel

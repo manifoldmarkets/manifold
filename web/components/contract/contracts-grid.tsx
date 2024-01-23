@@ -26,7 +26,7 @@ export function ContractsGrid(props: {
           contract={contract}
           key={contract.id}
           trackingPostfix={trackingPostfix}
-          small
+          size={'sm'}
         />
       ))}
       {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}

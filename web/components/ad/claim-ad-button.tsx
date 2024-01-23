@@ -10,10 +10,11 @@ import { Button } from '../buttons/button'
 export function ClaimButton(props: {
   adId: string
   reward: number
+  disabled: boolean
   className?: string
   onClaim: () => void
 }) {
-  const { adId, reward, className, onClaim } = props
+  const { adId, reward, disabled, className, onClaim } = props
 
   const [claimed, setClaimed] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -27,7 +28,7 @@ export function ClaimButton(props: {
       )}
       size="xl" // don't make it smaller!!!
       color="gold"
-      disabled={loading || claimed}
+      disabled={disabled || loading || claimed}
       onClick={async (e) => {
         e.preventDefault()
         e.stopPropagation()

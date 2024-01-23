@@ -152,7 +152,7 @@ export function CommentInputTextArea(props: {
             // emoji list is closed
             !emojiMenuActive(view)
           ) {
-            submit?.('comment')
+            submit?.(commentTypes[0])
             event.preventDefault()
             return true
           }

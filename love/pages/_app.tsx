@@ -9,6 +9,8 @@ import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { Major_Mono_Display, Figtree } from 'next/font/google'
+import clsx from 'clsx'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -16,6 +18,18 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 function firstLine(msg: string) {
   return msg.replace(/\r?\n.*/s, '')
 }
+
+const logoFont = Major_Mono_Display({
+  weight: ['400'],
+  variable: '--font-logo',
+  subsets: ['latin'],
+})
+
+const mainFont = Figtree({
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-main',
+  subsets: ['latin'],
+})
 
 // It can be very hard to see client logs on native, so send them manually
 if (getIsNative()) {
@@ -92,7 +106,13 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
         />
       </Head>
-      <div>
+      <div
+        className={clsx(
+          'font-figtree contents font-normal',
+          logoFont.variable,
+          mainFont.variable
+        )}
+      >
         <AuthProvider serverUser={pageProps.auth}>
           <NativeMessageListener />
           <Component {...pageProps} />

@@ -1,6 +1,6 @@
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { sample, uniqBy } from 'lodash'
+import { capitalize, sample, uniqBy } from 'lodash'
 import { ReactNode, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
@@ -288,7 +288,7 @@ export function SupabaseSearch(props: {
   const emptyContractsState =
     props.emptyState ??
     (query ? (
-      <NoResults />
+      <NoResults currentFilter={filter} updateParams={onChange} />
     ) : (
       <Col className="text-ink-700 mx-2 my-6 text-center">
         No questions yet.
@@ -498,7 +498,11 @@ const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
   )
 }
 
-const NoResults = () => {
+const NoResults = (props: {
+  currentFilter: string
+  updateParams: (params: Partial<SearchParams>) => void
+}) => {
+  const { currentFilter, updateParams } = props
   const [message] = useState(
     sample([
       'no questions found x.x',
@@ -513,7 +517,25 @@ const NoResults = () => {
     ])
   )
 
-  return <div className="text-ink-700 mx-2 my-6 text-center">{message}</div>
+  return (
+    <span className="text-ink-700 mx-2 my-6 text-center">
+      {capitalize(message)}
+      {currentFilter !== 'all' ? (
+        <>
+          . Try using the
+          <Button
+            onClick={() => updateParams({ f: 'all' })}
+            color={'indigo-outline'}
+            className={'mx-1'}
+            size={'2xs'}
+          >
+            Any status
+          </Button>
+          filter.
+        </>
+      ) : null}
+    </span>
+  )
 }
 
 const LoadingResults = () => {

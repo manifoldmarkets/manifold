@@ -28,10 +28,10 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { getUserByUsername, User } from 'web/lib/firebase/users'
 import { coll, getValues } from 'web/lib/firebase/utils'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
+import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
 
 export async function getStaticProps(props: {
@@ -102,7 +102,7 @@ export async function getStaticPaths() {
 }
 
 export default function RangePerformancePage(props: {
-  user: User | null
+  user: DisplayUser | null
   weeklyPortfolioUpdateString: string
   contractsString: string
   profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[]

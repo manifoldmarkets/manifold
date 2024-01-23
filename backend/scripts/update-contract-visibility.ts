@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_DEV) {
   throw new Error(
     'Environment variable GOOGLE_APPLICATION_CREDENTIALS_DEV is not set'
@@ -17,7 +18,7 @@ async function processGroup(creatorId: string) {
     .where('visibility', '==', 'unlisted')
   const querySnapshot = await query.get()
 
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter()
 
   querySnapshot.forEach((contractDoc) => {
     console.log(`Updating contract with ID: ${contractDoc.id}`)

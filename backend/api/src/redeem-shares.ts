@@ -6,7 +6,7 @@ import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
-import { APIError } from './helpers/endpoint'
+import { APIError } from 'common/api/utils'
 import { GCPLog } from 'shared/utils'
 
 export const redeemShares = async (
@@ -44,7 +44,7 @@ export const redeemShares = async (
         shares,
         loanPayment,
         lastProb,
-        answerId
+        answerId === 'undefined' ? undefined : answerId
       )
       const yesDoc = betsColl.doc()
       const noDoc = betsColl.doc()

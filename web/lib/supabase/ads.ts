@@ -3,7 +3,6 @@ import { db } from './db'
 import { PrivateUser } from 'common/user'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { Contract } from 'common/contract'
-import { INTEREST_DISTANCE_THRESHOLDS } from 'common/feed'
 
 // supabase type generator adds an extra array in the return type of getBoosts, so we define our own type instead
 export type BoostsType =
@@ -16,9 +15,8 @@ export type BoostsType =
     }[]
   | null
 export const getBoosts = async (privateUser: PrivateUser, limit: number) => {
-  const { data } = await db.rpc('get_top_market_ads', {
+  const { data } = await db.rpc('get_market_ads', {
     uid: privateUser.id,
-    distance_threshold: INTEREST_DISTANCE_THRESHOLDS.ad,
   })
   return (
     (data

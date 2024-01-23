@@ -21,7 +21,6 @@ import {
 } from 'shared/emails'
 import { contractUrl } from 'shared/utils'
 import { Txn } from 'common/txn'
-import { Reaction, ReactionTypes } from 'common/reaction'
 import {
   getUsersRecentBetContractIds,
   getUsersContractMetricsOrderedByProfit,
@@ -38,6 +37,7 @@ import {
   league_user_info,
 } from 'common/leagues'
 import * as numeral from 'numeral'
+import { millisToTs, run } from 'common/supabase/utils'
 
 const USERS_TO_EMAIL = 600
 const WEEKLY_MOVERS_TO_SEND = 6
@@ -127,17 +127,18 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     })
   )
 
-  // Get all likes the users received over the past week
-  const usersToLikesReceived: { [userId: string]: Reaction[] } = {}
+  // Get count of likes the users received over the past we
+  const usersToLikesReceived: { [userId: string]: number } = {}
   await Promise.all(
     userIds.map(async (id) => {
-      usersToLikesReceived[id] = await getValues<Reaction>(
-        firestore
-          .collectionGroup(`reactions`)
-          .where('contentOwnerId', '==', id)
-          .where('type', '==', 'like' as ReactionTypes)
-          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
+      const { count } = await run(
+        db
+          .from('user_reactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('content_owner_id', id)
+          .gte('created_time', millisToTs(Date.now() - 7 * DAY_MS))
       )
+      usersToLikesReceived[id] = count
     })
   )
   // TODO: use their saved weekly portfolio update object from weekly-portfolio-updates.ts
@@ -190,7 +191,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
         }`,
         markets_created: marketsCreated.toString(),
-        likes_received: usersToLikesReceived[privateUser.id].length.toString(),
+        likes_received: usersToLikesReceived[privateUser.id].toString(),
         unique_bettors: usersToTxnsReceived[privateUser.id]
           .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
           .length.toString(),

@@ -160,6 +160,7 @@ export function DesktopFilters(props: {
           <RelationshipFilter filters={filters} updateFilter={updateFilter} />
         }
         popoverClassName="bg-canvas-50"
+        menuWidth="w-50"
       />
       {/* WANTS KIDS */}
       <DropdownMenu

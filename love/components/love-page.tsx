@@ -34,6 +34,8 @@ import {
   NOTIFICATION_TYPES_TO_SELECT,
 } from 'love/pages/notifications'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
+import { useLover } from 'love/hooks/use-lover'
+import { Lover } from 'common/love/lover'
 
 export function LovePage(props: {
   trackPageView: string | false
@@ -53,8 +55,9 @@ export function LovePage(props: {
   } = props
   const user = useUser()
   const isMobile = useIsMobile()
+  const lover = useLover()
   const bottomNavOptions = user
-    ? getBottomNavigation(user)
+    ? getBottomNavigation(user, lover)
     : signedOutNavigation()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const desktopSidebarOptions = getDesktopNav(user)
@@ -118,7 +121,7 @@ export function LovePage(props: {
   )
 }
 
-function getBottomNavigation(user: User) {
+function getBottomNavigation(user: User, lover: Lover | null | undefined) {
   return buildArray(
     { name: 'Profiles', href: '/', icon: SolidHomeIcon },
     {
@@ -134,7 +137,7 @@ function getBottomNavigation(user: User) {
     },
     {
       name: 'Profile',
-      href: `/${user.username}`,
+      href: lover === null ? '/signup' : `/${user.username}`,
     },
     {
       name: 'Messages',

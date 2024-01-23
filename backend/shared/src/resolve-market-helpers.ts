@@ -7,7 +7,7 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { getContractBetMetrics } from 'common/calculate'
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import {
   Txn,
@@ -33,6 +33,7 @@ import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
+import { Answer } from 'common/answer'
 
 export type ResolutionParams = {
   outcome: string
@@ -83,6 +84,7 @@ export const resolveMarketHelper = async (
     resolverId: resolver.id,
     subsidyPool: 0,
   })
+  let updateAnswerAttrs: Partial<Answer> | undefined
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
     // Only resolve the contract if all other answers are resolved.
@@ -96,6 +98,29 @@ export const resolveMarketHelper = async (
         resolution: 'MKT',
       }
     else updatedAttrs = undefined
+
+    const finalProb =
+      resolutionProbability ??
+      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
+    updateAnswerAttrs = removeUndefinedProps({
+      resolution: outcome,
+      resolutionTime,
+      resolutionProbability,
+      prob: finalProb,
+      resolverId: resolver.id,
+    }) as Partial<Answer>
+    // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+    updatedAttrs = {
+      ...(updatedAttrs ?? {}),
+      answers: unresolvedContract.answers.map((a) =>
+        a.id === answerId
+          ? {
+              ...a,
+              ...updateAnswerAttrs,
+            }
+          : a
+      ),
+    } as Partial<CPMMMultiContract>
   }
 
   const contract = {
@@ -134,28 +159,14 @@ export const resolveMarketHelper = async (
     await contractDoc.update(updatedAttrs)
     log('contract resolved')
   }
-
-  log('processing payouts', { payouts })
-
-  await payUsersTransactions(log, payouts, contractId, answerId)
-
-  if (answerId) {
+  if (updateAnswerAttrs) {
     const answerDoc = firestore.doc(
       `contracts/${contractId}/answersCpmm/${answerId}`
     )
-    const finalProb =
-      resolutionProbability ??
-      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
-    await answerDoc.update(
-      removeUndefinedProps({
-        resolution: outcome,
-        resolutionTime,
-        resolutionProbability,
-        prob: finalProb,
-        resolverId: resolver.id,
-      })
-    )
+    await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
   }
+  log('processing payouts', { payouts })
+  await payUsersTransactions(log, payouts, contractId, answerId)
 
   await updateContractMetricsForUsers(contract, bets)
   // TODO: we may want to support clawing back trader bonuses on MC markets too

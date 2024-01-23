@@ -60,7 +60,7 @@ import {
   useUserById,
 } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
-import { User, getUserByUsername } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
@@ -70,6 +70,7 @@ import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DailyLoan } from 'web/components/home/daily-loan'
+import { getFullUserByUsername } from 'web/lib/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -77,7 +78,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getUserByUsername(username)
+  const user = await getFullUserByUsername(username)
 
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined

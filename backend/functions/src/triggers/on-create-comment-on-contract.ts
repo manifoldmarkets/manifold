@@ -13,6 +13,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { secrets } from 'common/secrets'
+
 import { removeUndefinedProps } from 'common/util/object'
 import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
@@ -46,7 +47,7 @@ async function getMostRecentCommentableBet(
       from (
         select created_time from prior_user_comments_with_bets
         union all
-        select (millis_to_ts($3) - interval '1 hour') as created_time
+        select (millis_to_ts($3) - interval '5 minutes') as created_time
       ) as t
       order by created_time desc
       limit 1

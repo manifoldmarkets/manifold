@@ -5,7 +5,6 @@ import {
   TextEditor,
   useTextEditor,
 } from 'web/components/widgets/editor'
-import { getUser, User } from 'web/lib/firebase/users'
 import { PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
@@ -22,12 +21,13 @@ import { db } from 'web/lib/supabase/db'
 import { Row as rowFor } from 'common/supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { Visibility } from 'common/contract'
+import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
 
   const post = await getPostBySlug(slug)
-  const creator = post ? await getUser(post.creatorId) : null
+  const creator = post ? await getUserById(post.creatorId) : null
 
   const watched: string[] = []
   const skipped: string[] = []
@@ -51,13 +51,13 @@ export async function getStaticPaths() {
 
 export default function PostPage(props: {
   post: OldPost | null
-  creator: User
+  creator: DisplayUser | null
   watched?: string[] //user ids
   skipped?: string[] //user ids
 }) {
   const { creator, post } = props
 
-  if (!post) {
+  if (!post || !creator) {
     return <Custom404 />
   }
   const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`

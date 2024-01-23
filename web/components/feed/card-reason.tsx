@@ -6,6 +6,9 @@ import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import dayjs from 'dayjs'
+import { UserLink } from 'web/components/widgets/user-link'
+import { BiRepost } from 'react-icons/bi'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -44,9 +47,24 @@ export function CardReason(props: {
   }
 
   if (item.isCopied) {
-    return <></>
+    return <div />
   }
-
+  if (item.dataType === 'repost' && item.creatorDetails) {
+    return (
+      <Tooltip text={'Reposted by ' + item.creatorDetails.name}>
+        <Row className={'text-ink-400 gap-1 text-sm'}>
+          <BiRepost className={' text-ink-500 h-5 w-5'} />
+          <UserLink short={true} user={item.creatorDetails} />
+          reposted
+          <RelativeTimestamp
+            time={item.createdTime}
+            shortened={true}
+            className="text-ink-400 -ml-1"
+          />
+        </Row>
+      </Tooltip>
+    )
+  }
   if (probChange) {
     return <ProbabilityChange probChange={probChange} since={since} />
   }
@@ -71,7 +89,7 @@ export function CardReason(props: {
       </Row>
     )
   }
-  return null
+  return <div />
 }
 
 function ProbabilityChange(props: { probChange: number; since?: number }) {

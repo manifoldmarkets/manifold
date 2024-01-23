@@ -186,6 +186,7 @@ export function FeedContractCard(props: {
             <ClaimButton
               {...promotedData}
               onClaim={() => router.push(path)}
+              disabled={false}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>
@@ -289,8 +290,6 @@ const BottomActionRow = (props: {
           contentCreatorId={contract.creatorId}
           user={user}
           contentType={'contract'}
-          totalLikes={contract.likedByUserCount ?? 0}
-          contract={contract}
           contentText={question}
           size={'2xs'}
           trackingLocation={'contract card (feed)'}

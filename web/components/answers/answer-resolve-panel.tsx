@@ -420,10 +420,12 @@ export function ResolutionAnswerItem(props: {
 
 export const IndependentAnswersResolvePanel = (props: {
   contract: CPMMMultiContract
+  onClose: () => void
 }) => {
-  const { contract } = props
+  const { contract, onClose } = props
 
   const isAdmin = useAdmin()
+  const user = useUser()
 
   const { answers, addAnswersMode } = contract
   const sortedAnswers = [
@@ -435,17 +437,26 @@ export const IndependentAnswersResolvePanel = (props: {
   ]
 
   return (
-    <>
-      {sortedAnswers.map((answer) => (
-        <IndependentResolutionAnswerItem
-          key={answer.id}
+    <GradientContainer>
+      <Col className="gap-3">
+        <ResolveHeader
           contract={contract}
-          answer={answer}
-          color={getAnswerColor(answer, [])}
-          isAdmin={isAdmin}
+          isCreator={user?.id === contract.creatorId}
+          onClose={onClose}
         />
-      ))}
-    </>
+        <Col className="gap-2">
+          {sortedAnswers.map((answer) => (
+            <IndependentResolutionAnswerItem
+              key={answer.id}
+              contract={contract}
+              answer={answer}
+              color={getAnswerColor(answer, [])}
+              isAdmin={isAdmin}
+            />
+          ))}
+        </Col>
+      </Col>
+    </GradientContainer>
   )
 }
 

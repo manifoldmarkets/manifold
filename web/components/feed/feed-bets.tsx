@@ -26,6 +26,8 @@ import { filterDefined } from 'common/util/array'
 import { sumBy, uniq } from 'lodash'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import { RepostButton } from 'web/components/comments/repost-modal'
+import { Button } from 'web/components/buttons/button'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -274,30 +276,37 @@ function BetActions(props: {
 }) {
   const { onReply, bet, contract } = props
   const user = useUser()
-  if (!user || bet.amount === 0) return null
+  if (!user) return null
   return (
-    <Col className="ml-1 sm:justify-center">
-      {user && onReply && (
-        <span>
-          <Tooltip
-            text={` Reply to ${bet.userName}'s bet`}
-            placement="top"
-            className="mr-2"
+    <Row className="items-center gap-1">
+      <RepostButton
+        bet={bet}
+        size={'2xs'}
+        className={'!p-1'}
+        contract={contract}
+      />
+      {onReply && (
+        <Tooltip
+          text={` Reply to ${bet.userName}'s bet`}
+          placement="top"
+          className="mr-2"
+        >
+          <Button
+            className={'!p-1'}
+            color={'gray-white'}
+            size={'2xs'}
+            onClick={() => {
+              onReply(bet)
+              track('reply to bet', {
+                slug: contract.slug,
+                amount: bet.amount,
+              })
+            }}
           >
-            <button
-              onClick={() => {
-                onReply(bet)
-                track('reply to bet', {
-                  slug: contract.slug,
-                  amount: bet.amount,
-                })
-              }}
-            >
-              <ReplyIcon className="text-ink-500 h-4 w-4" />
-            </button>
-          </Tooltip>
-        </span>
+            <ReplyIcon className=" h-5 w-5" />
+          </Button>
+        </Tooltip>
       )}
-    </Col>
+    </Row>
   )
 }

@@ -54,8 +54,8 @@ export function PrefGenderFilter(props: {
         Women: 'female',
         Men: 'male',
         'Non-binary': 'non-binary',
-        'Trans-women': 'trans-female',
-        'Trans-men': 'trans-male',
+        'Trans women': 'trans-female',
+        'Trans men': 'trans-male',
       }}
       onChange={(c) => {
         updateFilter({ pref_gender: c })

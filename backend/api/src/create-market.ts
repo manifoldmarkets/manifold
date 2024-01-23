@@ -1,7 +1,5 @@
 import * as admin from 'firebase-admin'
-import { JSONContent } from '@tiptap/core'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { marked } from 'marked'
 import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -51,6 +49,7 @@ import {
   toLiteMarket,
 } from 'common/api/market-types'
 import { z } from 'zod'
+import { anythingToRichText } from 'shared/tiptap'
 
 type Body = ValidatedAPIParams<'market'>
 
@@ -155,12 +154,16 @@ export async function createMarketHelper(
       creator: user,
       question,
       outcomeType,
-      description: getDescriptionJson(
-        description,
-        descriptionHtml,
-        descriptionMarkdown,
-        descriptionJson
-      ),
+      description:
+        typeof description !== 'string' && description
+          ? description
+          : anythingToRichText({
+              raw: description,
+              html: descriptionHtml,
+              markdown: descriptionMarkdown,
+              jsonString: descriptionJson,
+              // default: use a single empty space as the description
+            }) ?? htmlToRichText(`<p> </p>`),
       initialProb: initialProb ?? 50,
       ante,
       closeTime,
@@ -288,30 +291,6 @@ const runCreateMarketTxn = async (
     })
 
   return contract
-}
-
-function getDescriptionJson(
-  description?: string | JSONContent,
-  descriptionHtml?: string,
-  descriptionMarkdown?: string,
-  descriptionJson?: string
-): JSONContent {
-  if (description) {
-    if (typeof description === 'string') {
-      return htmlToRichText(`<p>${description}</p>`)
-    } else {
-      return description
-    }
-  } else if (descriptionHtml) {
-    return htmlToRichText(descriptionHtml)
-  } else if (descriptionMarkdown) {
-    return htmlToRichText(marked.parse(descriptionMarkdown))
-  } else if (descriptionJson) {
-    return JSON.parse(descriptionJson)
-  } else {
-    // Use a single empty space as the description
-    return htmlToRichText('<p> </p>')
-  }
 }
 
 async function getCloseTimestamp(
@@ -552,7 +531,8 @@ async function generateAntes(
       providerId,
       contract as CPMMBinaryContract | CPMMMultiContract,
       liquidityDoc.id,
-      ante
+      ante,
+      contract.createdTime
     )
 
     await liquidityDoc.set(lp)

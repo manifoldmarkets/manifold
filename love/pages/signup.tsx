@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import {
   initialRequiredState,
@@ -20,6 +20,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { removeUndefinedProps } from 'common/util/object'
+import { useLoverByUserId } from 'love/hooks/use-lover'
 
 export default function SignupPage() {
   const [step, setStep] = useState(0)
@@ -34,6 +35,17 @@ export default function SignupPage() {
   const setLoverState = (key: keyof rowFor<'lovers'>, value: any) => {
     setLoverForm((prevState) => ({ ...prevState, [key]: value }))
   }
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const existingLover = useLoverByUserId(user?.id)
+  useEffect(() => {
+    if (existingLover) {
+      setLoverForm(existingLover)
+      setStep(1)
+    }
+  }, [existingLover])
+
   return (
     <Col className="items-center">
       {user === undefined ? (
@@ -50,6 +62,7 @@ export default function SignupPage() {
               user={user}
               setLover={setLoverState}
               lover={loverForm}
+              isSubmitting={isSubmitting}
               onSubmit={async () => {
                 if (!loverForm.looking_for_matches) {
                   router.push('/')
@@ -60,6 +73,7 @@ export default function SignupPage() {
                     undefined
                   : undefined
 
+                setIsSubmitting(true)
                 const res = await createLover(
                   removeUndefinedProps({
                     ...loverForm,
@@ -69,6 +83,7 @@ export default function SignupPage() {
                   console.error(e)
                   return null
                 })
+                setIsSubmitting(false)
                 if (res && res.lover) {
                   setLoverForm(res.lover)
                   setStep(1)

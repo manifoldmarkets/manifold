@@ -3,7 +3,7 @@ import { getMutualAnswerCompatibility } from 'common/love/compatibility-score'
 import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { partition } from 'lodash'
+import { partition, sortBy, keyBy } from 'lodash'
 import { useLover } from 'love/hooks/use-lover'
 import {
   QuestionWithCountType,
@@ -40,6 +40,9 @@ import {
   PreferredListNoComparison,
 } from './compatibility-question-preferred-list'
 import { useUser } from 'web/hooks/use-user'
+import { Select } from 'web/components/widgets/select'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useIsMatchmaker } from 'love/hooks/use-is-matchmaker'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -64,6 +67,12 @@ function separateQuestionsArray(
 
   return { skippedQuestions, answeredQuestions, otherQuestions }
 }
+
+type CompatibilitySort =
+  | 'your-important'
+  | 'their-important'
+  | 'disagree'
+  | 'your-unanswered'
 
 export function CompatibilityQuestionsDisplay(props: {
   isCurrentUser: boolean
@@ -105,9 +114,49 @@ export function CompatibilityQuestionsDisplay(props: {
     refreshCompatibilityQuestions()
   }
 
+  const isMatchmaker = useIsMatchmaker()
+  const [sort, setSort] = usePersistentInMemoryState<CompatibilitySort>(
+    isMatchmaker && !fromLoverPage ? 'their-important' : 'your-important',
+    `compatibility-sort-${user.id}`
+  )
+
+  const currentUser = useUser()
+  const comparedUserId = fromLoverPage?.user_id ?? currentUser?.id
+  const { compatibilityAnswers: comparedAnswers } =
+    useUserCompatibilityAnswers(comparedUserId)
+  const questionIdToComparedAnswer = keyBy(comparedAnswers, 'question_id')
+
+  const sortedAnswers = sortBy(
+    answers.filter((a) => {
+      const comparedAnswer = questionIdToComparedAnswer[a.question_id]
+      if (sort === 'disagree') {
+        // Answered and not skipped.
+        return !!comparedAnswer && comparedAnswer.importance >= 0
+      }
+      return true
+    }),
+    (a) => {
+      const comparedAnswer = questionIdToComparedAnswer[a.question_id]
+      if (sort === 'your-important') {
+        return comparedAnswer ? -comparedAnswer.importance : 0
+      } else if (sort === 'their-important') {
+        return -a.importance
+      } else if (sort === 'disagree') {
+        return comparedAnswer
+          ? getMutualAnswerCompatibility(a, comparedAnswer)
+          : Infinity
+      } else if (sort === 'your-unanswered') {
+        // Not answered first, then skipped, then answered.
+        return comparedAnswer ? (comparedAnswer.importance >= 0 ? 2 : 1) : 0
+      }
+    },
+    // Break ties with their answer importance.
+    (a) => -a.importance
+  )
+
   const [page, setPage] = useState(0)
   const currentSlice = page * NUM_QUESTIONS_TO_SHOW
-  const shownAnswers = answers.slice(
+  const shownAnswers = sortedAnswers.slice(
     currentSlice,
     currentSlice + NUM_QUESTIONS_TO_SHOW
   )
@@ -138,6 +187,30 @@ export function CompatibilityQuestionsDisplay(props: {
                 refreshCompatibilityAll={refreshCompatibilityAll}
               />
             </span>
+          )}
+
+          {(!isCurrentUser || fromLoverPage) && (
+            <Select
+              onChange={(e) => {
+                setSort(e.target.value as CompatibilitySort)
+              }}
+              value={sort}
+              className={'w-18 border-ink-300 rounded-md'}
+            >
+              {fromLoverPage ? (
+                <option value="your-important">
+                  {fromLoverPage.user.name}'s important
+                </option>
+              ) : (
+                <option value="your-important">Your important</option>
+              )}
+              <option value="their-important">{user.name}'s important</option>
+              {(!fromLoverPage ||
+                fromLoverPage.user_id === currentUser?.id) && (
+                <option value="your-unanswered">Your unanswered</option>
+              )}
+              <option value="disagree">Disagree</option>
+            </Select>
           )}
           {shownAnswers.map((answer) => {
             return (
@@ -279,7 +352,7 @@ function CompatibilityAnswerBlock(props: {
           )}
         </Row>
       </Row>
-      <Row className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm">
+      <Row className="bg-canvas-50 w-fit gap-1 rounded px-2 py-1 text-sm">
         {answerText}
       </Row>
       {distinctPreferredAnswersText.length > 0 && (
@@ -293,7 +366,7 @@ function CompatibilityAnswerBlock(props: {
             {distinctPreferredAnswersText.map((text) => (
               <Row
                 key={text}
-                className="bg-canvas-50 w-fit gap-1 rounded py-1 pl-2 pr-3 text-sm"
+                className="bg-canvas-50 w-fit gap-1 rounded px-2 py-1 text-sm"
               >
                 {text}
               </Row>

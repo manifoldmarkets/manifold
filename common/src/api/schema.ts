@@ -5,6 +5,7 @@ import {
   resolveMarketProps,
   type LiteMarket,
   FullMarket,
+  updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
 import type { User } from 'common/user'
@@ -238,6 +239,14 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createMarketProps,
   },
+  // TODO: maybe this should be made consistent with the endpoints below and turned into a PUT
+  // but this is backwards compatible with the old clients
+  'update-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: updateMarketProps,
+  },
   'market/:contractId/close': {
     method: 'POST',
     visibility: 'public',
@@ -384,6 +393,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  manalink: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { slug: string },
+    props: z
+      .object({
+        amount: z.number().positive().finite().safe(),
+        expiresTime: z.number().optional(),
+        maxUses: z.number().optional(),
+        message: z.string().optional(),
+      })
+      .strict(),
+  },
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',
@@ -492,6 +515,16 @@ export const API = (_apiTypeCheck = {
     returns: [] as Headline[],
     props: z.object({}),
   },
+  react: {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contentId: z.string(),
+      contentType: z.enum(['comment', 'contract']),
+      remove: z.boolean().optional(),
+    }),
+  },
   'compatible-lovers': {
     method: 'GET',
     visibility: 'private',
@@ -515,6 +548,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
+        betId: z.string().optional(),
         commentId: z.string().optional(),
         content: contentSchema.optional(),
       })
@@ -546,6 +580,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       contractId: z.string(),
       limit: z.coerce.number().gte(0).lte(100),
+      limitTopics: z.coerce.number().gte(0).lte(10),
       userId: z.string().optional(),
     }),
     returns: {} as {

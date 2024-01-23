@@ -12,6 +12,7 @@ import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 export async function updateContractMetricsCore({ log }: JobContext) {
   const firestore = admin.firestore()
@@ -56,7 +57,8 @@ export async function updateContractMetricsCore({ log }: JobContext) {
   const limits = await getUnfilledLimitOrders(pg)
 
   log('Computing metric updates...')
-  const writer = firestore.bulkWriter()
+  const writer = new SafeBulkWriter()
+
   for (const contract of contracts) {
     let cpmmFields: Partial<CPMM> = {}
     if (contract.mechanism === 'cpmm-1') {
@@ -189,7 +191,7 @@ const getBetProbsAt = async (pg: SupabaseDirectClient, when: number) => {
           contract_id, answer_id, prob_before as prob
         from contract_bets
         where created_time >= millis_to_ts($1)
-        order by contract_id, answer_id, created_time asc
+        order by contract_id, answer_id, created_time
       )
       select
         coalesce(pa.contract_id, pb.contract_id) as contract_id,

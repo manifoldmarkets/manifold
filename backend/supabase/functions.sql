@@ -5,11 +5,11 @@ $$;
 
 create
 or replace function recently_liked_contract_counts (since bigint) returns table (contract_id text, n int) stable parallel safe language sql as $$
-select data->>'contentId' as contract_id,
+select content_id as contract_id,
   count(*) as n
 from user_reactions
-where data->>'contentType' = 'contract'
-  and data->>'createdTime' > since::text
+where content_type = 'contract'
+  and ts_to_millis(created_time) > since
 group by contract_id $$;
 
 create
@@ -187,7 +187,7 @@ alter table discord_messages_markets enable row level security;
 
 create
 or replace function get_your_contract_ids (uid text) returns table (contract_id text) stable parallel safe language sql as $$ with your_liked_contracts as (
-    select (data->>'contentId') as contract_id
+    select content_id as contract_id
     from user_reactions
     where user_id = uid
   ),
@@ -224,11 +224,11 @@ or replace function get_your_recent_contracts (uid text, n int, start int) retur
         order by ((data -> 'lastBetTime')::bigint) desc
         limit n),
     your_liked_contracts as (
-         select (data->>'contentId') as contract_id,
-                (data->>'createdTime')::bigint as ts
+         select content_id as contract_id,
+               ts_to_millis(created_time) as ts
          from user_reactions
          where user_id = uid
-         order by ((data->'createdTime')::bigint) desc
+         order by created_time desc
          limit n
     ),
      your_viewed_contracts as (
@@ -337,10 +337,10 @@ limit match_count;
 $$;
 
 create
-    or replace function close_contract_embeddings (
-    input_contract_id text,
-    similarity_threshold float,
-    match_count int
+or replace function close_contract_embeddings (
+  input_contract_id text,
+  similarity_threshold float,
+  match_count int
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
@@ -365,9 +365,8 @@ create
     limit match_count;
 $$;
 
-
 create
-or replace function get_top_market_ads (uid text, distance_threshold numeric) returns table (
+or replace function get_market_ads (uid text) returns table (
   ad_id text,
   market_id text,
   ad_funds numeric,
@@ -405,8 +404,7 @@ unredeemed_market_ads as (
     )
     and market_ads.funds >= cost_per_view
     and coalesce(embedding <=> (select disinterest_embedding from user_embedding), 1) > 0.125
-  and (embedding <=> (select interest_embedding from user_embedding))  < distance_threshold
-  order by cost_per_view * (1 - (embedding <=> (
+    order by cost_per_view * (1 - (embedding <=> (
     select interest_embedding
     from user_embedding
   ))) desc

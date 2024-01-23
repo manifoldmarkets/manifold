@@ -1,71 +1,75 @@
 import clsx from 'clsx'
-import { ClickHandler, SELECTED_OUTLINE_COLOR } from './usa-map'
+import {
+  ClickHandler,
+  HIGHLIGHTED_OUTLINE_COLOR,
+  SELECTED_OUTLINE_COLOR,
+} from './usa-map'
 import { StateDataType } from './usa-map-data'
-import { useState } from 'react'
+import { MouseEventHandler } from 'react'
+import { MultiContract } from 'common/contract'
+import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
-type USAStateProps = {
+export const OFFSET_TEXT_COLOR = '#9E9FBD'
+
+export function USAState(props: {
   state: string
   stateData: StateDataType
-  fill: string
+  contract: MultiContract
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
   hideStateTitle?: boolean
   selected?: boolean
-}
-export const USAState = ({
-  state,
-  stateData,
-  fill,
-  onClickState,
-  onMouseEnterState,
-  onMouseLeaveState,
-  hideStateTitle,
-  selected,
-}: USAStateProps) => {
+  hovered?: boolean
+}) {
+  const {
+    state,
+    stateData,
+    contract,
+    onClickState,
+    onMouseEnterState,
+    onMouseLeaveState,
+    hideStateTitle,
+    selected,
+    hovered,
+  } = props
+
   const { dimensions, textCoordinates, abbreviation, line } = stateData
-  const [isHovered, setIsHovered] = useState(false)
-  const onMouseEnter = () => {
-    setIsHovered(true)
-    if (onMouseEnterState) {
-      onMouseEnterState()
-    }
-  }
-  const onMouseLeave = () => {
-    setIsHovered(false)
-    if (onMouseLeaveState) {
-      onMouseLeaveState()
-    }
-  }
+
+  const fill = probToColor(contract) ?? ''
+
   return (
     <>
       <path
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(
-          !!onClickState && 'transition-all group-hover:cursor-pointer'
-        )}
-        onClick={onClickState}
+        className={clsx(!!onClickState && 'cursor-pointer transition-all')}
+        onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
-          !!selected ? SELECTED_OUTLINE_COLOR : isHovered ? '#fff' : undefined
+          !!selected
+            ? SELECTED_OUTLINE_COLOR
+            : hovered
+            ? HIGHLIGHTED_OUTLINE_COLOR
+            : undefined
         }
-        strokeWidth={!!selected || !!isHovered ? 2 : undefined}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
+        strokeWidth={!!selected || !!hovered ? 2 : undefined}
+        onMouseEnter={onMouseEnterState}
+        onMouseLeave={onMouseLeaveState}
       />
       {StateText({
         line,
         textCoordinates,
         abbreviation,
-        onMouseEnter: line ? onMouseEnter : undefined,
-        onMouseLeave: line ? onMouseLeave : undefined,
-        isHovered,
+        onMouseEnter: line ? onMouseEnterState : undefined,
+        onMouseLeave: line ? onMouseLeaveState : undefined,
+        isHovered: !!hovered,
         fill,
         onClick: line ? onClickState : undefined,
+        selected,
       })}
     </>
   )
@@ -87,6 +91,7 @@ export const StateText = (props: {
   isHovered: boolean
   fill: string
   onClick?: ClickHandler
+  selected?: boolean
 }) => {
   const {
     line,
@@ -96,31 +101,54 @@ export const StateText = (props: {
     onMouseLeave,
     isHovered,
     fill,
+    selected,
     onClick,
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
-  const textColor = !!line ? (isHovered ? fill : '#000') : '#FFF'
+  const isFillLight = isColorLight(fill)
+  const textColor = !!line
+    ? isHovered || selected
+      ? fill
+      : OFFSET_TEXT_COLOR
+    : isFillLight
+    ? '#1e293b'
+    : '#FFF'
 
   return (
     <>
+      {line && (!!isHovered || !!selected) && (
+        <text
+          key={`${abbreviation}-outline`}
+          x={textCoordinates.x}
+          y={textCoordinates.y}
+          textAnchor="middle"
+          fill={'#ffff'}
+          stroke={'#ffff'}
+          strokeWidth={2}
+        >
+          {abbreviation}
+        </text>
+      )}
+
       <text
         key={abbreviation}
         x={textCoordinates.x}
         y={textCoordinates.y}
         textAnchor="middle"
         fill={textColor}
+        fontWeight={isFillLight ? 600 : 'normal'}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
         className={line ? 'cursor-pointer' : 'pointer-events-none'}
-        onClick={onClick}
+        onClick={onClick as MouseEventHandler<SVGTextElement> | undefined}
       >
         {abbreviation}
       </text>
       {line && (
         <>
           {/* Outline Line - Only shown when hovered */}
-          {isHovered && (
+          {(isHovered || selected) && (
             <line
               x1={line.x1}
               y1={line.y1}
@@ -137,7 +165,7 @@ export const StateText = (props: {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke={isHovered ? fill : '#cec0ce'}
+            stroke={isHovered || selected ? fill : OFFSET_TEXT_COLOR}
             strokeWidth={1} // Assuming the regular line is thinner
           />
         </>

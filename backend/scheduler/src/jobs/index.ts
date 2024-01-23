@@ -30,7 +30,7 @@ export function createJobs() {
     createJob('update-contract-views', '0 0 * * * *', updateContractViews),
     createJob(
       'update-user-metrics',
-      '0 */10 * * * *', // every 10 minutes
+      '0 * * * * *', // every minute
       updateUserMetricsCore
     ),
     createJob(

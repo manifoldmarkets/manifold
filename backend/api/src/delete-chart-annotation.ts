@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getUser } from 'shared/utils'
+import { authEndpoint, validate } from 'api/helpers/endpoint'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
@@ -10,11 +9,8 @@ const bodySchema = z
   })
   .strict()
 
-export const deletechartannotation = authEndpoint(async (req, auth, log) => {
+export const deletechartannotation = authEndpoint(async (req, auth) => {
   const { id } = validate(bodySchema, req.body)
-
-  const creator = await getUser(auth.uid)
-  if (!creator) throw new APIError(404, 'Your account was not found')
 
   const pg = createSupabaseDirectClient()
   const res = await pg.one(

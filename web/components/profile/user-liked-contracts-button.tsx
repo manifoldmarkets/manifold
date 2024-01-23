@@ -8,12 +8,13 @@ import { Row } from 'web/components/layout/row'
 import {
   getLikedContracts,
   getLikedContractsCount,
-  SearchLikedContent,
 } from 'web/lib/supabase/reactions'
 import { Input } from 'web/components/widgets/input'
 import { withTracking } from 'web/lib/service/analytics'
 import { XIcon } from '@heroicons/react/outline'
-import { unReact } from 'web/lib/firebase/reactions'
+import { unLike } from 'web/lib/firebase/reactions'
+
+type SearchLikedContent = Awaited<ReturnType<typeof getLikedContracts>>[number]
 
 // Note: this button does NOT live update
 export const UserLikedContractsButton = memo(
@@ -38,9 +39,7 @@ export const UserLikedContractsButton = memo(
     // filter by query
     const filteredLikedContent = likedContent?.filter((c) => {
       return (
-        query === '' ||
-        c.title.toLowerCase().includes(query.toLowerCase()) ||
-        c.text.toLowerCase().includes(query.toLowerCase())
+        query === '' || c.question?.toLowerCase()?.includes(query.toLowerCase())
       )
     })
 
@@ -67,27 +66,25 @@ export const UserLikedContractsButton = memo(
               />
             </Row>
             <Col className={'gap-4'}>
-              {filteredLikedContent?.map((like) => (
+              {filteredLikedContent?.map((contract) => (
                 <Row
-                  key={like.id}
+                  key={contract.id}
                   className={'items-center justify-between gap-2'}
                 >
                   <Col className={'w-full'}>
                     <Link
-                      href={like.slug}
+                      href={`/market/${contract.slug}`}
                       className={'text-primary-700 line-clamp-2 text-sm'}
                     >
-                      {like.title}
+                      {contract.question}
                     </Link>
                   </Col>
                   <XIcon
                     className="ml-2 h-5 w-5 shrink-0 cursor-pointer"
                     onClick={() => {
-                      unReact(user.id, like.contentId, 'contract', 'like')
+                      unLike(contract.id, 'contract')
                       setLikedContent(
-                        filteredLikedContent.filter(
-                          (c) => c.contentId !== like.contentId
-                        )
+                        filteredLikedContent.filter((c) => c.id !== contract.id)
                       )
                       setLikedContentCount(likedContentCount - 1)
                     }}

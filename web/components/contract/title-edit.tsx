@@ -1,7 +1,7 @@
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { Contract, MAX_QUESTION_LENGTH } from 'common/contract'
 import { useState } from 'react'
-import { updateContract } from 'web/lib/firebase/contracts'
+import { updateMarket } from 'web/lib/firebase/api'
 import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'
@@ -22,9 +22,7 @@ export const EditableQuestionTitle = (props: {
 
   const onSave = async (newText: string) => {
     setEditing(false)
-    await updateContract(contract.id, {
-      question: newText,
-    })
+    await updateMarket({ contractId: contract.id, question: newText })
   }
 
   return isEditing ? (

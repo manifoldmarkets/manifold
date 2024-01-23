@@ -11,13 +11,11 @@ import { Contract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { difference, isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
-import { run } from 'common/supabase/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
-import { buildArray } from 'common/util/array'
 import { addContractToFeed } from 'shared/create-feed'
 import { DAY_MS } from 'common/util/time'
 
@@ -48,29 +46,10 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, description, groupLinks } = contract
+    const { closeTime, question, groupLinks } = contract
 
     const db = createSupabaseClient()
     const pg = createSupabaseDirectClient()
-
-    if (
-      !isEqual(previousContract.description, description) ||
-      !isEqual(previousContract.question, question)
-    ) {
-      await run(
-        db.from('contract_edits').insert({
-          contract_id: contract.id,
-          editor_id: contract.creatorId,
-          data: previousContract,
-          idempotency_key: eventId,
-          updated_keys: buildArray([
-            !isEqual(previousContract.description, description) &&
-              'description',
-            !isEqual(previousContract.question, question) && 'question',
-          ]),
-        })
-      )
-    }
 
     // Update group embeddings if group links changed
     const previousGroupIds = (previousContract.groupLinks ?? []).map(
