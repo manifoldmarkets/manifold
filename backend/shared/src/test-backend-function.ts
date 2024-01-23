@@ -6,7 +6,7 @@ import {
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
 import { log } from 'shared/utils'
-import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -20,8 +20,8 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    await updateContractMetricsCore({ log: log })
-    // await updateUserMetricsCore()
+    // await updateContractMetricsCore({ log: log })
+    await updateUserMetricsCore({ log: log })
     // await updateContractViews()
     // const comment = (
     //   await firestore

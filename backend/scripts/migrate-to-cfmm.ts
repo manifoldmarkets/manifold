@@ -10,10 +10,7 @@ import {
   CPMMBinaryContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
-import {
-  calculateDpmPayout,
-  getDpmProbability,
-} from 'common/calculate-dpm'
+import { calculateDpmPayout, getDpmProbability } from 'common/calculate-dpm'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { noFees } from 'common/fees'
 import { addObjects } from 'common/util/object'
@@ -109,7 +106,8 @@ async function recalculateContract(contractRef: DocRef, isCommit = false) {
         ...contractUpdate,
       } as CPMMBinaryContract,
       liquidityDocRef.id,
-      ante
+      ante,
+      contract.createdTime
     )
 
     if (isCommit) {

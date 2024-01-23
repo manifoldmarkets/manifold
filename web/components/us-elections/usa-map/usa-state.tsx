@@ -46,9 +46,7 @@ export function USAState(props: {
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(
-          !!onClickState && 'transition-all group-hover:cursor-pointer'
-        )}
+        className={clsx(!!onClickState && 'cursor-pointer transition-all')}
         onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={

@@ -4,12 +4,13 @@
 import * as admin from 'firebase-admin'
 import { initAdmin } from 'shared/init-admin'
 import { log, processPartitioned } from 'shared/utils'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 initAdmin()
 const firestore = admin.firestore()
 
 async function updateAllBets() {
-  const writer = firestore.bulkWriter({ throttling: false })
+  const writer = new SafeBulkWriter({ throttling: false })
   const flags = ['isAnte', 'isRedemption', 'isChallenge']
   let updated = 0
   const bets = firestore.collectionGroup('bets')

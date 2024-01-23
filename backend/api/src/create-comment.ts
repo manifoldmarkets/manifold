@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser } from 'shared/utils'
+import { getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 
@@ -126,7 +126,7 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
-  const you = await getUser(userId)
+  const you = await getUserFirebase(userId)
   const contract = await getContract(contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')

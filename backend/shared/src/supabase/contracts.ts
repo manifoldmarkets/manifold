@@ -13,7 +13,6 @@ import {
   unitVectorCosineDistance,
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
-import { log } from 'shared/utils'
 import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
@@ -207,7 +206,6 @@ export const getUsersWithSimilarInterestVectorsToContractServerSide = async (
   const userEmbeddingsCount = Object.keys(userInterestEmbeddings).length
   if (userEmbeddingsCount === 0)
     throw new Error('userInterestEmbeddings is not loaded')
-  else log('found ' + userEmbeddingsCount + ' user interest embeddings to use')
 
   const userDistanceMap: { [key: string]: number } = {}
   Object.entries(userInterestEmbeddings).forEach(([userId, user]) => {

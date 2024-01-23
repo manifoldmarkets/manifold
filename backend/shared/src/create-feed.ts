@@ -12,7 +12,7 @@ import {
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
 } from 'common/feed'
-import { log } from 'shared/utils'
+import { GCPLog, log as oldLog } from 'shared/utils'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 
@@ -40,7 +40,8 @@ export const bulkInsertDataToUserFeed = async (
     postId?: number
     betId?: string
   },
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  log: GCPLog = oldLog
 ) => {
   const eventTimeTz = new Date(eventTime).toISOString()
 
@@ -270,7 +271,7 @@ export const addContractToFeed = async (
     },
     pg
   )
-  log(
+  oldLog(
     `Added contract ${contract.id} to feed of ${
       Object.keys(usersToReasonsInterestedInContract).length
     } users`
@@ -283,6 +284,7 @@ export const addContractToFeedIfNotDuplicative = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   unseenNewerThanTime: number,
+  log: GCPLog,
   data?: Record<string, any>,
   trendingContractType?: 'old' | 'new'
 ) => {
@@ -298,10 +300,6 @@ export const addContractToFeedIfNotDuplicative = async (
       undefined,
       trendingContractType
     )
-  log(
-    'checking users for feed rows:',
-    Object.keys(usersToReasonsInterestedInContract).length
-  )
 
   const ignoreUserIds = await userIdsToIgnore(
     contract.id,
@@ -321,12 +319,14 @@ export const addContractToFeedIfNotDuplicative = async (
       creatorId: contract.creatorId,
       data,
     },
-    pg
+    pg,
+    log
   )
 }
 
 export const insertMarketMovementContractToUsersFeeds = async (
-  contract: CPMMContract
+  contract: CPMMContract,
+  log: GCPLog
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -339,6 +339,7 @@ export const insertMarketMovementContractToUsersFeeds = async (
     'contract_probability_changed',
     [],
     Date.now() - 1.5 * DAY_MS,
+    log,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
@@ -348,8 +349,9 @@ export const insertMarketMovementContractToUsersFeeds = async (
 export const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
   unseenNewerThanTime: number,
-  data?: Record<string, any>,
-  trendingContractType?: 'old' | 'new'
+  data: Record<string, any>,
+  trendingContractType: 'old' | 'new',
+  log: GCPLog
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -362,6 +364,7 @@ export const insertTrendingContractToUsersFeeds = async (
     'trending_contract',
     [contract.creatorId],
     unseenNewerThanTime,
+    log,
     data,
     trendingContractType
   )

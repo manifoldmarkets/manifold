@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
 import { Contract } from 'common/contract'
-import { getUser } from 'shared/utils'
 
 import { isAdminId } from 'common/envs/constants'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -31,9 +30,6 @@ export const closeMarket: APIHandler<'market/:contractId/close'> = async (
       'Close time must be in the future. ' +
         'Alternatively, do not provide a close time to close immediately.'
     )
-
-  const creator = await getUser(creatorId)
-  if (!creator) throw new APIError(500, 'Creator not found')
 
   const updatedContract = {
     ...contract,

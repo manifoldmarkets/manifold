@@ -103,7 +103,8 @@ export async function addInterestingContractsToFeed(
           thisWeekScore,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'new'
+        'new',
+        log
       )
     } else if (
       !readOnly &&
@@ -123,7 +124,8 @@ export async function addInterestingContractsToFeed(
           tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'old'
+        'old',
+        log
       )
     }
 
@@ -137,7 +139,8 @@ export async function addInterestingContractsToFeed(
         todayScore,
         importanceScore,
       })
-      if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
+      if (!readOnly)
+        await insertMarketMovementContractToUsersFeeds(contract, log)
     }
   }
   log('Done adding trending contracts to feed')

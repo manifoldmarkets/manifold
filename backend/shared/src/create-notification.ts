@@ -27,7 +27,6 @@ import {
   getContract,
   getPrivateUser,
   getUser,
-  getUserSupabase,
   getValues,
   log,
 } from 'shared/utils'
@@ -850,7 +849,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     const { data, error } = await db
       .from('contract_comments')
       .select('contract_id')
-      .eq('id', content_id)
+      .eq('comment_id', content_id)
     if (error) {
       log('Failed to get contract id: ' + error.message)
       return
@@ -1784,7 +1783,7 @@ export const createFollowSuggestionNotification = async (
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
   const id = crypto.randomUUID()
-  const contractCreator = await getUserSupabase(contract.creatorId)
+  const contractCreator = await getUser(contract.creatorId)
   if (!contractCreator) return
 
   if (!userOptedOutOfBrowserNotifications(privateUser)) {

@@ -17,6 +17,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { GCPLog } from 'shared/utils'
+import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -71,7 +72,7 @@ export const changeUser = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()
-  const bulkWriter = firestore.bulkWriter()
+  const bulkWriter = new SafeBulkWriter()
 
   if (update.username) update.username = cleanUsername(update.username)
   if (update.name) update.name = cleanDisplayName(update.name)
