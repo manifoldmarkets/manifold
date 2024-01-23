@@ -1,30 +1,25 @@
 import { ReactNode } from 'react'
+import { capitalize } from 'lodash'
 import { IoLocationOutline } from 'react-icons/io5'
 import { MdHeight } from 'react-icons/md'
+
 import { Row } from 'web/components/layout/row'
 import GenderIcon, { Gender, convertGender } from '../gender-icon'
 import { formatLoverValue } from '../lover-about'
-import { capitalize } from 'lodash'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Lover } from 'common/love/lover'
 
 export default function LoverPrimaryInfo(props: { lover: Lover }) {
   const { lover } = props
+  const stateOrCountry =
+    lover.country === 'United States of America'
+      ? lover.region_code
+      : lover.country
   return (
     <Row className="text-ink-700 gap-4 text-sm">
-      <Tooltip
-        text={`${lover.city}${
-          lover.country === 'United States of America'
-            ? ' ' + lover.region_code
-            : ''
-        }, ${lover.country}
-        `}
-      >
-        <IconWithInfo
-          text={lover.city}
-          icon={<IoLocationOutline className="h-4 w-4" />}
-        />
-      </Tooltip>
+      <IconWithInfo
+        text={`${lover.city}, ${stateOrCountry}`}
+        icon={<IoLocationOutline className="h-4 w-4" />}
+      />
       <IconWithInfo
         text={capitalize(convertGender(lover.gender as Gender))}
         icon={
