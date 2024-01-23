@@ -1219,13 +1219,8 @@ export const createContractResolvedNotifications = async (
 
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
-      const {
-        userPayout,
-        profitRank,
-
-        userInvestment,
-        totalShareholders,
-      } = notification.data as ContractResolutionData
+      const { userPayout, profitRank, userInvestment, totalShareholders } =
+        notification.data as ContractResolutionData
       const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
       const comparison =
         profitRank && totalShareholders && betterThan > 0
