@@ -14,7 +14,6 @@ import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
 import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
-import { BiQuestionMark } from 'react-icons/bi'
 
 const REP_IMG = '/politics-party/republican_symbol.png'
 const DEM_IMG = '/politics-party/democrat_symbol.png'
