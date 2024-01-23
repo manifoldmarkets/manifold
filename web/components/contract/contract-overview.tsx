@@ -544,14 +544,15 @@ const ChoiceOverview = (props: {
   const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
   useEffect(() => {
     if (
-      sort !== contract.sort &&
+      ((contract.sort && sort !== contract.sort) ||
+        (!contract.sort && sort !== defaultSort)) &&
       currentUserId &&
       (isModId(currentUserId) ||
         isAdminId(currentUserId) ||
         contract.creatorId === currentUserId)
     )
       setShowSetDefaultSort(true)
-  }, [sort])
+  }, [sort, contract.sort])
 
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
@@ -565,13 +566,16 @@ const ChoiceOverview = (props: {
           ? // Winners first
             (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
           : // Resolved last
-            (answer) =>
-              'resolutionTime' in answer ? answer.resolutionTime ?? 1 : 0,
+            (answer) => ('resolution' in answer ? 1 : 0),
         // then by sort
         (answer) => {
           if (sort === 'old') {
+            if ('resolutionTime' in answer && answer.resolutionTime)
+              return answer.resolutionTime
             return 'index' in answer ? answer.index : answer.number
           } else if (sort === 'new') {
+            if ('resolutionTime' in answer && answer.resolutionTime)
+              return -answer.resolutionTime
             return 'index' in answer ? -answer.index : -answer.number
           } else if (sort === 'prob-asc') {
             return answer.prob
@@ -605,6 +609,10 @@ const ChoiceOverview = (props: {
     )
   }, [sortedAnswers, query])
 
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => 'resolution' in a)
+
   const answersToShow = query
     ? searchedAnswers
     : showAll
@@ -615,9 +623,7 @@ const ChoiceOverview = (props: {
             return true
           }
 
-          if (resolutions?.[answer.id]) {
-            return true
-          }
+          if (allResolved) return true
           if (sort === 'prob-asc') {
             return answer.prob < 0.99
           } else if (sort === 'prob-desc') {
@@ -693,7 +699,10 @@ const ChoiceOverview = (props: {
       ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-          <IndependentAnswersResolvePanel contract={contract} />
+          <IndependentAnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
         ) : (
           <AnswersResolvePanel
             contract={contract}

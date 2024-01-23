@@ -22,6 +22,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   userName: string
   userUsername: string
   userAvatarUrl?: string
+  /** @deprecated out of date */
   likes?: number
 
   hidden?: boolean
@@ -50,6 +51,8 @@ export type OnContract = {
   // Used to respond to another user's bet
   bettorUsername?: string
   bettorName?: string
+  betLimitProb?: number
+  betOrderAmount?: number
 
   // denormalized based on betting history
   commenterPositionProb?: number // binary only

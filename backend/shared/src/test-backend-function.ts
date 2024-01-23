@@ -5,10 +5,8 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
-import { getContract, getUser } from 'shared/utils'
-import { addBetDataToUsersFeeds } from 'shared/create-feed'
-import { getUserMostChangedPosition } from 'common/supabase/bets'
-import * as crypto from 'crypto'
+import { log } from 'shared/utils'
+import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -22,8 +20,8 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    // await updateContractMetricsCore()
-    // await updateUserMetricsCore()
+    // await updateContractMetricsCore({ log: log })
+    await updateUserMetricsCore({ log: log })
     // await updateContractViews()
     // const comment = (
     //   await firestore
@@ -63,10 +61,10 @@ export async function testBackendFunction() {
     //   pg
     // )
 
-    const user = await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')
-    if (!user) return
-    const contract = await getContract('NtFRoxiF2Rfk4RM8KPRc')
-    if (!contract) return
+    // const user = await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2')
+    // if (!user) return
+    // const contract = await getContract('NtFRoxiF2Rfk4RM8KPRc')
+    // if (!contract) return
     // await addContractToFeed(
     //   contract,
     //   [
@@ -80,20 +78,6 @@ export async function testBackendFunction() {
     //     idempotencyKey: contract.id + '_new_contract',
     //   }
     // )
-
-    const maxOutcome = await getUserMostChangedPosition(
-      user,
-      contract,
-      Date.now() - 5000,
-      db
-    )
-    if (!maxOutcome) return
-    await addBetDataToUsersFeeds(
-      contract.id,
-      user,
-      maxOutcome,
-      crypto.randomUUID()
-    )
 
     // console.log('max change', maxOutcome)
     // await calculateGroupImportanceScore(pg)

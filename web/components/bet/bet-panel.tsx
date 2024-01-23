@@ -25,7 +25,7 @@ import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
 
 import { useFocus } from 'web/hooks/use-focus'
-import { useUnfilledBetsAndBalanceByUserId } from '../../hooks/use-bets'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { YourOrders } from './order-book'
 import { track, withTracking } from 'web/lib/service/analytics'
@@ -113,7 +113,7 @@ export function BuyPanel(props: {
       setOption(undefined)
     } else {
       // Skip for modals, we are tracking intent at the trigger call sites
-      if (inModal === false) {
+      if (!inModal) {
         track('bet intent', { location, option })
       }
       setOption(choice)
@@ -282,7 +282,10 @@ export function BuyPanel(props: {
           <Button
             color={seeLimit ? 'indigo' : 'indigo-outline'}
             onClick={() => onOptionChoice('LIMIT')}
-            className="px-2 text-lg sm:px-6"
+            className={clsx(
+              'px-2 text-lg sm:px-6',
+              selected !== undefined ? '!rounded-full' : ''
+            )}
             size="lg"
           >
             %
@@ -305,7 +308,7 @@ export function BuyPanel(props: {
       >
         <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
-        <Row className="mb-6 flex-wrap gap-x-10 gap-y-4">
+        <Row className="mb-6 flex-wrap gap-x-8 gap-y-4">
           <BuyAmountInput
             amount={betAmount}
             onChange={onBetChange}
@@ -319,7 +322,7 @@ export function BuyPanel(props: {
           />
 
           <Row className="mt-2 flex-1 gap-2">
-            <Col className="min-w-[138px]">
+            <Col className="min-w-[128px]">
               <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
                 {isPseudoNumeric || isStonk ? (
                   'Shares'
@@ -342,7 +345,7 @@ export function BuyPanel(props: {
                 </span>
               </div>
             </Col>
-            <Col className="min-w-[138px] text-sm">
+            <Col className="min-w-[120px] text-sm">
               <Row>
                 <span className="text-ink-700 whitespace-nowrap text-sm">
                   {isPseudoNumeric
@@ -412,7 +415,7 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : 'Bet'
+                : `Bet ${formatMoney(betAmount)} on ${outcome}`
             }
             inModal={inModal}
           />

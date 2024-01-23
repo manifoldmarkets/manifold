@@ -232,8 +232,7 @@ export function SellPanel(props: {
         quickAddMoreButton={
           <button
             className={clsx(
-              quickAddMoreButtonClassName,
-              'text-ink-500 hover:bg-ink-200'
+              'text-ink-500 hover:bg-ink-200 border-ink-300 m-[1px] rounded-r-md px-2.5 transition-colors'
             )}
             onClick={() =>
               onAmountChange(
@@ -311,9 +310,6 @@ export function SellPanel(props: {
     </>
   )
 }
-
-const quickAddMoreButtonClassName =
-  'absolute right-px top-px bottom-px rounded-r-md px-2.5 transition-colors'
 
 const getSaleResult = (
   contract: CPMMContract | CPMMMultiContract,

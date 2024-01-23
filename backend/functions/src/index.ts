@@ -11,7 +11,6 @@ export * from './triggers/on-create-answer'
 export * from './triggers/on-update-contract'
 export * from './triggers/on-create-contract'
 export * from './triggers/on-create-liquidity-provision'
-export * from './triggers/on-update-reaction'
 export * from './triggers/on-update-private-user'
 
 // scheduled functions

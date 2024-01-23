@@ -253,8 +253,9 @@ const EditAnswerModal = (props: {
 export function SimpleAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
+  barColor?: string
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, barColor } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -312,6 +313,7 @@ export function SimpleAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
               showAvatars={showAvatars}
+              barColor={barColor}
             />
           ))}
           {moreCount > 0 && (
@@ -343,6 +345,7 @@ function Answer(props: {
   userBets?: Bet[]
   showAvatars?: boolean
   expanded?: boolean
+  barColor?: string
 }) {
   const {
     answer,
@@ -356,6 +359,7 @@ function Answer(props: {
     showAvatars,
     expanded,
     user,
+    barColor,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
@@ -392,6 +396,7 @@ function Answer(props: {
           'cursor-pointer',
           selected && 'ring-primary-600 rounded  ring-2'
         )}
+        barColor={barColor}
         label={
           <Row className={'items-center gap-1'}>
             <AnswerStatus contract={contract} answer={answer} />
@@ -423,7 +428,11 @@ function Answer(props: {
                 style={{ fill: color }}
               />
             )}
-            <BetButtons contract={contract} answer={answer} />
+            <BetButtons
+              contract={contract}
+              answer={answer}
+              fillColor={barColor}
+            />
             {onClick && (
               <IconButton
                 className={'-ml-1 !px-1.5'}

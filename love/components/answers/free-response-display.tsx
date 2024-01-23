@@ -52,17 +52,7 @@ export function FreeResponseDisplay(props: {
 
   const noAnswers = answers.length < 1
 
-  if (noAnswers) {
-    if (isCurrentUser && !fromLoverPage) {
-      return (
-        <AddQuestionButton
-          isFirstQuestion={answers.length < 1}
-          questions={otherFRQuestions}
-          user={user}
-          refreshAnswers={refreshAnswers}
-        />
-      )
-    }
+  if (noAnswers && !isCurrentUser) {
     return null
   }
 

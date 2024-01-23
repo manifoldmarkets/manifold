@@ -48,6 +48,7 @@ export const AnswerBar = (props: {
   hideBar?: boolean
   onHover?: (hovering: boolean) => void
   onClick?: () => void
+  barColor?: string
 }) => {
   const {
     color,
@@ -75,7 +76,7 @@ export const AnswerBar = (props: {
       <div
         className={clsx(
           'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
-          hideBar ? 'bg-ink-200' : 'bg-canvas-50'
+          hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
         {/* bar outline if resolved */}
@@ -268,8 +269,9 @@ export const MultiBettor = (props: {
 export const YesNoBetButtons = (props: {
   answer: Answer
   contract: CPMMMultiContract
+  fillColor?: string
 }) => {
-  const { answer, contract } = props
+  const { answer, contract, fillColor } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
@@ -295,7 +297,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="green-outline"
-        className="bg-primary-50"
+        className={fillColor ?? 'bg-primary-50'}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -307,7 +309,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
-        className="bg-primary-50"
+        className={fillColor ?? 'bg-primary-50'}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -447,8 +449,9 @@ export const AnswerStatus = (props: {
 export const BetButtons = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  fillColor?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, fillColor } = props
   const isDpm = contract.mechanism === 'dpm-2'
 
   const isOpen = tradingAllowed(
@@ -463,6 +466,7 @@ export const BetButtons = (props: {
     <YesNoBetButtons
       answer={answer as Answer}
       contract={contract as CPMMMultiContract}
+      fillColor={fillColor}
     />
   )
 }

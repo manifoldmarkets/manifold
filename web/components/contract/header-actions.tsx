@@ -29,11 +29,9 @@ export function HeaderActions(props: {
         <LikeButton
           user={user}
           size={'xs'}
-          contract={contract}
           contentId={contract.id}
           contentType="contract"
           contentCreatorId={contract.creatorId}
-          totalLikes={contract.likedByUserCount ?? 0}
           contentText={contract.question}
           trackingLocation={'contract page'}
         />

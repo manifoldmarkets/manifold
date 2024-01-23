@@ -26,20 +26,27 @@ export const OptionalLoveUserForm = (props: {
 }) => {
   const { lover, user, buttonLabel, setLover, fromSignup } = props
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const [heightFeet, setHeightFeet] = useState<number | undefined>(
-    Math.floor((lover['height_in_inches'] ?? 0) / 12)
+    lover.height_in_inches
+      ? Math.floor((lover['height_in_inches'] ?? 0) / 12)
+      : undefined
   )
   const [heightInches, setHeightInches] = useState<number | undefined>(
-    Math.floor((lover['height_in_inches'] ?? 0) % 12)
+    lover.height_in_inches
+      ? Math.floor((lover['height_in_inches'] ?? 0) % 12)
+      : undefined
   )
   useCallReferUser()
 
   const handleSubmit = async () => {
+    setIsSubmitting(true)
     const res = await updateLover({ ...lover }).catch((e) => {
       console.error(e)
       return false
     })
+    setIsSubmitting(false)
     if (res) {
       console.log('success')
       track('submit love optional profile')
@@ -258,7 +265,13 @@ export const OptionalLoveUserForm = (props: {
           />
         </Col>
         <Row className={'justify-end'}>
-          <Button onClick={handleSubmit}>{buttonLabel ?? 'Next'}</Button>
+          <Button
+            disabled={isSubmitting}
+            loading={isSubmitting}
+            onClick={handleSubmit}
+          >
+            {buttonLabel ?? 'Next'}
+          </Button>
         </Row>
       </Col>
     </>

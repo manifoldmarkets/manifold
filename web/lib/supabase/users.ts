@@ -13,13 +13,33 @@ export type UserDisplay = {
 
 const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
 
+export type DisplayUser = Pick<User, (typeof defaultFields)[number]>
+
+export async function getUserById(id: string) {
+  const { data } = await run(
+    selectFrom(db, 'users', ...defaultFields).eq('id', id)
+  )
+  if (data.length === 0) return null
+
+  return data[0]
+}
+
 export async function getUserByUsername(username: string) {
   const { data } = await run(
     selectFrom(db, 'users', ...defaultFields).eq('username', username)
   )
   if (data.length === 0) return null
 
-  return data[0] as User
+  return data[0]
+}
+
+export async function getFullUserByUsername(username: string) {
+  const { data } = await run(
+    db.from('users').select('data').eq('username', username)
+  )
+  if (data.length === 0) return null
+
+  return data[0].data as User
 }
 
 export async function searchUsers(prompt: string, limit: number) {

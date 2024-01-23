@@ -10,7 +10,7 @@ import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import * as admin from 'firebase-admin'
-import { GCPLog, getContractSupabase, getUser } from 'shared/utils'
+import { GCPLog, getContractSupabase, getUserFirebase } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
@@ -44,7 +44,7 @@ export const referuser = authEndpoint(async (req, auth, log) => {
       `User ${referredByUsername} is banned from posting, not eligible for referral bonus`
     )
   }
-  const newUser = await getUser(auth.uid)
+  const newUser = await getUserFirebase(auth.uid)
   if (!newUser) {
     throw new APIError(403, `User ${auth.uid} not found`)
   }

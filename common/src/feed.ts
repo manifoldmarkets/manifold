@@ -36,7 +36,7 @@ export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
     new_comment: 0.05,
     new_contract: 0.25,
-    repost: 0.4,
+    repost: 0.5,
     new_subsidy: 0.1,
     user_position_changed: 0.02,
     contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
@@ -86,17 +86,13 @@ export type CreatorDetails = {
   avatarUrl: string
 }
 
-export const INTEREST_DISTANCE_THRESHOLDS: Record<
-  FEED_DATA_TYPES | 'ad',
-  number
-> = {
+export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   contract_probability_changed: 0.13,
   trending_contract: 0.15,
   new_contract: 0.125,
   new_comment: 0.115,
   new_subsidy: 0.15,
   user_position_changed: 1, // only targets followed users,
-  ad: 0.175,
   repost: 0.125,
 }
 

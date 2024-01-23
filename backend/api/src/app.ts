@@ -128,6 +128,8 @@ import { getHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
+import { addOrRemoveReaction } from './reaction'
+import { createManalink } from './create-manalink'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -196,6 +198,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'hide-comment': hideComment,
   comments: getComments,
   market: createMarket,
+  'update-market': updatemarket,
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -217,6 +220,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-markets-full': searchMarketsFull,
   managram: sendMana,
   managrams: getManagrams,
+  manalink: createManalink,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
   'user/:username': getUser,
@@ -224,6 +228,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
+  react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
   headlines: getHeadlines,
   'compatible-lovers': getCompatibleLovers,
@@ -366,7 +371,6 @@ app.post('/set-news-dashboards', ...apiRoute(setnews))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
-app.post('/update-market', ...apiRoute(updatemarket))
 app.post('/create-private-user-message', ...apiRoute(createprivateusermessage))
 app.post(
   '/create-private-user-message-channel',

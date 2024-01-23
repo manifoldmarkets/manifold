@@ -1,13 +1,13 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
-import { marked } from 'marked'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser, htmlToRichText } from 'shared/utils'
+import { getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { anythingToRichText } from 'shared/tiptap'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -100,6 +100,8 @@ export const createCommentOnContractInternal = async (
     betAnswerId: bet?.answerId,
     bettorName: bet?.userName,
     bettorUsername: bet?.userUsername,
+    betOrderAmount: bet?.orderAmount,
+    betLimitProb: bet?.limitProb,
     isApi,
     isRepost,
   } as ContractComment)
@@ -124,7 +126,7 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
-  const you = await getUser(userId)
+  const you = await getUserFirebase(userId)
   const contract = await getContract(contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
@@ -132,15 +134,7 @@ export const validateComment = async (
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  let contentJson = null
-  if (content) {
-    contentJson = content
-  } else if (html) {
-    contentJson = htmlToRichText(html)
-  } else if (markdown) {
-    const markedParse = marked.parse(markdown)
-    contentJson = htmlToRichText(markedParse)
-  }
+  const contentJson = content || anythingToRichText({ html, markdown })
 
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')

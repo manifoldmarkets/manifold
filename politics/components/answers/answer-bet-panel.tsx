@@ -178,7 +178,9 @@ export function AnswerBetPanel(props: {
           isSubmitting={isSubmitting}
           disabled={!!betDisabled}
           color={'indigo'}
-          actionLabel="Buy"
+          actionLabel={`Bet ${formatMoney(
+            betAmount ?? 0
+          )} on ${answer.text.slice(0, 20)}`}
           userOptedOutOfWarning={user.optOutBetWarnings}
           inModal={true}
         />

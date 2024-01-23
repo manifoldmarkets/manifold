@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { GCPLog, getPrivateUser, getUserSupabase } from 'shared/utils'
+import { GCPLog, getPrivateUser, getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -44,7 +44,7 @@ export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
     )
   }
   const pg = createSupabaseDirectClient()
-  const creator = await getUserSupabase(auth.uid)
+  const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
   return await createPrivateUserMessageMain(
@@ -179,7 +179,7 @@ const notifyOtherUserInChannelIfInactive = async (
   if (lastUserEvent && tsToMillis(lastUserEvent.ts) > Date.now() - HOUR_MS)
     return
 
-  const otherUser = await getUserSupabase(otherUserId.user_id)
+  const otherUser = await getUser(otherUserId.user_id)
   if (!otherUser) return
   await createNewMessageNotification(creator, otherUser, channelId)
 }

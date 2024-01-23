@@ -26,7 +26,7 @@ export function Checkbox(props: {
           <label
             htmlFor={label}
             className={clsx(
-              ' font-medium',
+              'whitespace-nowrap font-medium',
               disabled ? 'text-ink-300' : 'text-ink-700'
             )}
           >

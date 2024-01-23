@@ -12,7 +12,6 @@ import { removeUndefinedProps } from './util/object'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
-export const UNIQUE_BETTOR_LIQUIDITY_AMOUNT = 20
 
 type NormalizedBet<T extends Bet = Bet> = Omit<
   T,
@@ -23,9 +22,11 @@ export function getCpmmInitialLiquidity(
   providerId: string,
   contract: CPMMBinaryContract | CPMMMultiContract,
   anteId: string,
-  amount: number
+  amount: number,
+  createdTime: number,
+  answerId?: string
 ) {
-  const { createdTime, mechanism } = contract
+  const { mechanism } = contract
 
   const pool = mechanism === 'cpmm-1' ? { YES: 0, NO: 0 } : undefined
 
@@ -33,9 +34,11 @@ export function getCpmmInitialLiquidity(
     id: anteId,
     userId: providerId,
     contractId: contract.id,
-    createdTime,
     isAnte: true,
-
+    // Unfortunately, createdTime is only properly set for MC answers after this commit.
+    createdTime,
+    // answerId is only properly set for MC answers after this commit AND answers added after the question is created.
+    answerId,
     amount: amount,
     liquidity: amount,
     pool,

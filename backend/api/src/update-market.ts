@@ -1,29 +1,42 @@
-import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getContractSupabase } from 'shared/utils'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
+import {
+  getContractSupabase,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { buildArray } from 'common/util/array'
+import { anythingToRichText } from 'shared/tiptap'
+import { isEmpty } from 'lodash'
 
-const bodySchema = z
-  .object({
-    contractId: z.string(),
-    visibility: z.enum(['unlisted', 'public']).optional(),
-    closeTime: z.number().optional(),
-    addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
-    sort: z.string().optional(),
-  })
-  .strict()
-
-export const updatemarket = authEndpoint(async (req, auth, log) => {
-  const { contractId, visibility, addAnswersMode, closeTime, sort } = validate(
-    bodySchema,
-    req.body
-  )
-  if (!visibility && !closeTime && !addAnswersMode && !sort)
+export const updatemarket: APIHandler<'update-market'> = async (
+  body,
+  auth,
+  { log }
+) => {
+  const { contractId, ...fields } = body
+  if (isEmpty(fields))
     throw new APIError(400, 'Must provide some change to the contract')
+
+  const {
+    visibility,
+    addAnswersMode,
+    closeTime,
+    sort,
+    question,
+    coverImageUrl,
+
+    description: raw,
+    descriptionHtml: html,
+    descriptionMarkdown: markdown,
+    descriptionJson: jsonString,
+  } = fields
+
+  const description = anythingToRichText({ raw, html, markdown, jsonString })
+
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
@@ -38,36 +51,36 @@ export const updatemarket = authEndpoint(async (req, auth, log) => {
       addAnswersMode,
     })
   )
-  if (closeTime) {
-    await firestore.doc(`contracts/${contractId}`).update({
+
+  await firestore.doc(`contracts/${contractId}`).update(
+    removeUndefinedProps({
+      question,
+      coverImageUrl,
       closeTime,
-    })
-    log('updated close time')
-    await recordContractEdit(contract, auth.uid, ['closeTime'])
-  }
-  if (visibility) {
-    await firestore.doc(`contracts/${contractId}`).update(
-      removeUndefinedProps({
-        unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
-        visibility,
-      })
-    )
-    log('updated visibility')
-    await recordContractEdit(contract, auth.uid, ['visibility'])
-  }
-  if (addAnswersMode) {
-    await firestore.doc(`contracts/${contractId}`).update({
+      visibility,
+      unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
       addAnswersMode,
-    })
-    log('updated add answers mode')
-  }
-  if (sort) {
-    await firestore.doc(`contracts/${contractId}`).update({
       sort,
+      description,
     })
-    log('updated sort')
+  )
+
+  log(`updated fields: ${Object.keys(fields).join(', ')}`)
+
+  if (question || closeTime || visibility || description) {
+    await recordContractEdit(
+      contract,
+      auth.uid,
+      buildArray([
+        question && 'question',
+        closeTime && 'closeTime',
+        visibility && 'visibility',
+        description && 'description',
+      ])
+    )
   }
 
-  return { success: true }
-})
+  await revalidateContractStaticProps(contract)
+}
+
 const firestore = admin.firestore()

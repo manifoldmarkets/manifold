@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, jsonEndpoint, validate } from 'api/helpers/endpoint'
-import { getContractSupabase, getUserSupabase } from 'shared/utils'
+import { getContractSupabase, getUser, getUsers } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -63,7 +63,7 @@ export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
     [bet.bet_id, bet.contract_id]
   )
   log('bet exists: ' + !!betExists)
-  if (!betExists) throw new APIError(400, 'Bet already exists')
+  if (!betExists) throw new APIError(400, 'Bet not found')
 
   const idempotentId = bet.bet_id + bet.contract_id + '-limit-fill'
   const previousEventExists = await pg.oneOrNone(
@@ -76,7 +76,7 @@ export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
 
   const contract = await getContractSupabase(bet.contract_id)
   if (!contract) throw new APIError(404, 'Contract not found')
-  const bettor = await getUserSupabase(bet.user_id)
+  const bettor = await getUser(bet.user_id)
   if (!bettor) throw new APIError(404, 'Bettor not found')
 
   // If they're a new user and bet on their referrer's question, auto-create a follow and notify them
@@ -85,7 +85,7 @@ export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
     bettor.referredByUserId !== manifoldLoveUserId &&
     bettor.referredByUserId === contract.creatorId
   ) {
-    const referredByUser = await getUserSupabase(bettor.referredByUserId)
+    const referredByUser = await getUser(bettor.referredByUserId)
     if (!referredByUser) {
       logError(
         `User ${bettor.referredByUserId} not found, not creating follow after referral notification`
@@ -148,9 +148,8 @@ const notifyUsersOfLimitFills = async (
     )
   ).flat()
 
-  const betUsers = await Promise.all(
-    matchedBets.map((bet) => getUserSupabase(bet.userId))
-  )
+  const betUsers = await getUsers(matchedBets.map((bet) => bet.userId))
+
   const betUsersById = keyBy(filterDefined(betUsers), 'id')
 
   return filterDefined(

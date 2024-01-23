@@ -16,7 +16,9 @@ export const Matches = (props: {
   const { profileLover, profileUserId } = props
   const user = useUser()
 
-  const data = useCompatibleLovers(profileUserId)
+  const data = useCompatibleLovers(profileUserId, {
+    sortWithLocationPenalty: true,
+  })
 
   if (!data) return <LoadingIndicator />
 

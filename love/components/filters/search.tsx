@@ -1,7 +1,6 @@
-import { partition, zip, isEqual } from 'lodash'
+import { partition, zip, isEqual, orderBy, debounce } from 'lodash'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { debounce, orderBy } from 'lodash'
 import { useNearbyCities } from 'love/hooks/use-nearby-locations'
 import { useEffect, useState } from 'react'
 import { IoFilterSharp } from 'react-icons/io5'
@@ -23,16 +22,20 @@ import { OriginLocation } from './location-filter'
 import { Lover } from 'common/love/lover'
 import { filterDefined } from 'common/util/array'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { CompatibilityScore } from 'common/love/compatibility-score'
+import { useIsMatchmaker } from 'love/hooks/use-is-matchmaker'
 
 export type FilterFields = {
-  orderBy: 'last_online_time' | 'created_time'
+  orderBy: 'last_online_time' | 'created_time' | 'compatibility_score'
   geodbCityIds: string[] | null
   genders: string[]
 } & rowFor<'lovers'> &
   User
 
 function isOrderBy(input: string): input is FilterFields['orderBy'] {
-  return ['last_online_time', 'created_time'].includes(input)
+  return ['last_online_time', 'created_time', 'compatibility_score'].includes(
+    input
+  )
 }
 
 const initialFilters: Partial<FilterFields> = {
@@ -46,17 +49,29 @@ const initialFilters: Partial<FilterFields> = {
   is_smoker: undefined,
   pref_relation_styles: undefined,
   pref_gender: undefined,
-  orderBy: 'created_time',
+  orderBy: 'compatibility_score',
 }
 export const Search = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
+  setIsSearching: (isSearching: boolean) => void
   youLover: Lover | undefined | null
+  loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
 }) => {
-  const { allLovers, setLovers, youLover } = props
+  const {
+    allLovers,
+    setLovers,
+    youLover,
+    loverCompatibilityScores,
+    setIsSearching,
+  } = props
+
+  const isMatchmaker = useIsMatchmaker()
   const [filters, setFilters] = usePersistentLocalState<Partial<FilterFields>>(
-    initialFilters,
-    'profile-filters'
+    isMatchmaker
+      ? { ...initialFilters, orderBy: 'created_time' }
+      : initialFilters,
+    'profile-filters-2'
   )
 
   const updateFilter = (newState: Partial<FilterFields>) => {
@@ -155,11 +170,20 @@ export const Search = (props: {
     if (allLovers) {
       applyFilters()
     }
-  }, [JSON.stringify(filters), allLovers?.map((l) => l.id).join(',')])
+  }, [
+    JSON.stringify(filters),
+    allLovers?.map((l) => l.id).join(','),
+    loverCompatibilityScores,
+  ])
 
   const applyFilters = () => {
-    const sortedLovers = orderBy(
+    const initialSort = orderBy(
       allLovers,
+      (lover) => new Date(lover.last_online_time).getTime(),
+      'desc'
+    )
+    const sortedLovers = orderBy(
+      initialSort,
       (lover) => {
         switch (filters.orderBy) {
           case 'last_online_time':
@@ -169,12 +193,19 @@ export const Search = (props: {
             )
           case 'created_time':
             return new Date(lover.created_time).getTime()
+          case 'compatibility_score':
+            const score = loverCompatibilityScores?.[lover.user_id]?.score
+            return score ?? 0
         }
       },
       'desc'
     )
-    const modifiedSortedLovers = alternateWomenAndMen(sortedLovers)
-    const filteredLovers = modifiedSortedLovers?.filter((lover) => {
+    const modifiedSortedLovers =
+      filters.orderBy === 'compatibility_score'
+        ? sortedLovers
+        : alternateWomenAndMen(sortedLovers)
+
+    const filteredLovers = modifiedSortedLovers.filter((lover) => {
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
       if (filters.pref_age_min && lover.age < filters.pref_age_min) {
@@ -235,6 +266,13 @@ export const Search = (props: {
       ) {
         return false
       } else if (!lover.pinned_url) return false
+      else if (
+        loverCompatibilityScores &&
+        filters.orderBy === 'compatibility_score' &&
+        !loverCompatibilityScores[lover.user_id]
+      ) {
+        return false
+      }
       return true
     })
     setLovers(filteredLovers)
@@ -246,7 +284,10 @@ export const Search = (props: {
           value={filters.name ?? ''}
           placeholder={'Search name'}
           className={'w-full max-w-xs'}
-          onChange={(e) => updateFilter({ name: e.target.value })}
+          onChange={(e) => {
+            updateFilter({ name: e.target.value })
+            setIsSearching(e.target.value.length > 0)
+          }}
         />
 
         <Row className="gap-2">
@@ -261,8 +302,11 @@ export const Search = (props: {
             value={filters.orderBy || 'created_time'}
             className={'w-18 border-ink-300 rounded-md'}
           >
-            <option value="last_online_time">Active</option>
+            {youLover && (
+              <option value="compatibility_score">Compatible</option>
+            )}
             <option value="created_time">New</option>
+            <option value="last_online_time">Active</option>
           </Select>
           <Button
             color="none"

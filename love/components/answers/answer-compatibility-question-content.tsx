@@ -251,30 +251,17 @@ export function AnswerCompatibilityQuestionContent(props: {
           />
         </Col>
       </Col>
-      <Row className="w-full justify-between">
-        <Button
-          disabled={loading || skipLoading}
-          onClick={() => {
-            onSubmit()
-          }}
-          color={'gray-outline'}
-          className="h-min"
-        >
-          Close
-        </Button>
-        <Col className="gap-1">
-          <Button
-            disabled={
-              !multipleChoiceValid ||
-              !prefChoicesValid ||
-              !importanceValid ||
-              loading ||
-              skipLoading
-            }
-            loading={loading}
+      <Row className="w-full justify-between gap-4">
+        {noSkip ? (
+          <div />
+        ) : (
+          <button
+            disabled={loading || skipLoading}
             onClick={() => {
-              setLoading(true)
-              submitCompatibilityAnswer(answer)
+              setSkipLoading(true)
+              submitCompatibilityAnswer(
+                getEmptyAnswer(user.id, compatibilityQuestion.id)
+              )
                 .then(() => {
                   if (isLastQuestion) {
                     onSubmit()
@@ -282,37 +269,40 @@ export function AnswerCompatibilityQuestionContent(props: {
                     onNext()
                   }
                 })
-                .finally(() => setLoading(false))
+                .finally(() => setSkipLoading(false))
             }}
+            className={clsx(
+              'text-ink-500 disabled:text-ink-300 text-sm hover:underline disabled:cursor-not-allowed',
+              skipLoading && 'animate-pulse'
+            )}
           >
-            {isLastQuestion ? 'Finish' : 'Next'}
-          </Button>
-          {!noSkip && (
-            <button
-              disabled={loading || skipLoading}
-              onClick={() => {
-                setSkipLoading(true)
-                submitCompatibilityAnswer(
-                  getEmptyAnswer(user.id, compatibilityQuestion.id)
-                )
-                  .then(() => {
-                    if (isLastQuestion) {
-                      onSubmit()
-                    } else if (onNext) {
-                      onNext()
-                    }
-                  })
-                  .finally(() => setSkipLoading(false))
-              }}
-              className={clsx(
-                'text-ink-500 disabled:text-ink-300 text-sm hover:underline disabled:cursor-not-allowed',
-                skipLoading && 'animate-pulse'
-              )}
-            >
-              Skip
-            </button>
-          )}
-        </Col>
+            Skip
+          </button>
+        )}
+        <Button
+          disabled={
+            !multipleChoiceValid ||
+            !prefChoicesValid ||
+            !importanceValid ||
+            loading ||
+            skipLoading
+          }
+          loading={loading}
+          onClick={() => {
+            setLoading(true)
+            submitCompatibilityAnswer(answer)
+              .then(() => {
+                if (isLastQuestion) {
+                  onSubmit()
+                } else if (onNext) {
+                  onNext()
+                }
+              })
+              .finally(() => setLoading(false))
+          }}
+        >
+          {isLastQuestion ? 'Finish' : 'Next'}
+        </Button>
       </Row>
     </Col>
   )

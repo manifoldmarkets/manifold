@@ -86,11 +86,12 @@ export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
 
       const id = randomString()
       const n = answers.length
+      const createdTime = Date.now()
       const newAnswer: Answer = {
         id,
         index: n,
         contractId,
-        createdTime: Date.now(),
+        createdTime,
         userId: user.id,
         text,
         isOther: false,
@@ -132,7 +133,9 @@ export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
         user.id,
         contract,
         liquidityDoc.id,
-        ANSWER_COST
+        ANSWER_COST,
+        createdTime,
+        newAnswer.id
       )
       transaction.create(liquidityDoc, lp)
 

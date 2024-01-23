@@ -12,23 +12,22 @@ import {
 } from 'web/lib/supabase/txns'
 import { formatMoney, manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { getUser } from 'web/lib/firebase/users'
 import Link from 'next/link'
-import { User } from 'common/user'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
   const [totalsByCharity, mostRecentDonation] = await Promise.all([
     getDonationsByCharity(),
     getMostRecentDonation(),
-  ])
+  ]).catch(() => [{}, { toId: '', fromId: '' }] as const)
   return {
     props: {
       totalsByCharity,
       mostRecentCharityId: mostRecentDonation.toId,
-      mostRecentDonor: await getUser(mostRecentDonation.fromId),
+      mostRecentDonor: await getUserById(mostRecentDonation.fromId),
     },
     revalidate: 60,
   }
@@ -68,7 +67,7 @@ function DonatedStats(props: { stats: Stat[] }) {
 
 export default function Charity(props: {
   totalsByCharity: { [k: string]: { total: number; numSupporters: number } }
-  mostRecentDonor?: User | null
+  mostRecentDonor?: DisplayUser | null
   mostRecentCharityId?: string
 }) {
   const { totalsByCharity, mostRecentCharityId, mostRecentDonor } = props

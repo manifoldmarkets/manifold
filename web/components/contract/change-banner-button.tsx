@@ -6,7 +6,6 @@ import { useState } from 'react'
 import { Button, buttonClass } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Tooltip } from '../widgets/tooltip'
-import { updateContract } from 'web/lib/firebase/contracts'
 import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
@@ -15,6 +14,7 @@ import { uploadImage } from 'web/lib/firebase/storage'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { TbCameraPlus } from 'react-icons/tb'
+import { updateMarket } from 'web/lib/firebase/api'
 
 export function ChangeBannerButton(props: {
   contract?: Contract
@@ -103,7 +103,10 @@ const ChangeBannerModal = (props: {
                 </ChangeCoverImageButton>
                 <Button
                   onClick={() =>
-                    updateContract(contract.id, { coverImageUrl: null as any })
+                    updateMarket({
+                      contractId: contract.id,
+                      coverImageUrl: null as any,
+                    })
                   }
                 >
                   Remove
@@ -138,7 +141,7 @@ const ChangeCoverImageButton = (props: {
 }) => {
   const uploadMutation = useMutation(fileHandler, {
     onSuccess(url) {
-      updateContract(props.contract.id, { coverImageUrl: url })
+      updateMarket({ contractId: props.contract.id, coverImageUrl: url })
     },
     onError(error: any) {
       toast.error(error.message ?? error)

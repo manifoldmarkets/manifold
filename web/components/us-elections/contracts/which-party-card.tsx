@@ -28,10 +28,10 @@ import { CardReason } from 'web/components/feed/card-reason'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { PollPanel } from 'web/components/poll/poll-panel'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
+import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
 
-export function PoliticsContractCard(props: {
+export function WhichPartyCard(props: {
   contract: Contract
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
@@ -134,11 +134,9 @@ export function PoliticsContractCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'relative rounded-xl',
+        'relative',
         'cursor-pointer ',
-        'hover:ring-[1px]',
         'flex w-full flex-col gap-0.5 px-4 py-4',
-        small ? 'bg-canvas-50' : 'bg-canvas-0 shadow-md sm:px-6',
         'fade-in'
       )}
       onClick={(e) => {
@@ -227,15 +225,11 @@ export function PoliticsContractCard(props: {
           />
         )}
         {promotedData && canAdPay && (
-          <Col
-            className={clsx(
-              'w-full items-center opacity-0 transition-opacity',
-              adSecondsLeft === 0 && 'opacity-100'
-            )}
-          >
+          <Col className={clsx('w-full items-center')}>
             <ClaimButton
               {...promotedData}
               onClaim={() => Router.push(path)}
+              disabled={adSecondsLeft !== 0}
               className={'z-10 my-2 whitespace-nowrap'}
             />
           </Col>

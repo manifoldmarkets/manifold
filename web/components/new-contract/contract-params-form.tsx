@@ -208,9 +208,11 @@ export function ContractParamsForm(props: {
     [],
     'new-selected-groups' + paramsKey
   )
+
+  const defaultBountyAmount = 500
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
-  >(50, 'new-bounty' + paramsKey)
+  >(defaultBountyAmount, 'new-bounty' + paramsKey)
 
   const balance = getAvailableBalancePerQuestion(creator)
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -222,7 +224,7 @@ export function ContractParamsForm(props: {
           creator.createdTime
         ) > 0
       ? 250
-      : bountyAmount ?? 50
+      : bountyAmount ?? defaultBountyAmount
   )
 
   const closeTime = closeDate
@@ -523,6 +525,7 @@ export function ContractParamsForm(props: {
               onChange={(newAmount) => setBountyAmount(newAmount)}
               error={bountyError}
               setError={setBountyError}
+              quickButtonValues="large"
             />
           ) : (
             <div className="text-ink-700 pl-1 text-sm">

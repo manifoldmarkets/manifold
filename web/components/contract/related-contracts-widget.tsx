@@ -360,29 +360,32 @@ export const RelatedContractsGrid = memo(function (props: {
       <h2 className={clsx('text-ink-800 mb-2 text-lg')}>
         {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
       </h2>
-      <Masonry
-        breakpointCols={{ default: 2, 768: 1 }}
+      <Col
         className={clsx(
-          ' flex w-auto',
-          'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
+          'scrollbar-hide overflow-y-auto scroll-smooth',
           showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
         )}
       >
-        {getUnseenContracts(contracts, seenContractIds)
-          .filter((c) => !displayedGroupContractIds.includes(c.id))
-          .map((contract) => (
-            <RelatedContractCard
-              key={contract.id}
-              showGraph={showAll}
-              contract={contract}
-              onContractClick={(c) =>
-                track('click related market', { contractId: c.id })
-              }
-              twoLines
-            />
-          ))}
+        <Masonry
+          breakpointCols={{ default: 2, 768: 1 }}
+          className={clsx('flex w-auto snap-x gap-2')}
+        >
+          {getUnseenContracts(contracts, seenContractIds)
+            .filter((c) => !displayedGroupContractIds.includes(c.id))
+            .map((contract) => (
+              <RelatedContractCard
+                key={contract.id}
+                showGraph={showAll}
+                contract={contract}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                twoLines
+              />
+            ))}
+        </Masonry>
         {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
-      </Masonry>
+      </Col>
       {!showAll && (
         <Button
           color={'gray-white'}
