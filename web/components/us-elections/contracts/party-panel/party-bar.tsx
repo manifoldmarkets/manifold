@@ -52,22 +52,22 @@ export const PartyBar = (props: {
       : answer.text == 'Democratic Party'
       ? DEM_IMG
       : null
+
+  if (!imagePath) {
+    return null
+  }
   return (
     <>
       <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
           <Row className="w-full items-center gap-2 text-sm sm:text-lg">
-            {!imagePath ? (
-              <BiQuestionMark className="text-ink-600 ml-2 h-10 w-10 sm:h-[60px] sm:w-[60px]" />
-            ) : (
-              <Image
-                src={imagePath}
-                alt={answer.text}
-                width={isMobile ? 40 : 60}
-                height={isMobile ? 40 : 60}
-                className="dark:brightness-80 -mb-0.5 ml-2 mt-0.5 object-fill"
-              />
-            )}
+            <Image
+              src={imagePath}
+              alt={answer.text}
+              width={isMobile ? 40 : 60}
+              height={isMobile ? 40 : 60}
+              className="dark:brightness-80 -mb-0.5 ml-2 mt-0.5 object-fill"
+            />
 
             {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
           </Row>
