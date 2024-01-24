@@ -90,6 +90,15 @@ export default function LandingPage(props: {
                   Markets
                 </Button>
               </Link>
+              <Link href="/elections" className="hidden lg:flex">
+                <Button
+                  color="gray-white"
+                  size="xs"
+                  className="whitespace-nowrap"
+                >
+                  US Elections
+                </Button>
+              </Link>
               <Button
                 color="gray-white"
                 size="xs"

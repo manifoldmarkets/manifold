@@ -150,6 +150,11 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/browse', icon: SearchIcon },
+    {
+      name: 'US Elections',
+      href: '/elections',
+      icon: FaFlagUsa,
+    },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
