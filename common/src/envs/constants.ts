@@ -140,6 +140,7 @@ export const BOT_USERNAMES = [
   'TigerMcBot',
   'Euclidean',
   'manakin',
+  'LUCAtheory',
 ]
 
 export const MOD_IDS = [
