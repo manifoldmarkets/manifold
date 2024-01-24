@@ -369,6 +369,7 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'technical-ai-timelines', // same as ai
   'presidential-politics', // same as politics
   'unsubsidized',
+  'death-markets', 
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
