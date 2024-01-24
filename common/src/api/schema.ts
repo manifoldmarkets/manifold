@@ -644,6 +644,13 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
+  'get-signup-bonus': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { bonus: number },
+    props: z.object({}),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

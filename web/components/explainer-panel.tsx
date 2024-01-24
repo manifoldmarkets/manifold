@@ -2,6 +2,8 @@ import clsx from 'clsx'
 import { Col } from './layout/col'
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
@@ -58,7 +60,8 @@ export const WhatIsMana = () => (
   <ExpandSection title="💰 What is mana (Ṁ)?">
     Mana (Ṁ) is the play-money used to bet on Manifold.
     <br />
-    You start with Ṁ500 for free. Earn more by winning bets and gaining bonuses.
+    You start with ${formatMoney(STARTING_BALANCE)} for free. Earn more by
+    winning bets and gaining bonuses.
     <br />
     Most users never have to buy mana!
     <br />

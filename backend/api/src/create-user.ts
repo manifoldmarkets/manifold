@@ -132,6 +132,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
+        signupBonusPaid: 0,
       })
 
       const privateUser: PrivateUser = {

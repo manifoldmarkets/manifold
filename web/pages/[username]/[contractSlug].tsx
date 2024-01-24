@@ -78,6 +78,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
 import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
+import { useGetNewUserSignupBonus } from 'web/hooks/use-get-new-user-signup-bonus'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -276,7 +277,8 @@ export function ContractPageContent(props: ContractParams) {
     defaultReferrerUsername: contract.creatorUsername,
     contractId: contract.id,
   })
-
+  // Request new user signup bonus on every contract page visited
+  useGetNewUserSignupBonus(contract.id)
   const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
@@ -318,18 +320,6 @@ export function ContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
-  const [justBet, setJustBet] = useState(false)
-
-  // Show related contracts after a user bets, like Google shows related searches.
-  useEffect(() => {
-    if (
-      !user ||
-      !user.lastBetTime ||
-      parseJsonContentToText(contract.description).trim().length < 200
-    )
-      return
-    setJustBet(user.lastBetTime > Date.now() - 3000)
-  }, [user?.lastBetTime])
 
   return (
     <>
@@ -472,14 +462,14 @@ export function ContractPageContent(props: ContractParams) {
                 chartAnnotations={chartAnnotations}
               />
             </Col>
-            {justBet && (
-              <RelatedContractsGrid
-                contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
-                loadMore={loadMore}
-              />
-            )}
-
+            <RelatedContractsGrid
+              contracts={relatedMarkets}
+              seenContractIds={seenContractIds}
+              loadMore={loadMore}
+              showOnlyAfterBet={
+                parseJsonContentToText(contract.description).trim().length < 200
+              }
+            />
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
@@ -527,9 +517,6 @@ export function ContractPageContent(props: ContractParams) {
             />
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
-            {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
-            )}
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
               <ContractSharePanel
@@ -538,6 +525,9 @@ export function ContractPageContent(props: ContractParams) {
                 showResolver={showResolver}
                 contract={contract}
               />
+            )}
+            {showExplainerPanel && (
+              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
             )}
             {comments.length > 3 && (
               <RelatedContractsGrid

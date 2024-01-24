@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -24,12 +23,12 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { secrets } from 'common/secrets'
 import { bulkUpsert } from 'shared/supabase/utils'
-import { saveCalibrationData } from './calculate-calibration'
+import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
+import { isUserLikelySpammer } from 'common/user'
 
-const numberOfDays = 180
+const numberOfDays = 10
 
 interface StatEvent {
   id: string
@@ -37,6 +36,11 @@ interface StatEvent {
   ts: number
 }
 type StatBet = StatEvent & { amount: number }
+type StatUser = StatEvent & {
+  betCount: number
+  freeQuestionsCreated: number
+  bio: string
+}
 
 async function getDailyBets(
   pg: SupabaseDirectClient,
@@ -125,19 +129,31 @@ async function getDailyNewUsers(
 ) {
   const users = await pg.manyOrNone(
     `select
-      extract(day from millis_interval((data->'createdTime')::bigint, $2)) as day,
-      (data->'createdTime')::bigint as ts,
-      id
-    from users
-    where (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
+      extract(day from millis_interval((u.data->'createdTime')::bigint, $2)) as day,
+      (u.data->'createdTime')::bigint as ts,
+      u.id,
+      (u.data->>'bio') as bio,
+      (u.data->'freeQuestionsCreated')::int as free_questions_created,
+      count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count
+  from users u
+           left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
+          and (cb.created_time >= millis_to_ts($1) and cb.created_time < millis_to_ts($2))
+    where (u.created_time >= millis_to_ts($1) and u.created_time < millis_to_ts($2))
+  group by u.id;
+    `,
     [startTime, startTime + numberOfDays * DAY_MS]
   )
-  const usersByDay: StatEvent[][] = range(0, numberOfDays).map((_) => [])
+
+  const usersByDay: StatUser[][] = range(0, numberOfDays).map((_) => [])
+
   for (const r of users) {
     usersByDay[(numberOfDays - 1 - r.day) as number].push({
       id: r.id as string,
       userId: r.id as string,
       ts: r.ts as number,
+      betCount: r.bet_count as number,
+      freeQuestionsCreated: r.free_questions_created as number,
+      bio: r.bio as string,
     } as const)
   }
   return usersByDay
@@ -192,6 +208,10 @@ export const updateStatsCore = async () => {
     getSales(pg, start, numberOfDays),
   ])
   logMemory()
+
+  const dailyNewRealUsers = dailyNewUsers.map((users) =>
+    users.filter((user) => !isUserLikelySpammer(user, user.betCount > 0))
+  )
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
 
@@ -279,11 +299,15 @@ export const updateStatsCore = async () => {
     return intersection(engaged1, engaged2, engaged3).length
   })
 
+  const dailyNewRealUserIds = dailyNewRealUsers.map((users) =>
+    users.map((u) => u.id)
+  )
+
   const d1 = dailyUserIds.map((today, i) => {
     if (i === 0) return 0
     if (today.length === 0) return 0
 
-    const yesterday = dailyUserIds[i - 1]
+    const yesterday = dailyNewRealUserIds[i - 1]
 
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
@@ -297,12 +321,11 @@ export const updateStatsCore = async () => {
     return average(d1.slice(start, end))
   })
 
-  const dailyNewUserIds = dailyNewUsers.map((users) => users.map((u) => u.id))
   const nd1 = dailyUserIds.map((today, i) => {
     if (i === 0) return 0
     if (today.length === 0) return 0
 
-    const yesterday = dailyNewUserIds[i - 1]
+    const yesterday = dailyNewRealUserIds[i - 1]
 
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
@@ -315,7 +338,7 @@ export const updateStatsCore = async () => {
     const end = i + 1
     return average(nd1.slice(start, end))
   })
-  const nw1 = dailyNewUserIds.map((_userIds, i) => {
+  const nw1 = dailyNewRealUserIds.map((_userIds, i) => {
     if (i < 13) return 0
 
     const twoWeeksAgo = {
@@ -327,7 +350,7 @@ export const updateStatsCore = async () => {
       end: i + 1,
     }
     const newTwoWeeksAgo = new Set<string>(
-      dailyNewUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
+      dailyNewRealUserIds.slice(twoWeeksAgo.start, twoWeeksAgo.end).flat()
     )
     if (newTwoWeeksAgo.size === 0) return 0
     const activeLastWeek = new Set<string>(
@@ -394,7 +417,7 @@ export const updateStatsCore = async () => {
       firstBetDict[bet.userId] = i
     }
   }
-  const dailyActivationRate = dailyNewUsers.map((newUsers, i) => {
+  const dailyActivationRate = dailyNewRealUsers.map((newUsers, i) => {
     if (newUsers.length === 0) return 0
     const activedCount = sumBy(newUsers, (user) => {
       const firstBet = firstBetDict[user.id]
@@ -407,8 +430,14 @@ export const updateStatsCore = async () => {
     const end = i + 1
     return average(dailyActivationRate.slice(start, end))
   })
+  const newUserBetAverage = dailyNewRealUsers.map((newUsers, i) => {
+    if (newUsers.length === 0) return 0
+    const totalBetCounts = sum(newUsers.map((u) => u.betCount))
+    return totalBetCounts / newUsers.length
+  })
 
   const dailySignups = dailyNewUsers.map((users) => users.length)
+  const dailyNewRealUserSignups = dailyNewRealUsers.map((users) => users.length)
 
   // Total mana divided by 100.
   const manaBetDaily = dailyBets.map((bets) => {
@@ -455,6 +484,8 @@ export const updateStatsCore = async () => {
     manaBetDaily,
     manaBetWeekly,
     manaBetMonthly,
+    newUserBetAverage,
+    dailyNewRealUserSignups,
   }
 
   const rows = Object.entries(statsData).map(([title, daily_values]) => ({
@@ -469,12 +500,3 @@ export const updateStatsCore = async () => {
 
   await saveCalibrationData(pg)
 }
-
-export const updateStats = functions
-  .runWith({
-    memory: '2GB',
-    timeoutSeconds: 540,
-    secrets,
-  })
-  .pubsub.schedule('every 60 minutes')
-  .onRun(updateStatsCore)
