@@ -22,6 +22,8 @@ import { LikeData } from 'love/lib/supabase/likes'
 import { useShips } from 'love/hooks/use-ships'
 import { ShipData } from 'love/lib/supabase/ships'
 import { hasShipped } from 'love/lib/util/ship-util'
+import { areGenderCompatible } from 'common/love/compatibility-util'
+import { useLover } from 'love/hooks/use-lover'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -33,6 +35,7 @@ export function LoverProfile(props: {
   const { lover, user, refreshLover, fromLoverPage, fromSignup } = props
 
   const currentUser = useUser()
+  const currentLover = useLover()
   const isCurrentUser = currentUser?.id === user.id
 
   const { likesGiven, refreshLikesGiven } = useLikesGivenByUser(user.id)
@@ -50,6 +53,9 @@ export function LoverProfile(props: {
   const { ships, refreshShips } = useShips(user.id)
   const shipped =
     !!ships && hasShipped(currentUser, fromLoverPage?.user_id, user.id, ships)
+
+  const areCompatible =
+    !!currentLover && areGenderCompatible(currentLover, lover)
 
   return (
     <>
@@ -72,17 +78,17 @@ export function LoverProfile(props: {
         ships={ships ?? []}
         refreshShips={refreshShips}
       />
-      {((!fromLoverPage && !isCurrentUser) ||
-        (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
-        <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
-          <LikeButton
-            className="shadow"
-            targetId={user.id}
-            liked={liked}
-            refresh={refreshLikes}
-          />
-        </Row>
-      )}
+      {areCompatible &&
+        ((!fromLoverPage && !isCurrentUser) ||
+          (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
+          <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
+            <LikeButton
+              targetId={user.id}
+              liked={liked}
+              refresh={refreshLikes}
+            />
+          </Row>
+        )}
       {fromLoverPage &&
         fromLoverPage.user_id !== currentUser?.id &&
         user.id !== currentUser?.id && (
