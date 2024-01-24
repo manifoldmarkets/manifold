@@ -467,7 +467,8 @@ export function ContractPageContent(props: ContractParams) {
               seenContractIds={seenContractIds}
               loadMore={loadMore}
               showOnlyAfterBet={
-                parseJsonContentToText(contract.description).trim().length < 200
+                parseJsonContentToText(contract.description).trim().length >=
+                200
               }
             />
             {showReview && user && (
