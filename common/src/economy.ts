@@ -28,8 +28,8 @@ export const getAnte = (
 }
 
 export const STARTING_BALANCE = 100
-export const NEXT_DAY_BONUS = 100 // Paid on first 9 market visits and once the day following signup
-export const MARKET_VISIT_BONUS = 100 // Paid on first 9 market visits and once the day following signup
+export const NEXT_DAY_BONUS = 100 // Paid on day following signup
+export const MARKET_VISIT_BONUS = 100 // Paid on first distinct 9 market visits
 export const MARKET_VISIT_BONUS_TOTAL = 900
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
