@@ -135,7 +135,7 @@ export function TopicSelector(props: {
                       )
                     }
                   >
-                    <div className={'truncate'}>{group.name}</div>
+                    <div className={'truncate'}>{group.name} ({group.totalMembers} followers)</div>
                     {group.privacyStatus != 'public' && (
                       <Row className={'text-ink-500'}>
                         {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
