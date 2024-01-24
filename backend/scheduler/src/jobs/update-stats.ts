@@ -28,7 +28,7 @@ import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 
-const numberOfDays = 10
+const numberOfDays = 180
 
 interface StatEvent {
   id: string
@@ -430,7 +430,7 @@ export const updateStatsCore = async () => {
     const end = i + 1
     return average(dailyActivationRate.slice(start, end))
   })
-  const newUserBetAverage = dailyNewRealUsers.map((newUsers, i) => {
+  const newUserBetAverage = dailyNewRealUsers.map((newUsers) => {
     if (newUsers.length === 0) return 0
     const totalBetCounts = sum(newUsers.map((u) => u.betCount))
     return totalBetCounts / newUsers.length
