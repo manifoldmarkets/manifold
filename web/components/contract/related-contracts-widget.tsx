@@ -27,7 +27,6 @@ import { useRemainingNewUserSignupBonuses } from 'web/hooks/use-get-new-user-sig
 import { MARKET_VISIT_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useUser } from 'web/hooks/use-user'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 
@@ -128,6 +127,7 @@ export const RelatedContractsGrid = memo(function (props: {
   className?: string
   showAll?: boolean
   showOnlyAfterBet?: boolean
+  justBet?: boolean
 }) {
   const {
     contracts,
@@ -138,25 +138,19 @@ export const RelatedContractsGrid = memo(function (props: {
     showAll,
     seenContractIds,
     showOnlyAfterBet,
+    justBet,
   } = props
-  const user = useUser()
 
   // Show related contracts after a user bets, like Google shows related searches.
-  const [justBet, setJustBet] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
   const { ref } = useIsVisible(() => setIsVisible(true))
   const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
-  useEffect(() => {
-    if (!showOnlyAfterBet || !user || !user.lastBetTime) return
-    const hasJustBet = user.lastBetTime > Date.now() - 3000
-    setJustBet(hasJustBet)
-  }, [user?.lastBetTime])
 
   useEffect(() => {
     if (!justBet || remainingMarketsToVisit <= 0) return
     if (isVisible || !ref.current) return
     const rect = ref.current.getBoundingClientRect()
-    const relatedMarketTitleBottom = rect.bottom
+    const relatedMarketTitleBottom = rect.bottom + 200
     const windowHeight = window.innerHeight
     if (relatedMarketTitleBottom > windowHeight) {
       window.scrollTo({

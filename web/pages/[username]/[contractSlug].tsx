@@ -320,6 +320,14 @@ export function ContractPageContent(props: ContractParams) {
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)
   const userHasReviewed = userReview || justNowReview
+  const [justBet, setJustBet] = useState(false)
+  useEffect(() => {
+    if (!user || !user.lastBetTime) return
+    const hasJustBet = user.lastBetTime > Date.now() - 3000
+    setJustBet(hasJustBet)
+  }, [user?.lastBetTime])
+  const showRelatedMarketsBelowBet =
+    parseJsonContentToText(contract.description).trim().length >= 200
 
   return (
     <>
@@ -462,15 +470,15 @@ export function ContractPageContent(props: ContractParams) {
                 chartAnnotations={chartAnnotations}
               />
             </Col>
-            <RelatedContractsGrid
-              contracts={relatedMarkets}
-              seenContractIds={seenContractIds}
-              loadMore={loadMore}
-              showOnlyAfterBet={
-                parseJsonContentToText(contract.description).trim().length >=
-                200
-              }
-            />
+            {showRelatedMarketsBelowBet && (
+              <RelatedContractsGrid
+                contracts={relatedMarkets}
+                seenContractIds={seenContractIds}
+                loadMore={loadMore}
+                showOnlyAfterBet={true}
+                justBet={justBet}
+              />
+            )}
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
@@ -535,6 +543,7 @@ export function ContractPageContent(props: ContractParams) {
                 contracts={relatedMarkets}
                 seenContractIds={seenContractIds}
                 loadMore={loadMore}
+                justBet={!showRelatedMarketsBelowBet && justBet}
               />
             )}
             {isResolved && resolution !== 'CANCEL' && (
