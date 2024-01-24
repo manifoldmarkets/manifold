@@ -39,11 +39,7 @@ export const onCreateLiquidityProvision = functions
       if (!contractWithScore) return
       await addContractToFeed(
         contractWithScore,
-        [
-          'similar_interest_vector_to_contract',
-          'follow_user',
-          'contract_in_group_you_are_in',
-        ],
+        ['follow_user', 'contract_in_group_you_are_in'],
         'new_subsidy',
         [contractWithScore.creatorId, liquidity.userId],
         {

@@ -109,11 +109,7 @@ export const onCreateContract = functions
         isRanked: !isNonPredictive,
         isSubsidized: !isNonPredictive,
       },
-      [
-        'follow_user',
-        'similar_interest_vector_to_contract',
-        'contract_in_group_you_are_in',
-      ],
+      ['follow_user', 'contract_in_group_you_are_in'],
       'new_contract',
       [contractCreator.id],
       {
