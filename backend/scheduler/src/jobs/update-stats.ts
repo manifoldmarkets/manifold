@@ -307,7 +307,7 @@ export const updateStatsCore = async () => {
     if (i === 0) return 0
     if (today.length === 0) return 0
 
-    const yesterday = dailyNewRealUserIds[i - 1]
+    const yesterday = dailyUserIds[i - 1]
 
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
