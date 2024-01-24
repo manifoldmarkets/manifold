@@ -139,6 +139,8 @@ export const BOT_USERNAMES = [
   'WrenTec',
   'TigerMcBot',
   'Euclidean',
+  'manakin',
+  'LUCAtheory',
 ]
 
 export const MOD_IDS = [
