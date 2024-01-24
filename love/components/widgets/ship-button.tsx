@@ -40,12 +40,12 @@ export const ShipButton = (props: {
         disabled={isLoading}
         className={clsx(
           buttonClass('lg', 'none'),
-          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 !rounded-full disabled:cursor-not-allowed',
+          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 border-ink-100 dark:border-ink-300 !rounded-full border disabled:cursor-not-allowed',
           className
         )}
         onClick={like}
       >
-        <Col className="items-center gap-2">
+        <Col className="items-center gap-1">
           <HeartIcon
             className={clsx(
               'h-12 w-12',
@@ -53,7 +53,9 @@ export const ShipButton = (props: {
                 'fill-primary-400 stroke-primary-500 dark:stroke-primary-600'
             )}
           />
-          {shipped ? <div>Shipping!</div> : <div>Ship them!</div>}
+          <div className="p-2 pt-0 text-sm">
+            {shipped ? 'Shipping!' : 'Ship them!'}
+          </div>
         </Col>
       </button>
     </Tooltip>

@@ -33,14 +33,14 @@ export const LikeButton = (props: {
         disabled={isLoading}
         className={clsx(
           buttonClass('md', 'none'),
-          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 !rounded-full disabled:cursor-not-allowed',
+          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 border-ink-100 dark:border-ink-300 !rounded-full border disabled:cursor-not-allowed',
           className
         )}
         onClick={like}
       >
         <HeartIcon
           className={clsx(
-            'h-12 w-12',
+            'h-14 w-14',
             liked &&
               'fill-primary-400 stroke-primary-500 dark:stroke-primary-600'
           )}
