@@ -7,19 +7,12 @@ import { groupBy, orderBy } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
-import { User } from 'common/user'
+import { isUserLikelySpammer, User } from 'common/user'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized } from 'web/hooks/use-user'
-
-const isUserLikelySpammer = (user: User, hasBet: boolean) => {
-  return (
-    !hasBet &&
-    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
-  )
-}
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
@@ -30,11 +23,26 @@ export default function Journeys() {
   const [unBannedUsers, setUnBannedUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
   const isAuthed = useIsAuthorized()
+  const userIdsThatBet = unBannedUsers
+    .filter(
+      (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
+    )
+    .map((u) => u.id)
+  const likelySpammers = unBannedUsers.filter((u) =>
+    isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+  )
+  const unlikelySpammers = unBannedUsers.filter(
+    (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+  )
 
   const getEvents = async () => {
     const start = Date.now() - hoursFromNow * HOUR_MS
     const users = await run(
-      db.from('users').select('id').gt('data->createdTime', start)
+      db
+        .from('users')
+        .select('id')
+        .gt('data->createdTime', start)
+        .is('data->fromLove', null)
     )
     const events = await run(
       db
@@ -71,12 +79,6 @@ export default function Journeys() {
     getEvents()
   }, [hoursFromNow, isAuthed])
 
-  const userIdsThatBet = unBannedUsers
-    .filter(
-      (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
-    )
-    .map((u) => u.id)
-
   const isAdmin = useAdmin()
   if (!isAdmin) return <></>
 
@@ -100,9 +102,9 @@ export default function Journeys() {
           </Button>
         </Row>
         <Row>
-          Fraction of users that bet:{' '}
-          {(userIdsThatBet.length / unBannedUsers.length).toPrecision(2)}. If a
-          user is highlighted, check if they're a spammer.
+          Fraction of (unlikely spam) users that bet:{' '}
+          {(unlikelySpammers.length / unBannedUsers.length).toPrecision(2)}. If
+          a user is highlighted, check if they're a spammer.
         </Row>
         <Row className={'flex-wrap gap-2 scroll-auto'}>
           {Object.keys(eventsByUser).map((userId) => {
@@ -124,8 +126,7 @@ export default function Journeys() {
                 <Row
                   className={clsx(
                     'rounded-md p-1',
-                    user &&
-                      isUserLikelySpammer(user, userIdsThatBet.includes(userId))
+                    user && likelySpammers.find((u) => u.id === user.id)
                       ? 'bg-amber-100'
                       : ''
                   )}

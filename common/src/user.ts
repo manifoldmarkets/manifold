@@ -157,3 +157,10 @@ export function getCurrentUtcTime(): Date {
 }
 
 export const MINUTES_ALLOWED_TO_REFER = 60
+
+export const isUserLikelySpammer = (user: User, hasBet: boolean) => {
+  return (
+    !hasBet &&
+    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
+  )
+}
