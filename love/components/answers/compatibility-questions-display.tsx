@@ -40,9 +40,10 @@ import {
   PreferredListNoComparison,
 } from './compatibility-question-preferred-list'
 import { useUser } from 'web/hooks/use-user'
-import { Select } from 'web/components/widgets/select'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useIsMatchmaker } from 'love/hooks/use-is-matchmaker'
+import { DropdownButton } from '../filters/desktop-filters'
+import { buildArray } from 'common/util/array'
 
 const NUM_QUESTIONS_TO_SHOW = 8
 
@@ -194,29 +195,14 @@ export function CompatibilityQuestionsDisplay(props: {
               />
             </span>
           )}
-
           {(!isCurrentUser || fromLoverPage) && (
-            <Select
-              onChange={(e) => {
-                setSort(e.target.value as CompatibilitySort)
-              }}
-              value={sort}
-              className={'w-18 border-ink-300 rounded-md'}
-            >
-              {fromLoverPage ? (
-                <option value="your-important">
-                  Important to {fromLoverPage.user.name}
-                </option>
-              ) : (
-                <option value="your-important">Important to you</option>
-              )}
-              <option value="their-important">Important to {user.name}</option>
-              {(!fromLoverPage ||
-                fromLoverPage.user_id === currentUser?.id) && (
-                <option value="your-unanswered">Unanswered by you</option>
-              )}
-              <option value="disagree">Incompatible with you</option>
-            </Select>
+            <CompatibilitySortWidget
+              className="self-end"
+              sort={sort}
+              setSort={setSort}
+              user={user}
+              fromLoverPage={fromLoverPage}
+            />
           )}
           {shownAnswers.map((answer) => {
             return (
@@ -260,6 +246,53 @@ export function CompatibilityQuestionsDisplay(props: {
         />
       )}
     </Col>
+  )
+}
+
+function CompatibilitySortWidget(props: {
+  sort: CompatibilitySort
+  setSort: (sort: CompatibilitySort) => void
+  user: User
+  fromLoverPage: Lover | undefined
+  className?: string
+}) {
+  const { sort, setSort, user, fromLoverPage, className } = props
+  const currentUser = useUser()
+
+  const sortToDisplay = {
+    'your-important': fromLoverPage
+      ? `Important to ${fromLoverPage.user.name}`
+      : 'Important to you',
+    'their-important': `Important to ${user.name}`,
+    disagree: 'Incompatible',
+    'your-unanswered': 'Unanswered by you',
+  }
+
+  const shownSorts = buildArray(
+    'your-important',
+    'their-important',
+    'disagree',
+    (!fromLoverPage || fromLoverPage.user_id === currentUser?.id) &&
+      'your-unanswered'
+  )
+
+  return (
+    <DropdownMenu
+      className={className}
+      items={shownSorts.map((sort) => ({
+        name: sortToDisplay[sort],
+        onClick: () => {
+          setSort(sort)
+        },
+      }))}
+      closeOnClick
+      buttonClass={'!text-ink-600 !hover:!text-ink-600'}
+      buttonContent={(open: boolean) => (
+        <DropdownButton content={sortToDisplay[sort]} open={open} />
+      )}
+      menuItemsClass={'bg-canvas-50'}
+      menuWidth="w-48"
+    />
   )
 }
 
