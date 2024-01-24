@@ -249,10 +249,7 @@ export const RelatedContractsGrid = memo(function (props: {
       <h2 className={clsx('mb-2 text-lg')}>
         {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
         {!hasRelatedContractByTopic && (
-          <span>
-            {' '}
-            - <VisitNewMarketForBonuses />
-          </span>
+          <VisitNewMarketForBonuses inline={true} />
         )}
       </h2>
       <Col
@@ -301,13 +298,17 @@ export const RelatedContractsGrid = memo(function (props: {
   )
 })
 
-const VisitNewMarketForBonuses = (props: { className?: string }) => {
-  const { className } = props
+const VisitNewMarketForBonuses = (props: {
+  inline?: boolean
+  className?: string
+}) => {
+  const { className, inline } = props
   const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
   if (remainingMarketsToVisit <= 0) return <div />
   const upTo = formatMoney(remainingMarketsToVisit * MARKET_VISIT_BONUS)
   return (
     <span className={clsx('my-2 text-lg', className)}>
+      {inline && <span> - </span>}
       Earn up to
       <span className={'mx-1 font-semibold text-teal-500'}>{upTo}</span>
       for visiting other markets!
