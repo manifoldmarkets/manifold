@@ -126,12 +126,16 @@ export function CompatibilityQuestionsDisplay(props: {
     useUserCompatibilityAnswers(comparedUserId)
   const questionIdToComparedAnswer = keyBy(comparedAnswers, 'question_id')
 
-  const sortedAnswers = sortBy(
+  const sortedAndFilteredAnswers = sortBy(
     answers.filter((a) => {
       const comparedAnswer = questionIdToComparedAnswer[a.question_id]
       if (sort === 'disagree') {
         // Answered and not skipped.
         return !!comparedAnswer && comparedAnswer.importance >= 0
+      }
+      if (sort === 'your-unanswered') {
+        // Answered and not skipped.
+        return !comparedAnswer || comparedAnswer.importance === -1
       }
       return true
     }),
@@ -151,12 +155,14 @@ export function CompatibilityQuestionsDisplay(props: {
       }
     },
     // Break ties with their answer importance.
-    (a) => -a.importance
+    (a) => -a.importance,
+    // Then by whether they wrote an explanation.
+    (a) => (a.explanation ? 0 : 1)
   )
 
   const [page, setPage] = useState(0)
   const currentSlice = page * NUM_QUESTIONS_TO_SHOW
-  const shownAnswers = sortedAnswers.slice(
+  const shownAnswers = sortedAndFilteredAnswers.slice(
     currentSlice,
     currentSlice + NUM_QUESTIONS_TO_SHOW
   )
@@ -199,17 +205,17 @@ export function CompatibilityQuestionsDisplay(props: {
             >
               {fromLoverPage ? (
                 <option value="your-important">
-                  {fromLoverPage.user.name}'s important
+                  Important to {fromLoverPage.user.name}
                 </option>
               ) : (
-                <option value="your-important">Your important</option>
+                <option value="your-important">Important to you</option>
               )}
-              <option value="their-important">{user.name}'s important</option>
+              <option value="their-important">Important to {user.name}</option>
               {(!fromLoverPage ||
                 fromLoverPage.user_id === currentUser?.id) && (
-                <option value="your-unanswered">Your unanswered</option>
+                <option value="your-unanswered">Unanswered by you</option>
               )}
-              <option value="disagree">Disagree</option>
+              <option value="disagree">Incompatible with you</option>
             </Select>
           )}
           {shownAnswers.map((answer) => {
@@ -249,7 +255,7 @@ export function CompatibilityQuestionsDisplay(props: {
         <Pagination
           page={page}
           itemsPerPage={NUM_QUESTIONS_TO_SHOW}
-          totalItems={answers.length}
+          totalItems={sortedAndFilteredAnswers.length}
           setPage={setPage}
         />
       )}
