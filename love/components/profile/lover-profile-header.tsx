@@ -19,7 +19,7 @@ import { ShareProfileButton } from '../widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
-import { LikeData } from 'love/lib/supabase/likes'
+import { LikeData } from 'common/api/love-types'
 
 export default function LoverProfileHeader(props: {
   user: User

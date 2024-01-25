@@ -71,9 +71,9 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { compareTwoStrings } from 'string-similarity'
 import { toast } from 'react-hot-toast'
+import { WEEK_MS } from 'common/util/time'
 
 const DUPES_TO_SHOW = 3
-const MAX_TOPICS_ALLOWED = 5
 
 export function ContractParamsForm(props: {
   creator: User
@@ -658,9 +658,13 @@ export function ContractParamsForm(props: {
         )}
         <TopicSelector
           setSelectedGroup={(group) => {
-            if (selectedGroups.length >= MAX_TOPICS_ALLOWED) {
+            const newUser = creator.createdTime > Date.now() - 2 * WEEK_MS
+            const topicsAllowed = newUser ? 5 : 10
+            if (selectedGroups.length >= topicsAllowed) {
               toast.error(
-                `You can only choose up to ${MAX_TOPICS_ALLOWED} topics.`
+                `${
+                  newUser ? 'New users' : 'You'
+                } can only choose up to ${topicsAllowed} topics.`
               )
             } else if (group.privacyStatus === 'private') {
               toast.error('You cannot use private groups.')

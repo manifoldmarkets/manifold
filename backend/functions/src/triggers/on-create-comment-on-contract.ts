@@ -31,37 +31,38 @@ async function getMostRecentCommentableBet(
   commentCreatedTime: number,
   answerOutcome?: string
 ) {
-  return await pg.oneOrNone(
+  const maxAge = '5 minutes'
+  const bet = await pg.map(
     `with prior_user_comments_with_bets as (
       select created_time, data->>'betId' as bet_id from contract_comments
       where contract_id = $1 and user_id = $2
       and created_time < millis_to_ts($3)
       and data ->> 'betId' is not null
-    ), prior_user_bets as (
-      select * from contract_bets
-      where contract_id = $1 and user_id = $2
-      and created_time < millis_to_ts($3)
-      and not is_ante
-    ), cutoff_time as (
-      select *
-      from (
-        select created_time from prior_user_comments_with_bets
-        union all
-        select (millis_to_ts($3) - interval '5 minutes') as created_time
-      ) as t
+      and created_time > millis_to_ts($3) - interval $5
       order by created_time desc
       limit 1
+    ),
+    cutoff_time as (
+      select coalesce(
+         (select created_time from prior_user_comments_with_bets),
+         millis_to_ts($3) - interval $5)
+      as cutoff
     )
-    select bet_id, outcome, answer_id, amount
-    from prior_user_bets as b
-    where not b.is_redemption
-    and $4 is null or b.answer_id = $4
-    and b.created_time > (select created_time from cutoff_time)
-    and b.bet_id not in (select bet_id from prior_user_comments_with_bets)
-    order by created_time desc
-    limit 1`,
-    [contractId, userId, commentCreatedTime, answerOutcome]
+    select data from contract_bets
+      where contract_id = $1
+      and user_id = $2
+      and ($4 is null or answer_id = $4)
+      and created_time < millis_to_ts($3)
+      and created_time > (select cutoff from cutoff_time)
+      and not is_ante
+      and not is_redemption
+      order by created_time desc
+      limit 1
+    `,
+    [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
+    (r) => (r.data ? (r.data as Bet) : undefined)
   )
+  return first(bet)
 }
 
 export const onCreateCommentOnContract = functions
@@ -96,7 +97,7 @@ export const onCreateCommentOnContract = functions
 
     let bet: Bet | undefined
     if (!comment.betId) {
-      const bet = await getMostRecentCommentableBet(
+      bet = await getMostRecentCommentableBet(
         pg,
         contract.id,
         comment.userId,
@@ -104,13 +105,13 @@ export const onCreateCommentOnContract = functions
         comment.answerOutcome
       )
       if (bet) {
-        const { bet_id, outcome, amount, answer_id } = bet
+        const { id, outcome, amount, answerId } = bet
         await change.ref.update(
           removeUndefinedProps({
-            betId: bet_id,
+            betId: id,
             betOutcome: outcome,
             betAmount: amount,
-            betAnswerId: answer_id,
+            betAnswerId: answerId,
           })
         )
       }

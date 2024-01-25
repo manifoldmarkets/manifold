@@ -7,7 +7,6 @@ import { MatchAvatars } from '../matches/match-avatars'
 import { Row } from 'web/components/layout/row'
 import { Lover } from 'common/love/lover'
 import { useLoverByUserId } from 'love/hooks/use-lover'
-import { ShipData } from 'love/lib/supabase/ships'
 import { Col } from 'web/components/layout/col'
 import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -16,6 +15,7 @@ import { useUser, useUserById } from 'web/hooks/use-user'
 import { Subtitle } from './lover-subtitle'
 import { ShipButton } from './ship-button'
 import { hasShipped } from 'love/lib/util/ship-util'
+import { ShipData } from 'common/api/love-types'
 
 export const ShipsList = (props: {
   label: string
