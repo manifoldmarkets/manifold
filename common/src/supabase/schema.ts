@@ -2384,7 +2384,6 @@ export interface Database {
         Row: {
           contract_id: string
           created_time: string
-          data: Json | null
           id: number
           is_promoted: boolean | null
           type: string
@@ -2393,7 +2392,6 @@ export interface Database {
         Insert: {
           contract_id: string
           created_time?: string
-          data?: Json | null
           id?: never
           is_promoted?: boolean | null
           type?: string
@@ -2402,7 +2400,6 @@ export interface Database {
         Update: {
           contract_id?: string
           created_time?: string
-          data?: Json | null
           id?: never
           is_promoted?: boolean | null
           type?: string
@@ -3800,13 +3797,13 @@ export interface Database {
         }[]
       }
       get_your_contract_ids: {
-            Args: {
-              uid: string
-            }
-            Returns: {
-              contract_id: string
-            }[]
-          }
+        Args: {
+          uid: string
+        }
+        Returns: {
+          contract_id: string
+        }[]
+      }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string
