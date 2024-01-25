@@ -214,7 +214,7 @@ function ElectionContent(props: ElectionsPageProps) {
           contract={republicanCandidateContract as MultiContract}
         />
         <CandidateCard
-          customTitle="2024 Republican vice president nomination"
+          customTitle="2024 Republican vice presidential nomination"
           contract={republicanVPContract as MultiContract}
         />
 
