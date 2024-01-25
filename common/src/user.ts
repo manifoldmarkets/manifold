@@ -161,10 +161,13 @@ export const MINUTES_ALLOWED_TO_REFER = 60
 
 export const isUserLikelySpammer = (
   user: Pick<User, 'bio' | 'freeQuestionsCreated'>,
-  hasBet: boolean
+  hasBet: boolean,
+  hasCreatedDashboard?: boolean
 ) => {
   return (
     !hasBet &&
-    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
+    ((user.bio ?? '').length > 10 ||
+      (user.freeQuestionsCreated ?? 0) > 0 ||
+      (hasCreatedDashboard ?? false))
   )
 }

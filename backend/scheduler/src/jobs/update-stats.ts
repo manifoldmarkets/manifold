@@ -40,6 +40,7 @@ type StatUser = StatEvent & {
   betCount: number
   freeQuestionsCreated: number
   bio: string
+  dashboardCount: number
 }
 
 async function getDailyBets(
@@ -134,10 +135,13 @@ async function getDailyNewUsers(
       u.id,
       (u.data->>'bio') as bio,
       (u.data->'freeQuestionsCreated')::int as free_questions_created,
-      count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count
+      count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count,
+      count(d.id) filter (where d.id is not null) as dashboard_count
   from users u
       left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
       and (cb.created_time >= millis_to_ts($1) and cb.created_time < millis_to_ts($2))
+      left join dashboards d on u.id = d.creator_id
+      and (d.created_time >= millis_to_ts($1) and d.created_time < millis_to_ts($2))
     where (u.created_time >= millis_to_ts($1) and u.created_time < millis_to_ts($2))
     and u.data->>'fromLove' is null
   group by u.id;
@@ -155,6 +159,7 @@ async function getDailyNewUsers(
       betCount: r.bet_count as number,
       freeQuestionsCreated: r.free_questions_created as number,
       bio: r.bio as string,
+      dashboardCount: r.dashboard_count as number,
     } as const)
   }
   return usersByDay
@@ -211,7 +216,10 @@ export const updateStatsCore = async () => {
   logMemory()
 
   const dailyNewRealUsers = dailyNewUsers.map((users) =>
-    users.filter((user) => !isUserLikelySpammer(user, user.betCount > 0))
+    users.filter(
+      (user) =>
+        !isUserLikelySpammer(user, user.betCount > 0, user.dashboardCount > 0)
+    )
   )
 
   const dailyBetCounts = dailyBets.map((bets) => bets.length)
