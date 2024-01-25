@@ -3,7 +3,7 @@ create table if not exists
     contract_id text not null,
     comment_id text not null,
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     primary key (contract_id, comment_id),
     visibility text,
     user_id text not null,
