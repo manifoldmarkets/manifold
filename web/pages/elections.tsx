@@ -193,46 +193,7 @@ function ElectionContent(props: ElectionsPageProps) {
           contract={republicanCandidateContract as MultiContract}
         />
         <CandidateCard contract={democratCandidateContract as MultiContract} />
-        <Col className={'group w-full flex-col gap-1.5 '}>
-          {/* Title is link to contract for open in new tab and a11y */}
 
-          {isMobile ? (
-            <>
-              <div
-                className={clsx(
-                  'text-ink-700 grow items-start font-semibold transition-colors sm:text-lg'
-                )}
-              >
-                New Hampshire Primaries
-              </div>
-
-              <Carousel>
-                <NHPrimaries
-                  linkPreviews={linkPreviews}
-                  newHampshireContract={newHampshireContract}
-                  cardClassName={'sm:w-80 sm:min-w-[20rem] w-64 min-w-[16rem]'}
-                />
-              </Carousel>
-            </>
-          ) : (
-            <div className="relative">
-              <div
-                className={clsx(
-                  'text-ink-700 absolute -top-4 left-[calc(50%-120px)] mx-auto grow items-start font-semibold transition-colors sm:text-lg'
-                )}
-              >
-                <div className="bg-canvas-50 px-4">New Hampshire Primaries</div>
-              </div>
-              <Row className="border-ink-300 w-full gap-4 rounded-xl border-2 p-4">
-                <NHPrimaries
-                  linkPreviews={linkPreviews}
-                  newHampshireContract={newHampshireContract}
-                  cardClassName="w-1/2"
-                />
-              </Row>
-            </div>
-          )}
-        </Col>
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
             Which party will win the US Presidency?
