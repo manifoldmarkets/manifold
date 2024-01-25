@@ -478,47 +478,49 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <Col>
-      <AnswerBar
-        color={color}
-        prob={prob}
-        label={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
-              <span>
-                Other{' '}
-                <InfoTooltip
-                  className="!text-ink-600"
-                  text="Represents all answers not listed. New answers are split out of this answer."
+    <GradientContainer className={' shadow-none'}>
+      <Col>
+        <AnswerBar
+          color={color}
+          prob={prob}
+          label={
+            <Row className={'items-center gap-1'}>
+              <AnswerStatus contract={contract} answer={answer} />
+              {isOther ? (
+                <span>
+                  Other{' '}
+                  <InfoTooltip
+                    className="!text-ink-600"
+                    text="Represents all answers not listed. New answers are split out of this answer."
+                  />
+                </span>
+              ) : (
+                <CreatorAndAnswerLabel
+                  text={answer.text}
+                  createdTime={answer.createdTime}
+                  creator={
+                    addAnswersMode === 'ANYONE'
+                      ? answerCreator ?? false
+                      : undefined
+                  }
+                  className={clsx(
+                    'items-center text-sm !leading-none sm:text-base'
+                  )}
                 />
-              </span>
-            ) : (
-              <CreatorAndAnswerLabel
-                text={answer.text}
-                createdTime={answer.createdTime}
-                creator={
-                  addAnswersMode === 'ANYONE'
-                    ? answerCreator ?? false
-                    : undefined
-                }
-                className={clsx(
-                  'items-center text-sm !leading-none sm:text-base'
-                )}
-              />
-            )}
-          </Row>
-        }
-        end={null}
-      />
-      {!answer.resolution && (
-        <MiniResolutionPanel
-          contract={contract}
-          answer={answer}
-          isAdmin={isAdmin}
-          isCreator={isCreator}
+              )}
+            </Row>
+          }
+          end={null}
         />
-      )}
-    </Col>
+        {!answer.resolution && (
+          <MiniResolutionPanel
+            contract={contract}
+            answer={answer}
+            isAdmin={isAdmin}
+            isCreator={isCreator}
+          />
+        )}
+      </Col>
+    </GradientContainer>
   )
 }

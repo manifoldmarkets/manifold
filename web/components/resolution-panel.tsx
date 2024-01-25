@@ -230,6 +230,13 @@ export function MiniResolutionPanel(props: {
   const { contract, answer, isAdmin, isCreator, modalSetOpen } = props
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
+  const toggleOutcome = (newOutcome: resolution | undefined) => {
+    if (newOutcome === outcome) {
+      setOutcome(undefined)
+    } else {
+      setOutcome(newOutcome)
+    }
+  }
 
   const [prob, setProb] = useState<number | undefined>(
     Math.round(getAnswerProbability(contract, answer.id) * 100)
@@ -269,14 +276,14 @@ export function MiniResolutionPanel(props: {
   }
 
   return (
-    <Row className="mt-2 gap-4">
+    <Row className="mt-2 flex-wrap gap-4">
       {isAdmin && !isCreator && (
         <div className="bg-scarlet-50 text-scarlet-500 self-start rounded p-1 text-xs">
           ADMIN
         </div>
       )}
       <Col className="items-center gap-1">
-        <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
+        <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
         {outcome === 'MKT' && (
           <Row className="flex-wrap items-center gap-1">
             Resolve to
