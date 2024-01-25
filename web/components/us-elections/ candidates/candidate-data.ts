@@ -1,5 +1,5 @@
 export type CandidateDataType = {
-  party: 'Democrat' | 'Republican' | 'Libertarian' | 'Green' | 'Independent'
+  party: 'Democrat' | 'Republican' | 'Other'
   photo: string
   shortName: string
 }
@@ -90,4 +90,50 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/cruz.png',
     shortName: 'Cruz',
   },
+  'Elise Stefanik': {
+    party: 'Republican',
+    photo: '/political-candidates/stefanik.png',
+    shortName: 'Stefanik',
+  },
+  'Kristi Noem': {
+    party: 'Republican',
+    photo: '/political-candidates/noem.png',
+    shortName: 'Noem',
+  },
+  'J.D. Vance': {
+    party: 'Republican',
+    photo: '/political-candidates/vance.png',
+    shortName: 'Vance',
+  },
+  'Lee Zeldin': {
+    party: 'Republican',
+    photo: '/political-candidates/zeldin.png',
+    shortName: 'Zeldin',
+  },
+  'Sarah Huckabee Sanders': {
+    party: 'Republican',
+    photo: '/political-candidates/sanders.png',
+    shortName: 'Sanders',
+  },
+  'Doug Burgum': {
+    party: 'Republican',
+    photo: '/political-candidates/burgum.png',
+    shortName: 'Burgum',
+  },
+  'Tulsi Gabbard': {
+    party: 'Other',
+    photo: '/political-candidates/gabbard.png',
+    shortName: 'Gabbard',
+  },
+  'Ben Carson': {
+    party: 'Republican',
+    photo: '/political-candidates/carson.png',
+    shortName: 'Carson',
+  },
+  'Kari Lake': {
+    party: 'Republican',
+    photo: '/political-candidates/lake.png',
+    shortName: 'Lake',
+  },
+  
 }

@@ -36,6 +36,7 @@ export type ElectionsPageProps = {
   democratCandidateContract: Contract
   newHampshireContract: Contract
   linkPreviews: LinkPreviews
+  republicanVPContract: Contract
 }
 
 const NH_LINK =
@@ -84,6 +85,11 @@ export async function getStaticProps() {
     adminDb
   )
 
+  const republicanVPContract = await getContractFromSlug(
+    'who-will-be-the-republican-nominee-8a36dedc6445',
+    adminDb
+  )
+
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
   return {
     props: {
@@ -94,6 +100,7 @@ export async function getStaticProps() {
       democratCandidateContract: democratCandidateContract,
       newHampshireContract: newHampshireContract,
       linkPreviews: linkPreviews,
+      republicanVPContract: republicanVPContract,
     },
     revalidate: 60,
   }
@@ -130,6 +137,7 @@ export default function USElectionsPage(props: ElectionsPageProps) {
     democratCandidateContract,
     newHampshireContract,
     linkPreviews,
+    republicanVPContract,
   } = props
 
   if (
@@ -137,7 +145,8 @@ export default function USElectionsPage(props: ElectionsPageProps) {
     !electionCandidateContract ||
     !republicanCandidateContract ||
     !democratCandidateContract ||
-    !newHampshireContract
+    !newHampshireContract ||
+    !republicanVPContract
   ) {
     return <Custom404 />
   }
@@ -158,6 +167,7 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     newHampshireContract,
     linkPreviews,
+    republicanVPContract,
   } = props
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -199,10 +209,14 @@ function ElectionContent(props: ElectionsPageProps) {
 
         <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
+        <CandidateCard contract={democratCandidateContract as MultiContract} />
         <CandidateCard
           contract={republicanCandidateContract as MultiContract}
         />
-        <CandidateCard contract={democratCandidateContract as MultiContract} />
+        <CandidateCard
+          customTitle="2024 Republican vice president nomination"
+          contract={republicanVPContract as MultiContract}
+        />
 
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
