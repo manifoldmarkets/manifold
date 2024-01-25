@@ -1,5 +1,5 @@
+import { ShipData } from 'common/api/love-types'
 import { User } from 'common/user'
-import { ShipData } from '../supabase/ships'
 
 export const hasShipped = (
   currentUser: User | null | undefined,

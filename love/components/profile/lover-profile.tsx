@@ -11,19 +11,14 @@ import { LoverAnswers } from 'love/components/answers/lover-answers'
 import { SignUpButton } from 'love/components/nav/love-sidebar'
 import { Lover } from 'common/love/lover'
 import { LoverBio } from 'love/components/bio/lover-bio'
-import {
-  useLikesGivenByUser,
-  useLikesReceivedByUser,
-} from 'love/hooks/use-likes'
 import { LikesDisplay } from '../widgets/likes-display'
 import { LikeButton } from '../widgets/like-button'
 import { ShipButton } from '../widgets/ship-button'
-import { LikeData } from 'love/lib/supabase/likes'
-import { useShips } from 'love/hooks/use-ships'
-import { ShipData } from 'love/lib/supabase/ships'
 import { hasShipped } from 'love/lib/util/ship-util'
 import { areGenderCompatible } from 'common/love/compatibility-util'
 import { useLover } from 'love/hooks/use-lover'
+import { LikeData, ShipData } from 'common/api/love-types'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -38,19 +33,16 @@ export function LoverProfile(props: {
   const currentLover = useLover()
   const isCurrentUser = currentUser?.id === user.id
 
-  const { likesGiven, refreshLikesGiven } = useLikesGivenByUser(user.id)
-  const { likesReceived, refreshLikesReceived } = useLikesReceivedByUser(
-    user.id
-  )
-  const refreshLikes = async () => {
-    await Promise.all([refreshLikesGiven(), refreshLikesReceived()])
-  }
+  const { data, refresh } = useAPIGetter('get-likes-and-ships', {
+    userId: user.id,
+  })
+  const { likesGiven, likesReceived, ships } = data ?? {}
+
   const liked =
     !!currentUser &&
     !!likesReceived &&
-    likesReceived.map((l) => l.userId).includes(currentUser.id)
+    likesReceived.map((l) => l.user_id).includes(currentUser.id)
 
-  const { ships, refreshShips } = useShips(user.id)
   const shipped =
     !!ships && hasShipped(currentUser, fromLoverPage?.user_id, user.id, ships)
 
@@ -65,7 +57,7 @@ export function LoverProfile(props: {
         lover={lover}
         simpleView={!!fromLoverPage}
         likesReceived={likesReceived ?? []}
-        refreshLikes={refreshLikes}
+        refreshLikes={refresh}
       />
       <LoverContent
         user={user}
@@ -76,17 +68,13 @@ export function LoverProfile(props: {
         likesGiven={likesGiven ?? []}
         likesReceived={likesReceived ?? []}
         ships={ships ?? []}
-        refreshShips={refreshShips}
+        refreshShips={refresh}
       />
       {areCompatible &&
         ((!fromLoverPage && !isCurrentUser) ||
           (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
           <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
-            <LikeButton
-              targetId={user.id}
-              liked={liked}
-              refresh={refreshLikes}
-            />
+            <LikeButton targetId={user.id} liked={liked} refresh={refresh} />
           </Row>
         )}
       {fromLoverPage &&
@@ -97,7 +85,7 @@ export function LoverProfile(props: {
               shipped={shipped}
               targetId1={fromLoverPage.user_id}
               targetId2={user.id}
-              refresh={refreshShips}
+              refresh={refresh}
             />
           </Row>
         )}

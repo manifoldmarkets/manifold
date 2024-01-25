@@ -12,10 +12,9 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { LikeData } from 'love/lib/supabase/likes'
-import { ShipData } from 'love/lib/supabase/ships'
 import { ShipsList } from './ships-display'
 import { Subtitle } from './lover-subtitle'
+import { LikeData, ShipData } from 'common/api/love-types'
 
 export const LikesDisplay = (props: {
   likesGiven: LikeData[]
@@ -26,8 +25,8 @@ export const LikesDisplay = (props: {
 }) => {
   const { likesGiven, likesReceived, ships, refreshShips, profileLover } = props
 
-  const likesGivenByUserId = keyBy(likesGiven, (l) => l.userId)
-  const likesRecievedByUserId = keyBy(likesReceived, (l) => l.userId)
+  const likesGivenByUserId = keyBy(likesGiven, (l) => l.user_id)
+  const likesRecievedByUserId = keyBy(likesReceived, (l) => l.user_id)
   const mutualLikeUserIds = Object.keys(likesGivenByUserId).filter(
     (userId) => likesRecievedByUserId[userId]
   )
@@ -36,17 +35,17 @@ export const LikesDisplay = (props: {
     const likeGiven = likesGivenByUserId[userId]
     const likeReceived = likesRecievedByUserId[userId]
     const createdTime = Math.max(
-      likeGiven.createdTime,
-      likeReceived.createdTime
+      likeGiven.created_time,
+      likeReceived.created_time
     )
     return { userId, createdTime }
   })
   const sortedMutualLikes = orderBy(mutualLikes, 'createdTime', 'desc')
   const onlyLikesGiven = likesGiven.filter(
-    (l) => !likesRecievedByUserId[l.userId]
+    (l) => !likesRecievedByUserId[l.user_id]
   )
   const onlyLikesReceived = likesReceived.filter(
-    (l) => !likesGivenByUserId[l.userId]
+    (l) => !likesGivenByUserId[l.user_id]
   )
 
   if (
@@ -109,8 +108,8 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
           {sortedLikes.map((like) => (
             <UserAvatar
               className="-ml-1 first:ml-0"
-              key={like.userId}
-              userId={like.userId}
+              key={like.user_id}
+              userId={like.user_id}
             />
           ))}
         </Carousel>

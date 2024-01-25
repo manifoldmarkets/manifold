@@ -24,6 +24,7 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
+import { LikeData, ShipData } from './love-types'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -642,6 +643,20 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as {
       status: 'success'
+    },
+  },
+  'get-likes-and-ships': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as {
+      status: 'success'
+      likesReceived: LikeData[]
+      likesGiven: LikeData[]
+      ships: ShipData[]
     },
   },
 } as const)
