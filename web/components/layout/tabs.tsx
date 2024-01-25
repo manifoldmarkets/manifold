@@ -123,6 +123,9 @@ export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
     defaultIndex ?? 0,
     `tab-${props.trackingName}-${props.tabs[0]?.title}`
   )
+  if ((defaultIndex ?? 0) > props.tabs.length - 1) {
+    console.error('default index greater than tabs length')
+  }
   return (
     <ControlledTabs
       {...rest}
