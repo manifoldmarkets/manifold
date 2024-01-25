@@ -11,6 +11,9 @@ import { capitalize } from 'lodash'
 import { formatLargeNumber } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
+import { useAdmin } from 'web/hooks/use-admin'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
 
 export const getStaticProps = async () => {
   const stats = await getStats().catch((e) => {
@@ -82,6 +85,7 @@ export function CustomAnalytics(props: Stats) {
   const last30dSales = dailySales.slice(-30).reduce((a, b) => a + b, 0)
 
   const currentEngaged = engagedUsers[engagedUsers.length - 1]
+  const isAdmin = useAdmin()
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
@@ -359,10 +363,16 @@ export function CustomAnalytics(props: Stats) {
         ]}
       />
       <Spacer h={8} />
-      <Title>Average new user bets</Title>
+      <Title>D1 average new user bets</Title>
       <p className="text-ink-500">
-        On average for new users, how many bets did they place on the first day?
+        On average for new users, how many bets did they place in the first 24
+        hours?
       </p>
+      {isAdmin && (
+        <Link className={linkClass} href={'/admin/journeys'}>
+          Check out the new user journerys page to see what they did.
+        </Link>
+      )}
       <Spacer h={4} />
 
       <Tabs

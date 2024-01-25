@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Row as rowfor, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { HOUR_MS } from 'common/util/time'
-import { groupBy, orderBy } from 'lodash'
+import { groupBy, orderBy, uniq } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
@@ -12,7 +12,8 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { useIsAuthorized, useUsersById } from 'web/hooks/use-user'
+import { filterDefined } from 'common/util/array'
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
@@ -23,6 +24,9 @@ export default function Journeys() {
   const [unBannedUsers, setUnBannedUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
   const isAuthed = useIsAuthorized()
+  const usersThatBet = unBannedUsers.filter(
+    (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
+  )
   const userIdsThatBet = unBannedUsers
     .filter(
       (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
@@ -33,6 +37,17 @@ export default function Journeys() {
   )
   const unlikelySpammers = unBannedUsers.filter(
     (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+  )
+  const referrers = filterDefined(
+    useUsersById(
+      filterDefined(
+        uniq(
+          unBannedUsers
+            .filter((u) => u.referredByUserId)
+            .map((u) => u.referredByUserId)
+        )
+      )
+    )
   )
 
   const getEvents = async () => {
@@ -103,9 +118,48 @@ export default function Journeys() {
         </Row>
         <Row>
           Fraction of (unlikely spam) users that bet:{' '}
-          {(unlikelySpammers.length / unBannedUsers.length).toPrecision(2)}. If
+          {(userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)}. If
           a user is highlighted, check if they're a spammer.
         </Row>
+        <table>
+          <thead>
+            <tr className="text-left">
+              <th>Referrer</th>
+              <th>Users</th>
+              <th>Fraction that Bet</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orderBy(
+              referrers,
+              (r) =>
+                unBannedUsers.filter((u) => u.referredByUserId === r.id).length,
+              'desc'
+            ).map((r) => {
+              const referredUsersCount = unBannedUsers.filter(
+                (u) => u.referredByUserId === r.id
+              ).length
+              const usersThatBetCount = usersThatBet.filter(
+                (u) => u.referredByUserId === r.id
+              ).length
+              const fractionThatBet =
+                referredUsersCount > 0
+                  ? (usersThatBetCount / referredUsersCount).toPrecision(2)
+                  : 0
+
+              return (
+                <tr key={r.id}>
+                  <td className="py-2">
+                    <UserAvatarAndBadge user={r} />
+                  </td>
+                  <td>{referredUsersCount}</td>
+                  <td>{fractionThatBet}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
         <Row className={'flex-wrap gap-2 scroll-auto'}>
           {Object.keys(eventsByUser).map((userId) => {
             if (bannedUsers.find((u) => u.id === userId)) return null
@@ -120,7 +174,9 @@ export default function Journeys() {
               eventName = event.name
             })
             const user = unBannedUsers.find((u) => u.id === userId)
-
+            const referrer = referrers.find(
+              (u) => u?.id === user?.referredByUserId
+            )
             return (
               <Col className={'mt-4 min-w-[15rem]'} key={userId}>
                 <Row
@@ -128,10 +184,20 @@ export default function Journeys() {
                     'rounded-md p-1',
                     user && likelySpammers.find((u) => u.id === user.id)
                       ? 'bg-amber-100'
+                      : userIdsThatBet.includes(userId)
+                      ? 'bg-green-100'
                       : ''
                   )}
                 >
-                  {user ? <UserAvatarAndBadge user={user} /> : userId}
+                  <Row className={'items-center gap-1'}>
+                    {user ? <UserAvatarAndBadge user={user} /> : userId}
+                    {referrer && (
+                      <>
+                        (Referrer:
+                        <UserAvatarAndBadge user={referrer} />)
+                      </>
+                    )}
+                  </Row>
                 </Row>
                 <ul>
                   <li>{new Date(events[0].ts!).toLocaleString()}</li>
