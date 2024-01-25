@@ -334,6 +334,9 @@ export const FeedComment = memo(function FeedComment(props: {
           />
 
           <HideableContent comment={comment} />
+          <PinnableContent comment={comment}>
+            <Col className="group"></Col>
+          </PinnableContent>
           <Row>
             {children}
             <CommentActions
@@ -432,24 +435,26 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
 
   return (
-    <FeedComment
-      contract={contract}
-      comment={comment}
-      onReplyClick={onReplyClick}
-      highlighted={highlighted}
-      trackingLocation={trackingLocation}
-      inTimeline={inTimeline}
-      isParent={true}
-      bets={bets}
-    >
-      <div ref={ref} />
-      <ReplyToggle
-        seeReplies={seeReplies}
-        numComments={numReplies}
-        childrenBountyTotal={childrenBountyTotal}
-        onSeeReplyClick={onSeeReplyClick}
-      />
-    </FeedComment>
+    <PinnableContent comment={comment}>
+      <FeedComment
+        contract={contract}
+        comment={comment}
+        onReplyClick={onReplyClick}
+        highlighted={highlighted}
+        trackingLocation={trackingLocation}
+        inTimeline={inTimeline}
+        isParent={true}
+        bets={bets}
+      >
+        <div ref={ref} />
+        <ReplyToggle
+          seeReplies={seeReplies}
+          numComments={numReplies}
+          childrenBountyTotal={childrenBountyTotal}
+          onSeeReplyClick={onSeeReplyClick}
+        />
+      </FeedComment>
+    </PinnableContent>
   )
 })
 
@@ -468,6 +473,27 @@ function HideableContent(props: { comment: ContractComment }) {
     </div>
   ) : (
     <Content size="sm" className="mt-1 grow" content={content || text} />
+  )
+}
+
+function PinnableContent(props: {
+  comment: ContractComment
+  children: ReactNode
+}) {
+  const { comment, children } = props
+
+  return (
+    <div
+      className={clsx(
+        'p-2',
+        comment.pinned ? 'border-2 border-yellow-400' : ''
+      )}
+    >
+      {comment.pinned && (
+        <div className="mb-2 font-bold text-yellow-500">📌 Pinned comment</div>
+      )}
+      {children}
+    </div>
   )
 }
 
@@ -567,6 +593,25 @@ export function DotMenu(props: {
                 )
                 // undo optimistic update
                 updateComment({ hidden: wasHidden })
+              }
+            },
+          },
+          (isMod || isContractCreator) && {
+            name: comment.pinned ? 'Unpin' : 'Pin',
+            icon: '📌',
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const wasPinned = comment.pinned
+              updateComment({ pinned: !wasPinned })
+
+              try {
+                await api('pin-comment', { commentPath })
+              } catch (e) {
+                toast.error(
+                  wasPinned ? 'Error pinning comment' : 'Error pinning comment'
+                )
+                // undo optimistic update
+                updateComment({ pinned: wasPinned })
               }
             },
           }

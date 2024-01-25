@@ -67,6 +67,12 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ commentPath: z.string() }).strict(),
   },
+  'pin-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ commentPath: z.string() }).strict(),
+  },
   comments: {
     method: 'GET',
     visibility: 'public',
@@ -647,7 +653,7 @@ export const API = (_apiTypeCheck = {
 } as const)
 
 export type APIPath = keyof typeof API
-export type APISchema<N extends APIPath> = (typeof API)[N]
+export type APISchema<N extends APIPath> = typeof API[N]
 
 export type APIParams<N extends APIPath> = z.input<APISchema<N>['props']>
 export type ValidatedAPIParams<N extends APIPath> = z.output<

@@ -344,6 +344,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           commentTypes={['comment', 'repost']}
         />
       )}
+
       {comments.length > 0 && (
         <SortRow
           sort={sort}
@@ -364,54 +365,66 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           }
         />
       )}
-      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          contract={contract}
-          parentComment={parent}
-          threadComments={commentsByParent[parent.id] ?? []}
-          trackingLocation={'contract page'}
-          idInUrl={idToHighlight}
-          showReplies={
-            !isBountiedQuestion || (!!user && user.id === contract.creatorId)
-          }
-          childrenBountyTotal={
-            contract.outcomeType == 'BOUNTIED_QUESTION'
-              ? childrensBounties[parent.id]
-              : undefined
-          }
-          onSubmitReply={loadNewer}
-          bets={bets?.filter(
-            (b) =>
-              b.replyToCommentId &&
-              [parent]
-                .concat(commentsByParent[parent.id] ?? [])
-                .map((c) => c.id)
-                .includes(b.replyToCommentId)
-          )}
-        />
-      ))}
 
-      <div className="relative w-full">
-        <VisibilityObserver
-          onVisibilityUpdated={onVisibilityUpdated}
-          className="pointer-events-none absolute bottom-0 h-[75vh]"
-        />
-      </div>
+      {parentComments
+        .filter((comment) => comment.pinned)
+        .map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={commentsByParent[parent.id] ?? []}
+            trackingLocation={'contract page'}
+            idInUrl={idToHighlight}
+            showReplies={
+              !isBountiedQuestion || (!!user && user.id === contract.creatorId)
+            }
+            childrenBountyTotal={
+              contract.outcomeType == 'BOUNTIED_QUESTION'
+                ? childrensBounties[parent.id]
+                : undefined
+            }
+            onSubmitReply={loadNewer}
+            bets={bets?.filter(
+              (b) =>
+                b.replyToCommentId &&
+                [parent]
+                  .concat(commentsByParent[parent.id] ?? [])
+                  .map((c) => c.id)
+                  .includes(b.replyToCommentId)
+            )}
+          />
+        ))}
 
-      {!user && (
-        <Button
-          onClick={withTracking(
-            firebaseLogin,
-            'sign up to comment button click'
-          )}
-          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
-          size="lg"
-          color="gradient"
-        >
-          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
-        </Button>
-      )}
+      {parentComments
+        .filter((comment) => !comment.pinned)
+        .map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            contract={contract}
+            parentComment={parent}
+            threadComments={commentsByParent[parent.id] ?? []}
+            trackingLocation={'contract page'}
+            idInUrl={idToHighlight}
+            showReplies={
+              !isBountiedQuestion || (!!user && user.id === contract.creatorId)
+            }
+            childrenBountyTotal={
+              contract.outcomeType == 'BOUNTIED_QUESTION'
+                ? childrensBounties[parent.id]
+                : undefined
+            }
+            onSubmitReply={loadNewer}
+            bets={bets?.filter(
+              (b) =>
+                b.replyToCommentId &&
+                [parent]
+                  .concat(commentsByParent[parent.id] ?? [])
+                  .map((c) => c.id)
+                  .includes(b.replyToCommentId)
+            )}
+          />
+        ))}
     </Col>
   )
 })

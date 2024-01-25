@@ -102,6 +102,7 @@ import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
+import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
@@ -198,6 +199,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
+  'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
   'update-market': updatemarket,
