@@ -62,7 +62,8 @@ export async function updateGroupMetricsCore({ log }: JobContext) {
     const topTraderScores = profitScoresByGroup[groupId] ?? []
     const topCreatorScores = creatorScoresByGroup[groupId] ?? []
 
-    updateData(pg, 'groups', groupId, {
+    updateData(pg, 'groups', 'id', {
+      id: groupId,
       cachedLeaderboard: {
         topTraders: sortBy(topTraderScores, (x) => -x.score),
         topCreators: sortBy(topCreatorScores, (x) => -x.score),
