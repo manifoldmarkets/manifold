@@ -126,7 +126,7 @@ export default function Journeys() {
             <tr className="text-left">
               <th>Referrer</th>
               <th>Users</th>
-              <th>Fraction that Bet</th>
+              <th>Activation rate</th>
             </tr>
           </thead>
           <tbody>
