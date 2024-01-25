@@ -55,7 +55,7 @@ export function UnresolveButton(props: { contractId: string }) {
                 })
             }}
             loading={unresolving}
-            disabled={text !== 'UNRESOLVE'}
+            disabled={text !== 'UNRESOLVE' || unresolving}
             size="xs"
             color="yellow"
           >
