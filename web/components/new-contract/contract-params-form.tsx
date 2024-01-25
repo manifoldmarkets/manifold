@@ -658,10 +658,14 @@ export function ContractParamsForm(props: {
         )}
         <TopicSelector
           setSelectedGroup={(group) => {
-            const topicsAllowed =
-              creator.createdTime > Date.now() - 2 * WEEK_MS ? 5 : 10
+            const newUser = creator.createdTime > Date.now() - 2 * WEEK_MS
+            const topicsAllowed = newUser ? 5 : 10
             if (selectedGroups.length >= topicsAllowed) {
-              toast.error(`You can only choose up to ${topicsAllowed} topics.`)
+              toast.error(
+                `${
+                  newUser ? 'New users' : 'You'
+                } can only choose up to ${topicsAllowed} topics.`
+              )
             } else if (group.privacyStatus === 'private') {
               toast.error('You cannot use private groups.')
             } else {
