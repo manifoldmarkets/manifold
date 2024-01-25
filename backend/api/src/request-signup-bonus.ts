@@ -4,7 +4,7 @@ import { MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { sendOnboardingMarketVisitBonus } from 'shared/onboarding-helpers'
 import * as admin from 'firebase-admin'
 
-export const getSingupBonus: APIHandler<'get-signup-bonus'> = async (
+export const requestSignupBonus: APIHandler<'request-signup-bonus'> = async (
   _,
   auth
 ) => {

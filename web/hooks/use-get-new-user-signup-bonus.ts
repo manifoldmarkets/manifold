@@ -16,10 +16,12 @@ export const useGetNewUserSignupBonus = (contractId: string) => {
   const remainingBonuses = useRemainingNewUserSignupBonuses()
   const requestNewUserSignupBonus = async () => {
     const totalPaid = (user?.signupBonusPaid ?? 0) / 100
-    const data = await call(getApiUrl('get-signup-bonus'), 'GET').catch((e) => {
-      console.log('error', e)
-      return { bonus: 0 }
-    })
+    const data = await call(getApiUrl('request-signup-bonus'), 'GET').catch(
+      (e) => {
+        console.log('error', e)
+        return { bonus: 0 }
+      }
+    )
     const { bonus } = data
 
     if (bonus > 0) {

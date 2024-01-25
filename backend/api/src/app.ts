@@ -132,7 +132,7 @@ import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
 import { shipLovers } from './love/ship-lovers'
 import { createManalink } from './create-manalink'
-import { getSingupBonus } from 'api/get-singup-bonus'
+import { requestSignupBonus } from 'api/request-signup-bonus'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -244,7 +244,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
   'ship-lovers': shipLovers,
-  'get-signup-bonus': getSingupBonus,
+  'request-signup-bonus': requestSignupBonus,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -644,7 +644,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
-  'get-signup-bonus': {
+  'request-signup-bonus': {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
