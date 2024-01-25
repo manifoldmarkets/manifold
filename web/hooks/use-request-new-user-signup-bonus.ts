@@ -8,7 +8,7 @@ import { uniq } from 'lodash'
 import { MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
-export const useGetNewUserSignupBonus = (contractId: string) => {
+export const useRequestNewUserSignupBonus = (contractId: string) => {
   const user = useUser()
   const [newContractIdsVisited, setLastContractIdVisited] =
     usePersistentLocalState([contractId], 'newContractsVisited-' + user?.id)
@@ -26,7 +26,7 @@ export const useGetNewUserSignupBonus = (contractId: string) => {
 
     if (bonus > 0) {
       toast.success(
-        `${formatMoney(bonus)} for visiting a new question! (${
+        `+${formatMoney(bonus)} for visiting a new question! (${
           totalPaid + bonus / 100
         }/${MARKET_VISIT_BONUS_TOTAL / 100})`,
         {

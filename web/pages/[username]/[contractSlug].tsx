@@ -78,7 +78,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
 import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
-import { useGetNewUserSignupBonus } from 'web/hooks/use-get-new-user-signup-bonus'
+import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -278,7 +278,7 @@ export function ContractPageContent(props: ContractParams) {
     contractId: contract.id,
   })
   // Request new user signup bonus on every contract page visited
-  useGetNewUserSignupBonus(contract.id)
+  useRequestNewUserSignupBonus(contract.id)
   const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
