@@ -14,6 +14,7 @@ import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized, useUsersById } from 'web/hooks/use-user'
 import { filterDefined } from 'common/util/array'
+import { formatPercent } from 'common/util/format'
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
@@ -142,10 +143,11 @@ export default function Journeys() {
               const usersThatBetCount = usersThatBet.filter(
                 (u) => u.referredByUserId === r.id
               ).length
-              const fractionThatBet =
+              const fractionThatBet = formatPercent(
                 referredUsersCount > 0
-                  ? (usersThatBetCount / referredUsersCount).toPrecision(2)
+                  ? usersThatBetCount / referredUsersCount
                   : 0
+              )
 
               return (
                 <tr key={r.id}>
