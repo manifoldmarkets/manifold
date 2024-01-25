@@ -136,9 +136,10 @@ async function getDailyNewUsers(
       (u.data->'freeQuestionsCreated')::int as free_questions_created,
       count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count
   from users u
-           left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
-          and (cb.created_time >= millis_to_ts($1) and cb.created_time < millis_to_ts($2))
+      left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
+      and (cb.created_time >= millis_to_ts($1) and cb.created_time < millis_to_ts($2))
     where (u.created_time >= millis_to_ts($1) and u.created_time < millis_to_ts($2))
+    and u.data->>'fromLove' is null
   group by u.id;
     `,
     [startTime, startTime + numberOfDays * DAY_MS]
