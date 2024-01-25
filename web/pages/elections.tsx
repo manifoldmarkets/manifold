@@ -22,6 +22,7 @@ import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from './404'
 import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
+import { SEO } from 'web/components/SEO'
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
@@ -181,10 +182,21 @@ function ElectionContent(props: ElectionsPageProps) {
 
   return (
     <>
+      <SEO
+        title="2024 Election Forecast"
+        description="Live market odds for the US presidential election"
+        // TODO: add a nice preview image
+      />
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
-        <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
-          US 2024 Elections
-        </div>
+        <Col>
+          <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
+            2024 Election Forecast
+          </div>
+          <div className="text-canvas-500 text-md mt-2 inline-block font-normal">
+            Live market odds for the US presidential election
+          </div>
+        </Col>
+
         <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard
