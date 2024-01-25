@@ -135,5 +135,4 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/lake.png',
     shortName: 'Lake',
   },
-  
 }
