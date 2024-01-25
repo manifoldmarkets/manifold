@@ -40,7 +40,7 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
     // TODO: should we mark the comment as `isRepost`?
     if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
     const otherComment = await getComment(createSupabaseClient(), commentId)
-    if (!otherComment) throw new APIError(404, `Comment ${commentId} not found`)
+
     comment = otherComment
   }
   if (comment.betId) betId = comment.betId

@@ -1,7 +1,8 @@
 import { convertContractComment } from 'common/supabase/comments'
 import { type SupabaseClient, run } from 'common/supabase/utils'
+import { APIError } from 'common/api/utils'
 
-export async function getComment(db: SupabaseClient, commentId: string) {
+export async function getCommentSafe(db: SupabaseClient, commentId: string) {
   const res = await db
     .from('contract_comments')
     .select()
@@ -13,6 +14,21 @@ export async function getComment(db: SupabaseClient, commentId: string) {
   }
 
   return convertContractComment(res.data)
+}
+
+export async function getComment(db: SupabaseClient, commentId: string) {
+  const { data, error } = await db
+    .from('contract_comments')
+    .select()
+    .eq('comment_id', commentId)
+
+  if (error) {
+    throw new APIError(500, 'Failed to fetch comment: ' + error.message)
+  }
+  if (!data.length) {
+    throw new APIError(404, 'Comment not found')
+  }
+  return convertContractComment(data[0])
 }
 
 export async function getComments(

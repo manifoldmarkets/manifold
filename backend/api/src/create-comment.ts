@@ -8,6 +8,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -63,7 +64,6 @@ export const createCommentOnContractInternal = async (
     contentJson,
   } = await validateComment(contractId, auth.uid, content, html, markdown)
 
-  const ref = firestore.collection(`contracts/${contractId}/comments`).doc()
   const bet = replyToBetId
     ? await firestore
         .collection(`contracts/${contract.id}/bets`)
@@ -75,7 +75,8 @@ export const createCommentOnContractInternal = async (
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
-    id: ref.id,
+    // TODO: generate ids in supabase instead
+    id: Math.random().toString(36).substring(2, 15),
     content: contentJson,
     createdTime: Date.now(),
 
@@ -106,7 +107,12 @@ export const createCommentOnContractInternal = async (
     isRepost,
   } as ContractComment)
 
-  await ref.set(comment)
+  const db = createSupabaseClient()
+  await db.from('contract_comment').insert({
+    contract_id: contractId,
+    comment_id: comment.id,
+    data: comment,
+  })
 
   if (isApi) {
     const userRef = firestore.doc(`users/${creator.id}`)
