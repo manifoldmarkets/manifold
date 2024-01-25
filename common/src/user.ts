@@ -59,6 +59,7 @@ export type User = {
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
   fromLove?: boolean
+  signupBonusPaid?: number
 }
 
 export type PrivateUser = {
@@ -158,9 +159,15 @@ export function getCurrentUtcTime(): Date {
 
 export const MINUTES_ALLOWED_TO_REFER = 60
 
-export const isUserLikelySpammer = (user: User, hasBet: boolean) => {
+export const isUserLikelySpammer = (
+  user: Pick<User, 'bio' | 'freeQuestionsCreated'>,
+  hasBet: boolean,
+  hasCreatedDashboard?: boolean
+) => {
   return (
     !hasBet &&
-    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
+    ((user.bio ?? '').length > 10 ||
+      (user.freeQuestionsCreated ?? 0) > 0 ||
+      (hasCreatedDashboard ?? false))
   )
 }

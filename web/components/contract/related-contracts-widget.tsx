@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { memo, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -23,6 +23,12 @@ import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { DAY_MS } from 'common/util/time'
 import { linkClass } from 'web/components/widgets/site-link'
 import { removeEmojis } from 'common/topics'
+import { useRemainingNewUserSignupBonuses } from 'web/hooks/use-request-new-user-signup-bonus'
+import { MARKET_VISIT_BONUS } from 'common/economy'
+import { formatMoney } from 'common/util/format'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useIsVisible } from 'web/hooks/use-is-visible'
+import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 
 export const RelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -49,6 +55,7 @@ export const RelatedContractsList = memo(function (props: {
 
   return (
     <Col className={clsx(className, 'flex-1')}>
+      <VisitNewMarketForBonuses className={'text-ink-600'} />
       {topics &&
         contractsByTopicSlug &&
         topics
@@ -110,6 +117,204 @@ export const RelatedContractsList = memo(function (props: {
     </Col>
   )
 })
+
+export const RelatedContractsGrid = memo(function (props: {
+  contracts: Contract[]
+  contractsByTopicSlug?: Record<string, Contract[]>
+  topics?: Topic[]
+  seenContractIds?: string[]
+  loadMore?: () => Promise<boolean>
+  className?: string
+  showAll?: boolean
+  showOnlyAfterBet?: boolean
+  justBet?: boolean
+}) {
+  const {
+    contracts,
+    topics,
+    contractsByTopicSlug,
+    loadMore,
+    className,
+    showAll,
+    seenContractIds,
+    showOnlyAfterBet,
+    justBet,
+  } = props
+
+  // Show related contracts after a user bets, like Google shows related searches.
+  const [isVisible, setIsVisible] = useState(false)
+  const { ref } = useIsVisible(() => setIsVisible(true))
+  const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
+
+  useEffect(() => {
+    if (!justBet || remainingMarketsToVisit <= 0) return
+    if (isVisible || !ref.current) return
+    const rect = ref.current.getBoundingClientRect()
+    const relatedMarketTitleBottom = rect.bottom + 200
+    const windowHeight = window.innerHeight
+    if (relatedMarketTitleBottom > windowHeight) {
+      window.scrollTo({
+        top: relatedMarketTitleBottom - windowHeight + BOTTOM_NAV_BAR_HEIGHT,
+        behavior: 'smooth',
+      })
+    }
+  }, [justBet])
+
+  const [showMore, setShowMore] = useState(showAll ?? false)
+  const unseenRelatedContractsByTopic =
+    topics &&
+    contractsByTopicSlug &&
+    topics.filter(
+      (t) =>
+        getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
+          .length > 0
+    )
+  const hasRelatedContractByTopic =
+    unseenRelatedContractsByTopic && unseenRelatedContractsByTopic.length > 0
+  if (contracts.length === 0 && !hasRelatedContractByTopic) {
+    return null
+  }
+  const MAX_CONTRACTS_PER_GROUP = 4
+  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
+    .map((contracts) =>
+      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
+    )
+    .flat()
+
+  return (
+    <Col
+      ref={ref}
+      className={clsx(
+        className,
+        'mb-2 mt-4 flex-1 py-2 xl:hidden',
+        !justBet && showOnlyAfterBet ? 'hidden' : ''
+      )}
+    >
+      {hasRelatedContractByTopic && <VisitNewMarketForBonuses />}
+      {unseenRelatedContractsByTopic?.map((topic) => (
+        <Col key={'related-topics-' + topic.id} className={'my-2'}>
+          <h2 className={clsx('mb-1 text-lg')}>
+            <Link
+              className={linkClass}
+              href={`/browse?${TOPIC_KEY}=${topic.slug}`}
+            >
+              Related in {removeEmojis(topic.name)}
+            </Link>
+          </h2>
+          <Masonry
+            breakpointCols={{ default: 2, 768: 1 }}
+            className={clsx(
+              ' flex w-auto',
+              'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
+              'h-full'
+            )}
+          >
+            {getUnseenContracts(
+              contractsByTopicSlug?.[topic.slug],
+              seenContractIds
+            )
+              .slice(0, MAX_CONTRACTS_PER_GROUP)
+              .map((contract) => (
+                <RelatedContractCard
+                  key={contract.id}
+                  showGraph={showAll}
+                  contract={contract}
+                  onContractClick={(c) =>
+                    track('click related market', { contractId: c.id })
+                  }
+                  twoLines
+                />
+              ))}
+          </Masonry>
+
+          <Row className={'text-ink-700 items-center justify-end'}>
+            <Link
+              className={linkClass}
+              href={`/browse?${TOPIC_KEY}=${topic.slug}`}
+            >
+              <Row className={'items-center gap-1'}>
+                See more {removeEmojis(topic.name)} questions
+                <ArrowRightIcon className="h-4 w-4" />
+              </Row>
+            </Link>
+          </Row>
+        </Col>
+      ))}
+      <h2 className={clsx('mb-2 text-lg')}>
+        {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
+        {!hasRelatedContractByTopic && (
+          <VisitNewMarketForBonuses inline={true} />
+        )}
+      </h2>
+      <Col
+        className={clsx(
+          'scrollbar-hide overflow-y-auto scroll-smooth',
+          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
+        )}
+      >
+        <Masonry
+          breakpointCols={{ default: 2, 768: 1 }}
+          className={clsx('flex w-auto snap-x gap-2')}
+        >
+          {getUnseenContracts(contracts, seenContractIds)
+            .filter((c) => !displayedGroupContractIds.includes(c.id))
+            .map((contract) => (
+              <RelatedContractCard
+                key={contract.id}
+                showGraph={showAll}
+                contract={contract}
+                onContractClick={(c) =>
+                  track('click related market', { contractId: c.id })
+                }
+                twoLines
+              />
+            ))}
+        </Masonry>
+        {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
+      </Col>
+      {!showAll && (
+        <Button
+          color={'gray-white'}
+          onClick={() => setShowMore(!showMore)}
+          className="mt-2"
+        >
+          <Row className={'items-center'}>
+            {showMore ? (
+              <ChevronUpIcon className="mr-1 h-4 w-4" />
+            ) : (
+              <ChevronDownIcon className="mr-1 h-4 w-4" />
+            )}
+            {showMore ? 'Show less' : 'Show more'}
+          </Row>
+        </Button>
+      )}
+    </Col>
+  )
+})
+
+const VisitNewMarketForBonuses = (props: {
+  inline?: boolean
+  className?: string
+}) => {
+  const { className, inline } = props
+  const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
+  if (remainingMarketsToVisit <= 0) return <div />
+  const upTo = formatMoney(remainingMarketsToVisit * MARKET_VISIT_BONUS)
+  return (
+    <span className={clsx('my-2 text-lg', className)}>
+      {inline && <span> - </span>}
+      Earn up to
+      <span className={'mx-1 font-semibold text-teal-500'}>{upTo}</span>
+      for visiting other markets!
+      <InfoTooltip
+        className={'mb-0.5 !h-4 !w-4'}
+        text={`Visit any market you haven't previously seen to earn a ${formatMoney(
+          MARKET_VISIT_BONUS
+        )} bonus each, up to ${upTo}`}
+      />
+    </span>
+  )
+}
 
 const SidebarRelatedContractCard = memo(function (props: {
   contract: Contract
@@ -267,141 +472,3 @@ const getUnseenContracts = (
   seenContractIds?: string[]
 ) =>
   contracts ? contracts.filter((c) => !seenContractIds?.includes(c.id)) : []
-
-export const RelatedContractsGrid = memo(function (props: {
-  contracts: Contract[]
-  contractsByTopicSlug?: Record<string, Contract[]>
-  topics?: Topic[]
-  seenContractIds?: string[]
-  loadMore?: () => Promise<boolean>
-  className?: string
-  showAll?: boolean
-}) {
-  const {
-    contracts,
-    topics,
-    contractsByTopicSlug,
-    loadMore,
-    className,
-    showAll,
-    seenContractIds,
-  } = props
-  const [showMore, setShowMore] = useState(showAll ?? false)
-  const hasRelatedContractByTopic =
-    Object.values(contractsByTopicSlug ?? {}).length > 0
-  if (contracts.length === 0 && !hasRelatedContractByTopic) {
-    return null
-  }
-  const MAX_CONTRACTS_PER_GROUP = 4
-  const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
-    .map((contracts) =>
-      contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
-    )
-    .flat()
-  return (
-    <Col className={clsx(className, 'mb-2 mt-4 flex-1 py-2 xl:hidden')}>
-      {topics &&
-        contractsByTopicSlug &&
-        topics
-          .filter(
-            (t) =>
-              getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
-                .length > 0
-          )
-          .map((topic) => (
-            <Col key={'related-topics-' + topic.id} className={'my-2'}>
-              <h2 className={clsx('text-ink-800 mb-1 text-lg')}>
-                <Link
-                  className={linkClass}
-                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-                >
-                  Related in {removeEmojis(topic.name)}
-                </Link>
-              </h2>
-              <Masonry
-                breakpointCols={{ default: 2, 768: 1 }}
-                className={clsx(
-                  ' flex w-auto',
-                  'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
-                  'h-full'
-                )}
-              >
-                {getUnseenContracts(
-                  contractsByTopicSlug[topic.slug],
-                  seenContractIds
-                )
-                  .slice(0, MAX_CONTRACTS_PER_GROUP)
-                  .map((contract) => (
-                    <RelatedContractCard
-                      key={contract.id}
-                      showGraph={showAll}
-                      contract={contract}
-                      onContractClick={(c) =>
-                        track('click related market', { contractId: c.id })
-                      }
-                      twoLines
-                    />
-                  ))}
-              </Masonry>
-
-              <Row className={'text-ink-700 items-center justify-end'}>
-                <Link
-                  className={linkClass}
-                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-                >
-                  <Row className={'items-center gap-1'}>
-                    See more {removeEmojis(topic.name)} questions
-                    <ArrowRightIcon className="h-4 w-4" />
-                  </Row>
-                </Link>
-              </Row>
-            </Col>
-          ))}
-      <h2 className={clsx('text-ink-800 mb-2 text-lg')}>
-        {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
-      </h2>
-      <Col
-        className={clsx(
-          'scrollbar-hide overflow-y-auto scroll-smooth',
-          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
-        )}
-      >
-        <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
-          className={clsx('flex w-auto snap-x gap-2')}
-        >
-          {getUnseenContracts(contracts, seenContractIds)
-            .filter((c) => !displayedGroupContractIds.includes(c.id))
-            .map((contract) => (
-              <RelatedContractCard
-                key={contract.id}
-                showGraph={showAll}
-                contract={contract}
-                onContractClick={(c) =>
-                  track('click related market', { contractId: c.id })
-                }
-                twoLines
-              />
-            ))}
-        </Masonry>
-        {loadMore && <LoadMoreUntilNotVisible loadMore={loadMore} />}
-      </Col>
-      {!showAll && (
-        <Button
-          color={'gray-white'}
-          onClick={() => setShowMore(!showMore)}
-          className="mt-2"
-        >
-          <Row className={'items-center'}>
-            {showMore ? (
-              <ChevronUpIcon className="mr-1 h-4 w-4" />
-            ) : (
-              <ChevronDownIcon className="mr-1 h-4 w-4" />
-            )}
-            {showMore ? 'Show less' : 'Show more'}
-          </Row>
-        </Button>
-      )}
-    </Col>
-  )
-})

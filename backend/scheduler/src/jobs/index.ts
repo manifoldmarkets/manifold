@@ -9,6 +9,7 @@ import { cleanOldFeedRows } from './clean-old-feed-rows'
 import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
+import { updateStatsCore } from './update-stats'
 
 export function createJobs() {
   return [
@@ -57,6 +58,11 @@ export function createJobs() {
       'clean-old-notifications',
       '0 0 2 * * *', // 2 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'update-stats',
+      '0 0 * * * *', // every hour
+      updateStatsCore
     ),
   ]
 }
