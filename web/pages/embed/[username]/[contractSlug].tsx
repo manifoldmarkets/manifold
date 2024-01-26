@@ -260,7 +260,7 @@ function ContractSmolView(props: {
                         contract={contract as CPMMMultiContract}
                         multiPoints={props.multiPoints!}
                         width={w - 28}
-                        height={h - numBars(h) * 30}
+                        height={h - numBars(h) * 55}
                         selectedAnswerIds={contract.answers.map((a) => a.id)}
                       />
                       <Spacer h={14} />
