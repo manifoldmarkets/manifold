@@ -30,6 +30,7 @@
     "@headlessui/react": "1.7.11",
     "@hello-pangea/dnd": "16.3.0",
     "@heroicons/react": "1.0.6",
+    "@radix-ui/react-hover-card": "1.0.7",
     "@radix-ui/react-slider": "1.1.2",
     "@react-spring/web": "9.7.1",
     "@tiptap/core": "2.0.0-beta.204",
