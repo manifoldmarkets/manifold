@@ -25,10 +25,6 @@ service cloud.firestore {
       allow read;
     }
 
-     match /destiny-subs2/{sub} {
-      allow read;
-    }
-
     match /users/{userId} {
       allow read;
       allow update: if isAdmin();

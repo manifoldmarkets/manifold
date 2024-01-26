@@ -60,7 +60,6 @@ import { manachantweet } from './manachan-tweet'
 import { sendMana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
-import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
@@ -364,7 +363,6 @@ app.post(
   '/get-similar-groups-to-contract',
   ...apiRoute(getsimilargroupstocontract)
 )
-app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 app.post('/unresolve', ...apiRoute(unresolve))
