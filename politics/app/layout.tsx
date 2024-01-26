@@ -42,8 +42,8 @@ const serifFont = Crimson_Text({
 })
 
 const description =
-  'Sports betting but useful! Manifold is a prediction market where you can bet on the future of politics.'
-const title = 'Manifold Politics — sports betting for politics nerds!'
+  'Politifold is a prediction market where you can bet on the future of politics.'
+const title = 'Politifold — Bet on Politics'
 const ogImageUrl = '/bet-on-politics.png'
 const url = 'https://politifold.com/'
 export const metadata: Metadata = {
@@ -52,14 +52,14 @@ export const metadata: Metadata = {
   description,
   openGraph: {
     locale: 'en_US',
-    siteName: 'Manifold Politics',
+    siteName: 'Politifold',
     url,
     images: [
       {
         url: ogImageUrl,
         width: 1200,
         height: 630,
-        alt: 'Manifold Politics',
+        alt: 'Politifold',
       },
     ],
   },
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
         url: ogImageUrl,
         width: 1200,
         height: 630,
-        alt: 'Manifold Politics',
+        alt: 'Politifold',
       },
     ],
   },

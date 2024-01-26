@@ -50,7 +50,7 @@
     "../common/src/**/*.ts",
     "../web/**/*.ts",
     ".next/types/**/*.ts"
-, "../web/pages/us-elections.tsx"  ],
+  ],
   "exclude": [
     "node_modules"
   ]

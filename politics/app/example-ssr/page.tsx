@@ -1,6 +1,8 @@
 import { PoliticsPage } from 'politics/components/politics-page'
+import { first } from 'lodash'
+import { LiteMarket } from 'common/api/market-types'
 
-export const revalidate = 5 // revalidate at most in seconds
+export const revalidate = 60 // revalidate at most in seconds
 
 async function getData() {
   const res = await fetch('https://api.manifold.markets/v0/markets')
@@ -12,11 +14,11 @@ async function getData() {
     throw new Error('Failed to fetch data')
   }
 
-  return res.json()
+  return (await res.json()) as any as LiteMarket[]
 }
 
 export default async function Page() {
   const data = await getData()
-  console.log('data', data)
+  console.log('latest title', first(data ?? [])?.question)
   return <PoliticsPage trackPageView={false}>{data[0].question}</PoliticsPage>
 }

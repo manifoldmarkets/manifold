@@ -1,5 +1,13 @@
-import { StateElectionMarket } from './state-election-map'
+import { Contract } from 'common/contract'
+import { LinkPreviews } from 'common/link-preview'
 
+export interface StateElectionMarket {
+  slug: string
+  state: string
+}
+
+export const NH_LINK =
+  'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
 export const presidency2024: StateElectionMarket[] = [
   {
     state: 'AL',
@@ -209,3 +217,18 @@ export const presidency2024: StateElectionMarket[] = [
     slug: 'which-party-will-win-the-us-preside-686f75d3998e',
   },
 ]
+
+export type MapContractsDictionary = {
+  [key: string]: Contract | null
+}
+
+export type ElectionsPageProps = {
+  rawMapContractsDictionary: MapContractsDictionary
+  electionPartyContract: Contract | null
+  electionCandidateContract: Contract | null
+  republicanCandidateContract: Contract | null
+  democratCandidateContract: Contract | null
+  newHampshireContract: Contract | null
+  republicanVPContract: Contract | null
+  linkPreviews: LinkPreviews
+}

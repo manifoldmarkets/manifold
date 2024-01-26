@@ -4,12 +4,12 @@
 import clsx from 'clsx'
 import { MultiContract } from 'common/contract'
 import { MouseEvent } from 'react'
-import { MapContractsDictionary } from 'web/pages/elections'
 import { DATA } from './usa-map-data'
 import { USAState } from './usa-state'
 import { Col } from 'web/components/layout/col'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { Spacer } from 'web/components/layout/spacer'
+import { MapContractsDictionary } from 'common/election-contract-data'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'

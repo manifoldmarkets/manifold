@@ -1,4 +1,3 @@
-import { MapContractsDictionary } from 'web/pages/elections'
 import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'
 import { probToColor } from './state-election-map'
@@ -7,6 +6,7 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { MapContractsDictionary } from 'common/election-contract-data'
 
 export function ElectoralCollegeVisual(props: {
   mapContractsDictionary: MapContractsDictionary
