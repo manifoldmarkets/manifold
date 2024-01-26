@@ -234,6 +234,8 @@ function ElectionContent(props: ElectionsPageProps) {
               targetContract={
                 mapContractsDictionary[hoveredState! ?? targetState] as Contract
               }
+              targetState={targetState}
+              setTargetState={setTargetState}
             />
           ) : (
             <div className=" h-[183px] w-full" />
@@ -245,13 +247,19 @@ function ElectionContent(props: ElectionsPageProps) {
   )
 }
 
-function StateContract(props: { targetContract: Contract }) {
-  const { targetContract } = props
+function StateContract(props: {
+  targetContract: Contract
+  targetState?: string | null
+  setTargetState: (state?: string) => void
+}) {
+  const { targetContract, targetState, setTargetState } = props
   return (
     <StateContractCard
       contract={targetContract}
       customTitle={extractStateFromSentence(targetContract.question)}
       titleSize="lg"
+      targetState={targetState}
+      setTargetState={setTargetState}
     />
   )
 }

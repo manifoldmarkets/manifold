@@ -14,10 +14,19 @@ import { track } from 'web/lib/service/analytics'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { Row } from 'web/components/layout/row'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
+import { DATA, StateDataType } from '../usa-map/usa-map-data'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {
   contract: Contract
+  targetState?: string | null
+  setTargetState: (state?: string) => void
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
@@ -46,6 +55,8 @@ export function StateContractCard(props: {
     customTitle,
     titleSize,
     contract,
+    targetState,
+    setTargetState,
   } = props
   const user = useUser()
 
@@ -95,6 +106,8 @@ export function StateContractCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const [openStateSelectModal, setOpenStateSelectModal] =
+    useState<boolean>(false)
   return (
     <ClickFrame
       className={clsx(
@@ -111,11 +124,7 @@ export function StateContractCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 '}>
-        <div
-          className={clsx(
-            'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
-          )}
-        >
+        <Row className={'w-full justify-between'}>
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className={clsx(
@@ -128,8 +137,43 @@ export function StateContractCard(props: {
             <VisibilityIcon contract={contract} />{' '}
             {customTitle ? customTitle : contract.question}
           </Link>
-        </div>
+          {
+            <button
+              className="bg-primary-100 text-primary-700 rounded px-2 text-xs sm:hidden"
+              onClick={() => {
+                setOpenStateSelectModal(true)
+              }}
+            >
+              Choose state
+            </button>
+          }
+        </Row>
       </Col>
+      <Modal
+        open={openStateSelectModal}
+        setOpen={setOpenStateSelectModal}
+        className={MODAL_CLASS}
+      >
+        {/* Select a state */}
+        <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'text-left')}>
+          {Object.values(DATA)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((state: StateDataType) => {
+              return (
+                <button
+                  key={state.name}
+                  onClick={() => {
+                    setTargetState(state.abbreviation)
+                    setOpenStateSelectModal(false)
+                  }}
+                  className="hover:bg-primary-100 flex w-full flex-row items-start  rounded px-4 py-2"
+                >
+                  {state.name}
+                </button>
+              )
+            })}
+        </Col>
+      </Modal>
 
       <div className="w-full overflow-hidden pt-2">
         <SimpleAnswerBars
