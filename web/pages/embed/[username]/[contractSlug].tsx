@@ -1,6 +1,6 @@
 import clsx from 'clsx'
-import { HistoryPoint } from 'common/chart'
-import { Contract, contractPath } from 'common/contract'
+import { HistoryPoint, unserializeMultiPoints } from 'common/chart'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
@@ -34,6 +34,12 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
+import { getMultiBetPoints } from 'common/contract-params'
+import {
+  ChoiceContractChart,
+  MultiPoints,
+} from 'web/components/charts/contract/choice'
+import { Spacer } from 'web/components/layout/spacer'
 
 type Points = HistoryPoint<any>[]
 
@@ -46,7 +52,6 @@ async function getHistoryData(contract: Contract) {
       const points = getSingleBetPoints(allBetPoints, contract)
       return points.map(([x, y]) => ({ x, y }))
     }
-
     default:
       return null
   }
@@ -61,8 +66,18 @@ export async function getStaticProps(props: {
     return { notFound: true, revalidate: 60 }
   }
   const points = await getHistoryData(contract)
+
+  let multiPoints = null
+  if (contract.mechanism == 'cpmm-multi-1') {
+    const allBetPoints = await getBetPoints(db, contract.id)
+    const serializedMultiPoints = getMultiBetPoints(
+      allBetPoints,
+      contract as CPMMMultiContract
+    )
+    multiPoints = unserializeMultiPoints(serializedMultiPoints)
+  }
   return {
-    props: { contract, points },
+    props: { contract, points, multiPoints },
   }
 }
 
@@ -73,6 +88,7 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract
   points: Points | null
+  multiPoints?: MultiPoints | null
 }) {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -109,6 +125,7 @@ export default function ContractEmbedPage(props: {
       <ContractSmolView
         contract={contract}
         points={props.points}
+        multiPoints={props.multiPoints}
         showQRCode={showQRCode}
       />
     </>
@@ -118,6 +135,7 @@ export default function ContractEmbedPage(props: {
 const ContractChart = (props: {
   contract: Contract
   points: Points | null
+  multiPoints?: MultiPoints | null
   width: number
   height: number
 }) => {
@@ -137,7 +155,6 @@ const ContractChart = (props: {
           betPoints={points}
         />
       )
-
     case 'NUMERIC':
       return <NumericContractChart {...rest} contract={contract} />
     case 'STONK':
@@ -163,6 +180,7 @@ const numBars = (height: number) => {
 function ContractSmolView(props: {
   contract: Contract
   points: Points | null
+  multiPoints?: MultiPoints | null
   showQRCode: boolean
 }) {
   const { contract, points, showQRCode } = props
@@ -179,6 +197,7 @@ function ContractSmolView(props: {
 
   const shareUrl = getShareUrl(contract, undefined)
 
+  const showMultiChart = isMulti && !!props.multiPoints && showQRCode
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
       <Row className="text-ink-500 items-center gap-1 text-sm">
@@ -222,13 +241,8 @@ function ContractSmolView(props: {
         )}
       </Row>
       <div className="relative flex h-full min-h-0 w-full flex-1">
-        {showQRCode && (
-          <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
-            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 pb-2 drop-shadow">
-              <QRCode url={shareUrl} />
-              <div className="mt-1 text-center text-lg">Scan to bet!</div>
-            </div>
-          </div>
+        {showQRCode && !showMultiChart && (
+          <FloatingQRCode shareUrl={shareUrl} />
         )}
         {!isBountiedQuestion && !isPoll && (
           <SizedContainer
@@ -240,6 +254,20 @@ function ContractSmolView(props: {
             {(w, h) =>
               isMulti ? (
                 <div className="flex h-full flex-col justify-center">
+                  {showMultiChart && (
+                    <div className="relative">
+                      <ChoiceContractChart
+                        contract={contract as CPMMMultiContract}
+                        multiPoints={props.multiPoints!}
+                        width={w - 28}
+                        height={h - numBars(h) * 55}
+                        selectedAnswerIds={contract.answers.map((a) => a.id)}
+                      />
+                      <Spacer h={14} />
+                      <FloatingQRCode shareUrl={shareUrl} />
+                    </div>
+                  )}
+
                   <SimpleAnswerBars
                     contract={contract}
                     maxAnswers={numBars(h)}
@@ -285,5 +313,17 @@ function ContractSmolView(props: {
         <ContractSummaryStats contract={contract} />
       </Row>
     </Col>
+  )
+}
+
+function FloatingQRCode(props: { shareUrl: string }) {
+  const { shareUrl } = props
+  return (
+    <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
+      <div className="border-ink-400 bg-canvas-50 rounded-xl border p-4 pb-2 drop-shadow">
+        <QRCode url={shareUrl} />
+        <div className="mt-1 text-center text-lg">Scan to bet!</div>
+      </div>
+    </div>
   )
 }
