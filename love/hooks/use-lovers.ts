@@ -9,8 +9,8 @@ import { filterDefined } from 'common/util/array'
 import { Lover } from 'common/love/lover'
 import { api } from 'web/lib/firebase/api'
 import { API } from 'common/api/schema'
-import { areLocationCompatible } from 'common/love/compatibility-util'
 import { useLoverByUserId } from './use-lover'
+import { getLoversCompatibilityFactor } from 'common/love/compatibility-score'
 
 export const useLovers = () => {
   const [lovers, setLovers] = usePersistentInMemoryState<
@@ -64,8 +64,9 @@ export const useCompatibleLovers = (
           const { compatibleLovers, loverCompatibilityScores } = result
           if (options?.sortWithLocationPenalty) {
             result.compatibleLovers = sortBy(compatibleLovers, (l) => {
-              const modifier =
-                !lover || areLocationCompatible(lover, l) ? 1 : 0.1
+              const modifier = !lover
+                ? 1
+                : getLoversCompatibilityFactor(lover, l)
               return modifier * loverCompatibilityScores[l.user.id].score
             }).reverse()
           }
