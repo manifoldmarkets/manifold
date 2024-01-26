@@ -168,7 +168,6 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     }
   }, [w])
 
-  console.log(data)
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
   const {
