@@ -4,7 +4,6 @@ import { Row as rowFor } from 'common/supabase/utils'
 import {
   areAgeCompatible,
   areRelationshipStyleCompatible,
-  areGenderCompatible,
   areWantKidsCompatible,
 } from './compatibility-util'
 
@@ -56,7 +55,6 @@ const getLoversCompatibility = (lover1: LoverRow, lover2: LoverRow) => {
   multiplier *= areAgeCompatible(lover1, lover2) ? 1 : 0.5
   multiplier *= areRelationshipStyleCompatible(lover1, lover2) ? 1 : 0.5
   multiplier *= areWantKidsCompatible(lover1, lover2) ? 1 : 0.5
-  multiplier *= areGenderCompatible(lover1, lover2) ? 1 : 0.01
   return multiplier
 }
 const getAnswersCompatibility = (
@@ -68,6 +66,8 @@ const getAnswersCompatibility = (
   let answerCount = 0
 
   const score = sumBy(answers1, (a) => {
+    if (a.importance === -1) return 0
+
     const answer2 = answers2ByQuestionId[a.question_id]
     // Not answered or skipped.
     if (!answer2 || answer2.importance === -1) return 0
@@ -82,12 +82,9 @@ const getAnswersCompatibility = (
 }
 
 export function getAnswerCompatibilityImportanceScore(
-  answer1: rowFor<'love_compatibility_answers'> | undefined | null,
-  answer2: rowFor<'love_compatibility_answers'> | undefined | null
+  answer1: rowFor<'love_compatibility_answers'>,
+  answer2: rowFor<'love_compatibility_answers'>
 ) {
-  if (!answer1 || !answer2 || answer1.importance < 0 || answer2.importance < 0)
-    return 0
-
   const importanceScore = importanceToScore[answer1.importance] ?? 0
   return answer1.pref_choices.includes(answer2.multiple_choice)
     ? importanceScore
