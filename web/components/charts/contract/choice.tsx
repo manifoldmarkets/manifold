@@ -111,7 +111,7 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: CPMMMultiContract
-  multiPoints?: MultiPoints
+  multiPoints: MultiPoints
   width: number
   height: number
   chartAnnotations?: ChartAnnotation[]

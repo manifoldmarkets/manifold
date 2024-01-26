@@ -258,8 +258,8 @@ function ContractSmolView(props: {
                     <div className="relative">
                       <ChoiceContractChart
                         contract={contract as CPMMMultiContract}
-                        multiPoints={props.multiPoints}
-                        width={w}
+                        multiPoints={props.multiPoints!}
+                        width={w - 28}
                         height={h - numBars(h) * 30}
                         selectedAnswerIds={contract.answers.map((a) => a.id)}
                       />
