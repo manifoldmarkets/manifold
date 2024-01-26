@@ -15,14 +15,9 @@ import { CandidateCard } from 'web/components/us-elections/contracts/candidate-c
 import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
 import { Spacer } from 'web/components/layout/spacer'
 import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
-import { LinkPreviews } from 'common/link-preview'
-import { PoliticsArticle } from 'web/components/us-elections/article'
-import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
-import clsx from 'clsx'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
-  NH_LINK,
 } from 'common/election-contract-data'
 
 export function USElectionsPage(props: ElectionsPageProps) {
@@ -158,24 +153,6 @@ function extractStateFromSentence(sentence: string): string | undefined {
   const match = sentence.match(regex)
 
   return match ? match[1].trim() : undefined
-}
-
-function NHPrimaries(props: {
-  linkPreviews: LinkPreviews
-  newHampshireContract: Contract
-  cardClassName?: string
-}) {
-  const { linkPreviews, newHampshireContract, cardClassName } = props
-  return (
-    <>
-      <PoliticsArticle {...linkPreviews[NH_LINK]} className={cardClassName} />
-      <SmallCandidateCard
-        contract={newHampshireContract as MultiContract}
-        className={clsx('bg-canvas-0 px-4 py-2 ', cardClassName)}
-        maxAnswers={3}
-      />
-    </>
-  )
 }
 
 function useLiveContract(inputContract: Contract): Contract {
