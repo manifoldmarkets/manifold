@@ -96,11 +96,11 @@ function ElectionContent(props: ElectionsPageProps) {
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard contract={democratCandidateContract as MultiContract} />
         <CandidateCard
-          contract={republicanCandidateContract as MultiContract}
-        />
-        <CandidateCard
           customTitle="Democratic vice presidential nomination"
           contract={democraticVPContract as MultiContract}
+        />
+        <CandidateCard
+          contract={republicanCandidateContract as MultiContract}
         />
         <CandidateCard
           customTitle="Republican vice presidential nomination"
