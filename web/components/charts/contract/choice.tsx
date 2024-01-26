@@ -114,11 +114,11 @@ export const ChoiceContractChart = (props: {
   multiPoints?: MultiPoints
   width: number
   height: number
-  chartAnnotations: ChartAnnotation[]
-  zoomParams: ZoomParams
+  chartAnnotations?: ChartAnnotation[]
+  zoomParams?: ZoomParams
   showZoomer?: boolean
   highlightAnswerId?: string
-  selectedAnswerIds: string[]
+  selectedAnswerIds?: string[]
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
@@ -166,7 +166,7 @@ export const ChoiceContractChart = (props: {
       }
 
       const color = getAnswerColor(a, answerOrder)
-
+      console.log(a, points)
       ret[a.id] = { points, color }
     })
 
@@ -191,13 +191,17 @@ export const ChoiceContractChart = (props: {
       showZoomer={showZoomer}
       data={pick(data, chosenAnswerIds)}
       hoveringId={highlightAnswerId}
-      Tooltip={(props) => (
-        <ChoiceTooltip
-          answers={answers}
-          xScale={zoomParams.viewXScale}
-          ttProps={props}
-        />
-      )}
+      Tooltip={
+        !zoomParams
+          ? undefined
+          : (props) => (
+              <ChoiceTooltip
+                answers={answers}
+                xScale={zoomParams.viewXScale}
+                ttProps={props}
+              />
+            )
+      }
       contractId={contract.id}
       hoveredAnnotation={hoveredAnnotation}
       setHoveredAnnotation={setHoveredAnnotation}
