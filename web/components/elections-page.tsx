@@ -25,21 +25,6 @@ import {
   NH_LINK,
 } from 'common/election-contract-data'
 
-function useLiveContract(inputContract: Contract): Contract {
-  const contract =
-    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
-    inputContract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
-  return contract
-}
-
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
   useTracking('view elections')
@@ -88,8 +73,7 @@ function ElectionContent(props: ElectionsPageProps) {
   const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      const contract = useLiveContract(rawMapContractsDictionary[key]!)
-      acc[key] = contract
+      acc[key] = useLiveContract(rawMapContractsDictionary[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -192,4 +176,19 @@ function NHPrimaries(props: {
       />
     </>
   )
+}
+
+function useLiveContract(inputContract: Contract): Contract {
+  const contract =
+    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
+    inputContract
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+  return contract
 }

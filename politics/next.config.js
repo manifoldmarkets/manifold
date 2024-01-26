@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
+  },
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
   optimizeFonts: false,

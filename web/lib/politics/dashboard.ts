@@ -6,15 +6,17 @@ import {
 } from 'common/election-contract-data'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { fetchLinkPreviews } from 'common/link-preview'
+import { unstable_cache } from 'next/cache'
+import { SupabaseClient } from 'common/supabase/utils'
+const REVALIDATE_CONTRACTS_SECONDS = 60
 
 export async function getDashboardProps() {
   const adminDb = await initSupabaseAdmin()
 
-  const mapContractsPromises = presidency2024.map((m) =>
-    getContractFromSlug(m.slug, adminDb).then((contract) => {
-      return { state: m.state, contract: contract }
-    })
-  )
+  const mapContractsPromises = presidency2024.map(async (m) => {
+    const contract = await getCachedContractFromSlug(m.slug, adminDb)
+    return { state: m.state, contract: contract }
+  })
 
   const mapContractsArray = await Promise.all(mapContractsPromises)
 
@@ -25,34 +27,26 @@ export async function getDashboardProps() {
       return acc
     }, {} as MapContractsDictionary)
 
-  const electionPartyContract = await getContractFromSlug(
+  const specialContractSlugs = [
     'which-party-will-win-the-2024-us-pr-f4158bf9278a',
-    adminDb
-  )
-
-  const electionCandidateContract = await getContractFromSlug(
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
-    adminDb
-  )
-
-  const republicanCandidateContract = await getContractFromSlug(
     'who-will-win-the-2024-republican-pr-e1332cf40e59',
-    adminDb
-  )
-
-  const democratCandidateContract = await getContractFromSlug(
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
-    adminDb
+    'who-will-win-the-new-hampshire-repu',
+    'who-will-be-the-republican-nominee-8a36dedc6445',
+  ]
+  const contractsPromises = specialContractSlugs.map(async (slug) =>
+    getCachedContractFromSlug(slug, adminDb)
   )
 
-  const newHampshireContract = await getContractFromSlug(
-    'who-will-win-the-new-hampshire-repu',
-    adminDb
-  )
-  const republicanVPContract = await getContractFromSlug(
-    'who-will-be-the-republican-nominee-8a36dedc6445',
-    adminDb
-  )
+  const [
+    electionPartyContract,
+    electionCandidateContract,
+    republicanCandidateContract,
+    democratCandidateContract,
+    newHampshireContract,
+    republicanVPContract,
+  ] = await Promise.all(contractsPromises)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
   return {
@@ -65,4 +59,18 @@ export async function getDashboardProps() {
     republicanVPContract: republicanVPContract,
     linkPreviews: linkPreviews,
   }
+}
+
+function getCachedContractFromSlug(slug: string, db: SupabaseClient) {
+  return unstable_cache(
+    async () => {
+      if (slug === presidency2024[0].slug)
+        console.log('re-fetching dashboard contracts')
+      return getContractFromSlug(slug, db)
+    },
+    [slug],
+    {
+      revalidate: REVALIDATE_CONTRACTS_SECONDS,
+    }
+  )()
 }
