@@ -91,7 +91,9 @@ export default function ProfilesPage() {
             <LoadingIndicator />
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-              {!isSearching && <BetOnLovePromo key="betonlove" />}
+              {!isSearching && lovers.length > 1400 && (
+                <BetOnLovePromo key="betonlove" />
+              )}
 
               {lovers.map((lover) => (
                 <ProfilePreview
