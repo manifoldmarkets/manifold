@@ -166,7 +166,6 @@ export const ChoiceContractChart = (props: {
       }
 
       const color = getAnswerColor(a, answerOrder)
-      console.log(a, points)
       ret[a.id] = { points, color }
     })
 

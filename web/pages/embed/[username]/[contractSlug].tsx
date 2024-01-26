@@ -39,6 +39,7 @@ import {
   ChoiceContractChart,
   MultiPoints,
 } from 'web/components/charts/contract/choice'
+import { Spacer } from 'web/components/layout/spacer'
 
 type Points = HistoryPoint<any>[]
 
@@ -196,7 +197,7 @@ function ContractSmolView(props: {
 
   const shareUrl = getShareUrl(contract, undefined)
 
-  console.log('MULTI', props.multiPoints)
+  const showMultiChart = isMulti && !!props.multiPoints && showQRCode
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
       <Row className="text-ink-500 items-center gap-1 text-sm">
@@ -240,13 +241,8 @@ function ContractSmolView(props: {
         )}
       </Row>
       <div className="relative flex h-full min-h-0 w-full flex-1">
-        {showQRCode && (
-          <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
-            <div className="border-ink-400 bg-canvas-0 rounded-xl border p-4 pb-2 drop-shadow">
-              <QRCode url={shareUrl} />
-              <div className="mt-1 text-center text-lg">Scan to bet!</div>
-            </div>
-          </div>
+        {showQRCode && !showMultiChart && (
+          <FloatingQRCode shareUrl={shareUrl} />
         )}
         {!isBountiedQuestion && !isPoll && (
           <SizedContainer
@@ -258,18 +254,24 @@ function ContractSmolView(props: {
             {(w, h) =>
               isMulti ? (
                 <div className="flex h-full flex-col justify-center">
-                  {!!props.multiPoints && showQRCode && (
-                    <ChoiceContractChart
-                      contract={contract as CPMMMultiContract}
-                      multiPoints={props.multiPoints}
-                      width={w}
-                      height={h - numBars(h) * 12}
-                    />
+                  {showMultiChart && (
+                    <div className="relative">
+                      <ChoiceContractChart
+                        contract={contract as CPMMMultiContract}
+                        multiPoints={props.multiPoints}
+                        width={w}
+                        height={h - numBars(h) * 30}
+                        selectedAnswerIds={contract.answers.map((a) => a.id)}
+                      />
+                      <Spacer h={14} />
+                      <FloatingQRCode shareUrl={shareUrl} />
+                    </div>
                   )}
-                  {/* <SimpleAnswerBars
+
+                  <SimpleAnswerBars
                     contract={contract}
                     maxAnswers={numBars(h)}
-                  /> */}
+                  />
                 </div>
               ) : (
                 <ContractChart
@@ -311,5 +313,17 @@ function ContractSmolView(props: {
         <ContractSummaryStats contract={contract} />
       </Row>
     </Col>
+  )
+}
+
+function FloatingQRCode(props: { shareUrl: string }) {
+  const { shareUrl } = props
+  return (
+    <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
+      <div className="border-ink-400 bg-canvas-50 rounded-xl border p-4 pb-2 drop-shadow">
+        <QRCode url={shareUrl} />
+        <div className="mt-1 text-center text-lg">Scan to bet!</div>
+      </div>
+    </div>
   )
 }
