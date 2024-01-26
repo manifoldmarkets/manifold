@@ -230,5 +230,6 @@ export type ElectionsPageProps = {
   democratCandidateContract: Contract | null
   newHampshireContract: Contract | null
   republicanVPContract: Contract | null
+  democraticVPContract: Contract | null
   linkPreviews: LinkPreviews
 }

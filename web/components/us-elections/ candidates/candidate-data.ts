@@ -135,4 +135,29 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/lake.png',
     shortName: 'Lake',
   },
+  'Pete Buttigieg': {
+    party: 'Democrat',
+    photo: '/political-candidates/buttigieg.png',
+    shortName: 'Buttigieg',
+  },
+  'Raphael Warnock': {
+    party: 'Democrat',
+    photo: '/political-candidates/warnock.png',
+    shortName: 'Warnock',
+  },
+  'Michelle Obama': {
+    party: 'Democrat',
+    photo: '/political-candidates/mobama.png',
+    shortName: 'M. Obama',
+  },
+  'Beto O’Rourke': {
+    party: 'Democrat',
+    photo: '/political-candidates/orourke.png',
+    shortName: 'O’Rourke',
+  },
+  'Barack Obama': {
+    party: 'Democrat',
+    photo: '/political-candidates/bobama.png',
+    shortName: 'Obama',
+  },
 }

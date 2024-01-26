@@ -34,6 +34,7 @@ export async function getDashboardProps() {
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
     'who-will-win-the-new-hampshire-repu',
     'who-will-be-the-republican-nominee-8a36dedc6445',
+    'who-will-be-the-democratic-nominee-9d4a78f63ce1',
   ]
   const contractsPromises = specialContractSlugs.map(async (slug) =>
     getCachedContractFromSlug(slug, adminDb)
@@ -46,6 +47,7 @@ export async function getDashboardProps() {
     democratCandidateContract,
     newHampshireContract,
     republicanVPContract,
+    democraticVPContract,
   ] = await Promise.all(contractsPromises)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
@@ -57,6 +59,7 @@ export async function getDashboardProps() {
     democratCandidateContract: democratCandidateContract,
     newHampshireContract: newHampshireContract,
     republicanVPContract: republicanVPContract,
+    democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
   }
 }
