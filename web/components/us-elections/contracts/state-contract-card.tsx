@@ -166,7 +166,7 @@ export function StateContractCard(props: {
                     setTargetState(state.abbreviation)
                     setOpenStateSelectModal(false)
                   }}
-                  className="hover:bg-primary-100 flex w-full flex-row items-start items-start rounded px-4 py-2"
+                  className="hover:bg-primary-100 flex w-full flex-row items-start  rounded px-4 py-2"
                 >
                   {state.name}
                 </button>
