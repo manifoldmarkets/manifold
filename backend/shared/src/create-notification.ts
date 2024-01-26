@@ -945,7 +945,7 @@ export const createUniqueBettorBonusNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: txnId,
-      sourceType: 'push_notification_bonus',
+      sourceType: 'bonus',
       sourceUpdateType: 'created',
       sourceUserName: bettor.name,
       sourceUserUsername: bettor.username,
