@@ -25,7 +25,7 @@ import { DATA, StateDataType } from '../usa-map/usa-map-data'
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {
   contract: Contract
-  targetStat?: string
+  targetState?: string
   setTargetState: (state?: string) => void
   children?: React.ReactNode
   promotedData?: { adId: string; reward: number }
