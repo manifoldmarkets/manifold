@@ -31,7 +31,7 @@ const sizeClasses = {
   '2xl': 'px-6 py-3 text-xl font-semibold',
 }
 
-const baseButtonClasses =
+export const baseButtonClasses =
   'font-md inline-flex items-center justify-center rounded-md ring-inset transition-colors disabled:cursor-not-allowed text-center'
 
 const solid = 'disabled:bg-ink-300 text-white'

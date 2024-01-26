@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { HeartIcon } from '@heroicons/react/outline'
 
 import { api } from 'web/lib/firebase/api'
-import { buttonClass } from 'web/components/buttons/button'
+import { baseButtonClasses } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Col } from 'web/components/layout/col'
@@ -39,7 +39,8 @@ export const ShipButton = (props: {
       <button
         disabled={isLoading}
         className={clsx(
-          buttonClass('lg', 'none'),
+          baseButtonClasses,
+          'p-2 text-sm',
           'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 border-ink-100 dark:border-ink-300 !rounded-full border shadow disabled:cursor-not-allowed',
           className
         )}
@@ -53,7 +54,7 @@ export const ShipButton = (props: {
                 'fill-primary-400 stroke-primary-500 dark:stroke-primary-600'
             )}
           />
-          <div className="p-2 pt-0 text-sm">
+          <div className="p-3 pb-2 pt-0 text-xs">
             {shipped ? 'Shipping!' : 'Ship them!'}
           </div>
         </Col>
