@@ -69,7 +69,8 @@ const getAnswersCompatibility = (
 
   const score = sumBy(answers1, (a) => {
     const answer2 = answers2ByQuestionId[a.question_id]
-    if (!answer2) return 0
+    // Not answered or skipped.
+    if (!answer2 || answer2.importance === -1) return 0
 
     answerCount++
     const importanceScore = importanceToScore[a.importance] ?? 0
@@ -110,7 +111,6 @@ export function getAnswerCompatibility(
 
   return compatibility1to2 && compatibility2to1
 }
-
 
 export function getScoredAnswerCompatibility(
   answer1: rowFor<'love_compatibility_answers'>,
