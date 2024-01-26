@@ -74,13 +74,13 @@ const getAnswersCompatibility = (
     answerCount++
     const importanceScore = importanceToScore[a.importance] ?? 0
     maxScore += importanceScore
-    return getAnswerCompatibility(a, answer2)
+    return getAnswerCompatibilityImportanceScore(a, answer2)
   })
 
   return { score, maxScore, answerCount }
 }
 
-export function getAnswerCompatibility(
+export function getAnswerCompatibilityImportanceScore(
   answer1: rowFor<'love_compatibility_answers'> | undefined | null,
   answer2: rowFor<'love_compatibility_answers'> | undefined | null
 ) {
@@ -93,7 +93,26 @@ export function getAnswerCompatibility(
     : 0
 }
 
-export function getMutualAnswerCompatibility(
+export function getAnswerCompatibility(
+  answer1: rowFor<'love_compatibility_answers'>,
+  answer2: rowFor<'love_compatibility_answers'>
+) {
+  if (answer1.importance < 0 || answer2.importance < 0) {
+    return false
+  }
+
+  const compatibility1to2 = answer1.pref_choices.includes(
+    answer2.multiple_choice
+  )
+  const compatibility2to1 = answer2.pref_choices.includes(
+    answer1.multiple_choice
+  )
+
+  return compatibility1to2 && compatibility2to1
+}
+
+
+export function getScoredAnswerCompatibility(
   answer1: rowFor<'love_compatibility_answers'>,
   answer2: rowFor<'love_compatibility_answers'>
 ) {
