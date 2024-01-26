@@ -7,11 +7,6 @@ export const REP_DARK_HEX = '#9d3336'
 
 export const COLOR_MIXED_THRESHOLD = 0.1
 
-export interface StateElectionMarket {
-  slug: string
-  state: string
-}
-
 function hexToRgb(hex: string) {
   // Convert hex to RGB
   const r = parseInt(hex.slice(1, 3), 16)

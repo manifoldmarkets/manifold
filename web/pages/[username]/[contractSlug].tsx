@@ -210,7 +210,8 @@ export function ContractPageContent(props: ContractParams) {
       contractId: contract.id,
       creatorId: contract.creatorId,
     },
-    true
+    true,
+    [user?.id] // track user view market event if they sign up/sign in on this page
   )
   useSaveContractVisitsLocally(user === null, contract.id)
 
