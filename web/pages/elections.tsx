@@ -249,7 +249,7 @@ function ElectionContent(props: ElectionsPageProps) {
 
 function StateContract(props: {
   targetContract: Contract
-  targetState?: string
+  targetState?: string | null
   setTargetState: (state?: string) => void
 }) {
   const { targetContract, targetState, setTargetState } = props
