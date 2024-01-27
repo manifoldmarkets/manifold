@@ -2128,6 +2128,36 @@ export interface Database {
         }
         Relationships: []
       }
+      user_contract_views: {
+        Row: {
+          card_views: number
+          contract_id: string
+          id: number
+          last_view_ts: string
+          page_views: number
+          promoted_views: number
+          user_id: string | null
+        }
+        Insert: {
+          card_views?: number
+          contract_id: string
+          id?: never
+          last_view_ts?: string
+          page_views?: number
+          promoted_views?: number
+          user_id?: string | null
+        }
+        Update: {
+          card_views?: number
+          contract_id?: string
+          id?: never
+          last_view_ts?: string
+          page_views?: number
+          promoted_views?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_disinterests: {
         Row: {
           comment_id: string | null
