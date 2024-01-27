@@ -6,9 +6,10 @@ import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
-import { completeQuest } from 'web/lib/firebase/api'
+import { api, completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
-import { EventData, insertUserEvent } from 'common/supabase/analytics'
+import { run, SupabaseClient } from 'common/supabase/utils'
+import { Json } from 'common/supabase/schema'
 
 amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
@@ -17,6 +18,8 @@ type EventIds = {
   commentId?: string | null
   adId?: string | null
 }
+
+type EventData = Record<string, Json | undefined>
 
 export async function track(name: string, properties?: EventIds & EventData) {
   const deviceId = amplitude.getDeviceId()
@@ -102,4 +105,33 @@ export async function trackShareEvent(
     ...eventProperties,
   })
   completeQuest({ questType: 'SHARES' as QuestType }).catch(() => {})
+}
+
+function insertUserEvent(
+  name: string,
+  data: EventData,
+  db: SupabaseClient,
+  userId?: string,
+  contractId?: string | null,
+  commentId?: string | null,
+  adId?: string | null
+) {
+  if ((name === 'view market' || name === 'view market card') && contractId) {
+    const kind = !!data?.isPromoted
+      ? 'promoted'
+      : name === 'view market'
+      ? 'page'
+      : 'card'
+    return api('record-contract-view', { userId, contractId, kind })
+  }
+  return run(
+    db.from('user_events').insert({
+      name,
+      data: removeUndefinedProps(data) as Record<string, Json>,
+      user_id: userId,
+      contract_id: contractId,
+      comment_id: commentId,
+      ad_id: adId,
+    })
+  )
 }
