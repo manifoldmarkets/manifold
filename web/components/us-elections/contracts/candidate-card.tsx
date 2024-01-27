@@ -78,7 +78,7 @@ export function CandidateCard(props: {
     })
 
   function extractPhrase(inputString: string): string | null {
-    const regex = /Who will win the (.+?)\?/
+    const regex = /Who will win the 2024(.+?)\?/
     const match = regex.exec(inputString)
 
     if (match && match[1]) {

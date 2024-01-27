@@ -55,6 +55,7 @@ function ElectionContent(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     republicanVPContract,
+    democraticVPContract,
   } = props
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -95,10 +96,14 @@ function ElectionContent(props: ElectionsPageProps) {
         <CandidateCard contract={electionCandidateContract as MultiContract} />
         <CandidateCard contract={democratCandidateContract as MultiContract} />
         <CandidateCard
+          customTitle="Democratic vice presidential nomination"
+          contract={democraticVPContract as MultiContract}
+        />
+        <CandidateCard
           contract={republicanCandidateContract as MultiContract}
         />
         <CandidateCard
-          customTitle="2024 Republican vice presidential nomination"
+          customTitle="Republican vice presidential nomination"
           contract={republicanVPContract as MultiContract}
         />
 
