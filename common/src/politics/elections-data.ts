@@ -5,6 +5,9 @@ export interface StateElectionMarket {
   slug: string
   state: string
 }
+export const ELECTION_DASHBOARD_TITLE = '2024 Election Forecast'
+export const ELECTION_DASHBOARD_DESCRIPTION =
+  'Live market odds for the US presidential election'
 
 export const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'

@@ -3,7 +3,7 @@ import {
   MapContractsDictionary,
   NH_LINK,
   presidency2024,
-} from 'common/election-contract-data'
+} from 'common/politics/elections-data'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { unstable_cache } from 'next/cache'

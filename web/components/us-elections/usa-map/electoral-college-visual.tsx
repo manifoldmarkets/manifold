@@ -6,7 +6,7 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MapContractsDictionary } from 'common/election-contract-data'
+import { MapContractsDictionary } from 'common/politics/elections-data'
 
 export function ElectoralCollegeVisual(props: {
   mapContractsDictionary: MapContractsDictionary

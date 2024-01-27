@@ -9,7 +9,7 @@ import { USAState } from './usa-state'
 import { Col } from 'web/components/layout/col'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { Spacer } from 'web/components/layout/spacer'
-import { MapContractsDictionary } from 'common/election-contract-data'
+import { MapContractsDictionary } from 'common/politics/elections-data'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'

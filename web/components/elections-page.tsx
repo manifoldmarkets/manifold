@@ -8,7 +8,6 @@ import { useUser } from 'web/hooks/use-user'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import Custom404 from 'web/pages/404'
 import { useState } from 'react'
-import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
 import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
@@ -79,11 +78,6 @@ function ElectionContent(props: ElectionsPageProps) {
 
   return (
     <>
-      <SEO
-        title="2024 Election Forecast"
-        description="Live market odds for the US presidential election"
-        // TODO: add a nice preview image
-      />
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
           <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
