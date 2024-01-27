@@ -15,7 +15,7 @@ export async function generateMetadata() {
 }
 
 export default async function Page() {
-  const props = await getDashboardProps()
+  const props = await getDashboardProps(true)
   return (
     <PoliticsPage trackPageView={'home'}>
       <USElectionsPage {...props} />
