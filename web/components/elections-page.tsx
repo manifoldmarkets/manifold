@@ -17,7 +17,7 @@ import { StateContractCard } from 'web/components/us-elections/contracts/state-c
 import {
   ElectionsPageProps,
   MapContractsDictionary,
-} from 'common/election-contract-data'
+} from 'common/politics/elections-data'
 import { Row } from './layout/row'
 import { SmallCandidateCard } from './us-elections/contracts/small-candidate-card'
 
