@@ -103,7 +103,8 @@ export function SmallCandidateCard(props: {
         className,
         'relative rounded-xl',
         'cursor-pointer ',
-        'fade-in group'
+        'fade-in group',
+        'bg-canvas-0 px-4 py-2'
       )}
       onClick={(e) => {
         trackClick()
@@ -120,7 +121,7 @@ export function SmallCandidateCard(props: {
         href={path}
         onClick={trackClick}
       >
-        {contract.question}
+        {customTitle ?? contract.question}
       </Link>
       <Spacer h={4} />
       <SmallCandidatePanel contract={contract} maxAnswers={maxAnswers ?? 6} />
