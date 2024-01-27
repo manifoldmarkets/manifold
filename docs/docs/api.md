@@ -714,7 +714,7 @@ For multiple choice markets, you must also provide:
 
 - `answers`: An array of strings, each of which will be a valid answer for the market.
 - `addAnswersMode`: Optional. Controls who can add answers to the market after it has been created. Must be one of `'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'`. Defaults to `'DISABLED'`.
-- `shouldAnswerSumToOne`: Optional. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
+- `shouldAnswersSumToOne`: Optional. If `true`, makes this market auto-arbitrage so that probabilities add up to 100% and restricts market resolution accordingly.
 
 For bountied questions, you must also provide:
 
