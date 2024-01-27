@@ -19,6 +19,8 @@ import {
   ElectionsPageProps,
   MapContractsDictionary,
 } from 'common/election-contract-data'
+import { Row } from './layout/row'
+import { SmallCandidateCard } from './us-elections/contracts/small-candidate-card'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -94,18 +96,70 @@ function ElectionContent(props: ElectionsPageProps) {
 
         <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
         <CandidateCard contract={electionCandidateContract as MultiContract} />
-        <CandidateCard contract={democratCandidateContract as MultiContract} />
-        <CandidateCard
-          customTitle="Democratic vice presidential nomination"
-          contract={democraticVPContract as MultiContract}
-        />
-        <CandidateCard
-          contract={republicanCandidateContract as MultiContract}
-        />
-        <CandidateCard
-          customTitle="Republican vice presidential nomination"
-          contract={republicanVPContract as MultiContract}
-        />
+        <Col className="gap-6 sm:gap-8 lg:hidden">
+          <CandidateCard
+            contract={democratCandidateContract as MultiContract}
+          />
+          <CandidateCard
+            customTitle="Democratic vice presidential nomination"
+            contract={democraticVPContract as MultiContract}
+          />
+          <CandidateCard
+            contract={republicanCandidateContract as MultiContract}
+          />
+          <CandidateCard
+            customTitle="Republican vice presidential nomination"
+            contract={republicanVPContract as MultiContract}
+          />
+        </Col>
+        <Col className="hidden gap-6 sm:gap-8 lg:flex">
+          <Col className="gap-2">
+            <Row className="items-center gap-2">
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+              <div className="text-ink-600 text-lg font-semibold">
+                Presidential Nomination
+              </div>
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+            </Row>
+            <Row className="gap-4">
+              <SmallCandidateCard
+                contract={democratCandidateContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Democratic"
+                className="w-1/2"
+              />
+              <SmallCandidateCard
+                contract={republicanCandidateContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Republican"
+                className="w-1/2"
+              />
+            </Row>
+          </Col>
+          <Col className="gap-2">
+            <Row className="items-center gap-2">
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+              <div className="text-ink-600 text-lg font-semibold">
+                Vice Presidential Nomination
+              </div>
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+            </Row>
+            <Row className="gap-4">
+              <SmallCandidateCard
+                contract={democraticVPContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Democratic"
+                className="w-1/2"
+              />
+              <SmallCandidateCard
+                contract={republicanVPContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Republican"
+                className="w-1/2"
+              />
+            </Row>
+          </Col>
+        </Col>
 
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
