@@ -74,7 +74,7 @@ export function LoverProfile(props: {
         ((!fromLoverPage && !isCurrentUser) ||
           (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
           <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
-            <LikeButton targetId={user.id} liked={liked} refresh={refresh} />
+            <LikeButton targetLover={lover} liked={liked} refresh={refresh} />
           </Row>
         )}
       {fromLoverPage &&
