@@ -656,14 +656,26 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    props: z.object({
-      userId: z.string(),
-    }),
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
     returns: {} as {
       status: 'success'
       likesReceived: LikeData[]
       likesGiven: LikeData[]
       ships: ShipData[]
+    },
+  },
+  'has-free-like': {
+    method: 'GET',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      hasFreeLike: boolean
     },
   },
 } as const)

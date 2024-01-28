@@ -15,6 +15,7 @@ import { Lover } from 'common/love/lover'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { MatchAvatars } from '../matches/match-avatars'
 import { useLover } from 'love/hooks/use-lover'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export const LikeButton = (props: {
   targetLover: Lover
@@ -25,6 +26,12 @@ export const LikeButton = (props: {
   const { targetLover, liked, refresh, className } = props
   const targetId = targetLover.user_id
   const [isLoading, setIsLoading] = useState(false)
+
+  const { data, refresh: refreshHasFreeLike } = useAPIGetter(
+    'has-free-like',
+    {}
+  )
+  const hasFreeLike = data?.hasFreeLike ?? false
 
   const [showConfirmation, setShowConfirmation] = useState(false)
 
@@ -38,6 +45,7 @@ export const LikeButton = (props: {
     })
     await refresh()
     setIsLoading(false)
+    await refreshHasFreeLike()
   }
 
   return (
@@ -60,12 +68,17 @@ export const LikeButton = (props: {
             )}
           />
           <div className="p-2 pb-0 pt-0">
-            {liked ? <>Liked!</> : <>{formatMoney(LIKE_COST)}</>}
+            {liked ? (
+              <>Liked!</>
+            ) : (
+              <>{hasFreeLike ? '' : formatMoney(LIKE_COST)}</>
+            )}
           </div>
         </Col>
       </button>
       <LikeConfimationDialog
         targetLover={targetLover}
+        hasFreeLike={hasFreeLike}
         submit={like}
         open={!liked && showConfirmation}
         setOpen={setShowConfirmation}
@@ -82,11 +95,12 @@ export const LikeButton = (props: {
 
 const LikeConfimationDialog = (props: {
   targetLover: Lover
+  hasFreeLike: boolean
   open: boolean
   setOpen: (open: boolean) => void
   submit: () => void
 }) => {
-  const { open, setOpen, targetLover, submit } = props
+  const { open, setOpen, targetLover, hasFreeLike, submit } = props
   const youLover = useLover()
   const user = useUserById(targetLover.user_id)
   return (
@@ -98,8 +112,10 @@ const LikeConfimationDialog = (props: {
         'pointer-events-auto max-h-[32rem] overflow-auto'
       )}
     >
-      <Col className="gap-6">
+      <Col className="gap-4">
         <div className="text-xl">Send like to {user ? user.name : ''}</div>
+
+        <div className="text-ink-500">You get one free like per day.</div>
 
         {youLover && user && (
           <MatchAvatars
@@ -108,12 +124,16 @@ const LikeConfimationDialog = (props: {
           />
         )}
 
-        <Row className="items-center justify-between">
+        <Row className="mt-2 items-center justify-between">
           <Button color="gray-outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button onClick={() => submit()}>
-            Pay {formatMoney(LIKE_COST)} & submit
+            {hasFreeLike ? (
+              <>Use free like & submit</>
+            ) : (
+              <>Pay {formatMoney(LIKE_COST)} & submit</>
+            )}
           </Button>
         </Row>
       </Col>
@@ -143,7 +163,7 @@ const CancelLikeConfimationDialog = (props: {
 
         <div className="text-ink-500">You will not be refunded the cost.</div>
 
-        <Row className="items-center justify-between mt-2">
+        <Row className="mt-2 items-center justify-between">
           <Button color="gray-outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>

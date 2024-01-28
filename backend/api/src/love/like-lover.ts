@@ -2,6 +2,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
 import { createLoveLikeNotification } from 'shared/create-love-notification'
 import { runLikePurchaseTxn } from 'shared/txn/run-like-purchase-txn'
+import { getHasFreeLike } from './has-free-like'
 
 export const likeLover: APIHandler<'like-lover'> = async (
   props,
@@ -38,13 +39,18 @@ export const likeLover: APIHandler<'like-lover'> = async (
     return { status: 'success' }
   }
 
-  const { status, message } = await runLikePurchaseTxn(
-    creatorId,
-    targetUserId
-  )
+  const hasFreeLike = await getHasFreeLike(creatorId)
 
-  if (status === 'error' && message) {
-    throw new APIError(400, message)
+  if (!hasFreeLike) {
+    // Charge for like.
+    const { status, message } = await runLikePurchaseTxn(
+      creatorId,
+      targetUserId
+    )
+
+    if (status === 'error' && message) {
+      throw new APIError(400, message)
+    }
   }
 
   // Insert the new like
