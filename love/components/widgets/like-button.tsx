@@ -71,7 +71,7 @@ export const LikeButton = (props: {
             {liked ? (
               <>Liked!</>
             ) : (
-              <>{hasFreeLike ? '' : formatMoney(LIKE_COST)}</>
+              <>{hasFreeLike ? 'Like' : formatMoney(LIKE_COST)}</>
             )}
           </div>
         </Col>
@@ -113,7 +113,7 @@ const LikeConfimationDialog = (props: {
       )}
     >
       <Col className="gap-4">
-        <div className="text-xl">Send like to {user ? user.name : ''}</div>
+        <div className="text-xl">Like {user ? user.name : ''}?</div>
 
         <div className="text-ink-500">You get one free like per day.</div>
 
