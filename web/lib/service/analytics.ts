@@ -38,7 +38,7 @@ export async function track(name: string, properties?: EventIds & EventData) {
   const { contractId, adId, commentId, ...data } = allProperties
   try {
     if (ENV !== 'PROD') {
-      console.log(name, allProperties)
+      console.log(name, userId, allProperties)
       await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
     }
     await Promise.all([
