@@ -167,14 +167,24 @@ const ContractChart = (props: {
   }
 }
 
-const numBars = (height: number) => {
+const numBars = (height: number, withChart?: boolean) => {
+  if (withChart) {
+    if (height < 350) return 1
+    if (height < 400) return 2
+    if (height < 450) return 3
+    if (height < 500) return 4
+    if (height < 550) return 5
+    if (height < 600) return 6
+    return 7
+  }
   if (height < 50) return 0
   if (height < 100) return 1
   if (height < 150) return 2
   if (height < 200) return 3
   if (height < 250) return 4
   if (height < 300) return 5
-  return 6
+  if (height < 350) return 6
+  return 7
 }
 
 function ContractSmolView(props: {
@@ -260,7 +270,7 @@ function ContractSmolView(props: {
                         contract={contract as CPMMMultiContract}
                         multiPoints={props.multiPoints!}
                         width={w - 28}
-                        height={h - numBars(h) * 55}
+                        height={h - numBars(h, showMultiChart) * 55}
                         selectedAnswerIds={contract.answers.map((a) => a.id)}
                       />
                       <Spacer h={14} />
@@ -270,7 +280,7 @@ function ContractSmolView(props: {
 
                   <SimpleAnswerBars
                     contract={contract}
-                    maxAnswers={numBars(h)}
+                    maxAnswers={numBars(h, showMultiChart)}
                   />
                 </div>
               ) : (
