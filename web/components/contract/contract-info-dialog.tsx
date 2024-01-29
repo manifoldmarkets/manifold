@@ -44,19 +44,21 @@ export const Stats = (props: {
   user?: User | null | undefined
 }) => {
   const { contract, user } = props
+  const { creatorId, shouldAnswersSumToOne, addAnswersMode } = contract
 
   const hideAdvanced = !user
   const isDev = useDev()
   const isAdmin = !!user && isAdminId(user?.id)
   const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
-  const isCreator = user?.id === contract.creatorId
+  const isCreator = user?.id === creatorId
   const isPublic = contract.visibility === 'public'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const canAddAnswers = isMulti && contract.addAnswersMode !== 'DISABLED'
-  const creatorOnly = isMulti && contract.addAnswersMode === 'ONLY_CREATOR'
+  const addAnswersPossible =
+    isMulti && (shouldAnswersSumToOne ? addAnswersMode !== 'DISABLED' : true)
+  const creatorOnly = isMulti && addAnswersMode === 'ONLY_CREATOR'
   const wasUnlistedByCreator = contract.unlistedById
-    ? contract.unlistedById === contract.creatorId
+    ? contract.unlistedById === creatorId
     : false
 
   const {
@@ -265,7 +267,7 @@ export const Stats = (props: {
           </tr>
         )}
 
-        {canAddAnswers && (isCreator || isAdmin || isMod) && (
+        {addAnswersPossible && (isCreator || isAdmin || isMod) && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               Creator only{' '}
@@ -279,7 +281,7 @@ export const Stats = (props: {
             </td>
             <td>
               <ShortToggle
-                className="align-middle"
+                className="mr-1 align-middle"
                 on={creatorOnly}
                 setOn={(on) =>
                   updateMarket({
@@ -288,6 +290,7 @@ export const Stats = (props: {
                   })
                 }
               />
+              {addAnswersMode === 'DISABLED' && <span>(Disabled for all)</span>}
             </td>
           </tr>
         )}
