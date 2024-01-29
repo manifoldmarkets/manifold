@@ -169,8 +169,7 @@ const userIdsToIgnore = async (
 export const addCommentOnContractToFeed = async (
   contract: Contract,
   comment: ContractComment,
-  userIdsToExclude: string[],
-  idempotencyKey?: string
+  userIdsToExclude: string[]
 ) => {
   if (comment.isRepost || comment.replyToCommentId) return
   const pg = createSupabaseDirectClient()
@@ -192,7 +191,7 @@ export const addCommentOnContractToFeed = async (
       contractId: contract.id,
       commentId: comment.id,
       creatorId: comment.userId,
-      idempotencyKey,
+      idempotencyKey: comment.id,
     },
     pg
   )

@@ -8,7 +8,13 @@ import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { first } from 'lodash'
+import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -64,13 +70,24 @@ export const createCommentOnContractInternal = async (
     contentJson,
   } = await validateComment(contractId, auth.uid, content, html, markdown)
 
+  const pg = createSupabaseDirectClient()
+  const now = Date.now()
+
   const bet = replyToBetId
     ? await firestore
         .collection(`contracts/${contract.id}/bets`)
         .doc(replyToBetId)
         .get()
         .then((doc) => doc.data() as Bet)
-    : undefined
+    : await getMostRecentCommentableBet(
+        pg,
+        contract.id,
+        creator.id,
+        now,
+        replyToAnswerId
+      )
+
+  const position = await getLargestPosition(pg, contract.id, creator.id)
 
   const isApi = auth.creds.kind === 'key'
 
@@ -78,7 +95,7 @@ export const createCommentOnContractInternal = async (
     // TODO: generate ids in supabase instead
     id: Math.random().toString(36).substring(2, 15),
     content: contentJson,
-    createdTime: Date.now(),
+    createdTime: now,
 
     userId: creator.id,
     userName: creator.name,
@@ -93,6 +110,12 @@ export const createCommentOnContractInternal = async (
     replyToCommentId: replyToCommentId,
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
+
+    commentorPositionShares: position?.shares,
+    commentorPositionOutcome: position?.outcome,
+    commentorPositionAnswerId: position?.answer_id,
+    commentorPositionProb:
+      position && contract.mechanism === 'cpmm-1' ? contract.prob : undefined,
 
     // Response to another user's bet fields
     betId: bet?.id,
@@ -120,6 +143,12 @@ export const createCommentOnContractInternal = async (
       balance: FieldValue.increment(-FLAT_COMMENT_FEE),
       totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
     })
+  }
+
+  try {
+    await onCreateCommentOnContract({ contractId, comment, creator, bet })
+  } catch (e) {
+    console.error('Failed to run onCreateCommentOnContract: ' + e)
   }
 
   return comment
@@ -153,4 +182,68 @@ export const validateComment = async (
     )
   }
   return { contentJson, you, contract }
+}
+
+async function getMostRecentCommentableBet(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string,
+  commentCreatedTime: number,
+  answerOutcome?: string
+) {
+  const maxAge = '5 minutes'
+  const bet = await pg
+    .map(
+      `with prior_user_comments_with_bets as (
+      select created_time, data->>'betId' as bet_id from contract_comments
+      where contract_id = $1 and user_id = $2
+      and created_time < millis_to_ts($3)
+      and data ->> 'betId' is not null
+      and created_time > millis_to_ts($3) - interval $5
+      order by created_time desc
+      limit 1
+    ),
+    cutoff_time as (
+      select coalesce(
+         (select created_time from prior_user_comments_with_bets),
+         millis_to_ts($3) - interval $5)
+      as cutoff
+    )
+    select data from contract_bets
+      where contract_id = $1
+      and user_id = $2
+      and ($4 is null or answer_id = $4)
+      and created_time < millis_to_ts($3)
+      and created_time > (select cutoff from cutoff_time)
+      and not is_ante
+      and not is_redemption
+      order by created_time desc
+      limit 1
+    `,
+      [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
+      (r) => (r.data ? (r.data as Bet) : undefined)
+    )
+    .catch((e) => console.error('Failed to get bet: ' + e))
+  return first(bet ?? [])
+}
+
+async function getLargestPosition(
+  pg: SupabaseDirectClient,
+  contractId: string,
+  userId: string
+) {
+  // mqp: should probably use user_contract_metrics for this, i am just lazily porting
+  return await pg
+    .oneOrNone(
+      `with user_positions as (
+      select answer_id, outcome, sum(shares) as shares
+      from contract_bets
+      where contract_id = $1
+      and user_id = $2
+      group by answer_id, outcome
+    )
+    select * from user_positions order by shares desc limit 1`,
+      [contractId, userId]
+    )
+    .catch((e) => console.error('Failed to get position: ' + e))
 }
