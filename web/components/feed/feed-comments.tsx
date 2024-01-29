@@ -58,7 +58,7 @@ import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
 import TipJar from 'web/public/custom-components/tipJar'
 import { Answer, DpmAnswer } from 'common/answer'
-import { CommentOnAnswerRow } from './feed-answer-comment-group'
+import { CommentOnAnswer } from './comment-on-answer'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
@@ -872,7 +872,7 @@ export function ContractCommentInput(props: {
           clearReply={clearReply}
         />
       ) : replyTo ? (
-        <CommentOnAnswerRow
+        <CommentOnAnswer
           answer={replyTo}
           contract={contract as any}
           clear={clearReply}
@@ -1119,7 +1119,7 @@ export function CommentReplyHeader(props: {
       (a) => a.id === answerOutcome
     )
     if (answer)
-      return <CommentOnAnswerRow answer={answer} contract={contract as any} />
+      return <CommentOnAnswer answer={answer} contract={contract as any} />
   }
 
   return null
