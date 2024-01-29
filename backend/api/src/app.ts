@@ -25,8 +25,6 @@ import { getCurrentUser } from './get-current-user'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
-import { swapcert } from './swap-cert'
-import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
@@ -134,7 +132,6 @@ import { createManalink } from './create-manalink'
 import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
-
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -283,8 +280,6 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
-app.post('/swapcert', ...apiRoute(swapcert))
-app.post('/dividendcert', ...apiRoute(dividendcert))
 
 // TODO: remove everything in this block after a few days. This is mostly for compatibility with frontend
 app.post('/createcomment', ...oldRouteFrom('comment'))
