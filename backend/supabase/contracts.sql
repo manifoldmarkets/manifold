@@ -32,7 +32,8 @@ create table if not exists
                   views int default 0,
                   last_updated_time timestamptz,
                   last_bet_time timestamptz,
-                  last_comment_time timestamptz
+                  last_comment_time timestamptz,
+                  is_politics boolean default false
 );
 
 alter table contracts enable row level security;
@@ -125,6 +126,7 @@ begin
                                      when new.data ? 'lastCommentTime' then millis_to_ts(((new.data) ->> 'lastCommentTime')::bigint)
                                      else null
             end;
+        new.is_politics := coalesce(((new.data) ->> 'isPolitics')::boolean, false);
     end if;
     return new;
 end
