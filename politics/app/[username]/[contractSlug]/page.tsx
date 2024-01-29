@@ -32,7 +32,7 @@ export async function generateMetadata(props: {
     title: contract.question,
     openGraph: {
       images: [imageUrl],
-      url: `https://manifold.politics/${contract.creatorUsername}/${contract.slug}`,
+      url: `https://politifold.com/${contract.creatorUsername}/${contract.slug}`,
     },
     twitter: {
       images: [imageUrl],

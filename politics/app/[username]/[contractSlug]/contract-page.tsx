@@ -19,7 +19,6 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
@@ -132,7 +131,7 @@ export function ContractPageContent(props: ContractParams) {
 
   useSaveCampaign()
   useTracking(
-    'view market',
+    'view politics market',
     {
       slug: contract.slug,
       contractId: contract.id,
@@ -187,7 +186,14 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [historyData.points, newBets])
 
-  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
+  const {
+    isResolved,
+    outcomeType,
+    isPolitics,
+    resolution,
+    closeTime,
+    creatorId,
+  } = contract
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -337,6 +343,11 @@ export function ContractPageContent(props: ContractParams) {
                     </HeaderActions>
                   </Row>
                 )}
+                {!isPolitics && (
+                  <Row className={'bg-amber-200'}>
+                    [UNOFFICIAL - MANIFOLD.MARKETS]
+                  </Row>
+                )}
                 <div ref={titleRef}>
                   <VisibilityIcon
                     contract={contract}
@@ -351,8 +362,6 @@ export function ContractPageContent(props: ContractParams) {
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
-                <AuthorInfo contract={contract} />
-
                 <ContractSummaryStats
                   contract={contract}
                   editable={isCreator || isAdmin || isMod}

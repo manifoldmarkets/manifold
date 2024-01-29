@@ -68,6 +68,7 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
+    isPolitics,
   } = contract
 
   const typeDisplay =
@@ -325,7 +326,7 @@ export const Stats = (props: {
         {!hideAdvanced && contract.visibility != 'private' && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Publicly listed{' '}
+              🔎 Publicly listed{' '}
               <InfoTooltip
                 text={
                   isPublic
@@ -353,11 +354,43 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+        {!hideAdvanced && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              🇺🇸 Politics
+              <InfoTooltip text={'Listed on Politics site'} />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                disabled={!isMod}
+                on={isPolitics}
+                setOn={(on) => {
+                  toast.promise(
+                    api('update-market', {
+                      contractId: contract.id,
+                      isPolitics: on,
+                    }),
+                    {
+                      loading: `${
+                        on ? 'Adding' : 'Removing'
+                      } question to Politics site...`,
+                      success: `Successfully ${
+                        on ? 'added' : 'removed'
+                      } question to Politics site!`,
+                      error: `Error ${on ? 'adding' : 'removing'}. Try again?`,
+                    }
+                  )
+                }}
+              />
+            </td>
+          </tr>
+        )}
 
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Ranked{' '}
+              🏆 Ranked{' '}
               <InfoTooltip
                 text={'Profit and creator bonuses count towards leagues'}
               />
@@ -394,7 +427,7 @@ export const Stats = (props: {
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Subsidized{' '}
+              💰 Subsidized{' '}
               <InfoTooltip
                 text={'Market receives unique trader bonuses and house subsidy'}
               />

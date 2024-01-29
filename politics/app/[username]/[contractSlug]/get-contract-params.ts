@@ -11,11 +11,11 @@ import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
-import { cache } from 'react'
 import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
 
-export const getContractParams = cache(async function (
+// TODO: add unstable_cache where applicable
+export const getContractParams = async function (
   contract: Contract,
   db: SupabaseClient
 ): Promise<ContractParams> {
@@ -101,4 +101,4 @@ export const getContractParams = cache(async function (
     relatedContracts,
     chartAnnotations,
   } as ContractParams
-})
+}

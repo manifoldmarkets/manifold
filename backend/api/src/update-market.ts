@@ -28,6 +28,7 @@ export const updatemarket: APIHandler<'update-market'> = async (
     sort,
     question,
     coverImageUrl,
+    isPolitics,
 
     description: raw,
     descriptionHtml: html,
@@ -40,6 +41,12 @@ export const updatemarket: APIHandler<'update-market'> = async (
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+
+  const modOnlyFields = ['isPolitics']
+  const modOnlyFieldsChanged = Object.keys(fields).some((key) =>
+    modOnlyFields.includes(key)
+  )
+  if (modOnlyFieldsChanged) await throwErrorIfNotMod(auth.uid)
 
   await trackPublicEvent(
     auth.uid,
@@ -62,6 +69,7 @@ export const updatemarket: APIHandler<'update-market'> = async (
       addAnswersMode,
       sort,
       description,
+      isPolitics,
     })
   )
 

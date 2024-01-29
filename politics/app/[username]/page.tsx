@@ -4,7 +4,6 @@ import UserPage from 'politics/app/[username]/user-page'
 import { filterDefined } from 'common/util/array'
 import Custom404 from 'politics/app/404/page'
 
-export const dynamicParams = true
 export const revalidate = 60 // revalidate at most in seconds
 
 export async function generateStaticParams() {
