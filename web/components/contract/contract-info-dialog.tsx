@@ -44,7 +44,13 @@ export const Stats = (props: {
   user?: User | null | undefined
 }) => {
   const { contract, user } = props
-  const { creatorId, shouldAnswersSumToOne, addAnswersMode } = contract
+  const { creatorId } = contract
+  const shouldAnswersSumToOne =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.shouldAnswersSumToOne
+      : false
+  const addAnswersMode =
+    contract.mechanism === 'cpmm-multi-1' ? contract.addAnswersMode : 'DISABLED'
 
   const hideAdvanced = !user
   const isDev = useDev()
@@ -367,7 +373,7 @@ export const Stats = (props: {
               <ShortToggle
                 className="align-middle"
                 disabled={!isMod}
-                on={isPolitics}
+                on={!!isPolitics}
                 setOn={(on) => {
                   toast.promise(
                     api('update-market', {
