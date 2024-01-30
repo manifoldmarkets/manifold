@@ -151,7 +151,37 @@ Response type: `LiteUser`
 
 Return the [authenticated](#authentication) user.
 
-Response type: `LiteUser`
+Response type: `User`
+
+```tsx
+// More detailed information about a user. 
+// Has all fields in LiteUser except for url, isBot, isAdmin and isTrustworthy.
+// These are additional fields that User may have.
+type User = {
+  referredByUserId?: string 
+  referredByContractId?: string 
+  referredByGroupId?: string 
+  shouldShowWelcome?: boolean 
+
+  streakForgiveness: number
+
+  hasSeenLoanModal?: boolean
+  hasSeenContractFollowModal?: boolean
+  userDeleted?: boolean 
+  metricsLastUpdated?: number
+  optOutBetWarnings?: boolean
+  freeQuestionsCreated?: number
+  fromLove?: boolean 
+  signupBonusPaid?: number
+
+  /**@deprecated 2023-01-015 */
+  nextLoanCached: number
+  /** @deprecated */
+  followerCountCached?: number
+
+  tempLoanDebitDec8: number //How much loans on already-resolved single-outcome multiple choice markets Manifold forgot to claw back on December 8th
+}
+```
 
 ### `GET /v0/user/[username]/bets` (Deprecated)
 
