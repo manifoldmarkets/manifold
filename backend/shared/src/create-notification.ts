@@ -1642,7 +1642,7 @@ export const createPollClosedNotification = async (
 
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -1673,7 +1673,7 @@ export const createPollClosedNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     // A user doesn't have to follow a market to receive a notification with their tag
     if (!stillFollowingContract(userId)) return
@@ -1700,7 +1700,10 @@ export const createPollClosedNotification = async (
     await Promise.all(
       Object.keys(contractFollowersIds).map((userId) => {
         if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
+          sendNotificationsIfSettingsPermit(
+            userId,
+            'poll_close_on_watched_markets'
+          )
         }
       })
     )
