@@ -66,6 +66,7 @@ export function UserCommentsList(props: { user: User }) {
     if (pageNum == 0) {
       return <p className="text-ink-500 mt-4">No comments yet</p>
     } else {
+      // this can happen if their comment count is a multiple of page size
       return <p className="text-ink-500 mt-4">No more comments to display</p>
     }
   }
@@ -74,21 +75,13 @@ export function UserCommentsList(props: { user: User }) {
     <Col className={'bg-canvas-50'}>
       {isLoading && <LoadingIndicator className="mt-4" />}
       {!isLoading &&
-        pageComments.map(({ items }, i) => {
-          const pinnedComments = items.filter((comment) => comment.pinned)
-          const regularComments = items.filter((comment) => !comment.pinned)
-
+        pageComments.map(({ key, items }, i) => {
           return (
-            <div key={i}>
-              {pinnedComments.map((comment) => (
-                <ProfileComment key={comment.id} comment={comment} />
-              ))}
-
-              {/* Then render regular comments */}
-              {regularComments.map((comment) => (
-                <ProfileComment key={comment.id} comment={comment} />
-              ))}
-            </div>
+            <ProfileCommentGroup
+              key={i}
+              groupKey={key}
+              items={items as ContractComment[]}
+            />
           )
         })}
 

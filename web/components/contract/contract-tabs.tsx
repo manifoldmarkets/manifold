@@ -40,8 +40,29 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { ParentFeedComment, FeedComment } from '../feed/feed-comments'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 export const EMPTY_USER = '_'
+
+function useHash() {
+  const [hash, setHash] = useState('')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    setHash(window.location.hash)
+
+    const handleHashChange = () => {
+      setHash(window.location.hash)
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  return hash
+}
 
 export function ContractTabs(props: {
   contract: Contract
@@ -319,9 +340,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   }, [idToHighlight, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
+  const pinnedComments = comments.filter((comment) => comment.pinned)
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible) loadMore()
   })
+
+  const [idInUrl, setIdInUrl] = useState<string | undefined>(undefined)
+  const hash = useHash()
+
+  useEffect(() => {
+    if (hash.startsWith('#')) {
+      setIdInUrl(hash.replace('#', ''))
+    } else {
+      setIdInUrl(undefined)
+    }
+  }, [hash])
 
   return (
     <Col className={className}>
@@ -366,38 +399,22 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         />
       )}
 
-      {parentComments
-        .filter((comment) => comment.pinned)
-        .map((parent) => (
-          <FeedCommentThread
-            key={parent.id}
+      {pinnedComments.map((comment) => (
+        <div key={comment.id} className={'pt-3'}>
+          <PinnedComment
+            comment={comment}
             contract={contract}
-            parentComment={parent}
-            threadComments={commentsByParent[parent.id] ?? []}
             trackingLocation={'contract page'}
-            idInUrl={idToHighlight}
-            showReplies={
-              !isBountiedQuestion || (!!user && user.id === contract.creatorId)
-            }
-            childrenBountyTotal={
-              contract.outcomeType == 'BOUNTIED_QUESTION'
-                ? childrensBounties[parent.id]
-                : undefined
-            }
-            onSubmitReply={loadNewer}
-            bets={bets?.filter(
-              (b) =>
-                b.replyToCommentId &&
-                [parent]
-                  .concat(commentsByParent[parent.id] ?? [])
-                  .map((c) => c.id)
-                  .includes(b.replyToCommentId)
-            )}
+            seeReplies={false}
+            numReplies={0}
+            pinnedHighlighted={true}
+            setIdInUrl={setIdInUrl}
           />
-        ))}
+        </div>
+      ))}
 
-      {parentComments
-        .filter((comment) => !comment.pinned)
+      {comments
+        .filter((comment) => !comment.replyToCommentId)
         .map((parent) => (
           <FeedCommentThread
             key={parent.id}
@@ -405,7 +422,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             parentComment={parent}
             threadComments={commentsByParent[parent.id] ?? []}
             trackingLocation={'contract page'}
-            idInUrl={idToHighlight}
+            idInUrl={idInUrl}
             showReplies={
               !isBountiedQuestion || (!!user && user.id === contract.creatorId)
             }
@@ -425,9 +442,99 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             )}
           />
         ))}
+      <div className="relative w-full">
+        <VisibilityObserver
+          onVisibilityUpdated={onVisibilityUpdated}
+          className="pointer-events-none absolute bottom-0 h-[75vh]"
+        />
+      </div>
+
+      {!user && (
+        <Button
+          onClick={withTracking(
+            firebaseLogin,
+            'sign up to comment button click'
+          )}
+          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
+          size="lg"
+          color="gradient"
+        >
+          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </Col>
   )
 })
+
+const PinnedComment = (props: {
+  contract: Contract
+  comment: ContractComment
+  seeReplies: boolean
+  numReplies: number
+  trackingLocation: string
+  bets?: Bet[]
+  pinnedHighlighted?: boolean | undefined
+  setIdInUrl: React.Dispatch<React.SetStateAction<string | undefined>>
+}) => {
+  const {
+    comment,
+    contract,
+    trackingLocation,
+    bets,
+    seeReplies,
+    numReplies,
+    pinnedHighlighted,
+    setIdInUrl,
+  } = props
+
+  const handleContextClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault()
+    const commentId = comment.id
+    setIdInUrl(commentId)
+
+    const currentUrl = window.location.href
+    const newUrl = currentUrl.split('#')[0] + `#${commentId}`
+    window.history.pushState({}, '', newUrl)
+
+    const targetComment = document.getElementById(commentId)
+    if (targetComment) {
+      scrollIntoViewCentered(targetComment as HTMLElement)
+    }
+  }
+
+  const viewContext = (
+    <div className="self-end">
+      <a
+        className="ml-1 text-xs text-gray-400 hover:text-indigo-400 hover:underline"
+        href={`#${comment.id}`}
+        onClick={handleContextClick}
+      >
+        View original context
+      </a>
+    </div>
+  )
+
+  const pin = (
+    <div>
+      <a className="text-sm">📌 </a>{' '}
+    </div>
+  )
+
+  return (
+    <ParentFeedComment
+      contract={contract}
+      comment={comment}
+      trackingLocation={trackingLocation}
+      highlighted={false}
+      viewContext={viewContext}
+      bets={bets}
+      seeReplies={seeReplies}
+      numReplies={numReplies}
+      pinnedHighlighted={pinnedHighlighted}
+      pin={pin}
+    />
+  )
+}
 
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract

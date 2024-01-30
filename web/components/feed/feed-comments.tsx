@@ -211,6 +211,9 @@ export const FeedComment = memo(function FeedComment(props: {
   isParent?: boolean
   bets?: Bet[]
   lastInReplyChain?: boolean
+  viewContext?: ReactNode
+  pinnedHighlighted?: boolean
+  pin?: ReactNode
 }) {
   const {
     contract,
@@ -222,6 +225,9 @@ export const FeedComment = memo(function FeedComment(props: {
     isParent,
     bets,
     lastInReplyChain,
+    viewContext,
+    pinnedHighlighted,
+    pin,
   } = props
 
   const groupedBets = useMemo(() => {
@@ -297,6 +303,7 @@ export const FeedComment = memo(function FeedComment(props: {
             avatarUrl={userAvatarUrl}
             className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
           />
+
           {/* Outer vertical reply line*/}
           <div
             className={clsx(
@@ -306,6 +313,7 @@ export const FeedComment = memo(function FeedComment(props: {
               (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
           />
+
           {/* Inner vertical reply line*/}
           {isBetParent && !isParent && (
             <div
@@ -320,24 +328,25 @@ export const FeedComment = memo(function FeedComment(props: {
         <Col
           className={clsx(
             'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
-            highlighted
+            highlighted || pinnedHighlighted
               ? 'bg-primary-100 border-primary-300 border-2'
               : 'bg-canvas-50'
           )}
         >
-          <FeedCommentHeader
-            comment={comment}
-            updateComment={updateComment}
-            contract={contract}
-            inTimeline={inTimeline}
-            isParent={isParent}
-          />
+          <Row className="flex items-center justify-between">
+            <FeedCommentHeader
+              comment={comment}
+              updateComment={updateComment}
+              contract={contract}
+              inTimeline={inTimeline}
+              isParent={isParent}
+            />
+            {pin}
+          </Row>
 
           <HideableContent comment={comment} />
-          <PinnableContent comment={comment}>
-            <Col className="group"></Col>
-          </PinnableContent>
-          <Row>
+          <Row className="flex flex-wrap items-start">
+            {viewContext}
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
@@ -380,6 +389,7 @@ export const FeedComment = memo(function FeedComment(props: {
                     contract={contract}
                     bets={bets}
                   />
+
                   {/* Inner vertical bet reply line*/}
                   <div
                     className={clsx(
@@ -399,18 +409,21 @@ export const FeedComment = memo(function FeedComment(props: {
   )
 })
 
-const ParentFeedComment = memo(function ParentFeedComment(props: {
+export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
   seeReplies: boolean
   numReplies: number
   onReplyClick?: (comment: ContractComment) => void
-  onSeeReplyClick: () => void
+  onSeeReplyClick?: () => void
   trackingLocation: string
   inTimeline?: boolean
   childrenBountyTotal?: number
   bets?: Bet[]
+  viewContext?: ReactNode
+  pinnedHighlighted?: boolean
+  pin?: ReactNode
 }) {
   const {
     contract,
@@ -424,6 +437,9 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
     inTimeline,
     childrenBountyTotal,
     bets,
+    viewContext,
+    pinnedHighlighted,
+    pin,
   } = props
   const { ref } = useIsVisible(
     () =>
@@ -435,26 +451,28 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
   )
 
   return (
-    <PinnableContent comment={comment}>
-      <FeedComment
-        contract={contract}
-        comment={comment}
-        onReplyClick={onReplyClick}
-        highlighted={highlighted}
-        trackingLocation={trackingLocation}
-        inTimeline={inTimeline}
-        isParent={true}
-        bets={bets}
-      >
-        <div ref={ref} />
-        <ReplyToggle
-          seeReplies={seeReplies}
-          numComments={numReplies}
-          childrenBountyTotal={childrenBountyTotal}
-          onSeeReplyClick={onSeeReplyClick}
-        />
-      </FeedComment>
-    </PinnableContent>
+    <FeedComment
+      contract={contract}
+      comment={comment}
+      onReplyClick={onReplyClick}
+      highlighted={highlighted}
+      trackingLocation={trackingLocation}
+      inTimeline={inTimeline}
+      isParent={true}
+      bets={bets}
+      viewContext={viewContext}
+      pin={pin}
+      pinnedHighlighted={pinnedHighlighted}
+    >
+      <div ref={ref} />
+
+      <ReplyToggle
+        seeReplies={seeReplies}
+        numComments={numReplies}
+        childrenBountyTotal={childrenBountyTotal}
+        onSeeReplyClick={onSeeReplyClick}
+      />
+    </FeedComment>
   )
 })
 
@@ -473,27 +491,6 @@ function HideableContent(props: { comment: ContractComment }) {
     </div>
   ) : (
     <Content size="sm" className="mt-1 grow" content={content || text} />
-  )
-}
-
-function PinnableContent(props: {
-  comment: ContractComment
-  children: ReactNode
-}) {
-  const { comment, children } = props
-
-  return (
-    <div
-      className={clsx(
-        'p-2',
-        comment.pinned ? 'border-2 border-yellow-400' : ''
-      )}
-    >
-      {comment.pinned && (
-        <div className="mb-2 font-bold text-yellow-500">📌 Pinned comment</div>
-      )}
-      {children}
-    </div>
   )
 }
 
