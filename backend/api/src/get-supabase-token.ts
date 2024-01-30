@@ -2,7 +2,6 @@ import { sign } from 'jsonwebtoken'
 import { authEndpoint, APIError } from './helpers/endpoint'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { getInstanceHostname } from 'common/supabase/utils'
 import { isProd } from 'shared/utils'
 
 export const getsupabasetoken = authEndpoint(async (_req, auth) => {
@@ -21,7 +20,7 @@ export const getsupabasetoken = authEndpoint(async (_req, auth) => {
     jwt: sign(payload, jwtSecret, {
       algorithm: 'HS256', // same as what supabase uses for its auth tokens
       expiresIn: '1d',
-      audience: `db.${getInstanceHostname(instanceId)}`,
+      audience: instanceId,
       issuer: isProd()
         ? PROD_CONFIG.firebaseConfig.projectId
         : DEV_CONFIG.firebaseConfig.projectId,
