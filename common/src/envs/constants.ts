@@ -141,6 +141,7 @@ export const BOT_USERNAMES = [
   'Euclidean',
   'manakin',
   'LUCAtheory',
+  'TunglBot',
 ]
 
 export const MOD_IDS = [
