@@ -63,6 +63,7 @@ export function createSupabaseDirectClient(
     port: 6543,
     user: `postgres.${instanceId}`,
     password: password,
+    database: 'postgres',
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
