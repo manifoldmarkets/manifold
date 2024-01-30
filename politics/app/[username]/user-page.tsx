@@ -238,7 +238,7 @@ function UserProfile(props: { user: User }) {
                       isCurrentUser={isCurrentUser}
                     />
                     <Spacer h={4} />
-                    <UserBetsTable user={user} />
+                    <UserBetsTable user={user} isPolitics={true} />
                   </>
                 ),
               },

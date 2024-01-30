@@ -252,6 +252,7 @@ export function getUserContractsMetricsWithContracts(params: {
   userId: string
   offset: number
   limit: number
+  isPolitics?: boolean
 }) {
   return call(
     getApiUrl('get-user-contract-metrics-with-contracts'),

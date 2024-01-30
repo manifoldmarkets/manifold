@@ -444,6 +444,7 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
@@ -471,6 +472,7 @@ export interface Database {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -498,6 +500,7 @@ export interface Database {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -1593,6 +1596,7 @@ export interface Database {
       }
       posts: {
         Row: {
+          bet_id: string | null
           contract_comment_id: string | null
           contract_id: string | null
           created_time: string
@@ -1603,6 +1607,7 @@ export interface Database {
           user_username: string
         }
         Insert: {
+          bet_id?: string | null
           contract_comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -1613,6 +1618,7 @@ export interface Database {
           user_username: string
         }
         Update: {
+          bet_id?: string | null
           contract_comment_id?: string | null
           contract_id?: string | null
           created_time?: string
@@ -2168,11 +2174,11 @@ export interface Database {
         Row: {
           answer_ids: string[] | null
           bet_data: Json | null
+          bet_id: string | null
           comment_id: string | null
           contract_id: string | null
           created_time: string
           creator_id: string | null
-          bet_id: string | null
           data: Json | null
           data_type: string
           event_time: string
@@ -2193,8 +2199,8 @@ export interface Database {
         Insert: {
           answer_ids?: string[] | null
           bet_data?: Json | null
-          comment_id?: string | null
           bet_id?: string | null
+          comment_id?: string | null
           contract_id?: string | null
           created_time?: string
           creator_id?: string | null
@@ -2218,9 +2224,9 @@ export interface Database {
         Update: {
           answer_ids?: string[] | null
           bet_data?: Json | null
+          bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
-          bet_id?: string | null
           created_time?: string
           creator_id?: string | null
           data?: Json | null
@@ -2478,6 +2484,62 @@ export interface Database {
           user_id?: string
         }
         Relationships: []
+      }
+      weekly_update: {
+        Row: {
+          contract_metrics: Json
+          created_time: string
+          id: string
+          profit: number
+          range_end: string
+          user_id: string
+        }
+        Insert: {
+          contract_metrics: Json
+          created_time?: string
+          id?: string
+          profit: number
+          range_end: string
+          user_id: string
+        }
+        Update: {
+          contract_metrics?: Json
+          created_time?: string
+          id?: string
+          profit?: number
+          range_end?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'weekly_update_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'weekly_update_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'weekly_update_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'weekly_update_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
     }
     Views: {
@@ -3229,6 +3291,7 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
@@ -3535,6 +3598,7 @@ export interface Database {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
+          is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
@@ -3569,6 +3633,18 @@ export interface Database {
         Args: {
           uid: string
           count: number
+        }
+        Returns: {
+          contract_id: string
+          bets: Json[]
+          contract: Json
+        }[]
+      }
+      get_open_limit_bets_with_contracts_1: {
+        Args: {
+          uid: string
+          count: number
+          politics: boolean
         }
         Returns: {
           contract_id: string
@@ -3796,14 +3872,25 @@ export interface Database {
           id: number
         }[]
       }
-      get_your_contract_ids: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          contract_id: string
-        }[]
-      }
+      get_your_contract_ids:
+        | {
+            Args: {
+              uid: string
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
+        | {
+            Args: {
+              uid: string
+              n: number
+              start: number
+            }
+            Returns: {
+              contract_id: string
+            }[]
+          }
       get_your_daily_changed_contracts: {
         Args: {
           uid: string

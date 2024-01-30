@@ -97,23 +97,27 @@ order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
 
 create
-or replace function get_open_limit_bets_with_contracts (uid text, count int) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
+    or replace function get_open_limit_bets_with_contracts_1
+(uid text, count int, politics boolean)
+    returns table (contract_id text, bets jsonb[], contract jsonb)
+    stable parallel safe language sql as $$;
 select contract_id,
-  bets.data as bets,
-  contracts.data as contracts
+       bets.data as bets,
+       contracts.data as contracts
 from (
-    select contract_id,
-      array_agg(
-        data
-        order by created_time desc
-      ) as data
-    from contract_bets
-    where user_id = uid
-      and (data->>'isFilled')::boolean = false
-      and (data->>'isCancelled')::boolean = false
-    group by contract_id
-  ) as bets
-  join contracts on contracts.id = bets.contract_id
+         select contract_id,
+                array_agg(
+                        data
+                        order by created_time desc
+                ) as data
+         from contract_bets
+         where user_id = uid
+           and (data->>'isFilled')::boolean = false
+           and (data->>'isCancelled')::boolean = false
+         group by contract_id
+     ) as bets
+         join contracts on contracts.id = bets.contract_id
+where (politics is false or is_politics = politics)
 limit count $$;
 
 create
