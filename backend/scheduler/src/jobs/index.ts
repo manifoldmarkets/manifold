@@ -28,7 +28,11 @@ export function createJobs() {
       '0 0 11 * * *',
       sendOnboardingNotificationsInternal
     ),
-    createJob('update-contract-views', '0 0 * * * *', updateContractViews),
+    createJob(
+      'update-contract-views',
+      '0 55 * * * *', // on the 55th minute of every hour
+      updateContractViews
+    ),
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
