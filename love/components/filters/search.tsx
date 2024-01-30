@@ -57,6 +57,7 @@ export const Search = (props: {
   setIsSearching: (isSearching: boolean) => void
   youLover: Lover | undefined | null
   loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
+  starredUserIds: string[]
 }) => {
   const {
     allLovers,
@@ -64,6 +65,7 @@ export const Search = (props: {
     youLover,
     loverCompatibilityScores,
     setIsSearching,
+    starredUserIds,
   } = props
 
   const isMatchmaker = useIsMatchmaker()
@@ -203,7 +205,16 @@ export const Search = (props: {
         ? sortedLovers
         : alternateWomenAndMen(sortedLovers)
 
-    const filteredLovers = modifiedSortedLovers.filter((lover) => {
+    const sortedWithStarsFirst = filterDefined([
+      ...starredUserIds.map((id) =>
+        modifiedSortedLovers.find((l) => l.user_id === id)
+      ),
+      ...modifiedSortedLovers.filter(
+        (l) => !starredUserIds.includes(l.user_id)
+      ),
+    ])
+
+    const filteredLovers = sortedWithStarsFirst.filter((lover) => {
       if (lover.user_id === youLover?.user_id) return false
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false

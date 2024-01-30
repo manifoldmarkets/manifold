@@ -19,16 +19,16 @@ import { ShareProfileButton } from '../widgets/share-profile-button'
 import { Lover } from 'common/love/lover'
 import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
-import { LikeData } from 'common/api/love-types'
+import { StarButton } from '../widgets/star-button'
 
 export default function LoverProfileHeader(props: {
   user: User
   lover: Lover
   simpleView?: boolean
-  likesReceived: LikeData[]
-  refreshLikes: () => void
+  starredUserIds: string[]
+  refreshStars: () => Promise<void>
 }) {
-  const { user, lover, simpleView } = props
+  const { user, lover, simpleView, starredUserIds, refreshStars } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -98,6 +98,11 @@ export default function LoverProfileHeader(props: {
             <ShareProfileButton
               className="hidden sm:flex"
               username={user.username}
+            />
+            <StarButton
+              targetLover={lover}
+              isStarred={starredUserIds.includes(user.id)}
+              refresh={refreshStars}
             />
             <SendMessageButton toUser={user} currentUser={currentUser} />
             <MoreOptionsUserButton user={user} />

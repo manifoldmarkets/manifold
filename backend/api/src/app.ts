@@ -132,6 +132,7 @@ import { createManalink } from './create-manalink'
 import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
+import { starLover } from './love/star-lover'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -246,6 +247,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-signup-bonus': requestSignupBonus,
   'get-likes-and-ships': getLikesAndShips,
   'has-free-like': hasFreeLike,
+  'star-lover': starLover,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

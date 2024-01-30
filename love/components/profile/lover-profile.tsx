@@ -19,6 +19,8 @@ import { areGenderCompatible } from 'common/love/compatibility-util'
 import { useLover } from 'love/hooks/use-lover'
 import { LikeData, ShipData } from 'common/api/love-types'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useGetter } from 'web/hooks/use-getter'
+import { getStars } from 'love/lib/supabase/stars'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -33,6 +35,11 @@ export function LoverProfile(props: {
   const currentLover = useLover()
   const isCurrentUser = currentUser?.id === user.id
 
+  const { data: starredUserIds, refresh: refreshStars } = useGetter(
+    'stars',
+    currentUser?.id,
+    getStars
+  )
   const { data, refresh } = useAPIGetter('get-likes-and-ships', {
     userId: user.id,
   })
@@ -56,8 +63,8 @@ export function LoverProfile(props: {
         user={user}
         lover={lover}
         simpleView={!!fromLoverPage}
-        likesReceived={likesReceived ?? []}
-        refreshLikes={refresh}
+        starredUserIds={starredUserIds ?? []}
+        refreshStars={refreshStars}
       />
       <LoverContent
         user={user}

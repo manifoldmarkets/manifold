@@ -27,6 +27,9 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import { CompatibleBadge } from 'love/components/widgets/compatible-badge'
+import { useGetter } from 'web/hooks/use-getter'
+import { getStars } from 'love/lib/supabase/stars'
+import { StarButton } from 'love/components/widgets/star-button'
 
 export default function ProfilesPage() {
   const allLovers = useLovers()
@@ -46,6 +49,11 @@ export default function ProfilesPage() {
   useSaveCampaign()
   useCallReferUser()
   const lover = useLover()
+  const { data: starredUserIds, refresh: refreshStars } = useGetter(
+    'star',
+    user?.id,
+    getStars
+  )
 
   const compatibleLovers = useCompatibleLovers(user ? user.id : user)
 
@@ -85,6 +93,7 @@ export default function ProfilesPage() {
             loverCompatibilityScores={
               compatibleLovers?.loverCompatibilityScores
             }
+            starredUserIds={starredUserIds ?? []}
           />
 
           {lovers === undefined || compatibleLovers === undefined ? (
@@ -104,6 +113,10 @@ export default function ProfilesPage() {
                       ? compatibleLovers.loverCompatibilityScores[lover.user_id]
                       : undefined
                   }
+                  hasStar={
+                    !!starredUserIds && starredUserIds.includes(lover.user_id)
+                  }
+                  refreshStars={refreshStars}
                 />
               ))}
             </div>
@@ -117,8 +130,10 @@ export default function ProfilesPage() {
 function ProfilePreview(props: {
   lover: Lover
   compatibilityScore: CompatibilityScore | undefined
+  hasStar: boolean
+  refreshStars: () => Promise<void>
 }) {
-  const { lover, compatibilityScore } = props
+  const { lover, compatibilityScore, hasStar, refreshStars } = props
   const { user, gender, age, pinned_url, city, last_online_time } = lover
 
   return (
@@ -144,11 +159,18 @@ function ProfilePreview(props: {
           </Col>
         )}
 
-        {compatibilityScore && (
-          <Col className="absolute inset-x-0 right-0 top-0 bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-1">
+        <Row className="absolute inset-x-0 right-0 top-0 items-start justify-between bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-2">
+          <StarButton
+            className="!pt-0"
+            isStarred={hasStar}
+            refresh={refreshStars}
+            targetLover={lover}
+            hideTooltip
+          />
+          {compatibilityScore && (
             <CompatibleBadge compatibility={compatibilityScore} />
-          </Col>
-        )}
+          )}
+        </Row>
 
         <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
           <div>
