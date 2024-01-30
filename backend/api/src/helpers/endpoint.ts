@@ -189,7 +189,8 @@ export type APIHandler<N extends APIPath> = (
   auth: APISchema<N> extends { authed: true }
     ? AuthedUser
     : AuthedUser | undefined,
-  { log, logError }: { log: GCPLog; logError: GCPLog }
+  { log, logError }: { log: GCPLog; logError: GCPLog },
+  res: Response
 ) => Promise<APIResponse<N>>
 
 export const typedEndpoint = <N extends APIPath>(
@@ -217,13 +218,16 @@ export const typedEndpoint = <N extends APIPath>(
       const result = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
-        logs
+        logs,
+        res
       )
 
-      // Convert bigint to number, b/c JSON doesn't support bigint.
-      const convertedResult = deepConvertBigIntToNumber(result)
+      if (!res.headersSent) {
+        // Convert bigint to number, b/c JSON doesn't support bigint.
+        const convertedResult = deepConvertBigIntToNumber(result)
 
-      res.status(200).json(convertedResult ?? { success: true })
+        res.status(200).json(convertedResult ?? { success: true })
+      }
     } catch (e) {
       logs.logError('Error in api endpoint', { error: e })
       next(e)

@@ -41,7 +41,7 @@ export const bulkInsertDataToUserFeed = async (
     betId?: string
   },
   pg: SupabaseDirectClient,
-  log: GCPLog = oldLog
+  log?: GCPLog
 ) => {
   const eventTimeTz = new Date(eventTime).toISOString()
 
@@ -66,23 +66,8 @@ export const bulkInsertDataToUserFeed = async (
   if (feedRows.length === 0) return
   const cs = new pgp.helpers.ColumnSet(feedRows[0], { table: 'user_feed' })
   const insert = pgp.helpers.insert(feedRows, cs) + ` ON CONFLICT DO NOTHING`
-
-  const maxRetries = 3
-  let retries = 0
-  while (retries < maxRetries) {
-    try {
-      await pg.none(insert)
-      log(`inserted ${feedRows.length} feed items`)
-      break // Exit if successful
-    } catch (e) {
-      retries++
-      log(`error inserting feed items, retrying ${retries}/${maxRetries}`)
-      log(e)
-      await new Promise((r) => setTimeout(r, 1000 * retries + 1000))
-    }
-  }
-  if (retries === maxRetries)
-    log(`Failed to insert feed items after ${maxRetries} attempts`)
+  await pg.none(insert)
+  log?.(`Inserted ${feedRows.length} feed rows of type ${dataType}`)
 }
 
 export const createManualTrendingFeedRow = (
@@ -204,6 +189,7 @@ export const repostContractToFeed = async (
   creatorId: string,
   postId: number,
   userIdsToExclude: string[],
+  log: GCPLog,
   betId?: string
 ) => {
   const pg = createSupabaseDirectClient()
@@ -221,6 +207,11 @@ export const repostContractToFeed = async (
       'repost',
       0.1
     )
+  log(
+    `Reposting contract ${contract.id} to ${
+      Object.keys(usersToReasonsInterestedInContract).length
+    } users`
+  )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     comment.createdTime,
@@ -233,7 +224,8 @@ export const repostContractToFeed = async (
       betId,
       postId,
     },
-    pg
+    pg,
+    log
   )
 }
 
@@ -319,8 +311,7 @@ export const addContractToFeedIfNotDuplicative = async (
       creatorId: contract.creatorId,
       data,
     },
-    pg,
-    log
+    pg
   )
 }
 
