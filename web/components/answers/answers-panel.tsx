@@ -395,16 +395,7 @@ function Answer(props: {
   const isMobile = useIsMobile()
 
   const limitOrderVolume = useMemo(
-    () =>
-      unfilledBets?.reduce((acc, bet) => {
-        acc += bet.orderAmount
-
-        bet.fills.map((fill) => {
-          acc -= fill.amount
-        })
-
-        return acc
-      }, 0),
+    () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
     [unfilledBets]
   )
 
