@@ -47,6 +47,7 @@ export type User = {
   referredByGroupId?: string
   shouldShowWelcome?: boolean
   lastBetTime?: number
+  lastSeenTime?: number
 
   currentBettingStreak?: number
   streakForgiveness: number

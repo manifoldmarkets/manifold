@@ -129,6 +129,7 @@ type LiteUser = {
   balance: number
   totalDeposits: number
   lastBetTime?: number
+  lastSeenTime?: number
   currentBettingStreak?: number
   profitCached: {
     daily: number
@@ -919,7 +920,7 @@ Example response:
   // Limit bet, partially filled.
   {
     "isFilled": false,
-    "amount": 15.596681605353808,//The amount that has already been filled.
+    "amount": 15.596681605353808, //The amount that has already been filled.
     "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
     "contractId": "Tz5dA01GkK5QKiQfZeDL",
     "probBefore": 0.5730753474948571,
@@ -930,7 +931,7 @@ Example response:
     "limitProb": 0.5,
     "id": "yXB8lVbs86TKkhWA1FVi",
     "loanAmount": 0,
-    "orderAmount": 100,//The original amount placed on the limit order when it was created. The amount remaining can be calulated as orderAmount - amount.
+    "orderAmount": 100, //The original amount placed on the limit order when it was created. The amount remaining can be calulated as orderAmount - amount.
     "probAfter": 0.5730753474948571,
     "createdTime": 1659482775970,
     "fills": [

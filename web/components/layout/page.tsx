@@ -13,6 +13,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Banner } from '../nav/banner'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
+import { useLastSeen } from 'web/hooks/use-last-seen'
 
 export function Page(props: {
   trackPageView: string | false
@@ -48,6 +49,7 @@ export function Page(props: {
     }
   }, [showBanner])
   const user = useUser()
+  useLastSeen()
 
   return (
     <>

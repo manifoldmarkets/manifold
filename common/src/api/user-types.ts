@@ -25,6 +25,7 @@ export type LiteUser = {
   balance: number
   totalDeposits: number
   lastBetTime?: number
+  lastSeenTime?: number
   currentBettingStreak?: number
   profitCached: {
     daily: number
@@ -52,6 +53,7 @@ export function toLiteUser(user: User): LiteUser {
     userDeleted,
     currentBettingStreak,
     lastBetTime,
+    lastSeenTime,
   } = user
 
   const isBot = BOT_USERNAMES.includes(username)
@@ -79,5 +81,6 @@ export function toLiteUser(user: User): LiteUser {
     userDeleted,
     currentBettingStreak,
     lastBetTime,
+    lastSeenTime,
   })
 }
