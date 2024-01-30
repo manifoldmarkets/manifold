@@ -247,7 +247,7 @@ function UserProfile(props: { user: User }) {
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <Col>
-                    <UserCommentsList user={user} />
+                    <UserCommentsList user={user} isPolitics={true} />
                   </Col>
                 ),
               },

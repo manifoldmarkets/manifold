@@ -871,13 +871,13 @@ Parameter:
 
 ### `GET /v0/comments`
 
-Get a list of comments for a contract, ordered by creation date descending.
+Get a list of comments for a contract or user, ordered by creation date descending.
 
 Parameters:
 
 - `contractId`: Optional. The ID of the market to read comments of.
 - `contractSlug`: Optional. The slug of the market to read comments of.
-- `limit`. Optional. How many comments to return
+- `limit`. Optional. How many comments to return. Default 5000.
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
 

@@ -276,6 +276,16 @@ export const getContractSupabase = async (contractId: string) => {
   )
   return first(res)
 }
+export const getContractFromSlugSupabase = async (contractSlug: string) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.map(
+    `select data, importance_score from contracts where slug = $1
+            limit 1`,
+    [contractSlug],
+    (row) => convertContract(row)
+  )
+  return first(res)
+}
 
 export const getUserFirebase = (userId: string) => {
   return getDoc<User>('users', userId)
