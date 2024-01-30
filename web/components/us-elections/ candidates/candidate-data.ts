@@ -30,6 +30,11 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/kennedy.png',
     shortName: 'Kennedy',
   },
+  'Robert F. Kennedy Jr.': {
+    party: 'Democrat',
+    photo: '/political-candidates/kennedy.png',
+    shortName: 'Kennedy',
+  },
   'Dean Phillips': {
     party: 'Democrat',
     photo: '/political-candidates/phillips.png',
