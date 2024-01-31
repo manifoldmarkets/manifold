@@ -59,13 +59,15 @@ export function createSupabaseDirectClient(
     )
   }
   pgpDirect = pgp({
-    host: 'aws-0-us-east-1.pooler.supabase.com',
-    port: 6543,
-    user: `postgres.${instanceId}`,
+    host: `db.${getInstanceHostname(instanceId)}`,
+    port: 5432,
+    user: `postgres`,
     password: password,
-    database: 'postgres',
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
   return pgpDirect
+}
+function getInstanceHostname(instanceId: string) {
+  return `${instanceId}.supabase.co`
 }
