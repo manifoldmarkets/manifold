@@ -20,28 +20,29 @@ export async function call(
   method: 'POST' | 'PUT' | 'GET',
   params?: any
 ) {
-  // Wait for the current user to load before making the request.
-  let i = 0
-  console.log('call got user', auth.currentUser)
-  while (auth.currentUser === undefined) {
-    i++
-    await sleep(0)
-    if (i > 10) {
-      console.error('User did not load after 10 iterations')
-      break
-    }
-  }
-
   return baseApiCall(url, method, params, auth.currentUser)
 }
 
-// this is the preferred way of using the api going forward
-export function api<P extends APIPath>(path: P, params: APIParams<P>) {
-  return call(
+// This is the preferred way of using the api going forward
+export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
+  // If the api is authed and the user is not loaded, wait for the user to load.
+  if (API[path].authed && !auth.currentUser) {
+    let i = 0
+    while (!auth.currentUser) {
+      i++
+      await sleep(10)
+      if (i > 10) {
+        console.error('User did not load after 10 iterations')
+        break
+      }
+    }
+  }
+
+  return (await call(
     formatApiUrlWithParams(path, params),
     API[path].method,
     params
-  ) as Promise<APIResponse<P>>
+  )) as Promise<APIResponse<P>>
 }
 
 // helper function for the old apis so we don't have to migrate them
