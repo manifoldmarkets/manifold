@@ -247,8 +247,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createMarketProps,
   },
-  // TODO: maybe this should be made consistent with the endpoints below and turned into a PUT
-  // but this is backwards compatible with the old clients
+  'market/:contractId/update': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: updateMarketProps,
+  },
+  // deprecated. remove after a few days
   'update-market': {
     method: 'POST',
     visibility: 'undocumented',

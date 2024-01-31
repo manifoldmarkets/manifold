@@ -358,7 +358,7 @@ export function referUser(params: {
   return call(getApiUrl('refer-user'), 'POST', params)
 }
 
-export const updateMarket = curriedAPI('update-market')
+export const updateMarket = curriedAPI('market/:contractId/update')
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)

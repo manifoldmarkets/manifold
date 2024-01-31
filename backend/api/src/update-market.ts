@@ -12,7 +12,7 @@ import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 
-export const updatemarket: APIHandler<'update-market'> = async (
+export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
   auth,
   { log }

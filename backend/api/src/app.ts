@@ -75,7 +75,7 @@ import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
-import { updatemarket } from 'api/update-market'
+import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
@@ -192,7 +192,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': updatemarket,
+  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -202,6 +202,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
+  'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
   'market/:contractId/add-liquidity': addLiquidity,
