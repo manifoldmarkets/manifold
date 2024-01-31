@@ -115,7 +115,6 @@ import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
   searchMarketsFull,
-  searchMarketsLegacy,
 } from './supabase-search-contract'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
@@ -172,18 +171,6 @@ const apiRoute = (endpoint: RequestHandler) => {
     allowCorsUnrestricted,
     express.json(),
     endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// temporary
-const oldRouteFrom = <N extends APIPath>(path: N) => {
-  const handler = handlers[path]
-
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    typedEndpoint(path, handler),
     apiErrorHandler,
   ] as const
 }
@@ -289,32 +276,6 @@ app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 
-// TODO: remove everything in this block after a few days. This is mostly for compatibility with frontend
-app.post('/createcomment', ...oldRouteFrom('comment'))
-app.post('/placebet', ...oldRouteFrom('bet'))
-app.post('/cancelbet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/v0/cancel-bet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/sellbet', ...oldRouteFrom('sell-shares-dpm'))
-app.post('/sellshares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/v0/sell-shares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/addsubsidy', ...oldRouteFrom('market/:contractId/add-liquidity'))
-app.post(
-  '/v0/add-liquidity',
-  ...oldRouteFrom('market/:contractId/add-liquidity')
-)
-app.post('/createmarket', ...oldRouteFrom('market'))
-app.post('/v0/create-market', ...oldRouteFrom('market'))
-app.post('/resolvemarket', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/v0/resolve', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/closemarket', ...oldRouteFrom('market/:contractId/close'))
-app.post('/v0/close', ...oldRouteFrom('market/:contractId/close'))
-app.post('/createanswercpmm', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/add-answer', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/send-mana', ...oldRouteFrom('managram'))
-app.put('/v0/update-tag', ...oldRouteFrom('market/:contractId/group'))
-app.post('/v0/award-bounty', ...oldRouteFrom('market/:contractId/award-bounty'))
-app.post('/v0/add-bounty', ...oldRouteFrom('market/:contractId/add-bounty'))
-
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
@@ -332,7 +293,6 @@ app.post(
   ...apiRoute(updateUserDisinterestEmbedding)
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsLegacy)) // TODO: remove after a few days
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
