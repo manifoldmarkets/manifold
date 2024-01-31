@@ -22,6 +22,7 @@ export async function call(
 ) {
   // Wait for the current user to load before making the request.
   let i = 0
+  console.log('call got user', auth.currentUser)
   while (auth.currentUser === undefined) {
     i++
     await sleep(0)
