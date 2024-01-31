@@ -226,6 +226,7 @@ export function AnswerCpmmBetPanel(props: {
   me: User | null | undefined
 }) {
   const { answer, contract, closePanel, outcome, me } = props
+  console.log(answer)
   return (
     <Col className="gap-2">
       <Row className="justify-between">
