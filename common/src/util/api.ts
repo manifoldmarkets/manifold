@@ -43,11 +43,8 @@ export async function baseApiCall(
     'Content-Type': 'application/json',
   }
   if (user) {
-    console.log('base api awaiting token' + user.uid)
     const token = await user.getIdToken()
     headers.Authorization = `Bearer ${token}`
-  } else {
-    console.log('base api no user')
   }
   const req = new Request(actualUrl, {
     headers,

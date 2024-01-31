@@ -27,7 +27,6 @@ export async function call(
 export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
   // If the api is authed and the user is not loaded, wait for the user to load.
   if (API[path].authed && !auth.currentUser) {
-    console.log('authed api awaiting user')
     let i = 0
     while (!auth.currentUser) {
       i++
