@@ -6,7 +6,7 @@ import { MultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
-import { Col } from '../../../layout/col'
+import { Col } from 'web/components/layout/col'
 import { PartyBar } from './party-bar'
 
 // just the bars

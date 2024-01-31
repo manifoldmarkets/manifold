@@ -1,16 +1,23 @@
+import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { MultiContract } from 'common/contract'
+import { MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { sortBy } from 'lodash'
+import { floatingEqual } from 'common/util/math'
+import { sortBy, sumBy } from 'lodash'
+import Link from 'next/link'
+import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { Col } from '../../../layout/col'
-import { PartyBar } from './party-bar'
+import { useChartAnswers } from 'web/components/charts/contract/choice'
+import { Col } from 'web/components/layout/col'
+import { SmallCandidateBar } from './small-candidate-bar'
+import { getCandidateColor } from './candidates-panel'
+import { removeTextInParentheses } from './candidate-bar'
 
 // just the bars
-export function PartyPanel(props: {
+export function SmallCandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
 }) {
@@ -27,6 +34,16 @@ export function PartyPanel(props: {
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
+  const addAnswersMode =
+    'addAnswersMode' in contract
+      ? contract.addAnswersMode
+      : outcomeType === 'FREE_RESPONSE'
+      ? 'ANYONE'
+      : 'DISABLED'
+  const showAvatars =
+    addAnswersMode === 'ANYONE' ||
+    answers.some((a) => a.userId !== contract.creatorId)
+
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
@@ -40,9 +57,15 @@ export function PartyPanel(props: {
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ]).slice(0, maxAnswers)
+
+  const moreCount = answers.length - displayedAnswers.length
+
+  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+
   return (
     <Col className="mx-[2px] gap-2">
       {showNoAnswers ? (
@@ -50,28 +73,31 @@ export function PartyPanel(props: {
       ) : (
         <>
           {displayedAnswers.map((answer) => (
-            <PartyAnswer
+            <SmallCandidateAnswer
               key={answer.id}
               answer={answer as Answer}
               contract={contract}
-              color={getPartyColor(answer.text)}
+              color={getCandidateColor(answer.text)}
               user={user}
             />
           ))}
+          {moreCount > 0 && (
+            <Link href={contractPath(contract)} className="group">
+              <Row className="sm:text-md group-hover:text-primary-700 text-ink-700 w-full items-center justify-end gap-1 text-sm">
+                See {moreCount} more{' '}
+                <span>
+                  <ArrowRightIcon className="h-5 w-5" />
+                </span>
+              </Row>
+            </Link>
+          )}
         </>
       )}
     </Col>
   )
 }
 
-export function getPartyColor(name: string) {
-  // return 'bg-primary-500'
-  if (name == 'Democratic Party') return '#adc4e3'
-  if (name == 'Republican Party') return '#ecbab5'
-  return '#9E9FBD'
-}
-
-function PartyAnswer(props: {
+function SmallCandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
   color: string
@@ -80,7 +106,7 @@ function PartyAnswer(props: {
   userBets?: Bet[]
   user?: User | null
 }) {
-  const { answer, contract, onHover, selected, color } = props
+  const { answer, contract, onHover, selected, color, userBets, user } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -92,10 +118,14 @@ function PartyAnswer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
-      <PartyBar
-        color={color}
+      <SmallCandidateBar
+        color={getCandidateColor(removeTextInParentheses(answer.text))}
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
