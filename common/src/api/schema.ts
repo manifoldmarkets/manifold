@@ -691,6 +691,16 @@ export const API = (_apiTypeCheck = {
       status: 'success'
     },
   },
+  'get-lovers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      lovers: Lover[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
