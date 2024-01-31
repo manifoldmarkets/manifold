@@ -7,7 +7,7 @@ import { useEvent } from './use-event'
 
 export const useAPIGetter = <P extends APIPath>(
   path: P,
-  props: APIParams<P>
+  props: APIParams<P> | undefined
 ) => {
   const propsString = JSON.stringify(props)
 
@@ -16,6 +16,7 @@ export const useAPIGetter = <P extends APIPath>(
   >(undefined, `${path}-${propsString}`)
 
   const refresh = useEvent(async () => {
+    if (!props) return
     const data = await api(path, props)
     setData(data)
   })

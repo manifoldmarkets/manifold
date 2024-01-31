@@ -135,6 +135,7 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
+import { getLoverAnswers } from './love/get-lover-answers'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -251,7 +252,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-likes-and-ships': getLikesAndShips,
   'has-free-like': hasFreeLike,
   'star-lover': starLover,
-  'get-lovers': getLovers
+  'get-lovers': getLovers,
+  'get-lover-answers': getLoverAnswers,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -707,10 +707,20 @@ export const API = (_apiTypeCheck = {
       lovers: Lover[]
     },
   },
+  'get-lover-answers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ userId: z.string() }).strict(),
+    returns: {} as {
+      status: 'success'
+      answers: Row<'love_compatibility_answers'>[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
-export type APISchema<N extends APIPath> = typeof API[N]
+export type APISchema<N extends APIPath> = (typeof API)[N]
 
 export type APIParams<N extends APIPath> = z.input<APISchema<N>['props']>
 export type ValidatedAPIParams<N extends APIPath> = z.output<
