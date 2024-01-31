@@ -12,6 +12,7 @@ import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
+import { sleep } from 'common/util/time'
 export { APIError } from 'common/api/utils'
 
 export async function call(
@@ -19,10 +20,17 @@ export async function call(
   method: 'POST' | 'PUT' | 'GET',
   params?: any
 ) {
-  // const user = auth.currentUser
-  // if (user == null) {
-  //   throw new Error('Must be signed in to make API calls.')
-  // }
+  // Wait for the current user to load before making the request.
+  let i = 0
+  while (auth.currentUser === undefined) {
+    i++
+    await sleep(0)
+    if (i > 10) {
+      console.error('User did not load after 10 iterations')
+      break
+    }
+  }
+
   return baseApiCall(url, method, params, auth.currentUser)
 }
 
