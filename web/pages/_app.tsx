@@ -73,7 +73,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   const title = 'Manifold | The Most Popular Prediction Markets'
   const description =
-    'Manifold is the world's largest prediction market. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd.'
+    "Manifold is the world's largest prediction market. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd."
 
   return (
     <>
