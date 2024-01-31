@@ -523,6 +523,23 @@ export const API = (_apiTypeCheck = {
     returns: [] as Headline[],
     props: z.object({}),
   },
+  'politics-headlines': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as Headline[],
+    props: z.object({}),
+  },
+  'set-news': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z.object({
+      dashboardIds: z.array(z.string()),
+      isPolitics: z.boolean().optional(),
+    }),
+  },
   react: {
     method: 'POST',
     visibility: 'undocumented',

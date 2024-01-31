@@ -121,7 +121,7 @@ import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
-import { getHeadlines } from './get-headlines'
+import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
@@ -225,6 +225,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
   headlines: getHeadlines,
+  'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
@@ -241,6 +242,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'star-lover': starLover,
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
+  'set-news': setnews,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -339,7 +341,6 @@ app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
 app.post('/delete-dashboard', ...apiRoute(deletedashboard))
-app.post('/set-news-dashboards', ...apiRoute(setnews))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))

@@ -326,10 +326,6 @@ export function supabaseSearchDashboards(params: {
   >
 }
 
-export function setNewsDashboards(params: { dashboardIds: string[] }) {
-  return call(getApiUrl('set-news-dashboards'), 'POST', params)
-}
-
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
