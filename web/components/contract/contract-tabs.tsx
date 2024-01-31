@@ -1,4 +1,4 @@
-import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -18,7 +18,6 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
@@ -40,29 +39,10 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
-import { ParentFeedComment, FeedComment } from '../feed/feed-comments'
-import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import { ParentFeedComment } from '../feed/feed-comments'
+import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 
 export const EMPTY_USER = '_'
-
-function useHash() {
-  const [hash, setHash] = useState('')
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    setHash(window.location.hash)
-
-    const handleHashChange = () => {
-      setHash(window.location.hash)
-    }
-
-    window.addEventListener('hashchange', handleHashChange)
-    return () => window.removeEventListener('hashchange', handleHashChange)
-  }, [])
-
-  return hash
-}
 
 export function ContractTabs(props: {
   contract: Contract
@@ -77,6 +57,7 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
+  pinnedComments: ContractComment[]
 }) {
   const {
     contract,
@@ -89,6 +70,7 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     userPositionsByOutcome,
+    pinnedComments,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -153,6 +135,7 @@ export function ContractTabs(props: {
             <CommentsTabContent
               contract={contract}
               comments={comments}
+              pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
               blockedUserIds={blockedUserIds}
               replyTo={replyTo}
@@ -215,6 +198,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   className?: string
   bets?: Bet[]
   highlightCommentId?: string
+  pinnedComments: ContractComment[]
 }) {
   const {
     contract,
@@ -329,8 +313,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const idToHighlight = highlightCommentId ?? useHashInUrl()
+  const idToHighlight =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    highlightCommentId ?? useHashInUrlPageRouter('')
   useEffect(() => {
     if (idToHighlight) {
       const currentlyVisible = visibleCommentIds.includes(idToHighlight)
@@ -340,21 +325,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   }, [idToHighlight, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
-  const pinnedComments = comments.filter((comment) => comment.pinned)
+  const pinnedComments = uniqBy(
+    props.pinnedComments.concat(comments.filter((comment) => comment.pinned)),
+    'id'
+  )
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible) loadMore()
   })
-
-  const [idInUrl, setIdInUrl] = useState<string | undefined>(undefined)
-  const hash = useHash()
-
-  useEffect(() => {
-    if (hash.startsWith('#')) {
-      setIdInUrl(hash.replace('#', ''))
-    } else {
-      setIdInUrl(undefined)
-    }
-  }, [hash])
 
   return (
     <Col className={className}>
@@ -407,41 +384,37 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             trackingLocation={'contract page'}
             seeReplies={false}
             numReplies={0}
-            pinnedHighlighted={true}
-            setIdInUrl={setIdInUrl}
           />
         </div>
       ))}
 
-      {comments
-        .filter((comment) => !comment.replyToCommentId)
-        .map((parent) => (
-          <FeedCommentThread
-            key={parent.id}
-            contract={contract}
-            parentComment={parent}
-            threadComments={commentsByParent[parent.id] ?? []}
-            trackingLocation={'contract page'}
-            idInUrl={idInUrl}
-            showReplies={
-              !isBountiedQuestion || (!!user && user.id === contract.creatorId)
-            }
-            childrenBountyTotal={
-              contract.outcomeType == 'BOUNTIED_QUESTION'
-                ? childrensBounties[parent.id]
-                : undefined
-            }
-            onSubmitReply={loadNewer}
-            bets={bets?.filter(
-              (b) =>
-                b.replyToCommentId &&
-                [parent]
-                  .concat(commentsByParent[parent.id] ?? [])
-                  .map((c) => c.id)
-                  .includes(b.replyToCommentId)
-            )}
-          />
-        ))}
+      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
+        <FeedCommentThread
+          key={parent.id}
+          contract={contract}
+          parentComment={parent}
+          threadComments={commentsByParent[parent.id] ?? []}
+          trackingLocation={'contract page'}
+          idInUrl={idToHighlight}
+          showReplies={
+            !isBountiedQuestion || (!!user && user.id === contract.creatorId)
+          }
+          childrenBountyTotal={
+            contract.outcomeType == 'BOUNTIED_QUESTION'
+              ? childrensBounties[parent.id]
+              : undefined
+          }
+          onSubmitReply={loadNewer}
+          bets={bets?.filter(
+            (b) =>
+              b.replyToCommentId &&
+              [parent]
+                .concat(commentsByParent[parent.id] ?? [])
+                .map((c) => c.id)
+                .includes(b.replyToCommentId)
+          )}
+        />
+      ))}
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
@@ -473,52 +446,9 @@ const PinnedComment = (props: {
   numReplies: number
   trackingLocation: string
   bets?: Bet[]
-  pinnedHighlighted?: boolean | undefined
-  setIdInUrl: React.Dispatch<React.SetStateAction<string | undefined>>
 }) => {
-  const {
-    comment,
-    contract,
-    trackingLocation,
-    bets,
-    seeReplies,
-    numReplies,
-    pinnedHighlighted,
-    setIdInUrl,
-  } = props
-
-  const handleContextClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    const commentId = comment.id
-    setIdInUrl(commentId)
-
-    const currentUrl = window.location.href
-    const newUrl = currentUrl.split('#')[0] + `#${commentId}`
-    window.history.pushState({}, '', newUrl)
-
-    const targetComment = document.getElementById(commentId)
-    if (targetComment) {
-      scrollIntoViewCentered(targetComment as HTMLElement)
-    }
-  }
-
-  const viewContext = (
-    <div className="self-end">
-      <a
-        className="ml-1 text-xs text-gray-400 hover:text-indigo-400 hover:underline"
-        href={`#${comment.id}`}
-        onClick={handleContextClick}
-      >
-        View original context
-      </a>
-    </div>
-  )
-
-  const pin = (
-    <div>
-      <a className="text-sm">📌 </a>{' '}
-    </div>
-  )
+  const { comment, contract, trackingLocation, bets, seeReplies, numReplies } =
+    props
 
   return (
     <ParentFeedComment
@@ -526,12 +456,10 @@ const PinnedComment = (props: {
       comment={comment}
       trackingLocation={trackingLocation}
       highlighted={false}
-      viewContext={viewContext}
       bets={bets}
       seeReplies={seeReplies}
       numReplies={numReplies}
-      pinnedHighlighted={pinnedHighlighted}
-      pin={pin}
+      isPinned={true}
     />
   )
 }

@@ -70,6 +70,8 @@ import { AnnotateChartModal } from 'web/components/annotate-chart'
 import { BiRepost } from 'react-icons/bi'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { RepostModal } from 'web/components/comments/repost-modal'
+import { TiPin } from 'react-icons/ti'
+import Router from 'next/router'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -211,9 +213,7 @@ export const FeedComment = memo(function FeedComment(props: {
   isParent?: boolean
   bets?: Bet[]
   lastInReplyChain?: boolean
-  viewContext?: ReactNode
-  pinnedHighlighted?: boolean
-  pin?: ReactNode
+  isPinned?: boolean
 }) {
   const {
     contract,
@@ -225,9 +225,7 @@ export const FeedComment = memo(function FeedComment(props: {
     isParent,
     bets,
     lastInReplyChain,
-    viewContext,
-    pinnedHighlighted,
-    pin,
+    isPinned,
   } = props
 
   const groupedBets = useMemo(() => {
@@ -272,6 +270,13 @@ export const FeedComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
+  const handleContextClick = () => {
+    const commentId = comment.id
+
+    const currentUrl = window.location.href
+    const newUrl = currentUrl.split('#')[0] + `#${commentId}`
+    Router.push(newUrl)
+  }
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -328,12 +333,14 @@ export const FeedComment = memo(function FeedComment(props: {
         <Col
           className={clsx(
             'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
-            highlighted || pinnedHighlighted
+            highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
+              : isPinned
+              ? 'bg-canvas-50 border-primary-300 border-2'
               : 'bg-canvas-50'
           )}
         >
-          <Row className="flex items-center justify-between">
+          <Row className="items-center justify-between">
             <FeedCommentHeader
               comment={comment}
               updateComment={updateComment}
@@ -341,12 +348,23 @@ export const FeedComment = memo(function FeedComment(props: {
               inTimeline={inTimeline}
               isParent={isParent}
             />
-            {pin}
+
+            {isPinned && <TiPin className="text-ink-500 text-lg" />}
           </Row>
 
           <HideableContent comment={comment} />
-          <Row className="flex flex-wrap items-start">
-            {viewContext}
+          <Row className="flex-wrap items-start">
+            {isPinned && (
+              <div className="self-end">
+                <a
+                  className="ml-1 text-xs text-gray-400 hover:text-indigo-400 hover:underline"
+                  href={`#${comment.id}`}
+                  onClick={handleContextClick}
+                >
+                  View original context
+                </a>
+              </div>
+            )}
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
@@ -421,9 +439,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
   inTimeline?: boolean
   childrenBountyTotal?: number
   bets?: Bet[]
-  viewContext?: ReactNode
-  pinnedHighlighted?: boolean
-  pin?: ReactNode
+  isPinned?: boolean
 }) {
   const {
     contract,
@@ -437,9 +453,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     inTimeline,
     childrenBountyTotal,
     bets,
-    viewContext,
-    pinnedHighlighted,
-    pin,
+    isPinned,
   } = props
   const { ref } = useIsVisible(
     () =>
@@ -460,9 +474,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       inTimeline={inTimeline}
       isParent={true}
       bets={bets}
-      viewContext={viewContext}
-      pin={pin}
-      pinnedHighlighted={pinnedHighlighted}
+      isPinned={isPinned}
     >
       <div ref={ref} />
 
