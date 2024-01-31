@@ -4,22 +4,18 @@ import Router from 'next/router'
 import { useState } from 'react'
 
 import { Contract, MultiContract, contractPath } from 'common/contract'
-import { ContractCardView } from 'common/events'
-import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
-import { ClickFrame } from 'web/components/widgets/click-frame'
-import { Col } from 'web/components/layout/col'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { Row } from 'web/components/layout/row'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
+import { Col } from 'web/components/layout/col'
 import {
   MODAL_CLASS,
   Modal,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { track } from 'web/lib/service/analytics'
 import { DATA, StateDataType } from '../usa-map/usa-map-data'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
@@ -47,58 +43,17 @@ export function StateContractCard(props: {
     trackingPostfix,
     item,
     className,
-    children,
-    small,
-    hide,
-    showGraph,
-    hideBottomRow,
+
     customTitle,
     titleSize,
     contract,
-    targetState,
     setTargetState,
   } = props
-  const user = useUser()
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
-
-  const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
-  const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
-  const metrics = useSavedContractMetrics(contract)
-
-  // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
-
-  const [visible, setVisible] = useState(false)
-  const { ref } = useIsVisible(
-    () => {
-      !DEBUG_FEED_CARDS &&
-        track('view market card', {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          slug: contract.slug,
-          feedId: item?.id,
-          isPromoted: !!promotedData,
-        } as ContractCardView)
-      setVisible(true)
-    },
-    false,
-    true,
-    () => {
-      setVisible(false)
-    }
-  )
 
   const trackClick = () =>
-    track(('click market card ' + trackingPostfix).trim(), {
+    track(('click state card ' + trackingPostfix).trim(), {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
@@ -108,6 +63,7 @@ export function StateContractCard(props: {
 
   const [openStateSelectModal, setOpenStateSelectModal] =
     useState<boolean>(false)
+
   return (
     <ClickFrame
       className={clsx(
@@ -121,7 +77,6 @@ export function StateContractCard(props: {
         Router.push(path)
         e.currentTarget.focus() // focus the div like a button, for style
       }}
-      ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 '}>
         <Row className={'w-full justify-between'}>

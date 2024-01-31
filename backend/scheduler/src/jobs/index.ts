@@ -15,12 +15,12 @@ export function createJobs() {
   return [
     createJob(
       'add-trending-feed-contracts',
-      '0 0 * * * *', // every hour
+      '0 10 * * * *', // on the 10th minute of every hour
       addTrendingFeedContracts
     ),
     createJob(
       'update-contract-metrics',
-      '0 */15 * * * *', // every 15 minutes
+      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
       updateContractMetricsCore
     ),
     createJob(
@@ -28,7 +28,11 @@ export function createJobs() {
       '0 0 11 * * *',
       sendOnboardingNotificationsInternal
     ),
-    createJob('update-contract-views', '0 0 * * * *', updateContractViews),
+    createJob(
+      'update-contract-views',
+      '0 55 * * * *', // on the 55th minute of every hour
+      updateContractViews
+    ),
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
@@ -36,7 +40,7 @@ export function createJobs() {
     ),
     createJob(
       'update-group-metrics',
-      '0 */15 * * * *', // every 15 minutes
+      '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
       updateGroupMetricsCore
     ),
     createJob(
@@ -61,7 +65,7 @@ export function createJobs() {
     ),
     createJob(
       'update-stats',
-      '0 0 * * * *', // every hour
+      '0 20 * * * *', // on the 20th minute of every hour
       updateStatsCore
     ),
   ]
