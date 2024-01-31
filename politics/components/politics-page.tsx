@@ -2,6 +2,7 @@
 import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
   HomeIcon as SolidHomeIcon,
+  SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -107,6 +108,7 @@ export function PoliticsPage(props: {
 function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Home', href: '/', icon: SolidHomeIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
       name: 'Notifs',
       href: `/notifications`,
@@ -127,6 +129,7 @@ function getBottomNavigation(user: User) {
 
 const signedOutNavigation = () => [
   { name: 'Home', href: '/', icon: SolidHomeIcon },
+  { name: 'Browse', href: '/browse', icon: SearchIcon },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
@@ -137,6 +140,7 @@ const getDesktopNav = (user: User | null | undefined) => {
   if (user)
     return buildArray(
       { name: 'Home', href: '/', icon: HomeIcon },
+      { name: 'Browse', href: '/browse', icon: SearchIcon },
       {
         name: 'Notifs',
         href: `/notifications`,

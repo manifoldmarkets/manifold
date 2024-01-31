@@ -54,6 +54,7 @@ const search = async (
     limit,
     topicSlug: possibleTopicSlug,
     creatorId,
+    isPolitics,
   } = props
 
   if (limit === 0) {
@@ -108,6 +109,7 @@ const search = async (
           isForYou,
           groupAccess,
           searchType,
+          isPolitics,
         })
         return pg
           .map(searchSQL, null, (r) => ({

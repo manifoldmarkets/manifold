@@ -48,5 +48,6 @@ export const searchProps = z
     limit: z.coerce.number().gt(0).lte(1000).default(100),
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+    isPolitics: z.coerce.boolean().optional(),
   })
   .strict()
