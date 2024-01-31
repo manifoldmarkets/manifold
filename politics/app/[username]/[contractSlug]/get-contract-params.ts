@@ -1,5 +1,8 @@
 import { Contract, ContractParams } from 'common/contract'
-import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
+import {
+  getRecentTopLevelCommentsAndReplies,
+  getPinnedComments,
+} from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
@@ -30,6 +33,7 @@ export const getContractParams = async function (
     betsToPass,
     allBetPoints,
     comments,
+    pinnedComments,
     userPositionsByOutcome,
     topContractMetrics,
     totalPositions,
@@ -53,6 +57,7 @@ export const getContractParams = async function (
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
+    getPinnedComments(db, contract.id),
     isCpmm1
       ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
       : {},
@@ -91,10 +96,12 @@ export const getContractParams = async function (
     },
     pointsString,
     comments,
+    pinnedComments,
     userPositionsByOutcome,
     totalPositions,
     totalBets,
     topContractMetrics,
+
     // Not sure if these will be used on politics, if so will need to implement
     relatedContractsByTopicSlug: {},
     topics: [],

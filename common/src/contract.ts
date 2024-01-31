@@ -422,6 +422,7 @@ export type ContractParams = {
   chartAnnotations: ChartAnnotation[]
   relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
+  pinnedComments: ContractComment[]
 }
 
 export type MaybeAuthedContractParams =

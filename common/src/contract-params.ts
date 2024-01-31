@@ -9,7 +9,10 @@ import {
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
-import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
+import {
+  getRecentTopLevelCommentsAndReplies,
+  getPinnedComments,
+} from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
@@ -45,6 +48,7 @@ export async function getContractParams(
     betsToPass,
     allBetPoints,
     comments,
+    pinnedComments,
     userPositionsByOutcome,
     topContractMetrics,
     totalPositions,
@@ -70,6 +74,7 @@ export async function getContractParams(
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
+    getPinnedComments(db, contract.id),
     isCpmm1
       ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
       : {},
@@ -134,6 +139,7 @@ export async function getContractParams(
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
       chartAnnotations,
+      pinnedComments,
       topics: orderBy(
         topics,
         (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
