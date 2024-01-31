@@ -1,5 +1,5 @@
 import { PoliticsPage } from 'politics/components/politics-page'
-import { USElectionsPage } from 'web/components/elections-page'
+import { USElectionsPage } from 'politics/components/elections-page'
 import { getDashboardProps } from 'web/lib/politics/dashboard'
 import {
   ELECTION_DASHBOARD_DESCRIPTION,

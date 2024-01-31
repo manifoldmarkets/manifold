@@ -10,10 +10,10 @@ import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { useChartAnswers } from '../../../charts/contract/choice'
-import { Col } from '../../../layout/col'
+import { useChartAnswers } from 'web/components/charts/contract/choice'
+import { Col } from 'web/components/layout/col'
 import { CandidateBar, removeTextInParentheses } from './candidate-bar'
-import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
+import { CANDIDATE_DATA } from '../../candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 
 // just the bars

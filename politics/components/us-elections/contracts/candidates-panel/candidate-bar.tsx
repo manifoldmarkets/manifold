@@ -12,10 +12,10 @@ import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
-import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
-import { Col } from '../../../layout/col'
-import { MODAL_CLASS, Modal } from '../../../layout/modal'
-import { Row } from '../../../layout/row'
+import { CANDIDATE_DATA } from '../../candidates/candidate-data'
+import { Col } from 'web/components/layout/col'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
