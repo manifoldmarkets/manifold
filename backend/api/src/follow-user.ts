@@ -15,6 +15,10 @@ export const followUser = authEndpoint(async (req, auth, log) => {
   const { userId: them, follow } = schema.parse(req.body)
   const me = auth.uid
 
+  if (me === them && follow) {
+    return { success: false, error: "Cannot follow yourself" }
+  }
+
   const db = createSupabaseClient()
 
   const query = follow
