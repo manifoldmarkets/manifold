@@ -329,9 +329,9 @@ export function ContractPageContent(props: ContractParams) {
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
                 {coverImageUrl && (
-                  <Row className=" w-full justify-between">
-                    <Col className="my-auto">
-                      <BackButton />
+                  <Row className="w-full justify-between">
+                    <Col className=" my-auto -ml-3">
+                      <BackButton className={'!px-3'} />
                     </Col>
                     <HeaderActions contract={contract}>
                       {!coverImageUrl && isCreator && (
