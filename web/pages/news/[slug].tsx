@@ -11,7 +11,7 @@ import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 export async function getStaticProps(ctx: { params: { slug: string } }) {
   const { slug } = ctx.params
   try {
-    const props = getDashboardProps(slug)
+    const props = await getDashboardProps(slug)
     return {
       props,
     }
