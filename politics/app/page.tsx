@@ -33,7 +33,7 @@ export default async function Page() {
         await unstable_cache(
           () => getDashboardProps(headline.slug),
           [headline.slug],
-          { revalidate: 60 }
+          { revalidate: 60, tags: [headline.slug] }
         )()
     )
   )
