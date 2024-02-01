@@ -55,6 +55,7 @@ export const getContractParams = async function (
     hasMechanism
       ? getBetPoints(db, contract.id, {
           filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+          limit: 10000,
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
