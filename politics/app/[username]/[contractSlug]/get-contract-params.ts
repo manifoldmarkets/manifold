@@ -16,6 +16,7 @@ import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
+import { unstable_cache } from 'next/cache'
 
 // TODO: add unstable_cache where applicable
 export const getContractParams = async function (
@@ -63,7 +64,11 @@ export const getContractParams = async function (
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    getRelatedContracts(contract, 20, db),
+    unstable_cache(
+      async () => getRelatedContracts(contract, 20, db),
+      [contract.id],
+      { revalidate: 5 * 60 }
+    )(),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {

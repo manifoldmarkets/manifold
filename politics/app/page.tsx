@@ -8,7 +8,7 @@ import {
 import { api } from 'web/lib/firebase/api'
 import { HeadlineTabs } from 'politics/components/home-dashboard/news-sections'
 import { unstable_cache } from 'next/cache'
-import { HOUR_MS } from 'common/util/time'
+import { HOUR_SECONDS } from 'common/util/time'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { NewsDashboard } from 'politics/components/home-dashboard/news-dashboard'
 
@@ -25,7 +25,7 @@ export default async function Page() {
   const headlines = await unstable_cache(
     async () => api('politics-headlines', {}),
     ['politics-headlines'],
-    { revalidate: 4 * HOUR_MS, tags: ['politics-headlines'] }
+    { revalidate: 4 * HOUR_SECONDS, tags: ['politics-headlines'] }
   )()
   const newsDashboards = await Promise.all(
     headlines.map(

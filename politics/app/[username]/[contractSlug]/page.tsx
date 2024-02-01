@@ -9,7 +9,6 @@ import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { removeUndefinedProps } from 'common/util/object'
 import { buildOgUrl } from 'common/util/og'
 
-export const revalidate = 15 // revalidate at most in seconds
 export async function generateStaticParams() {
   return []
 }

@@ -341,10 +341,11 @@ limit match_count;
 $$;
 
 create
-or replace function close_contract_embeddings (
+or replace function close_contract_embeddings_1 (
   input_contract_id text,
   similarity_threshold float,
-  match_count int
+  match_count int,
+  politics_only boolean default false
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
@@ -365,6 +366,7 @@ or replace function close_contract_embeddings (
     where contract_id != input_contract_id
       and resolution_time is null
       and contracts.visibility = 'public'
+      and (politics_only is false or politics_only = contracts.is_politics)
     order by similarity * similarity * importance_score desc
     limit match_count;
 $$;
