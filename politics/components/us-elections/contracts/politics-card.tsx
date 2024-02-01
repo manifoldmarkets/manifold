@@ -119,7 +119,7 @@ export function PoliticsCard(props: {
           <VisibilityIcon contract={contract} />{' '}
           {customTitle ? customTitle : extractPhrase(contract.question)}
         </Link>
-        <CandidatePanel contract={contract} maxAnswers={6} />
+        <CandidatePanel contract={contract} maxAnswers={8} />
       </Col>
     )
   }

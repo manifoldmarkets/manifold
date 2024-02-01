@@ -72,7 +72,7 @@ export function CandidatePanel(props: {
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          <Carousel labelsParentClassName="gap-1">
+          <Carousel labelsParentClassName="gap-2">
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
@@ -89,12 +89,12 @@ export function CandidatePanel(props: {
                     ' text-ink-1000 items-center justify-center overflow-hidden text-sm transition-all hover:underline '
                   )}
                 >
-                  <Row className=" items-center gap-1 whitespace-nowrap">
+                  <Col className=" items-center gap-1 whitespace-nowrap">
                     {moreCount} more{' '}
                     <span>
                       <ArrowRightIcon className="h-4 w-4" />
                     </span>
-                  </Row>
+                  </Col>
                 </Col>
               </Link>
             )}

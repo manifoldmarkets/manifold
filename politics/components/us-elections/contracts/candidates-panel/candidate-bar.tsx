@@ -58,11 +58,11 @@ export const CandidateBar = (props: {
         onPointerOver={onHover && (() => onHover(true))}
         onPointerLeave={onHover && (() => onHover(false))}
         className={clsx(
-          ' border-ink-100 hover:border-ink-1000 relative h-40 w-[112px] justify-between overflow-hidden border-[1.5px] transition-all',
+          ' border-ink-100 bg-canvas-0 hover:border-ink-1000 relative h-40 w-[112px] justify-between overflow-hidden border-[1.5px] transition-all',
           className
         )}
       >
-        <div className={clsx('bg-canvas-0 transition-all')}>
+        <div className={clsx(' transition-all')}>
           {/* bar outline if resolved */}
           {!!resolvedProb && !hideBar && (
             <div
