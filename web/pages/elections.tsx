@@ -3,13 +3,13 @@ import {
   ELECTION_DASHBOARD_TITLE,
   ElectionsPageProps,
 } from 'common/politics/elections-data'
-import { getDashboardProps } from 'web/lib/politics/dashboard'
+import { getElectionsPageProps } from 'web/lib/politics/home'
 import { USElectionsPage } from 'web/components/elections-page'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  const props = await getDashboardProps(false)
+  const props = await getElectionsPageProps(false)
   return {
     props,
     revalidate: 60,

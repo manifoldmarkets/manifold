@@ -10,7 +10,7 @@ import { unstable_cache } from 'next/cache'
 import { SupabaseClient } from 'common/supabase/utils'
 const REVALIDATE_CONTRACTS_SECONDS = 60
 
-export async function getDashboardProps(useUnstableCache: boolean) {
+export async function getElectionsPageProps(useUnstableCache: boolean) {
   const adminDb = await initSupabaseAdmin()
   const getContract = (slug: string) =>
     useUnstableCache

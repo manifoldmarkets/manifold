@@ -18,18 +18,15 @@ export function HeadlineTabs(props: {
   return (
     <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
       <Carousel labelsParentClassName="gap-px">
-        {user && (
-          <Tab label="Home" href="/home" active={currentSlug === 'home'} />
-        )}
+        {user && <Tab label="Home" href="#" active={currentSlug === ''} />}
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}
             label={title}
-            href={`/news/${slug}`}
+            href={`#${slug}`}
             active={slug === currentSlug}
           />
         ))}
-        {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
           <EditNewsButton defaultDashboards={headlines} isPolitics={true} />
         )}
@@ -43,7 +40,7 @@ const Tab = (props: { href: string; label: string; active?: boolean }) => {
   return (
     <Link
       href={href}
-      onClick={() => track('news tabs', { tab: label, href })}
+      onClick={() => track('politics news tabs', { tab: label, href })}
       className={clsx(
         'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
         active && 'bg-primary-200 text-primary-900'

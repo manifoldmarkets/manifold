@@ -1,52 +1,19 @@
 import { useRouter } from 'next/router'
-import {
-  Dashboard,
-  DashboardLinkItem,
-  DashboardQuestionItem,
-} from 'common/dashboard'
-import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
+import { Dashboard } from 'common/dashboard'
 import Custom404 from '../404'
-import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
+import { LinkPreviews } from 'common/link-preview'
 import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
 import { Page } from 'web/components/layout/page'
 import { Headline } from 'common/news'
-import { getContracts } from 'web/lib/supabase/contracts'
-import { removeUndefinedProps } from 'common/util/object'
-import { omit } from 'lodash'
 import { type Contract } from 'common/contract'
+import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 
 export async function getStaticProps(ctx: { params: { slug: string } }) {
   const { slug } = ctx.params
   try {
-    const dashboard = await getDashboardFromSlug({ dashboardSlug: slug })
-
-    const links = dashboard.items
-      .filter((item): item is DashboardLinkItem => item.type === 'link')
-      .map((item) => item.url)
-
-    const questionSlugs = dashboard.items
-      .filter((item): item is DashboardQuestionItem => item.type === 'question')
-      .map((item) => item.slug)
-      .slice(0, 20) // preload just the first n questions
-
-    const previews = await fetchLinkPreviews(links)
-    const fullContracts = await getContracts(questionSlugs, 'slug')
-    const contracts = fullContracts.map((c) =>
-      // remove some heavy fields that are not needed for the cards
-      removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
-    )
-
-    const headlines = await api('headlines', {})
-
+    const props = getDashboardProps(slug)
     return {
-      props: {
-        state: 'success',
-        initialDashboard: dashboard,
-        headlines,
-        previews,
-        initialContracts: contracts,
-        slug,
-      },
+      props,
     }
   } catch (e) {
     if (typeof e === 'object' && e !== null && 'code' in e && e.code === 404) {

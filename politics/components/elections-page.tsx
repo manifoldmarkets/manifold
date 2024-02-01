@@ -18,6 +18,8 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from 'web/pages/404'
 import { Row } from 'web/components/layout/row'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -78,9 +80,14 @@ function ElectionContent(props: ElectionsPageProps) {
     <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
-          <div className=" mt-4 inline-block font-serif text-2xl sm:mt-0 sm:text-3xl">
+          <Row className="mt-2 items-center justify-between gap-4 font-serif text-2xl sm:mt-0 sm:justify-start sm:text-3xl">
             2024 Election Forecast
-          </div>
+            <CopyLinkOrShareButton
+              url={`https://${ENV_CONFIG.domain}/`}
+              eventTrackingName="copy dashboard link"
+              tooltip="Share"
+            />
+          </Row>
           <div className="text-canvas-500 text-md mt-2 inline-block font-normal">
             Live market odds for the US presidential election
           </div>
@@ -165,7 +172,7 @@ function ElectionContent(props: ElectionsPageProps) {
         </Col>
 
         <Col className="bg-canvas-0 p-4">
-          <div className="mx-auto font-semibold sm:text-xl font-serif">
+          <div className="mx-auto font-serif font-semibold sm:text-xl">
             Which party will win the US Presidency?
           </div>
           <USAMap
