@@ -3,20 +3,23 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
 import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { Col } from '../layout/col'
+import { Col } from 'web/components/layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
-import { Row } from '../layout/row'
-import { ChooseCancelSelector } from '../bet/yes-no-selector'
-import { ResolveConfirmationButton } from '../buttons/confirmation-button'
+import { Row } from 'web/components/layout/row'
+import { ChooseCancelSelector } from 'web/components/bet/yes-no-selector'
+import { ResolveConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
-import { Button } from '../buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { DpmAnswer, Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
-import { InfoTooltip } from '../widgets/info-tooltip'
+import {
+  MiniResolutionPanel,
+  ResolveHeader,
+} from 'web/components/resolution-panel'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import {
   AnswerBar,
   CreatorAndAnswerLabel,
@@ -25,9 +28,9 @@ import {
   OpenProb,
 } from './answer-components'
 import { useAdmin } from 'web/hooks/use-admin'
-import { GradientContainer } from '../widgets/gradient-container'
-import { AmountInput } from '../widgets/amount-input'
-import { getAnswerColor } from '../charts/contract/choice'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
+import { AmountInput } from 'web/components/widgets/amount-input'
+import { getAnswerColor } from 'web/components/charts/contract/choice'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
