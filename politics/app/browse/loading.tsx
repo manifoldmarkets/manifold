@@ -1,4 +1,4 @@
-import LoadingContractRows from 'politics/components/loading-contract-rows'
+import LoadingContractRows from 'politics/components/loading/loading-contract-rows'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { IconButton } from 'web/components/buttons/button'
