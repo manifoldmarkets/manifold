@@ -55,7 +55,7 @@ export const CandidateBar = (props: {
     <>
       <Link
         className={clsx(
-          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden rounded-md border-2 transition-all sm:w-[220px]',
+          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden border-2 transition-all sm:w-[220px]',
           className
         )}
         href={contractPath(contract)}
@@ -86,21 +86,21 @@ export const CandidateBar = (props: {
                 }}
               />
             </Row>
-            <Row className="w-full justify-end text-sm sm:text-lg">
+            <Row className="w-full justify-end font-mono text-sm sm:text-lg">
               {shortName ?? answer.text}
             </Row>
           </Col>
         </Row>
         <div
           className={clsx(
-            'bg-canvas-0 absolute bottom-0 left-0 right-0 top-0 -z-10 rounded transition-all'
+            'bg-canvas-0 absolute bottom-0 left-0 right-0 top-0 -z-10 transition-all'
           )}
         >
           {/* bar outline if resolved */}
           {!!resolvedProb && !hideBar && (
             <div
               className={clsx(
-                'absolute bottom-0 w-full rounded ring-1 ring-purple-500 sm:ring-2',
+                'absolute bottom-0 w-full ring-1 ring-purple-500 sm:ring-2',
                 resolvedProb > prob
                   ? 'bg-purple-100 dark:bg-purple-900'
                   : 'z-10'

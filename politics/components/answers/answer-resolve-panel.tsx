@@ -1,37 +1,33 @@
-import clsx from 'clsx'
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
 
-import { Answer, DpmAnswer } from 'common/answer'
-import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { BETTORS } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { useAdmin } from 'web/hooks/use-admin'
-import { useUser } from 'web/hooks/use-user'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
-
+import { Row } from '../layout/row'
+import { ChooseCancelSelector } from '../bet/yes-no-selector'
+import { ResolveConfirmationButton } from '../buttons/confirmation-button'
+import { removeUndefinedProps } from 'common/util/object'
+import { BETTORS } from 'common/user'
+import { Button } from '../buttons/button'
+import { useUser } from 'web/hooks/use-user'
+import { DpmAnswer, Answer } from 'common/answer'
+import { getAnswerProbability } from 'common/calculate'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
+  CreatorAndAnswerLabel,
   AnswerStatus,
   ClosedProb,
-  CreatorAndAnswerLabel,
   OpenProb,
 } from './answer-components'
-import { ChooseCancelSelector } from 'web/components/bet/yes-no-selector'
-import { Row } from 'web/components/layout/row'
-import { ResolveConfirmationButton } from 'web/components/buttons/confirmation-button'
-import { Button } from 'web/components/buttons/button'
-import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { Col } from 'web/components/layout/col'
-import { getAnswerColor } from 'web/components/charts/contract/choice'
-import { AmountInput } from 'web/components/widgets/amount-input'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import {
-  MiniResolutionPanel,
-  ResolveHeader,
-} from 'web/components/resolution-panel'
+import { useAdmin } from 'web/hooks/use-admin'
+import { GradientContainer } from '../widgets/gradient-container'
+import { AmountInput } from '../widgets/amount-input'
+import { getAnswerColor } from '../charts/contract/choice'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -424,10 +420,12 @@ export function ResolutionAnswerItem(props: {
 
 export const IndependentAnswersResolvePanel = (props: {
   contract: CPMMMultiContract
+  onClose: () => void
 }) => {
-  const { contract } = props
+  const { contract, onClose } = props
 
   const isAdmin = useAdmin()
+  const user = useUser()
 
   const { answers, addAnswersMode } = contract
   const sortedAnswers = [
@@ -439,17 +437,26 @@ export const IndependentAnswersResolvePanel = (props: {
   ]
 
   return (
-    <>
-      {sortedAnswers.map((answer) => (
-        <IndependentResolutionAnswerItem
-          key={answer.id}
+    <GradientContainer>
+      <Col className="gap-3">
+        <ResolveHeader
           contract={contract}
-          answer={answer}
-          color={getAnswerColor(answer, [])}
-          isAdmin={isAdmin}
+          isCreator={user?.id === contract.creatorId}
+          onClose={onClose}
         />
-      ))}
-    </>
+        <Col className="gap-2">
+          {sortedAnswers.map((answer) => (
+            <IndependentResolutionAnswerItem
+              key={answer.id}
+              contract={contract}
+              answer={answer}
+              color={getAnswerColor(answer, [])}
+              isAdmin={isAdmin}
+            />
+          ))}
+        </Col>
+      </Col>
+    </GradientContainer>
   )
 }
 
@@ -471,47 +478,49 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <Col>
-      <AnswerBar
-        color={color}
-        prob={prob}
-        label={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} />
-            {isOther ? (
-              <span>
-                Other{' '}
-                <InfoTooltip
-                  className="!text-ink-600"
-                  text="Represents all answers not listed. New answers are split out of this answer."
+    <GradientContainer className={' shadow-none'}>
+      <Col>
+        <AnswerBar
+          color={color}
+          prob={prob}
+          label={
+            <Row className={'items-center gap-1'}>
+              <AnswerStatus contract={contract} answer={answer} />
+              {isOther ? (
+                <span>
+                  Other{' '}
+                  <InfoTooltip
+                    className="!text-ink-600"
+                    text="Represents all answers not listed. New answers are split out of this answer."
+                  />
+                </span>
+              ) : (
+                <CreatorAndAnswerLabel
+                  text={answer.text}
+                  createdTime={answer.createdTime}
+                  creator={
+                    addAnswersMode === 'ANYONE'
+                      ? answerCreator ?? false
+                      : undefined
+                  }
+                  className={clsx(
+                    'items-center text-sm !leading-none sm:text-base'
+                  )}
                 />
-              </span>
-            ) : (
-              <CreatorAndAnswerLabel
-                text={answer.text}
-                createdTime={answer.createdTime}
-                creator={
-                  addAnswersMode === 'ANYONE'
-                    ? answerCreator ?? false
-                    : undefined
-                }
-                className={clsx(
-                  'items-center text-sm !leading-none sm:text-base'
-                )}
-              />
-            )}
-          </Row>
-        }
-        end={null}
-      />
-      {!answer.resolution && (
-        <MiniResolutionPanel
-          contract={contract}
-          answer={answer}
-          isAdmin={isAdmin}
-          isCreator={isCreator}
+              )}
+            </Row>
+          }
+          end={null}
         />
-      )}
-    </Col>
+        {!answer.resolution && (
+          <MiniResolutionPanel
+            contract={contract}
+            answer={answer}
+            isAdmin={isAdmin}
+            isCreator={isCreator}
+          />
+        )}
+      </Col>
+    </GradientContainer>
   )
 }

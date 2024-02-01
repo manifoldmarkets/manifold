@@ -4,49 +4,49 @@ import {
   PencilIcon,
   PresentationChartLineIcon,
 } from '@heroicons/react/outline'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, MultiContract, SORTS, contractPath } from 'common/contract'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
-import { groupBy, sortBy, sumBy } from 'lodash'
+import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
 import Link from 'next/link'
-import { useState } from 'react'
-import toast from 'react-hot-toast'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { TradesButton } from 'web/components/contract/trades-button'
-import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Input } from 'web/components/widgets/input'
-import { Title } from 'web/components/widgets/title'
-import { UserLink } from 'web/components/widgets/user-link'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
-import {
-  AddComment,
-  AnswerBar,
-  AnswerPosition,
-  AnswerStatus,
-  BetButtons,
-  CreatorAndAnswerLabel,
-} from './answer-components'
-import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { MultiSort } from 'web/components/contract/contract-overview'
-import { Col } from 'web/components/layout/col'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
-import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
 import {
   getAnswerColor,
   useChartAnswers,
 } from 'web/components/charts/contract/choice'
+import { Col } from 'web/components/layout/col'
+import {
+  AddComment,
+  AnswerBar,
+  CreatorAndAnswerLabel,
+  AnswerStatus,
+  BetButtons,
+  AnswerPosition,
+} from './answer-components'
+import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import DropdownMenu from 'web/components/comments/dropdown-menu'
+import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
+import { SearchCreateAnswerPanel } from 'web/components/answers/create-answer-panel'
+import { MultiSort } from 'web/components/contract/contract-overview'
+import { useState } from 'react'
+import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
+import { Modal } from 'web/components/layout/modal'
+import { Title } from 'web/components/widgets/title'
+import { Input } from 'web/components/widgets/input'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { User } from 'common/user'
+import { Avatar } from 'web/components/widgets/avatar'
+import { UserLink } from 'web/components/widgets/user-link'
+import { TradesButton } from 'web/components/contract/trades-button'
+import toast from 'react-hot-toast'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -226,7 +226,7 @@ const EditAnswerModal = (props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
+      <Col className={'bg-canvas-50  p-4'}>
         <Title>Edit answer</Title>
         <Input
           value={text}
@@ -256,8 +256,9 @@ const EditAnswerModal = (props: {
 export function SimpleAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
+  barColor?: string
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, barColor } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -315,6 +316,7 @@ export function SimpleAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
               showAvatars={showAvatars}
+              barColor={barColor}
             />
           ))}
           {moreCount > 0 && (
@@ -346,6 +348,7 @@ function Answer(props: {
   userBets?: Bet[]
   showAvatars?: boolean
   expanded?: boolean
+  barColor?: string
 }) {
   const {
     answer,
@@ -359,6 +362,7 @@ function Answer(props: {
     showAvatars,
     expanded,
     user,
+    barColor,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
@@ -393,16 +397,16 @@ function Answer(props: {
         onClick={onClick}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded  ring-2'
+          selected && 'ring-primary-600 ring-2'
         )}
+        barColor={barColor}
         label={
-          <Row className={'items-center gap-1 font-mono'}>
-            <AnswerStatus contract={contract} answer={answer} />
+          <Row className={'items-center gap-1'}>
             {isOther ? (
-              <span className={textColorClass}>
+              <span className={clsx('font-mono', textColorClass)}>
                 Other{' '}
                 <InfoTooltip
-                  className="!text-ink-600 dark:!text-ink-700"
+                  className="!text-ink-600 dark:!text-ink-700 "
                   text="Represents all answers not listed. New answers are split out of this answer."
                 />
               </span>
@@ -411,7 +415,7 @@ function Answer(props: {
                 text={answer.text}
                 createdTime={answer.createdTime}
                 className={clsx(
-                  'items-center text-sm !leading-none sm:text-base',
+                  'items-center font-mono text-sm !leading-none sm:text-base',
                   textColorClass
                 )}
               />
@@ -420,13 +424,18 @@ function Answer(props: {
         }
         end={
           <Row className={'items-center gap-1.5 sm:gap-2'}>
+            <AnswerStatus contract={contract} answer={answer} />
             {selected && (
               <PresentationChartLineIcon
                 className="h-5 w-5 text-black"
                 style={{ fill: color }}
               />
             )}
-            <BetButtons contract={contract} answer={answer} />
+            <BetButtons
+              contract={contract}
+              answer={answer}
+              fillColor={barColor}
+            />
             {onClick && (
               <IconButton
                 className={'-ml-1 !px-1.5'}

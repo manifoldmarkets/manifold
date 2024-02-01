@@ -1,35 +1,35 @@
-import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { useState } from 'react'
+import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { Bet } from 'common/bet'
-import {
-  calculateSharesBought,
-  getAnswerProbability,
-  getOutcomeProbabilityAfterBet,
-} from 'common/calculate'
-import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { User } from 'common/user'
+import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { Col } from 'web/components/layout/col'
+import { APIError, api } from 'web/lib/firebase/api'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
 import {
   formatMoney,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { removeUndefinedProps } from 'common/util/object'
-import { useUser } from 'web/hooks/use-user'
-import { APIError, api } from 'web/lib/firebase/api'
-import { track } from 'web/lib/service/analytics'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Spacer } from 'web/components/layout/spacer'
-import { WarningConfirmationButton } from 'web/components/buttons/warning-confirmation-button'
+import { useUser } from 'web/hooks/use-user'
+import { calculateDpmPayoutAfterCorrectBet } from 'common/calculate-dpm'
+import { Bet } from 'common/bet'
+import { track } from 'web/lib/service/analytics'
 import { BetSignUpPrompt } from 'web/components/sign-up-prompt'
+import { WarningConfirmationButton } from 'web/components/buttons/warning-confirmation-button'
+import {
+  calculateSharesBought,
+  getAnswerProbability,
+  getOutcomeProbabilityAfterBet,
+} from 'common/calculate'
+import { removeUndefinedProps } from 'common/util/object'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { BuyPanel } from 'web/components/bet/bet-panel'
+import { User } from 'common/user'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer
@@ -129,6 +129,7 @@ export function AnswerBetPanel(props: {
         setError={setError}
         disabled={isSubmitting}
         showBalance
+        showSlider
       />
 
       <Col className="mt-8 w-full gap-3">

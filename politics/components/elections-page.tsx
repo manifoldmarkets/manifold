@@ -78,7 +78,7 @@ function ElectionContent(props: ElectionsPageProps) {
     <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
-          <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
+          <div className=" mt-4 inline-block font-serif text-2xl sm:mt-0 sm:text-3xl">
             2024 Election Forecast
           </div>
           <div className="text-canvas-500 text-md mt-2 inline-block font-normal">
@@ -89,6 +89,7 @@ function ElectionContent(props: ElectionsPageProps) {
         <PoliticsCard
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
+          customTitle="Which party will win the Presidential Election?"
         />
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
@@ -118,9 +119,7 @@ function ElectionContent(props: ElectionsPageProps) {
           <Col className="gap-2">
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-              <div className="text-ink-600 text-lg font-semibold">
-                Presidential Nomination
-              </div>
+              <div className="text-ink-600  ">Presidential Nomination</div>
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
@@ -143,9 +142,7 @@ function ElectionContent(props: ElectionsPageProps) {
           <Col className="gap-2">
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-              <div className="text-ink-600 text-lg font-semibold">
-                Vice Presidential Nomination
-              </div>
+              <div className="text-ink-600">Vice Presidential Nomination</div>
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
@@ -167,8 +164,8 @@ function ElectionContent(props: ElectionsPageProps) {
           </Col>
         </Col>
 
-        <Col className="bg-canvas-0 rounded-xl p-4">
-          <div className="mx-auto font-semibold sm:text-xl">
+        <Col className="bg-canvas-0 p-4">
+          <div className="mx-auto font-semibold sm:text-xl font-serif">
             Which party will win the US Presidency?
           </div>
           <USAMap
