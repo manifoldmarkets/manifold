@@ -8,6 +8,7 @@ import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { User } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { BuyPanel } from './bet-panel'
+import { AdvancedBetPanel } from './advanced-bet-panel'
 
 export function SignedInBinaryMobileBetting(props: {
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -17,11 +18,19 @@ export function SignedInBinaryMobileBetting(props: {
 
   return (
     <Col className="my-3 w-full">
-      <BuyPanel
-        inModal={false}
-        contract={contract as CPMMBinaryContract}
-        user={user}
-      />
+      {user?.isAdvancedTrader ? (
+        <AdvancedBetPanel
+          contract={contract as CPMMBinaryContract}
+          user={user}
+          inModal={false}
+        />
+      ) : (
+        <BuyPanel
+          inModal={false}
+          contract={contract as CPMMBinaryContract}
+          user={user}
+        />
+      )}
       <UserBetsSummary
         className="border-ink-200 !mb-2 mt-2 "
         contract={contract}
