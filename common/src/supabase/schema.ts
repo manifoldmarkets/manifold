@@ -3301,6 +3301,30 @@ export interface Database {
               data: Json
             }[]
           }
+      close_politics_contract_embeddings:
+        | {
+            Args: {
+              input_contract_id: string
+              match_count: number
+            }
+            Returns: {
+              contract_id: string
+              similarity: number
+              data: Json
+            }[]
+          }
+        | {
+            Args: {
+              input_contract_id: string
+              start: number
+              match_count: number
+            }
+            Returns: {
+              contract_id: string
+              similarity: number
+              data: Json
+            }[]
+          }
       closest_contract_embeddings: {
         Args: {
           input_contract_id: string
