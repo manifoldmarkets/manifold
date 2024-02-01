@@ -8,7 +8,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { getRelatedPoliticsContracts } from 'common/supabase/related-contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
@@ -65,7 +65,7 @@ export const getContractParams = async function (
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unstable_cache(
-      async () => getRelatedContracts(contract, 20, db),
+      async () => getRelatedPoliticsContracts(contract, 20, db),
       [contract.id],
       { revalidate: 5 * 60 }
     )(),

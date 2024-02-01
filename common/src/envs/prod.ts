@@ -3,6 +3,7 @@ export type EnvConfig = {
   loveDomain: string
   loveDomainAlternate: string
   politicsDomain: string
+  politicsDomainAlternate: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
@@ -50,6 +51,7 @@ export const PROD_CONFIG: EnvConfig = {
   loveDomain: 'manifold.love',
   loveDomainAlternate: 'manifoldlove.com',
   politicsDomain: 'politifold.com',
+  politicsDomainAlternate: 'manifoldpolitics.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:

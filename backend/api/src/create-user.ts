@@ -14,7 +14,12 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { LOVE_DOMAIN, LOVE_DOMAIN_ALTERNATE, RESERVED_PATHS } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  LOVE_DOMAIN,
+  LOVE_DOMAIN_ALTERNATE,
+  RESERVED_PATHS,
+} from 'common/envs/constants'
 import { GCPLog, isProd } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
@@ -61,10 +66,19 @@ export const createuser = authEndpoint(async (req, auth, log) => {
 
   const host = req.get('referer')
   log(`Create user from: ${host}`)
+
   const fromLove =
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_LOVE === 'true'
-      : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) || undefined
+      : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
+    undefined
+
+  const fromPolitics =
+    (host?.includes('localhost')
+      ? process.env.IS_MANIFOLD_POLITICS === 'true'
+      : host?.includes(ENV_CONFIG.politicsDomain) ||
+        host?.includes(ENV_CONFIG.politicsDomainAlternate)) || undefined
+
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
   const deviceUsedBefore =
@@ -132,6 +146,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
+        fromPolitics,
         signupBonusPaid: 0,
       })
 

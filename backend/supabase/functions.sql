@@ -340,6 +340,7 @@ order by similarity * similarity * importance_score desc
 limit match_count;
 $$;
 
+-- TODO: remove politics only bits of this function, search is too shallow
 create
 or replace function close_contract_embeddings_1 (
   input_contract_id text,
@@ -369,6 +370,31 @@ or replace function close_contract_embeddings_1 (
       and (politics_only is false or politics_only = contracts.is_politics)
     order by similarity * similarity * importance_score desc
     limit match_count;
+$$;
+
+create
+    or replace function close_politics_contract_embeddings (
+    input_contract_id text,
+    match_count int
+) returns table (contract_id text, similarity float, data jsonb) language sql as $$
+    WITH query_embedding AS (
+        SELECT embedding
+        FROM contract_embeddings
+        WHERE contract_id = input_contract_id
+    ),
+         politics_embeddings as
+             (select embedding, contracts.* from contract_embeddings
+                join contracts on contract_id = contracts.id
+                where is_politics = true
+                and contract_id != input_contract_id
+                and resolution_time is null
+                and contracts.visibility = 'public')
+    select politics_embeddings.id as contract_id,
+           1 - (politics_embeddings.embedding <=> (select embedding from query_embedding)) as similarity,
+           politics_embeddings.data
+    from politics_embeddings
+        order by 1 - (politics_embeddings.embedding <=> (select embedding from query_embedding)) * importance_score desc
+    limit match_count
 $$;
 
 create

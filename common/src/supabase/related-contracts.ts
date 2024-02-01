@@ -10,7 +10,19 @@ export async function getRelatedContracts(
     input_contract_id: contract.id,
     match_count: count,
     similarity_threshold: 0.7,
-    politics_only: true,
+    politics_only: false,
   })
   return (data ?? []).map((c) => c.data as Contract)
+}
+
+export async function getRelatedPoliticsContracts(
+  contract: Contract,
+  count: number,
+  db: SupabaseClient
+) {
+  const { data } = await db.rpc('close_politics_contract_embeddings' as any, {
+    input_contract_id: contract.id,
+    match_count: count,
+  })
+  return (data ?? []).map((c: any) => c.data as Contract)
 }
