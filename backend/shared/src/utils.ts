@@ -137,7 +137,7 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
 
     const queryStr = `?tag=${tag}&apiSecret=${apiSecret}`
     const { ok, status, statusText } = await fetch(
-      `http://${domain}/api/v0/revalidate${queryStr}`
+      `https://${domain}/api/v0/revalidate${queryStr}`
     )
     if (!ok)
       throw new Error(
