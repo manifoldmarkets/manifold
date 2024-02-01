@@ -33,7 +33,7 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings', 'hasSeenLoanModal']);
       // delete user rules
-      if userId == request.auth.uid
+      allow update: if userId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userDeleted', 'isBannedFromPosting'])
         && request.resource.data.userDeleted == true
         && request.resource.data.isBannedFromPosting == true;
