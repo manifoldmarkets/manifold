@@ -1,36 +1,36 @@
+import clsx from 'clsx'
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
 
-import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { Col } from 'web/components/layout/col'
-import { APIError, api } from 'web/lib/firebase/api'
-import { Row } from 'web/components/layout/row'
-import { ChooseCancelSelector } from 'web/components/bet/yes-no-selector'
-import { ResolveConfirmationButton } from 'web/components/buttons/confirmation-button'
-import { removeUndefinedProps } from 'common/util/object'
-import { BETTORS } from 'common/user'
-import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { DpmAnswer, Answer } from 'common/answer'
+import { Answer, DpmAnswer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { BETTORS } from 'common/user'
+import { removeUndefinedProps } from 'common/util/object'
+import { ChooseCancelSelector } from 'web/components/bet/yes-no-selector'
+import { Button } from 'web/components/buttons/button'
+import { ResolveConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { getAnswerColor } from 'web/components/charts/contract/choice'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import {
   MiniResolutionPanel,
   ResolveHeader,
 } from 'web/components/resolution-panel'
+import { AmountInput } from 'web/components/widgets/amount-input'
+import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
+import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { APIError, api } from 'web/lib/firebase/api'
+import { AnimatedProb } from '../us-elections/contracts/party-panel/party-bar'
 import {
   AnswerBar,
-  CreatorAndAnswerLabel,
   AnswerStatus,
   ClosedProb,
-  OpenProb,
+  CreatorAndAnswerLabel,
 } from './answer-components'
-import { useAdmin } from 'web/hooks/use-admin'
-import { GradientContainer } from 'web/components/widgets/gradient-container'
-import { AmountInput } from 'web/components/widgets/amount-input'
-import { getAnswerColor } from 'web/components/charts/contract/choice'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -375,7 +375,7 @@ export function ResolutionAnswerItem(props: {
           {chosenShare ? (
             <ClosedProb prob={prob} resolvedProb={chosenShare} />
           ) : (
-            <OpenProb contract={contract} answer={answer} />
+            <AnimatedProb contract={contract} answer={answer} />
           )}
 
           {showChoice === 'checkbox' && (
