@@ -13,12 +13,17 @@ export const useLover = () => {
     Row<'lovers'> | undefined | null
   >(undefined, `lover-${user?.id}`)
 
-  useEffect(() => {
-    if (user)
+  const refreshLover = () => {
+    if (user) {
       getLoverRow(user.id, db).then((lover) => {
         if (!lover) setLover(null)
         else setLover(lover)
       })
+    }
+  }
+
+  useEffect(() => {
+    refreshLover()
   }, [user?.id])
 
   return user && lover ? { ...lover, user } : lover === null ? null : undefined
@@ -30,14 +35,6 @@ export const useLoverByUser = (user: User | undefined) => {
     Lover | undefined | null
   >(undefined, `lover-user-${userId}`)
 
-  useEffect(() => {
-    if (userId)
-      getLoverRow(userId, db).then((lover) => {
-        if (!lover) setLover(null)
-        else setLover({ ...lover, user })
-      })
-  }, [userId])
-
   function refreshLover() {
     if (userId)
       getLoverRow(userId, db).then((lover) => {
@@ -45,6 +42,10 @@ export const useLoverByUser = (user: User | undefined) => {
         else setLover({ ...lover, user })
       })
   }
+
+  useEffect(() => {
+    refreshLover()
+  }, [userId])
 
   return { lover, refreshLover }
 }
