@@ -18,7 +18,6 @@ import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
 import { unstable_cache } from 'next/cache'
 
-// TODO: add unstable_cache where applicable
 export const getContractParams = async function (
   contract: Contract,
   db: SupabaseClient
@@ -29,6 +28,7 @@ export const getContractParams = async function (
   const isBinaryDpm =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
 
+  // TODO: add unstable_cache where applicable
   const [
     totalBets,
     betsToPass,

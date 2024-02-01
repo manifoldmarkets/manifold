@@ -8,7 +8,7 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { unstable_cache } from 'next/cache'
 import { SupabaseClient } from 'common/supabase/utils'
-const REVALIDATE_CONTRACTS_SECONDS = 60
+export const REVALIDATE_CONTRACTS_SECONDS = 60
 
 export async function getElectionsPageProps(useUnstableCache: boolean) {
   const adminDb = await initSupabaseAdmin()
