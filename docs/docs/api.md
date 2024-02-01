@@ -1041,6 +1041,20 @@ Parameters:
 
 Requires no auth.
 
+## Manifold Love Endpoints
+
+### `GET /v0/get-lovers`
+
+See all users' profile data. (Doesn't include answers to compatibility questions.)
+
+### `GET /v0/get-lover-answers?userId=[user_id]`
+
+See a specific user's answers to compatibility questions.
+
+### `GET /v0/get-compatibility-questions`
+
+See the text of all compatibility questions.
+
 ## Internal API
 
 Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implimented. These endpoints are not preceeded by `/v0` and are even more subject to sudden changes than the official API endpoints.
