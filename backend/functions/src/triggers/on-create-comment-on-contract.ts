@@ -1,7 +1,11 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import { compact, first } from 'lodash'
-import { getUser, revalidateStaticProps } from 'shared/utils'
+import {
+  getDomainForContract,
+  getUser,
+  revalidateStaticProps,
+} from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -80,7 +84,10 @@ export const onCreateCommentOnContract = functions
     if (!contract)
       throw new Error('Could not find contract corresponding with comment')
 
-    await revalidateStaticProps(contractPath(contract))
+    await revalidateStaticProps(
+      contractPath(contract),
+      getDomainForContract(contract)
+    )
 
     const comment = change.data() as ContractComment
     const lastCommentTime = comment.createdTime

@@ -50,8 +50,8 @@ export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   loveDomain: 'manifold.love',
   loveDomainAlternate: 'manifoldlove.com',
-  politicsDomain: 'politifold.com',
-  politicsDomainAlternate: 'manifoldpolitics.com',
+  politicsDomain: 'manifoldpolitics.com',
+  politicsDomainAlternate: 'politifold.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
