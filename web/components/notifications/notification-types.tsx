@@ -66,7 +66,7 @@ import {
   CommentOnLoverNotification,
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
