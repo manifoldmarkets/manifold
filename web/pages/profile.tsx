@@ -88,6 +88,9 @@ export default function ProfilePage(props: {
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
+  const [advancedTraderMode, setAdvancedTraderMode] = useState(
+    !!user.isAdvancedTrader
+  )
   const [showAdvanced, setShowAdvanced] = useState(false)
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
@@ -255,6 +258,19 @@ export default function ProfilePage(props: {
             )}
           </Button>
           <Col className={clsx('gap-2', showAdvanced ? '' : 'hidden')}>
+            <div>
+              <label className="mb-1 block">
+                Advanced trader mode{' '}
+                <InfoTooltip text={'More advanced betting UI'} />
+              </label>
+              <ShortToggle
+                on={advancedTraderMode}
+                setOn={(enabled) => {
+                  setAdvancedTraderMode(enabled)
+                  updateUser(user.id, { isAdvancedTrader: enabled })
+                }}
+              />
+            </div>
             <div>
               <label className="mb-1 block">
                 Bet warnings{' '}

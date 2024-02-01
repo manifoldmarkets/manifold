@@ -61,6 +61,7 @@ export type User = {
   fromLove?: boolean
   fromPolitics?: boolean
   signupBonusPaid?: number
+  isAdvancedTrader?: boolean
 }
 
 export type PrivateUser = {
