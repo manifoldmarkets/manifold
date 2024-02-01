@@ -16,6 +16,7 @@ import { CANDIDATE_DATA } from '../../candidates/candidate-data'
 import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
+import { Button } from 'politics/components/button/button'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
@@ -47,62 +48,28 @@ export const CandidateBar = (props: {
   const candidatefullName = removeTextInParentheses(answer.text)
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const isMobile = useIsMobile()
 
-  const { shortName, photo, party } = CANDIDATE_DATA[candidatefullName] ?? {}
+  const { shortName, photo } = CANDIDATE_DATA[candidatefullName] ?? {}
 
   return (
     <>
       <Link
-        className={clsx(
-          'border-ink-200 hover:border-primary-600 border-1 relative w-[11rem] overflow-hidden border-2 transition-all sm:w-[220px]',
-          className
-        )}
         href={contractPath(contract)}
         onPointerOver={onHover && (() => onHover(true))}
         onPointerLeave={onHover && (() => onHover(false))}
+        className={clsx(
+          ' border-ink-100 hover:border-ink-1000 relative h-40 w-[112px] justify-between overflow-hidden border-[1.5px] transition-all',
+          className
+        )}
       >
-        <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
-          {!photo ? (
-            <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
-          ) : (
-            <Image
-              src={photo}
-              alt={candidatefullName}
-              width={isMobile ? 64 : 80}
-              height={isMobile ? 64 : 80}
-              className="object-fill"
-            />
-          )}
-          <Col>
-            <Row className="w-full justify-end">
-              <CandidateProb
-                contract={contract}
-                answer={answer}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  setOpen(true)
-                }}
-              />
-            </Row>
-            <Row className="w-full justify-end font-mono text-sm sm:text-lg">
-              {shortName ?? answer.text}
-            </Row>
-          </Col>
-        </Row>
-        <div
-          className={clsx(
-            'bg-canvas-0 absolute bottom-0 left-0 right-0 top-0 -z-10 transition-all'
-          )}
-        >
+        <div className={clsx('bg-canvas-0 transition-all')}>
           {/* bar outline if resolved */}
           {!!resolvedProb && !hideBar && (
             <div
               className={clsx(
-                'absolute bottom-0 w-full ring-1 ring-purple-500 sm:ring-2',
+                'absolute bottom-0 w-full ring-1 ring-orange-500 sm:ring-2',
                 resolvedProb > prob
-                  ? 'bg-purple-100 dark:bg-purple-900'
+                  ? 'bg-orange-100 dark:bg-orange-900'
                   : 'z-10'
               )}
               style={{
@@ -112,7 +79,7 @@ export const CandidateBar = (props: {
           )}
           {/* main bar */}
           {!hideBar && (
-            <Col className="h-full w-full justify-end">
+            <Col className="absolute h-full w-full justify-end">
               <div
                 className="w-full dark:brightness-75"
                 style={{
@@ -123,7 +90,39 @@ export const CandidateBar = (props: {
             </Col>
           )}
         </div>
+        <Col className="absolute inset-0">
+          <Col className="mt-2 px-2">
+            <Row className="w-full items-center justify-between">
+              <CandidateProb contract={contract} answer={answer} />
+              <Button
+                size="xs"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  setOpen(true)
+                }}
+              >
+                Bet
+              </Button>
+            </Row>
+            <div className="sm:text-md w-full font-mono text-sm">
+              {shortName ?? answer.text}
+            </div>
+          </Col>
+          {!photo ? (
+            <IoIosPerson className="text-ink-600 -mb-4 h-[112px] w-[112px]" />
+          ) : (
+            <Image
+              src={photo}
+              alt={candidatefullName}
+              width={112}
+              height={112}
+              className="mx-auto object-fill"
+            />
+          )}
+        </Col>
       </Link>
+
       <Modal open={open} setOpen={setOpen} className={MODAL_CLASS}>
         <AnswerCpmmBetPanel
           answer={answer}
@@ -142,20 +141,17 @@ export const CandidateBar = (props: {
 export const CandidateProb = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
-  onClick: MouseEventHandler<HTMLButtonElement>
 }) => {
-  const { contract, answer, onClick } = props
+  const { contract, answer } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
 
   return (
-    <button className={'items-center'} onClick={onClick}>
-      <span
-        className={clsx(
-          ' hover:text-primary-700 min-w-[2.5rem] whitespace-nowrap text-lg font-bold sm:text-2xl'
-        )}
-      >
-        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
-      </span>
-    </button>
+    <span
+      className={clsx(
+        ' min-w-[2.5rem] whitespace-nowrap text-lg font-bold sm:text-xl'
+      )}
+    >
+      <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
+    </span>
   )
 }
