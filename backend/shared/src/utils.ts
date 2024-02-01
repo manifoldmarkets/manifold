@@ -128,6 +128,25 @@ export const revalidateStaticProps = async (
   }
 }
 
+export const revalidateCachedTag = async (tag: string, domain: string) => {
+  if (isProd()) {
+    const apiSecret = process.env.API_SECRET as string
+    if (!apiSecret)
+      throw new Error('Revalidation failed because of missing API_SECRET.')
+
+    const queryStr = `?tag=${tag}&apiSecret=${apiSecret}`
+    const { ok, status, statusText } = await fetch(
+      `http://${domain}/api/v0/revalidate${queryStr}`
+    )
+    if (!ok)
+      throw new Error(
+        'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
+      )
+
+    console.log('Revalidated tag', tag)
+  }
+}
+
 export async function revalidateContractStaticProps(contract: Contract) {
   await Promise.all([
     revalidateStaticProps(contractPath(contract)),

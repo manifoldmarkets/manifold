@@ -1,11 +1,14 @@
 import { Contract, ContractParams } from 'common/contract'
-import { getRecentTopLevelCommentsAndReplies } from 'common/supabase/comments'
+import {
+  getRecentTopLevelCommentsAndReplies,
+  getPinnedComments,
+} from 'common/supabase/comments'
 import {
   getCPMMContractUserContractMetrics,
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { getRelatedPoliticsContracts } from 'common/supabase/related-contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
@@ -13,6 +16,7 @@ import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
+import { unstable_cache } from 'next/cache'
 
 // TODO: add unstable_cache where applicable
 export const getContractParams = async function (
@@ -30,6 +34,7 @@ export const getContractParams = async function (
     betsToPass,
     allBetPoints,
     comments,
+    pinnedComments,
     userPositionsByOutcome,
     topContractMetrics,
     totalPositions,
@@ -53,12 +58,17 @@ export const getContractParams = async function (
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
+    getPinnedComments(db, contract.id),
     isCpmm1
       ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    getRelatedContracts(contract, 20, db),
+    unstable_cache(
+      async () => getRelatedPoliticsContracts(contract, 20, db),
+      [contract.id],
+      { revalidate: 5 * 60 }
+    )(),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {
@@ -91,10 +101,12 @@ export const getContractParams = async function (
     },
     pointsString,
     comments,
+    pinnedComments,
     userPositionsByOutcome,
     totalPositions,
     totalBets,
     topContractMetrics,
+
     // Not sure if these will be used on politics, if so will need to implement
     relatedContractsByTopicSlug: {},
     topics: [],

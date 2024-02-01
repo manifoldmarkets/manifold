@@ -93,6 +93,7 @@ function CommentsDialog(props: {
             contract={contract}
             comments={comments}
             blockedUserIds={blockedUserIds}
+            pinnedComments={[]}
           />
         </Col>
       </Col>

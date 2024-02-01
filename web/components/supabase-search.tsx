@@ -1,3 +1,4 @@
+'use client'
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
@@ -138,11 +139,10 @@ export const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
-  tag?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
-  nonQueryFacetFilters?: string[]
+  isPolitics?: boolean
 }
 
 export type SearchState = {
@@ -184,6 +184,7 @@ export function SupabaseSearch(props: {
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
+  hideAvatars?: boolean
 }) {
   const {
     defaultSort,
@@ -208,6 +209,7 @@ export function SupabaseSearch(props: {
     contractsOnly,
     showTopicTag,
     hideSearchTypes,
+    hideAvatars,
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -409,6 +411,7 @@ export function SupabaseSearch(props: {
         ) : (
           <>
             <ContractsTable
+              hideAvatar={hideAvatars}
               contracts={contracts}
               onContractClick={onContractClick}
               highlightContractIds={highlightContractIds}
@@ -607,6 +610,7 @@ const useContractSearch = (
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
+        isPolitics: additionalFilter?.isPolitics,
       })
 
       if (id === requestId.current) {

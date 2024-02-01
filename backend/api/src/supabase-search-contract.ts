@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { MaybeAuthedEndpoint, type APIHandler } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
 import {
   hasGroupAccess,
   getSearchContractSQL,
@@ -33,13 +33,6 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   return await search(props, auth?.uid, logError)
 }
 
-// TODO: delete after a few days
-export const searchMarketsLegacy = MaybeAuthedEndpoint(
-  async (req, auth, _log, logError) => {
-    return await search(req.body, auth?.uid, logError)
-  }
-)
-
 const search = async (
   props: z.infer<typeof searchProps>,
   userId: string | undefined,
@@ -54,6 +47,7 @@ const search = async (
     limit,
     topicSlug: possibleTopicSlug,
     creatorId,
+    isPolitics,
   } = props
 
   if (limit === 0) {
@@ -108,6 +102,7 @@ const search = async (
           isForYou,
           groupAccess,
           searchType,
+          isPolitics,
         })
         return pg
           .map(searchSQL, null, (r) => ({

@@ -10,7 +10,7 @@ import { LovePage } from 'love/components/love-page'
 import { SignUpAsMatchmaker } from 'love/components/nav/love-sidebar'
 import OnlineIcon from 'love/components/online-icon'
 import { useLover } from 'love/hooks/use-lover'
-import { useCompatibleLovers, useLovers } from 'love/hooks/use-lovers'
+import { useCompatibleLovers } from 'love/hooks/use-lovers'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -30,9 +30,11 @@ import { CompatibleBadge } from 'love/components/widgets/compatible-badge'
 import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
 import { StarButton } from 'love/components/widgets/star-button'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export default function ProfilesPage() {
-  const allLovers = useLovers()
+  const { data: loversResult } = useAPIGetter('get-lovers', {})
+  const allLovers = loversResult?.lovers
 
   const [lovers, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
     undefined,

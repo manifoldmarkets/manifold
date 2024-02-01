@@ -12,6 +12,7 @@ import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
+import { sleep } from 'common/util/time'
 export { APIError } from 'common/api/utils'
 
 export async function call(
@@ -19,20 +20,29 @@ export async function call(
   method: 'POST' | 'PUT' | 'GET',
   params?: any
 ) {
-  // const user = auth.currentUser
-  // if (user == null) {
-  //   throw new Error('Must be signed in to make API calls.')
-  // }
   return baseApiCall(url, method, params, auth.currentUser)
 }
 
-// this is the preferred way of using the api going forward
-export function api<P extends APIPath>(path: P, params: APIParams<P>) {
-  return call(
+// This is the preferred way of using the api going forward
+export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
+  // If the api is authed and the user is not loaded, wait for the user to load.
+  if (API[path].authed && !auth.currentUser) {
+    let i = 0
+    while (!auth.currentUser) {
+      i++
+      await sleep(i * 10)
+      if (i > 10) {
+        console.error('User did not load after 10 iterations')
+        break
+      }
+    }
+  }
+
+  return (await call(
     formatApiUrlWithParams(path, params),
     API[path].method,
     params
-  ) as Promise<APIResponse<P>>
+  )) as Promise<APIResponse<P>>
 }
 
 // helper function for the old apis so we don't have to migrate them
@@ -316,10 +326,6 @@ export function supabaseSearchDashboards(params: {
   >
 }
 
-export function setNewsDashboards(params: { dashboardIds: string[] }) {
-  return call(getApiUrl('set-news-dashboards'), 'POST', params)
-}
-
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
@@ -352,7 +358,7 @@ export function referUser(params: {
   return call(getApiUrl('refer-user'), 'POST', params)
 }
 
-export const updateMarket = curriedAPI('update-market')
+export const updateMarket = curriedAPI('market/:contractId/update')
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)

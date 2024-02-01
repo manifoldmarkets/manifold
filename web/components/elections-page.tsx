@@ -1,25 +1,23 @@
 'use client'
 import { Contract, MultiContract } from 'common/contract'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import Custom404 from 'web/pages/404'
-import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
-import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
-import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
-import { Spacer } from 'web/components/layout/spacer'
-import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
 } from 'common/politics/elections-data'
+import { useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
+import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
+import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
+import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
+import Custom404 from 'web/pages/404'
 import { Row } from './layout/row'
-import { SmallCandidateCard } from './us-elections/contracts/small-candidate-card'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -88,22 +86,32 @@ function ElectionContent(props: ElectionsPageProps) {
           </div>
         </Col>
 
-        <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
-        <CandidateCard contract={electionCandidateContract as MultiContract} />
+        <PoliticsCard
+          contract={electionPartyContract as MultiContract}
+          viewType="PARTY"
+        />
+        <PoliticsCard
+          contract={electionCandidateContract as MultiContract}
+          viewType="CANDIDATE"
+        />
         <Col className="gap-6 sm:gap-8 lg:hidden">
-          <CandidateCard
+          <PoliticsCard
             contract={democratCandidateContract as MultiContract}
+            viewType="CANDIDATE"
           />
-          <CandidateCard
+          <PoliticsCard
             customTitle="Democratic vice presidential nomination"
             contract={democraticVPContract as MultiContract}
+            viewType="CANDIDATE"
           />
-          <CandidateCard
+          <PoliticsCard
             contract={republicanCandidateContract as MultiContract}
+            viewType="CANDIDATE"
           />
-          <CandidateCard
+          <PoliticsCard
             customTitle="Republican vice presidential nomination"
             contract={republicanVPContract as MultiContract}
+            viewType="CANDIDATE"
           />
         </Col>
         <Col className="hidden gap-6 sm:gap-8 lg:flex">
@@ -116,17 +124,19 @@ function ElectionContent(props: ElectionsPageProps) {
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
-              <SmallCandidateCard
+              <PoliticsCard
                 contract={democratCandidateContract as MultiContract}
                 maxAnswers={3}
                 customTitle="Democratic"
                 className="w-1/2"
+                viewType="SMALL CANDIDATE"
               />
-              <SmallCandidateCard
+              <PoliticsCard
                 contract={republicanCandidateContract as MultiContract}
                 maxAnswers={3}
                 customTitle="Republican"
                 className="w-1/2"
+                viewType="SMALL CANDIDATE"
               />
             </Row>
           </Col>
@@ -139,17 +149,19 @@ function ElectionContent(props: ElectionsPageProps) {
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
-              <SmallCandidateCard
+              <PoliticsCard
                 contract={democraticVPContract as MultiContract}
                 maxAnswers={3}
                 customTitle="Democratic"
                 className="w-1/2"
+                viewType="SMALL CANDIDATE"
               />
-              <SmallCandidateCard
+              <PoliticsCard
                 contract={republicanVPContract as MultiContract}
                 maxAnswers={3}
                 customTitle="Republican"
                 className="w-1/2"
+                viewType="SMALL CANDIDATE"
               />
             </Row>
           </Col>

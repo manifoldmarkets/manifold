@@ -75,7 +75,7 @@ import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
-import { updatemarket } from 'api/update-market'
+import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
@@ -99,6 +99,7 @@ import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
+import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
@@ -114,14 +115,13 @@ import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
   searchMarketsFull,
-  searchMarketsLegacy,
 } from './supabase-search-contract'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
-import { getHeadlines } from './get-headlines'
+import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
@@ -133,6 +133,8 @@ import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
+import { getLovers } from './love/get-lovers'
+import { getLoverAnswers } from './love/get-lover-answers'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -173,18 +175,6 @@ const apiRoute = (endpoint: RequestHandler) => {
   ] as const
 }
 
-// temporary
-const oldRouteFrom = <N extends APIPath>(path: N) => {
-  const handler = handlers[path]
-
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    typedEndpoint(path, handler),
-    apiErrorHandler,
-  ] as const
-}
-
 export const app = express()
 app.use(requestLogger)
 
@@ -199,9 +189,10 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
+  'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': updatemarket,
+  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -211,6 +202,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
+  'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
   'market/:contractId/add-liquidity': addLiquidity,
@@ -234,6 +226,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
   headlines: getHeadlines,
+  'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
@@ -248,6 +241,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-likes-and-ships': getLikesAndShips,
   'has-free-like': hasFreeLike,
   'star-lover': starLover,
+  'get-lovers': getLovers,
+  'get-lover-answers': getLoverAnswers,
+  'set-news': setnews,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -283,32 +279,6 @@ app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 
-// TODO: remove everything in this block after a few days. This is mostly for compatibility with frontend
-app.post('/createcomment', ...oldRouteFrom('comment'))
-app.post('/placebet', ...oldRouteFrom('bet'))
-app.post('/cancelbet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/v0/cancel-bet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/sellbet', ...oldRouteFrom('sell-shares-dpm'))
-app.post('/sellshares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/v0/sell-shares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/addsubsidy', ...oldRouteFrom('market/:contractId/add-liquidity'))
-app.post(
-  '/v0/add-liquidity',
-  ...oldRouteFrom('market/:contractId/add-liquidity')
-)
-app.post('/createmarket', ...oldRouteFrom('market'))
-app.post('/v0/create-market', ...oldRouteFrom('market'))
-app.post('/resolvemarket', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/v0/resolve', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/closemarket', ...oldRouteFrom('market/:contractId/close'))
-app.post('/v0/close', ...oldRouteFrom('market/:contractId/close'))
-app.post('/createanswercpmm', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/add-answer', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/send-mana', ...oldRouteFrom('managram'))
-app.put('/v0/update-tag', ...oldRouteFrom('market/:contractId/group'))
-app.post('/v0/award-bounty', ...oldRouteFrom('market/:contractId/award-bounty'))
-app.post('/v0/add-bounty', ...oldRouteFrom('market/:contractId/add-bounty'))
-
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/creategroup', ...apiRoute(creategroup))
 app.post('/updategroup', ...apiRoute(updategroup))
@@ -326,7 +296,6 @@ app.post(
   ...apiRoute(updateUserDisinterestEmbedding)
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsLegacy)) // TODO: remove after a few days
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
@@ -373,7 +342,6 @@ app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
 app.post('/delete-dashboard', ...apiRoute(deletedashboard))
-app.post('/set-news-dashboards', ...apiRoute(setnews))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))

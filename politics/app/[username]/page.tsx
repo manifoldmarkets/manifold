@@ -6,10 +6,6 @@ import Custom404 from 'politics/app/404/page'
 
 export const revalidate = 60 // revalidate at most in seconds
 
-export async function generateStaticParams() {
-  return []
-}
-
 export async function generateMetadata(
   props: { params: { username: string } },
   parent: ResolvingMetadata

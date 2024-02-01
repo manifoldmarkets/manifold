@@ -1,11 +1,5 @@
 import clsx from 'clsx'
-import { MAX_ANSWER_LENGTH, getMaximumAnswers } from 'common/answer'
-import { Bet } from 'common/bet'
-import {
-  calculateDpmPayoutAfterCorrectBet,
-  calculateDpmShares,
-  getDpmOutcomeProbabilityAfterBet,
-} from 'common/calculate-dpm'
+import { useState } from 'react'
 import {
   CPMMMultiContract,
   FreeResponseContract,
@@ -13,23 +7,29 @@ import {
   add_answers_mode,
   tradingAllowed,
 } from 'common/contract'
-import { ANSWER_COST } from 'common/economy'
+import { BuyAmountInput } from 'web/components/widgets/amount-input'
+import { Col } from 'web/components/layout/col'
+import { APIError, api, createAnswer } from 'web/lib/firebase/api'
+import { Row } from 'web/components/layout/row'
 import {
   formatMoney,
   formatPercent,
   formatWithCommas,
 } from 'common/util/format'
-import { useState } from 'react'
-import { Button } from 'web/components/buttons/button'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { BuyAmountInput } from 'web/components/widgets/amount-input'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Input } from 'web/components/widgets/input'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { APIError, api, createAnswer } from 'web/lib/firebase/api'
+import {
+  calculateDpmShares,
+  calculateDpmPayoutAfterCorrectBet,
+  getDpmOutcomeProbabilityAfterBet,
+} from 'common/calculate-dpm'
+import { Bet } from 'common/bet'
+import { MAX_ANSWER_LENGTH, getMaximumAnswers } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
+import { Button } from 'web/components/buttons/button'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { ANSWER_COST } from 'common/economy'
+import { Input } from 'web/components/widgets/input'
 
 export function CreateAnswerCpmmPanel(props: {
   contract: CPMMMultiContract

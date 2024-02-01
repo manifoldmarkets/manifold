@@ -89,9 +89,7 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
         [
           l.user_id,
           getCompatibilityScore(
-            lover,
             answersByUserId[lover.user_id] ?? [],
-            l,
             answersByUserId[l.user_id] ?? []
           ),
         ] as const

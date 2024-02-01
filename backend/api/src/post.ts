@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getContractSupabase, getUser } from 'shared/utils'
 import {
   createSupabaseClient,
@@ -11,7 +11,7 @@ import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 
-export const post: APIHandler<'post'> = async (props, auth, { log }) => {
+export const post: APIHandler<'post'> = async (props, auth, { log }, res) => {
   const { contractId, content, betId: passedBetId, commentId } = props
 
   const contract = await getContractSupabase(contractId)
@@ -62,7 +62,7 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
 
   const pg = createSupabaseDirectClient()
 
-  const res = await pg.one(
+  const result = await pg.one(
     `
     insert into posts
         (contract_id, contract_comment_id, bet_id, user_id, user_name, user_username, user_avatar_url)
@@ -79,14 +79,25 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
       creator.avatarUrl,
     ]
   )
+
+  log('Inserted row into posts table', {
+    resultId: result.id,
+    contractId,
+    commentId,
+    betId,
+    creatorId: creator.id,
+  })
+
+  res.status(200).json(comment)
   await repostContractToFeed(
     contract,
     comment,
     creator.id,
-    res.id,
+    result.id,
     [auth.uid],
+    log,
     betId
   )
-
+  // TODO: not necessary except to satisfy the API typing machinery. Hopefully Sinclair will fix this
   return comment
 }

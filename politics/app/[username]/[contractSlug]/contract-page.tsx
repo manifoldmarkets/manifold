@@ -477,6 +477,8 @@ export function ContractPageContent(props: ContractParams) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                pinnedComments={[]}
+                appRouter={true}
               />
             </div>
             {contract.outcomeType === 'BOUNTIED_QUESTION' && (

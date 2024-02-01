@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { getGroupBySlug } from 'web/lib/supabase/groups'
 import { PoliticsPage } from 'politics/components/politics-page'
+import clsx from 'clsx'
+import { SupabaseSearch } from 'web/components/supabase-search'
+import { Col } from 'web/components/layout/col'
 
 type Props = {
   // aka queryparams
@@ -11,8 +14,14 @@ export async function generateMetadata({
   searchParams,
 }: Props): Promise<Metadata> {
   console.log('searchParams', searchParams)
+  const { topic } = searchParams
+  if (!topic)
+    return {
+      title: 'Manifold politics',
+      description: 'Browse politics questions on Manifold',
+    }
   // fetch data
-  const group = await getGroupBySlug(searchParams.topic as string)
+  const group = await getGroupBySlug(topic as string)
   if (!group) return { title: 'Not found' }
 
   return {
@@ -22,9 +31,22 @@ export async function generateMetadata({
 }
 
 export default function Page({ searchParams }: Props) {
+  // if (true) return <LoadingResults />
   return (
     <PoliticsPage trackPageView={'browse page'}>
-      <h1>{searchParams.topic}</h1>
+      <Col className={clsx('relative col-span-8 mx-auto w-full xl:col-span-7')}>
+        <SupabaseSearch
+          hideSearchTypes={true}
+          persistPrefix="search"
+          // autoFocus={autoFocus}
+          additionalFilter={{
+            isPolitics: true,
+          }}
+          useUrlParams
+          isWholePage
+          headerClassName={'pt-0 px-2'}
+        />
+      </Col>
     </PoliticsPage>
   )
 }

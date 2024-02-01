@@ -164,6 +164,7 @@ export function ContractPageContent(props: ContractParams) {
     chartAnnotations,
     relatedContractsByTopicSlug,
     topics,
+    pinnedComments,
   } = props
 
   const contract =
@@ -574,6 +575,7 @@ export function ContractPageContent(props: ContractParams) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                pinnedComments={pinnedComments}
               />
             </div>
             <RelatedContractsGrid

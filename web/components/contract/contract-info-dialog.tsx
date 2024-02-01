@@ -376,7 +376,7 @@ export const Stats = (props: {
                 on={!!isPolitics}
                 setOn={(on) => {
                   toast.promise(
-                    api('update-market', {
+                    api('market/:contractId/update', {
                       contractId: contract.id,
                       isPolitics: on,
                     }),

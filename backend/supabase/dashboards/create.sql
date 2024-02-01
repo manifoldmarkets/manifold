@@ -12,7 +12,8 @@ create table if not exists
     creator_username text not null,
     creator_name text not null,
     creator_avatar_url text not null,
-    importance_score numeric not null default 0
+    importance_score numeric not null default 0,
+    politics_importance_score numeric not null default 0
   );
 
 alter table dashboards
