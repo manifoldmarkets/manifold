@@ -14,7 +14,7 @@ import { useChartAnswers } from 'web/components/charts/contract/choice'
 import { Col } from 'web/components/layout/col'
 import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../candidates/candidate-data'
-import { Carousel } from 'web/components/widgets/carousel'
+import { Carousel } from '../../../widgets/carousel'
 
 // just the bars
 export function CandidatePanel(props: {

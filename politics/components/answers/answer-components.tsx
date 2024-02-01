@@ -11,7 +11,7 @@ import {
 } from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
+import { Button } from 'politics/components/button/button'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
@@ -252,12 +252,11 @@ export const MultiBettor = (props: {
       </Modal>
 
       <Button
-        size="2xs"
-        color="indigo-outline"
-        className="bg-primary-50"
+        size="xs"
         onClick={(e) => {
           e.stopPropagation()
-          track('bet intent', { location: 'answer panel' })
+          e.preventDefault()
+          track('politics bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
       >
