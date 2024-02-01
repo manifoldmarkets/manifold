@@ -75,16 +75,8 @@ export const DeletedUser = () => {
   return (
     <PoliticsPage trackPageView={'deleted user profile'}>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title>Deleted account page</Title>
-        <p>This user has been deleted.</p>
-        <p>If you didn't expect this, let us know on Discord!</p>
-        <br />
-        <iframe
-          src="https://discord.com/widget?id=915138780216823849&theme=dark"
-          width="350"
-          height="500"
-          sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-        ></iframe>
+        <Title>Deleted account</Title>
+        <p>This user's account has been deleted.</p>
       </div>
     </PoliticsPage>
   )
