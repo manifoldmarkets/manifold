@@ -59,7 +59,7 @@ export const PartyBar = (props: {
     <>
       <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
-          <Row className="w-full items-center gap-2 text-sm sm:text-lg">
+          <Row className="w-full items-center gap-2 font-mono text-sm sm:text-lg">
             <Image
               src={imagePath}
               alt={answer.text}
@@ -82,7 +82,7 @@ export const PartyBar = (props: {
         </Row>
         <div
           className={clsx(
-            'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
+            'absolute bottom-0 left-0 right-0 -z-10 h-full transition-all ',
             hideBar ? 'bg-ink-200' : 'bg-canvas-0'
           )}
         >
@@ -90,9 +90,9 @@ export const PartyBar = (props: {
           {!!resolvedProb && !hideBar && (
             <div
               className={clsx(
-                'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
+                'absolute top-0 h-full  ring-1 ring-orange-500 sm:ring-2',
                 resolvedProb > prob
-                  ? 'bg-purple-100 dark:bg-purple-900'
+                  ? 'bg-orange-100 dark:bg-orange-900'
                   : 'z-10'
               )}
               style={{
@@ -103,7 +103,7 @@ export const PartyBar = (props: {
           {/* main bar */}
           {!hideBar && (
             <div
-              className="isolate h-full rounded dark:brightness-75"
+              className="isolate h-full  dark:brightness-75"
               style={{
                 width: `max(8px, ${prob * 100}%)`,
                 background: color,

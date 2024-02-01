@@ -4,7 +4,7 @@ import Router from 'next/router'
 import { useState } from 'react'
 
 import { Contract, MultiContract, contractPath } from 'common/contract'
-import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
+import { SimpleAnswerBars } from '../../answers/answers-panel'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import {
@@ -83,7 +83,7 @@ export function StateContractCard(props: {
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className={clsx(
-              'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg ',
+              'grow items-start font-serif font-semibold transition-colors group-hover:underline sm:text-lg ',
               titleSize === 'lg' && ' sm:text-3xl'
             )}
             href={path}

@@ -1,10 +1,6 @@
 import { ChatIcon } from '@heroicons/react/outline'
-import { SparklesIcon } from '@heroicons/react/solid'
-import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
-import { Bet } from 'common/bet'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   CPMMMultiContract,
   DpmMultipleChoiceContract,
@@ -13,22 +9,15 @@ import {
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import { User } from 'common/user'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { HOUR_MS } from 'common/util/time'
-import { sumBy } from 'lodash'
 import { ReactNode, useState } from 'react'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
-import { formatTimeShort } from 'web/lib/util/time'
+import { Button } from 'web/components/buttons/button'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
-import { Linkify } from 'web/components/widgets/linkify'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { useUser } from 'web/hooks/use-user'
+import { Bet } from 'common/bet'
+import { sumBy } from 'lodash'
+import { User } from 'common/user'
 import { SellSharesModal } from 'web/components/bet/sell-row'
 import {
   BinaryOutcomeLabel,
@@ -36,7 +25,18 @@ import {
   ProbPercentLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Button } from '../button/button'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
+import { formatTimeShort } from 'web/lib/util/time'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { Linkify } from 'web/components/widgets/linkify'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { animated } from '@react-spring/web'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { HOUR_MS } from 'common/util/time'
+import { SparklesIcon } from '@heroicons/react/solid'
+import { track } from 'web/lib/service/analytics'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -48,6 +48,7 @@ export const AnswerBar = (props: {
   hideBar?: boolean
   onHover?: (hovering: boolean) => void
   onClick?: () => void
+  barColor?: string
 }) => {
   const {
     color,
@@ -74,16 +75,16 @@ export const AnswerBar = (props: {
       </Row>
       <div
         className={clsx(
-          'absolute bottom-0 left-0 right-0 -z-10 h-full transition-all ',
-          hideBar ? 'bg-ink-200' : 'bg-canvas-50'
+          'absolute bottom-0 left-0 right-0 -z-10 h-full  transition-all ',
+          hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
         {/* bar outline if resolved */}
         {!!resolvedProb && !hideBar && (
           <div
             className={clsx(
-              'absolute top-0 h-full  ring-1 ring-purple-500 sm:ring-2',
-              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : 'z-10'
+              'absolute top-0 h-full  ring-1 ring-orange-500 sm:ring-2',
+              resolvedProb > prob ? 'bg-orange-100 dark:bg-orange-900' : 'z-10'
             )}
             style={{
               width: `${resolvedProb * 100}%`,
@@ -93,7 +94,7 @@ export const AnswerBar = (props: {
         {/* main bar */}
         {!hideBar && (
           <div
-            className="isolate h-full  dark:brightness-75"
+            className="isolate h-full dark:brightness-75"
             style={{
               width: `max(8px, ${prob * 100}%)`,
               background: color,
@@ -268,8 +269,9 @@ export const MultiBettor = (props: {
 export const YesNoBetButtons = (props: {
   answer: Answer
   contract: CPMMMultiContract
+  fillColor?: string
 }) => {
-  const { answer, contract } = props
+  const { answer, contract, fillColor } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
@@ -295,7 +297,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="green-outline"
-        className="bg-ink-100"
+        className={fillColor ?? 'bg-primary-50'}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -307,7 +309,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
-        className="bg-ink-100"
+        className={fillColor ?? 'bg-primary-50'}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -447,8 +449,9 @@ export const AnswerStatus = (props: {
 export const BetButtons = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  fillColor?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, fillColor } = props
   const isDpm = contract.mechanism === 'dpm-2'
 
   const isOpen = tradingAllowed(
@@ -463,6 +466,7 @@ export const BetButtons = (props: {
     <YesNoBetButtons
       answer={answer as Answer}
       contract={contract as CPMMMultiContract}
+      fillColor={fillColor}
     />
   )
 }
