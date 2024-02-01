@@ -8,7 +8,7 @@ import { getLoversCompatibilityFactor } from 'common/love/compatibility-score'
 
 export const useCompatibleLovers = (
   userId: string | null | undefined,
-  options?: { sortWithLocationPenalty?: boolean }
+  options?: { sortWithModifiers?: boolean }
 ) => {
   const [data, setData] = usePersistentInMemoryState<
     (typeof API)['compatible-lovers']['returns'] | undefined | null
@@ -19,18 +19,7 @@ export const useCompatibleLovers = (
   useEffect(() => {
     if (userId) {
       api('compatible-lovers', { userId })
-        .then((result) => {
-          const { compatibleLovers, loverCompatibilityScores } = result
-          if (options?.sortWithLocationPenalty) {
-            result.compatibleLovers = sortBy(compatibleLovers, (l) => {
-              const modifier = !lover
-                ? 1
-                : getLoversCompatibilityFactor(lover, l)
-              return modifier * loverCompatibilityScores[l.user.id].score
-            }).reverse()
-          }
-          setData(result)
-        })
+        .then(setData)
         .catch((e) => {
           if (e.code === 404) {
             setData(null)
@@ -40,6 +29,13 @@ export const useCompatibleLovers = (
         })
     } else if (userId === null) setData(null)
   }, [userId])
+
+  if (data && lover && options?.sortWithModifiers) {
+    data.compatibleLovers = sortBy(data.compatibleLovers, (l) => {
+      const modifier = !lover ? 1 : getLoversCompatibilityFactor(lover, l)
+      return -1 * modifier * data.loverCompatibilityScores[l.user.id].score
+    })
+  }
 
   return data
 }

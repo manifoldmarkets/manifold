@@ -17,7 +17,7 @@ export const Matches = (props: {
   const { profileLover, profileUserId } = props
   const user = useUser()
   const data = useCompatibleLovers(profileUserId, {
-    sortWithLocationPenalty: true,
+    sortWithModifiers: true,
   })
 
   const [showOldMatches, setShowOldMatches] = useState(false)
