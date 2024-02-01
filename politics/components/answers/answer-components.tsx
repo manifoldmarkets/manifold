@@ -37,6 +37,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
+import { AnimatedProb } from '../us-elections/contracts/party-panel/party-bar'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -356,30 +357,6 @@ export const MultiSeller = (props: {
   )
 }
 
-export const OpenProb = (props: {
-  contract: MultiContract
-  answer: Answer | DpmAnswer
-}) => {
-  const { contract, answer } = props
-  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
-  const cutoffTime = Date.now() - 6 * HOUR_MS
-  const isNew =
-    contract.createdTime < cutoffTime && answer.createdTime > cutoffTime
-  return (
-    <Row className={'items-center'}>
-      <span
-        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
-      >
-        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
-      </span>
-      {isNew && (
-        <Tooltip text={'Recently submitted'}>
-          <SparklesIcon className="h-4 w-4 text-green-500" />
-        </Tooltip>
-      )}
-    </Row>
-  )
-}
 export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
   const { prob, resolvedProb: resolveProb } = props
   return (
@@ -440,7 +417,7 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} />
+    <AnimatedProb contract={contract} answer={answer} />
   ) : (
     <ClosedProb prob={prob} resolvedProb={resolvedProb} />
   )
