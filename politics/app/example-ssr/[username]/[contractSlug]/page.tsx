@@ -1,9 +1,8 @@
-import { PoliticsPage } from 'politics/components/politics-page'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { db } from 'web/lib/supabase/db'
 import { filterDefined } from 'common/util/array'
-import Custom404 from 'politics/app/404/page'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import { Col } from 'web/components/layout/col'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -34,13 +33,6 @@ export default async function Page({
   params: { contractSlug: string }
 }) {
   const market = await getContractFromSlug(params.contractSlug, db)
-  if (!market) return <Custom404 />
-  return (
-    <PoliticsPage
-      trackPageView={'politics market page'}
-      className={'bg-canvas-50'}
-    >
-      {market.question}
-    </PoliticsPage>
-  )
+  if (!market) return <Col>Not found</Col>
+  return <Col>{market.question}</Col>
 }
