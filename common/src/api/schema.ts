@@ -70,7 +70,7 @@ export const API = (_apiTypeCheck = {
   },
   'pin-comment': {
     method: 'POST',
-    visibility: 'public',
+    visibility: 'undocumented',
     authed: true,
     props: z.object({ commentPath: z.string() }).strict(),
   },
@@ -596,6 +596,14 @@ export const API = (_apiTypeCheck = {
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
   },
+  'unlist-and-cancel-user-contracts': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+    }),
+  },
   'get-ad-analytics': {
     method: 'POST',
     visibility: 'undocumented',
@@ -710,7 +718,7 @@ export const API = (_apiTypeCheck = {
 } as const)
 
 export type APIPath = keyof typeof API
-export type APISchema<N extends APIPath> = typeof API[N]
+export type APISchema<N extends APIPath> = (typeof API)[N]
 
 export type APIParams<N extends APIPath> = z.input<APISchema<N>['props']>
 export type ValidatedAPIParams<N extends APIPath> = z.output<

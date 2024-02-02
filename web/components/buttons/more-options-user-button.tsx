@@ -16,6 +16,7 @@ import { PROJECT_ID } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { ReferralsButton } from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/firebase/api'
+import { superBanUser } from 'web/lib/firebase/super-ban-user'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -24,6 +25,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
+  const superBan = () => superBanUser(userId)
   if (!currentPrivateUser || currentPrivateUser.id === userId) return null
   const createdTime = new Date(user.createdTime).toLocaleDateString('en-us', {
     year: 'numeric',
@@ -47,17 +49,41 @@ export function MoreOptionsUserButton(props: { user: User }) {
           <Title className={'!mb-2 flex justify-between'}>
             {name}
             {(isAdmin || isTrusted) && (
-              <Button
-                color={'red'}
-                onClick={() => {
-                  banUser({
-                    userId,
-                    unban: user.isBannedFromPosting ?? false,
-                  })
-                }}
-              >
-                {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
-              </Button>
+              <div>
+                <Button
+                  className="mr-2"
+                  color={'red'}
+                  onClick={() => {
+                    superBan()
+                      .then(() => {
+                        // Handle success, like closing the modal or showing a success message
+                      })
+                      .catch((error) => {
+                        // Handle error, like showing an error message
+                        console.error('Superban failed:', error)
+                        alert(
+                          error instanceof Error
+                            ? error.message
+                            : 'An unknown error occurred'
+                        )
+                      })
+                  }}
+                >
+                  {' '}
+                  Super Ban!
+                </Button>
+                <Button
+                  color={'red'}
+                  onClick={() => {
+                    banUser({
+                      userId,
+                      unban: user.isBannedFromPosting ?? false,
+                    })
+                  }}
+                >
+                  {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
+                </Button>
+              </div>
             )}
           </Title>
           <span className={'ml-1 text-sm'}> joined {createdTime}</span>
