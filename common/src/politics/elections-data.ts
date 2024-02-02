@@ -1,5 +1,9 @@
+import { Bet } from 'common/bet'
+import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
 import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { ChartParams } from 'web/lib/politics/home'
 
 export interface StateElectionMarket {
   slug: string
@@ -235,4 +239,5 @@ export type ElectionsPageProps = {
   republicanVPContract: Contract | null
   democraticVPContract: Contract | null
   linkPreviews: LinkPreviews
+  partyChartParams?: ChartParams
 }

@@ -36,6 +36,7 @@ export function PoliticsCard(props: {
     className,
     maxAnswers,
     viewType,
+    children,
   } = props
 
   const contract =
@@ -99,6 +100,8 @@ export function PoliticsCard(props: {
         >
           {contract.question}
         </Link>
+        <Spacer h={4} />
+        {children}
         <Spacer h={4} />
         <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
       </ClickFrame>

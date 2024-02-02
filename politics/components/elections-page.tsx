@@ -20,6 +20,7 @@ import Custom404 from 'web/pages/404'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { ContractChart } from './charts/contract-chart'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -57,6 +58,7 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     republicanVPContract,
     democraticVPContract,
+    partyChartParams,
   } = props
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -97,7 +99,15 @@ function ElectionContent(props: ElectionsPageProps) {
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
-        />
+        >
+          {partyChartParams && (
+            <ContractChart
+              contract={electionPartyContract!}
+              historyData={partyChartParams.historyData}
+              chartAnnotations={partyChartParams.chartAnnotations}
+            />
+          )}
+        </PoliticsCard>
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"
