@@ -1,10 +1,7 @@
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
 import { ReactNode, memo, useEffect, useMemo, useRef, useState } from 'react'
 
-import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { getAnswerProbability } from 'common/calculate'
 import {
   HistoryPoint,
   MultiSerializedPoints,
@@ -21,21 +18,17 @@ import {
   PseudoNumericContract,
   tradingAllowed,
 } from 'common/contract'
-import { isAdminId, isModId } from 'common/envs/constants'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { formatPercent } from 'common/util/format'
-import { searchInAny } from 'common/util/parse'
 import { first, mergeWith } from 'lodash'
 import toast from 'react-hot-toast'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
 import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { Button } from 'web/components/buttons/button'
 import { BinaryContractChart } from 'web/components/charts/contract/binary'
 import {
-  ChoiceContractChart,
   MultiPoints,
   getMultiBetPoints,
 } from 'web/components/charts/contract/choice'
@@ -51,7 +44,6 @@ import {
 } from 'web/components/contract/contract-price'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { CancelLabel } from 'web/components/outcome-label'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { AlertBox } from 'web/components/widgets/alert-box'
@@ -64,15 +56,10 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import { Period } from 'web/lib/firebase/users'
 import { periodDurations } from 'web/lib/util/time'
-import {
-  AnswersResolvePanel,
-  IndependentAnswersResolvePanel,
-} from '../answers/answer-resolve-panel'
-import { AnswersPanel } from '../answers/answers-panel'
+import { ChoiceContractChart } from '../charts/contract/choice'
 import { PointerMode, ZoomParams, getEndDate, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 
@@ -84,8 +71,9 @@ export const ContractChart = memo(
       points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
     }
     chartAnnotations: ChartAnnotation[]
+    shownAnswers?: string[]
   }) => {
-    const { contract, historyData, chartAnnotations } = props
+    const { contract, historyData, chartAnnotations, shownAnswers } = props
 
     // Static props load bets in descending order by time
     const lastBetTime = first(historyData.bets)?.createdTime
@@ -152,10 +140,11 @@ export const ContractChart = memo(
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return (
-          <ChoiceOverview
+          <ChoiceChart
             contract={contract}
             points={betPoints as any}
             chartAnnotations={chartAnnotations}
+            shownAnswers={shownAnswers}
           />
         )
       case 'STONK':
@@ -238,7 +227,6 @@ export const BinaryOverview = (props: {
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setTimePeriod}
             maxRange={maxRange}
-            color="green"
           />
         </Row>
       </Row>
@@ -497,122 +485,19 @@ const ChartAnnotation = (props: {
   )
 }
 
-export type MultiSort =
-  | 'prob-desc'
-  | 'prob-asc'
-  | 'old'
-  | 'new'
-  | 'liquidity'
-  | 'alphabetical'
-
-const MAX_DEFAULT_GRAPHED_ANSWERS = 6
-const MAX_DEFAULT_ANSWERS = 20
-
-const ChoiceOverview = (props: {
+export const ChoiceChart = (props: {
   points: MultiPoints
   contract: MultiContract
-
   chartAnnotations: ChartAnnotation[]
+  shownAnswers?: string[]
 }) => {
   const { points, contract } = props
 
-  const currentUser = useUser()
-  const currentUserId = currentUser?.id
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
   const [hoverAnswerId, setHoverAnswerId] = useState<string>()
-  const [checkedAnswerIds, setCheckedAnswerIds] = useState<string[]>([])
-
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const { resolutions, outcomeType } = contract
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const [query, setQuery] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
-
-  let defaultSort = contract.sort
-  if (!defaultSort) {
-    if (addAnswersMode === 'DISABLED') {
-      defaultSort = 'old'
-    } else if (!shouldAnswersSumToOne) {
-      defaultSort = 'prob-desc'
-    } else if (answers.length > 10) {
-      defaultSort = 'prob-desc'
-    } else {
-      defaultSort = 'old'
-    }
-  }
-  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    defaultSort,
-    'answer-sort' + contract.id
-  )
-  const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
-  useEffect(() => {
-    if (
-      ((contract.sort && sort !== contract.sort) ||
-        (!contract.sort && sort !== defaultSort)) &&
-      currentUserId &&
-      (isModId(currentUserId) ||
-        isAdminId(currentUserId) ||
-        contract.creatorId === currentUserId)
-    )
-      setShowSetDefaultSort(true)
-  }, [sort, contract.sort])
-
-  const [showAll, setShowAll] = useState(
-    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
-      answers.length <= 5
-  )
-
-  const sortedAnswers = useMemo(
-    () =>
-      sortBy(answers, [
-        shouldAnswersSumToOne
-          ? // Winners first
-            (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
-          : // Resolved last
-            (answer) => ('resolution' in answer ? 1 : 0),
-        // then by sort
-        (answer) => {
-          if (sort === 'old') {
-            if ('resolutionTime' in answer && answer.resolutionTime)
-              return answer.resolutionTime
-            return 'index' in answer ? answer.index : answer.number
-          } else if (sort === 'new') {
-            if ('resolutionTime' in answer && answer.resolutionTime)
-              return -answer.resolutionTime
-            return 'index' in answer ? -answer.index : -answer.number
-          } else if (sort === 'prob-asc') {
-            return answer.prob
-          } else if (sort === 'prob-desc') {
-            return -1 * answer.prob
-          } else if (sort === 'liquidity') {
-            return 'subsidyPool' in answer ? -answer.subsidyPool : 0
-          } else if (sort === 'alphabetical') {
-            return answer.text.toLowerCase()
-          }
-        },
-      ]),
-    [answers, resolutions, shouldAnswersSumToOne, sort]
-  )
 
   const {
     pointerMode,
@@ -623,50 +508,11 @@ const ChoiceOverview = (props: {
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
-  const searchedAnswers = useMemo(() => {
-    if (!answers.length || !query) return []
+  const shownAnswers = props.shownAnswers ?? contract.answers.map((a) => a.id)
 
-    return sortedAnswers.filter(
-      (answer) =>
-        checkedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
-    )
-  }, [sortedAnswers, query])
-
-  const allResolved =
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => 'resolution' in a)
-
-  const answersToShow = query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (checkedAnswerIds.includes(answer.id)) {
-            return true
-          }
-
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !('resolution' in answer)
-          }
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
   return (
     <>
       <Row className="justify-between gap-2">
-        {contract.resolution === 'CANCEL' ? (
-          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
-            <span className="text-base">Resolved</span>
-            <CancelLabel />
-          </div>
-        ) : (
-          <div />
-        )}
         <Row className={'gap-1'}>
           {enableAdd && (
             <EditChartAnnotationsButton
@@ -678,7 +524,6 @@ const ChoiceOverview = (props: {
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setTimePeriod}
             maxRange={maxRange}
-            color="indigo"
           />
         </Row>
       </Row>
@@ -698,13 +543,7 @@ const ChoiceOverview = (props: {
               multiPoints={points}
               contract={contract}
               highlightAnswerId={hoverAnswerId}
-              selectedAnswerIds={
-                checkedAnswerIds.length
-                  ? checkedAnswerIds
-                  : answersToShow
-                      .map((a) => a.id)
-                      .slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
-              }
+              selectedAnswerIds={shownAnswers}
               pointerMode={pointerMode}
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
@@ -746,7 +585,6 @@ const PseudoNumericOverview = (props: {
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setTimePeriod}
           maxRange={maxRange}
-          color="indigo"
         />
       </Row>
       <SizedContainer className="mb-8 h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
@@ -787,7 +625,6 @@ const StonkOverview = (props: {
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setTimePeriod}
           maxRange={maxRange}
-          color="green"
         />
       </Row>
       <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">

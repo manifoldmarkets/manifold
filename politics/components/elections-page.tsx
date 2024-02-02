@@ -20,7 +20,8 @@ import Custom404 from 'web/pages/404'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ContractChart } from './charts/contract-chart'
+import { ChoiceChart, ContractChart } from './charts/contract-chart'
+import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -100,14 +101,27 @@ function ElectionContent(props: ElectionsPageProps) {
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
         >
-          {partyChartParams && (
+          {/* {partyChartParams && (
             <ContractChart
-              contract={electionPartyContract!}
+              contract={(electionPartyContract as MultiContract)!}
               historyData={partyChartParams.historyData}
               chartAnnotations={partyChartParams.chartAnnotations}
+              shownAnswers={(electionPartyContract as MultiContract)!.answers
+                .filter((a) => a.text != 'Other')
+                .map((a) => a.id)}
             />
-          )}
+          )} */}
         </PoliticsCard>
+        {partyChartParams && (
+          <ContractChart
+            contract={(electionPartyContract as MultiContract)!}
+            historyData={partyChartParams.historyData}
+            chartAnnotations={partyChartParams.chartAnnotations}
+            shownAnswers={(electionPartyContract as MultiContract)!.answers
+              .filter((a) => a.text != 'Other')
+              .map((a) => a.id)}
+          />
+        )}
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"

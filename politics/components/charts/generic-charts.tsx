@@ -573,11 +573,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         )}
       </SVGChart>
       {showZoomer && zoomParams && (
-        <ZoomSlider
-          zoomParams={zoomParams}
-          color="light-green"
-          className="relative top-4"
-        />
+        <ZoomSlider zoomParams={zoomParams} className="relative top-4" />
       )}
       {chartAnnotationTime !== undefined &&
         contractId &&

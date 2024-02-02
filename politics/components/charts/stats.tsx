@@ -4,7 +4,7 @@ import { min, max } from 'lodash'
 import dayjs from 'dayjs'
 
 import { formatPercent } from 'common/util/format'
-import { Row } from '../layout/row'
+import { Row } from 'web/components/layout/row'
 import { SingleValueHistoryChart } from './generic-charts'
 import { TooltipProps, useZoom } from './helpers'
 import { SizedContainer } from 'web/components/sized-container'
