@@ -27,7 +27,6 @@ import {
   NOTIFICATION_REASONS_TO_SELECT,
   NOTIFICATION_TYPES_TO_SELECT,
 } from 'politics/app/notifications/constants'
-import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 
 export function PoliticsPage(props: {
   trackPageView: string | false
@@ -68,7 +67,7 @@ export function PoliticsPage(props: {
           'mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
-        <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+        {/*<GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />*/}
         <Toaster
           position={isMobile ? 'bottom-center' : 'top-center'}
           containerClassName="!bottom-[70px]"

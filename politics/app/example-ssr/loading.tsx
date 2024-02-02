@@ -1,5 +1,5 @@
-import LoadingContractRows from 'politics/components/loading/loading-contract-rows'
+import { Flapper } from 'politics/components/loading/flapper'
 
 export default function LoadingResults() {
-  return <LoadingContractRows />
+  return <Flapper />
 }
