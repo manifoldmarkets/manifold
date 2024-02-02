@@ -8,6 +8,7 @@ import {
 } from 'next/font/google'
 import clsx from 'clsx'
 import { Metadata, Viewport } from 'next'
+import { AuthProvider } from 'web/components/auth-context'
 
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
@@ -85,13 +86,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // const cookieStore = cookies()
-  // const user = cookieStore.has(AUTH_COOKIE_NAME)
-  //   ? cookieStore.get(AUTH_COOKIE_NAME)
-  //   : null
-  // const serverUser = await authenticateOnServer(user?.value)
-  // const users = serverUser ? await getUserAndPrivateUser(serverUser.uid) : null
-  // const authUser = users ? { ...users, authLoaded: true } : null
+  const cookieStore = cookies()
+  const user = cookieStore.has(AUTH_COOKIE_NAME)
+    ? cookieStore.get(AUTH_COOKIE_NAME)
+    : null
+  const serverUser = await authenticateOnServer(user?.value)
+  const users = serverUser ? await getUserAndPrivateUser(serverUser.uid) : null
+  const authUser = users ? { ...users, authLoaded: true } : null
   return (
     <html>
       <body
@@ -103,9 +104,9 @@ export default async function RootLayout({
           serifFont.variable
         )}
       >
-        {/*<AuthProvider serverUser={authUser}>*/}
-        <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
-        {/*</AuthProvider>*/}
+        <AuthProvider serverUser={authUser}>
+          <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
+        </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
           <div />
