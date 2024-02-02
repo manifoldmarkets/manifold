@@ -3,6 +3,8 @@ import { db } from 'web/lib/supabase/db'
 import { filterDefined } from 'common/util/array'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { Col } from 'web/components/layout/col'
+import { config } from 'manifold-discord-bot/lib/constants/config'
+import { FullMarket } from 'common/api/market-types'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -27,12 +29,20 @@ export async function generateMetadata(
   }
 }
 
+const getMarketFromSlug = async (slug: string) => {
+  const resp = await fetch(`${config.domain}api/v0/slug/${slug}`)
+  if (!resp.ok) {
+    throw new Error('Market not found with slug: ' + slug)
+  }
+  return (await resp.json()) as FullMarket
+}
+
 export default async function Page({
   params,
 }: {
   params: { contractSlug: string }
 }) {
-  const market = await getContractFromSlug(params.contractSlug, db)
+  const market = await getMarketFromSlug(params.contractSlug)
   if (!market) return <Col>Not found</Col>
   return <Col>{market.question}</Col>
 }
