@@ -5,6 +5,7 @@ import { filterDefined } from 'common/util/array'
 import Custom404 from 'politics/app/404/page'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 
+export const dynamicParams = true
 export const revalidate = 60
 export async function generateStaticParams() {
   return []

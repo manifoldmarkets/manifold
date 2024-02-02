@@ -11,6 +11,7 @@ import { buildOgUrl } from 'common/util/og'
 import { ENV_CONFIG } from 'common/envs/constants'
 
 export const revalidate = 60
+export const dynamicParams = true
 export async function generateStaticParams() {
   return []
 }
@@ -43,7 +44,6 @@ export async function generateMetadata(props: {
     description,
   }
 }
-
 export default async function Page({
   params,
 }: {
