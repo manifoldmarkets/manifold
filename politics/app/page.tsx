@@ -1,4 +1,3 @@
-import { Contract } from 'common/contract'
 import {
   ELECTION_DASHBOARD_DESCRIPTION,
   ELECTION_DASHBOARD_TITLE,
@@ -9,14 +8,12 @@ import { USElectionsPage } from 'politics/components/elections-page'
 import { NewsDashboard } from 'politics/components/home-dashboard/news-dashboard'
 import { HeadlineTabs } from 'politics/components/home-dashboard/news-sections'
 import { PoliticsPage } from 'politics/components/politics-page'
-import { Suspense } from 'react'
 import { api } from 'web/lib/firebase/api'
 import {
-  getElectionsPageProps,
   REVALIDATE_CONTRACTS_SECONDS,
+  getElectionsPageProps,
 } from 'web/lib/politics/home'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export const revalidate = REVALIDATE_CONTRACTS_SECONDS
 

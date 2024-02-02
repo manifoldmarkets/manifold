@@ -68,7 +68,7 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
 
   let historyDataProps = undefined
   let chartAnnotationsProps: ChartAnnotation[] = []
-  if (electionPartyContract) {
+  if (!!electionPartyContract) {
     const { historyData, chartAnnotations } = await getChartParams(
       electionPartyContract,
       adminDb
