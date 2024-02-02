@@ -13,19 +13,16 @@ import { USAMap } from 'politics/components/us-elections/usa-map/usa-map'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
 import Custom404 from 'web/pages/404'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { ReferralSaver } from 'politics/components/referral-saver'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
   useTracking('view elections')
-  const user = useUser()
-  useSaveReferral(user)
 
   const {
     electionCandidateContract,
@@ -78,6 +75,7 @@ function ElectionContent(props: ElectionsPageProps) {
 
   return (
     <>
+      <ReferralSaver />
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
           <Row className="mt-2 items-center justify-between gap-4 font-serif text-2xl sm:mt-0 sm:justify-start sm:text-3xl">
