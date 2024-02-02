@@ -1,26 +1,25 @@
 'use client'
 import { Contract, MultiContract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
 } from 'common/politics/elections-data'
-import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { Spacer } from 'web/components/layout/spacer'
+import { ReferralSaver } from 'politics/components/referral-saver'
 import { PoliticsCard } from 'politics/components/us-elections/contracts/politics-card'
 import { StateContractCard } from 'politics/components/us-elections/contracts/state-contract-card'
 import { USAMap } from 'politics/components/us-elections/usa-map/usa-map'
+import { useState } from 'react'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useTracking } from 'web/hooks/use-tracking'
 import Custom404 from 'web/pages/404'
-import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ChoiceChart, ContractChart } from './charts/contract-chart'
-import { ChoiceContractChart } from 'web/components/charts/contract/choice'
-import { ReferralSaver } from 'politics/components/referral-saver'
+import { ContractChart } from './charts/contract-chart'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -98,6 +97,7 @@ function ElectionContent(props: ElectionsPageProps) {
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
+          className="-mt-4"
         >
           {partyChartParams && (
             <ContractChart
