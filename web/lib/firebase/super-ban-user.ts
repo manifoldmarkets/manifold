@@ -1,33 +1,37 @@
 import { api, banUser } from 'web/lib/firebase/api'
 
 async function superBanUser(userId: string) {
+  let marketsStatus = "could not be unlisted nor N/A'd due to an unknown error"
+  let commentsStatus = 'could not be hidden due to an unknown error'
+
   try {
     await banUser({ userId })
     await api('unlist-and-cancel-user-contracts', { userId })
+    marketsStatus = "successfully unlisted & NA'd"
   } catch (error) {
     console.error('Failed to unlist and cancel user contracts:', error)
-    // Optionally, alert or handle the error specifically if needed
-    // alert('Failed to unlist and cancel all user contracts. Proceeding with comment hiding.');
+    marketsStatus = 'not affected (>5)'
   }
 
   const comments = await api('comments', { userId })
 
   if (comments.length > 15) {
-    throw new Error('User has more than 15 comments. Manual review required.')
+    commentsStatus = 'not hidden (>15)'
+  } else {
+    if (comments.length > 0) {
+      const commentsToHide = comments.filter((comment) => !comment.hidden)
+      for (const comment of commentsToHide) {
+        await api('hide-comment', {
+          commentPath: `contracts/${comment.contractId}/comments/${comment.id}`,
+        })
+      }
+      commentsStatus = 'successfully hidden'
+    } else {
+      commentsStatus = 'were not found'
+    }
   }
 
-  for (const comment of comments) {
-    await api('hide-comment', {
-      commentPath: `contracts/${comment.contractId}/comments/${comment.id}`,
-    })
-  }
-
-  alert('Superban completed')
-  try {
-  } catch (error) {
-    console.error('Superban failed:', error)
-    alert(error instanceof Error ? error.message : 'An unknown error occurred')
-  }
+  return `Super ban completed. Markets ${marketsStatus}. Comments ${commentsStatus}.`
 }
 
 export { superBanUser }
