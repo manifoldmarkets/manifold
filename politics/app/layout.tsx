@@ -9,10 +9,6 @@ import {
 import clsx from 'clsx'
 import { Metadata, Viewport } from 'next'
 import { AuthProvider } from 'web/components/auth-context'
-import { cookies } from 'next/headers'
-import { authenticateOnServer } from 'web/lib/firebase/server-auth'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
-import { AUTH_COOKIE_NAME } from 'common/envs/constants'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
 
@@ -82,20 +78,20 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
 }
-export const dynamic = 'force-dynamic'
+// export const dynamic = 'force-dynamic'
 // Only renders once per session
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = cookies()
-  const user = cookieStore.has(AUTH_COOKIE_NAME)
-    ? cookieStore.get(AUTH_COOKIE_NAME)
-    : null
-  const serverUser = await authenticateOnServer(user?.value)
-  const users = serverUser ? await getUserAndPrivateUser(serverUser.uid) : null
-  const authUser = users ? { ...users, authLoaded: true } : null
+  // const cookieStore = cookies()
+  // const user = cookieStore.has(AUTH_COOKIE_NAME)
+  //   ? cookieStore.get(AUTH_COOKIE_NAME)
+  //   : null
+  // const serverUser = await authenticateOnServer(user?.value)
+  // const users = serverUser ? await getUserAndPrivateUser(serverUser.uid) : null
+  // const authUser = users ? { ...users, authLoaded: true } : null
   return (
     <html>
       <body
@@ -107,7 +103,7 @@ export default async function RootLayout({
           serifFont.variable
         )}
       >
-        <AuthProvider serverUser={authUser}>
+        <AuthProvider>
           <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
         </AuthProvider>
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
