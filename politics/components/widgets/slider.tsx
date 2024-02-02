@@ -18,7 +18,7 @@ export function Slider(props: {
     <RxSlider.Root
       className={clsx(
         className,
-        'bg-ink-300 relative flex touch-none select-none items-center',
+        '0 relative flex touch-none select-none items-center',
         marks ? 'h-[42px]' : 'h-4'
       )}
       value={[amount]}
@@ -113,7 +113,7 @@ export function RangeSlider(props: {
 const Track = (props: { className?: string; children?: ReactNode }) => {
   const { className, children } = props
   return (
-    <RxSlider.Track className="bg-ink-300 relative h-1 grow ">
+    <RxSlider.Track className="bg-ink-200 relative h-1 grow ">
       {children}
       <RxSlider.Range className={clsx(className, 'absolute h-full')} />
     </RxSlider.Track>
@@ -124,7 +124,7 @@ const Thumb = (props: { className?: string }) => (
   <RxSlider.Thumb
     className={clsx(
       props.className,
-      'bg-ink-1000 hover:bg-ink-0 outline-ink-1000 block h-4 w-4 cursor-col-resize outline transition-colors '
+      'bg-ink-1000 border-ink-1000 hover:bg-ink-0 block h-3 w-3 cursor-col-resize border-2  transition-colors'
     )}
   />
 )

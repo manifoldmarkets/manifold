@@ -16,7 +16,7 @@ import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { removeTextInParentheses } from './candidate-bar'
-import { AnimatedProb } from '../party-panel/party-bar'
+import { AnimatedProb } from '../../../widgets/animated-prob'
 import { Button } from 'politics/components/button/button'
 import { MultiBettor } from 'politics/components/answers/answer-components'
 

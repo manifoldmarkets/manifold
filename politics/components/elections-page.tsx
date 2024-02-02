@@ -81,8 +81,8 @@ function ElectionContent(props: ElectionsPageProps) {
 
   return (
     <>
-      <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
-        <Col>
+      <Col className="gap-6 sm:gap-8 sm:px-4">
+        <Col className="px-2 sm:px-0">
           <Row className="mt-2 items-center justify-between gap-4 font-serif text-2xl sm:mt-0 sm:justify-start sm:text-3xl">
             2024 Election Forecast
             <CopyLinkOrShareButton
@@ -101,7 +101,7 @@ function ElectionContent(props: ElectionsPageProps) {
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
         >
-          {/* {partyChartParams && (
+          {partyChartParams && (
             <ContractChart
               contract={(electionPartyContract as MultiContract)!}
               historyData={partyChartParams.historyData}
@@ -110,18 +110,9 @@ function ElectionContent(props: ElectionsPageProps) {
                 .filter((a) => a.text != 'Other')
                 .map((a) => a.id)}
             />
-          )} */}
+          )}
         </PoliticsCard>
-        {partyChartParams && (
-          <ContractChart
-            contract={(electionPartyContract as MultiContract)!}
-            historyData={partyChartParams.historyData}
-            chartAnnotations={partyChartParams.chartAnnotations}
-            shownAnswers={(electionPartyContract as MultiContract)!.answers
-              .filter((a) => a.text != 'Other')
-              .map((a) => a.id)}
-          />
-        )}
+
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"

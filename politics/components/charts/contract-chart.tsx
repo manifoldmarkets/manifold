@@ -512,14 +512,8 @@ export const ChoiceChart = (props: {
 
   return (
     <>
-      <Row className="justify-between gap-2">
+      <Row className="justify-end gap-2">
         <Row className={'gap-1'}>
-          {enableAdd && (
-            <EditChartAnnotationsButton
-              pointerMode={pointerMode}
-              setPointerMode={setPointerMode}
-            />
-          )}
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setTimePeriod}
