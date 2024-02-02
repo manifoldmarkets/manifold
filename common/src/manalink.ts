@@ -6,19 +6,30 @@ import { DAY_MS } from 'common/util/time'
 import { SupabaseClient } from 'common/supabase/utils'
 import { formatMoney } from 'common/util/format'
 
-export async function canSendMana(user: User, db: SupabaseClient) {
-  if (user.userDeleted || user.isBannedFromPosting) return false
-  const ageThreshold = Date.now() - 14 * DAY_MS
+type PorfolioHistoryItem = Awaited<
+  ReturnType<typeof getPortfolioHistory>
+>[number]
+
+export async function canSendManaSupa(user: User, db: SupabaseClient) {
   const portfolioHistory = last(
     await getPortfolioHistory(user.id, Date.now() - DAY_MS, db)
   )
+  return canSendMana(user, portfolioHistory)
+}
+
+export async function canSendMana(
+  user: User,
+  lastPortfolioHistory?: PorfolioHistoryItem
+) {
+  if (user.userDeleted || user.isBannedFromPosting) return false
+  const ageThreshold = Date.now() - 14 * DAY_MS
 
   return (
     (user.createdTime < ageThreshold ||
       BOT_USERNAMES.includes(user.username)) &&
     (user.balance > 1000 ||
       user.profitCached.allTime > 500 ||
-      (portfolioHistory?.investmentValue ?? 0) > 1000 ||
+      (lastPortfolioHistory?.investmentValue ?? 0) > 1000 ||
       user.creatorTraders.allTime > 10)
   )
 }

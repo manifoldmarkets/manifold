@@ -1,19 +1,17 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { User } from 'common/user'
-import { canSendMana } from 'common/manalink'
+import { canSendManaDirect } from 'shared/supabase/manalink'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
 // don't tell the users but you can double redeem via race conditions.
 // the money still gets taken from the creator correctly though so no money is created
+const firestore = admin.firestore()
 
 export const claimmanalink = authEndpoint(async (req, auth) => {
   const { slug } = validate(bodySchema, req.body)
@@ -21,9 +19,9 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
 
   // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
+  return await pg.tx(async (tx) => {
     // Look up the manalink
-    const manalink = await pg.oneOrNone<Row<'manalinks'>>(
+    const manalink = await tx.oneOrNone<Row<'manalinks'>>(
       `select * from manalinks where id = $1`,
       [slug]
     )
@@ -34,7 +32,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
     const { amount, creator_id, expires_time, max_uses } = manalink
 
-    const claimedUserIds = await pg.map(
+    const claimedUserIds = await tx.map(
       `select txns.data from manalink_claims
          join txns on txns.id = manalink_claims.txn_id
          where manalink_id = $1`,
@@ -46,14 +44,13 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(403, `You can't claim your own manalink`)
 
     const fromDoc = firestore.doc(`users/${creator_id}`)
-    const fromSnap = await transaction.get(fromDoc)
+    const fromSnap = await fromDoc.get()
     if (!fromSnap.exists) {
       throw new APIError(500, `User ${creator_id} not found`)
     }
     const fromUser = fromSnap.data() as User
-    const db = createSupabaseClient()
 
-    const canCreate = await canSendMana(fromUser, db)
+    const canCreate = await canSendManaDirect(fromUser, tx)
     if (!canCreate) {
       throw new APIError(
         403,
@@ -99,22 +96,13 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       description: `Manalink ${slug} claimed: ${amount} from ${fromUser.username} to ${auth.uid}`,
     } as const
 
-    const result = await runTxn(transaction, data)
-    const txnId = result.txn?.id
-    if (!txnId) {
-      throw new APIError(
-        500,
-        result.message ?? 'An error occurred posting the transaction.'
-      )
-    }
+    const txn = await runTxn(tx, data)
 
-    await pg.none(
+    await tx.none(
       `insert into manalink_claims (txn_id, manalink_id) values ($1, $2)`,
-      [txnId, slug]
+      [txn.id, slug]
     )
 
     return { message: 'Manalink claimed' }
   })
 })
-
-const firestore = admin.firestore()

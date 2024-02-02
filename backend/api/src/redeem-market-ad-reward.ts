@@ -6,6 +6,7 @@ import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { FieldValue } from 'firebase-admin/firestore'
 import { MarketAdRedeemFeeTxn, MarketAdRedeemTxn } from 'common/txn'
+import { insertTxns } from 'shared/txn/run-txn'
 
 const schema = z
   .object({
@@ -37,73 +38,63 @@ export const redeemboost = authEndpoint(async (req, auth) => {
   }
 
   // create the redeem txn
-  const result = await firestore.runTransaction(async (trans) => {
-    // first check if user has redeemed before, in firestore.
-    // we check in this transaction to prevent double redeems via race condition
-    const oldTxn = await trans.get(
-      firestore
-        .collection('txns')
-        .where('category', '==', 'MARKET_BOOST_REDEEM')
-        .where('fromId', '==', adId)
-        .where('toId', '==', auth.uid)
+  await pg.tx(async (tx) => {
+    // first check if user has redeemed before
+    const oldTxn = await tx.oneOrNone(
+      `select 1 from txns
+      where data->>category = 'MARKET_BOOST_REDEEM'
+      and data->>fromId = $1
+      and data->>toId = $2`,
+      [adId, auth.uid]
     )
 
-    if (oldTxn.docs.length > 0) {
+    if (oldTxn) {
       throw new APIError(
         403,
-        `You have already redeemed the boost for this market ${oldTxn.docs.length} times`
+        `You have already redeemed the boost for this market`
       )
     }
 
-    const pg = createSupabaseDirectClient()
-
-    await pg.none(
+    await tx.none(
       `update market_ads 
       set funds = funds - $1
       where id = $2`,
       [cost, adId]
     )
-
-    const txnColl = firestore.collection(`txns/`)
-
     const reward = AD_REDEEM_REWARD
 
-    const toUserDoc = firestore.doc(`users/${auth.uid}`)
-    trans.update(toUserDoc, {
+    await insertTxns(
+      tx,
+      {
+        category: 'MARKET_BOOST_REDEEM',
+        fromType: 'AD',
+        fromId: adId,
+        toType: 'USER',
+        toId: auth.uid,
+        amount: reward,
+        token: 'M$',
+        description: 'Redeeming market ad',
+        createdTime: Date.now(),
+      } as MarketAdRedeemTxn,
+      {
+        category: 'MARKET_BOOST_REDEEM_FEE',
+        fromType: 'AD',
+        fromId: adId,
+        toType: 'BANK',
+        toId: 'BANK',
+        amount: cost - reward,
+        token: 'M$',
+        description: 'Manifold fee for redeeming market ad',
+        createdTime: Date.now(),
+      } as MarketAdRedeemFeeTxn
+    )
+
+    const toUser = firestore.doc(`users/${auth.uid}`)
+    toUser.update({
       balance: FieldValue.increment(reward),
       totalDeposits: FieldValue.increment(reward),
     })
-
-    txnColl.add({
-      category: 'MARKET_BOOST_REDEEM',
-      fromType: 'AD',
-      fromId: adId,
-      toType: 'USER',
-      toId: auth.uid,
-      amount: reward,
-      token: 'M$',
-      description: 'Redeeming market ad',
-      createdTime: Date.now(),
-    } as MarketAdRedeemTxn)
-
-    txnColl.add({
-      category: 'MARKET_BOOST_REDEEM_FEE',
-      fromType: 'AD',
-      fromId: adId,
-      toType: 'BANK',
-      toId: 'BANK',
-      amount: cost - reward,
-      token: 'M$',
-      description: 'Manifold fee for redeeming market ad',
-      createdTime: Date.now(),
-    } as MarketAdRedeemFeeTxn)
-
-    return { status: 'success' }
   })
 
-  if (result.status == 'error') {
-    throw new APIError(500, 'An unknown error occurred')
-  }
-
-  return result
+  return { status: 'success' }
 })

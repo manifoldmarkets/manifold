@@ -43,14 +43,7 @@ export const likeLover: APIHandler<'like-lover'> = async (props, auth) => {
 
   if (!hasFreeLike) {
     // Charge for like.
-    const { status, message } = await runLikePurchaseTxn(
-      creatorId,
-      targetUserId
-    )
-
-    if (status === 'error' && message) {
-      throw new APIError(400, message)
-    }
+    await runLikePurchaseTxn(creatorId, targetUserId)
   }
 
   // Insert the new like

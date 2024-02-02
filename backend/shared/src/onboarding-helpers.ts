@@ -26,6 +26,7 @@ import * as crypto from 'crypto'
 import { getForYouMarkets } from 'shared/supabase/search-contracts'
 import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { APIError } from 'common/api/utils'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -83,6 +84,8 @@ const sendNextDayManaBonus = async (
   firestore: admin.firestore.Firestore,
   userId: string
 ) => {
+  const pg = createSupabaseDirectClient()
+
   return await firestore.runTransaction(async (transaction) => {
     const toDoc = firestore.doc(`private-users/${userId}`)
     const toUserSnap = await transaction.get(toDoc)
@@ -104,17 +107,22 @@ const sendNextDayManaBonus = async (
       description: 'Signup bonus',
       data: {},
     }
-    const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-    if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-      transaction.update(toDoc, {
-        manaBonusSent: true,
-        weeklyTrendingEmailSent: true, // not yet, but about to!
+
+    const manaBonusTxn = await pg
+      .tx((tx) => {
+        return runTxnFromBank(tx, signupBonusTxn)
       })
-      log(`Sent mana bonus to user ${userId}`)
-    } else {
-      log(`No mana bonus sent to user ${userId}: ${manaBonusTxn.message}`)
-    }
-    return { ...manaBonusTxn, privateUser }
+      .catch((e: APIError) => {
+        log(`No mana bonus sent to user ${userId}: ${e.message}`)
+      })
+
+    transaction.update(toDoc, {
+      manaBonusSent: true,
+      weeklyTrendingEmailSent: true, // not yet, but about to!
+    })
+    log(`Sent mana bonus to user ${userId}`)
+
+    return { txn: manaBonusTxn, privateUser }
   })
 }
 
@@ -125,12 +133,12 @@ export const sendOnboardingMarketVisitBonus = async (
   return await firestore.runTransaction(async (transaction) => {
     const toDoc = firestore.doc(`users/${userId}`)
     const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) return { txn: null }
+    if (!toUserSnap.exists) return null
 
     const user = toUserSnap.data() as User
     if (user.signupBonusPaid === undefined) {
       log(`User ${userId} not eligible for market visit bonus`)
-      return { txn: null }
+      return null
     }
     const signupBonusAmountPaid = user.signupBonusPaid
     if (signupBonusAmountPaid >= MARKET_VISIT_BONUS_TOTAL) {
@@ -139,8 +147,11 @@ export const sendOnboardingMarketVisitBonus = async (
           MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
         } market visit bonuses`
       )
-      return { txn: null }
+      return null
     }
+
+    const pg = createSupabaseDirectClient()
+
     const signupBonusTxn: Omit<
       SignupBonusTxn,
       'fromId' | 'id' | 'createdTime'
@@ -154,16 +165,20 @@ export const sendOnboardingMarketVisitBonus = async (
       description: 'Market visit signup bonus',
       data: {},
     }
-    const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-    if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-      transaction.update(toDoc, {
-        signupBonusPaid: signupBonusAmountPaid + MARKET_VISIT_BONUS,
+
+    const manaBonusTxn = await pg
+      .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+      .catch((e: APIError) => {
+        log(`No mana bonus sent to user ${userId}: ${e.message}`)
+        throw e
       })
-      log(`Sent mana bonus to user ${userId}`)
-    } else {
-      log(`No mana bonus sent to user ${userId}: ${manaBonusTxn.message}`)
-    }
-    return { ...manaBonusTxn }
+
+    transaction.update(toDoc, {
+      signupBonusPaid: signupBonusAmountPaid + MARKET_VISIT_BONUS,
+    })
+    log(`Sent mana bonus to user ${userId}`)
+
+    return manaBonusTxn
   })
 }
 

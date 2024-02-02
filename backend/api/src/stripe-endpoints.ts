@@ -7,6 +7,7 @@ import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from './helpers/endpoint'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -137,14 +138,8 @@ const issueMoneys = async (session: StripeSession) => {
       return false
     }
     const stripeDoc = firestore.collection('stripe-transactions').doc()
-    trans.set(stripeDoc, {
-      userId,
-      manticDollarQuantity: deposit, // save as number
-      sessionId,
-      session,
-      timestamp: Date.now(),
-    })
 
+    const pg = createSupabaseDirectClient()
     const manaPurchaseTxn = {
       fromId: 'EXTERNAL',
       fromType: 'BANK',
@@ -157,11 +152,15 @@ const issueMoneys = async (session: StripeSession) => {
       description: `Deposit M$${deposit} from BANK for mana purchase`,
     } as const
 
-    const result = await runTxnFromBank(trans, manaPurchaseTxn)
+    const result = await pg.tx((tx) => runTxnFromBank(tx, manaPurchaseTxn))
 
-    if (result.status === 'error') {
-      throw new APIError(500, result.message ?? 'An unknown error occurred')
-    }
+    trans.set(stripeDoc, {
+      userId,
+      manticDollarQuantity: deposit, // save as number
+      sessionId,
+      session,
+      timestamp: Date.now(),
+    })
 
     return result
   })

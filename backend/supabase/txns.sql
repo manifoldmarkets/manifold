@@ -9,7 +9,7 @@ create table if not exists
     to_type text,
     amount numeric,
     category text,
-    fs_updated_time timestamp not null
+    fs_updated_time timestamp
   );
 
 alter table txns enable row level security;

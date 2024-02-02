@@ -22,7 +22,7 @@ export const requestSignupBonus: APIHandler<'request-signup-bonus'> = async (
     )
   }
   const firestore = admin.firestore()
-  const { txn } = await sendOnboardingMarketVisitBonus(firestore, auth.uid)
+  const txn = await sendOnboardingMarketVisitBonus(firestore, auth.uid)
   if (!txn) {
     throw new APIError(400, 'Error sending signup bonus')
   }
