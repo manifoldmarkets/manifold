@@ -1,9 +1,9 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { revalidateStaticProps } from 'shared/utils'
+import { revalidateCachedTag, revalidateStaticProps } from 'shared/utils'
 import { DashboardItemSchema } from 'common/api/zod-types'
 import { z } from 'zod'
 import { authEndpoint, validate } from './helpers/endpoint'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
 import { track } from 'shared/analytics'
@@ -50,6 +50,7 @@ export const updatedashboard = authEndpoint(async (req, auth, log) => {
   })
 
   await revalidateStaticProps(`/news/${updatedDashboard.slug}`)
+  await revalidateCachedTag(updatedDashboard.slug, ENV_CONFIG.politicsDomain)
 
   // return updated dashboard
   return { updateDashboard: { ...updatedDashboard, topics } }

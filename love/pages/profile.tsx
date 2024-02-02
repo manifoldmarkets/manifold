@@ -8,11 +8,11 @@ import { OptionalLoveUserForm } from 'love/components/optional-lover-form'
 import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { Lover } from 'common/love/lover'
-import { useLover } from 'love/hooks/use-lover'
+import { useLoverByUser } from 'love/hooks/use-lover'
 
 export default function ProfilePage() {
   const user = useUser()
-  const lover = useLover()
+  const { lover } = useLoverByUser(user ?? undefined)
 
   useEffect(() => {
     if (user === null || lover === null) {

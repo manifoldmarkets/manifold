@@ -41,6 +41,7 @@ import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 
 export const EMPTY_USER = '_'
 
@@ -58,6 +59,7 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
+  appRouter?: boolean
 }) {
   const {
     contract,
@@ -71,6 +73,7 @@ export function ContractTabs(props: {
     totalBets,
     userPositionsByOutcome,
     pinnedComments,
+    appRouter,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -142,6 +145,7 @@ export function ContractTabs(props: {
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
               bets={bets}
+              appRouter={appRouter}
             />
           ),
         },
@@ -199,6 +203,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   bets?: Bet[]
   highlightCommentId?: string
   pinnedComments: ContractComment[]
+  appRouter?: boolean
 }) {
   const {
     contract,
@@ -209,6 +214,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     className,
     bets,
     highlightCommentId,
+    appRouter,
   } = props
   const user = useUser()
 
@@ -315,7 +321,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
   const idToHighlight =
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    highlightCommentId ?? useHashInUrlPageRouter('')
+    highlightCommentId ?? appRouter
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useHashInUrl()
+      : // eslint-disable-next-line react-hooks/rules-of-hooks
+        useHashInUrlPageRouter('')
   useEffect(() => {
     if (idToHighlight) {
       const currentlyVisible = visibleCommentIds.includes(idToHighlight)

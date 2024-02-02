@@ -3,11 +3,12 @@ import {
   ChevronDownIcon,
   PencilIcon,
   PresentationChartLineIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
 import Link from 'next/link'
@@ -32,7 +33,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { MultiSort } from '../contract/contract-overview'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
@@ -44,6 +45,10 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { TradesButton } from 'web/components/contract/trades-button'
 import toast from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { OrderBookButton } from '../bet/order-book'
+import { useUnfilledBets } from 'web/hooks/use-bets'
+import { Tooltip } from '../widgets/tooltip'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -94,6 +99,7 @@ export function AnswersPanel(props: {
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+  const unfilledBets = useUnfilledBets(contract.id)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -159,6 +165,9 @@ export function AnswersPanel(props: {
                     : [...ids, answer.id]
                 )
               }}
+              unfilledBets={unfilledBets?.filter(
+                (b) => b.answerId === answer.id
+              )}
               selected={selected?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
@@ -336,6 +345,7 @@ export function SimpleAnswerBars(props: {
 function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  unfilledBets?: Array<LimitBet>
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
@@ -350,6 +360,7 @@ function Answer(props: {
   const {
     answer,
     contract,
+    unfilledBets,
     onCommentClick,
     onHover,
     onClick,
@@ -382,6 +393,11 @@ function Answer(props: {
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isMobile = useIsMobile()
+
+  const limitOrderVolume = useMemo(
+    () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
+    [unfilledBets]
+  )
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
@@ -497,6 +513,27 @@ function Answer(props: {
                   Edit
                 </Button>
               )}
+
+            {unfilledBets?.length && limitOrderVolume ? (
+              <OrderBookButton
+                limitBets={unfilledBets}
+                contract={contract}
+                label={
+                  <Tooltip
+                    text={`Limit order volume: ${formatMoney(
+                      limitOrderVolume
+                    )}`}
+                    placement="top"
+                    noTap
+                    className="flex flex-row gap-1"
+                  >
+                    <ScaleIcon className="h-5 w-5" />
+                    {shortFormatNumber(limitOrderVolume)}
+                  </Tooltip>
+                }
+                buttonColor="gray-outline"
+              />
+            ) : null}
             {'poolYes' in answer && (
               <TradesButton
                 contract={contract}

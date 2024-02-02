@@ -4,10 +4,8 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract } from 'common/contract'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
-import { sortBy, sumBy } from 'lodash'
+import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
-import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { PartyBar } from './party-bar'
 
@@ -29,16 +27,6 @@ export function PartyPanel(props: {
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
-
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
@@ -52,15 +40,9 @@ export function PartyPanel(props: {
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ]).slice(0, maxAnswers)
-
-  const moreCount = answers.length - displayedAnswers.length
-
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-
   return (
     <Col className="mx-[2px] gap-2">
       {showNoAnswers ? (
@@ -98,7 +80,7 @@ function PartyAnswer(props: {
   userBets?: Bet[]
   user?: User | null
 }) {
-  const { answer, contract, onHover, selected, color, userBets, user } = props
+  const { answer, contract, onHover, selected, color } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -110,10 +92,6 @@ function PartyAnswer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
       <PartyBar
@@ -129,15 +107,6 @@ function PartyAnswer(props: {
         selected={selected}
         contract={contract}
       />
-      {/* {!resolution && hasBets && isCpmm && user && (
-        <AnswerPosition
-          contract={contract}
-          answer={answer as Answer}
-          userBets={userBets}
-          className="mt-0.5 self-end sm:mx-3 sm:mt-0"
-          user={user}
-        />
-      )} */}
     </Col>
   )
 }

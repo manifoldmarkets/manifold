@@ -7,10 +7,6 @@ import { getContractFromSlug } from 'web/lib/supabase/contracts'
 
 export const revalidate = 15 // revalidate at most in seconds
 
-export async function generateStaticParams() {
-  return []
-}
-
 export async function generateMetadata(
   props: { params: { contractSlug: string } },
   parent: ResolvingMetadata

@@ -111,6 +111,7 @@ export default function ProfilePage(props: {
   }
 
   const deleteAccount = async () => {
+    // if you change this, be sure to update firestore.rules. it's pretty exact to prevent self-unbanning. or better, turn this to API call
     await updateUser(user.id, { userDeleted: true, isBannedFromPosting: true })
     await updatePrivateUser(privateUser.id, {
       //eslint-disable-next-line @typescript-eslint/ban-ts-comment

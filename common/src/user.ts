@@ -59,6 +59,7 @@ export type User = {
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
   fromLove?: boolean
+  fromPolitics?: boolean
   signupBonusPaid?: number
 }
 

@@ -14,6 +14,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { ProfileSummary } from './politics-profile-summary'
 import { Item, SidebarItem } from './politics-sidebar-item'
 import { useTheme } from 'web/hooks/use-theme'
+import { PoliticsLogo } from './politics-logo'
 
 export default function Sidebar(props: {
   className?: string
@@ -41,7 +42,8 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      {user === undefined && <div className="h-[56px]" />}
+      <PoliticsLogo className="pb-3 pt-6" />
+      {/* {user === undefined && <div className="h-[56px]" />} */}
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 

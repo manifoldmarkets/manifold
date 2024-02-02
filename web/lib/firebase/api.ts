@@ -326,10 +326,6 @@ export function supabaseSearchDashboards(params: {
   >
 }
 
-export function setNewsDashboards(params: { dashboardIds: string[] }) {
-  return call(getApiUrl('set-news-dashboards'), 'POST', params)
-}
-
 export function getYourFollowedDashboards() {
   return call(getApiUrl('getyourfolloweddashboards'), 'POST')
 }
@@ -362,7 +358,7 @@ export function referUser(params: {
   return call(getApiUrl('refer-user'), 'POST', params)
 }
 
-export const updateMarket = curriedAPI('update-market')
+export const updateMarket = curriedAPI('market/:contractId/update')
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)

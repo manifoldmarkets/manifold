@@ -8,7 +8,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getRelatedContracts } from 'common/supabase/related-contracts'
+import { getRelatedPoliticsContracts } from 'common/supabase/related-contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
@@ -16,8 +16,8 @@ import { getBetPoints, getBets, getTotalBetCount } from 'common/supabase/bets'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
+import { unstable_cache } from 'next/cache'
 
-// TODO: add unstable_cache where applicable
 export const getContractParams = async function (
   contract: Contract,
   db: SupabaseClient
@@ -28,6 +28,7 @@ export const getContractParams = async function (
   const isBinaryDpm =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
 
+  // TODO: add unstable_cache where applicable
   const [
     totalBets,
     betsToPass,
@@ -54,6 +55,7 @@ export const getContractParams = async function (
     hasMechanism
       ? getBetPoints(db, contract.id, {
           filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+          limit: 10000,
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
@@ -63,7 +65,11 @@ export const getContractParams = async function (
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    getRelatedContracts(contract, 20, db),
+    unstable_cache(
+      async () => getRelatedPoliticsContracts(contract, 20, 0, db),
+      [contract.id],
+      { revalidate: 5 * 60 }
+    )(),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {

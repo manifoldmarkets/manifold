@@ -66,6 +66,7 @@ import {
   CommentOnLoverNotification,
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1799,7 +1800,7 @@ function LoveLikeNotification(props: {
           setOpen={setOpen}
         />
       }
-      link={`/${sourceUserUsername}`}
+      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
       subtitle={<></>}
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
@@ -1846,7 +1847,7 @@ function LoveShipNotification(props: {
           setOpen={setOpen}
         />
       }
-      link={`/${sourceUserUsername}`}
+      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
       subtitle={<></>}
     >
       You and {reactorsText && <PrimaryNotificationLink text={reactorsText} />}{' '}

@@ -5,6 +5,8 @@ export const DEV_CONFIG: EnvConfig = {
   domain: 'dev.manifold.markets',
   loveDomain: 'dev.manifold.love',
   loveDomainAlternate: 'dev.manifoldlove.com',
+  politicsDomain: 'dev.politifold.com',
+  politicsDomainAlternate: 'dev.manifoldpolitics.com',
   firebaseConfig: {
     apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
     authDomain: 'dev-mantic-markets.firebaseapp.com',
