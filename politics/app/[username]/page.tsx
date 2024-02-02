@@ -3,6 +3,8 @@ import type { Metadata, ResolvingMetadata } from 'next'
 import UserPage from 'politics/app/[username]/user-page'
 import { filterDefined } from 'common/util/array'
 import Custom404 from 'politics/app/404/page'
+import { shouldIgnoreUserPage } from 'common/user'
+import { db } from 'web/lib/supabase/db'
 
 export const revalidate = 60
 
@@ -16,6 +18,7 @@ export async function generateMetadata(
     return {
       title: `User @${props.params.username} not found`,
     }
+  const ignore = await shouldIgnoreUserPage(user, db)
   return {
     title: `${user.name} (@${user.username})`,
     description: user.bio ?? '',
@@ -23,10 +26,7 @@ export async function generateMetadata(
       images: filterDefined([user.avatarUrl, ...previousImages]),
       url: `/${user.username}`,
     },
-    robots:
-      user.userDeleted || user.isBannedFromPosting
-        ? 'noindex, nofollow'
-        : undefined,
+    robots: ignore ? 'noindex, nofollow' : undefined,
   }
 }
 export default async function Page(props: { params: { username: string } }) {
