@@ -46,6 +46,7 @@ export const AnswerBar = (props: {
   end: ReactNode
   className?: string
   hideBar?: boolean
+  renderBackgroundLayer?: React.ReactNode
   onHover?: (hovering: boolean) => void
   onClick?: () => void
   barColor?: string
@@ -58,6 +59,7 @@ export const AnswerBar = (props: {
     end,
     className,
     hideBar,
+    renderBackgroundLayer,
     onHover,
     onClick,
   } = props
@@ -101,6 +103,7 @@ export const AnswerBar = (props: {
             }}
           />
         )}
+        {renderBackgroundLayer}
       </div>
     </Col>
   )
