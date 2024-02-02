@@ -82,7 +82,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
 }
-
+export const dynamic = 'force-dynamic'
 // Only renders once per session
 export default async function RootLayout({
   children,

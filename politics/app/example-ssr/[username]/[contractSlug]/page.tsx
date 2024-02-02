@@ -4,7 +4,6 @@ import { filterDefined } from 'common/util/array'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { Col } from 'web/components/layout/col'
 import { FullMarket } from 'common/api/market-types'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 export const dynamicParams = true
 export const revalidate = 60
@@ -30,7 +29,7 @@ export async function generateMetadata(
 }
 
 const getMarketFromSlug = async (slug: string) => {
-  const resp = await fetch(`${ENV_CONFIG.politicsDomain}api/v0/slug/${slug}`)
+  const resp = await fetch(`https://api.manifold.markets/v0/slug/${slug}`)
   if (!resp.ok) {
     throw new Error('Market not found with slug: ' + slug)
   }
