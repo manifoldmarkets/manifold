@@ -49,8 +49,8 @@ import { OrderBookButton } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { safeLocalStorage } from 'web/lib/util/local'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
@@ -105,19 +105,8 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   const unfilledBets = useUnfilledBets(contract.id)
 
-  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] = useState(
-    safeLocalStorage?.getItem(SHOW_LIMIT_ORDER_CHARTS_KEY) === 'true' ?? false
-  )
-
-  const handleToggleLimitOrderCharts = () => {
-    const newValue = !shouldShowLimitOrderChart
-
-    setShouldShowLimitOrderChart(newValue)
-    safeLocalStorage?.setItem(
-      SHOW_LIMIT_ORDER_CHARTS_KEY,
-      newValue ? 'true' : 'false'
-    )
-  }
+  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
+    usePersistentLocalState<boolean>(false, SHOW_LIMIT_ORDER_CHARTS_KEY)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -164,7 +153,9 @@ export function AnswersPanel(props: {
               type="checkbox"
               className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
               checked={shouldShowLimitOrderChart}
-              onChange={handleToggleLimitOrderCharts}
+              onChange={() =>
+                setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+              }
             />
             <label
               htmlFor="limitOrderChart"
@@ -343,8 +334,10 @@ export function SimpleAnswerBars(props: {
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-  const shouldShowLimitOrderChart =
-    safeLocalStorage?.getItem(SHOW_LIMIT_ORDER_CHARTS_KEY) === 'true' ?? false
+  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
+    false,
+    SHOW_LIMIT_ORDER_CHARTS_KEY
+  )
 
   return (
     <Col className="mx-[2px] gap-2">
