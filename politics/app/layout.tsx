@@ -1,5 +1,4 @@
 import Script from 'next/script'
-import { AuthProvider } from 'web/components/auth-context'
 import '../styles/globals.css'
 import {
   Major_Mono_Display,
@@ -108,9 +107,9 @@ export default async function RootLayout({
           serifFont.variable
         )}
       >
-        <AuthProvider serverUser={authUser}>
-          <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
-        </AuthProvider>
+        {/*<AuthProvider serverUser={authUser}>*/}
+        <div className={'bg-canvas-50 text-ink-1000'}>{children}</div>
+        {/*</AuthProvider>*/}
         {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
         <div id="headlessui-portal-root">
           <div />
