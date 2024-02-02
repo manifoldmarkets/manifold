@@ -51,6 +51,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
@@ -105,8 +106,9 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   const unfilledBets = useUnfilledBets(contract.id)
 
+  const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
-    usePersistentLocalState<boolean>(false, SHOW_LIMIT_ORDER_CHARTS_KEY)
+    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -147,23 +149,25 @@ export function AnswersPanel(props: {
             </Button>
           )}
 
-          <Row className="items-center gap-2">
-            <input
-              id="limitOrderChart"
-              type="checkbox"
-              className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-              checked={shouldShowLimitOrderChart}
-              onChange={() =>
-                setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
-              }
-            />
-            <label
-              htmlFor="limitOrderChart"
-              className="text-ink-500 text-sm font-medium"
-            >
-              Show limit orders
-            </label>
-          </Row>
+          {isAdvancedTrader && (
+            <Row className="items-center gap-2">
+              <input
+                id="limitOrderChart"
+                type="checkbox"
+                className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+                checked={shouldShowLimitOrderChart}
+                onChange={() =>
+                  setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+                }
+              />
+              <label
+                htmlFor="limitOrderChart"
+                className="text-ink-500 text-sm font-medium"
+              >
+                Show limit orders
+              </label>
+            </Row>
+          )}
         </Row>
       </SearchCreateAnswerPanel>
 
@@ -198,7 +202,9 @@ export function AnswersPanel(props: {
               userBets={userBetsByAnswer[answer.id]}
               showAvatars={showAvatars}
               expanded={expandedIds.includes(answer.id)}
-              shouldShowLimitOrderChart={shouldShowLimitOrderChart}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
             />
           ))}
 
