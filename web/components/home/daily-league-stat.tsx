@@ -24,6 +24,12 @@ export const DailyLeagueStat = (props: { user: User }) => {
             ? '🥉'
             : name === 'Silver'
             ? '🥈'
+            : name === 'Gold'
+            ? '🥇'
+            : name === 'Platinum'
+            ? '💿'
+            : name === 'Diamond'
+            ? '💎'
             : name === 'Masters'
             ? '🎖️'
             : '🏅'}{' '}
