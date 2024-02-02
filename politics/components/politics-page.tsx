@@ -84,7 +84,7 @@ export function PoliticsPage(props: {
         <main
           className={clsx(
             'flex flex-1 flex-col lg:mt-6 xl:px-2',
-            'col-span-8',
+            'col-span-10',
             className
           )}
         >

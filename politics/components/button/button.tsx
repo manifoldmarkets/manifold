@@ -5,7 +5,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
 const sizeClasses = {
-  '2xs': 'px-2 py-1 text-xs border-2',
+  '2xs': 'px-2 py-1 text-xs ring-[1.5px]',
   xs: 'px-2 text-xs ring-[1.5px] h-6',
   sm: 'px-3 py-2 text-sm ring-2',
   md: 'px-4 py-2 text-sm ring-2',
@@ -34,7 +34,6 @@ export const Button = forwardRef(function Button(
     children,
     className,
     size = 'md',
-    color = 'indigo',
     type = 'button',
     disabled = false,
     loading,

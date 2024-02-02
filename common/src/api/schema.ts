@@ -70,7 +70,7 @@ export const API = (_apiTypeCheck = {
   },
   'pin-comment': {
     method: 'POST',
-    visibility: 'public',
+    visibility: 'undocumented',
     authed: true,
     props: z.object({ commentPath: z.string() }).strict(),
   },
@@ -617,6 +617,14 @@ export const API = (_apiTypeCheck = {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
+  },
+  'unlist-and-cancel-user-contracts': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+    }),
   },
   'get-ad-analytics': {
     method: 'POST',

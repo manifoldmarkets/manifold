@@ -9,7 +9,13 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
+import {
+  MultiContract,
+  contractPath,
+  Contract,
+  SORTS,
+  CPMMMultiContract,
+} from 'common/contract'
 import Link from 'next/link'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -28,6 +34,7 @@ import {
   AnswerStatus,
   BetButtons,
   AnswerPosition,
+  MultiBettor,
 } from './answer-components'
 import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -423,7 +430,7 @@ function Answer(props: {
           </Row>
         }
         end={
-          <Row className={'items-center gap-1.5 sm:gap-2'}>
+          <Row className={'items-center gap-1 sm:gap-2'}>
             <AnswerStatus contract={contract} answer={answer} />
             {selected && (
               <PresentationChartLineIcon
@@ -431,10 +438,10 @@ function Answer(props: {
                 style={{ fill: color }}
               />
             )}
-            <BetButtons
-              contract={contract}
-              answer={answer}
-              fillColor={barColor}
+
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
             />
             {onClick && (
               <IconButton

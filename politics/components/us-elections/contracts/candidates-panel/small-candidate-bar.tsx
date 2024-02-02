@@ -16,6 +16,9 @@ import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { removeTextInParentheses } from './candidate-bar'
+import { AnimatedProb } from '../party-panel/party-bar'
+import { Button } from 'politics/components/button/button'
+import { MultiBettor } from 'politics/components/answers/answer-components'
 
 export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
@@ -41,11 +44,10 @@ export const SmallCandidateBar = (props: {
   } = props
 
   const candidatefullName = removeTextInParentheses(answer.text)
-  const [open, setOpen] = useState(false)
-  const user = useUser()
+
   const isMobile = useIsMobile()
 
-  const { shortName, photo, party } = CANDIDATE_DATA[candidatefullName] ?? {}
+  const { shortName, photo } = CANDIDATE_DATA[candidatefullName] ?? {}
 
   return (
     <>
@@ -66,15 +68,13 @@ export const SmallCandidateBar = (props: {
 
             {shortName ?? answer.text}
           </Row>
-          <CandidateProb
-            contract={contract}
-            answer={answer}
-            onClick={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-              setOpen(true)
-            }}
-          />
+          <Row className="items-center gap-1 sm:gap-2">
+            <AnimatedProb contract={contract} answer={answer} align="right" />
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
+            />
+          </Row>
         </Row>
         <div
           className={clsx(
@@ -108,38 +108,6 @@ export const SmallCandidateBar = (props: {
           )}
         </div>
       </Col>
-      <Modal open={open} setOpen={setOpen} className={MODAL_CLASS}>
-        <AnswerCpmmBetPanel
-          answer={answer}
-          contract={contract as CPMMMultiContract}
-          outcome={'YES'}
-          closePanel={() => {
-            setOpen(false)
-          }}
-          me={user}
-        />
-      </Modal>
     </>
-  )
-}
-
-export const CandidateProb = (props: {
-  contract: MultiContract
-  answer: Answer | DpmAnswer
-  onClick: MouseEventHandler<HTMLButtonElement>
-}) => {
-  const { contract, answer, onClick } = props
-  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
-
-  return (
-    <button className={'items-center'} onClick={onClick}>
-      <span
-        className={clsx(
-          ' hover:text-primary-700 min-w-[2.5rem] whitespace-nowrap text-lg font-bold sm:text-2xl'
-        )}
-      >
-        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
-      </span>
-    </button>
   )
 }

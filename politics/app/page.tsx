@@ -1,6 +1,9 @@
 import { PoliticsPage } from 'politics/components/politics-page'
 import { USElectionsPage } from 'politics/components/elections-page'
-import { getElectionsPageProps } from 'web/lib/politics/home'
+import {
+  getElectionsPageProps,
+  REVALIDATE_CONTRACTS_SECONDS,
+} from 'web/lib/politics/home'
 import {
   ELECTION_DASHBOARD_DESCRIPTION,
   ELECTION_DASHBOARD_TITLE,
@@ -11,6 +14,8 @@ import { unstable_cache } from 'next/cache'
 import { HOUR_SECONDS } from 'common/util/time'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { NewsDashboard } from 'politics/components/home-dashboard/news-dashboard'
+
+export const revalidate = REVALIDATE_CONTRACTS_SECONDS
 
 export async function generateMetadata() {
   return {
@@ -25,7 +30,7 @@ export default async function Page() {
   const headlines = await unstable_cache(
     async () => api('politics-headlines', {}),
     ['politics-headlines'],
-    { revalidate: 4 * HOUR_SECONDS, tags: ['politics-headlines'] }
+    { revalidate: 12 * HOUR_SECONDS, tags: ['politics-headlines'] }
   )()
   const newsDashboards = await Promise.all(
     headlines.map(
@@ -33,7 +38,7 @@ export default async function Page() {
         await unstable_cache(
           () => getDashboardProps(headline.slug),
           [headline.slug],
-          { revalidate: 60 }
+          { revalidate: REVALIDATE_CONTRACTS_SECONDS, tags: [headline.slug] }
         )()
     )
   )

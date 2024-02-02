@@ -30,11 +30,10 @@ export async function generateMetadata({
   }
 }
 
-export default function Page({ searchParams }: Props) {
-  // if (true) return <LoadingResults />
+export default function Page() {
   return (
     <PoliticsPage trackPageView={'browse page'}>
-      <Col className={clsx('relative col-span-8 mx-auto w-full xl:col-span-7')}>
+      <Col className={clsx('relative col-span-10 w-full ')}>
         <SupabaseSearch
           hideSearchTypes={true}
           persistPrefix="search"

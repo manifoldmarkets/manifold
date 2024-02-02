@@ -14,7 +14,7 @@ import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import { useDev } from 'web/hooks/use-admin'
+import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
 import {
   api,
   updateMarket,
@@ -38,6 +38,7 @@ import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
+import SuperBanControl from '../SuperBanControl'
 
 export const Stats = (props: {
   contract: Contract
@@ -482,6 +483,8 @@ export function ContractInfoDialog(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, open, setOpen } = props
+  const isAdmin = useAdmin()
+  const isTrusted = useTrusted()
 
   return (
     <Modal
@@ -514,6 +517,9 @@ export function ContractInfoDialog(props: {
 
             <BlockMarketButton contract={contract} />
             <DisinterestedButton contract={contract} user={user} />
+            {isAdmin || isTrusted ? (
+              <SuperBanControl userId={contract.creatorId} />
+            ) : null}
           </Row>
         </>
       )}

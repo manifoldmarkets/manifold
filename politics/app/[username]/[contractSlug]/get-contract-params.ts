@@ -18,7 +18,6 @@ import { binAvg } from 'common/chart'
 import { pointsToBase64 } from 'common/util/og'
 import { unstable_cache } from 'next/cache'
 
-// TODO: add unstable_cache where applicable
 export const getContractParams = async function (
   contract: Contract,
   db: SupabaseClient
@@ -29,6 +28,7 @@ export const getContractParams = async function (
   const isBinaryDpm =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
 
+  // TODO: add unstable_cache where applicable
   const [
     totalBets,
     betsToPass,
@@ -55,6 +55,7 @@ export const getContractParams = async function (
     hasMechanism
       ? getBetPoints(db, contract.id, {
           filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+          limit: 10000,
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
@@ -65,7 +66,7 @@ export const getContractParams = async function (
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unstable_cache(
-      async () => getRelatedPoliticsContracts(contract, 20, db),
+      async () => getRelatedPoliticsContracts(contract, 20, 0, db),
       [contract.id],
       { revalidate: 5 * 60 }
     )(),
