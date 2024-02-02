@@ -5,7 +5,6 @@ import { getContractFromSlug } from 'web/lib/supabase/contracts'
 import { Col } from 'web/components/layout/col'
 import { FullMarket } from 'common/api/market-types'
 
-export const dynamicParams = true
 export const revalidate = 60
 export async function generateStaticParams() {
   return []
