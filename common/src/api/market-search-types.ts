@@ -4,7 +4,7 @@ export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
 export const searchProps = z
   .object({
-    term: z.string(),
+    term: z.string().optional(),
     filter: z
       .union([
         z.literal('open'),

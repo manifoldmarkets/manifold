@@ -66,7 +66,7 @@ export const getContractParams = async function (
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unstable_cache(
-      async () => getRelatedPoliticsContracts(contract, 20, db),
+      async () => getRelatedPoliticsContracts(contract, 20, 0, db),
       [contract.id],
       { revalidate: 5 * 60 }
     )(),

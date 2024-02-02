@@ -43,7 +43,6 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -63,6 +62,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PoliticsPage } from 'politics/components/politics-page'
 import ContractEmbedPage from 'web/pages/embed/[username]/[contractSlug]'
+import { useRelatedPoliticalMarkets } from 'politics/hooks/use-related-politics-markets'
 
 export function ContractPage(props: { contractParams: ContractParams }) {
   const inIframe = useIsIframe()
@@ -77,7 +77,7 @@ export function ContractPage(props: { contractParams: ContractParams }) {
     return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
-      <PoliticsPage trackPageView={false}>
+      <PoliticsPage trackPageView={false} className={'xl:col-span-10'}>
         <ContractPageContent key={contract.id} {...props.contractParams} />
       </PoliticsPage>
     )
@@ -228,7 +228,7 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [replyTo])
 
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+  const { contracts: relatedMarkets, loadMore } = useRelatedPoliticalMarkets(
     contract,
     relatedContracts
   )

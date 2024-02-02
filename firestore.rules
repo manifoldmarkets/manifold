@@ -31,7 +31,7 @@ service cloud.firestore {
       allow update:
       if userId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings', 'hasSeenLoanModal']);
+        .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings', 'hasSeenLoanModal', 'isAdvancedTrader']);
       // delete user rules
       allow update: if userId == request.auth.uid
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userDeleted', 'isBannedFromPosting'])

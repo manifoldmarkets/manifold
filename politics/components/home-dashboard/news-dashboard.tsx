@@ -7,7 +7,6 @@ import {
 } from 'common/dashboard'
 import { LinkPreviews } from 'common/link-preview'
 import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
 import { useEffect, useState } from 'react'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -23,6 +22,7 @@ import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
 import { type Contract } from 'common/contract'
+import { ReferralSaver } from 'politics/components/referral-saver'
 
 export function NewsDashboard(props: {
   initialDashboard: Dashboard
@@ -32,7 +32,6 @@ export function NewsDashboard(props: {
   editByDefault: boolean
 }) {
   const user = useUser()
-  useSaveReferral(user)
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
@@ -80,7 +79,7 @@ export function NewsDashboard(props: {
           </div>
         </>
       )}
-
+      <ReferralSaver />
       <Col className="w-full px-1 sm:px-2" id={slug}>
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (

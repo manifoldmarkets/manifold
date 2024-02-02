@@ -49,6 +49,11 @@ import { OrderBookButton } from '../bet/order-book'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { Tooltip } from '../widgets/tooltip'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { useIsClient } from 'web/hooks/use-is-client'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+
+const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
@@ -101,6 +106,10 @@ export function AnswersPanel(props: {
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   const unfilledBets = useUnfilledBets(contract.id)
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+  const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
+    usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
+
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
@@ -121,7 +130,7 @@ export function AnswersPanel(props: {
         text={query}
         setText={setQuery}
       >
-        <Row className={'mb-1 items-center gap-3'}>
+        <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
             closeOnClick
             items={generateFilterDropdownItems(SORTS, setSort)}
@@ -138,6 +147,26 @@ export function AnswersPanel(props: {
             <Button color="gray-outline" size="2xs" onClick={setDefaultSort}>
               Set default
             </Button>
+          )}
+
+          {isAdvancedTrader && (
+            <Row className="items-center gap-2">
+              <input
+                id="limitOrderChart"
+                type="checkbox"
+                className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+                checked={shouldShowLimitOrderChart}
+                onChange={() =>
+                  setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+                }
+              />
+              <label
+                htmlFor="limitOrderChart"
+                className="text-ink-500 text-sm font-medium"
+              >
+                Show limit orders
+              </label>
+            </Row>
           )}
         </Row>
       </SearchCreateAnswerPanel>
@@ -173,6 +202,9 @@ export function AnswersPanel(props: {
               userBets={userBetsByAnswer[answer.id]}
               showAvatars={showAvatars}
               expanded={expandedIds.includes(answer.id)}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
             />
           ))}
 
@@ -303,10 +335,15 @@ export function SimpleAnswerBars(props: {
   const moreCount = answers.length - displayedAnswers.length
 
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
+  const unfilledBets = useUnfilledBets(contract.id)
 
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
+    false,
+    SHOW_LIMIT_ORDER_CHARTS_KEY
+  )
 
   return (
     <Col className="mx-[2px] gap-2">
@@ -323,6 +360,10 @@ export function SimpleAnswerBars(props: {
               color={getAnswerColor(answer, answersArray)}
               showAvatars={showAvatars}
               barColor={barColor}
+              shouldShowLimitOrderChart={shouldShowLimitOrderChart}
+              unfilledBets={unfilledBets?.filter(
+                (b) => b.answerId === answer.id
+              )}
             />
           ))}
           {moreCount > 0 && (
@@ -356,6 +397,7 @@ function Answer(props: {
   showAvatars?: boolean
   expanded?: boolean
   barColor?: string
+  shouldShowLimitOrderChart: boolean
 }) {
   const {
     answer,
@@ -371,6 +413,7 @@ function Answer(props: {
     expanded,
     user,
     barColor,
+    shouldShowLimitOrderChart,
   } = props
 
   const answerCreator = useUserByIdOrAnswer(answer)
@@ -393,6 +436,7 @@ function Answer(props: {
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isMobile = useIsMobile()
+  const isClient = useIsClient()
 
   const limitOrderVolume = useMemo(
     () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
@@ -467,6 +511,16 @@ function Answer(props: {
               </IconButton>
             )}
           </Row>
+        }
+        renderBackgroundLayer={
+          shouldShowLimitOrderChart &&
+          isClient && (
+            <LimitOrderBarChart
+              limitOrders={unfilledBets}
+              prob={prob}
+              activeColor={color}
+            />
+          )
         }
       />
       {!resolution && hasBets && isCpmm && user && (
@@ -554,5 +608,51 @@ function Answer(props: {
         />
       )}
     </Col>
+  )
+}
+
+function LimitOrderBarChart({
+  limitOrders,
+  prob,
+  activeColor,
+}: {
+  limitOrders?: Array<LimitBet>
+  prob: number
+  activeColor: string
+}) {
+  const limitOrdersByProb = useMemo(
+    () => groupBy(limitOrders, 'limitProb'),
+    [limitOrders]
+  )
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Object.entries(limitOrdersByProb).map(([limitProb, bets]) => {
+        const numericLimitProb = Number(limitProb)
+        const volume = sumBy(bets, (bet) => bet.orderAmount - bet.amount)
+
+        const logVolume = Math.log(volume)
+        const logMaxOfVolume = Math.log(40000)
+        const scaledResult = (logVolume / logMaxOfVolume) * 50 // Only fill up max 50% of the height
+
+        return (
+          <div
+            key={limitProb}
+            className={clsx(
+              'absolute bottom-0 -ml-1 min-h-[3px] w-0.5 rounded-t dark:brightness-75'
+            )}
+            style={{
+              left: `${numericLimitProb * 100}%`,
+              height: `${scaledResult}%`,
+
+              backgroundColor:
+                prob >= numericLimitProb
+                  ? 'rgb(var(--color-canvas-50))'
+                  : activeColor,
+            }}
+          ></div>
+        )
+      })}
+    </div>
   )
 }

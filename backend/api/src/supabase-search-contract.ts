@@ -39,7 +39,7 @@ const search = async (
   logError: GCPLog
 ) => {
   const {
-    term,
+    term = '',
     filter,
     sort,
     contractType,

@@ -1041,6 +1041,93 @@ Parameters:
 
 Requires no auth.
 
+## Manifold Love Endpoints
+
+### `GET /v0/get-lovers`
+
+See all users' profile data. (Doesn't include answers to compatibility questions.)
+
+Requires no auth.
+
+Example response (truncated):
+
+```json
+{
+  "lovers": [
+    {
+      "id": 2,
+      "user_id": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+      "created_time": "2023-10-21T21:18:26.691Z",
+      "last_online_time": "2024-02-02T00:16:34.937Z",
+      "city": "San Francisco",
+      "gender": "male",
+      "pref_gender": [
+        "female"
+      ],
+      "user": {
+        "id": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+        "bio": "Manifold cofounder! We got the AMM (What!?). We got the order book (What!?). We got the combination AMM and order book!",
+      "name": "James",
+    },
+  ]
+}
+```
+
+### `GET /v0/get-lover-answers?userId=[user_id]`
+
+See a specific user's answers to compatibility questions.
+
+Requires no auth.
+
+Example response (truncated):
+
+```json
+{
+  "answers": [
+    {
+      "id": 3167,
+      "question_id": 187,
+      "creator_id": "5LZ4LgYuySdL1huCWe7bti02ghx2",
+      "created_time": "2023-12-07T18:44:42.549Z",
+      "explanation": "This is a fun question. As a startup founder, I'm a Gryffindor. As a friend, a Hufflepuff. When discussing ideas, I'm a Ravenclaw. When I have a galaxy-brain scheme to alter society and maximize utility, I'm a Slytherin.",
+      "multiple_choice": 0,
+      "pref_choices": [0, 1, 2, 3],
+      "importance": 1
+    }
+  ]
+}
+```
+
+### `GET /v0/get-compatibility-questions`
+
+See the text of all compatibility questions.
+
+Requires no auth.
+
+Example response (truncated):
+
+```json
+{
+  "questions": [
+  {
+    "id": 297,
+    "creator_id": "IwoMKy7dXwXlqeTDn8vPbSe4w4m1",
+    "created_time": "2024-01-30T03:04:30.899Z",
+    "question": "When we disagree, I prefer to:",
+    "importance_score": 0,
+    "answer_type": "compatibility_multiple_choice",
+    "multiple_choice_options": {
+      "Avoid bringing up difficult topics": 3,
+      "Discuss the issue calmly and find a compromise": 0,
+      "Take some time to cool off before discussing it": 1,
+      "Express my feelings directly, even if it gets heated": 2
+    },
+    "answer_count": 41,
+    "score": 12.6829268292683
+  },
+}
+```
+
 ## Internal API
 
 Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implimented. These endpoints are not preceeded by `/v0` and are even more subject to sudden changes than the official API endpoints.
@@ -1055,6 +1142,7 @@ Parameters:
 
 ## Changelog
 
+- 2024-02-01: Add Manifold Love endpoints `/get-lovers`, `/get-lover-answers?userId=[user_id]`, `/get-compatibility-questions`
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.
 - 2023-12-18: `manifold.markets/api` -> `api.manifold.markets`. Please migrate old code.
 - 2023-12-12: New flat api structure (reverted)

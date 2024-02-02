@@ -375,6 +375,7 @@ $$;
 create
     or replace function close_politics_contract_embeddings (
     input_contract_id text,
+    start int,
     match_count int
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$
     WITH query_embedding AS (
@@ -394,7 +395,7 @@ create
            politics_embeddings.data
     from politics_embeddings
         order by 1 - (politics_embeddings.embedding <=> (select embedding from query_embedding)) * importance_score desc
-    limit match_count
+    limit match_count offset start;
 $$;
 
 create
