@@ -85,6 +85,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // TOD: Using cookies and 'force-dynamic' ruins static caching of contract pages
+  // Not sure how to fix yet, or how necessary it is to get the user on the server
   // const cookieStore = cookies()
   // const user = cookieStore.has(AUTH_COOKIE_NAME)
   //   ? cookieStore.get(AUTH_COOKIE_NAME)
