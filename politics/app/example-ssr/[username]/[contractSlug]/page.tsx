@@ -5,7 +5,10 @@ import { filterDefined } from 'common/util/array'
 import Custom404 from 'politics/app/404/page'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
 
-export const revalidate = 15 // revalidate at most in seconds
+export const revalidate = 60
+export async function generateStaticParams() {
+  return []
+}
 
 export async function generateMetadata(
   props: { params: { contractSlug: string } },
