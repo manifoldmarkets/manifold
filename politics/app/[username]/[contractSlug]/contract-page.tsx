@@ -77,7 +77,7 @@ export function ContractPage(props: { contractParams: ContractParams }) {
     return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
-      <PoliticsPage trackPageView={false}>
+      <PoliticsPage trackPageView={false} className={'xl:col-span-10'}>
         <ContractPageContent key={contract.id} {...props.contractParams} />
       </PoliticsPage>
     )
