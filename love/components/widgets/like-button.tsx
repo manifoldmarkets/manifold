@@ -16,6 +16,7 @@ import { useUserById } from 'web/hooks/use-user-supabase'
 import { MatchAvatars } from '../matches/match-avatars'
 import { useLover } from 'love/hooks/use-lover'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useUser } from 'web/hooks/use-user'
 
 export const LikeButton = (props: {
   targetLover: Lover
@@ -104,6 +105,8 @@ const LikeConfimationDialog = (props: {
   const { open, setOpen, targetLover, hasFreeLike, submit } = props
   const youLover = useLover()
   const user = useUserById(targetLover.user_id)
+  const currentUser = useUser()
+
   return (
     <Modal
       open={open}
@@ -129,11 +132,23 @@ const LikeConfimationDialog = (props: {
           />
         )}
 
+        {!hasFreeLike && currentUser && (
+          <div className="text-ink-500 mt-4 whitespace-nowrap text-sm">
+            Balance{' '}
+            <span className="text-ink-800">
+              {formatMoney(currentUser.balance)}
+            </span>
+          </div>
+        )}
+
         <Row className="mt-2 items-center justify-between">
           <Button color="gray-outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={() => submit()}>
+          <Button
+            onClick={() => submit()}
+            disabled={!!user && user.balance < LIKE_COST}
+          >
             {hasFreeLike ? (
               <>Use free like & submit</>
             ) : (
