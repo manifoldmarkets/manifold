@@ -137,6 +137,7 @@ function ProfilePreview(props: {
 }) {
   const { lover, compatibilityScore, hasStar, refreshStars } = props
   const { user, gender, age, pinned_url, city, last_online_time } = lover
+  const currentUser = useUser()
 
   return (
     <Link
@@ -162,13 +163,17 @@ function ProfilePreview(props: {
         )}
 
         <Row className="absolute inset-x-0 right-0 top-0 items-start justify-between bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-2">
-          <StarButton
-            className="!pt-0"
-            isStarred={hasStar}
-            refresh={refreshStars}
-            targetLover={lover}
-            hideTooltip
-          />
+          {currentUser ? (
+            <StarButton
+              className="!pt-0"
+              isStarred={hasStar}
+              refresh={refreshStars}
+              targetLover={lover}
+              hideTooltip
+            />
+          ) : (
+            <div />
+          )}
           {compatibilityScore && (
             <CompatibleBadge compatibility={compatibilityScore} />
           )}

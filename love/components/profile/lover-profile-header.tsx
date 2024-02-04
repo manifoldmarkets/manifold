@@ -107,12 +107,14 @@ export default function LoverProfileHeader(props: {
               className="hidden sm:flex"
               username={user.username}
             />
-            <StarButton
-              targetLover={lover}
-              isStarred={starredUserIds.includes(user.id)}
-              refresh={refreshStars}
-            />
-            {showMessageButton && (
+            {currentUser && (
+              <StarButton
+                targetLover={lover}
+                isStarred={starredUserIds.includes(user.id)}
+                refresh={refreshStars}
+              />
+            )}
+            {currentUser && showMessageButton && (
               <SendMessageButton toUser={user} currentUser={currentUser} />
             )}
             <MoreOptionsUserButton user={user} />
