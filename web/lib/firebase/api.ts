@@ -200,16 +200,7 @@ export function followTopic(params: { groupId: string }) {
   return call(getApiUrl('follow-topic'), 'POST', params)
 }
 
-export function searchGroups(params: {
-  term: string
-  limit: number
-  offset?: number
-  addingToContract?: boolean
-}) {
-  return call(getApiUrl('supabasesearchgroups'), 'POST', params) as Promise<
-    Group[]
-  >
-}
+export const searchGroups = curriedAPI('search-groups')
 
 export function leagueActivity(params: { season: number; cohort: string }) {
   return call(getApiUrl('league-activity'), 'POST', params) as Promise<{

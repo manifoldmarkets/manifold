@@ -1,5 +1,12 @@
 import { z } from 'zod'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import {
+  Group,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  LiteGroup,
+  SearchGroupParams,
+  SearchGroupShape,
+} from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -752,6 +759,27 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
+  },
+  'search-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Is there a way to cast {lite:[] as LiteGroup[]} if type is 'lite'?
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(SearchGroupShape),
+  },
+  'search-my-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(MySearchGroupShape),
   },
 } as const)
 

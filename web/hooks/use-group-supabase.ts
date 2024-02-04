@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { Group, GroupRole } from 'common/group'
+import { Group, GroupRole, LiteGroup } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
@@ -24,8 +24,8 @@ import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { difference, orderBy } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -105,37 +105,28 @@ export const useGroupsWithContract = (
   return groups
 }
 
-export function useRealtimeMemberGroups(userId: string | undefined | null) {
-  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
+export function useRealtimeMemberTopics(userId: string | undefined | null) {
+  const [groups, setGroups] = usePersistentInMemoryState<
+    LiteGroup[] | undefined
+  >(undefined, `member-topics-${userId ?? ''}`)
 
-  const { rows } = useSubscription('group_members', {
-    k: 'member_id',
-    v: userId ?? '_',
+  const ids = useRealtimeMemberGroupIds(userId)
+  const { data, refresh } = useAPIGetter('search-my-groups', {
+    limit: 20,
+    term: '',
+    type: 'lite',
   })
-  const ids = rows?.map((row) => row.group_id) ?? []
-
   useEffect(() => {
-    if (!userId) return
-    const newIds = difference(ids, groups?.map((g) => g.id) ?? [])
-    const oldIds = difference(groups?.map((g) => g.id) ?? [], ids)
-    if (groups?.length && oldIds.length > 0) {
-      setGroups((groups) => groups?.filter((g) => !oldIds.includes(g.id)))
-    } else if (newIds.length > 0) {
-      db.from('groups')
-        .select('*')
-        .in('id', newIds)
-        .then((result) => {
-          const newGroups = result.data?.map(convertGroup) ?? []
-          setGroups((groups) =>
-            orderBy(
-              [...(groups ?? []), ...newGroups],
-              'importanceScore',
-              'desc'
-            )
-          )
-        })
+    if (!ids) return
+    console.log('refreshing')
+    refresh()
+  }, [ids])
+  useEffect(() => {
+    if (data) {
+      console.log('setting groups')
+      setGroups(data.lite)
     }
-  }, [JSON.stringify(ids)])
+  }, [JSON.stringify(data)])
 
   return groups
 }
