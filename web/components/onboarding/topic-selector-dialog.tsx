@@ -7,7 +7,7 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, removeEmojis, TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { followTopic, updateUserEmbedding } from 'web/lib/firebase/api'
+import { api, followTopic } from 'web/lib/firebase/api'
 import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
@@ -59,7 +59,7 @@ export function TopicSelectorDialog(props: {
   const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
 
-    if (user && !skipUpdate) await updateUserEmbedding()
+    if (user && !skipUpdate) await api('update-user-embedding', {})
 
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
 

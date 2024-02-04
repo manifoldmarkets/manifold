@@ -153,9 +153,6 @@ export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
 
-export function updateUserEmbedding() {
-  return call(getApiUrl('update-user-embedding'), 'POST')
-}
 export function updateUserDisinterestEmbedding(params: {
   contractId: string
   creatorId: string

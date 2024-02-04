@@ -139,7 +139,6 @@ import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts
 
 import { getLoverAnswers } from './love/get-lover-answers'
 
-
 const allowCorsUnrestricted: RequestHandler = cors({})
 
 function cacheController(policy?: string): RequestHandler {
@@ -249,6 +248,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
+  'update-user-embedding': updateUserEmbedding,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -295,7 +295,6 @@ app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
-app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
   '/update-user-disinterest-embedding',
   ...apiRoute(updateUserDisinterestEmbedding)

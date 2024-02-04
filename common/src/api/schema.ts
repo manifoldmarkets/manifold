@@ -747,6 +747,12 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
+  'update-user-embedding': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
