@@ -71,7 +71,7 @@ export default function Sidebar(props: {
         />
 
         {user === null && (
-          <SignUpButton className="mt-4" text="Create a profile" />
+          <SignUpButton className="mt-4" text="Sign up" />
         )}
         {user === null && <SignUpAsMatchmaker className="mt-2" />}
 

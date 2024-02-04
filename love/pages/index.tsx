@@ -81,7 +81,7 @@ export default function ProfilesPage() {
                 size="xl"
                 onClick={signupThenMaybeRedirectToSignup}
               >
-                Create a profile
+                Sign up
               </Button>
               <SignUpAsMatchmaker className="flex-1" />
             </Col>
