@@ -115,7 +115,12 @@ const LikeConfimationDialog = (props: {
       <Col className="gap-4">
         <div className="text-xl">Like {user ? user.name : ''}?</div>
 
-        <div className="text-ink-500">You get one free like per day.</div>
+        <Col className="gap-2">
+          <div className="text-ink-500">
+            Send a public like. They will get a notification.
+          </div>
+          <div className="text-ink-500">(You get one free like per day.)</div>
+        </Col>
 
         {youLover && user && (
           <MatchAvatars
