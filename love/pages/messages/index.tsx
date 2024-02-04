@@ -6,7 +6,6 @@ import {
 } from 'web/hooks/use-private-messages'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
-import NewMessageButton from 'web/components/messaging/new-message-button'
 import { Col } from 'web/components/layout/col'
 import { MessageChannelRow } from 'web/pages/messages'
 import { LovePage } from 'love/components/love-page'
@@ -36,7 +35,8 @@ export function MessagesContent() {
     <>
       <Row className="justify-between">
         <Title>Messages</Title>
-        <NewMessageButton />
+        {/* Disabled. */}
+        {/* <NewMessageButton /> */}
       </Row>
       <Col className={'w-full overflow-hidden'}>
         {currentUser && isAuthed && channels.length === 0 && (

@@ -107,7 +107,6 @@ const LikeConfimationDialog = (props: {
   return (
     <Modal
       open={open}
-      setOpen={setOpen}
       className={clsx(
         MODAL_CLASS,
         'pointer-events-auto max-h-[32rem] overflow-auto'
@@ -118,7 +117,7 @@ const LikeConfimationDialog = (props: {
 
         <Col className="gap-2">
           <div className="text-ink-500">
-            Send a public like. They will get a notification.
+            They will get a notification. Unlocks messaging them.
           </div>
           <div className="text-ink-500">(You get one free like per day.)</div>
         </Col>

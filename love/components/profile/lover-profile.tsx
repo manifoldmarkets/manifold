@@ -49,12 +49,18 @@ export function LoverProfile(props: {
     !!currentUser &&
     !!likesReceived &&
     likesReceived.map((l) => l.user_id).includes(currentUser.id)
+  const likedBack =
+    !!currentUser &&
+    !!likesGiven &&
+    likesGiven.map((l) => l.user_id).includes(currentUser.id)
 
   const shipped =
     !!ships && hasShipped(currentUser, fromLoverPage?.user_id, user.id, ships)
 
   const areCompatible =
     !!currentLover && areGenderCompatible(currentLover, lover)
+
+  const showMessageButton = liked || likedBack || !areCompatible
 
   return (
     <>
@@ -65,6 +71,7 @@ export function LoverProfile(props: {
         simpleView={!!fromLoverPage}
         starredUserIds={starredUserIds ?? []}
         refreshStars={refreshStars}
+        showMessageButton={showMessageButton}
       />
       <LoverContent
         user={user}
