@@ -5,7 +5,10 @@ import { QUEST_DETAILS, QuestType } from 'common/quest'
 
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getRecentContractIds } from 'common/supabase/contracts'
 import { getUserShareEventsCount } from 'common/supabase/user-events'
 import { APIError } from 'common//api/utils'
@@ -17,6 +20,8 @@ import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { GCPLog, log as oldLog } from 'shared/utils'
+import { as } from 'pg-promise'
+import { API } from 'common/api/schema'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -109,8 +114,7 @@ const completeQuestInternal = async (
   // If they have created the required amounts, send them a quest txn reward
   if (count !== oldScore && count === QUEST_DETAILS[questType].requiredCount) {
     const resp = await awardQuestBonus(user, questType, count)
-    if (!resp.txn)
-      throw new APIError(500, resp.message ?? 'Could not award quest bonus')
+
     await createQuestPayoutNotification(
       user,
       resp.txn.id,
@@ -152,23 +156,26 @@ const awardQuestBonus = async (
   newCount: number
 ) => {
   const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-  return await firestore.runTransaction(async (trans) => {
+
+  const pg = createSupabaseDirectClient()
+  return await pg.tx(async (tx) => {
     // make sure we don't already have a txn for this user/questType
-    const previousTxns = firestore
-      .collection('txns')
-      .where('toId', '==', user.id)
-      .where('category', '==', 'QUEST_REWARD')
-      .where('data.questType', '==', questType)
-      .where('data.questCount', '==', newCount)
-      .where('createdTime', '>=', startOfDay)
-      .limit(1)
-    const previousTxn = (await trans.get(previousTxns)).docs[0]
+    const previousTxn = await tx.oneOrNone(
+      `select data from txns
+      where data->>'toId' = $1
+      and data->>'category' = 'QUEST_REWARD'
+      and data->data->>'questType' = $2
+      and data->data->>'questCount' = $3
+      and data->'createdTime' >= $4
+      limit 1`,
+      [user.id, questType, newCount, startOfDay],
+      (r: any) => r.data
+    )
+
     if (previousTxn) {
-      return {
-        error: true,
-        message: 'Already awarded quest bonus',
-      }
+      throw new APIError(400, 'Already awarded quest bonus today')
     }
+
     const rewardAmount = QUEST_DETAILS[questType].rewardAmount
 
     const bonusTxnData = {
@@ -185,7 +192,7 @@ const awardQuestBonus = async (
       category: 'QUEST_REWARD',
       data: bonusTxnData,
     }
-    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
-    return { message, txn, status, bonusAmount: rewardAmount }
+    const txn = await runTxnFromBank(tx, bonusTxn)
+    return { txn, bonusAmount: rewardAmount }
   })
 }

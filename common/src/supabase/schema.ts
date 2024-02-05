@@ -2047,17 +2047,17 @@ export interface Database {
       txns: {
         Row: {
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
         }
         Insert: {
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           id: string
         }
         Update: {
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
         }
         Relationships: []

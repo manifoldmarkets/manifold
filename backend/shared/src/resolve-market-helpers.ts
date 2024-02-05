@@ -10,26 +10,25 @@ import { getContractBetMetrics } from 'common/calculate'
 import { Contract, contractPath, CPMMMultiContract } from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import {
-  Txn,
   CancelUniqueBettorBonusTxn,
   ContractResolutionPayoutTxn,
+  UniqueBettorBonusTxn,
 } from 'common/txn'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { runTxn, runContractPayoutTxn } from './txn/run-txn'
+import { runTxn, insertTxns } from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
-  getValues,
   checkAndMergePayouts,
   GCPLog,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { Query } from 'firebase-admin/firestore'
+import { FieldValue, Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
@@ -313,20 +312,27 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log: GCPLog
 ) {
   if (outcome === 'CANCEL') {
-    const creatorsBonusTxns = await getValues<Txn>(
-      firestore
-        .collection('txns')
-        .where('category', '==', 'UNIQUE_BETTOR_BONUS')
-        .where('toId', '==', contract.creatorId)
-    )
+    const pg = createSupabaseDirectClient()
 
-    const bonusTxnsOnThisContract = creatorsBonusTxns.filter(
-      (txn) => txn.data && txn.data.contractId === contract.id
-    )
-    log('total bonusTxnsOnThisContract ' + bonusTxnsOnThisContract.length)
-    const totalBonusAmount = sumBy(bonusTxnsOnThisContract, (txn) => txn.amount)
-    log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
-    const result = await firestore.runTransaction(async (trans) => {
+    const txn = await pg.tx(async (tx) => {
+      // TODO: bonuses for contractId should be sufficient, no need for toId
+      const bettorBonusTxnsOnThisContract = await tx.map<UniqueBettorBonusTxn>(
+        `select data from txns
+      where category = 'UNIQUE_BETTOR_BONUS'
+      and data->>'contractId' = $2`,
+        [contract.id],
+        (res) => res.data
+      )
+
+      log(
+        'total bonusTxnsOnThisContract ' + bettorBonusTxnsOnThisContract.length
+      )
+      const totalBonusAmount = sumBy(
+        bettorBonusTxnsOnThisContract,
+        (txn) => txn.amount
+      )
+      log('totalBonusAmount to be withdrawn ' + totalBonusAmount)
+
       const bonusTxn = {
         fromId: contract.creatorId,
         fromType: 'USER',
@@ -341,19 +347,10 @@ async function undoUniqueBettorRewardsIfCancelResolution(
           contractId: contract.id,
         },
       } as Omit<CancelUniqueBettorBonusTxn, 'id' | 'createdTime'>
-      return await runTxn(trans, bonusTxn)
+      return await runTxn(tx, bonusTxn)
     })
 
-    if (result.status != 'success' || !result.txn) {
-      log(
-        `Couldn't cancel bonus for user: ${contract.creatorId} - status: ${result.status}`
-      )
-      log('message: ' + result.message)
-    } else {
-      log(
-        `Cancel Bonus txn for user: ${contract.creatorId} completed: ${result.txn?.id}`
-      )
-    }
+    log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
   }
 }
 
@@ -368,36 +365,43 @@ export const payUsersTransactions = async (
   answerId?: string
 ) => {
   const firestore = admin.firestore()
+  const pg = createSupabaseDirectClient()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 250)
   const payoutStartTime = Date.now()
 
   for (const payoutChunk of payoutChunks) {
-    await firestore
-      .runTransaction(async (transaction) => {
-        payoutChunk.forEach(({ userId, payout, deposit }) => {
-          const payoutTxn: Omit<
-            ContractResolutionPayoutTxn,
-            'id' | 'createdTime'
-          > = {
-            category: 'CONTRACT_RESOLUTION_PAYOUT',
-            fromType: 'CONTRACT',
-            fromId: contractId,
-            toType: 'USER',
-            toId: userId,
-            amount: payout,
-            token: 'M$',
-            data: removeUndefinedProps({
-              deposit: deposit ?? 0,
-              payoutStartTime,
-              answerId,
-            }),
-            description: 'Contract payout for resolution: ' + contractId,
-          }
+    const txns: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>[] =
+      payoutChunk.map(({ userId, payout, deposit }) => ({
+        category: 'CONTRACT_RESOLUTION_PAYOUT',
+        fromType: 'CONTRACT',
+        fromId: contractId,
+        toType: 'USER',
+        toId: userId,
+        amount: payout,
+        token: 'M$',
+        data: removeUndefinedProps({
+          deposit: deposit ?? 0,
+          payoutStartTime,
+          answerId,
+        }),
+        description: 'Contract payout for resolution: ' + contractId,
+      }))
 
-          runContractPayoutTxn(transaction, payoutTxn)
-        })
-      })
+    await pg
+      .tx(async (tx) => {
+        insertTxns(tx, ...txns)
+
+        await firestore.runTransaction(async (transaction) => {
+          payoutChunk.forEach(({ userId, payout, deposit }) => {
+            const toDoc = firestore.doc(`users/${userId}`)
+            transaction.update(toDoc, {
+              balance: FieldValue.increment(payout),
+              totalDeposits: FieldValue.increment(deposit ?? 0),
+            })
+          })
+        }) // end firestore transaction
+      }) // end pg.tx
       .catch((err) => {
         log('Error running payout chunk transaction', err)
         log('payoutChunk', payoutChunk)

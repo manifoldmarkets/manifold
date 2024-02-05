@@ -62,7 +62,6 @@ const sendEndOfSeasonNotificationAndBonus = async (
   )
 
   if (prize) {
-    const firestore = admin.firestore()
     const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
       fromType: 'BANK',
       toId: userId,
@@ -72,9 +71,8 @@ const sendEndOfSeasonNotificationAndBonus = async (
       category: 'LEAGUE_PRIZE',
       data: prevRow,
     }
-    await firestore.runTransaction(async (transaction) => {
-      await runTxnFromBank(transaction, data)
-    })
+
+    pg.tx((tx) => runTxnFromBank(tx, data))
   }
   await createLeagueChangedNotification(userId, prevRow, newRow, prize, pg)
 }

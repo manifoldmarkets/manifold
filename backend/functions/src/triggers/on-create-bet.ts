@@ -55,6 +55,7 @@ import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { Answer } from 'common/answer'
 import { ContractComment } from 'common/comment'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
+import { APIError } from 'openai/error'
 
 const firestore = admin.firestore()
 
@@ -195,11 +196,7 @@ const updateBettingStreak = async (
     const lastBetTime = bettor.lastBetTime ?? 0
 
     // If they've already bet after the reset time
-    if (lastBetTime > betStreakResetTime)
-      return {
-        message: 'User has already bet after the reset time',
-        status: 'error',
-      }
+    if (lastBetTime > betStreakResetTime) return undefined
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
     // Otherwise, add 1 to their betting streak
@@ -213,9 +210,7 @@ const updateBettingStreak = async (
       BETTING_STREAK_BONUS_MAX
     )
 
-    const bonusTxnDetails = {
-      currentBettingStreak: newBettingStreak,
-    }
+    const db = createSupabaseDirectClient()
 
     const bonusTxn: Omit<
       BettingStreakBonusTxn,
@@ -227,20 +222,22 @@ const updateBettingStreak = async (
       amount: bonusAmount,
       token: 'M$',
       category: 'BETTING_STREAK_BONUS',
-      description: JSON.stringify(bonusTxnDetails),
-      data: bonusTxnDetails,
+      description: `currentBettingStreak: ${newBettingStreak}`,
+      data: {
+        currentBettingStreak: newBettingStreak,
+      },
     }
-    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
-    return { message, txn, status, bonusAmount, newBettingStreak }
+    const txn = await db
+      .tx((tx) => runTxnFromBank(tx, bonusTxn))
+      .catch((e: APIError) => {
+        log("Betting streak bonus couldn't be made")
+        log(e.message)
+        return
+      })
+    return { bonusAmount, newBettingStreak, txn }
   })
 
-  if (result.status != 'success') {
-    log("betting streak bonus txn couldn't be made")
-    log('status:', result.status)
-    log('message:', result.message)
-    return
-  }
-  if (result.txn) {
+  if (result?.txn) {
     await createBettingStreakBonusNotification(
       user,
       result.txn.id,
@@ -329,20 +326,20 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
-  const result = await firestore.runTransaction(async (trans) => {
-    const query = firestore
-      .collection('txns')
-      .where('fromType', '==', 'BANK')
-      .where('toId', '==', creatorId)
-      .where('category', '==', 'UNIQUE_BETTOR_BONUS')
-      .where('data.uniqueNewBettorId', '==', bettor.id)
-      .where('data.contractId', '==', contract.id)
-    const queryWithMaybeAnswer = answerId
-      ? query.where('data.answerId', '==', answerId)
-      : query
-    const txnsSnap = await queryWithMaybeAnswer.get()
-    const bonusGivenAlready = txnsSnap.docs.length > 0
-    if (bonusGivenAlready) return undefined
+  const txn = await pg.tx(async (tx) => {
+    const alreadyTxns = await tx.oneOrNone(
+      `select 1 from txns
+      where from_type = 'BANK'
+      and data->>'toId' = $1
+      and data->>'category' = 'UNIQUE_BETTOR_BONUS'
+      and data->>'uniqueNewBettorId' = $2
+      and data->>'contractId' = $3
+      ${answerId ? `and data->>'answerId' = $4` : ''}
+      limit 1`,
+      [creatorId, bettor.id, contract.id, answerId]
+    )
+
+    if (alreadyTxns) return undefined
 
     const bonusTxnData = removeUndefinedProps({
       contractId: contract.id,
@@ -371,9 +368,10 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       data: bonusTxnData,
     }
 
-    return await runTxnFromBank(trans, bonusTxn)
+    return await runTxnFromBank(tx, bonusTxn)
   })
-  if (!result) return
+
+  if (!txn) return
 
   const subsidy =
     uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
@@ -398,24 +396,19 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     }
   }
 
-  if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
-    log('message:', result.message)
-  } else {
-    log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
-    const overallUniqueBettorIds = answerId
-      ? await getUniqueBettorIds(contract.id, pg)
-      : uniqueBettorIds
+  log(`Bonus txn for user: ${contract.creatorId} completed:`, txn.id)
+  const overallUniqueBettorIds = answerId
+    ? await getUniqueBettorIds(contract.id, pg)
+    : uniqueBettorIds
 
-    await createUniqueBettorBonusNotification(
-      creatorId,
-      bettor,
-      result.txn.id,
-      contract,
-      result.txn.amount,
-      overallUniqueBettorIds,
-      eventId + '-unique-bettor-bonus',
-      bet
-    )
-  }
+  await createUniqueBettorBonusNotification(
+    creatorId,
+    bettor,
+    txn.id,
+    contract,
+    txn.amount,
+    overallUniqueBettorIds,
+    eventId + '-unique-bettor-bonus',
+    bet
+  )
 }

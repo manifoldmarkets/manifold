@@ -19,14 +19,14 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { query, where } from 'firebase/firestore'
-import { coll, listenForValues } from 'web/lib/firebase/utils'
-import { sum } from 'lodash'
+import { sumBy } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { db } from 'web/lib/supabase/db'
+import { run } from 'common/supabase/utils'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -226,23 +226,17 @@ const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    return listenForValues(
-      query(
-        coll<Txn>('txns'),
-        where('category', '==', 'MANA_PURCHASE'),
-        where('toId', '==', userId)
-      ),
-      setPurchases
-    )
+    run(
+      db
+        .from('txns')
+        .select('data')
+        .eq('data->>category', 'MANA_PURCHASE')
+        .eq('data->>toId', userId)
+        .gt('data->createdTime', Date.now() - DAY_MS)
+    ).then((res) => {
+      setPurchases(res.data.map((r) => r.data as Txn))
+    })
   }, [userId])
 
-  //  TODO: include ios purchases
-
-  return (
-    sum(
-      purchases
-        .filter((t) => t.createdTime > Date.now() - DAY_MS)
-        .map((t) => t.amount)
-    ) / 100
-  )
+  return sumBy(purchases, 'amount') / 100
 }

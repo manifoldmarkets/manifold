@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
@@ -41,54 +39,36 @@ export const boostmarket = authEndpoint(async (req, auth, log) => {
     embedding = (await generateContractEmbeddings(contract, pg)).embedding
     if (!embedding) throw new APIError(500, 'Error generating embedding')
   }
-  const firestore = admin.firestore()
 
   log(
     'got embedding. connected. starting transaction to create market ad or add funds'
   )
 
-  // create if not exists the market ad row
-  const { id } = await pg.one(
-    `insert into market_ads
+  await pg.tx(async (tx) => {
+    // create if not exists the market ad row
+    const { id } = await tx.one(
+      `insert into market_ads
       (user_id, market_id, embedding, funds, cost_per_view)
       values ($1, $2, $3, $4, $5)
       returning id`,
-    [auth.uid, marketId, embedding, totalCost, costPerView]
-  )
-
-  // use supabase to add txn from user to the ad. deducts from user
-  try {
-    log('starting transaction to deduct funds.')
-    await firestore.runTransaction(async (trans) => {
-      const result = await runTxn(trans, {
-        category: 'MARKET_BOOST_CREATE',
-        fromType: 'USER',
-        fromId: auth.uid,
-        toType: 'AD',
-        toId: id,
-        amount: totalCost,
-        token: 'M$',
-        description: 'Creating market ad',
-      } as MarketAdCreateTxn)
-
-      if (result.status == 'error') {
-        throw new APIError(500, result.message ?? 'An unknown error occurred')
-      }
-    })
-  } catch (e) {
-    log('error adding txn! reversing funds to ad.')
-
-    await pg.none(
-      `update market_ads
-      set funds = market_ads.funds - $1
-      where id = $2`,
-      [totalCost, id]
+      [auth.uid, marketId, embedding, totalCost, costPerView]
     )
-    log(`done subtracting ${totalCost} from ad ${id}`)
 
-    throw e
-  }
+    // use supabase to add txn from user to the ad. deducts from user
+    log('starting transaction to deduct funds.')
+
+    await runTxn(tx, {
+      category: 'MARKET_BOOST_CREATE',
+      fromType: 'USER',
+      fromId: auth.uid,
+      toType: 'AD',
+      toId: id,
+      amount: totalCost,
+      token: 'M$',
+      description: 'Creating market ad',
+    } as MarketAdCreateTxn)
+  })
 
   // return something
-  return { status: 'success', id }
+  return { status: 'success' }
 })

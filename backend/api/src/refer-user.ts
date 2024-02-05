@@ -72,32 +72,36 @@ async function handleReferral(
   referredByContract?: Contract
 ) {
   const firestore = admin.firestore()
-  const res = await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${newUserId}`)
-    const user = (await transaction.get(userDoc)).data() as User
-    if (user.referredByUserId || user.referredByContractId) {
-      throw new APIError(404, `User ${user.id} already has referral details`)
-    }
-    if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
-      throw new APIError(404, `User ${user.id} is too old to be referred`)
-    }
 
-    log(`referredByUserId: ${referredByUserId}`)
+  const userDoc = firestore.doc(`users/${newUserId}`)
+  const userSnap = await userDoc.get()
+  if (!userSnap.exists) {
+    throw new APIError(404, `User ${newUserId} not found`)
+  }
+  const user = userSnap.data() as User
+  if (user.referredByUserId || user.referredByContractId) {
+    throw new APIError(400, `User ${user.id} already has referral details`)
+  }
+  if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
+    throw new APIError(400, `User ${user.id} is too old to be referred`)
+  }
 
-    const txns = await transaction.get(
-      firestore
-        .collection('txns')
-        .where('toId', '==', referredByUserId)
-        .where('category', '==', 'REFERRAL')
+  const pg = createSupabaseDirectClient()
+
+  log(`referredByUserId: ${referredByUserId}`)
+  const res = await pg.tx(async (tx) => {
+    const txns = await tx.manyOrNone(
+      `select * from txns where data->>'toId' = $1 and data->>'category' = 'REFERRAL' limit 1`,
+      [referredByUserId]
     )
-    if (txns.size > 0) {
-      // If the referring user already has a referral txn due to referring this user, halt
-      if (txns.docs.some((txn) => txn.data()?.description.includes(user.id))) {
-        throw new APIError(
-          404,
-          'Existing referral bonus found with matching details'
-        )
-      }
+
+    // If the referring user already has a referral txn due to referring this user, halt
+    // TODO: store in data instead
+    if (txns.some((txn) => txn.data()?.description.includes(user.id))) {
+      throw new APIError(
+        404,
+        'Existing referral bonus found with matching details'
+      )
     }
     log('creating referral txns')
 
@@ -113,25 +117,23 @@ async function handleReferral(
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     }
-    const { status, txn, message } = await runTxnFromBank(transaction, txnData)
-    if (status !== 'success') {
-      throw new APIError(500, message ?? 'Error creating referral txn')
-    }
-    transaction.update(
-      userDoc,
+    const txn = await runTxnFromBank(tx, txnData)
+
+    userDoc.update(
       removeUndefinedProps({
         referredByUserId,
         referredByContractId: referredByContract?.id,
       })
     )
+
     return { user, txn }
   })
   if (!res || !res.txn) return
-  const { user, txn } = res
+
   await createReferralNotification(
     referredByUserId,
     user,
-    txn.amount.toString(),
+    res.txn.amount.toString(),
     referredByContract
   )
   await completeReferralsQuest(referredByUserId)

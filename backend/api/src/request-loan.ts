@@ -1,5 +1,9 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  type SupabaseDirectClient,
+  createSupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
@@ -10,8 +14,8 @@ import { groupBy, uniq } from 'lodash'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
-import { LoanTxn } from 'common/txn'
-import { runTxnFromBankAsProfit } from 'shared/txn/run-txn'
+import { LoanTxn, Txn } from 'common/txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export const requestloan: APIHandler<'request-loan'> = async (
   _,
@@ -94,65 +98,62 @@ export const requestloan: APIHandler<'request-loan'> = async (
     throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
   }
 
-  await payUserLoan(user.id, payout, firestore)
-  await createLoanIncomeNotification(user, payout)
+  return await pg.tx(async (tx) => {
+    await payUserLoan(user.id, payout, tx)
+    await createLoanIncomeNotification(user, payout)
 
-  const userBetUpdates = updates.map((update) => ({
-    doc: firestore
-      .collection('contracts')
-      .doc(update.contractId)
-      .collection('bets')
-      .doc(update.betId),
-    fields: {
-      loanAmount: update.loanTotal,
-    },
-  }))
+    const userBetUpdates = updates.map((update) => ({
+      doc: firestore
+        .collection('contracts')
+        .doc(update.contractId)
+        .collection('bets')
+        .doc(update.betId),
+      fields: {
+        loanAmount: update.loanTotal,
+      },
+    }))
 
-  const betUpdates = userBetUpdates.flat()
-  await writeAsync(firestore, betUpdates)
-  log(`Paid out ${payout} to user ${user.id}.`)
+    const betUpdates = userBetUpdates.flat()
+    await writeAsync(firestore, betUpdates)
+    log(`Paid out ${payout} to user ${user.id}.`)
 
-  return { payout }
+    return { payout }
+  })
 }
 
 const payUserLoan = async (
   userId: string,
   payout: number,
-  firestore: FirebaseFirestore.Firestore
+  tx: SupabaseTransaction
 ) => {
   const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
-  return await firestore.runTransaction(async (trans) => {
-    // make sure we don't already have a txn for this user/questType
-    const previousTxns = firestore
-      .collection('txns')
-      .where('toId', '==', userId)
-      .where('category', '==', 'LOAN')
-      .where('createdTime', '>=', startOfDay)
-      .limit(1)
-    const previousTxn = (await trans.get(previousTxns)).docs[0]
-    if (previousTxn) {
-      throw new APIError(400, 'Already awarded loan today')
-    }
 
-    const loanTxn: Omit<LoanTxn, 'fromId' | 'id' | 'createdTime'> = {
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: payout,
-      token: 'M$',
-      category: 'LOAN',
-      data: {
-        // Distinguishes correct loans from erroneous old loans that were marked as deposits instead of profit.
-        countsAsProfit: true,
-      },
-    }
-    const { message, txn, status } = await runTxnFromBankAsProfit(
-      trans,
-      loanTxn
-    )
-    if (status !== 'success') {
-      throw new APIError(500, message ?? 'Error creating loan txn')
-    }
-    return { message, txn, status }
-  })
+  // make sure we don't already have a txn for this user/questType
+  const previousTxns = await tx.map<Txn>(
+    `select data from txns
+    where data->>'toId' = $1
+    and data->>'category' = 'LOAN'
+    and data->'createdTime' >= $2
+    limit 1`,
+    [userId, startOfDay],
+    (r: any) => r.data
+  )
+
+  if (previousTxns.length) {
+    throw new APIError(400, 'Already awarded loan today')
+  }
+
+  const loanTxn: Omit<LoanTxn, 'fromId' | 'id' | 'createdTime'> = {
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    amount: payout,
+    token: 'M$',
+    category: 'LOAN',
+    data: {
+      // Distinguishes correct loans from erroneous old loans that were marked as deposits instead of profit.
+      countsAsProfit: true,
+    },
+  }
+  await runTxnFromBank(tx, loanTxn, true)
 }

@@ -7,7 +7,7 @@ import { getHasFreeLike } from './has-free-like'
 export const likeLover: APIHandler<'like-lover'> = async (
   props,
   auth,
-  { log, logError }
+  { log }
 ) => {
   const { targetUserId, remove } = props
   const creatorId = auth.uid
@@ -43,14 +43,7 @@ export const likeLover: APIHandler<'like-lover'> = async (
 
   if (!hasFreeLike) {
     // Charge for like.
-    const { status, message } = await runLikePurchaseTxn(
-      creatorId,
-      targetUserId
-    )
-
-    if (status === 'error' && message) {
-      throw new APIError(400, message)
-    }
+    await runLikePurchaseTxn(creatorId, targetUserId)
   }
 
   // Insert the new like
