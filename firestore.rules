@@ -21,10 +21,6 @@ service cloud.firestore {
       ]
     }
 
-    match /stats/stats {
-      allow read;
-    }
-
     match /users/{userId} {
       allow read;
       allow update: if isAdmin();
@@ -65,11 +61,6 @@ service cloud.firestore {
       allow read;
     }
 
-    match /contracts/{contractId}/follows/{userId} {
-      allow read;
-      allow create, delete: if userId == request.auth.uid;
-    }
-
     match /contracts/{contractId}/challenges/{challengeId}{
       allow read;
       allow create: if request.auth.uid == request.resource.data.creatorId;
@@ -77,48 +68,18 @@ service cloud.firestore {
       allow update: if request.auth.uid == resource.data.creatorId;
     }
 
-    match /users/{userId}/follows/{followUserId} {
-      allow read;
-      allow write: if request.auth.uid == userId;
-    }
-
-    match /{somePath=**}/follows/{followUserId} {
-      allow read;
-    }
-
     match /private-users/{userId} {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['email', 'apiKey', 'notificationPreferences', 'twitchInfo', 'pushToken', 'rejectedPushNotificationsOn', 'blockedUserIds', 'blockedContractIds', 'blockedGroupSlugs','interestedInPushNotifications', 'hasSeenAppBannerInNotificationsOn', 'installedAppPlatforms','lastPromptedToEnablePushNotifications']);
-    // Symmetric block rules
+      // Symmetric block rules
       allow update: if (request.auth != null || isAdmin())
                        && request.resource.data.diff(resource.data).affectedKeys()
                          .hasOnly(['blockedByUserIds'])
                        && request.resource.data.blockedByUserIds.toSet().difference(resource.data.blockedByUserIds.toSet()).hasOnly([request.auth.uid]);
 
       allow delete: if (userId == request.auth.uid || isAdmin());
-    }
-
-    match /private-users/{userId}/views/{viewId} {
-      allow create: if userId == request.auth.uid;
-    }
-
-    match /private-users/{userId}/events/{eventId} {
-      allow create: if userId == request.auth.uid;
-    }
-
-    match /private-users/{userId}/latency/{loadTimeId} {
-      allow create: if userId == request.auth.uid;
-    }
-
-    match /private-users/{userId}/cache/{docId} {
-      allow read: if userId == request.auth.uid || isAdmin();
-    }
-
-    match /private-users/{userId}/seenMarkets/{marketId} {
-      allow write: if userId == request.auth.uid;
-      allow read: if userId == request.auth.uid
     }
 
     match /contracts/{contractId} {
@@ -142,10 +103,6 @@ service cloud.firestore {
       allow read;
     }
 
-    match /{somePath=**}/comments/{commentId} {
-      allow read;
-    }
-
     match /{somePath=**}/answers/{answerId} {
       allow read;
     }
@@ -154,22 +111,8 @@ service cloud.firestore {
       allow read;
     }
 
-    match /{somePath=**}/followers/{userId} {
-      allow read;
-      allow create, update: if request.auth.uid == userId && request.resource.data.userId == userId;
-      allow delete: if request.auth.uid == userId;
-    }
-
     match /txns/{txnId} {
       allow read;
-    }
-
-    // Note: `resource` = existing doc, `request.resource` = incoming doc
-    match /manalinks/{slug} {
-      // Only you can create a manalink with your fromId
-      allow create: if request.auth.uid == request.resource.data.fromId;
-      // Only you can list and change your own manalinks
-      allow list, update: if request.auth.uid == resource.data.fromId;
     }
 
     match /refresh-all-clients/{id} {
