@@ -28,6 +28,7 @@ export const supabasesearchgroups: APIHandler<'search-groups'> = async (
     limit,
     uid,
     addingToContract,
+    // An alternative would be to create a topics view with only these lite group columns
     fieldSet:
       type === 'full'
         ? '*'
