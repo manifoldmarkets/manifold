@@ -315,8 +315,7 @@ export interface Database {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string
-          is_api: boolean
+          fs_updated_time: string | null
           user_id: string
           visibility: string | null
         }
@@ -325,8 +324,7 @@ export interface Database {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string
-          is_api?: boolean
+          fs_updated_time?: string | null
           user_id: string
           visibility?: string | null
         }
@@ -335,8 +333,7 @@ export interface Database {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string
-          is_api?: boolean
+          fs_updated_time?: string | null
           user_id?: string
           visibility?: string | null
         }
