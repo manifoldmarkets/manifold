@@ -4,15 +4,11 @@ import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
   ChartParams,
-  MapContractsDictionary,
   NH_LINK,
   presidency2024,
 } from 'common/politics/elections-data'
 import { getBetPoints, getBets } from 'common/supabase/bets'
-import {
-  ChartAnnotation,
-  getChartAnnotations,
-} from 'common/supabase/chart-annotations'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { unstable_cache } from 'next/cache'
