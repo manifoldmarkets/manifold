@@ -17,16 +17,20 @@ export const CreateYourMarketButton = ({
 }) => {
   const user = useUser()
   const [showModal, setShowModal] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submit = () => {
-    api('create-your-love-market', {})
+  const submit = async () => {
+    setIsSubmitting(true)
+    await api('create-your-love-market', {})
+    setShowModal(false)
+    setIsSubmitting(false)
   }
 
   const disabled = !user || user.balance < LOVE_MARKET_COST
 
   return (
     <div className={className}>
-      <Button onClick={() => setShowModal(true)}>
+      <Button disabled={isSubmitting} onClick={() => setShowModal(true)}>
         Set up dating prediction market
       </Button>
 

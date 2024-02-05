@@ -281,13 +281,13 @@ function createAnswers(
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
   } else if (specialLiquidityPerAnswer !== undefined) {
-    // We start each answer at 1%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
+    // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
     // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
     // Then we can solve probability identity:
-    // 0.01 = poolNo / (poolYes + poolNo)
-    prob = 0.01
+    // prob = poolNo / (poolYes + poolNo)
+    prob = 0.02
     poolYes = specialLiquidityPerAnswer
-    poolNo = specialLiquidityPerAnswer / 99
+    poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
   }
 
   const now = Date.now()
