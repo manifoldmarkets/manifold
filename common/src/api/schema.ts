@@ -765,7 +765,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    // Is there a way to cast {lite:[] as LiteGroup[]} if type is 'lite'?
+    // Is there a way to infer return { lite:[] as LiteGroup[] } if type is 'lite'?
     returns: {
       full: [] as Group[],
       lite: [] as LiteGroup[],
