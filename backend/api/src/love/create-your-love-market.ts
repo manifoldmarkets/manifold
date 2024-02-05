@@ -1,6 +1,5 @@
-import { z } from 'zod'
 import { orderBy } from 'lodash'
-import { APIError, authEndpoint } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -15,7 +14,9 @@ import {
 } from 'common/love/constants'
 import { getLikesAndShipsMain } from './get-likes-and-ships'
 
-export const createYourLoveMarket = authEndpoint(async (req, auth, log) => {
+export const createYourLoveMarket: APIHandler<
+  'create-your-love-market'
+> = async (req, auth, { log }) => {
   const userId = auth.uid
   const db = createSupabaseClient()
 
@@ -119,4 +120,4 @@ See [FAQ](https://manifold.love/faq) for more details.`,
     status: 'success',
     contract,
   }
-})
+}

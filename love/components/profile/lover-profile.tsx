@@ -21,6 +21,7 @@ import { LikeData, ShipData } from 'common/api/love-types'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
+import { CreateYourMarketButton } from '../widgets/create-your-market-button'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -156,6 +157,7 @@ function LoverContent(props: {
         refreshShips={refreshShips}
         profileLover={lover}
       />
+      {isCurrentUser && !fromLoverPage && <CreateYourMarketButton />}
       {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
       )}

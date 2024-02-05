@@ -138,6 +138,7 @@ import { getLovers } from './love/get-lovers'
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
 
 import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
 
 
 const allowCorsUnrestricted: RequestHandler = cors({})
@@ -249,6 +250,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
+  'create-your-love-market': createYourLoveMarket,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

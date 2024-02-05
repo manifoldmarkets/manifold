@@ -747,6 +747,16 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
+  'create-your-love-market': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
