@@ -1,24 +1,25 @@
 'use client'
 import { Contract, MultiContract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
 } from 'common/politics/elections-data'
-import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { Spacer } from 'web/components/layout/spacer'
+import { ReferralSaver } from 'politics/components/referral-saver'
 import { PoliticsCard } from 'politics/components/us-elections/contracts/politics-card'
 import { StateContractCard } from 'politics/components/us-elections/contracts/state-contract-card'
 import { USAMap } from 'politics/components/us-elections/usa-map/usa-map'
+import { useState } from 'react'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useTracking } from 'web/hooks/use-tracking'
 import Custom404 from 'web/pages/404'
-import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ReferralSaver } from 'politics/components/referral-saver'
+import { ContractChart } from './charts/contract-chart'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -54,6 +55,7 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     republicanVPContract,
     democraticVPContract,
+    partyChartParams,
   } = props
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -76,8 +78,8 @@ function ElectionContent(props: ElectionsPageProps) {
   return (
     <>
       <ReferralSaver />
-      <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
-        <Col>
+      <Col className="gap-6 sm:gap-8 sm:px-4">
+        <Col className="px-2 sm:px-0">
           <Row className="mt-2 items-center justify-between gap-4 font-serif text-2xl sm:mt-0 sm:justify-start sm:text-3xl">
             2024 Election Forecast
             <CopyLinkOrShareButton
@@ -95,7 +97,20 @@ function ElectionContent(props: ElectionsPageProps) {
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
-        />
+          className="-mt-4"
+        >
+          {partyChartParams && (
+            <ContractChart
+              contract={(electionPartyContract as MultiContract)!}
+              historyData={partyChartParams.historyData}
+              chartAnnotations={partyChartParams.chartAnnotations}
+              shownAnswers={(electionPartyContract as MultiContract)!.answers
+                .filter((a) => a.text != 'Other')
+                .map((a) => a.id)}
+            />
+          )}
+        </PoliticsCard>
+
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"

@@ -7,7 +7,14 @@ import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
 import { Col } from 'web/components/layout/col'
-import { PartyBar } from './party-bar'
+import { Row } from 'web/components/layout/row'
+import {
+  AnswerBar,
+  AnswerStatus,
+} from 'politics/components/answers/answer-components'
+import { CreatorAndAnswerLabel } from 'politics/components/answers/answer-components'
+import { MultiBettor } from 'politics/components/answers/answer-components'
+import { CPMMMultiContract } from 'common/contract'
 
 // just the bars
 export function PartyPanel(props: {
@@ -94,18 +101,36 @@ function PartyAnswer(props: {
 
   return (
     <Col className={'w-full'}>
-      <PartyBar
+      <AnswerBar
         color={color}
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
         className={clsx(
           'cursor-pointer',
-          selected && 'ring-primary-600 rounded ring-2'
+          selected && 'ring-primary-600 ring-2'
         )}
-        answer={answer}
-        selected={selected}
-        contract={contract}
+        label={
+          <Row className={'items-center gap-1'}>
+            <CreatorAndAnswerLabel
+              text={answer.text}
+              createdTime={answer.createdTime}
+              className={clsx(
+                'items-center font-mono text-sm !leading-none sm:text-base'
+              )}
+            />
+          </Row>
+        }
+        end={
+          <Row className={'items-center gap-1 sm:gap-2'}>
+            <AnswerStatus contract={contract} answer={answer} />
+
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
+            />
+          </Row>
+        }
       />
     </Col>
   )

@@ -37,7 +37,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
-import { AnimatedProb } from '../us-elections/contracts/party-panel/party-bar'
+import { AnimatedProb } from '../widgets/animated-prob'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex

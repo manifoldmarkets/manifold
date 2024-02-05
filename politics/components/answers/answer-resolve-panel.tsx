@@ -24,13 +24,13 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { APIError, api } from 'web/lib/firebase/api'
-import { AnimatedProb } from '../us-elections/contracts/party-panel/party-bar'
 import {
   AnswerBar,
   AnswerStatus,
   ClosedProb,
   CreatorAndAnswerLabel,
 } from './answer-components'
+import { AnimatedProb } from '../widgets/animated-prob'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,

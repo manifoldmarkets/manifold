@@ -1,16 +1,26 @@
+import { Bet } from 'common/bet'
+import { MultiSerializedPoints, SerializedPoint, binAvg } from 'common/chart'
+import { Contract } from 'common/contract'
+import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
+  ChartParams,
   MapContractsDictionary,
   NH_LINK,
   presidency2024,
 } from 'common/politics/elections-data'
+import { getBetPoints, getBets } from 'common/supabase/bets'
+import {
+  ChartAnnotation,
+  getChartAnnotations,
+} from 'common/supabase/chart-annotations'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { unstable_cache } from 'next/cache'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
-export async function getElectionsPageProps(useUnstableCache: boolean) {
+export async function getHomeProps(useUnstableCache: boolean) {
   const adminDb = await initSupabaseAdmin()
   const getContract = (slug: string) =>
     useUnstableCache
@@ -56,6 +66,17 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
 
+  let historyDataProps = undefined
+  let chartAnnotationsProps: ChartAnnotation[] = []
+  if (!!electionPartyContract) {
+    const { historyData, chartAnnotations } = await getChartParams(
+      electionPartyContract,
+      adminDb
+    )
+    historyDataProps = historyData
+    chartAnnotationsProps = chartAnnotations
+  }
+
   return {
     rawMapContractsDictionary: mapContractsDictionary,
     electionPartyContract: electionPartyContract,
@@ -66,6 +87,12 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
     republicanVPContract: republicanVPContract,
     democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
+    partyChartParams: historyDataProps
+      ? {
+          historyData: historyDataProps,
+          chartAnnotations: chartAnnotationsProps,
+        }
+      : undefined,
   }
 }
 
@@ -81,4 +108,60 @@ function getCachedContractFromSlug(slug: string, db: SupabaseClient) {
       revalidate: REVALIDATE_CONTRACTS_SECONDS,
     }
   )()
+}
+
+export const getChartParams = async function (
+  contract: Contract,
+  db: SupabaseClient
+): Promise<ChartParams> {
+  const isCpmm1 = contract.mechanism === 'cpmm-1'
+  const hasMechanism = contract.mechanism !== 'none'
+  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isBinaryDpm =
+    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
+
+  // TODO: add unstable_cache where applicable
+  const [betsToPass, allBetPoints, betReplies, chartAnnotations] =
+    await Promise.all([
+      hasMechanism
+        ? getBets(db, {
+            contractId: contract.id,
+            limit: 100,
+            order: 'desc',
+            filterAntes: true,
+            filterRedemptions: true,
+          })
+        : ([] as Bet[]),
+      hasMechanism
+        ? getBetPoints(db, contract.id, {
+            filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+            limit: 10000,
+          })
+        : [],
+      isCpmm1
+        ? getBets(db, {
+            contractId: contract.id,
+            commentRepliesOnly: true,
+          })
+        : ([] as Bet[]),
+      getChartAnnotations(contract.id, db),
+    ])
+
+  const chartPoints =
+    isCpmm1 || isBinaryDpm
+      ? getSingleBetPoints(allBetPoints, contract)
+      : isMulti
+      ? getMultiBetPoints(allBetPoints, contract)
+      : []
+  return {
+    historyData: {
+      bets: betsToPass.concat(
+        betReplies.filter(
+          (b1) => !betsToPass.map((b2) => b2.id).includes(b1.id)
+        )
+      ),
+      points: chartPoints,
+    },
+    chartAnnotations,
+  }
 }
