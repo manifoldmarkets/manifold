@@ -9,7 +9,7 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 
 export async function getStaticProps() {
-  const props = await getElectionsPageProps(false)
+  const props = await getElectionsPageProps()
   return {
     props,
     revalidate: 60,

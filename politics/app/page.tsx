@@ -8,12 +8,9 @@ import { USElectionsPage } from 'politics/components/elections-page'
 import { NewsDashboard } from 'politics/components/home-dashboard/news-dashboard'
 import { HeadlineTabs } from 'politics/components/home-dashboard/news-sections'
 import { PoliticsPage } from 'politics/components/politics-page'
-import { getHomeProps } from 'politics/lib/get-home-props'
+import { getHomeProps } from 'politics/lib/home/get-home-props'
 import { api } from 'web/lib/firebase/api'
-import {
-  REVALIDATE_CONTRACTS_SECONDS,
-  getElectionsPageProps,
-} from 'web/lib/politics/home'
+import { REVALIDATE_CONTRACTS_SECONDS } from 'web/lib/politics/home'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 
 export const revalidate = REVALIDATE_CONTRACTS_SECONDS
@@ -27,7 +24,7 @@ export async function generateMetadata() {
 }
 
 export default async function Page() {
-  const props = await getHomeProps(true)
+  const props = await getHomeProps()
   const headlines = await unstable_cache(
     async () => api('politics-headlines', {}),
     ['politics-headlines'],
