@@ -1,5 +1,3 @@
-import { User } from 'common/user'
-import { DAY_MS } from 'common/util/time'
 import { Col } from 'web/components/layout/col'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Row } from 'web/components/layout/row'
@@ -12,20 +10,9 @@ import { Button } from 'web/components/buttons/button'
 import { Contract } from 'common/contract'
 
 export const WelcomeTopicSections = (props: {
-  user: User | undefined | null
   memberTopicsWithContracts: { topic: Topic; contracts: Contract[] }[]
 }) => {
-  const { user, memberTopicsWithContracts } = props
-
-  if (!user) {
-    return <div />
-  }
-
-  const createdRecently = user.createdTime > Date.now() - DAY_MS
-  if (!createdRecently) {
-    return <div />
-  }
-
+  const { memberTopicsWithContracts } = props
   return (
     <Col>
       {memberTopicsWithContracts.map((topicWithContracts) => {

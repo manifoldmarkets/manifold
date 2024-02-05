@@ -1,6 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { run, SupabaseClient } from 'common/supabase/utils'
 
 export type User = {
@@ -142,7 +142,7 @@ export const freeQuestionRemaining = (
 ) => {
   if (!createdTime) return 0
   // hide if account less than one hour old
-  if (createdTime > Date.now() - 60 * 60 * 1000) return 0
+  if (createdTime > Date.now() - HOUR_MS) return 0
 
   const now = getCurrentUtcTime()
   if (freeQuestionsCreated >= MAX_FREE_QUESTIONS) {
