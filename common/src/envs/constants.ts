@@ -376,6 +376,8 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'unsubsidized',
   'death-markets',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
+  'destiny',
+  'donald-trump-adb8f1bbf890',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
