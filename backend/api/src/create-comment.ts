@@ -15,6 +15,7 @@ import {
 } from 'shared/supabase/init'
 import { first } from 'lodash'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
+import { millisToTs } from 'common/supabase/utils'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -131,11 +132,17 @@ export const createCommentOnContractInternal = async (
   } as ContractComment)
 
   const db = createSupabaseClient()
-  await db.from('contract_comment').insert({
+  const ret = await db.from('contract_comments').insert({
     contract_id: contractId,
     comment_id: comment.id,
+    user_id: creator.id,
+    created_time: millisToTs(now),
     data: comment,
   })
+
+  if (ret.error) {
+    throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
+  }
 
   if (isApi) {
     const userRef = firestore.doc(`users/${creator.id}`)
