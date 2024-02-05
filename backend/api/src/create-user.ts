@@ -14,7 +14,12 @@ import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-url
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { RESERVED_PATHS } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  LOVE_DOMAIN,
+  LOVE_DOMAIN_ALTERNATE,
+  RESERVED_PATHS,
+} from 'common/envs/constants'
 import { GCPLog, isProd } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
@@ -61,10 +66,19 @@ export const createuser = authEndpoint(async (req, auth, log) => {
 
   const host = req.get('referer')
   log(`Create user from: ${host}`)
+
   const fromLove =
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_LOVE === 'true'
-      : host?.includes('manifold.love')) || undefined
+      : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
+    undefined
+
+  const fromPolitics =
+    (host?.includes('localhost')
+      ? process.env.IS_MANIFOLD_POLITICS === 'true'
+      : host?.includes(ENV_CONFIG.politicsDomain) ||
+        host?.includes(ENV_CONFIG.politicsDomainAlternate)) || undefined
+
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
   const deviceUsedBefore =
@@ -132,6 +146,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
+        fromPolitics,
         signupBonusPaid: 0,
       })
 
@@ -164,7 +179,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
   if (fromLove) await onboardLover(user, ip, log)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg, log)
-  const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
+  const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
   await generateNewUserFeedFromContracts(
     auth.uid,
     pg,
@@ -198,9 +213,9 @@ async function addContractsToSeenMarketsTable(
   await Promise.all(
     visitedContractIds.map((contractId) =>
       pg.none(
-        `insert into user_seen_markets (user_id, contract_id, type, data)
-            values ($1, $2, $3, $4)`,
-        [userId, contractId, 'view market', {}]
+        `insert into user_seen_markets (user_id, contract_id, type)
+            values ($1, $2, $3)`,
+        [userId, contractId, 'view market']
       )
     )
   )

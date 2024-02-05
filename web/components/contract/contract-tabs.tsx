@@ -1,4 +1,4 @@
-import { groupBy, keyBy, last, mapValues, sortBy, sumBy } from 'lodash'
+import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
@@ -18,7 +18,6 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
@@ -40,6 +39,9 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { ParentFeedComment } from '../feed/feed-comments'
+import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
+import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 
 export const EMPTY_USER = '_'
 
@@ -56,6 +58,8 @@ export function ContractTabs(props: {
   setActiveIndex: (i: number) => void
   totalBets: number
   totalPositions: number
+  pinnedComments: ContractComment[]
+  appRouter?: boolean
 }) {
   const {
     contract,
@@ -68,6 +72,8 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     userPositionsByOutcome,
+    pinnedComments,
+    appRouter,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -132,12 +138,14 @@ export function ContractTabs(props: {
             <CommentsTabContent
               contract={contract}
               comments={comments}
+              pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
               blockedUserIds={blockedUserIds}
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
               bets={bets}
+              appRouter={appRouter}
             />
           ),
         },
@@ -194,6 +202,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   className?: string
   bets?: Bet[]
   highlightCommentId?: string
+  pinnedComments: ContractComment[]
+  appRouter?: boolean
 }) {
   const {
     contract,
@@ -204,6 +214,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     className,
     bets,
     highlightCommentId,
+    appRouter,
   } = props
   const user = useUser()
 
@@ -308,8 +319,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const idToHighlight = highlightCommentId ?? useHashInUrl()
+  const idToHighlight =
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    highlightCommentId ?? appRouter
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useHashInUrl()
+      : // eslint-disable-next-line react-hooks/rules-of-hooks
+        useHashInUrlPageRouter('')
   useEffect(() => {
     if (idToHighlight) {
       const currentlyVisible = visibleCommentIds.includes(idToHighlight)
@@ -319,6 +335,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   }, [idToHighlight, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
+  const pinnedComments = uniqBy(
+    props.pinnedComments.concat(comments.filter((comment) => comment.pinned)),
+    'id'
+  )
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible) loadMore()
   })
@@ -344,6 +364,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           commentTypes={['comment', 'repost']}
         />
       )}
+
       {comments.length > 0 && (
         <SortRow
           sort={sort}
@@ -364,6 +385,19 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           }
         />
       )}
+
+      {pinnedComments.map((comment) => (
+        <div key={comment.id} className={'pt-3'}>
+          <PinnedComment
+            comment={comment}
+            contract={contract}
+            trackingLocation={'contract page'}
+            seeReplies={false}
+            numReplies={0}
+          />
+        </div>
+      ))}
+
       {parentComments.slice(0, parentCommentsToRender).map((parent) => (
         <FeedCommentThread
           key={parent.id}
@@ -391,7 +425,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           )}
         />
       ))}
-
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
@@ -415,6 +448,31 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     </Col>
   )
 })
+
+const PinnedComment = (props: {
+  contract: Contract
+  comment: ContractComment
+  seeReplies: boolean
+  numReplies: number
+  trackingLocation: string
+  bets?: Bet[]
+}) => {
+  const { comment, contract, trackingLocation, bets, seeReplies, numReplies } =
+    props
+
+  return (
+    <ParentFeedComment
+      contract={contract}
+      comment={comment}
+      trackingLocation={trackingLocation}
+      highlighted={false}
+      bets={bets}
+      seeReplies={seeReplies}
+      numReplies={numReplies}
+      isPinned={true}
+    />
+  )
+}
 
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract

@@ -117,19 +117,6 @@ export const getContractLikerIds = async (
   return likedUserIds.map((r) => r.user_id)
 }
 
-export const getContractViewerIds = async (
-  contractId: string,
-  pg: SupabaseDirectClient
-) => {
-  const viewerIds = await pg.manyOrNone<{ user_id: string }>(
-    `select distinct user_id from user_seen_markets
-                where contract_id = $1
-                and type = 'view market'`,
-    [contractId]
-  )
-  return viewerIds.map((r) => r.user_id)
-}
-
 export const getContractGroupMemberIds = async (
   contractId: string,
   pg: SupabaseDirectClient

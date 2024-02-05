@@ -9,6 +9,7 @@ import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/firebase/api'
+import { toast } from 'react-hot-toast'
 
 export function ContractDescription(props: { contract: Contract }) {
   const { contract } = props
@@ -42,13 +43,20 @@ function EditableDescription(props: { contract: Contract }) {
   })
 
   const emptyDescription = editor?.isEmpty
+  const [saving, setSaving] = useState(false)
 
   async function saveDescription() {
     if (!editor) return
+    setSaving(true)
     await updateMarket({
       contractId: contract.id,
       descriptionJson: JSON.stringify(editor.getJSON()),
     })
+      .catch((e) => {
+        console.error(e)
+        toast.error('Failed to save description. Try again?')
+      })
+      .finally(() => setSaving(false))
   }
 
   return editing ? (
@@ -63,6 +71,8 @@ function EditableDescription(props: { contract: Contract }) {
             await saveDescription()
             setEditing(false)
           }}
+          loading={saving}
+          disabled={saving}
         >
           Save
         </Button>

@@ -1,5 +1,8 @@
 import { PencilIcon } from '@heroicons/react/outline'
-import { getMutualAnswerCompatibility } from 'common/love/compatibility-score'
+import {
+  getAnswerCompatibility,
+  getScoredAnswerCompatibility,
+} from 'common/love/compatibility-score'
 import { Lover } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import { User } from 'common/user'
@@ -132,7 +135,8 @@ export function CompatibilityQuestionsDisplay(props: {
       const comparedAnswer = questionIdToComparedAnswer[a.question_id]
       if (sort === 'disagree') {
         // Answered and not skipped.
-        return !!comparedAnswer && comparedAnswer.importance >= 0
+        if (!comparedAnswer || comparedAnswer.importance < 0) return false
+        return !getAnswerCompatibility(a, comparedAnswer)
       }
       if (sort === 'your-unanswered') {
         // Answered and not skipped.
@@ -148,7 +152,7 @@ export function CompatibilityQuestionsDisplay(props: {
         return -a.importance
       } else if (sort === 'disagree') {
         return comparedAnswer
-          ? getMutualAnswerCompatibility(a, comparedAnswer)
+          ? getScoredAnswerCompatibility(a, comparedAnswer)
           : Infinity
       } else if (sort === 'your-unanswered') {
         // Not answered first, then skipped, then answered.
@@ -170,9 +174,20 @@ export function CompatibilityQuestionsDisplay(props: {
 
   return (
     <Col className="gap-4">
-      <Subtitle>{`${
-        isCurrentUser ? 'Your' : shortenName(user.name) + `'s`
-      } Compatibility Prompts`}</Subtitle>
+      <Row className="flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <Subtitle>{`${
+          isCurrentUser ? 'Your' : shortenName(user.name) + `'s`
+        } Compatibility Prompts`}</Subtitle>
+        {(!isCurrentUser || fromLoverPage) && (
+          <CompatibilitySortWidget
+            className="text-sm sm:flex"
+            sort={sort}
+            setSort={setSort}
+            user={user}
+            fromLoverPage={fromLoverPage}
+          />
+        )}
+      </Row>
       {answeredQuestions.length <= 0 ? (
         <span className="text-ink-600 text-sm">
           {isCurrentUser ? "You haven't" : `${user.name} hasn't`} answered any
@@ -185,24 +200,19 @@ export function CompatibilityQuestionsDisplay(props: {
         <>
           {isCurrentUser && !fromLoverPage && (
             <span>
-              {otherQuestions.length < 1 && (
+              {otherQuestions.length < 1 ? (
                 <span className="text-ink-600 text-sm">
                   You've already answered all the compatibility questions!
                 </span>
-              )}{' '}
+              ) :
+                <span className="text-ink-600 text-sm">
+                  Answer more questions to increase your compatibility scores!
+                </span>
+              }{' '}
               <AddCompatibilityQuestionButton
                 refreshCompatibilityAll={refreshCompatibilityAll}
               />
             </span>
-          )}
-          {(!isCurrentUser || fromLoverPage) && (
-            <CompatibilitySortWidget
-              className="self-end"
-              sort={sort}
-              setSort={setSort}
-              user={user}
-              fromLoverPage={fromLoverPage}
-            />
           )}
           {shownAnswers.map((answer) => {
             return (
@@ -218,6 +228,9 @@ export function CompatibilityQuestionsDisplay(props: {
               />
             )
           })}
+          {shownAnswers.length === 0 && (
+            <div className="text-ink-500">None</div>
+          )}
         </>
       )}
       {otherQuestions.length >= 1 && isCurrentUser && !fromLoverPage && (
@@ -290,7 +303,7 @@ function CompatibilitySortWidget(props: {
       buttonContent={(open: boolean) => (
         <DropdownButton content={sortToDisplay[sort]} open={open} />
       )}
-      menuItemsClass={'bg-canvas-50'}
+      menuItemsClass={'bg-canvas-0'}
       menuWidth="w-48"
     />
   )
@@ -509,7 +522,7 @@ function CompatibilityDisplay(props: {
   const isCurrentUser = currentUser?.id === lover2.user_id
 
   const answerCompatibility = answer2
-    ? getMutualAnswerCompatibility(answer1, answer2)
+    ? getScoredAnswerCompatibility(answer1, answer2)
     : undefined
   const user1 = lover1.user
   const user2 = lover2.user

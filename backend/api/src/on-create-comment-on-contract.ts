@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { compact, first } from 'lodash'
-import { getUser, revalidateStaticProps } from 'shared/utils'
+import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -34,7 +34,10 @@ export const onCreateCommentOnContract = async (props: {
   if (!contract)
     throw new Error('Could not find contract corresponding with comment')
 
-  await revalidateStaticProps(contractPath(contract))
+  await revalidateStaticProps(
+    contractPath(contract),
+    getDomainForContract(contract)
+  )
 
   const lastCommentTime = comment.createdTime
 

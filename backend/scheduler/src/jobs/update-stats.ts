@@ -28,7 +28,7 @@ import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 
-const numberOfDays = 180
+const numberOfDays = 365
 
 interface StatEvent {
   id: string
@@ -37,9 +37,9 @@ interface StatEvent {
 }
 type StatBet = StatEvent & { amount: number }
 type StatUser = StatEvent & {
-  betCount: number
-  freeQuestionsCreated: number
-  bio: string
+  d1BetCount: number
+  freeQuestionsCreated: number | undefined
+  bio: string | undefined
   dashboardCount: number
 }
 
@@ -135,11 +135,11 @@ async function getDailyNewUsers(
       u.id,
       (u.data->>'bio') as bio,
       (u.data->'freeQuestionsCreated')::int as free_questions_created,
-      count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count,
+      count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count_within_24h,
       count(d.id) filter (where d.id is not null) as dashboard_count
   from users u
       left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
-      and (cb.created_time >= millis_to_ts($1) and cb.created_time < millis_to_ts($2))
+      and (cb.created_time >= u.created_time and cb.created_time <= u.created_time + interval '24 hours')
       left join dashboards d on u.id = d.creator_id
       and (d.created_time >= millis_to_ts($1) and d.created_time < millis_to_ts($2))
     where (u.created_time >= millis_to_ts($1) and u.created_time < millis_to_ts($2))
@@ -156,10 +156,10 @@ async function getDailyNewUsers(
       id: r.id as string,
       userId: r.id as string,
       ts: r.ts as number,
-      betCount: r.bet_count as number,
-      freeQuestionsCreated: r.free_questions_created as number,
-      bio: r.bio as string,
-      dashboardCount: r.dashboard_count as number,
+      d1BetCount: Number(r.bet_count_within_24h as number), // count returns bigint
+      freeQuestionsCreated: r.free_questions_created ?? undefined,
+      bio: r.bio ?? undefined,
+      dashboardCount: Number(r.dashboard_count as number), // count returns bigint
     } as const)
   }
   return usersByDay
@@ -218,7 +218,7 @@ export const updateStatsCore = async () => {
   const dailyNewRealUsers = dailyNewUsers.map((users) =>
     users.filter(
       (user) =>
-        !isUserLikelySpammer(user, user.betCount > 0, user.dashboardCount > 0)
+        !isUserLikelySpammer(user, user.d1BetCount > 0, user.dashboardCount > 0)
     )
   )
 
@@ -439,10 +439,22 @@ export const updateStatsCore = async () => {
     const end = i + 1
     return average(dailyActivationRate.slice(start, end))
   })
-  const newUserBetAverage = dailyNewRealUsers.map((newUsers) => {
+
+  const d1BetAverage = dailyNewRealUsers.map((newUsers) => {
     if (newUsers.length === 0) return 0
-    const totalBetCounts = sum(newUsers.map((u) => u.betCount))
-    return totalBetCounts / newUsers.length
+    return average(newUsers.map((u) => u.d1BetCount))
+  })
+
+  const d1Bet3DayAverage = dailyNewRealUsers.map((_, i) => {
+    const start = Math.max(0, i - 2)
+    const end = i + 1
+    const d1BetWindowAverages = dailyNewRealUsers
+      .slice(start, end)
+      .map((users) => {
+        if (users.length === 0) return 0
+        return average(users.map((u) => u.d1BetCount))
+      })
+    return average(d1BetWindowAverages)
   })
 
   const dailySignups = dailyNewUsers.map((users) => users.length)
@@ -493,7 +505,8 @@ export const updateStatsCore = async () => {
     manaBetDaily,
     manaBetWeekly,
     manaBetMonthly,
-    newUserBetAverage,
+    d1BetAverage,
+    d1Bet3DayAverage,
     dailyNewRealUserSignups,
   }
 

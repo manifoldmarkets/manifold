@@ -1,6 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { z } from 'zod'
-import { Json, MaybeAuthedEndpoint, validate } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
 import { convertGroup } from 'common/supabase/groups'
 import {
   renderSql,
@@ -11,21 +10,14 @@ import {
   where,
 } from 'shared/supabase/sql-builder'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
+import { LiteGroup } from 'common/group'
 
-const bodySchema = z
-  .object({
-    term: z.string(),
-    offset: z.number().gte(0).default(0),
-    limit: z.number().gt(0),
-    addingToContract: z.boolean().optional(),
-  })
-  .strict()
-
-export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
-  const { term, offset, limit, addingToContract } = validate(
-    bodySchema,
-    req.body
-  )
+export const supabasesearchgroups: APIHandler<'search-groups'> = async (
+  props,
+  auth
+) => {
+  const { term, offset, limit, addingToContract, type, memberGroupsOnly } =
+    props
 
   const pg = createSupabaseDirectClient()
   const uid = auth?.uid
@@ -36,11 +28,20 @@ export const supabasesearchgroups = MaybeAuthedEndpoint(async (req, auth) => {
     limit,
     uid,
     addingToContract,
+    // An alternative would be to create a topics view with only these lite group columns
+    fieldSet:
+      type === 'full'
+        ? '*'
+        : 'id, name, slug, total_members, privacy_status, creator_id',
+    memberGroupsOnly,
   })
 
   const groups = await pg.map(searchGroupSQL, null, convertGroup)
-  return (groups ?? []) as unknown as Json
-})
+  return {
+    full: type === 'full' ? groups : [],
+    lite: type === 'lite' ? (groups as LiteGroup[]) : [],
+  }
+}
 
 function getSearchGroupSQL(props: {
   term: string
@@ -48,14 +49,18 @@ function getSearchGroupSQL(props: {
   limit: number
   uid?: string
   addingToContract?: boolean
+  memberGroupsOnly?: boolean
+  fieldSet?: string
 }) {
-  const { term, uid, addingToContract } = props
+  const { term, fieldSet, memberGroupsOnly, uid, addingToContract } = props
 
   return renderSql(
-    select('*'),
+    select(fieldSet ?? '*'),
     from('groups'),
     where(
-      `privacy_status != 'private' or is_group_member(id, $1) or is_admin($1)`,
+      memberGroupsOnly
+        ? `is_group_member(id, $1) or is_admin($1)`
+        : `privacy_status != 'private' or is_group_member(id, $1) or is_admin($1)`,
       [uid]
     ),
 
@@ -81,5 +86,19 @@ function getSearchGroupSQL(props: {
         ),
 
     limit(props.limit, props.offset)
+  )
+}
+
+export const supabasesearchmygroups: APIHandler<'search-my-groups'> = async (
+  props,
+  auth,
+  logs,
+  res
+) => {
+  return supabasesearchgroups(
+    { ...props, memberGroupsOnly: true },
+    auth,
+    logs,
+    res
   )
 }

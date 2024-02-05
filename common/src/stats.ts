@@ -23,6 +23,7 @@ export type Stats = {
   manaBetDaily: number[]
   manaBetWeekly: number[]
   manaBetMonthly: number[]
-  newUserBetAverage: number[]
+  d1BetAverage: number[]
+  d1Bet3DayAverage: number[]
   dailyNewRealUserSignups: number[]
 }

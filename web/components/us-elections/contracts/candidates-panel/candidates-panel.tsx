@@ -12,7 +12,7 @@ import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
-import { CandidateBar } from './candidate-bar'
+import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 
@@ -78,7 +78,7 @@ export function CandidatePanel(props: {
                 key={answer.id}
                 answer={answer as Answer}
                 contract={contract}
-                color={getCandidateColor(answer.text)}
+                color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
               />
             ))}

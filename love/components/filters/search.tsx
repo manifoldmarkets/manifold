@@ -57,6 +57,7 @@ export const Search = (props: {
   setIsSearching: (isSearching: boolean) => void
   youLover: Lover | undefined | null
   loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
+  starredUserIds: string[]
 }) => {
   const {
     allLovers,
@@ -64,6 +65,7 @@ export const Search = (props: {
     youLover,
     loverCompatibilityScores,
     setIsSearching,
+    starredUserIds,
   } = props
 
   const isMatchmaker = useIsMatchmaker()
@@ -139,9 +141,7 @@ export const Search = (props: {
     pref_gender: youLover ? [youLover.gender] : undefined,
     pref_age_max: youLover?.pref_age_max,
     pref_age_min: youLover?.pref_age_min,
-    // Disable preferred relationships styles b/c it doesn't seem like a deal-breaker IMO.
-    // Don't think it was signaled as a hard requirement in sign up.
-    // pref_relation_styles: youLover?.pref_relation_styles,
+    pref_relation_styles: youLover?.pref_relation_styles,
     wants_kids_strength: wantsKidsDatabaseToWantsKidsFilter(
       (youLover?.wants_kids_strength ?? 2) as wantsKidsDatabase
     ),
@@ -205,7 +205,17 @@ export const Search = (props: {
         ? sortedLovers
         : alternateWomenAndMen(sortedLovers)
 
-    const filteredLovers = modifiedSortedLovers.filter((lover) => {
+    const sortedWithStarsFirst = filterDefined([
+      ...starredUserIds.map((id) =>
+        modifiedSortedLovers.find((l) => l.user_id === id)
+      ),
+      ...modifiedSortedLovers.filter(
+        (l) => !starredUserIds.includes(l.user_id)
+      ),
+    ])
+
+    const filteredLovers = sortedWithStarsFirst.filter((lover) => {
+      if (lover.user_id === youLover?.user_id) return false
       if (lover.user.name === 'deleted') return false
       if (lover.user.userDeleted || lover.user.isBannedFromPosting) return false
       if (filters.pref_age_min && lover.age < filters.pref_age_min) {
@@ -266,13 +276,6 @@ export const Search = (props: {
       ) {
         return false
       } else if (!lover.pinned_url) return false
-      else if (
-        loverCompatibilityScores &&
-        filters.orderBy === 'compatibility_score' &&
-        !loverCompatibilityScores[lover.user_id]
-      ) {
-        return false
-      }
       return true
     })
     setLovers(filteredLovers)

@@ -8,8 +8,9 @@ import Custom404 from 'politics/app/404/page'
 import { getContractOGProps, getSeoDescription } from 'common/contract-seo'
 import { removeUndefinedProps } from 'common/util/object'
 import { buildOgUrl } from 'common/util/og'
+import { ENV_CONFIG } from 'common/envs/constants'
 
-export const revalidate = 15 // revalidate at most in seconds
+export const revalidate = 60
 export async function generateStaticParams() {
   return []
 }
@@ -26,13 +27,14 @@ export async function generateMetadata(props: {
       ...getContractOGProps(contract),
       points: params.pointsString,
     }) as Record<string, string>,
-    'market'
+    'market',
+    ENV_CONFIG.politicsDomain
   )
   return {
     title: contract.question,
     openGraph: {
       images: [imageUrl],
-      url: `https://manifold.politics/${contract.creatorUsername}/${contract.slug}`,
+      url: `https://${ENV_CONFIG.politicsDomain}/${contract.creatorUsername}/${contract.slug}`,
     },
     twitter: {
       images: [imageUrl],
@@ -41,7 +43,6 @@ export async function generateMetadata(props: {
     description,
   }
 }
-
 export default async function Page({
   params,
 }: {

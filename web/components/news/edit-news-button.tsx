@@ -3,10 +3,7 @@ import { XIcon } from '@heroicons/react/outline'
 import { BaseDashboard } from 'common/dashboard'
 import { uniqBy } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
-import {
-  setNewsDashboards,
-  supabaseSearchDashboards,
-} from 'web/lib/firebase/api'
+import { api, supabaseSearchDashboards } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -16,8 +13,11 @@ import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
 import { Headline } from 'common/news'
 
-export const EditNewsButton = (props: { defaultDashboards: Headline[] }) => {
-  const { defaultDashboards } = props
+export const EditNewsButton = (props: {
+  defaultDashboards: Headline[]
+  isPolitics?: boolean
+}) => {
+  const { defaultDashboards, isPolitics } = props
   const [open, setOpen] = useState(false)
 
   return (
@@ -31,6 +31,7 @@ export const EditNewsButton = (props: { defaultDashboards: Headline[] }) => {
       </button>
       {open && (
         <EditNewsModal
+          isPolitics={isPolitics}
           setOpen={setOpen}
           defaultDashboards={defaultDashboards}
         />
@@ -42,8 +43,9 @@ export const EditNewsButton = (props: { defaultDashboards: Headline[] }) => {
 const EditNewsModal = (props: {
   setOpen(open: boolean): void
   defaultDashboards: Headline[]
+  isPolitics?: boolean
 }) => {
-  const { setOpen, defaultDashboards } = props
+  const { setOpen, defaultDashboards, isPolitics } = props
 
   const [dashboards, setDashboards] = useState(defaultDashboards)
 
@@ -69,7 +71,10 @@ const EditNewsModal = (props: {
           <Button
             color="red"
             onClick={() => {
-              setNewsDashboards({ dashboardIds: dashboards.map((d) => d.id) })
+              api('set-news', {
+                dashboardIds: dashboards.map((d) => d.id),
+                isPolitics,
+              })
               setOpen(false)
             }}
           >

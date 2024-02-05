@@ -17,6 +17,10 @@ import { Col } from '../../../layout/col'
 import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
 
+export function removeTextInParentheses(input: string): string {
+  return input.replace(/\s*\([^)]*\)/g, '')
+}
+
 export const CandidateBar = (props: {
   color: string // 6 digit hex
   prob: number // 0 - 1
@@ -40,10 +44,12 @@ export const CandidateBar = (props: {
     contract,
   } = props
 
-  const candidateImage = CANDIDATE_DATA[answer.text]?.photo
+  const candidatefullName = removeTextInParentheses(answer.text)
   const [open, setOpen] = useState(false)
   const user = useUser()
   const isMobile = useIsMobile()
+
+  const { shortName, photo, party } = CANDIDATE_DATA[candidatefullName] ?? {}
 
   return (
     <>
@@ -57,12 +63,12 @@ export const CandidateBar = (props: {
         onPointerLeave={onHover && (() => onHover(false))}
       >
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
-          {!candidateImage ? (
+          {!photo ? (
             <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
           ) : (
             <Image
-              src={candidateImage}
-              alt={answer.text}
+              src={photo}
+              alt={candidatefullName}
               width={isMobile ? 64 : 80}
               height={isMobile ? 64 : 80}
               className="object-fill"
@@ -81,7 +87,7 @@ export const CandidateBar = (props: {
               />
             </Row>
             <Row className="w-full justify-end text-sm sm:text-lg">
-              {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
+              {shortName ?? answer.text}
             </Row>
           </Col>
         </Row>

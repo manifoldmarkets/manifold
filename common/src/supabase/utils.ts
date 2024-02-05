@@ -52,16 +52,12 @@ export const subcollectionTables: SubcollectionTableMapping = {
   },
 }
 
-export function getInstanceHostname(instanceId: string) {
-  return `${instanceId}.supabase.co`
-}
-
 export function createClient(
   instanceId: string,
   key: string,
   opts?: SupabaseClientOptionsGeneric<'public'>
 ) {
-  const url = `https://${getInstanceHostname(instanceId)}`
+  const url = `https://${instanceId}.supabase.co`
   return createClientGeneric(url, key, opts) as SupabaseClient
 }
 

@@ -58,6 +58,7 @@ export function FeedContractCard(props: {
   hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
+  hideTags?: boolean
 }) {
   const {
     promotedData,
@@ -69,6 +70,7 @@ export function FeedContractCard(props: {
     showGraph,
     hideBottomRow,
     size = 'md',
+    hideTags,
   } = props
   const user = useUser()
 
@@ -186,19 +188,20 @@ export function FeedContractCard(props: {
               className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
             />
           </Row>
-          {hide && (
-            <Row className="gap-2">
-              {promotedData && canAdPay && (
-                <div className="text-ink-400 w-12 text-sm">
-                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-                </div>
-              )}
-              <CardReason
-                item={item}
-                contract={contract}
-                probChange={probChange}
-                since={startTime}
-              />
+
+          <Row className="gap-2">
+            {promotedData && canAdPay && (
+              <div className="text-ink-400 w-12 text-sm">
+                Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
+              </div>
+            )}
+            <CardReason
+              item={item}
+              contract={contract}
+              probChange={probChange}
+              since={startTime}
+            />
+            {hide && (
               <FeedDropdown
                 contract={contract}
                 item={item}
@@ -206,8 +209,8 @@ export function FeedContractCard(props: {
                 toggleInteresting={hide}
                 importanceScore={props.contract.importanceScore}
               />
-            </Row>
-          )}
+            )}
+          </Row>
         </Row>
 
         <div
@@ -289,11 +292,13 @@ export function FeedContractCard(props: {
           )}
         {!hideBottomRow && (
           <Col>
-            <CategoryTags
-              categories={contract.groupLinks}
-              // hide tags after first line. (tags are 24 px tall)
-              className="h-6 flex-wrap overflow-hidden"
-            />
+            {!hideTags && (
+              <CategoryTags
+                categories={contract.groupLinks}
+                // hide tags after first line. (tags are 24 px tall)
+                className="h-6 flex-wrap overflow-hidden"
+              />
+            )}
             <BottomActionRow
               contract={contract}
               user={user}

@@ -1,5 +1,13 @@
 import { z } from 'zod'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import {
+  Group,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  LiteGroup,
+  SearchGroupParams,
+  SearchGroupShape,
+  Topic,
+} from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -68,6 +76,12 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ commentPath: z.string() }).strict(),
   },
+  'pin-comment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ commentPath: z.string() }).strict(),
+  },
   comments: {
     method: 'GET',
     visibility: 'public',
@@ -81,6 +95,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
+        isPolitics: z.coerce.boolean().optional(),
       })
       .strict(),
   },
@@ -240,8 +255,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as LiteMarket,
     props: createMarketProps,
   },
-  // TODO: maybe this should be made consistent with the endpoints below and turned into a PUT
-  // but this is backwards compatible with the old clients
+  'market/:contractId/update': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: updateMarketProps,
+  },
+  // deprecated. remove after a few days
   'update-market': {
     method: 'POST',
     visibility: 'undocumented',
@@ -516,6 +536,23 @@ export const API = (_apiTypeCheck = {
     returns: [] as Headline[],
     props: z.object({}),
   },
+  'politics-headlines': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as Headline[],
+    props: z.object({}),
+  },
+  'set-news': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z.object({
+      dashboardIds: z.array(z.string()),
+      isPolitics: z.boolean().optional(),
+    }),
+  },
   react: {
     method: 'POST',
     visibility: 'undocumented',
@@ -589,6 +626,14 @@ export const API = (_apiTypeCheck = {
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
   },
+  'unlist-and-cancel-user-contracts': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+    }),
+  },
   'get-ad-analytics': {
     method: 'POST',
     visibility: 'undocumented',
@@ -656,15 +701,93 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    props: z.object({
-      userId: z.string(),
-    }),
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
     returns: {} as {
       status: 'success'
       likesReceived: LikeData[]
       likesGiven: LikeData[]
       ships: ShipData[]
     },
+  },
+  'has-free-like': {
+    method: 'GET',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      hasFreeLike: boolean
+    },
+  },
+  'star-lover': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({
+      targetUserId: z.string(),
+      remove: z.boolean().optional(),
+    }),
+    returns: {} as {
+      status: 'success'
+    },
+  },
+  'get-lovers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      lovers: Lover[]
+    },
+  },
+  'get-lover-answers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ userId: z.string() }).strict(),
+    returns: {} as {
+      status: 'success'
+      answers: Row<'love_compatibility_answers'>[]
+    },
+  },
+  'update-user-embedding': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+  },
+  'search-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Is there a way to infer return { lite:[] as LiteGroup[] } if type is 'lite'?
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(SearchGroupShape),
+  },
+  'search-my-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(MySearchGroupShape),
+  },
+  'get-groups-with-top-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as { topic: Topic; contracts: Contract[] }[],
+    props: z.object({}),
   },
 } as const)
 

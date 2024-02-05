@@ -79,16 +79,6 @@ export async function getRecentCommentsOnContracts(
   return rows.flat().map((r) => convertContractComment(r))
 }
 
-export async function getNumUserComments(userId: string) {
-  const { count } = await run(
-    db
-      .from('contract_comments')
-      .select('*', { head: true, count: 'exact' })
-      .eq('user_id', userId)
-  )
-  return count as number
-}
-
 export async function getNumContractComments(contractId: string) {
   const { count } = await run(
     db

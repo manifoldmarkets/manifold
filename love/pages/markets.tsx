@@ -6,9 +6,9 @@ export default function MarketsPage() {
     <LovePage trackPageView="love markets">
       <Col className="mt-[15vh] self-center px-4">
         <div className="text-ink-400 max-w-md text-5xl leading-[3.5rem]">
-          Prediction markets to forecast compatibility are{' '}
-          <span className="text-primary-500">coming soon</span> as a premium
-          feature!
+          <div className="text-primary-500">Coming soon</div>
+          Next generation prediction markets to forecast compatibility better
+          than ever!
         </div>
       </Col>
     </LovePage>

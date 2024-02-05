@@ -1,3 +1,4 @@
+'use client'
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
@@ -20,7 +21,7 @@ import {
   useGroupFromSlug,
   useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
-import { DEFAULT_TOPIC, Group, TOPIC_KEY } from 'common/group'
+import { DEFAULT_TOPIC, LiteGroup, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
@@ -138,11 +139,10 @@ export const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
-  tag?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
-  nonQueryFacetFilters?: string[]
+  isPolitics?: boolean
 }
 
 export type SearchState = {
@@ -179,11 +179,12 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  topics?: Group[]
-  setTopics?: (topics: Group[]) => void
+  topics?: LiteGroup[]
+  setTopics?: (topics: LiteGroup[]) => void
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
+  hideAvatars?: boolean
 }) {
   const {
     defaultSort,
@@ -208,6 +209,7 @@ export function SupabaseSearch(props: {
     contractsOnly,
     showTopicTag,
     hideSearchTypes,
+    hideAvatars,
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -219,7 +221,7 @@ export function SupabaseSearch(props: {
   })
   const user = useUser()
   // const followingUsers = useFollowedUsersOnLoad(user?.id)
-  const follwingTopics = useRealtimeMemberGroupIds(user?.id)
+  const followingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
@@ -257,6 +259,7 @@ export function SupabaseSearch(props: {
     searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
+      type: 'lite',
     })
   )
 
@@ -278,7 +281,8 @@ export function SupabaseSearch(props: {
         if (searchCount === searchCountRef.current) setUserResults(results)
       })
       queryTopics(query).then((results) => {
-        if (searchCount === searchCountRef.current) setTopicResults?.(results)
+        if (searchCount === searchCountRef.current)
+          setTopicResults?.(results.lite)
       })
     },
     100,
@@ -409,6 +413,7 @@ export function SupabaseSearch(props: {
         ) : (
           <>
             <ContractsTable
+              hideAvatar={hideAvatars}
               contracts={contracts}
               onContractClick={onContractClick}
               highlightContractIds={highlightContractIds}
@@ -459,7 +464,7 @@ export function SupabaseSearch(props: {
         ) : (
           <TopicResults
             topics={topicResults ?? []}
-            yourTopicIds={follwingTopics ?? []}
+            yourTopicIds={followingTopics ?? []}
           />
         )
       ) : null}
@@ -467,7 +472,10 @@ export function SupabaseSearch(props: {
   )
 }
 
-const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
+const TopicResults = (props: {
+  topics: LiteGroup[]
+  yourTopicIds: string[]
+}) => {
   const { topics, yourTopicIds } = props
   const me = useUser()
 
@@ -607,6 +615,7 @@ const useContractSearch = (
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
+        isPolitics: additionalFilter?.isPolitics,
       })
 
       if (id === requestId.current) {

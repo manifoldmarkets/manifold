@@ -8,7 +8,7 @@ import {
 import { run } from 'common/supabase/utils'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
-import { revalidateStaticProps } from 'shared/utils'
+import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
 import { contractPath } from 'common/contract'
 import { getComment } from 'shared/supabase/contract_comments'
 import { updateData } from 'shared/supabase/utils'
@@ -54,7 +54,10 @@ export const editcomment = authEndpoint(async (req, auth) => {
       data: comment,
     })
   )
-  await revalidateStaticProps(contractPath(contract))
+  await revalidateStaticProps(
+    contractPath(contract),
+    getDomainForContract(contract)
+  )
 
   return { success: true }
 })

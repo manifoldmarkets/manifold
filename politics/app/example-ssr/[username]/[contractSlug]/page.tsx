@@ -1,12 +1,11 @@
-import { PoliticsPage } from 'politics/components/politics-page'
 import type { Metadata, ResolvingMetadata } from 'next'
 import { db } from 'web/lib/supabase/db'
 import { filterDefined } from 'common/util/array'
-import Custom404 from 'politics/app/404/page'
 import { getContractFromSlug } from 'web/lib/supabase/contracts'
+import { Col } from 'web/components/layout/col'
+import { FullMarket } from 'common/api/market-types'
 
-export const revalidate = 15 // revalidate at most in seconds
-
+export const revalidate = 60
 export async function generateStaticParams() {
   return []
 }
@@ -28,19 +27,20 @@ export async function generateMetadata(
   }
 }
 
+const getMarketFromSlug = async (slug: string) => {
+  const resp = await fetch(`https://api.manifold.markets/v0/slug/${slug}`)
+  if (!resp.ok) {
+    throw new Error('Market not found with slug: ' + slug)
+  }
+  return (await resp.json()) as FullMarket
+}
+
 export default async function Page({
   params,
 }: {
   params: { contractSlug: string }
 }) {
-  const market = await getContractFromSlug(params.contractSlug, db)
-  if (!market) return <Custom404 />
-  return (
-    <PoliticsPage
-      trackPageView={'politics market page'}
-      className={'bg-canvas-50'}
-    >
-      {market.question}
-    </PoliticsPage>
-  )
+  const market = await getMarketFromSlug(params.contractSlug)
+  if (!market) return <Col>Not found</Col>
+  return <Col>{market.question}</Col>
 }

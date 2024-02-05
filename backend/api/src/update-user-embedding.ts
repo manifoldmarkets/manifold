@@ -1,4 +1,4 @@
-import { authEndpoint } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
@@ -7,13 +7,18 @@ import { getMemberGroupSlugs } from 'shared/supabase/groups'
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
-export const updateUserEmbedding = authEndpoint(async (req, auth, log) => {
+export const updateUserEmbedding: APIHandler<'update-user-embedding'> = async (
+  _,
+  auth,
+  { log },
+  res
+) => {
   const pg = createSupabaseDirectClient()
-
+  res.status(200).json({ success: true })
   await updateUserInterestEmbedding(pg, auth.uid)
   const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
   const contractIds = await getImportantContractsForNewUsers(
-    300,
+    100,
     pg,
     groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
   )
@@ -25,6 +30,4 @@ export const updateUserEmbedding = authEndpoint(async (req, auth, log) => {
     1,
     log
   )
-
-  return { success: true }
-})
+}

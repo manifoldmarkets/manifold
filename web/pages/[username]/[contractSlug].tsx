@@ -164,6 +164,7 @@ export function ContractPageContent(props: ContractParams) {
     chartAnnotations,
     relatedContractsByTopicSlug,
     topics,
+    pinnedComments,
   } = props
 
   const contract =
@@ -210,7 +211,8 @@ export function ContractPageContent(props: ContractParams) {
       contractId: contract.id,
       creatorId: contract.creatorId,
     },
-    true
+    true,
+    [user?.id] // track user view market event if they sign up/sign in on this page
   )
   useSaveContractVisitsLocally(user === null, contract.id)
 
@@ -573,6 +575,7 @@ export function ContractPageContent(props: ContractParams) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                pinnedComments={pinnedComments}
               />
             </div>
             <RelatedContractsGrid

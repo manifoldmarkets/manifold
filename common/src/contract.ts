@@ -133,6 +133,9 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
   matchCreatorId?: string // The user id of the person who proposed the match.
+
+  // Politics
+  isPolitics?: boolean
 } & T
 
 export type DPMContract = Contract & DPM
@@ -419,6 +422,7 @@ export type ContractParams = {
   chartAnnotations: ChartAnnotation[]
   relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
+  pinnedComments: ContractComment[]
 }
 
 export type MaybeAuthedContractParams =

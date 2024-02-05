@@ -13,7 +13,7 @@ export const CompatibleBadge = (props: {
   return (
     <Row
       className={clsx(
-        'items-center gap-1 self-end text-sm font-semibold',
+        'items-center gap-1 text-sm font-semibold',
         className
       )}
     >

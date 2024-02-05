@@ -73,7 +73,7 @@ export const RelatedContractsList = memo(function (props: {
                 >
                   <Row className={'items-center gap-1'}>
                     {removeEmojis(topic.name)} questions
-                    <ArrowRightIcon className="h-4 w-4" />
+                    <ArrowRightIcon className="h-4 w-4 shrink-0" />
                   </Row>
                 </Link>
               </h2>
@@ -234,7 +234,7 @@ export const RelatedContractsGrid = memo(function (props: {
             >
               <Row className={'items-center gap-1'}>
                 See more {removeEmojis(topic.name)} questions
-                <ArrowRightIcon className="h-4 w-4" />
+                <ArrowRightIcon className="h-4 w-4 shrink-0" />
               </Row>
             </Link>
           </Row>

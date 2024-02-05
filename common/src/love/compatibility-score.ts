@@ -3,8 +3,8 @@ import { LoverRow } from 'common/love/lover'
 import { Row as rowFor } from 'common/supabase/utils'
 import {
   areAgeCompatible,
+  areLocationCompatible,
   areRelationshipStyleCompatible,
-  areGenderCompatible,
   areWantKidsCompatible,
 } from './compatibility-util'
 
@@ -21,9 +21,7 @@ export type CompatibilityScore = {
 }
 
 export const getCompatibilityScore = (
-  lover1: LoverRow,
   answers1: rowFor<'love_compatibility_answers'>[],
-  lover2: LoverRow,
   answers2: rowFor<'love_compatibility_answers'>[]
 ): CompatibilityScore => {
   const {
@@ -36,29 +34,24 @@ export const getCompatibilityScore = (
     answers1
   )
 
-  const upWeight = 5
-  const downWeight = 10
+  // >=100 answers in common leads to no weight toward 50%.
+  // Use sqrt for diminishing returns to answering more questions.
+  const weightTowardFiftyPercent = Math.max(
+    25 - 2.5 * Math.sqrt(answerCount),
+    0
+  )
+  const upWeight = weightTowardFiftyPercent / 2
+  const downWeight = weightTowardFiftyPercent
   const compat1 = (score1 + upWeight) / (maxScore1 + downWeight)
   const compat2 = (score2 + upWeight) / (maxScore2 + downWeight)
   const geometricMean = Math.sqrt(compat1 * compat2)
 
-  const multiplier = getLoversCompatibility(lover1, lover2)
-  const score = multiplier * geometricMean
-
   const confidence =
     answerCount < 10 ? 'low' : answerCount < 100 ? 'medium' : 'high'
 
-  return { score, confidence }
+  return { score: geometricMean, confidence }
 }
 
-const getLoversCompatibility = (lover1: LoverRow, lover2: LoverRow) => {
-  let multiplier = 1
-  multiplier *= areAgeCompatible(lover1, lover2) ? 1 : 0.5
-  multiplier *= areRelationshipStyleCompatible(lover1, lover2) ? 1 : 0.5
-  multiplier *= areWantKidsCompatible(lover1, lover2) ? 1 : 0.5
-  multiplier *= areGenderCompatible(lover1, lover2) ? 1 : 0.01
-  return multiplier
-}
 const getAnswersCompatibility = (
   answers1: rowFor<'love_compatibility_answers'>[],
   answers2: rowFor<'love_compatibility_answers'>[]
@@ -68,32 +61,50 @@ const getAnswersCompatibility = (
   let answerCount = 0
 
   const score = sumBy(answers1, (a) => {
+    if (a.importance === -1) return 0
+
     const answer2 = answers2ByQuestionId[a.question_id]
-    if (!answer2) return 0
+    // Not answered or skipped.
+    if (!answer2 || answer2.importance === -1) return 0
 
     answerCount++
     const importanceScore = importanceToScore[a.importance] ?? 0
     maxScore += importanceScore
-    return getAnswerCompatibility(a, answer2)
+    return getAnswerCompatibilityImportanceScore(a, answer2)
   })
 
   return { score, maxScore, answerCount }
 }
 
-export function getAnswerCompatibility(
-  answer1: rowFor<'love_compatibility_answers'> | undefined | null,
-  answer2: rowFor<'love_compatibility_answers'> | undefined | null
+export function getAnswerCompatibilityImportanceScore(
+  answer1: rowFor<'love_compatibility_answers'>,
+  answer2: rowFor<'love_compatibility_answers'>
 ) {
-  if (!answer1 || !answer2 || answer1.importance < 0 || answer2.importance < 0)
-    return 0
-
   const importanceScore = importanceToScore[answer1.importance] ?? 0
   return answer1.pref_choices.includes(answer2.multiple_choice)
     ? importanceScore
     : 0
 }
 
-export function getMutualAnswerCompatibility(
+export function getAnswerCompatibility(
+  answer1: rowFor<'love_compatibility_answers'>,
+  answer2: rowFor<'love_compatibility_answers'>
+) {
+  if (answer1.importance < 0 || answer2.importance < 0) {
+    return false
+  }
+
+  const compatibility1to2 = answer1.pref_choices.includes(
+    answer2.multiple_choice
+  )
+  const compatibility2to1 = answer2.pref_choices.includes(
+    answer1.multiple_choice
+  )
+
+  return compatibility1to2 && compatibility2to1
+}
+
+export function getScoredAnswerCompatibility(
   answer1: rowFor<'love_compatibility_answers'>,
   answer2: rowFor<'love_compatibility_answers'>
 ) {
@@ -119,4 +130,16 @@ export function getMutualAnswerCompatibility(
       importanceCompatibility * importanceWeight) /
     2
   )
+}
+
+export const getLoversCompatibilityFactor = (
+  lover1: LoverRow,
+  lover2: LoverRow
+) => {
+  let multiplier = 1
+  multiplier *= areAgeCompatible(lover1, lover2) ? 1 : 0.5
+  multiplier *= areRelationshipStyleCompatible(lover1, lover2) ? 1 : 0.5
+  multiplier *= areWantKidsCompatible(lover1, lover2) ? 1 : 0.5
+  multiplier *= areLocationCompatible(lover1, lover2) ? 1 : 0.1
+  return multiplier
 }

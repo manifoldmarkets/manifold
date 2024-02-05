@@ -19,7 +19,6 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
-import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
 import ContractSharePanel from 'web/components/contract/contract-share-panel'
@@ -44,7 +43,6 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -64,6 +62,7 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { PoliticsPage } from 'politics/components/politics-page'
 import ContractEmbedPage from 'web/pages/embed/[username]/[contractSlug]'
+import { useRelatedPoliticalMarkets } from 'politics/hooks/use-related-politics-markets'
 
 export function ContractPage(props: { contractParams: ContractParams }) {
   const inIframe = useIsIframe()
@@ -78,7 +77,7 @@ export function ContractPage(props: { contractParams: ContractParams }) {
     return <ContractEmbedPage contract={contract} points={points} />
   } else
     return (
-      <PoliticsPage trackPageView={false}>
+      <PoliticsPage trackPageView={false} className={'xl:col-span-10'}>
         <ContractPageContent key={contract.id} {...props.contractParams} />
       </PoliticsPage>
     )
@@ -132,7 +131,7 @@ export function ContractPageContent(props: ContractParams) {
 
   useSaveCampaign()
   useTracking(
-    'view market',
+    'view politics market',
     {
       slug: contract.slug,
       contractId: contract.id,
@@ -187,7 +186,14 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [historyData.points, newBets])
 
-  const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
+  const {
+    isResolved,
+    outcomeType,
+    isPolitics,
+    resolution,
+    closeTime,
+    creatorId,
+  } = contract
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -222,7 +228,7 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [replyTo])
 
-  const { contracts: relatedMarkets, loadMore } = useRelatedMarkets(
+  const { contracts: relatedMarkets, loadMore } = useRelatedPoliticalMarkets(
     contract,
     relatedContracts
   )
@@ -323,9 +329,9 @@ export function ContractPageContent(props: ContractParams) {
             <Col className="w-full gap-3 lg:gap-4">
               <Col>
                 {coverImageUrl && (
-                  <Row className=" w-full justify-between">
-                    <Col className="my-auto">
-                      <BackButton />
+                  <Row className="w-full justify-between">
+                    <Col className=" my-auto -ml-3">
+                      <BackButton className={'!px-3'} />
                     </Col>
                     <HeaderActions contract={contract}>
                       {!coverImageUrl && isCreator && (
@@ -335,6 +341,11 @@ export function ContractPageContent(props: ContractParams) {
                         />
                       )}
                     </HeaderActions>
+                  </Row>
+                )}
+                {!isPolitics && (
+                  <Row className={'bg-amber-200'}>
+                    [UNOFFICIAL - MANIFOLD.MARKETS]
                   </Row>
                 )}
                 <div ref={titleRef}>
@@ -351,8 +362,6 @@ export function ContractPageContent(props: ContractParams) {
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
-                <AuthorInfo contract={contract} />
-
                 <ContractSummaryStats
                   contract={contract}
                   editable={isCreator || isAdmin || isMod}
@@ -468,6 +477,8 @@ export function ContractPageContent(props: ContractParams) {
                 blockedUserIds={blockedUserIds}
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
+                pinnedComments={[]}
+                appRouter={true}
               />
             </div>
             {contract.outcomeType === 'BOUNTIED_QUESTION' && (

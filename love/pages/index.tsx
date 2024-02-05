@@ -10,7 +10,7 @@ import { LovePage } from 'love/components/love-page'
 import { SignUpAsMatchmaker } from 'love/components/nav/love-sidebar'
 import OnlineIcon from 'love/components/online-icon'
 import { useLover } from 'love/hooks/use-lover'
-import { useCompatibleLovers, useLovers } from 'love/hooks/use-lovers'
+import { useCompatibleLovers } from 'love/hooks/use-lovers'
 import { signupThenMaybeRedirectToSignup } from 'love/lib/util/signup'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -27,9 +27,14 @@ import { useTracking } from 'web/hooks/use-tracking'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import { CompatibleBadge } from 'love/components/widgets/compatible-badge'
+import { useGetter } from 'web/hooks/use-getter'
+import { getStars } from 'love/lib/supabase/stars'
+import { StarButton } from 'love/components/widgets/star-button'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export default function ProfilesPage() {
-  const allLovers = useLovers()
+  const { data: loversResult } = useAPIGetter('get-lovers', {})
+  const allLovers = loversResult?.lovers
 
   const [lovers, setLovers] = usePersistentInMemoryState<Lover[] | undefined>(
     undefined,
@@ -46,6 +51,11 @@ export default function ProfilesPage() {
   useSaveCampaign()
   useCallReferUser()
   const lover = useLover()
+  const { data: starredUserIds, refresh: refreshStars } = useGetter(
+    'star',
+    user?.id,
+    getStars
+  )
 
   const compatibleLovers = useCompatibleLovers(user ? user.id : user)
 
@@ -71,7 +81,7 @@ export default function ProfilesPage() {
                 size="xl"
                 onClick={signupThenMaybeRedirectToSignup}
               >
-                Create a profile
+                Sign up
               </Button>
               <SignUpAsMatchmaker className="flex-1" />
             </Col>
@@ -85,13 +95,16 @@ export default function ProfilesPage() {
             loverCompatibilityScores={
               compatibleLovers?.loverCompatibilityScores
             }
+            starredUserIds={starredUserIds ?? []}
           />
 
           {lovers === undefined || compatibleLovers === undefined ? (
             <LoadingIndicator />
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-              {!isSearching && <BetOnLovePromo key="betonlove" />}
+              {!isSearching && lovers.length > 1400 && (
+                <BetOnLovePromo key="betonlove" />
+              )}
 
               {lovers.map((lover) => (
                 <ProfilePreview
@@ -102,6 +115,10 @@ export default function ProfilesPage() {
                       ? compatibleLovers.loverCompatibilityScores[lover.user_id]
                       : undefined
                   }
+                  hasStar={
+                    !!starredUserIds && starredUserIds.includes(lover.user_id)
+                  }
+                  refreshStars={refreshStars}
                 />
               ))}
             </div>
@@ -115,9 +132,12 @@ export default function ProfilesPage() {
 function ProfilePreview(props: {
   lover: Lover
   compatibilityScore: CompatibilityScore | undefined
+  hasStar: boolean
+  refreshStars: () => Promise<void>
 }) {
-  const { lover, compatibilityScore } = props
+  const { lover, compatibilityScore, hasStar, refreshStars } = props
   const { user, gender, age, pinned_url, city, last_online_time } = lover
+  const currentUser = useUser()
 
   return (
     <Link
@@ -142,11 +162,22 @@ function ProfilePreview(props: {
           </Col>
         )}
 
-        {compatibilityScore && (
-          <Col className="absolute inset-x-0 right-0 top-0 bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-1">
+        <Row className="absolute inset-x-0 right-0 top-0 items-start justify-between bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-3 pt-2">
+          {currentUser ? (
+            <StarButton
+              className="!pt-0"
+              isStarred={hasStar}
+              refresh={refreshStars}
+              targetLover={lover}
+              hideTooltip
+            />
+          ) : (
+            <div />
+          )}
+          {compatibilityScore && (
             <CompatibleBadge compatibility={compatibilityScore} />
-          </Col>
-        )}
+          )}
+        </Row>
 
         <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
           <div>

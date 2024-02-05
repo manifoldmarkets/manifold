@@ -42,7 +42,8 @@ export const OptionalLoveUserForm = (props: {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
-    const res = await updateLover({ ...lover }).catch((e) => {
+    const { bio: _, ...otherLoverProps } = lover
+    const res = await updateLover(otherLoverProps).catch((e) => {
       console.error(e)
       return false
     })
