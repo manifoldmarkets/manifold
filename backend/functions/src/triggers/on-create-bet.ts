@@ -54,10 +54,8 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
-import { convertContractComment } from 'common/supabase/comments'
-import { getComment, getCommentSafe } from 'shared/supabase/contract_comments'
+import { getCommentSafe } from 'shared/supabase/contract_comments'
 import { updateData } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
