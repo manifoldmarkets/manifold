@@ -4,6 +4,8 @@ import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
+import React from 'react'
+import { Row } from './layout/row'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
@@ -20,7 +22,7 @@ export const ExplainerPanel = (props: { className?: string }) => {
 }
 
 export const ExpandSection = (props: {
-  title: string
+  title: React.ReactNode
   children: React.ReactNode
 }) => {
   const { title, children } = props
@@ -29,7 +31,7 @@ export const ExpandSection = (props: {
     <Card className="mb-4">
       <details className="group flex flex-col gap-2">
         <summary className="flex list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
-          <div className="text-lg font-semibold">{title}</div>
+          <Row className="items-center text-lg font-semibold">{title}</Row>
           <ChevronDoubleDownIcon
             className="ml-auto inline-block h-4 w-4 transition group-open:-rotate-180"
             aria-hidden
