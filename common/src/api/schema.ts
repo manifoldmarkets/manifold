@@ -6,6 +6,7 @@ import {
   LiteGroup,
   SearchGroupParams,
   SearchGroupShape,
+  Topic,
 } from 'common/group'
 import {
   createMarketProps,
@@ -780,6 +781,13 @@ export const API = (_apiTypeCheck = {
       lite: [] as LiteGroup[],
     },
     props: SearchGroupParams(MySearchGroupShape),
+  },
+  'get-groups-with-top-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as { topic: Topic; contracts: Contract[] }[],
+    props: z.object({}),
   },
 } as const)
 

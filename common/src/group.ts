@@ -46,7 +46,7 @@ export type GroupLink = {
 // TODO: unify with LiteGroup?
 export type Topic = Pick<
   Group,
-  'id' | 'slug' | 'name' | 'importanceScore' | 'privacyStatus'
+  'id' | 'slug' | 'name' | 'importanceScore' | 'privacyStatus' | 'totalMembers'
 >
 
 export type LiteGroup = Pick<

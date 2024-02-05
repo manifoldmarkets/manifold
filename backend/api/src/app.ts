@@ -141,6 +141,7 @@ import { getLovers } from './love/get-lovers'
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
 
 import { getLoverAnswers } from './love/get-lover-answers'
+import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -254,6 +255,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-user-embedding': updateUserEmbedding,
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
+  'get-groups-with-top-contracts': getGroupsWithTopContracts,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

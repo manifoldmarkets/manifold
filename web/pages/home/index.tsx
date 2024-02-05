@@ -14,6 +14,9 @@ import { api } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
+import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
+import { useMemberTopicsAndContractsOnLoad } from 'web/hooks/use-group-supabase'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export async function getStaticProps() {
   const headlines = await api('headlines', {})
@@ -34,7 +37,7 @@ export default function Home(props: { headlines: Headline[] }) {
 
   const { headlines } = props
   const isMobile = useIsMobile()
-
+  const memberTopicsWithContracts = useMemberTopicsAndContractsOnLoad(user?.id)
   return (
     <>
       <Welcome />
@@ -57,7 +60,17 @@ export default function Home(props: { headlines: Headline[] }) {
 
           <DailyStats user={user} />
         </Row>
-        {isClient && <FeedTimeline />}
+        {!memberTopicsWithContracts ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <WelcomeTopicSections
+              memberTopicsWithContracts={memberTopicsWithContracts}
+              user={user}
+            />
+            {isClient && <FeedTimeline />}
+          </>
+        )}
       </Page>
     </>
   )

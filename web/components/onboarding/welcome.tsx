@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 import clsx from 'clsx'
 
-import { MARKET_VISIT_BONUS_TOTAL, STARTING_BALANCE } from 'common/economy'
+import { MARKET_VISIT_BONUS, STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
@@ -353,11 +353,9 @@ function ThankYouPage() {
       <p className="text-lg">
         As a thank you for signing up, we sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        mana, our play money! You can earn{' '}
-        <strong className="text-xl">
-          {formatMoney(MARKET_VISIT_BONUS_TOTAL)}
-        </strong>{' '}
-        more by visiting 9 different questions.
+        mana, our play money! You'll earn{' '}
+        <strong className="text-xl">{formatMoney(MARKET_VISIT_BONUS)}</strong>{' '}
+        on every new question you visit, (max 9) to help you explore the site.
       </p>
       <p className={'my-3 text-lg '}>
         Mana can't be converted into cash, but can be purchased and donated to
