@@ -179,7 +179,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
   if (fromLove) await onboardLover(user, ip, log)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg, log)
-  const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
+  const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
   await generateNewUserFeedFromContracts(
     auth.uid,
     pg,

@@ -13,6 +13,7 @@ export const WelcomeTopicSections = (props: {
   memberTopicsWithContracts: { topic: Topic; contracts: Contract[] }[]
 }) => {
   const { memberTopicsWithContracts } = props
+  if (!memberTopicsWithContracts.length) return null
   return (
     <Col>
       {memberTopicsWithContracts.map((topicWithContracts) => {

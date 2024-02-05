@@ -15,7 +15,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
-import { useMemberTopicsAndContractsOnLoad } from 'web/hooks/use-group-supabase'
+import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
 
@@ -39,7 +39,7 @@ export default function Home(props: { headlines: Headline[] }) {
 
   const { headlines } = props
   const isMobile = useIsMobile()
-  const memberTopicsWithContracts = useMemberTopicsAndContractsOnLoad(user?.id)
+  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
   const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
   return (
     <>
