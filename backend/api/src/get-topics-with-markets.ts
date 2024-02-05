@@ -33,7 +33,7 @@ export const getGroupsWithTopContracts: APIHandler<
       ) as c
       order by gs.slug, c.importance_score desc
       `,
-      [auth.uid, 20],
+      [auth.uid, CONTRACTS_PER_TOPIC * 4],
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     getMemberTopics(auth.uid, pg),
