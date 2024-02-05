@@ -1,7 +1,7 @@
 import { Combobox } from '@headlessui/react'
 import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Group } from 'common/group'
+import { Group, LiteGroup } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
@@ -37,7 +37,7 @@ export function TopicSelector(props: {
   const onlyGroups = useAsyncData(onlyGroupIds, getGroups)
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
   const [query, setQuery] = useState('')
-  const [searchedGroups, setSearchedGroups] = useState<Group[]>([])
+  const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
   const [loading, setLoading] = useState(false)
 
   const requestNumber = useRef(0)
@@ -63,9 +63,10 @@ export function TopicSelector(props: {
       term: query,
       limit: 10,
       addingToContract: true,
+      type: 'lite',
     }).then((result) => {
       if (requestNumber.current === requestId) {
-        setSearchedGroups(uniqBy(result, 'name'))
+        setSearchedGroups(uniqBy(result.lite, 'name'))
         setLoading(false)
       }
     })
@@ -121,10 +122,9 @@ export function TopicSelector(props: {
             ) : (
               searchedGroups
                 .filter(
-                  (group: Group) =>
-                    !ignoreGroupIds?.some((id) => id == group.id)
+                  (group) => !ignoreGroupIds?.some((id) => id == group.id)
                 )
-                .map((group: Group) => (
+                .map((group: LiteGroup) => (
                   <Combobox.Option
                     key={group.id}
                     value={group}

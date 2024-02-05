@@ -1,5 +1,13 @@
 import { z } from 'zod'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import {
+  Group,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  LiteGroup,
+  SearchGroupParams,
+  SearchGroupShape,
+  Topic,
+} from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -746,6 +754,40 @@ export const API = (_apiTypeCheck = {
       status: 'success'
       answers: Row<'love_compatibility_answers'>[]
     },
+  },
+  'update-user-embedding': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+  },
+  'search-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Is there a way to infer return { lite:[] as LiteGroup[] } if type is 'lite'?
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(SearchGroupShape),
+  },
+  'search-my-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(MySearchGroupShape),
+  },
+  'get-groups-with-top-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as { topic: Topic; contracts: Contract[] }[],
+    props: z.object({}),
   },
 } as const)
 

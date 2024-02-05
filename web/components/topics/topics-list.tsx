@@ -1,4 +1,3 @@
-import { Group } from 'common/group'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
 import { PrivateUser, User } from 'common/user'
@@ -7,8 +6,10 @@ import { MdOutlineKeyboardDoubleArrowRight } from 'react-icons/md'
 import { track } from 'web/lib/service/analytics'
 import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 
+import { LiteGroup } from 'common/group'
+
 export function TopicsList(props: {
-  topics: Group[]
+  topics: LiteGroup[]
   loadMore?: () => Promise<boolean>
   currentTopicSlug?: string
   setCurrentTopicSlug: (slug: string) => void
