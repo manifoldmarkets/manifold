@@ -13,6 +13,7 @@ import {
   manifoldLoveRelationshipsGroupId,
 } from 'common/love/constants'
 import { getLikesAndShipsMain } from './get-likes-and-ships'
+import { MONTH_MS } from 'common/util/time'
 
 export const createYourLoveMarket: APIHandler<
   'create-your-love-market'
@@ -90,17 +91,17 @@ export const createYourLoveMarket: APIHandler<
   )
   const answersAsText = candidateUsers.map((u) => `${u.name} (@${u.username})`)
 
-  const twentyOneHundred = new Date(`2100-01-01T00:00:00-08:00`)
+  const sixMonthsFromNow = new Date(Date.now() + 6 * MONTH_MS)
 
   const contract = (await createMarketHelper(
     {
-      question: `Who will I go on 3 dates with?`,
+      question: `Who will I next go on 3 dates with?`,
       answers: answersAsText,
       descriptionMarkdown: `See [my profile](https://manifold.love/${user.username}) to get more info on me and the candidates.
 
-This market resolves once I've gone on 3 dates with someone on Manifold Love.
+This market resolves once I've gone on 3 dates with someone on Manifold Love or once 6 months have passed.
 
-The person I went on 3 dates with resolves YES. Other candidates where we have exchanged messages on Manifold Love resolve NO. Other candidates where we have not both exchanged messages resolve N/A.
+The person I went on 3 dates with resolves YES. Other candidates where we have exchanged messages on Manifold Love resolve NO. Candidates where we have not both exchanged messages resolve N/A.
   
 See [FAQ](https://manifold.love/faq) for more details.`,
       outcomeType: 'MULTIPLE_CHOICE',
@@ -108,7 +109,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       addAnswersMode: 'DISABLED',
       groupIds: [manifoldLoveRelationshipsGroupId],
       visibility: 'public',
-      closeTime: twentyOneHundred,
+      closeTime: sixMonthsFromNow,
       isLove: true,
       specialLiquidityPerAnswer: LOVE_MARKET_COST,
     },
