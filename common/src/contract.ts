@@ -128,11 +128,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
+  specialLiquidityPerAnswer?: number // Special market type where all answers are bet down to 1% and have the same liquidity while only one resolves yes. Implemented as independent multi.
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
   matchCreatorId?: string // The user id of the person who proposed the match.
+  isLove?: boolean
 
   // Politics
   isPolitics?: boolean

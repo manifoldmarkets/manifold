@@ -51,6 +51,9 @@ export function getNewContract(props: {
   loverUserId1: string | undefined
   loverUserId2: string | undefined
   matchCreatorId: string | undefined
+  isLove: boolean | undefined
+
+  specialLiquidityPerAnswer: number | undefined
 }) {
   const {
     id,
@@ -73,7 +76,9 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
     coverImageUrl,
+    specialLiquidityPerAnswer,
   } = props
   const createdTime = Date.now()
 
@@ -88,7 +93,8 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante
+        ante,
+        specialLiquidityPerAnswer
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
@@ -138,6 +144,7 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   })
 
   return contract as Contract
@@ -214,7 +221,8 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number
+  ante: number,
+  specialLiquidityPerAnswer: number | undefined
 ) => {
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -225,7 +233,8 @@ const getMultipleChoiceProps = (
     addAnswersMode,
     shouldAnswersSumToOne,
     ante,
-    answersWithOther
+    answersWithOther,
+    specialLiquidityPerAnswer
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -233,7 +242,7 @@ const getMultipleChoiceProps = (
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: answerObjects,
-    totalLiquidity: ante,
+    totalLiquidity: specialLiquidityPerAnswer ?? ante,
     subsidyPool: 0,
   }
 
@@ -246,7 +255,8 @@ function createAnswers(
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  answers: string[]
+  answers: string[],
+  specialLiquidityPerAnswer: number | undefined
 ) {
   const ids = answers.map(() => randomString())
 
@@ -270,6 +280,14 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
+  } else if (specialLiquidityPerAnswer !== undefined) {
+    // We start each answer at 1%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
+    // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
+    // Then we can solve probability identity:
+    // 0.01 = poolNo / (poolYes + poolNo)
+    prob = 0.01
+    poolYes = specialLiquidityPerAnswer
+    poolNo = specialLiquidityPerAnswer / 99
   }
 
   const now = Date.now()

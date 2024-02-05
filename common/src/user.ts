@@ -126,7 +126,14 @@ export const getAvailableBalancePerQuestion = (user: User): number => {
   )
 }
 
-export const marketCreationCosts = (user: User, ante: number) => {
+export const marketCreationCosts = (user: User, ante: number, allSuppliedByUser?: boolean) => {
+  if (allSuppliedByUser) {
+    return {
+      amountSuppliedByUser: ante,
+      amountSuppliedByHouse: 0
+    }
+  }
+
   let amountSuppliedByUser = ante
   let amountSuppliedByHouse = 0
   if (freeQuestionRemaining(user.freeQuestionsCreated, user.createdTime) > 0) {

@@ -17,11 +17,7 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import {
-  getAvailableBalancePerQuestion,
-  marketCreationCosts,
-  User,
-} from 'common/user'
+import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
@@ -91,6 +87,8 @@ export async function createMarketHelper(
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -116,7 +114,9 @@ export async function createMarketHelper(
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante =
-    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+    (specialLiquidityPerAnswer ??
+      totalBounty ??
+      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -137,10 +137,11 @@ export async function createMarketHelper(
 
     const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
       user,
-      ante
+      ante,
+      !!specialLiquidityPerAnswer
     )
 
-    if (ante > getAvailableBalancePerQuestion(user) && user.id !== BTE_USER_ID)
+    if (amountSuppliedByUser > user.balance && user.id !== BTE_USER_ID)
       throw new APIError(
         403,
         `Balance must be at least ${amountSuppliedByUser}.`
@@ -178,6 +179,8 @@ export async function createMarketHelper(
       loverUserId1,
       loverUserId2,
       matchCreatorId,
+      isLove,
+      specialLiquidityPerAnswer,
     })
 
     const houseId = isProd()
@@ -346,6 +349,7 @@ function validateMarketBody(body: Body) {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   } = body
 
   let min: number | undefined,
@@ -356,7 +360,8 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
-    extraLiquidity: number | undefined
+    extraLiquidity: number | undefined,
+    specialLiquidityPerAnswer: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -410,6 +415,16 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'POLL') {
     ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
   }
+
+  if (body.specialLiquidityPerAnswer) {
+    if (outcomeType !== 'MULTIPLE_CHOICE' || body.shouldAnswersSumToOne)
+      throw new APIError(
+        400,
+        'specialLiquidityPerAnswer can only be used with independent MULTIPLE_CHOICE markets'
+      )
+    specialLiquidityPerAnswer = body.specialLiquidityPerAnswer
+  }
+
   return {
     question,
     description,
@@ -434,6 +449,8 @@ function validateMarketBody(body: Body) {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   }
 }
 

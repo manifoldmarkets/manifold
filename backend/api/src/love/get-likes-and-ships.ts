@@ -6,6 +6,13 @@ export const getLikesAndShips: APIHandler<'get-likes-and-ships'> = async (
 ) => {
   const { userId } = props
 
+  return {
+    status: 'success',
+    ...(await getLikesAndShipsMain(userId)),
+  }
+}
+
+export const getLikesAndShipsMain = async (userId: string) => {
   const pg = createSupabaseDirectClient()
 
   const likesGiven = await pg.map<{
@@ -90,7 +97,6 @@ export const getLikesAndShips: APIHandler<'get-likes-and-ships'> = async (
   )
 
   return {
-    status: 'success',
     likesGiven,
     likesReceived,
     ships,
