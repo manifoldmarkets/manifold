@@ -143,6 +143,7 @@ export const BOT_USERNAMES = [
   'LUCAtheory',
   'TunglBot',
   'timetraveler',
+  'AImogus',
 ]
 
 export const MOD_IDS = [
