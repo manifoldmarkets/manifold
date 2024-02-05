@@ -135,7 +135,7 @@ const FeedContractAndRelatedItems = (props: {
           hide={() => setHidden(true)}
           item={item}
           className="max-w-full"
-        ></FeedContractCard>
+        />
       )}
     </FeedItemFrame>
   )

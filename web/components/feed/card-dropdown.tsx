@@ -39,7 +39,7 @@ export function FeedDropdown(props: {
       contractId: contract.id,
       creatorId,
       feedId: item?.id,
-      // Currently not interesting, toggling to interesting
+      // Currently interesting, toggling to not remove contract from disinterests
       removeContract: !interesting,
     })
     if (interesting)
