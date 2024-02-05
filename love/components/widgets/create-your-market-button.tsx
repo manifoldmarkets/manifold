@@ -9,6 +9,7 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
 import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
+import { Row } from 'web/components/layout/row'
 
 export const CreateYourMarketButton = ({
   className,
@@ -29,9 +30,14 @@ export const CreateYourMarketButton = ({
   const disabled = !user || user.balance < LOVE_MARKET_COST
 
   return (
-    <div className={className}>
-      <Button disabled={isSubmitting} onClick={() => setShowModal(true)}>
-        Set up dating prediction market
+    <>
+      <Button
+        className={clsx(className, 'font-semibold')}
+        color="gradient-pink"
+        disabled={isSubmitting}
+        onClick={() => setShowModal(true)}
+      >
+        Create your dating prediction market
       </Button>
 
       <Modal open={showModal} setOpen={setShowModal}>
@@ -82,17 +88,23 @@ export const CreateYourMarketButton = ({
             </div>
           </Col>
 
-          <Col className="items-center gap-2 self-end">
-            <div className="text-ink-500 text-2xl font-semibold">
-              Give it a shot:
-            </div>
-
-            <Button disabled={disabled} onClick={submit}>
-              Pay ${formatMoney(LOVE_MARKET_COST)} & submit
+          <Row className="w-full items-end justify-between">
+            <Button color="gray-white" disabled={disabled} onClick={() => setShowModal(false)}>
+              Maybe later
             </Button>
-          </Col>
+
+            <Col className="items-center gap-2 self-end">
+              <div className="text-ink-500 text-2xl font-semibold">
+                Give it a shot:
+              </div>
+
+              <Button disabled={disabled} onClick={submit}>
+                Pay ${formatMoney(LOVE_MARKET_COST)} & submit
+              </Button>
+            </Col>
+          </Row>
         </Col>
       </Modal>
-    </div>
+    </>
   )
 }

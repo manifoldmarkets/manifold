@@ -65,6 +65,7 @@ export function LoverProfile(props: {
 
   return (
     <>
+      {isCurrentUser && !fromLoverPage && <CreateYourMarketButton className="w-full" />}
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
       <LoverProfileHeader
         user={user}
@@ -157,7 +158,6 @@ function LoverContent(props: {
         refreshShips={refreshShips}
         profileLover={lover}
       />
-      {isCurrentUser && !fromLoverPage && <CreateYourMarketButton />}
       {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />
       )}
