@@ -59,6 +59,7 @@ export function FeedContractCard(props: {
   showGraph?: boolean
   hideBottomRow?: boolean
   hideTags?: boolean
+  hideReason?: boolean
 }) {
   const {
     promotedData,
@@ -71,6 +72,7 @@ export function FeedContractCard(props: {
     hideBottomRow,
     size = 'md',
     hideTags,
+    hideReason,
   } = props
   const user = useUser()
 
@@ -195,12 +197,14 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            <CardReason
-              item={item}
-              contract={contract}
-              probChange={probChange}
-              since={startTime}
-            />
+            {!hideReason && (
+              <CardReason
+                item={item}
+                contract={contract}
+                probChange={probChange}
+                since={startTime}
+              />
+            )}
             {hide && (
               <FeedDropdown
                 contract={contract}
