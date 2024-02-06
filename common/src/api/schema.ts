@@ -757,6 +757,21 @@ export const API = (_apiTypeCheck = {
       contract: CPMMMultiContract
     },
   },
+  'get-love-market': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract | null
+      lovers: Lover[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

@@ -21,7 +21,13 @@ import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
+import {
+  GCPLog,
+  getUser,
+  getUserByUsername,
+  htmlToRichText,
+  isProd,
+} from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -149,6 +155,12 @@ export async function createMarketHelper(
 
     const slug = await getSlug(trans, question)
 
+    let answerLoverUserIds: string[] = []
+    if (isLove && answers) {
+      answerLoverUserIds = await getLoveAnswerUserIds(answers)
+      console.log('answerLoverUserIds', answerLoverUserIds)
+    }
+
     const contract = getNewContract({
       id: contractRef.id,
       slug,
@@ -180,6 +192,7 @@ export async function createMarketHelper(
       loverUserId2,
       matchCreatorId,
       isLove,
+      answerLoverUserIds,
       specialLiquidityPerAnswer,
     })
 
@@ -517,13 +530,51 @@ async function getGroupCheckPermissions(
 }
 
 async function createAnswers(contract: CPMMMultiContract) {
-  const { answers } = contract
+  const { isLove } = contract
+  let { answers } = contract
+
+  if (isLove) {
+    // Add loverUserId to the answer.
+    answers = await Promise.all(
+      answers.map(async (a) => {
+        // Parse username from answer text.
+        const matches = a.text.match(/@(\w+)/)
+        const loverUsername = matches ? matches[1] : null
+        if (!loverUsername) return a
+        const loverUserId = (await getUserByUsername(loverUsername))?.id
+        if (!loverUserId) return a
+        return {
+          ...a,
+          loverUserId,
+        }
+      })
+    )
+  }
+
   await Promise.all(
     answers.map((answer) => {
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
         .doc(answer.id)
         .set(answer)
+    })
+  )
+}
+
+async function getLoveAnswerUserIds(answers: string[]) {
+  // Get the loverUserId from the answer text.
+  return await Promise.all(
+    answers.map(async (answerText) => {
+      // Parse username from answer text.
+      const matches = answerText.match(/@(\w+)/)
+      console.log('matches', matches)
+      const loverUsername = matches ? matches[1] : null
+      if (!loverUsername)
+        throw new APIError(500, 'No lover username found ' + answerText)
+      const user = await getUserByUsername(loverUsername)
+      if (!user)
+        throw new APIError(500, 'No user found with username ' + answerText)
+      return user.id
     })
   )
 }

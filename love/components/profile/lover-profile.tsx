@@ -22,6 +22,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
 import { CreateYourMarketButton } from '../widgets/create-your-market-button'
+import { MarketsDisplay } from '../widgets/markets-display'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -151,6 +152,7 @@ function LoverContent(props: {
   }
   return (
     <>
+      <MarketsDisplay lover={lover} />
       <LikesDisplay
         likesGiven={likesGiven}
         likesReceived={likesReceived}

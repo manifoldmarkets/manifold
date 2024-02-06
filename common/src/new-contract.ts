@@ -52,6 +52,7 @@ export function getNewContract(props: {
   loverUserId2: string | undefined
   matchCreatorId: string | undefined
   isLove: boolean | undefined
+  answerLoverUserIds: string[] | undefined
 
   specialLiquidityPerAnswer: number | undefined
 }) {
@@ -79,6 +80,7 @@ export function getNewContract(props: {
     isLove,
     coverImageUrl,
     specialLiquidityPerAnswer,
+    answerLoverUserIds,
   } = props
   const createdTime = Date.now()
 
@@ -94,7 +96,8 @@ export function getNewContract(props: {
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
         ante,
-        specialLiquidityPerAnswer
+        specialLiquidityPerAnswer,
+        answerLoverUserIds
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
@@ -222,7 +225,8 @@ const getMultipleChoiceProps = (
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  specialLiquidityPerAnswer: number | undefined
+  specialLiquidityPerAnswer: number | undefined,
+  answerLoverUserIds: string[] | undefined
 ) => {
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -234,7 +238,8 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    specialLiquidityPerAnswer
+    specialLiquidityPerAnswer,
+    answerLoverUserIds
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -256,7 +261,8 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  specialLiquidityPerAnswer: number | undefined
+  specialLiquidityPerAnswer: number | undefined,
+  answerLoverUserIds: string[] | undefined
 ) {
   const ids = answers.map(() => randomString())
 
@@ -294,13 +300,14 @@ function createAnswers(
 
   return answers.map((text, i) => {
     const id = ids[i]
-    const answer: Answer = {
+    const answer: Answer = removeUndefinedProps({
       id,
       index: i,
       contractId,
       userId,
       text,
       createdTime: now,
+      loverUserId: answerLoverUserIds?.[i],
 
       poolYes,
       poolNo,
@@ -312,7 +319,7 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
-    }
+    })
     return answer
   })
 }

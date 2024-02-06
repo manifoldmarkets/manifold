@@ -28,6 +28,8 @@ export type Answer = {
     week: number
     month: number
   }
+
+  loverUserId?: string
 }
 
 export type DpmAnswer = {
