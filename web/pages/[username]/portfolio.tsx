@@ -3,7 +3,11 @@ import { shouldIgnoreUserPage, User } from 'common/user'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/firebase/api'
-import { AnyBalanceChangeType, BetBalanceChange } from 'common/balance-change'
+import {
+  AnyBalanceChangeType,
+  BetBalanceChange,
+  TXN_BALANCE_CHANGE_TYPES,
+} from 'common/balance-change'
 import { formatMoney, getMoneyNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { DAY_MS } from 'common/util/time'
@@ -62,7 +66,7 @@ export default function UserPortfolio(props: {
           if (getMoneyNumber(amount) === 0) return null
           return (
             <div
-              key={amount + contract.slug}
+              key={change.createdTime}
               className={'grid-cols-16 grid w-full'}
             >
               <div className={'col-span-3 inline-flex'}>
@@ -80,6 +84,18 @@ export default function UserPortfolio(props: {
               </div>
               <div className={'col-span-2'}>{outcome}</div>
               <div className={'col-span-6'}>{question.slice(0, 18)}</div>
+            </div>
+          )
+        } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+          return (
+            <div
+              key={change.createdTime}
+              className={'grid-cols-16 grid w-full'}
+            >
+              <div className={'col-span-3 inline-flex'}>
+                {formatMoney(change.amount)}
+              </div>
+              <div className={'col-span-2'}>{type}</div>
             </div>
           )
         }

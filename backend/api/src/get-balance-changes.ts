@@ -3,8 +3,14 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
-import { BetBalanceChange } from 'common/balance-change'
+import {
+  AnyBalanceChangeType,
+  BetBalanceChange,
+  TXN_BALANCE_CHANGE_TYPES,
+  TxnBalanceChange,
+} from 'common/balance-change'
 import { isAdminId } from 'common/envs/constants'
+import { Txn } from 'common/txn'
 
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props,
@@ -12,7 +18,41 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
 ) => {
   const { after, userId } = props
   const betBalanceChanges = await getBetBalanceChanges(after, userId, auth)
-  return betBalanceChanges
+  const txnBalanceChanges = await getTxnBalanceChanges(after, userId, auth)
+  return orderBy(
+    [...betBalanceChanges, ...txnBalanceChanges],
+    (change) => change.createdTime,
+    'desc'
+  )
+}
+const getTxnBalanceChanges = async (
+  after: number,
+  userId: string,
+  auth: AuthedUser | undefined
+) => {
+  const pg = createSupabaseDirectClient()
+  const balanceChanges = [] as AnyBalanceChangeType[]
+
+  const txns = await pg.map(
+    `
+    select data
+    from txns
+    where fs_updated_time > millis_to_ts($1)
+      and data->>'toId' = $2
+    and data->>'category' = ANY ($3);
+    `,
+    [after, userId, TXN_BALANCE_CHANGE_TYPES],
+    (row) => row.data as Txn
+  )
+  for (const txn of txns) {
+    const balanceChange: TxnBalanceChange = {
+      type: txn.category,
+      amount: txn.amount,
+      createdTime: txn.createdTime,
+    }
+    balanceChanges.push(balanceChange)
+  }
+  return balanceChanges
 }
 
 const getBetBalanceChanges = async (
