@@ -67,8 +67,7 @@ export async function getHomeProps() {
       return acc
     }, {} as MapContractsDictionary)
   return {
-    rawMapContractsDictionary: mapContractsPromises,
-    // rawMapContractsDictionary: mapContractsDictionary,
+    rawMapContractsDictionary: mapContractsDictionary,
     electionPartyContract: electionPartyContract,
     electionCandidateContract: electionCandidateContract,
     republicanCandidateContract: republicanCandidateContract,
