@@ -3,8 +3,8 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://politifold.com
+Host: https://manifoldpolitics.com
 
 # Sitemaps
-Sitemap: https://politifold.com/server-sitemap.xml
-Sitemap: https://politifold.com/sitemap.xml
+Sitemap: https://manifoldpolitics.com/server-sitemap.xml
+Sitemap: https://manifoldpolitics.com/sitemap.xml

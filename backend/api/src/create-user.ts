@@ -76,8 +76,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
   const fromPolitics =
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_POLITICS === 'true'
-      : host?.includes(ENV_CONFIG.politicsDomain) ||
-        host?.includes(ENV_CONFIG.politicsDomainAlternate)) || undefined
+      : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
 
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
