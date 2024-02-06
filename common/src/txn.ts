@@ -41,6 +41,7 @@ type AnyTxnType =
   | Loan
   | PushNotificationBonus
   | LikePurchase
+  | ContractUndoResolutionPayout
 
 export type SourceType =
   | 'USER'

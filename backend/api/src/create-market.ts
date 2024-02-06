@@ -239,6 +239,7 @@ const runCreateMarketTxn = async (
     ante
   )
 
+  // TODO: these should be txns!
   if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
     if (amountSuppliedByHouse > 0 && houseDoc)
       trans.update(houseDoc.ref, {

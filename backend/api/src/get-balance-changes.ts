@@ -11,25 +11,23 @@ import {
 } from 'common/balance-change'
 import { isAdminId } from 'common/envs/constants'
 import { Txn } from 'common/txn'
+import { filterDefined } from 'common/util/array'
 
+// market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props,
   auth
 ) => {
   const { after, userId } = props
   const betBalanceChanges = await getBetBalanceChanges(after, userId, auth)
-  const txnBalanceChanges = await getTxnBalanceChanges(after, userId, auth)
+  const txnBalanceChanges = await getTxnBalanceChanges(after, userId)
   return orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
     (change) => change.createdTime,
     'desc'
   )
 }
-const getTxnBalanceChanges = async (
-  after: number,
-  userId: string,
-  auth: AuthedUser | undefined
-) => {
+const getTxnBalanceChanges = async (after: number, userId: string) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as AnyBalanceChangeType[]
 
@@ -38,21 +36,75 @@ const getTxnBalanceChanges = async (
     select data
     from txns
     where fs_updated_time > millis_to_ts($1)
-      and data->>'toId' = $2
+      and (data->>'toId' = $2 or data->>'fromId' = $2)
     and data->>'category' = ANY ($3);
     `,
     [after, userId, TXN_BALANCE_CHANGE_TYPES],
     (row) => row.data as Txn
   )
+  const contractIds = filterDefined(
+    txns.map((txn) => getContractIdFromTxn(txn))
+  )
+  const userIds = filterDefined(
+    txns.map((txn) => getOtherUserIdFromTxn(txn, userId))
+  )
+  const contracts = await pg.map(
+    `
+    select data from contracts
+    where id = any($1);
+    `,
+    [contractIds],
+    (row) => row.data as Contract
+  )
+  const users = await pg.map(
+    `
+    select id, username, name from users
+    where id = any($1);
+    `,
+    [userIds],
+    (row) => row
+  )
   for (const txn of txns) {
+    const contract = contracts.find((c) => c.id === getContractIdFromTxn(txn))
+    const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       type: txn.category,
       amount: txn.amount,
       createdTime: txn.createdTime,
+      contract: {
+        question: contract?.question ?? '',
+        visibility: contract?.visibility ?? 'unlisted',
+        slug: contract?.slug ?? 'Unknown',
+      },
+      questType: txn.data?.questType,
+      user: user ? { username: user.username, name: user.name } : undefined,
     }
     balanceChanges.push(balanceChange)
   }
   return balanceChanges
+}
+
+const getOtherUserIdFromTxn = (txn: Txn, userId: string) => {
+  if (txn.toType === 'USER' && txn.toId !== userId) {
+    return txn.toId
+  } else if (txn.fromType === 'USER' && txn.fromId !== userId) {
+    return txn.fromId
+  }
+  return undefined
+}
+const getContractIdFromTxn = (txn: Txn) => {
+  if (txn.category === 'CONTRACT_RESOLUTION_PAYOUT') {
+    return txn.fromId
+  } else if (txn.category === 'BOUNTY_POSTED') {
+    return txn.toId
+  } else if ('data' in txn && txn.data?.contractId) return txn.data.contractId
+  if (
+    !['BETTING_STREAK_BONUS', 'MARKET_BOOST_REDEEM', 'QUEST_REWARD'].includes(
+      txn.category
+    )
+  )
+    console.error('No contractId found for txn', txn)
+  return null
 }
 
 const getBetBalanceChanges = async (
@@ -113,6 +165,10 @@ const getBetBalanceChanges = async (
       const beHonest =
         isCurrentUser || visibility === 'public' || isAdminId(auth?.uid ?? '')
       const changeToBalance = !isRedemption ? -amount : -shares
+      const text =
+        contract.mechanism === 'cpmm-multi-1' && bet.answerId
+          ? contract.answers.find((a) => a.id === bet.answerId)?.text
+          : undefined
       const balanceChange: BetBalanceChange = {
         amount: changeToBalance,
         type: isRedemption
@@ -131,6 +187,7 @@ const getBetBalanceChanges = async (
           visibility: visibility,
         },
         createdTime: createdTime,
+        answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
       }
       balanceChanges.push(balanceChange)
     }
