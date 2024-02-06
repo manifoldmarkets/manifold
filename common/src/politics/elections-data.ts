@@ -7,6 +7,7 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 export interface StateElectionMarket {
   slug: string
   state: string
+  additionalSlugs?: string[]
 }
 export const ELECTION_DASHBOARD_TITLE = '2024 Election Forecast'
 export const ELECTION_DASHBOARD_DESCRIPTION =
