@@ -16,7 +16,6 @@ import {
   updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
-import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
