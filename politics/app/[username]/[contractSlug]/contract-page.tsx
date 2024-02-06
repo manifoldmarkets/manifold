@@ -433,7 +433,10 @@ export function ContractPageContent(props: ContractParams) {
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {showExplainerPanel && (
-              <PoliticsExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
+              <PoliticsExplainerPanel
+                header="What is this?"
+                className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden"
+              />
             )}
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
@@ -490,7 +493,9 @@ export function ContractPageContent(props: ContractParams) {
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
-          {showExplainerPanel && <PoliticsExplainerPanel />}
+          {showExplainerPanel && (
+            <PoliticsExplainerPanel header={'What is this?'} />
+          )}
 
           <RelatedContractsList
             contracts={relatedMarkets}
