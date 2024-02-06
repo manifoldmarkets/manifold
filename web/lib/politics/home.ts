@@ -5,8 +5,6 @@ import {
   presidency2024,
 } from 'common/politics/elections-data'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import { SupabaseClient } from 'common/supabase/utils'
-import { unstable_cache } from 'next/cache'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
