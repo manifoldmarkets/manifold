@@ -82,11 +82,6 @@ function ElectionContent(props: ElectionsPageProps) {
         <Col className="px-2 sm:px-0">
           <Row className="mt-2 items-center justify-between gap-4 font-serif text-2xl sm:mt-0 sm:justify-start sm:text-3xl">
             2024 Election Forecast
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/`}
-              eventTrackingName="copy dashboard link"
-              tooltip="Share"
-            />
           </Row>
           <div className="text-canvas-500 text-md mt-2 inline-block font-normal">
             Live market odds for the US presidential election
