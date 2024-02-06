@@ -10,12 +10,9 @@ import { unstable_cache } from 'next/cache'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
-export async function getElectionsPageProps(useUnstableCache: boolean) {
+export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) =>
-    useUnstableCache
-      ? getCachedContractFromSlug(slug, adminDb)
-      : getContractFromSlug(slug, adminDb)
+  const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
 
   const mapContractsPromises = presidency2024.map(async (m) => {
     const contract = await getContract(m.slug)
@@ -67,18 +64,4 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
     democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
   }
-}
-
-function getCachedContractFromSlug(slug: string, db: SupabaseClient) {
-  return unstable_cache(
-    async () => {
-      if (slug === presidency2024[0].slug)
-        console.log('re-fetching dashboard contracts')
-      return getContractFromSlug(slug, db)
-    },
-    [slug],
-    {
-      revalidate: REVALIDATE_CONTRACTS_SECONDS,
-    }
-  )()
 }

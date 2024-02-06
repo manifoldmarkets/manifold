@@ -1,5 +1,4 @@
 import { Bet } from 'common/bet'
-import { MultiSerializedPoints, SerializedPoint, binAvg } from 'common/chart'
 import { Contract } from 'common/contract'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { fetchLinkPreviews } from 'common/link-preview'
@@ -10,36 +9,16 @@ import {
   presidency2024,
 } from 'common/politics/elections-data'
 import { getBetPoints, getBets } from 'common/supabase/bets'
-import {
-  ChartAnnotation,
-  getChartAnnotations,
-} from 'common/supabase/chart-annotations'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { unstable_cache } from 'next/cache'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
-export async function getHomeProps(useUnstableCache: boolean) {
+export async function getHomeProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) =>
-    useUnstableCache
-      ? getCachedContractFromSlug(slug, adminDb)
-      : getContractFromSlug(slug, adminDb)
-
-  const mapContractsPromises = presidency2024.map(async (m) => {
-    const contract = await getContract(m.slug)
-    return { state: m.state, contract: contract }
-  })
-
-  const mapContractsArray = await Promise.all(mapContractsPromises)
-
-  // Convert array to dictionary
-  const mapContractsDictionary: MapContractsDictionary =
-    mapContractsArray.reduce((acc, mapContract) => {
-      acc[mapContract.state] = mapContract.contract
-      return acc
-    }, {} as MapContractsDictionary)
+  const getContract = (slug: string) => getCachedContractFromSlug(slug, adminDb)
 
   const specialContractSlugs = [
     'which-party-will-win-the-2024-us-pr-f4158bf9278a',
@@ -66,17 +45,27 @@ export async function getHomeProps(useUnstableCache: boolean) {
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
 
-  let historyDataProps = undefined
-  let chartAnnotationsProps: ChartAnnotation[] = []
-  if (!!electionPartyContract) {
-    const { historyData, chartAnnotations } = await getChartParams(
-      electionPartyContract,
-      adminDb
-    )
-    historyDataProps = historyData
-    chartAnnotationsProps = chartAnnotations
+  if (!electionPartyContract) {
+    throw new Error('No election candidate contract found')
   }
+  const { historyData, chartAnnotations } = await getChartParams(
+    electionPartyContract,
+    adminDb
+  )
 
+  const mapContractsPromises = presidency2024.map(async (m) => {
+    const contract = await getContract(m.slug)
+    return { state: m.state, contract: contract }
+  })
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  // Convert array to dictionary
+  const mapContractsDictionary: MapContractsDictionary =
+    mapContractsArray.reduce((acc, mapContract) => {
+      acc[mapContract.state] = mapContract.contract
+      return acc
+    }, {} as MapContractsDictionary)
   return {
     rawMapContractsDictionary: mapContractsDictionary,
     electionPartyContract: electionPartyContract,
@@ -87,12 +76,10 @@ export async function getHomeProps(useUnstableCache: boolean) {
     republicanVPContract: republicanVPContract,
     democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
-    partyChartParams: historyDataProps
-      ? {
-          historyData: historyDataProps,
-          chartAnnotations: chartAnnotationsProps,
-        }
-      : undefined,
+    partyChartParams: {
+      historyData: historyData,
+      chartAnnotations: chartAnnotations,
+    },
   }
 }
 
