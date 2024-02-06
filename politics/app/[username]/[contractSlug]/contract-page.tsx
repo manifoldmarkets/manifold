@@ -62,7 +62,7 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PoliticsPage } from 'politics/components/politics-page'
 import ContractEmbedPage from 'web/pages/embed/[username]/[contractSlug]'
 import { useRelatedPoliticalMarkets } from 'politics/hooks/use-related-politics-markets'
-import { PoliticsExplainerPanel } from 'politics/app/about/page'
+import { PoliticsExplainerPanel } from 'politics/components/politics-explainer-panel'
 
 export function ContractPage(props: { contractParams: ContractParams }) {
   const inIframe = useIsIframe()
