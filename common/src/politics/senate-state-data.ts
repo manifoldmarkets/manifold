@@ -137,3 +137,133 @@ export const senate2024: StateElectionMarket[] = [
     slug: 'which-party-will-win-the-us-senate-38fbe6b30c6e',
   },
 ]
+
+export interface CurrentSenateState {
+  state: string
+  name1: string
+  name2: string
+  party1: 'Democrat' | 'Republican'
+  party2: 'Democrat' | 'Republican'
+}
+
+export const currentSenate: CurrentSenateState[] = [
+  {
+    state: 'AL',
+    name1: 'Tommy Tuberville',
+    party1: 'Republican',
+    name2: 'Katie Boyd Britt',
+    party2: 'Republican',
+  },
+  {
+    state: 'AK',
+    name1: 'Lisa Murkowski',
+    party1: 'Republican',
+    name2: 'Dan Sullivan',
+    party2: 'Republican',
+  },
+  {
+    state: 'AR',
+    name1: 'Tom Cotton',
+    party1: 'Republican',
+    name2: 'John Boozman',
+    party2: 'Republican',
+  },
+  {
+    state: 'CO',
+    name1: 'Michael F. Bennet',
+    party1: 'Democrat',
+    name2: 'John W. Hickenlooper',
+    party2: 'Democrat',
+  },
+  {
+    state: 'GA',
+    name1: 'Raphael Warnock',
+    party1: 'Democrat',
+    name2: 'Jon Ossoff',
+    party2: 'Democrat',
+  },
+  {
+    state: 'ID',
+    name1: 'Mike Crapo',
+    party1: 'Republican',
+    name2: 'James E. Risch',
+    party2: 'Republican',
+  },
+  {
+    state: 'IL',
+    name1: 'Tammy Duckworth',
+    party1: 'Democrat',
+    name2: 'Richard J. Durbin',
+    party2: 'Democrat',
+  },
+  {
+    state: 'IA',
+    name1: 'Chuck Grassley',
+    party1: 'Republican',
+    name2: 'Joni Ernst',
+    party2: 'Republican',
+  },
+  {
+    state: 'KS',
+    name1: 'Jerry Moran',
+    party1: 'Republican',
+    name2: 'Roger Marshall',
+    party2: 'Republican',
+  },
+  {
+    state: 'KY',
+    name1: 'Rand Paul',
+    party1: 'Republican',
+    name2: 'Mitch McConnell',
+    party2: 'Republican',
+  },
+  {
+    state: 'LA',
+    name1: 'John Kennedy',
+    party1: 'Republican',
+    name2: 'Bill Cassidy',
+    party2: 'Republican',
+  },
+  {
+    state: 'NH',
+    name1: 'Margaret Wood Hassan',
+    party1: 'Democrat',
+    name2: 'Jeanne Shaheen',
+    party2: 'Democrat',
+  },
+  {
+    state: 'NC',
+    name1: 'Ted Budd',
+    party1: 'Republican',
+    name2: 'Tom Tillis',
+    party2: 'Republican',
+  },
+  {
+    state: 'OK',
+    name1: 'James Lankford',
+    party1: 'Republican',
+    name2: 'Markwayne Mullin',
+    party2: 'Republican',
+  },
+  {
+    state: 'OR',
+    name1: 'Ron Wyden',
+    party1: 'Democrat',
+    name2: 'Jeff Merkley',
+    party2: 'Democrat',
+  },
+  {
+    state: 'SC',
+    name1: 'Tim Scott',
+    party1: 'Republican',
+    name2: 'Lindsey Graham',
+    party2: 'Republican',
+  },
+  {
+    state: 'SD',
+    name1: 'John Thune',
+    party1: 'Republican',
+    name2: 'Mike Rounds',
+    party2: 'Republican',
+  },
+]
