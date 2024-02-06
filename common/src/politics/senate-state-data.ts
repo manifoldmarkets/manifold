@@ -2,210 +2,138 @@ import { StateElectionMarket } from './elections-data'
 
 export const senate2024: StateElectionMarket[] = [
   {
-    state: 'AL',
-    slug: 'which-party-will-win-the-us-preside-98654274ab42',
-  },
-  {
-    state: 'AK',
-    slug: 'which-party-will-win-the-us-preside-3834d8e5168f',
-  },
-  {
     state: 'AZ',
-    slug: 'which-party-will-win-the-us-preside-c1307cf9f69a',
-  },
-  {
-    state: 'AR',
-    slug: 'which-party-will-win-the-us-preside-e845a612e2a4',
+    slug: 'which-party-will-win-the-us-senate',
   },
   {
     state: 'CA',
-    slug: 'which-party-will-win-the-us-preside-26a1eb1b8ce6',
-  },
-  {
-    state: 'CO',
-    slug: 'which-party-will-win-the-us-preside-995251995021',
+    slug: 'which-party-will-win-the-us-senate-2b64764fca8f',
+    additionalSlugs: ['which-party-will-win-the-us-senate-9e94af964b01'],
   },
   {
     state: 'CT',
-    slug: 'which-party-will-win-the-us-preside-12e8e8ae4aee',
-  },
-  {
-    state: 'DC',
-    slug: 'which-party-will-win-the-us-preside-11704714dec4',
+    slug: 'which-party-will-win-the-us-senate-321c568d093a',
   },
   {
     state: 'DE',
-    slug: 'which-party-will-win-the-us-preside-86216dcc6ec8',
+    slug: 'which-party-will-win-the-us-senate-89874b11ebec',
   },
   {
     state: 'FL',
-    slug: 'which-party-will-win-the-us-preside-a0c0e217efb2',
-  },
-  {
-    state: 'GA',
-    slug: 'which-party-will-win-the-us-preside-9d5b554982a7',
+    slug: 'which-party-will-win-the-us-senate-3e1923e2f7b1',
   },
   {
     state: 'HI',
-    slug: 'which-party-will-win-the-us-preside-878851234156',
-  },
-  {
-    state: 'IA',
-    slug: 'which-party-will-win-the-us-preside-31c9af68dec9',
-  },
-  {
-    state: 'ID',
-    slug: 'which-party-will-win-the-us-preside-e762820f4b34',
-  },
-  {
-    state: 'IL',
-    slug: 'which-party-will-win-the-us-preside-c506aa98d74d',
+    slug: 'which-party-will-win-the-us-senate-441f0e4d88f7',
   },
   {
     state: 'IN',
-    slug: 'which-party-will-win-the-us-preside-5414030a4a48',
-  },
-  {
-    state: 'KS',
-    slug: 'which-party-will-win-the-us-preside-4df471a7f5e3',
-  },
-  {
-    state: 'KY',
-    slug: 'which-party-will-win-the-us-preside-52290675de33',
-  },
-  {
-    state: 'LA',
-    slug: 'which-party-will-win-the-us-preside-7047ba212e02',
+    slug: 'which-party-will-win-the-us-senate-f415a4f01ca7',
   },
   {
     state: 'MA',
-    slug: 'which-party-will-win-the-us-preside-dcff5d64dbc8',
+    slug: 'which-party-will-win-the-us-senate-008840091f7f',
   },
   {
     state: 'MD',
-    slug: 'which-party-will-win-the-us-preside-e43222661719',
+    slug: 'which-party-will-win-the-us-senate-f86a540383d7',
   },
-  // MAINE HAS MULTIPLES
   {
     state: 'ME',
-    slug: 'which-party-will-win-the-us-preside-af574b601b0f',
+    slug: 'which-party-will-win-the-us-senate-0c5f42942065',
   },
   {
     state: 'MI',
-    slug: 'which-party-will-win-the-us-preside-7e7362326c95',
+    slug: 'which-party-will-win-the-us-senate-7f74a016ea6d',
   },
   {
     state: 'MN',
-    slug: 'which-party-will-win-the-us-preside-052a52f54c0e',
+    slug: 'which-party-will-win-the-us-senate-54b354ef1d48',
   },
   {
     state: 'MO',
-    slug: 'which-party-will-win-the-us-preside-1ccd026993f1',
+    slug: 'which-party-will-win-the-us-senate-5002222f91cf',
   },
   {
     state: 'MS',
-    slug: 'which-party-will-win-the-us-preside-859f4dab533d',
+    slug: 'which-party-will-win-the-us-senate-1aefd5764365',
   },
   {
     state: 'MT',
-    slug: 'which-party-will-win-the-us-preside-5406455b109d',
-  },
-  {
-    state: 'NC',
-    slug: 'which-party-will-win-the-us-preside-c2b132de8821',
+    slug: 'which-party-will-win-the-us-senate-5df03a1dbdaa',
   },
   {
     state: 'ND',
-    slug: 'which-party-will-win-the-us-preside-fab2b645d9d3',
+    slug: 'which-party-will-win-the-us-senate-6435fa51f138',
   },
-  // NEBRASKA HAS MULTIPLES
   {
     state: 'NE',
-    slug: 'which-party-will-win-the-us-preside-3c332029e300',
-  },
-  {
-    state: 'NH',
-    slug: 'which-party-will-win-the-us-preside-458f2140827c',
+    slug: 'which-party-will-win-the-us-senate-e04ebb9536b1',
+    additionalSlugs: ['which-party-will-win-the-us-senate-78078f7ff791'],
   },
   {
     state: 'NJ',
-    slug: 'which-party-will-win-the-us-preside-96f0176fbd5a',
+    slug: 'which-party-will-win-the-us-senate-9f25a0cb649f',
   },
   {
     state: 'NM',
-    slug: 'which-party-will-win-the-us-preside-c98c13402468',
+    slug: 'which-party-will-win-the-us-senate-5337f3d2b9f3',
   },
   {
     state: 'NV',
-    slug: 'which-party-will-win-the-us-preside-5777ea10ce2a',
+    slug: 'which-party-will-win-the-us-senate-c37346690ded',
   },
   {
     state: 'NY',
-    slug: 'which-party-will-win-the-us-preside-7c957d5b5e4c',
+    slug: 'which-party-will-win-the-us-senate-3a6777bbcdc0',
   },
   {
     state: 'OH',
-    slug: 'which-party-will-win-the-us-preside-f2f89eddc252',
-  },
-  {
-    state: 'OK',
-    slug: 'which-party-will-win-the-us-preside-8144295e678c',
-  },
-  {
-    state: 'OR',
-    slug: 'which-party-will-win-the-us-preside-c24796f7ea73',
+    slug: 'which-party-will-win-the-us-senate-dc2772a021f2',
   },
   {
     state: 'PA',
-    slug: 'which-party-will-win-the-us-preside',
+    slug: 'which-party-will-win-the-us-senate-f532d1911a4a',
   },
   {
     state: 'RI',
-    slug: 'which-party-will-win-the-us-preside-f7998626f959',
-  },
-  {
-    state: 'SC',
-    slug: 'which-party-will-win-the-us-preside-f0e933a475d1',
-  },
-  {
-    state: 'SD',
-    slug: 'which-party-will-win-the-us-preside-bc361a1e7ca0',
+    slug: 'which-party-will-win-the-us-senate-54a3abdb7d30',
   },
   {
     state: 'TN',
-    slug: 'which-party-will-win-the-us-preside-a870c481a5ce',
+    slug: 'which-party-will-win-the-us-senate-60334dd279e7',
   },
   {
     state: 'TX',
-    slug: 'which-party-will-win-the-us-preside-2ad2e0596c59',
+    slug: 'which-party-will-win-the-us-senate-a20d3315c939',
   },
   {
     state: 'UT',
-    slug: 'which-party-will-win-the-us-preside-9cd88c5b9389',
+    slug: 'which-party-will-win-the-us-senate-53ad17f67f8f',
   },
   {
     state: 'VA',
-    slug: 'which-party-will-win-the-us-preside-6db80c968e21',
+    slug: 'which-party-will-win-the-us-senate-82b0f2f38917',
   },
   {
     state: 'VT',
-    slug: 'which-party-will-win-the-us-preside-7b9db14c6562',
+    slug: 'which-party-will-win-the-us-senate-671f45a6f661',
   },
 
   {
     state: 'WA',
-    slug: 'which-party-will-win-the-us-preside-8b4af904766d',
+    slug: 'which-party-will-win-the-us-senate-c49351e24df6',
   },
   {
     state: 'WI',
-    slug: 'which-party-will-win-the-us-preside-ee07598f45ea',
+    slug: 'which-party-will-win-the-us-senate-64264277f438',
   },
   {
     state: 'WV',
-    slug: 'which-party-will-win-the-us-preside-3ffb4d1203a0',
+    slug: 'which-party-will-win-the-us-senate-8a2cb35530af',
   },
   {
     state: 'WY',
-    slug: 'which-party-will-win-the-us-preside-686f75d3998e',
+    slug: 'which-party-will-win-the-us-senate-38fbe6b30c6e',
   },
 ]
