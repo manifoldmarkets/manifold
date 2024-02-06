@@ -65,17 +65,3 @@ export async function getElectionsPageProps() {
     linkPreviews: linkPreviews,
   }
 }
-
-function getCachedContractFromSlug(slug: string, db: SupabaseClient) {
-  return unstable_cache(
-    async () => {
-      if (slug === presidency2024[0].slug)
-        console.log('re-fetching dashboard contracts')
-      return getContractFromSlug(slug, db)
-    },
-    [slug],
-    {
-      revalidate: REVALIDATE_CONTRACTS_SECONDS,
-    }
-  )()
-}

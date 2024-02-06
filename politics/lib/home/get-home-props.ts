@@ -4,6 +4,7 @@ import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
   ChartParams,
+  MapContractsDictionary,
   NH_LINK,
   presidency2024,
 } from 'common/politics/elections-data'
@@ -13,7 +14,6 @@ import { getContractFromSlug } from 'common/supabase/contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { unstable_cache } from 'next/cache'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { getStateContracts } from './get-map-contracts'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
 export async function getHomeProps() {
@@ -32,8 +32,6 @@ export async function getHomeProps() {
   const contractsPromises = specialContractSlugs.map(async (slug) =>
     getContract(slug)
   )
-
-  const presidencyStateContracts = await getStateContracts(presidency2024)
 
   const [
     electionPartyContract,
@@ -55,8 +53,22 @@ export async function getHomeProps() {
     adminDb
   )
 
+  const mapContractsPromises = presidency2024.map(async (m) => {
+    const contract = await getContract(m.slug)
+    return { state: m.state, contract: contract }
+  })
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  // Convert array to dictionary
+  const mapContractsDictionary: MapContractsDictionary =
+    mapContractsArray.reduce((acc, mapContract) => {
+      acc[mapContract.state] = mapContract.contract
+      return acc
+    }, {} as MapContractsDictionary)
   return {
-    rawMapContractsDictionary: presidencyStateContracts,
+    rawMapContractsDictionary: mapContractsPromises,
+    // rawMapContractsDictionary: mapContractsDictionary,
     electionPartyContract: electionPartyContract,
     electionCandidateContract: electionCandidateContract,
     republicanCandidateContract: republicanCandidateContract,
