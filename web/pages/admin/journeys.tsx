@@ -15,6 +15,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized, useUsersById } from 'web/hooks/use-user'
 import { filterDefined } from 'common/util/array'
 import { formatPercent } from 'common/util/format'
+import { Input } from 'web/components/widgets/input'
 
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
@@ -24,13 +25,14 @@ export default function Journeys() {
   const hoursFromNow = parseInt(hoursFromNowQ ?? '5')
   const [unBannedUsers, setUnBannedUsers] = useState<User[]>([])
   const [bannedUsers, setBannedUsers] = useState<User[]>([])
+  const [referrer, setReferrer] = useState<string>()
   const isAuthed = useIsAuthorized()
   const usersThatBet = unBannedUsers.filter(
-    (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
+    (u) => eventsByUser[u.id]?.filter((e) => e.name === 'bet').length > 0
   )
   const userIdsThatBet = unBannedUsers
     .filter(
-      (u) => eventsByUser[u.id].filter((e) => e.name === 'bet').length > 0
+      (u) => eventsByUser[u.id]?.filter((e) => e.name === 'bet').length > 0
     )
     .map((u) => u.id)
   const likelySpammers = unBannedUsers.filter((u) =>
@@ -53,13 +55,17 @@ export default function Journeys() {
 
   const getEvents = async () => {
     const start = Date.now() - hoursFromNow * HOUR_MS
-    const users = await run(
-      db
-        .from('users')
-        .select('id')
-        .gt('data->createdTime', start)
-        .is('data->fromLove', null)
-    )
+    let usersQ = db
+      .from('users')
+      .select('id')
+      .gt('data->createdTime', start)
+      .is('data->fromLove', null)
+    if (referrer) {
+      usersQ = usersQ
+        .not('data->referredByUserId', 'is', null)
+        .eq('data->>referredByUserId', referrer)
+    }
+    const users = await run(usersQ)
     const events = await run(
       db
         .from('user_events')
@@ -120,12 +126,21 @@ export default function Journeys() {
         <Row>
           Fraction of (unlikely spam) users that bet:{' '}
           {(userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)}. If
-          a user is highlighted, check if they're a spammer.
+          a user is highlighted in yellow, check if they're a spammer.
         </Row>
         <table>
           <thead>
             <tr className="text-left">
-              <th>Referrer</th>
+              <th>
+                Referrer{' '}
+                <Input
+                  placeholder={'Filter by referrer user id'}
+                  type={'text'}
+                  value={referrer}
+                  onChange={(e) => setReferrer(e.target.value)}
+                  onBlur={getEvents}
+                />
+              </th>
               <th>Users</th>
               <th>Activation rate</th>
             </tr>
