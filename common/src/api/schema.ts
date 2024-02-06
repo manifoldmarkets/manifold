@@ -471,7 +471,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({}),
-    returns: {} as User,
+    returns: {} as LiteUser,
   },
   'user/:username': {
     method: 'GET',
