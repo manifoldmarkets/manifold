@@ -142,6 +142,7 @@ import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts
 
 import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getBalanceChanges } from 'api/get-balance-changes'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -256,6 +257,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
+  'get-balance-changes': getBalanceChanges,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
