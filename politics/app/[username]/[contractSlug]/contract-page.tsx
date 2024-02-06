@@ -435,7 +435,7 @@ export function ContractPageContent(props: ContractParams) {
             {showExplainerPanel && (
               <PoliticsExplainerPanel
                 header="What is this?"
-                className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden"
+                className="bg-canvas-50 -mx-4 max-w-[60ch] p-4 pb-0 xl:hidden"
               />
             )}
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
@@ -494,7 +494,10 @@ export function ContractPageContent(props: ContractParams) {
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && (
-            <PoliticsExplainerPanel header={'What is this?'} />
+            <PoliticsExplainerPanel
+              className="max-w-[60ch]"
+              header={'What is this?'}
+            />
           )}
 
           <RelatedContractsList

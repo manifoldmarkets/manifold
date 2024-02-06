@@ -13,7 +13,7 @@ export const PoliticsExplainerPanel = (props: {
   const { className, header } = props
   return (
     <div className={className}>
-      <Col className="mx-auto max-w-[60ch]">
+      <Col className="mx-auto ">
         <h2 className={clsx('text-ink-600 mb-2 text-xl')}>{header}</h2>
         <ExpandSection
           title={
