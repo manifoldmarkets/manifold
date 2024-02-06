@@ -53,35 +53,36 @@ export default function UserPortfolio(props: {
   return (
     <Col className={'w-full'}>
       {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
-        const { amount, contract, bet, type } = change as BetBalanceChange
-        const { outcome, shares, isRedemption } = bet
-        const { slug, question } = contract
-        const niceAmount = formatMoney(Math.round(amount))
-        if (getMoneyNumber(amount) === 0) return null
-        return (
-          <div
-            key={amount + contract.slug}
-            className={'grid-cols-16 grid w-full'}
-          >
-            <div className={'col-span-3 inline-flex'}>
-              {amount > 0 ? '+' : ''}
-              {niceAmount}
-              {type === 'sell_shares' ? (
-                isRedemption ? (
+        const { type } = change
+        if (['sell_shares', 'create_bet', 'redeem_shares'].includes(type)) {
+          const { amount, contract, bet, type } = change as BetBalanceChange
+          const { outcome } = bet
+          const { slug, question } = contract
+          const niceAmount = formatMoney(Math.round(amount))
+          if (getMoneyNumber(amount) === 0) return null
+          return (
+            <div
+              key={amount + contract.slug}
+              className={'grid-cols-16 grid w-full'}
+            >
+              <div className={'col-span-3 inline-flex'}>
+                {amount > 0 ? '+' : ''}
+                {niceAmount}
+                {type === 'redeem_shares' ? (
                   <Tooltip text={'Redemption'} className={'my-auto '}>
                     <TbArrowsExchange2 className={'h-4 w-4'} />
                   </Tooltip>
-                ) : (
+                ) : type === 'sell_shares' ? (
                   <Tooltip text={'Sell'} className={'my-auto '}>
                     <MdOutlineSell className={'h-4 w-4'} />
                   </Tooltip>
-                )
-              ) : null}
+                ) : null}
+              </div>
+              <div className={'col-span-2'}>{outcome}</div>
+              <div className={'col-span-6'}>{question.slice(0, 18)}</div>
             </div>
-            <div className={'col-span-2'}>{outcome}</div>
-            <div className={'col-span-6'}>{question.slice(0, 18)}</div>
-          </div>
-        )
+          )
+        }
       })}
     </Col>
   )

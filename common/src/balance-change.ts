@@ -25,7 +25,7 @@ export type BalanceChange = {
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
 
 export type BetBalanceChange = CustomBalanceChange & {
-  type: 'create_bet' | 'sell_shares'
-  bet: Pick<Bet, 'outcome' | 'shares' | 'isRedemption'>
+  type: 'create_bet' | 'sell_shares' | 'redeem_shares'
+  bet: Pick<Bet, 'outcome' | 'shares'>
   contract: Pick<Contract, 'question' | 'slug' | 'visibility'>
 }

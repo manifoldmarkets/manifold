@@ -1,4 +1,4 @@
-import type { APIHandler } from 'api/helpers/endpoint'
+import type { APIHandler, AuthedUser } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -11,8 +11,17 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   auth
 ) => {
   const { after, userId } = props
+  const betBalanceChanges = await getBetBalanceChanges(after, userId, auth)
+  return betBalanceChanges
+}
+
+const getBetBalanceChanges = async (
+  after: number,
+  userId: string,
+  auth: AuthedUser | undefined
+) => {
   const isCurrentUser = userId === auth?.uid
-  // get bets
+
   const pg = createSupabaseDirectClient()
   const contractToBets: {
     [contractId: string]: {
@@ -66,11 +75,14 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
       const changeToBalance = !isRedemption ? -amount : -shares
       const balanceChange: BetBalanceChange = {
         amount: changeToBalance,
-        type: isRedemption || amount < 0 ? 'sell_shares' : 'create_bet',
+        type: isRedemption
+          ? 'redeem_shares'
+          : amount < 0
+          ? 'sell_shares'
+          : 'create_bet',
         bet: {
           outcome,
           shares,
-          isRedemption,
         },
         contract: {
           question: question,
