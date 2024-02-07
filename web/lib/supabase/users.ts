@@ -42,6 +42,13 @@ export async function getFullUserByUsername(username: string) {
   return data[0].data as User
 }
 
+export async function getFullUserById(id: string) {
+  const { data } = await run(db.from('users').select('data').eq('id', id))
+  if (data.length === 0) return null
+
+  return data[0].data as User
+}
+
 export async function searchUsers(prompt: string, limit: number) {
   const users = await api('search-users', { term: prompt, limit: limit })
   return users

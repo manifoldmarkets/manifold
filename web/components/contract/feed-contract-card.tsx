@@ -44,6 +44,7 @@ import { Button } from 'web/components/buttons/button'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -174,23 +175,24 @@ export function FeedContractCard(props: {
         )}
       >
         <Row className="w-full justify-between">
-          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={size === 'xs' ? '2xs' : 'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creatorName,
-                username: creatorUsername,
-              }}
-              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
-            />
-          </Row>
-
+          <UserHovercard userId={creatorId}>
+            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+              <Avatar
+                size={size === 'xs' ? '2xs' : 'xs'}
+                className={'mr-0.5'}
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
+              />
+              <UserLink
+                user={{
+                  id: creatorId,
+                  name: creatorName,
+                  username: creatorUsername,
+                }}
+                className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
+              />
+            </Row>
+          </UserHovercard>
           <Row className="gap-2">
             {promotedData && canAdPay && (
               <div className="text-ink-400 w-12 text-sm">
