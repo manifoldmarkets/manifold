@@ -1,3 +1,4 @@
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 
@@ -9,6 +10,7 @@ export type Item = {
   href?: string
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
+  external?: boolean
 }
 
 export function SidebarItem(props: { item: Item; currentPage?: string }) {
@@ -45,6 +47,7 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
         />
       )}
       <span className="truncate">{item.name}</span>
+      {item.external && <ExternalLinkIcon className="ml-2 h-4 w-4" />}
     </>
   )
 
