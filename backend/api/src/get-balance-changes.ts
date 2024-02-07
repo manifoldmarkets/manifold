@@ -31,6 +31,7 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
     'desc'
   )
 }
+
 const getTxnBalanceChanges = async (
   after: number,
   userId: string,
@@ -170,19 +171,9 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
       const nextBetExists = betsThusFar.length < bets.length
       const nextBetIsRedemption =
         nextBetExists && bets[betsThusFar.length].isRedemption
-      const { isRedemption, createdTime, amount, shares } = bet
+      const { isRedemption, outcome, createdTime, amount, shares } = bet
 
       if (isRedemption && nextBetIsRedemption) continue
-
-      let { outcome } = bet
-      if (isRedemption && betsThusFar[betsThusFar.length - 2]?.isRedemption) {
-        // make outcome = the max of shares of either redemption bet
-        const previousRedemptionBet = betsThusFar[betsThusFar.length - 2]
-        outcome =
-          Math.abs(previousRedemptionBet.amount) > Math.abs(amount)
-            ? previousRedemptionBet.outcome
-            : outcome
-      }
       const { question, visibility, creatorUsername, slug } = contract
       const changeToBalance = !isRedemption ? -amount : -shares
       const text =
