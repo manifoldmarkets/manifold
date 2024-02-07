@@ -12,15 +12,18 @@ import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
 import { getUser, log } from 'shared/utils'
+import { User } from 'common/user'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
   const { after, userId } = props
+  const user = await getUser(userId)
+  if (!user) throw new APIError(404, 'User not found')
   const [betBalanceChanges, txnBalanceChanges] = await Promise.all([
     getBetBalanceChanges(after, userId),
-    getTxnBalanceChanges(after, userId),
+    getTxnBalanceChanges(after, userId, user),
   ])
   return orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
@@ -28,17 +31,20 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
     'desc'
   )
 }
-const getTxnBalanceChanges = async (after: number, userId: string) => {
+const getTxnBalanceChanges = async (
+  after: number,
+  userId: string,
+  user: User
+) => {
   const pg = createSupabaseDirectClient()
-  const user = await getUser(userId)
-  if (!user) throw new APIError(404, 'User not found')
-  const balanceChanges = [
-    {
+  const balanceChanges = [] as TxnBalanceChange[]
+  if (user.createdTime > after) {
+    balanceChanges.push({
       type: 'STARTING_BALANCE',
       amount: STARTING_BALANCE,
       createdTime: user.createdTime,
-    },
-  ] as TxnBalanceChange[]
+    })
+  }
 
   const txns = await pg.map(
     `
