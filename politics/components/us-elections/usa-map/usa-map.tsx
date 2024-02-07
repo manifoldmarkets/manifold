@@ -12,7 +12,8 @@ import { DEFAULT_STATE_FILL } from './usa-state'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
-const PATTERN_SIZE = 5
+export const DEM_REP_PURPLE = '#73496f'
+const PATTERN_SIZE = 4
 
 export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,
@@ -80,6 +81,36 @@ export const USAMap = (props: {
                 x2="0"
                 y2={PATTERN_SIZE}
                 stroke={REP_DARK_HEX}
+                strokeWidth="1"
+              />
+            </pattern>
+            <pattern
+              id="crossHatchPurple"
+              patternUnits="userSpaceOnUse"
+              width={PATTERN_SIZE}
+              height={PATTERN_SIZE}
+            >
+              <rect
+                width={PATTERN_SIZE}
+                height={PATTERN_SIZE}
+                fill={DEFAULT_STATE_FILL}
+              />
+              {/* Horizontal line */}
+              <line
+                x1="0"
+                y1="0"
+                x2={PATTERN_SIZE}
+                y2={PATTERN_SIZE}
+                stroke={DEM_REP_PURPLE}
+                strokeWidth="1"
+              />
+              {/* Vertical line */}
+              <line
+                x1={PATTERN_SIZE}
+                y1="0"
+                x2="0"
+                y2={PATTERN_SIZE}
+                stroke={DEM_REP_PURPLE}
                 strokeWidth="1"
               />
             </pattern>

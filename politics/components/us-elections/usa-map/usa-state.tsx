@@ -23,6 +23,7 @@ export function USAState(props: {
   hideStateTitle?: boolean
   selected?: boolean
   hovered?: boolean
+  patternTextColor?: string
 }) {
   const {
     state,
@@ -33,6 +34,7 @@ export function USAState(props: {
     hideStateTitle,
     selected,
     hovered,
+    patternTextColor,
   } = props
 
   const { dimensions, textCoordinates, abbreviation, line } = stateData
@@ -71,8 +73,7 @@ export function USAState(props: {
         fill,
         onClick: line ? onClickState : undefined,
         selected,
-        isClickDisabled:
-          !onMouseEnterState && !onMouseLeaveState && !onClickState,
+        patternTextColor,
       })}
     </>
   )
@@ -95,7 +96,7 @@ export const StateText = (props: {
   fill: string
   onClick?: ClickHandler
   selected?: boolean
-  isClickDisabled?: boolean
+  patternTextColor?: string
 }) => {
   const {
     line,
@@ -107,17 +108,17 @@ export const StateText = (props: {
     fill,
     selected,
     onClick,
-    isClickDisabled,
+    patternTextColor,
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
   const isFillLight = isColorLight(fill)
-  const textColor = isClickDisabled
-    ? '#cec0ce'
-    : !!line
+  const textColor = !!line
     ? isHovered || selected
       ? fill
       : OFFSET_TEXT_COLOR
+    : patternTextColor
+    ? patternTextColor
     : isFillLight
     ? '#1e293b'
     : '#FFF'
@@ -172,7 +173,7 @@ export const StateText = (props: {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke={isHovered || selected ? fill : OFFSET_TEXT_COLOR}
+            stroke={textColor}
             strokeWidth={1} // Assuming the regular line is thinner
           />
         </>

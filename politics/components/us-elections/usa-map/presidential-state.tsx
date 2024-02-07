@@ -55,6 +55,7 @@ export function PresidentialState(props: StateProps) {
       stateData={data}
       hideStateTitle={hideStateTitle}
       state={stateKey}
+      
     />
   )
 }
