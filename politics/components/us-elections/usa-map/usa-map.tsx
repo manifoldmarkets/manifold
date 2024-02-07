@@ -10,6 +10,7 @@ import { Col } from 'web/components/layout/col'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { Spacer } from 'web/components/layout/spacer'
 import { MapContractsDictionary } from 'common/politics/elections-data'
+import { probToColor } from './state-election-map'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
@@ -22,47 +23,24 @@ export type ClickHandler<
 export const USAMap = (props: {
   hideStateTitle?: boolean
   mapContractsDictionary: MapContractsDictionary
-  targetState: string | null | undefined
-  setTargetState: (targetState: string | null | undefined) => void
-  hoveredState: string | null | undefined
-  setHoveredState: (hoveredState: string | null | undefined) => void
+  handleClick: (newTargetState: string | undefined) => void
+  onMouseEnter: (hoverState: string) => void
+  onMouseLeave: () => void
+  targetState: string | undefined | null
+  hoveredState: string | undefined | null
 }) => {
   const {
     hideStateTitle,
     mapContractsDictionary,
+    handleClick,
+    onMouseEnter,
+    onMouseLeave,
     targetState,
-    setTargetState,
     hoveredState,
-    setHoveredState,
   } = props
-
-  function handleClick(newTargetState: string | undefined) {
-    if (targetState && newTargetState == targetState) {
-      setTargetState(undefined)
-    } else {
-      setTargetState(newTargetState)
-    }
-  }
-
-  function onMouseEnter(hoverState: string) {
-    setHoveredState(hoverState)
-  }
-
-  function onMouseLeave() {
-    setHoveredState(undefined)
-  }
 
   return (
     <Col className="gap-2">
-      <ElectoralCollegeVisual
-        mapContractsDictionary={mapContractsDictionary}
-        handleClick={handleClick}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        targetState={targetState}
-        hoveredState={hoveredState}
-      />
-      <Spacer h={4} />
       <div
         className={clsx('relative w-full')}
         style={{ paddingTop: '61.75%' /* (593 / 959) * 100 */ }}
@@ -81,9 +59,9 @@ export const USAMap = (props: {
                   <USAState
                     key={stateKey}
                     stateData={data}
-                    contract={stateContract as MultiContract}
                     hideStateTitle={hideStateTitle}
                     state={stateKey}
+                    fill={probToColor(stateContract)}
                     onClickState={() => {
                       handleClick(stateKey)
                     }}
@@ -98,7 +76,17 @@ export const USAMap = (props: {
                   />
                 )
               }
-              return <></>
+              return (
+                <USAState
+                  key={stateKey}
+                  stateData={data}
+                  hideStateTitle={hideStateTitle}
+                  state={stateKey}
+                  selected={!!targetState && targetState == stateKey}
+                  hovered={!!hoveredState && hoveredState == stateKey}
+              
+                />
+              )
             })}
           </g>
         </svg>
