@@ -11,7 +11,7 @@ import {
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -125,7 +125,7 @@ const getContractIdFromTxn = (txn: Txn) => {
       'SIGNUP_BONUS',
     ].includes(txn.category)
   )
-    console.error('No contractId found for txn', txn)
+    log('No contractId in get-balance-changes for txn', txn)
   return null
 }
 
