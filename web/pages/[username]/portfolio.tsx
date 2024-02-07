@@ -179,7 +179,7 @@ function UserPortfolioInternal(props: {
                 onClick={() => setShowBalanceChanges(true)}
               >
                 <Row className={clsx('items-center')}>
-                  {formatMoney(changeToday)} today
+                  {formatMoney(changeToday).replace('-', '')} today
                 </Row>
               </button>
             </Col>
@@ -289,7 +289,7 @@ function ChangeIcon(props: {
     <div className="relative">
       <Link href={slug} onClick={(e) => e.stopPropagation}>
         <div className={clsx('h-10 w-10 rounded-full', className)} />
-        <div className="absolute bottom-1.5 left-[10px] text-lg">{symbol}</div>
+        <div className="absolute bottom-1.5 left-[12px] text-lg">{symbol}</div>
       </Link>
     </div>
   )
@@ -503,7 +503,7 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'BOUNTY_AWARDED':
       return <span>Bounty awarded</span>
     case 'MANA_PAYMENT':
-      return <span>Managram</span>
+      return <span>User payment</span>
     case 'LOAN':
       return <span></span>
     default:
