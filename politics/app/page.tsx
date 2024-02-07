@@ -47,10 +47,12 @@ export default async function Page() {
       <HeadlineTabs headlines={headlines} />
 
       <USElectionsPage {...props} />
+
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
           <NewsDashboard
             key={dashboard.slug + 'section'}
+            className="my-4"
             {...(dashboard as any)}
           />
         )

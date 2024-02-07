@@ -30,7 +30,6 @@ import {
   RelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
-import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -63,6 +62,7 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PoliticsPage } from 'politics/components/politics-page'
 import ContractEmbedPage from 'web/pages/embed/[username]/[contractSlug]'
 import { useRelatedPoliticalMarkets } from 'politics/hooks/use-related-politics-markets'
+import { PoliticsExplainerPanel } from 'politics/components/politics-explainer-panel'
 
 export function ContractPage(props: { contractParams: ContractParams }) {
   const inIframe = useIsIframe()
@@ -433,7 +433,10 @@ export function ContractPageContent(props: ContractParams) {
             <ContractDescription contract={contract} />
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
+              <PoliticsExplainerPanel
+                header="What is this?"
+                className="bg-canvas-50 -mx-4 max-w-[60ch] p-4 pb-0 xl:hidden"
+              />
             )}
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
             {!!user && (
@@ -490,7 +493,12 @@ export function ContractPageContent(props: ContractParams) {
           </Col>
         </Col>
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
-          {showExplainerPanel && <ExplainerPanel />}
+          {showExplainerPanel && (
+            <PoliticsExplainerPanel
+              className="max-w-[60ch]"
+              header={'What is this?'}
+            />
+          )}
 
           <RelatedContractsList
             contracts={relatedMarkets}

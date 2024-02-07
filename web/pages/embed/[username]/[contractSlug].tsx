@@ -207,7 +207,8 @@ function ContractSmolView(props: {
 
   const shareUrl = getShareUrl(contract, undefined)
 
-  const showMultiChart = isMulti && !!props.multiPoints && showQRCode
+  const showMultiChart = isMulti && !!props.multiPoints
+
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
       <Row className="text-ink-500 items-center gap-1 text-sm">
@@ -274,7 +275,7 @@ function ContractSmolView(props: {
                         selectedAnswerIds={contract.answers.map((a) => a.id)}
                       />
                       <Spacer h={14} />
-                      <FloatingQRCode shareUrl={shareUrl} />
+                      {showQRCode && <FloatingQRCode shareUrl={shareUrl} />}
                     </div>
                   )}
 
