@@ -43,6 +43,7 @@ import {
 import { contractPathWithoutContract } from 'common/contract'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { ScaleIcon } from '@heroicons/react/outline'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export const getStaticProps = async (props: {
   params: {
@@ -212,6 +213,7 @@ function UserPortfolioInternal(props: {
         </Col>
         {showBalanceChanges && (
           <BalanceChangesModal
+            changeToday={changeToday}
             user={user}
             balanceChanges={balanceChanges}
             setOpen={() => setShowBalanceChanges(false)}
@@ -224,14 +226,11 @@ function UserPortfolioInternal(props: {
 
 const BalanceChangesModal = (props: {
   user: User
+  changeToday: number
   balanceChanges: AnyBalanceChangeType[]
   setOpen: () => void
 }) => {
-  const { balanceChanges, setOpen, user } = props
-  const changeToday = sumBy(
-    balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
-    'amount'
-  )
+  const { balanceChanges, changeToday, setOpen, user } = props
   return (
     <Modal size={'lg'} open={true} setOpen={setOpen} className={MODAL_CLASS}>
       <Col className={'w-full justify-center'}>
@@ -270,6 +269,7 @@ const BalanceChangesModal = (props: {
                 <TxnBalanceChangeRow
                   key={change.createdTime}
                   change={change as TxnBalanceChange}
+                  avatarlUrl={user.avatarUrl}
                 />
               )
             }
@@ -371,8 +371,11 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
   )
 }
 
-const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
-  const { change } = props
+const TxnBalanceChangeRow = (props: {
+  change: TxnBalanceChange
+  avatarlUrl: string
+}) => {
+  const { change, avatarlUrl } = props
   const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
@@ -382,6 +385,8 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
     CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
     CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    SIGNUP_BONUS: 'bg-yellow-200',
+    STARTING_BALANCE: 'bg-yellow-200',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
     MARKET_BOOST_CREATE: 'bg-purple-400',
     LEAGUE_PRIZE: 'bg-indigo-400',
@@ -394,19 +399,29 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
   return (
     <Row className={'gap-2'}>
       <Col>
-        <ChangeIcon
-          slug={contract?.slug ?? changeUser?.username ?? ''}
-          symbol={
-            type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
-              '🎉'
-            ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
-              <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
-            ) : (
-              '🎁'
-            )
-          }
-          className={reasonToBgClassNameMap[type]}
-        />
+        {type === 'STARTING_BALANCE' ? (
+          <Avatar
+            className={''}
+            avatarUrl={avatarlUrl}
+            noLink={true}
+            size={'md'}
+          />
+        ) : (
+          <ChangeIcon
+            slug={contract?.slug ?? changeUser?.username ?? ''}
+            symbol={
+              type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
+                '🎉'
+              ) : type === 'CREATE_CONTRACT_ANTE' ||
+                type === 'BOUNTY_POSTED' ? (
+                <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+              ) : (
+                '🎁'
+              )
+            }
+            className={reasonToBgClassNameMap[type]}
+          />
+        )}
       </Col>
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
@@ -462,6 +477,10 @@ const txnTitle = (change: TxnBalanceChange) => {
       return <span>Loan</span>
     case 'MARKET_BOOST_REDEEM':
       return <span>Ad claim</span>
+    case 'SIGNUP_BONUS':
+      return <span>Question exploration bonus</span>
+    case 'STARTING_BALANCE':
+      return <span>Starting balance</span>
     default:
       return <span>{contract?.question}</span>
   }
@@ -492,9 +511,11 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'BETTING_STREAK_BONUS':
       return <span>Quest</span>
     case 'SIGNUP_BONUS':
-      return <span>Signup</span>
+      return <span>New user quest</span>
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return <span>Unresolve</span>
+    case 'STARTING_BALANCE':
+      return <span></span>
     case 'MARKET_BOOST_REDEEM':
       return <span></span>
     case 'MARKET_BOOST_CREATE':

@@ -1,16 +1,17 @@
-import type { APIHandler } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
 import {
-  AnyBalanceChangeType,
   BetBalanceChange,
   TXN_BALANCE_CHANGE_TYPES,
   TxnBalanceChange,
 } from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
+import { STARTING_BALANCE } from 'common/economy'
+import { getUser } from 'shared/utils'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -27,7 +28,15 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
 }
 const getTxnBalanceChanges = async (after: number, userId: string) => {
   const pg = createSupabaseDirectClient()
-  const balanceChanges = [] as AnyBalanceChangeType[]
+  const user = await getUser(userId)
+  if (!user) throw new APIError(404, 'User not found')
+  const balanceChanges = [
+    {
+      type: 'STARTING_BALANCE',
+      amount: STARTING_BALANCE,
+      createdTime: user.createdTime,
+    },
+  ] as TxnBalanceChange[]
 
   const txns = await pg.map(
     `
@@ -143,7 +152,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
     }
   )
 
-  const balanceChanges = []
+  const balanceChanges = [] as BetBalanceChange[]
   for (const contractId of Object.keys(contractToBets)) {
     const { bets, contract } = contractToBets[contractId]
     const betsThusFar = []

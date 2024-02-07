@@ -54,6 +54,7 @@ export const TXN_BALANCE_CHANGE_TYPES = [
   'CREATE_CONTRACT_ANTE',
   'MANA_PAYMENT',
   'LOAN',
+  'STARTING_BALANCE',
 ]
 export type TxnType = (typeof TXN_BALANCE_CHANGE_TYPES)[number]
 export type TxnBalanceChange = CustomBalanceChange & {
