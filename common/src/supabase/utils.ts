@@ -46,14 +46,9 @@ export const subcollectionTables: SubcollectionTableMapping = {
     answers: 'contract_answers',
     answersCpmm: 'answers',
     bets: 'contract_bets',
-    comments: 'contract_comments',
     follows: 'contract_follows',
     liquidity: 'contract_liquidity',
   },
-}
-
-export function getInstanceHostname(instanceId: string) {
-  return `${instanceId}.supabase.co`
 }
 
 export function createClient(
@@ -61,7 +56,7 @@ export function createClient(
   key: string,
   opts?: SupabaseClientOptionsGeneric<'public'>
 ) {
-  const url = `https://${getInstanceHostname(instanceId)}`
+  const url = `https://${instanceId}.supabase.co`
   return createClientGeneric(url, key, opts) as SupabaseClient
 }
 

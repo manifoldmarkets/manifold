@@ -129,8 +129,6 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'bounty_canceled'
   | 'mana_payment_received'
-  | 'poll_you_follow_closed'
-  | 'your_poll_closed'
 
 type notification_descriptions = {
   [key in notification_preference]: {
@@ -323,7 +321,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   },
   new_love_ship: {
     simple: 'New ships',
-    detailed: 'When another user supports a relationship between you and someone else',
+    detailed:
+      'When another user supports a relationship between you and someone else',
   },
 }
 

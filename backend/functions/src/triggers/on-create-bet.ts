@@ -39,6 +39,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
+  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -53,8 +54,9 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
+import { getCommentSafe } from 'shared/supabase/contract_comments'
+import { updateData } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
 
@@ -151,27 +153,30 @@ const handleBetReplyToComment = async (
   bettor: User,
   pg: SupabaseDirectClient
 ) => {
-  const commentSnap = await firestore
-    .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
-    .get()
-  const comment = commentSnap.data() as ContractComment
+  if (!bet.replyToCommentId) return
+
+  const db = createSupabaseClient()
+  const comment = await getCommentSafe(db, bet.replyToCommentId)
+
+  if (!comment) return
   if (comment.userId === bettor.id) return
-  if (comment) {
-    const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
-    // This could potentially miss some bets if they're not replicated in time
-    if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
-    const groupedBetsByOutcome = groupBy(bets, 'outcome')
-    const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
-    for (const outcome in groupedBetsByOutcome) {
-      betReplyAmountsByOutcome[outcome] = sumBy(
-        groupedBetsByOutcome[outcome],
-        (b) => b.amount
-      )
-    }
-    await commentSnap.ref.update({
-      betReplyAmountsByOutcome,
-    })
+
+  const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+  // This could potentially miss some bets if they're not replicated in time
+  if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+  const groupedBetsByOutcome = groupBy(bets, 'outcome')
+  const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+  for (const outcome in groupedBetsByOutcome) {
+    betReplyAmountsByOutcome[outcome] = sumBy(
+      groupedBetsByOutcome[outcome],
+      (b) => b.amount
+    )
   }
+
+  await updateData(pg, 'contract_comments', 'comment_id', {
+    comment_id: bet.replyToCommentId,
+    betReplyAmountsByOutcome,
+  })
   await createBetReplyToCommentNotification(
     comment.userId,
     contract,

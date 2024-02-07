@@ -40,6 +40,7 @@ type AnyTxnType =
   | ManaPay
   | Loan
   | PushNotificationBonus
+  | LikePurchase
 
 export type SourceType =
   | 'USER'
@@ -368,6 +369,13 @@ type PushNotificationBonus = {
   token: 'M$'
 }
 
+type LikePurchase = {
+  category: 'LIKE_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+}
+
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -406,3 +414,4 @@ export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
+export type LikePurchaseTxn = Txn & LikePurchase

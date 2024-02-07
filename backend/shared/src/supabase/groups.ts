@@ -7,7 +7,7 @@ import { getPrivateUser } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
+import { convertTopic, TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 export const getMemberGroupSlugs = async (
   userId: string,
@@ -19,6 +19,18 @@ export const getMemberGroupSlugs = async (
     )`,
     [userId],
     (r) => r.slug as string
+  )
+}
+export const getMemberTopics = async (
+  userId: string,
+  pg: SupabaseDirectClient
+) => {
+  return await pg.map(
+    `select * from groups where id in (
+        select group_id from group_members where member_id = $1
+    )`,
+    [userId],
+    convertTopic
   )
 }
 export const getGroupIdFromSlug = async (

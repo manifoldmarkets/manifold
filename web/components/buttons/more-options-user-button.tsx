@@ -16,6 +16,7 @@ import { PROJECT_ID } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { ReferralsButton } from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/firebase/api'
+import SuperBanControl from '../SuperBanControl'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -47,17 +48,21 @@ export function MoreOptionsUserButton(props: { user: User }) {
           <Title className={'!mb-2 flex justify-between'}>
             {name}
             {(isAdmin || isTrusted) && (
-              <Button
-                color={'red'}
-                onClick={() => {
-                  banUser({
-                    userId,
-                    unban: user.isBannedFromPosting ?? false,
-                  })
-                }}
-              >
-                {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
-              </Button>
+              <Row>
+                <SuperBanControl userId={userId} />
+                <Button
+                  color={'red'}
+                  className="ml-2"
+                  onClick={() => {
+                    banUser({
+                      userId,
+                      unban: user.isBannedFromPosting ?? false,
+                    })
+                  }}
+                >
+                  {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
+                </Button>
+              </Row>
             )}
           </Title>
           <span className={'ml-1 text-sm'}> joined {createdTime}</span>

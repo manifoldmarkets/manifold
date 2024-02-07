@@ -19,6 +19,8 @@ import { areGenderCompatible } from 'common/love/compatibility-util'
 import { useLover } from 'love/hooks/use-lover'
 import { LikeData, ShipData } from 'common/api/love-types'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useGetter } from 'web/hooks/use-getter'
+import { getStars } from 'love/lib/supabase/stars'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -33,6 +35,11 @@ export function LoverProfile(props: {
   const currentLover = useLover()
   const isCurrentUser = currentUser?.id === user.id
 
+  const { data: starredUserIds, refresh: refreshStars } = useGetter(
+    'stars',
+    currentUser?.id,
+    getStars
+  )
   const { data, refresh } = useAPIGetter('get-likes-and-ships', {
     userId: user.id,
   })
@@ -42,12 +49,18 @@ export function LoverProfile(props: {
     !!currentUser &&
     !!likesReceived &&
     likesReceived.map((l) => l.user_id).includes(currentUser.id)
+  const likedBack =
+    !!currentUser &&
+    !!likesGiven &&
+    likesGiven.map((l) => l.user_id).includes(currentUser.id)
 
   const shipped =
     !!ships && hasShipped(currentUser, fromLoverPage?.user_id, user.id, ships)
 
   const areCompatible =
     !!currentLover && areGenderCompatible(currentLover, lover)
+
+  const showMessageButton = liked || likedBack || !areCompatible
 
   return (
     <>
@@ -56,8 +69,9 @@ export function LoverProfile(props: {
         user={user}
         lover={lover}
         simpleView={!!fromLoverPage}
-        likesReceived={likesReceived ?? []}
-        refreshLikes={refresh}
+        starredUserIds={starredUserIds ?? []}
+        refreshStars={refreshStars}
+        showMessageButton={showMessageButton}
       />
       <LoverContent
         user={user}
@@ -74,7 +88,7 @@ export function LoverProfile(props: {
         ((!fromLoverPage && !isCurrentUser) ||
           (fromLoverPage && fromLoverPage.user_id === currentUser?.id)) && (
           <Row className="sticky bottom-[70px] right-0 mr-1 self-end lg:bottom-6">
-            <LikeButton targetId={user.id} liked={liked} refresh={refresh} />
+            <LikeButton targetLover={lover} liked={liked} refresh={refresh} />
           </Row>
         )}
       {fromLoverPage &&

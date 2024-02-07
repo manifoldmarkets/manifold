@@ -1,4 +1,5 @@
 import * as Sprig from 'web/lib/service/sprig'
+import * as amplitude from '@amplitude/analytics-browser'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
@@ -9,8 +10,7 @@ import { completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 import { EventData, insertUserEvent } from 'common/supabase/analytics'
 
-const loadAmplitude = () => import('@amplitude/analytics-browser')
-let amplitudeLib: ReturnType<typeof loadAmplitude> | undefined
+amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
 type EventIds = {
   contractId?: string | null
@@ -18,18 +18,7 @@ type EventIds = {
   adId?: string | null
 }
 
-export const initAmplitude = async () => {
-  if (amplitudeLib == null) {
-    const amplitude = await (amplitudeLib = loadAmplitude())
-    amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
-    return amplitude
-  } else {
-    return await amplitudeLib
-  }
-}
-
 export async function track(name: string, properties?: EventIds & EventData) {
-  const amplitude = await initAmplitude()
   const deviceId = amplitude.getDeviceId()
   const sessionId = amplitude.getSessionId()
   const userId = amplitude.getUserId()
@@ -77,8 +66,7 @@ export const withTracking =
     await promise
   }
 
-export async function identifyUser(userId: string | null) {
-  const amplitude = await initAmplitude()
+export function identifyUser(userId: string | null) {
   if (userId) {
     Sprig.setUserId(userId)
     amplitude.setUserId(userId)
@@ -89,14 +77,12 @@ export async function identifyUser(userId: string | null) {
 
 export async function setUserProperty(property: string, value: string) {
   Sprig.setAttributes({ [property]: value })
-  const amplitude = await initAmplitude()
   const identifyObj = new amplitude.Identify()
   identifyObj.set(property, value)
   await amplitude.identify(identifyObj).promise
 }
 
 export async function setOnceUserProperty(property: string, value: string) {
-  const amplitude = await initAmplitude()
   const identifyObj = new amplitude.Identify()
   identifyObj.setOnce(property, value)
   await amplitude.identify(identifyObj).promise

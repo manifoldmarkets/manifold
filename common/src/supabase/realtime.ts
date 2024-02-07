@@ -42,7 +42,6 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   },
   contract_comments: {
     pk: ['contract_id', 'comment_id'],
-    ts: (r) => Date.parse(r.fs_updated_time),
   },
   user_notifications: {
     pk: ['user_id', 'notification_id'],

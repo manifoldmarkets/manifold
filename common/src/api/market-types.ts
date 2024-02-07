@@ -114,6 +114,9 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastUpdatedTime,
     lastBetTime,
     lastCommentTime,
+    loverUserId1,
+    loverUserId2,
+    matchCreatorId,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -162,6 +165,11 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastBetTime,
     lastCommentTime,
     ...numericValues,
+
+    // Manifold love props.
+    loverUserId1,
+    loverUserId2,
+    matchCreatorId,
   })
 }
 
@@ -335,6 +343,7 @@ export const updateMarketProps = z
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
     coverImageUrl: z.string().or(z.null()).optional(),
     sort: z.string().optional(),
+    isPolitics: z.boolean().optional(),
 
     description: z.string().optional(),
     descriptionHtml: z.string().optional(),

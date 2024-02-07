@@ -3,6 +3,7 @@ import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -69,6 +70,7 @@ export function OrderTable(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   isYou?: boolean
   side?: 'YES' | 'NO'
 }) {
@@ -139,6 +141,7 @@ function OrderRow(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   bet: LimitBet
   isYou: boolean
   showOutcome?: boolean
@@ -227,9 +230,18 @@ export function OrderBookButton(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   className?: string
+  label?: React.ReactNode
+  buttonColor?: 'indigo' | 'gray-outline'
 }) {
-  const { limitBets, contract, className } = props
+  const {
+    limitBets,
+    contract,
+    label,
+    className,
+    buttonColor = 'indigo',
+  } = props
   const [open, setOpen] = useState(false)
 
   const yesBets = sortBy(
@@ -253,9 +265,10 @@ export function OrderBookButton(props: {
         onClick={() => setOpen(true)}
         disabled={limitBets.length === 0}
         size="xs"
-        color="indigo"
+        color={buttonColor}
       >
-        View {limitBets.length} order{limitBets.length === 1 ? '' : 's'}
+        {label ||
+          `View ${limitBets.length} order${limitBets.length === 1 ? '' : 's'}`}
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">

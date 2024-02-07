@@ -89,7 +89,7 @@ export default function AboutPage() {
           </SocialLink>
           <SocialLink
             Icon={TbBrandTwitter}
-            href="https://twitter.com/ManifoldMarkets"
+            href="https://twitter.com/ManifoldLoveApp"
           >
             Twitter
           </SocialLink>

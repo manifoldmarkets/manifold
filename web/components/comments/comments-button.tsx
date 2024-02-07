@@ -90,6 +90,7 @@ function CommentsDialog(props: {
           comments={comments}
           blockedUserIds={blockedUserIds}
           highlightCommentId={highlightCommentId}
+          pinnedComments={[]}
         />
       </Col>
     </Modal>

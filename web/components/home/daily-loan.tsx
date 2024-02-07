@@ -17,6 +17,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { track } from 'web/lib/service/analytics'
+import { DAY_MS } from 'common/util/time'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -63,6 +64,11 @@ export function DailyLoan(props: { user: User }) {
     if (showLoansModal && !user.hasSeenLoanModal)
       updateUser(user.id, { hasSeenLoanModal: true })
   }, [showLoansModal])
+
+  const createdRecently = user.createdTime > Date.now() - DAY_MS
+  if (createdRecently) {
+    return null
+  }
 
   return (
     <Col

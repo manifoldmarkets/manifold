@@ -1,44 +1,23 @@
 'use client'
 import { Contract, MultiContract } from 'common/contract'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useTracking } from 'web/hooks/use-tracking'
-import { useUser } from 'web/hooks/use-user'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import Custom404 from 'web/pages/404'
-import { useState } from 'react'
-import { SEO } from 'web/components/SEO'
-import { Col } from 'web/components/layout/col'
-import { PoliticsPartyCard } from 'web/components/us-elections/contracts/politics-party-card'
-import { CandidateCard } from 'web/components/us-elections/contracts/candidate-card'
-import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
-import { Spacer } from 'web/components/layout/spacer'
-import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
-import { LinkPreviews } from 'common/link-preview'
-import { PoliticsArticle } from 'web/components/us-elections/article'
-import { SmallCandidateCard } from 'web/components/us-elections/contracts/small-candidate-card'
-import clsx from 'clsx'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
-  NH_LINK,
-} from 'common/election-contract-data'
-
-function useLiveContract(inputContract: Contract): Contract {
-  const contract =
-    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
-    inputContract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
-  return contract
-}
+} from 'common/politics/elections-data'
+import { useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Spacer } from 'web/components/layout/spacer'
+import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
+import { StateContractCard } from 'web/components/us-elections/contracts/state-contract-card'
+import { USAMap } from 'web/components/us-elections/usa-map/usa-map'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTracking } from 'web/hooks/use-tracking'
+import { useUser } from 'web/hooks/use-user'
+import Custom404 from 'web/pages/404'
+import { Row } from './layout/row'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()
@@ -75,6 +54,7 @@ function ElectionContent(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     republicanVPContract,
+    democraticVPContract,
   } = props
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -88,8 +68,7 @@ function ElectionContent(props: ElectionsPageProps) {
   const mapContractsDictionary = Object.keys(rawMapContractsDictionary).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      const contract = useLiveContract(rawMapContractsDictionary[key]!)
-      acc[key] = contract
+      acc[key] = useLiveContract(rawMapContractsDictionary[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -97,11 +76,6 @@ function ElectionContent(props: ElectionsPageProps) {
 
   return (
     <>
-      <SEO
-        title="2024 Election Forecast"
-        description="Live market odds for the US presidential election"
-        // TODO: add a nice preview image
-      />
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
           <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
@@ -112,16 +86,86 @@ function ElectionContent(props: ElectionsPageProps) {
           </div>
         </Col>
 
-        <PoliticsPartyCard contract={electionPartyContract as MultiContract} />
-        <CandidateCard contract={electionCandidateContract as MultiContract} />
-        <CandidateCard contract={democratCandidateContract as MultiContract} />
-        <CandidateCard
-          contract={republicanCandidateContract as MultiContract}
+        <PoliticsCard
+          contract={electionPartyContract as MultiContract}
+          viewType="PARTY"
         />
-        <CandidateCard
-          customTitle="2024 Republican vice presidential nomination"
-          contract={republicanVPContract as MultiContract}
+        <PoliticsCard
+          contract={electionCandidateContract as MultiContract}
+          viewType="CANDIDATE"
         />
+        <Col className="gap-6 sm:gap-8 lg:hidden">
+          <PoliticsCard
+            contract={democratCandidateContract as MultiContract}
+            viewType="CANDIDATE"
+          />
+          <PoliticsCard
+            customTitle="Democratic vice presidential nomination"
+            contract={democraticVPContract as MultiContract}
+            viewType="CANDIDATE"
+          />
+          <PoliticsCard
+            contract={republicanCandidateContract as MultiContract}
+            viewType="CANDIDATE"
+          />
+          <PoliticsCard
+            customTitle="Republican vice presidential nomination"
+            contract={republicanVPContract as MultiContract}
+            viewType="CANDIDATE"
+          />
+        </Col>
+        <Col className="hidden gap-6 sm:gap-8 lg:flex">
+          <Col className="gap-2">
+            <Row className="items-center gap-2">
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+              <div className="text-ink-600 text-lg font-semibold">
+                Presidential Nomination
+              </div>
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+            </Row>
+            <Row className="gap-4">
+              <PoliticsCard
+                contract={democratCandidateContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Democratic"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+              />
+              <PoliticsCard
+                contract={republicanCandidateContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Republican"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+              />
+            </Row>
+          </Col>
+          <Col className="gap-2">
+            <Row className="items-center gap-2">
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+              <div className="text-ink-600 text-lg font-semibold">
+                Vice Presidential Nomination
+              </div>
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+            </Row>
+            <Row className="gap-4">
+              <PoliticsCard
+                contract={democraticVPContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Democratic"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+              />
+              <PoliticsCard
+                contract={republicanVPContract as MultiContract}
+                maxAnswers={3}
+                customTitle="Republican"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+              />
+            </Row>
+          </Col>
+        </Col>
 
         <Col className="bg-canvas-0 rounded-xl p-4">
           <div className="mx-auto font-semibold sm:text-xl">
@@ -176,20 +220,17 @@ function extractStateFromSentence(sentence: string): string | undefined {
   return match ? match[1].trim() : undefined
 }
 
-function NHPrimaries(props: {
-  linkPreviews: LinkPreviews
-  newHampshireContract: Contract
-  cardClassName?: string
-}) {
-  const { linkPreviews, newHampshireContract, cardClassName } = props
-  return (
-    <>
-      <PoliticsArticle {...linkPreviews[NH_LINK]} className={cardClassName} />
-      <SmallCandidateCard
-        contract={newHampshireContract as MultiContract}
-        className={clsx('bg-canvas-0 px-4 py-2 ', cardClassName)}
-        maxAnswers={3}
-      />
-    </>
-  )
+function useLiveContract(inputContract: Contract): Contract {
+  const contract =
+    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
+    inputContract
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const answers = useAnswersCpmm(contract.id)
+    if (answers) {
+      contract.answers = answers
+    }
+  }
+  return contract
 }

@@ -16,3 +16,5 @@ export const isManifoldLoveContract = (contract: Contract) =>
 export const MIN_BET_AMOUNT_FOR_NEW_MATCH = 50
 
 export const MAX_COMPATIBILITY_QUESTION_LENGTH = 240
+
+export const LIKE_COST = 50

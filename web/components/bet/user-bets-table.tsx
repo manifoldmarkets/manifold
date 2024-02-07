@@ -56,8 +56,8 @@ type BetSort =
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
-export function UserBetsTable(props: { user: User }) {
-  const { user } = props
+export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
+  const { user, isPolitics } = props
 
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
@@ -84,6 +84,7 @@ export function UserBetsTable(props: { user: User }) {
       userId: user.id,
       offset: 0,
       limit: 5000,
+      isPolitics,
     }).then((res) => {
       const { data, error } = res
       if (error) {
@@ -98,13 +99,15 @@ export function UserBetsTable(props: { user: User }) {
     })
 
   useEffect(() => {
-    getOpenLimitOrdersWithContracts(user.id, 5000).then((betsWithContracts) => {
-      const { contracts, betsByContract } = betsWithContracts
-      setOpenLimitBetsByContract(betsByContract)
-      setInitialContracts((c) =>
-        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-      )
-    })
+    getOpenLimitOrdersWithContracts(user.id, 5000, isPolitics).then(
+      (betsWithContracts) => {
+        const { contracts, betsByContract } = betsWithContracts
+        setOpenLimitBetsByContract(betsByContract)
+        setInitialContracts((c) =>
+          uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
+        )
+      }
+    )
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(

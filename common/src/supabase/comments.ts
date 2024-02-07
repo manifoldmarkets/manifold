@@ -50,3 +50,20 @@ export const convertContractComment = (row: Row<'contract_comments'>) =>
     fs_updated_time: false,
     created_time: tsToMillis as any,
   })
+
+export async function getPinnedComments(
+  db: SupabaseClient,
+  contractId: string
+): Promise<ContractComment[]> {
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select('data')
+      .eq('contract_id', contractId)
+      .eq('data->>pinned', true)
+      .order('created_time', { ascending: false })
+  )
+
+  const pinnedComments = data.map((c) => c.data as ContractComment)
+  return pinnedComments
+}

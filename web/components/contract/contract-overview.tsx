@@ -32,7 +32,6 @@ import { StonkContractChart } from '../charts/contract/stonk'
 import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
-import { QfOverview } from './qf-overview'
 import { AnswersPanel } from '../answers/answers-panel'
 import { Answer, DpmAnswer } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
@@ -63,6 +62,7 @@ import { formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
+import { AlertBox } from '../widgets/alert-box'
 
 export const ContractOverview = memo(
   (props: {
@@ -111,7 +111,7 @@ export const ContractOverview = memo(
         )
 
       case 'QUADRATIC_FUNDING':
-        return <QfOverview contract={contract} />
+        return <AlertBox title="Quadratic Funding markets are deprecated" />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         return (
@@ -134,7 +134,7 @@ export const ContractOverview = memo(
       case 'POLL':
         return <PollPanel contract={contract} />
       case 'CERT':
-        return <>Deprecated</>
+        return <AlertBox title="Certs are deprecated" />
     }
   }
 )

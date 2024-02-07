@@ -1,4 +1,4 @@
-import { TOPIC_KEY, Group, DEFAULT_TOPIC } from 'common/group'
+import { TOPIC_KEY, Group, DEFAULT_TOPIC, LiteGroup } from 'common/group'
 import { uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/topics/topics-list'
@@ -75,7 +75,7 @@ export default function BrowsePage() {
 
   const topics = buildArray(topicsFromRouter, topicsByImportance)
   const [topicResults, setTopicResults] = usePersistentInMemoryState<
-    Group[] | undefined
+    LiteGroup[] | undefined
   >(undefined, `search-topic-results`)
 
   const currentTopic = topics.find((t) => t.slug === topicSlug)

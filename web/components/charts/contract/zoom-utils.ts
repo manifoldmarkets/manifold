@@ -40,7 +40,7 @@ export const useDataZoomFetcher = <T>(props: {
 
         setData(
           buildArray(
-            props.points.filter((p) => p.x < min),
+            props.points.filter((p, i) => i == 0 || p.x < min),
             points,
             props.points.filter((p) => p.x > max)
           )

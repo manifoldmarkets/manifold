@@ -13,7 +13,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, TOPICS_TO_SUBTOPICS } from './topics-college'
 
-import { followTopic, updateUserEmbedding } from 'web/lib/firebase/api'
+import { api, followTopic } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
 import { unfollowTopic } from 'web/lib/supabase/groups'
@@ -46,7 +46,7 @@ export function TopicSelectorDialog(props: {
   const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
 
-    if (user && !skipUpdate) await updateUserEmbedding()
+    if (user && !skipUpdate) await api('update-user-embedding', {})
 
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
 

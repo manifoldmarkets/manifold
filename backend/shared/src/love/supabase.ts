@@ -1,4 +1,5 @@
 import { CPMMMultiContract } from 'common/contract'
+import { areGenderCompatible } from 'common/love/compatibility-util'
 import { Lover, LoverRow } from 'common/love/lover'
 import { Row } from 'common/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -56,7 +57,7 @@ export const getLoverContracts = async (userId: string) => {
 
 export const getGenderCompatibleLovers = async (lover: LoverRow) => {
   const pg = createSupabaseDirectClient()
-  return await pg.manyOrNone<Lover>(
+  const lovers = await pg.manyOrNone<Lover>(
     `
       select 
         *, users.data as user
@@ -68,13 +69,10 @@ export const getGenderCompatibleLovers = async (lover: LoverRow) => {
         and looking_for_matches
         and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
         and lovers.pinned_url is not null
-
-        -- Gender
-        and (lovers.gender = any($(pref_gender)) or lovers.gender = 'non-binary')
-        and ($(gender) = any(lovers.pref_gender) or $(gender) = 'non-binary')
       `,
     { ...lover }
   )
+  return lovers.filter(l => areGenderCompatible(lover, l))
 }
 
 export const getCompatibleLovers = async (

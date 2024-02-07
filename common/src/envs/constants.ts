@@ -141,6 +141,8 @@ export const BOT_USERNAMES = [
   'Euclidean',
   'manakin',
   'LUCAtheory',
+  'TunglBot',
+  'timetraveler',
 ]
 
 export const MOD_IDS = [
@@ -244,6 +246,7 @@ export const VERIFIED_USERNAMES = [
   'patrissimo',
   'postjawline',
   'MatthewYglesias',
+  'BillyMcRascal',
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -371,8 +374,10 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'technical-ai-timelines', // same as ai
   'presidential-politics', // same as politics
   'unsubsidized',
-  'death-markets', 
+  'death-markets',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
+  'destiny',
+  'donald-trump-adb8f1bbf890',
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

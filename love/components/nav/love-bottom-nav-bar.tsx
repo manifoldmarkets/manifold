@@ -86,7 +86,7 @@ function ProfileItem(props: {
   const { user, item, touched, setTouched, currentPage, track } = props
   const balance = useAnimatedNumber(user?.balance ?? 0)
   const lover = useLover()
-  const manaEnabled = false
+  const manaEnabled = true
   return (
     <Link
       href={item.href ?? '#'}

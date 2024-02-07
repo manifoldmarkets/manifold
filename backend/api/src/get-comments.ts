@@ -1,19 +1,20 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { getComments as getCommentsSupabase } from 'shared/supabase/contract_comments'
-import { getContractIdFromSlug } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getContractFromSlugSupabase } from 'shared/utils'
+import { getCommentsDirect } from 'shared/supabase/contract_comments'
 
 export const getComments: APIHandler<'comments'> = async (props) => {
-  const { userId, limit, page, contractSlug } = props
+  const { userId, contractSlug } = props
 
   if (!props.contractId && !contractSlug && !userId) {
     throw new APIError(400, 'You must specify a contract or user')
   }
-
-  const db = createSupabaseClient()
-
   const contractId =
-    props.contractId ?? (await getContractIdFromSlug(db, contractSlug))
+    props.contractId ?? (await getContractFromSlugSupabase(contractSlug!))?.id
+  const pg = createSupabaseDirectClient()
 
-  return getCommentsSupabase(db, { contractId, userId, limit, page })
+  return await getCommentsDirect(pg, {
+    ...props,
+    contractId,
+  })
 }

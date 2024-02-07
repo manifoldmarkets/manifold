@@ -58,7 +58,7 @@ import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
 import TipJar from 'web/public/custom-components/tipJar'
 import { Answer, DpmAnswer } from 'common/answer'
-import { CommentOnAnswerRow } from './feed-answer-comment-group'
+import { CommentOnAnswer } from './comment-on-answer'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { FeedReplyBet } from 'web/components/feed/feed-bets'
@@ -70,6 +70,8 @@ import { AnnotateChartModal } from 'web/components/annotate-chart'
 import { BiRepost } from 'react-icons/bi'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { RepostModal } from 'web/components/comments/repost-modal'
+import { TiPin } from 'react-icons/ti'
+import Router from 'next/router'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -211,6 +213,7 @@ export const FeedComment = memo(function FeedComment(props: {
   isParent?: boolean
   bets?: Bet[]
   lastInReplyChain?: boolean
+  isPinned?: boolean
 }) {
   const {
     contract,
@@ -222,6 +225,7 @@ export const FeedComment = memo(function FeedComment(props: {
     isParent,
     bets,
     lastInReplyChain,
+    isPinned,
   } = props
 
   const groupedBets = useMemo(() => {
@@ -266,6 +270,13 @@ export const FeedComment = memo(function FeedComment(props: {
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
+  const handleContextClick = () => {
+    const commentId = comment.id
+
+    const currentUrl = window.location.href
+    const newUrl = currentUrl.split('#')[0] + `#${commentId}`
+    Router.push(newUrl)
+  }
 
   useEffect(() => {
     if (highlighted && ref.current) {
@@ -297,6 +308,7 @@ export const FeedComment = memo(function FeedComment(props: {
             avatarUrl={userAvatarUrl}
             className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
           />
+
           {/* Outer vertical reply line*/}
           <div
             className={clsx(
@@ -306,6 +318,7 @@ export const FeedComment = memo(function FeedComment(props: {
               (!isBetParent || lastInReplyChain) && 'group-last:hidden'
             )}
           />
+
           {/* Inner vertical reply line*/}
           {isBetParent && !isParent && (
             <div
@@ -322,19 +335,36 @@ export const FeedComment = memo(function FeedComment(props: {
             'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',
             highlighted
               ? 'bg-primary-100 border-primary-300 border-2'
+              : isPinned
+              ? 'bg-canvas-50 border-primary-300 border-2'
               : 'bg-canvas-50'
           )}
         >
-          <FeedCommentHeader
-            comment={comment}
-            updateComment={updateComment}
-            contract={contract}
-            inTimeline={inTimeline}
-            isParent={isParent}
-          />
+          <Row className="items-center justify-between">
+            <FeedCommentHeader
+              comment={comment}
+              updateComment={updateComment}
+              contract={contract}
+              inTimeline={inTimeline}
+              isParent={isParent}
+            />
+
+            {isPinned && <TiPin className="text-ink-500 text-lg" />}
+          </Row>
 
           <HideableContent comment={comment} />
-          <Row>
+          <Row className="flex-wrap items-start">
+            {isPinned && (
+              <div className="self-end">
+                <a
+                  className="ml-1 text-xs text-gray-400 hover:text-indigo-400 hover:underline"
+                  href={`#${comment.id}`}
+                  onClick={handleContextClick}
+                >
+                  View original context
+                </a>
+              </div>
+            )}
             {children}
             <CommentActions
               onReplyClick={onReplyClick}
@@ -377,6 +407,7 @@ export const FeedComment = memo(function FeedComment(props: {
                     contract={contract}
                     bets={bets}
                   />
+
                   {/* Inner vertical bet reply line*/}
                   <div
                     className={clsx(
@@ -396,18 +427,19 @@ export const FeedComment = memo(function FeedComment(props: {
   )
 })
 
-const ParentFeedComment = memo(function ParentFeedComment(props: {
+export const ParentFeedComment = memo(function ParentFeedComment(props: {
   contract: Contract
   comment: ContractComment
   highlighted?: boolean
   seeReplies: boolean
   numReplies: number
   onReplyClick?: (comment: ContractComment) => void
-  onSeeReplyClick: () => void
+  onSeeReplyClick?: () => void
   trackingLocation: string
   inTimeline?: boolean
   childrenBountyTotal?: number
   bets?: Bet[]
+  isPinned?: boolean
 }) {
   const {
     contract,
@@ -421,6 +453,7 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
     inTimeline,
     childrenBountyTotal,
     bets,
+    isPinned,
   } = props
   const { ref } = useIsVisible(
     () =>
@@ -441,8 +474,10 @@ const ParentFeedComment = memo(function ParentFeedComment(props: {
       inTimeline={inTimeline}
       isParent={true}
       bets={bets}
+      isPinned={isPinned}
     >
       <div ref={ref} />
+
       <ReplyToggle
         seeReplies={seeReplies}
         numComments={numReplies}
@@ -567,6 +602,25 @@ export function DotMenu(props: {
                 )
                 // undo optimistic update
                 updateComment({ hidden: wasHidden })
+              }
+            },
+          },
+          (isMod || isContractCreator) && {
+            name: comment.pinned ? 'Unpin' : 'Pin',
+            icon: '📌',
+            onClick: async () => {
+              const commentPath = `contracts/${contract.id}/comments/${comment.id}`
+              const wasPinned = comment.pinned
+              updateComment({ pinned: !wasPinned })
+
+              try {
+                await api('pin-comment', { commentPath })
+              } catch (e) {
+                toast.error(
+                  wasPinned ? 'Error pinning comment' : 'Error pinning comment'
+                )
+                // undo optimistic update
+                updateComment({ pinned: wasPinned })
               }
             },
           }
@@ -872,7 +926,7 @@ export function ContractCommentInput(props: {
           clearReply={clearReply}
         />
       ) : replyTo ? (
-        <CommentOnAnswerRow
+        <CommentOnAnswer
           answer={replyTo}
           contract={contract as any}
           clear={clearReply}
@@ -1119,7 +1173,7 @@ export function CommentReplyHeader(props: {
       (a) => a.id === answerOutcome
     )
     if (answer)
-      return <CommentOnAnswerRow answer={answer} contract={contract as any} />
+      return <CommentOnAnswer answer={answer} contract={contract as any} />
   }
 
   return null

@@ -218,7 +218,6 @@ export const notificationReasonToSubscriptionType: Partial<
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
-  poll_you_follow_closed: 'poll_close_on_watched_markets',
 }
 
 export function getNotificationPreference(reason: NotificationReason) {

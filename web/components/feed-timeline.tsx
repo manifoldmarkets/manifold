@@ -1,4 +1,4 @@
-import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useIsAuthorized } from 'web/hooks/use-user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -26,9 +26,11 @@ import {
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
-export function FeedTimeline() {
-  const privateUser = usePrivateUser()
-  const user = useUser()
+export function FeedTimeline(props: {
+  user: User | undefined | null
+  privateUser: PrivateUser | undefined | null
+}) {
+  const { user, privateUser } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime

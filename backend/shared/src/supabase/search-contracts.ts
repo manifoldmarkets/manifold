@@ -119,8 +119,18 @@ export function getSearchContractSQL(args: {
   groupAccess?: boolean
   isForYou?: boolean
   searchType: SearchTypes
+  isPolitics?: boolean
 }) {
-  const { term, sort, offset, limit, groupId, creatorId, searchType } = args
+  const {
+    term,
+    sort,
+    offset,
+    limit,
+    groupId,
+    creatorId,
+    searchType,
+    isPolitics,
+  } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -157,7 +167,7 @@ export function getSearchContractSQL(args: {
       ),
 
     whereSql,
-
+    isPolitics && where('is_politics = true'),
     term.length && [
       searchType === 'prefix' &&
         where(
