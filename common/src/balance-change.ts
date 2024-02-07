@@ -27,7 +27,10 @@ export type BalanceChange = {
 
   createdTime: number
 }
-type MinimalContract = Pick<Contract, 'question' | 'slug' | 'visibility'>
+type MinimalContract = Pick<
+  Contract,
+  'question' | 'slug' | 'visibility' | 'creatorUsername'
+>
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
 
 export type BetBalanceChange = CustomBalanceChange & {
@@ -55,7 +58,7 @@ export const TXN_BALANCE_CHANGE_TYPES = [
 export type TxnType = (typeof TXN_BALANCE_CHANGE_TYPES)[number]
 export type TxnBalanceChange = CustomBalanceChange & {
   type: TxnType
-  contract: MinimalContract
+  contract?: MinimalContract
   questType?: QuestType
   user?: Pick<User, 'username' | 'name'>
 }

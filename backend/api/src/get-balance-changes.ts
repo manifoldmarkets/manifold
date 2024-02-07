@@ -71,11 +71,14 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
       type: txn.category,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
-      contract: {
-        question: contract?.question ?? '',
-        visibility: contract?.visibility ?? 'unlisted',
-        slug: contract?.slug ?? 'Unknown',
-      },
+      contract: contract
+        ? {
+            question: contract.question,
+            visibility: contract.visibility,
+            slug: contract.slug,
+            creatorUsername: contract.creatorUsername,
+          }
+        : undefined,
       questType: txn.data?.questType,
       user: user ? { username: user.username, name: user.name } : undefined,
     }
@@ -105,6 +108,7 @@ const getContractIdFromTxn = (txn: Txn) => {
       'QUEST_REWARD',
       'MANA_PAYMENT',
       'LOAN',
+      'MARKET_BOOST_CREATE',
     ].includes(txn.category)
   )
     console.error('No contractId found for txn', txn)
@@ -165,7 +169,7 @@ const getBetBalanceChanges = async (
             ? previousRedemptionBet.outcome
             : outcome
       }
-      const { question, visibility, slug } = contract
+      const { question, visibility, creatorUsername, slug } = contract
       const beHonest =
         isCurrentUser || visibility === 'public' || isAdminId(auth?.uid ?? '')
       const changeToBalance = !isRedemption ? -amount : -shares
@@ -185,12 +189,13 @@ const getBetBalanceChanges = async (
           shares,
         },
         contract: {
-          question: question,
+          question,
           // question: beHonest ? question : '[redacted]', // TODO: reenable this
           slug: beHonest ? slug : '[redacted]',
-          visibility: visibility,
+          visibility,
+          creatorUsername,
         },
-        createdTime: createdTime,
+        createdTime,
         answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
       }
       balanceChanges.push(balanceChange)
