@@ -268,14 +268,15 @@ const runCreateMarketTxn = async (
       contractRef,
       userDocRef
     )
-    const houseId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    const houseDoc =
-      amountSuppliedByHouse > 0
-        ? await trans.get(firestore.collection('users').doc(houseId))
-        : undefined
-    if (amountSuppliedByHouse > 0 && houseDoc)
+    if (amountSuppliedByHouse > 0) {
+      const houseId = isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+      const houseDoc =
+        amountSuppliedByHouse > 0
+          ? await trans.get(firestore.collection('users').doc(houseId))
+          : undefined
+      if (!houseDoc) throw new APIError(404, 'House account not found')
       await runPostBountyTxn(
         trans,
         {
@@ -290,6 +291,7 @@ const runCreateMarketTxn = async (
         contractRef,
         houseDoc.ref
       )
+    }
   }
 
   if (amountSuppliedByHouse > 0)
