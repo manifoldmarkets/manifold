@@ -189,7 +189,9 @@ export function FeedContractCard(props: {
                   name: creatorName,
                   username: creatorUsername,
                 }}
-                className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
+                className={
+                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+                }
               />
             </Row>
           </UserHovercard>
