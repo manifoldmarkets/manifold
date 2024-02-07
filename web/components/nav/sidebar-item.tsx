@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 import { track } from 'web/lib/service/analytics'
 
-export type Item = {
+export type NavItem = {
   name: string
   trackingEventName?: string
   href?: string
@@ -13,7 +13,7 @@ export type Item = {
   external?: boolean
 }
 
-export function SidebarItem(props: { item: Item; currentPage?: string }) {
+export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const { item, currentPage } = props
 
   const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
