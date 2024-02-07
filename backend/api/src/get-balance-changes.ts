@@ -1,4 +1,4 @@
-import type { APIHandler, AuthedUser } from 'api/helpers/endpoint'
+import type { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -9,17 +9,15 @@ import {
   TXN_BALANCE_CHANGE_TYPES,
   TxnBalanceChange,
 } from 'common/balance-change'
-import { isAdminId } from 'common/envs/constants'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
-  props,
-  auth
+  props
 ) => {
   const { after, userId } = props
-  const betBalanceChanges = await getBetBalanceChanges(after, userId, auth)
+  const betBalanceChanges = await getBetBalanceChanges(after, userId)
   const txnBalanceChanges = await getTxnBalanceChanges(after, userId)
   return orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
@@ -73,9 +71,13 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
       createdTime: txn.createdTime,
       contract: contract
         ? {
-            question: contract.question,
+            question:
+              contract.visibility === 'public'
+                ? contract.question
+                : '[unlisted question]',
             visibility: contract.visibility,
-            slug: contract.slug,
+            slug:
+              contract.visibility === 'public' ? contract.slug : '[unlisted]',
             creatorUsername: contract.creatorUsername,
           }
         : undefined,
@@ -115,13 +117,7 @@ const getContractIdFromTxn = (txn: Txn) => {
   return null
 }
 
-const getBetBalanceChanges = async (
-  after: number,
-  userId: string,
-  auth: AuthedUser | undefined
-) => {
-  const isCurrentUser = userId === auth?.uid
-
+const getBetBalanceChanges = async (after: number, userId: string) => {
   const pg = createSupabaseDirectClient()
   const contractToBets: {
     [contractId: string]: {
@@ -170,8 +166,6 @@ const getBetBalanceChanges = async (
             : outcome
       }
       const { question, visibility, creatorUsername, slug } = contract
-      const beHonest =
-        isCurrentUser || visibility === 'public' || isAdminId(auth?.uid ?? '')
       const changeToBalance = !isRedemption ? -amount : -shares
       const text =
         contract.mechanism === 'cpmm-multi-1' && bet.answerId
@@ -189,9 +183,8 @@ const getBetBalanceChanges = async (
           shares,
         },
         contract: {
-          question,
-          // question: beHonest ? question : '[redacted]', // TODO: reenable this
-          slug: beHonest ? slug : '[redacted]',
+          question: visibility === 'public' ? question : '[unlisted question]',
+          slug: visibility === 'public' ? slug : '[unlisted]',
           visibility,
           creatorUsername,
         },
