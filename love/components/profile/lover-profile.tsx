@@ -171,6 +171,7 @@ function LoverContent(props: {
         ships={ships}
         refreshShips={refreshShips}
         profileLover={lover}
+        mutualLikesBig={!contractData?.contract}
       />
       {!fromLoverPage && lover.looking_for_matches && (
         <Matches profileLover={lover} profileUserId={user.id} />

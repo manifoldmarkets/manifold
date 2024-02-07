@@ -25,9 +25,10 @@ export const getLikesAndShipsMain = async (userId: string) => {
       join lovers on lovers.user_id = love_likes.target_id
       join users on users.id = love_likes.target_id
       where creator_id = $1
-      and looking_for_matches
-      and lovers.pinned_url is not null
-      and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
+        and looking_for_matches
+        and lovers.pinned_url is not null
+        and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
+      order by created_time desc
     `,
     [userId],
     (r) => ({
@@ -46,9 +47,10 @@ export const getLikesAndShipsMain = async (userId: string) => {
       join lovers on lovers.user_id = love_likes.creator_id
       join users on users.id = love_likes.creator_id
       where target_id = $1
-      and looking_for_matches
-      and lovers.pinned_url is not null
-      and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
+        and looking_for_matches
+        and lovers.pinned_url is not null
+        and (data->>'isBannedFromPosting' != 'true' or data->>'isBannedFromPosting' is null)
+      order by created_time desc
     `,
     [userId],
     (r) => ({
