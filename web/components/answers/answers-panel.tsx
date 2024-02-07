@@ -340,8 +340,9 @@ export function SimpleAnswerBars(props: {
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
+  const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
-    false,
+    true,
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
 
@@ -360,7 +361,9 @@ export function SimpleAnswerBars(props: {
               color={getAnswerColor(answer, answersArray)}
               showAvatars={showAvatars}
               barColor={barColor}
-              shouldShowLimitOrderChart={shouldShowLimitOrderChart}
+              shouldShowLimitOrderChart={
+                isAdvancedTrader && shouldShowLimitOrderChart
+              }
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
