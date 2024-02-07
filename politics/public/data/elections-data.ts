@@ -230,7 +230,8 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
-  rawMapContractsDictionary: MapContractsDictionary
+  rawPresidencyStateContracts: MapContractsDictionary
+  rawSenateStateContracts: MapContractsDictionary
   electionPartyContract: Contract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null

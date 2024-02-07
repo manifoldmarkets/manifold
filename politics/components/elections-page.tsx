@@ -1,6 +1,5 @@
 'use client'
 import { MultiContract } from 'common/contract'
-import { ElectionsPageProps } from 'common/politics/elections-data'
 import { ReferralSaver } from 'politics/components/referral-saver'
 import { PoliticsCard } from 'politics/components/us-elections/contracts/politics-card'
 import { Col } from 'web/components/layout/col'
@@ -11,6 +10,7 @@ import { useTracking } from 'web/hooks/use-tracking'
 import Custom404 from 'web/pages/404'
 import { ContractChart } from './charts/contract-chart'
 import { HomepageMap } from './us-elections/usa-map/homepage-map'
+import { ElectionsPageProps } from 'politics/public/data/elections-data'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   useSaveCampaign()

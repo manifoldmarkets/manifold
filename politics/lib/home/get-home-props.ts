@@ -2,19 +2,19 @@ import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { fetchLinkPreviews } from 'common/link-preview'
+import { getBetPoints, getBets } from 'common/supabase/bets'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { SupabaseClient } from 'common/supabase/utils'
+import { unstable_cache } from 'next/cache'
 import {
   ChartParams,
   MapContractsDictionary,
   NH_LINK,
   StateElectionMarket,
   presidency2024,
-} from 'common/politics/elections-data'
-import { senate2024 } from 'common/politics/senate-state-data'
-import { getBetPoints, getBets } from 'common/supabase/bets'
-import { getChartAnnotations } from 'common/supabase/chart-annotations'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { SupabaseClient } from 'common/supabase/utils'
-import { unstable_cache } from 'next/cache'
+} from 'politics/public/data/elections-data'
+import { senate2024 } from 'politics/public/data/senate-state-data'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
