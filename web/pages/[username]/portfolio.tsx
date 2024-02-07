@@ -41,6 +41,7 @@ import { useState } from 'react'
 import { ArrowRightIcon, ArrowUpIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
+import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 
 export const getStaticProps = async (props: {
   params: {
@@ -152,51 +153,70 @@ function UserPortfolioInternal(props: {
             />
           </Row>
         )}
-
-        <Row
-          className={'bg-canvas-0 mx-4 max-w-sm justify-between rounded-md p-2'}
-        >
-          <Col>
-            <span className={'ml-1'}>Mana balance</span>
-            <span className={'mb-1 text-5xl'}>{formatMoney(user.balance)}</span>
-            <button
-              color={'gray-white'}
-              onClick={() => setShowBalanceChanges(true)}
-            >
-              <Row
-                className={clsx(
-                  changeToday > 0 ? 'text-teal-600' : 'text-ink-600',
-                  'items-center'
-                )}
+        <Col className={'gap-4'}>
+          <Row
+            className={
+              'bg-canvas-0 mx-4 max-w-sm justify-between rounded-md p-2'
+            }
+          >
+            <Col>
+              <span className={'ml-1'}>Mana balance</span>
+              <span className={'mb-1 text-5xl'}>
+                {formatMoney(user.balance)}
+              </span>
+              <button
+                color={'gray-white'}
+                onClick={() => setShowBalanceChanges(true)}
               >
-                {changeToday > 0 ? (
-                  <ArrowUpIcon className={'h-4 w-4'} />
-                ) : (
-                  <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-                )}
-                {formatMoney(changeToday)} today
-              </Row>
-            </button>
-          </Col>
-          <Col className={'items-end justify-between'}>
-            <Link className={'text-ink-400 text-sm'} href={'/' + user.username}>
-              <Row className={'items-center gap-1'}>
-                See profile
-                <ArrowRightIcon className={'h-4 w-4'} />
-              </Row>
-            </Link>
-            <Button
-              color="gray-outline"
-              onClick={() => setShowAddFunds(true)}
-              size="2xs"
-            >
-              Add funds
-            </Button>
-            <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
-          </Col>
-        </Row>
+                <Row
+                  className={clsx(
+                    changeToday > 0 ? 'text-teal-600' : 'text-ink-600',
+                    'items-center'
+                  )}
+                >
+                  {changeToday > 0 ? (
+                    <ArrowUpIcon className={'h-4 w-4'} />
+                  ) : (
+                    <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
+                  )}
+                  {formatMoney(changeToday)} today
+                </Row>
+              </button>
+            </Col>
+            <Col className={'items-end justify-between'}>
+              <Link
+                className={'text-ink-400 text-sm'}
+                href={'/' + user.username}
+              >
+                <Row className={'items-center gap-1'}>
+                  See profile
+                  <ArrowRightIcon className={'h-4 w-4'} />
+                </Row>
+              </Link>
+              <Button
+                color="gray-outline"
+                onClick={() => setShowAddFunds(true)}
+                size="2xs"
+              >
+                Add funds
+              </Button>
+              <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
+            </Col>
+          </Row>
+          <Row
+            className={
+              'bg-canvas-0 mx-4 max-w-sm justify-between rounded-md p-2'
+            }
+          >
+            <Col>
+              <span className={'ml-1'}>Investment value</span>
+              <InvestmentValueCard user={user} />
+            </Col>
+          </Row>
+        </Col>
         {showBalanceChanges && (
           <BalanceChangesModal
+            user={user}
             balanceChanges={balanceChanges}
             setOpen={() => setShowBalanceChanges(false)}
           />
@@ -207,10 +227,11 @@ function UserPortfolioInternal(props: {
 }
 
 const BalanceChangesModal = (props: {
+  user: User
   balanceChanges: AnyBalanceChangeType[]
   setOpen: () => void
 }) => {
-  const { balanceChanges, setOpen } = props
+  const { balanceChanges, setOpen, user } = props
   const changeToday = sumBy(
     balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
     'amount'
@@ -222,19 +243,24 @@ const BalanceChangesModal = (props: {
   return (
     <Modal open={true} setOpen={setOpen} className={MODAL_CLASS}>
       <Col className={'w-full justify-center'}>
-        <Row
-          className={clsx(
-            changeToday > 0 ? 'text-teal-600' : 'text-ink-600',
-            'mb-2 items-center justify-center text-2xl'
-          )}
-        >
-          {changeToday > 0 ? (
-            <ArrowUpIcon className={'h-4 w-4'} />
-          ) : (
-            <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-          )}
-          {formatMoney(changeToday)} today
-        </Row>
+        <div className="mb-2 grid w-full grid-cols-10 text-xl">
+          <div className="col-span-4">
+            <div>Balance</div>
+            <div>Daily change</div>
+          </div>
+          <div className="col-span-6">
+            <div>{formatMoney(user.balance)}</div>
+            <Row
+              className={clsx(
+                'items-center',
+                changeToday > 0 ? 'text-teal-600' : 'text-ink-600'
+              )}
+            >
+              {formatMoney(changeToday)}
+            </Row>
+          </div>
+        </div>
+
         <div className={mainCol}>
           <span className={clsx(col1, 'text-ink-400 text-sm')}>Amount</span>
           <span className={clsx(col2, 'text-ink-400 text-sm')}>Type</span>

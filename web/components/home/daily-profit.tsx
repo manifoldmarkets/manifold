@@ -15,7 +15,6 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { Table } from '../widgets/table'
@@ -98,7 +97,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   )
 })
 
-function DailyProfitModal(props: {
+export function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   metrics?: ContractMetric[]
@@ -110,14 +109,14 @@ function DailyProfitModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
-        <Col className={'mb-4'}>
-          <Row className="gap-2 text-2xl">
-            <Col className="gap-2">
+      <div className="bg-canvas-0 text-ink-1000 rounded-lg px-4 py-2">
+        <Col className={'mb-2'}>
+          <div className="grid w-full grid-cols-10 text-xl">
+            <div className="col-span-4">
               <div>Invested</div>
               <div>Daily profit</div>
-            </Col>
-            <Col className="text-ink-600 items-end gap-2">
+            </div>
+            <div className="col-span-6">
               <div>{formatMoney(investment)}</div>
               <div
                 className={clsx(
@@ -126,15 +125,7 @@ function DailyProfitModal(props: {
               >
                 {formatMoney(dailyProfit)}
               </div>
-            </Col>
-          </Row>
-
-          <div className="text-ink-500 mt-4 text-sm">
-            Change in profit over the last 24 hours.{' '}
-            <InfoTooltip
-              text="I.e. the change in the value of your
-            shares in Yes/No questions. (Updates every 30 min)"
-            />
+            </div>
           </div>
         </Col>
 
