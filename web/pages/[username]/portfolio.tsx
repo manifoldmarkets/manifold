@@ -41,7 +41,6 @@ import {
   FaArrowTrendUp,
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { ScaleIcon } from '@heroicons/react/outline'
 
@@ -137,10 +136,7 @@ function UserPortfolioInternal(props: {
               className={clsx('text-ink-500', linkClass)}
               href={'/' + user.username}
             >
-              <Row className={'items-center gap-1 px-3'}>
-                Profile
-                <ArrowRightIcon className={'h-5 w-5'} />
-              </Row>
+              <Row className={'items-center gap-1 px-3'}>See profile</Row>
             </Link>
           </Row>
         </Row>
@@ -192,8 +188,8 @@ function UserPortfolioInternal(props: {
             </Col>
           </Row>
         </Col>
-        <Col className={'mt-4 border-t-2 px-2 pt-4'}>
-          <Row className={'mb-2 justify-between'}>
+        <Col className={'mt-4 border-t-2 pt-4'}>
+          <Row className={'mb-2 justify-between px-1'}>
             <span className={'text-2xl'}>Your trades</span>
             {(user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && (
@@ -202,13 +198,15 @@ function UserPortfolioInternal(props: {
                   className={clsx('text-ink-500', linkClass)}
                   href={'/' + user.username + '?tab=questions'}
                 >
-                  <Row className={'items-center gap-1 px-3'}>See questions</Row>
+                  <Row className={'items-center gap-1 px-2'}>See questions</Row>
                 </Link>
               </Col>
             )}
           </Row>
           {/* It would be awesome to be able to search your questions here too*/}
-          <UserBetsTable user={user} />
+          <Col className={'px-1'}>
+            <UserBetsTable user={user} />
+          </Col>
         </Col>
         {showBalanceChanges && (
           <BalanceChangesModal
