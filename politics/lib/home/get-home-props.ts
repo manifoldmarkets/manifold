@@ -6,8 +6,10 @@ import {
   ChartParams,
   MapContractsDictionary,
   NH_LINK,
+  StateElectionMarket,
   presidency2024,
 } from 'common/politics/elections-data'
+import { senate2024 } from 'common/politics/senate-state-data'
 import { getBetPoints, getBets } from 'common/supabase/bets'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { getContractFromSlug } from 'common/supabase/contracts'
@@ -53,21 +55,16 @@ export async function getHomeProps() {
     adminDb
   )
 
-  const mapContractsPromises = presidency2024.map(async (m) => {
-    const contract = await getContract(m.slug)
-    return { state: m.state, contract: contract }
-  })
+  const presidencyStateContracts = await getStateContracts(
+    getContract,
+    presidency2024
+  )
 
-  const mapContractsArray = await Promise.all(mapContractsPromises)
+  const senateStateContracts = await getStateContracts(getContract, senate2024)
 
-  // Convert array to dictionary
-  const mapContractsDictionary: MapContractsDictionary =
-    mapContractsArray.reduce((acc, mapContract) => {
-      acc[mapContract.state] = mapContract.contract
-      return acc
-    }, {} as MapContractsDictionary)
   return {
-    rawMapContractsDictionary: mapContractsDictionary,
+    rawPresidencyStateContracts: presidencyStateContracts,
+    rawSenateStateContracts: senateStateContracts,
     electionPartyContract: electionPartyContract,
     electionCandidateContract: electionCandidateContract,
     republicanCandidateContract: republicanCandidateContract,
@@ -81,6 +78,27 @@ export async function getHomeProps() {
       chartAnnotations: chartAnnotations,
     },
   }
+}
+
+async function getStateContracts(
+  getContract: (slug: string) => Promise<Contract | null>,
+  stateSlugs: StateElectionMarket[]
+): Promise<MapContractsDictionary> {
+  const mapContractsPromises = stateSlugs.map(async (m) => {
+    const contract = await getContract(m.slug)
+    return { state: m.state, contract: contract }
+  })
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  // Convert array to dictionary
+  const mapContractsDictionary: MapContractsDictionary =
+    mapContractsArray.reduce((acc, mapContract) => {
+      acc[mapContract.state] = mapContract.contract
+      return acc
+    }, {} as MapContractsDictionary)
+
+  return mapContractsDictionary
 }
 
 function getCachedContractFromSlug(slug: string, db: SupabaseClient) {

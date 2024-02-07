@@ -1,13 +1,12 @@
 import clsx from 'clsx'
+import { MouseEventHandler } from 'react'
+import { isColorLight } from './state-election-map'
 import {
   ClickHandler,
   HIGHLIGHTED_OUTLINE_COLOR,
   SELECTED_OUTLINE_COLOR,
 } from './usa-map'
 import { StateDataType } from './usa-map-data'
-import { MouseEventHandler } from 'react'
-import { MultiContract } from 'common/contract'
-import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
@@ -16,7 +15,7 @@ export const OFFSET_TEXT_COLOR = '#9E9FBD'
 export function USAState(props: {
   state: string
   stateData: StateDataType
-  contract: MultiContract
+  fill?: string
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
@@ -27,7 +26,6 @@ export function USAState(props: {
   const {
     state,
     stateData,
-    contract,
     onClickState,
     onMouseEnterState,
     onMouseLeaveState,
@@ -37,16 +35,18 @@ export function USAState(props: {
   } = props
 
   const { dimensions, textCoordinates, abbreviation, line } = stateData
-
-  const fill = probToColor(contract) ?? ''
-
+  const fill = props.fill ?? '#e7dfe6'
   return (
     <>
       <path
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(!!onClickState && 'cursor-pointer transition-all')}
+        className={clsx(
+          !!onClickState
+            ? 'cursor-pointer transition-all'
+            : 'cursor-not-allowed'
+        )}
         onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
@@ -70,6 +70,8 @@ export function USAState(props: {
         fill,
         onClick: line ? onClickState : undefined,
         selected,
+        isClickDisabled:
+          !onMouseEnterState && !onMouseLeaveState && !onClickState,
       })}
     </>
   )
@@ -92,6 +94,7 @@ export const StateText = (props: {
   fill: string
   onClick?: ClickHandler
   selected?: boolean
+  isClickDisabled?: boolean
 }) => {
   const {
     line,
@@ -103,11 +106,14 @@ export const StateText = (props: {
     fill,
     selected,
     onClick,
+    isClickDisabled,
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
   const isFillLight = isColorLight(fill)
-  const textColor = !!line
+  const textColor = isClickDisabled
+    ? '#cec0ce'
+    : !!line
     ? isHovered || selected
       ? fill
       : OFFSET_TEXT_COLOR
