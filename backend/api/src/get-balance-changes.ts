@@ -122,6 +122,7 @@ const getContractIdFromTxn = (txn: Txn) => {
       'MANA_PAYMENT',
       'LOAN',
       'MARKET_BOOST_CREATE',
+      'SIGNUP_BONUS',
     ].includes(txn.category)
   )
     console.error('No contractId found for txn', txn)
