@@ -66,7 +66,9 @@ export function LoverProfile(props: {
 
   return (
     <>
-      {isCurrentUser && !fromLoverPage && <CreateYourMarketButton className="w-full" />}
+      {isCurrentUser && !fromLoverPage && (
+        <CreateYourMarketButton className="w-full" />
+      )}
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
       <LoverProfileHeader
         user={user}
@@ -135,6 +137,10 @@ function LoverContent(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
+  const { data: contractData } = useAPIGetter('get-love-market', {
+    userId: lover.user_id,
+  })
+
   if (!currentUser) {
     return (
       <Col className="bg-canvas-0 w-full gap-4 rounded p-4">
@@ -152,7 +158,13 @@ function LoverContent(props: {
   }
   return (
     <>
-      <MarketsDisplay lover={lover} />
+      {contractData && contractData.contract && (
+        <MarketsDisplay
+          profileLover={lover}
+          lovers={contractData.lovers}
+          contract={contractData.contract}
+        />
+      )}
       <LikesDisplay
         likesGiven={likesGiven}
         likesReceived={likesReceived}

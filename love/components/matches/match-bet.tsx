@@ -17,11 +17,10 @@ import { useState } from 'react'
 export function MatchBetButton(props: {
   contract: CPMMMultiContract
   answer: Answer
-  answers: Answer[]
   user: User
   modalHeader?: React.ReactNode
 }) {
-  const { contract, answer, answers, user, modalHeader } = props
+  const { contract, answer, user, modalHeader } = props
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -53,7 +52,7 @@ export function MatchBetButton(props: {
           </Link>
           <BuyPanel
             contract={contract}
-            multiProps={{ answers, answerToBuy: answer }}
+            multiProps={{ answers: contract.answers, answerToBuy: answer }}
             user={user}
             initialOutcome="YES"
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
