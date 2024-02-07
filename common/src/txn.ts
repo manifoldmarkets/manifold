@@ -169,6 +169,7 @@ type BettingStreakBonus = {
   category: 'BETTING_STREAK_BONUS'
   data: {
     currentBettingStreak?: number
+    contractId?: string
   }
 }
 
