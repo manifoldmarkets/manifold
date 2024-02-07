@@ -42,6 +42,7 @@ type AnyTxnType =
   | PushNotificationBonus
   | LikePurchase
   | ContractUndoResolutionPayout
+  | ContractAnte
 
 export type SourceType =
   | 'USER'
@@ -214,6 +215,12 @@ type ContractResolutionPayout = {
     payoutStartTime?: number
     answerId?: string
   }
+}
+type ContractAnte = {
+  fromType: 'USER' | 'BANK'
+  toType: 'CONTRACT'
+  category: 'CREATE_CONTRACT_ANTE'
+  token: 'M$'
 }
 
 type ContractUndoResolutionPayout = {

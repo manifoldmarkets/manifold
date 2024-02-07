@@ -50,6 +50,7 @@ import {
 } from 'common/api/market-types'
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
+import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 
 type Body = ValidatedAPIParams<'market'>
 
@@ -135,10 +136,7 @@ export async function createMarketHelper(
 
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
-      user,
-      ante
-    )
+    const { amountSuppliedByUser } = marketCreationCosts(user, ante)
 
     if (ante > getAvailableBalancePerQuestion(user) && user.id !== BTE_USER_ID)
       throw new APIError(
@@ -180,23 +178,16 @@ export async function createMarketHelper(
       matchCreatorId,
     })
 
-    const houseId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    const houseDoc =
-      amountSuppliedByHouse > 0
-        ? await trans.get(firestore.collection('users').doc(houseId))
-        : undefined
-    trans.create(contractRef, contract)
-    return runCreateMarketTxn(
+    const res = await runCreateMarketTxn(
       contract,
       ante,
       user,
       userDoc.ref,
       contractRef,
-      houseDoc,
       trans
     )
+    trans.create(contractRef, contract)
+    return res
   })
 
   log('created contract ', {
@@ -231,7 +222,6 @@ const runCreateMarketTxn = async (
   user: User,
   userDocRef: admin.firestore.DocumentReference,
   contractRef: admin.firestore.DocumentReference,
-  houseDoc: admin.firestore.DocumentSnapshot | undefined,
   trans: Transaction
 ) => {
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -239,20 +229,37 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  // TODO: these should be txns!
   if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
-    if (amountSuppliedByHouse > 0 && houseDoc)
-      trans.update(houseDoc.ref, {
-        balance: FieldValue.increment(-amountSuppliedByHouse),
-        totalDeposits: FieldValue.increment(-amountSuppliedByHouse),
+    if (amountSuppliedByHouse > 0) {
+      await runTxnFromBank(trans, {
+        amount: amountSuppliedByHouse,
+        category: 'CREATE_CONTRACT_ANTE',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        fromType: 'BANK',
+        token: 'M$',
       })
+    }
 
-    if (amountSuppliedByUser > 0)
-      trans.update(userDocRef, {
-        balance: FieldValue.increment(-amountSuppliedByUser),
-        totalDeposits: FieldValue.increment(-amountSuppliedByUser),
+    if (amountSuppliedByUser > 0) {
+      await runTxn(trans, {
+        fromId: user.id,
+        fromType: 'USER',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        amount: amountSuppliedByUser,
+        token: 'M$',
+        category: 'CREATE_CONTRACT_ANTE',
       })
+    }
   } else {
+    const houseId = isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+    const houseDoc =
+      amountSuppliedByHouse > 0
+        ? await trans.get(firestore.collection('users').doc(houseId))
+        : undefined
     // Even if their debit is 0, it seems important that the user posts the bounty
     await runPostBountyTxn(
       trans,

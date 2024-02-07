@@ -10,18 +10,18 @@ export type AnyBalanceChangeType =
 
 export type BalanceChange = {
   amount: number
-  type: // users
+  type: // txns:
   | 'managram'
     | 'manalink'
-    // contracts
-    | 'create_contract_ante'
-    | 'subsidize_contract'
     | 'contract_payout'
-    // bonuses
     | 'create_contract_quest_bonus'
     | 'contract_unique_trader_bonus'
     | 'prediction_bonus'
     | 'share_bonus'
+    // contracts
+    | 'create_contract_ante'
+    // liquidites? or maybe txns too
+    | 'subsidize_contract'
 
   user?: Pick<User, 'username'>
 
@@ -48,6 +48,7 @@ export const TXN_BALANCE_CHANGE_TYPES = [
   'LEAGUE_PRIZE',
   'BOUNTY_POSTED',
   'BOUNTY_AWARDED',
+  'CREATE_CONTRACT_ANTE',
   'MANA_PAYMENT',
   'LOAN',
 ]

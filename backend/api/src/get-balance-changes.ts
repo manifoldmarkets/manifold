@@ -69,7 +69,7 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       type: txn.category,
-      amount: txn.amount,
+      amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
       contract: {
         question: contract?.question ?? '',
@@ -93,15 +93,19 @@ const getOtherUserIdFromTxn = (txn: Txn, userId: string) => {
   return undefined
 }
 const getContractIdFromTxn = (txn: Txn) => {
-  if (txn.category === 'CONTRACT_RESOLUTION_PAYOUT') {
+  if (txn.fromType === 'CONTRACT') {
     return txn.fromId
-  } else if (txn.category === 'BOUNTY_POSTED') {
+  } else if (txn.toType === 'CONTRACT') {
     return txn.toId
   } else if ('data' in txn && txn.data?.contractId) return txn.data.contractId
   if (
-    !['BETTING_STREAK_BONUS', 'MARKET_BOOST_REDEEM', 'QUEST_REWARD'].includes(
-      txn.category
-    )
+    ![
+      'BETTING_STREAK_BONUS',
+      'MARKET_BOOST_REDEEM',
+      'QUEST_REWARD',
+      'MANA_PAYMENT',
+      'LOAN',
+    ].includes(txn.category)
   )
     console.error('No contractId found for txn', txn)
   return null

@@ -160,6 +160,8 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
   switch (txnCategory) {
     case 'CONTRACT_RESOLUTION_PAYOUT':
       return <span>Payout</span>
+    case 'CREATE_CONTRACT_ANTE':
+      return <span>Ante</span>
     case 'UNIQUE_BETTOR_BONUS':
       return <span>Traders</span>
     case 'BETTING_STREAK_BONUS':
