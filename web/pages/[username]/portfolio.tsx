@@ -35,7 +35,6 @@ import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { ReactNode, useState } from 'react'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
@@ -103,7 +102,7 @@ function UserPortfolioInternal(props: {
   const isMobile = useIsMobile()
   const [showBalanceChanges, setShowBalanceChanges] = useState(false)
   const [showAddFunds, setShowAddFunds] = useState(false)
-  const { ref: titleRef, headerStuck } = useHeaderIsStuck()
+  const { ref: titleRef } = useHeaderIsStuck()
   const changeToday = sumBy(
     balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
     'amount'
@@ -126,7 +125,7 @@ function UserPortfolioInternal(props: {
       )}
 
       <Col className="relative mt-1">
-        {isMobile && (
+        {isMobile ? (
           <Row
             className={
               'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
@@ -134,32 +133,40 @@ function UserPortfolioInternal(props: {
             ref={titleRef}
           >
             <BackButton />
-            {headerStuck && (
-              <span className={'text-primary-700 text-xl'}>
-                {formatMoney(user.balance)}
-              </span>
-            )}
-            <div
-              className={clsx(
-                'opacity-0 transition-opacity',
-                headerStuck && 'opacity-100'
-              )}
-            >
+
+            <Row className={'items-center gap-2'}>
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={'md'}
+                className="bg-ink-1000"
+              />
               <UserLink user={user} noLink />
-            </div>
-            <Avatar
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              size={'md'}
-              className="bg-ink-1000"
-              noLink
-            />
+            </Row>
           </Row>
-        )}
-        <Col className={'gap-4'}>
+        ) : (
           <Row
             className={
-              'bg-canvas-0 mx-4 max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2'
+            }
+            ref={titleRef}
+          >
+            <BackButton />
+
+            <Row className={'items-center gap-2'}>
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={'md'}
+                className="bg-ink-1000"
+              />
+            </Row>
+          </Row>
+        )}
+        <Col className={'gap-4 sm:mt-4 sm:flex-row'}>
+          <Row
+            className={
+              'bg-canvas-0 mx-4 min-w-[45%] max-w-sm justify-between rounded-md p-2'
             }
           >
             <Col>
@@ -176,16 +183,16 @@ function UserPortfolioInternal(props: {
                 </Row>
               </button>
             </Col>
-            <Col className={'items-end justify-between'}>
-              <Link
-                className={'text-ink-400 text-sm'}
-                href={'/' + user.username}
-              >
-                <Row className={'items-center gap-1'}>
-                  See profile
-                  <ArrowRightIcon className={'h-4 w-4'} />
-                </Row>
-              </Link>
+            <Col className={'items-end justify-end'}>
+              {/*<Link*/}
+              {/*  className={'text-ink-400 text-sm'}*/}
+              {/*  href={'/' + user.username}*/}
+              {/*>*/}
+              {/*  <Row className={'items-center gap-1'}>*/}
+              {/*    See profile*/}
+              {/*    <ArrowRightIcon className={'h-4 w-4'} />*/}
+              {/*  </Row>*/}
+              {/*</Link>*/}
               <Button
                 color="gray-outline"
                 onClick={() => setShowAddFunds(true)}
@@ -198,10 +205,10 @@ function UserPortfolioInternal(props: {
           </Row>
           <Row
             className={
-              'bg-canvas-0 mx-4 max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-0 mx-4 min-w-[45%] max-w-sm justify-between rounded-md p-2'
             }
           >
-            <Col>
+            <Col className={''}>
               <span className={'ml-1'}>Investment value</span>
               <InvestmentValueCard user={user} />
             </Col>

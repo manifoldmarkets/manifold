@@ -11,7 +11,6 @@ import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { formatMoney } from 'common/util/format'
-import { ArrowUpIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
@@ -46,33 +45,26 @@ export const InvestmentValueCard = memo(function (props: {
   )
 
   return (
-    <>
-      <Col>
-        <span className={'text-5xl'}>{formatMoney(investment)}</span>
+    <Col>
+      <span className={'text-5xl'}>{formatMoney(investment)}</span>
 
-        <Row>
-          <button
-            onClick={withTracking(() => {
-              setOpen(true)
-            }, DAILY_INVESTMENT_CLICK_EVENT)}
+      <Row>
+        <button
+          onClick={withTracking(() => {
+            setOpen(true)
+          }, DAILY_INVESTMENT_CLICK_EVENT)}
+        >
+          <Row
+            className={clsx(
+              'mt-1 items-center',
+              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+            )}
           >
-            <Row
-              className={clsx(
-                'items-center',
-                dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
-              )}
-            >
-              {dailyProfit > 0 ? (
-                <ArrowUpIcon className={'h-4 w-4'} />
-              ) : (
-                <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-              )}
-              {formatMoney(dailyProfit)} today
-            </Row>
-          </button>
-        </Row>
-      </Col>
-
+            {dailyProfit > 0 ? '+' : ''}
+            {formatMoney(dailyProfit)} today
+          </Row>
+        </button>
+      </Row>
       {open && (
         <DailyProfitModal
           setOpen={setOpen}
@@ -83,6 +75,6 @@ export const InvestmentValueCard = memo(function (props: {
           investment={investment}
         />
       )}
-    </>
+    </Col>
   )
 })
