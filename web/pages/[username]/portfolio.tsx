@@ -18,9 +18,6 @@ import {
 import { Col } from 'web/components/layout/col'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { orderBy, sumBy } from 'lodash'
-import { TbArrowsExchange2 } from 'react-icons/tb'
-import { MdOutlineSell } from 'react-icons/md'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { QuestType } from 'common/quest'
 import { ENV_CONFIG } from 'common/envs/constants'
 import clsx from 'clsx'
@@ -37,11 +34,17 @@ import { Avatar } from 'web/components/widgets/avatar'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { useState } from 'react'
-import { ArrowRightIcon, ArrowUpIcon } from '@heroicons/react/solid'
+import { ReactNode, useState } from 'react'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
+import {
+  FaArrowRightArrowLeft,
+  FaArrowTrendDown,
+  FaArrowTrendUp,
+} from 'react-icons/fa6'
+import { contractPathWithoutContract } from 'common/contract'
 
 export const getStaticProps = async (props: {
   params: {
@@ -168,17 +171,7 @@ function UserPortfolioInternal(props: {
                 color={'gray-white'}
                 onClick={() => setShowBalanceChanges(true)}
               >
-                <Row
-                  className={clsx(
-                    changeToday > 0 ? 'text-teal-600' : 'text-ink-600',
-                    'items-center'
-                  )}
-                >
-                  {changeToday > 0 ? (
-                    <ArrowUpIcon className={'h-4 w-4'} />
-                  ) : (
-                    <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-                  )}
+                <Row className={clsx('items-center')}>
                   {formatMoney(changeToday)} today
                 </Row>
               </button>
@@ -236,10 +229,6 @@ const BalanceChangesModal = (props: {
     balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
     'amount'
   )
-  const col1 = 'col-span-3'
-  const col2 = 'col-span-4'
-  const col3 = 'col-span-9'
-  const mainCol = 'grid-cols-16 w-full grid'
   return (
     <Modal open={true} setOpen={setOpen} className={MODAL_CLASS}>
       <Col className={'w-full justify-center'}>
@@ -250,132 +239,220 @@ const BalanceChangesModal = (props: {
           </div>
           <div className="col-span-6">
             <div>{formatMoney(user.balance)}</div>
-            <Row
-              className={clsx(
-                'items-center',
-                changeToday > 0 ? 'text-teal-600' : 'text-ink-600'
-              )}
-            >
-              {formatMoney(changeToday)}
+            <Row className={clsx('items-center')}>
+              {formatMoney(changeToday).replace('-', '')}
             </Row>
           </div>
         </div>
+        <Col className={'gap-4 border-t-2 pt-4'}>
+          {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
+            const { type } = change
 
-        <div className={mainCol}>
-          <span className={clsx(col1, 'text-ink-400 text-sm')}>Amount</span>
-          <span className={clsx(col2, 'text-ink-400 text-sm')}>Type</span>
-          <span className={clsx(col3, 'text-ink-400 text-sm')}>Title</span>
-        </div>
-
-        {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
-          const { type } = change
-
-          // BetBalanceChanges
-          if (['sell_shares', 'create_bet', 'redeem_shares'].includes(type)) {
-            const { amount, contract, answer, bet, type } =
-              change as BetBalanceChange
-            const { outcome } = bet
-            const { slug, question } = contract
-            const niceAmount =
-              ENV_CONFIG.moneyMoniker + shortFormatNumber(Math.round(amount))
-            if (getMoneyNumber(amount) === 0) return null
-            return (
-              <div key={change.createdTime} className={mainCol}>
-                <div
-                  className={clsx(
-                    col1,
-                    ' inline-flex',
-                    amount > 0 ? 'text-teal-600' : 'text-ink-600'
-                  )}
-                >
-                  {niceAmount}
-                  {type === 'redeem_shares' ? (
-                    <Tooltip text={'Redemption'} className={'my-auto '}>
-                      <TbArrowsExchange2 className={'h-4 w-4'} />
-                    </Tooltip>
-                  ) : type === 'sell_shares' ? (
-                    <Tooltip text={'Sell'} className={'my-auto '}>
-                      <MdOutlineSell className={'h-4 w-4'} />
-                    </Tooltip>
-                  ) : null}
-                </div>
-                <div className={clsx(col2, 'truncate')}>
-                  {outcome}
-                  {answer ? ` ${answer.text}` : ''}
-                </div>
-                <Link
-                  href={'/market/' + slug}
-                  className={clsx(col3, ' truncate', linkClass)}
-                >
-                  {question}
-                </Link>
-              </div>
-            )
-          }
-
-          // TxnBalanceChanges
-          else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
-            const txnChange = change as TxnBalanceChange
-            const {
-              contract,
-              amount,
-              createdTime,
-              user: changeUser,
-            } = txnChange
-
-            return (
-              <div key={createdTime} className={mainCol}>
-                <div
-                  className={clsx(
-                    col1,
-                    'inline-flex',
-                    amount > 0 ? 'text-teal-600' : 'text-ink-600'
-                  )}
-                >
-                  {formatMoney(amount)}
-                </div>
-                <div className={clsx(col2)}>
-                  {txnTypeToDescription(change.type)}
-                </div>
-
-                {contract ? (
-                  <Link
-                    href={contract.creatorUsername + '/' + contract.slug}
-                    className={clsx(col3, ' truncate', linkClass)}
-                  >
-                    {txnTitle(txnChange)}
-                  </Link>
-                ) : changeUser ? (
-                  <Link
-                    href={'/' + changeUser.username}
-                    className={clsx(col3, ' truncate', linkClass)}
-                  >
-                    {txnTitle(txnChange)}
-                  </Link>
-                ) : (
-                  <div className={clsx(col3, ' truncate')}>
-                    {txnTitle(txnChange)}
-                  </div>
-                )}
-              </div>
-            )
-          }
-        })}
+            // BetBalanceChanges
+            if (['sell_shares', 'create_bet', 'redeem_shares'].includes(type)) {
+              return (
+                <BetBalanceChangeRow
+                  key={change.createdTime}
+                  change={change as BetBalanceChange}
+                />
+              )
+            }
+            // TxnBalanceChanges
+            else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+              return (
+                <TxnBalanceChangeRow
+                  key={change.createdTime}
+                  change={change as TxnBalanceChange}
+                />
+              )
+            }
+          })}
+        </Col>
       </Col>
     </Modal>
+  )
+}
+function ChangeIcon(props: {
+  slug: string
+  symbol: string | ReactNode
+  className: string
+}) {
+  const { symbol, slug, className } = props
+  return (
+    <div className="relative">
+      <Link href={slug} onClick={(e) => e.stopPropagation}>
+        <div className={clsx('h-10 w-10 rounded-full', className)} />
+        <div className="absolute bottom-1.5 left-[10px] text-lg">{symbol}</div>
+      </Link>
+    </div>
+  )
+}
+
+const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
+  const { change } = props
+  const { amount, contract, answer, bet, type } = change
+  const { outcome } = bet
+  const { slug, question, creatorUsername } = contract
+  const niceAmount =
+    ENV_CONFIG.moneyMoniker +
+    shortFormatNumber(Math.round(amount)).replace('-', '')
+  const direction =
+    type === 'redeem_shares'
+      ? 'sideways'
+      : type === 'sell_shares' && outcome === 'YES'
+      ? 'down'
+      : type === 'sell_shares' && outcome === 'NO'
+      ? 'up'
+      : outcome === 'YES'
+      ? 'up'
+      : 'down'
+  if (getMoneyNumber(amount) === 0) return null
+  return (
+    <Row className={'gap-2'}>
+      <Col>
+        <ChangeIcon
+          slug={contract.slug}
+          symbol={
+            <div
+              className={clsx(
+                direction === 'sideways' ? 'mb-1.5 ml-0.5' : 'mb-1'
+              )}
+            >
+              {direction === 'up' ? (
+                <FaArrowTrendUp className={'h-5 w-5 '} />
+              ) : direction === 'down' ? (
+                <FaArrowTrendDown className={'h-5 w-5'} />
+              ) : (
+                <FaArrowRightArrowLeft className={'h-4 w-4'} />
+              )}
+            </div>
+          }
+          className={
+            direction === 'up'
+              ? 'bg-teal-500'
+              : direction === 'down'
+              ? 'bg-scarlet-400'
+              : 'bg-blue-400'
+          }
+        />
+      </Col>
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          <Link
+            href={contractPathWithoutContract(creatorUsername, slug)}
+            className={clsx('line-clamp-1', linkClass)}
+          >
+            {question}
+          </Link>
+          <span className={'inline-flex whitespace-nowrap'}>
+            {amount > 0 ? '+ ' : ''}
+            {niceAmount}
+          </span>
+        </Row>
+        <Row>
+          <div className={clsx('text-ink-500 line-clamp-1')}>
+            {type === 'redeem_shares'
+              ? `Redeem shares`
+              : type === 'sell_shares'
+              ? `Sell ${outcome} shares`
+              : `Buy ${outcome}`}
+            {answer ? ` on ${answer.text}` : ''}
+          </div>
+        </Row>
+      </Col>
+    </Row>
+  )
+}
+
+const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
+  const { change } = props
+  const txnChange = change
+  const { contract, amount, user: changeUser } = txnChange
+  const reasonToBgClassNameMap: {
+    [key in TxnType]: string
+  } = {
+    QUEST_REWARD: 'bg-amber-400',
+    BETTING_STREAK_BONUS: 'bg-red-400',
+    CREATE_CONTRACT_ANTE: 'bg-blue-400',
+    CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
+    CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    MARKET_BOOST_REDEEM: 'bg-purple-200',
+    MARKET_BOOST_CREATE: 'bg-purple-400',
+    LEAGUE_PRIZE: 'bg-indigo-400',
+    BOUNTY_POSTED: 'bg-ink-1000',
+    BOUNTY_AWARDED: 'bg-teal-600',
+    MANA_PAYMENT: 'bg-teal-400',
+    LOAN: 'bg-amber-500',
+    UNIQUE_BETTOR_BONUS: 'bg-fuchsia-400',
+  }
+  return (
+    <Row className={'gap-2'}>
+      <Col>
+        <ChangeIcon
+          slug={contract?.slug ?? changeUser?.username ?? ''}
+          symbol={'🎁'}
+          className={reasonToBgClassNameMap[txnChange.type]}
+        />
+      </Col>
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          {contract ? (
+            <Link
+              href={contractPathWithoutContract(
+                contract.creatorUsername,
+                contract.slug
+              )}
+              className={clsx('line-clamp-1', linkClass)}
+            >
+              {txnTitle(txnChange)}
+            </Link>
+          ) : changeUser ? (
+            <Link
+              href={'/' + changeUser.username}
+              className={clsx('line-clamp-1', linkClass)}
+            >
+              {txnTitle(txnChange)}
+            </Link>
+          ) : (
+            <div className={clsx(' truncate')}>
+              {txnTitle(txnChange) ?? txnTypeToDescription(change.type)}
+            </div>
+          )}
+          <span className={clsx('shrink-0')}>
+            {amount > 0 ? '+ ' : ''}
+            {formatMoney(amount).replace('-', '')}
+          </span>
+        </Row>
+        <Row className={'text-ink-500'}>
+          {txnTypeToDescription(change.type)}
+        </Row>
+      </Col>
+    </Row>
   )
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
   const { type, contract, questType } = change
 
-  if (type === 'QUEST_REWARD' && questType) {
-    return questTypeToDescription(questType)
-  }
   if (change.user) {
-    return change.user.username
+    return <span>{change.user.username}</span>
   }
-  return contract?.question ?? ''
+  switch (type) {
+    case 'QUEST_REWARD':
+      return <span>{questType ? questTypeToDescription(questType) : ''}</span>
+    case 'BETTING_STREAK_BONUS':
+      return !contract ? (
+        <span>Prediction streak bonus</span>
+      ) : (
+        <span>{contract?.question}</span>
+      )
+    case 'LOAN':
+      return <span>Loan</span>
+    case 'MARKET_BOOST_REDEEM':
+      return <span>Ad claim</span>
+    default:
+      return <span>{contract?.question}</span>
+  }
 }
 const questTypeToDescription = (questType: QuestType) => {
   switch (questType) {
@@ -399,15 +476,15 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'CREATE_CONTRACT_ANTE':
       return <span>Ante</span>
     case 'UNIQUE_BETTOR_BONUS':
-      return <span>New trader</span>
+      return <span>Trader bonus</span>
     case 'BETTING_STREAK_BONUS':
-      return <span>Streak</span>
+      return <span>Quest</span>
     case 'SIGNUP_BONUS':
       return <span>Signup</span>
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return <span>Unresolve</span>
     case 'MARKET_BOOST_REDEEM':
-      return <span>Ad claim</span>
+      return <span></span>
     case 'MARKET_BOOST_CREATE':
       return <span>Ad create</span>
     case 'QUEST_REWARD':
@@ -421,7 +498,7 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'MANA_PAYMENT':
       return <span>Managram</span>
     case 'LOAN':
-      return <span>Loan</span>
+      return <span></span>
     default:
       return <span>{txnCategory}</span>
   }

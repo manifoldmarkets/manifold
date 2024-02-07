@@ -110,13 +110,13 @@ export function DailyProfitModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
       <div className="bg-canvas-0 text-ink-1000 rounded-lg px-4 py-2">
-        <Col className={'mb-2'}>
+        <Col className={'mb-2 ml-2'}>
           <div className="grid w-full grid-cols-10 text-xl">
-            <div className="col-span-4">
-              <div>Invested</div>
-              <div>Daily profit</div>
+            <div className="col-span-5">
+              <div>Investment value</div>
+              <div>Unrealized profit</div>
             </div>
-            <div className="col-span-6">
+            <div className="col-span-5">
               <div>{formatMoney(investment)}</div>
               <div
                 className={clsx(
