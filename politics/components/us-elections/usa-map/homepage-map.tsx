@@ -3,7 +3,7 @@ import { Contract } from 'common/contract'
 import { MapContractsDictionary } from 'common/politics/elections-data'
 import { Congress } from 'politics/public/custom-components/congress'
 import { WhiteHouse } from 'politics/public/custom-components/whiteHouse'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useState, useEffect } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
@@ -20,13 +20,6 @@ export function HomepageMap(props: {
   rawSenateStateContracts: MapContractsDictionary
 }) {
   const { rawPresidencyStateContracts, rawSenateStateContracts } = props
-  const [targetState, setTargetState] = useState<string | undefined | null>(
-    'GA'
-  )
-
-  const [hoveredState, setHoveredState] = useState<string | undefined | null>(
-    undefined
-  )
 
   const presidencyContractsDictionary = Object.keys(
     rawPresidencyStateContracts
@@ -45,6 +38,14 @@ export function HomepageMap(props: {
     {} as MapContractsDictionary
   )
   const [mode, setMode] = useState<MapMode>('presidency')
+
+  const [targetState, setTargetState] = useState<string | undefined | null>(
+    'GA'
+  )
+
+  const [hoveredState, setHoveredState] = useState<string | undefined | null>(
+    undefined
+  )
 
   function handleClick(newTargetState: string | undefined) {
     if (targetState && newTargetState == targetState) {
