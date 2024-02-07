@@ -163,7 +163,7 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'CREATE_CONTRACT_ANTE':
       return <span>Ante</span>
     case 'UNIQUE_BETTOR_BONUS':
-      return <span>Traders</span>
+      return <span>New trader</span>
     case 'BETTING_STREAK_BONUS':
       return <span>Streak</span>
     case 'SIGNUP_BONUS':
@@ -179,7 +179,7 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'LEAGUE_PRIZE':
       return <span>Leagues</span>
     case 'BOUNTY_POSTED':
-      return <span>Bounty posted</span>
+      return <span>Ante</span>
     case 'BOUNTY_AWARDED':
       return <span>Bounty awarded</span>
     case 'MANA_PAYMENT':
