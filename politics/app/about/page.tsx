@@ -104,7 +104,7 @@ export default function AboutPage() {
           />
         </div>
 
-        <div className="mb-6 mt-2 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
+        <div className="mb-6 mt-2 grid grid-cols-2 gap-4 sm:grid-cols-3 md:flex">
           {!isNative && (
             <SocialLink
               Icon={!isMobile || isIOS() ? TbBrandApple : TbBrandAndroid}
@@ -141,13 +141,6 @@ export default function AboutPage() {
           >
             Email
           </SocialLink>
-          <SocialLink
-            Icon={TbBrandGithub}
-            href="https://github.com/manifoldmarkets/manifold"
-            target="_blank"
-          >
-            Github
-          </SocialLink>
         </div>
 
         <iframe
@@ -173,7 +166,7 @@ const SocialLink = (props: {
       href={href}
       onClick={onClick}
       target={target}
-      className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 mt-4 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
+      className="bg-canvas-0 text-ink-800 hover:text-primary-800 hover:bg-primary-100 mt-4 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
     >
       <Icon className="h-6 w-6" />
       {children}
