@@ -2,13 +2,13 @@ import * as admin from 'firebase-admin'
 import { type APIHandler } from './helpers/endpoint'
 import { removeUndefinedProps } from 'common/util/object'
 
-export const saveTwitchCredentials: APIHandler<'save-twitch'> = async (
+export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
   props,
   auth
 ) => {
   await firestore
-    .doc(`private-users/${auth.uid}/twitchInfo`)
-    .update(removeUndefinedProps(props.twitchInfo))
+    .doc(`private-users/${auth.uid}/notificationPreferences`)
+    .update(removeUndefinedProps(props))
 }
 
 const firestore = admin.firestore()

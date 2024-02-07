@@ -32,6 +32,8 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { PrivateUser } from 'common/user'
+import { notification_preferences } from 'common/user-notification-preferences'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -98,7 +100,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
   bet: {
     method: 'POST',
     visibility: 'public',
@@ -194,6 +195,18 @@ export const API = (_apiTypeCheck = {
     cache: 'no-cache',
     returns: {} as Group,
     props: z.object({ id: z.string() }).strict(),
+  },
+  'group/:slug/block': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ slug: z.string() }).strict(),
+  },
+  'group/:slug/unblock': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ slug: z.string() }).strict(),
   },
   // deprecated. use /markets?groupId= instead
   'group/by-id/:id/markets': {
@@ -346,6 +359,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'market/:contractId/block': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ contractId: z.string() }).strict(),
+  },
+  'market/:contractId/unblock': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ contractId: z.string() }).strict(),
+  },
   leagues: {
     method: 'GET',
     visibility: 'public',
@@ -472,6 +497,38 @@ export const API = (_apiTypeCheck = {
     props: z.object({}),
     returns: {} as LiteUser,
   },
+  'me/private': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}),
+    returns: {} as PrivateUser,
+  },
+  'update-private-user': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z
+      .object({
+        email: z.string().email().optional(),
+        apiKey: z.string().optional(),
+        pushToken: z.string().optional(),
+        rejectedPushNotificationsOn: z.number().optional(),
+        interestedInPushNotifications: z.boolean().optional(),
+        lastPromptedToEnablePushNotifications: z.number().optional(),
+        hasSeenAppBannerInNotificationsOn: z.number().optional(),
+        installedAppPlatforms: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'delete-account': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      username: z.string(), // just checking - are you sure?
+    }),
+  },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
@@ -515,6 +572,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'block-user': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }).strict(),
+  },
+  'unblock-user': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }).strict(),
+  },
   'save-twitch': {
     method: 'POST',
     visibility: 'undocumented',
@@ -522,11 +591,25 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         twitchInfo: z.object({
-          twitchName: z.string(),
-          controlToken: z.string(),
+          twitchName: z.string().optional(),
+          controlToken: z.string().optional(),
+          botEnabled: z.boolean().optional(),
+          needsRelinking: z.boolean().optional(),
         }),
       })
       .strict(),
+  },
+  'set-push-token': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ pushToken: z.string() }).strict(),
+  },
+  'update-notif-settings': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.any() as z.ZodType<Partial<notification_preferences>>,
   },
   headlines: {
     method: 'GET',

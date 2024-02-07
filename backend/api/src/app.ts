@@ -137,11 +137,17 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
-
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-
 import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getCurrentPrivateUser } from './get-current-private-user'
+import { blockUser, unblockUser } from './block-user'
+import { blockGroup, unblockGroup } from './block-group'
+import { deleteAccount } from './delete-account'
+import { updatePrivateUser } from './update-private-user'
+import { blockMarket, unblockMarket } from './block-contract'
+import { setPushToken } from './push-token'
+import { updateNotifSettings } from './update-notif-settings'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -202,6 +208,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
+  'group/:slug/block': blockGroup,
+  'group/:slug/unblock': unblockGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
     getMarkets({ groupId: id, limit }, ...rest),
@@ -216,6 +224,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/add-bounty': addBounty,
   'market/:contractId/award-bounty': awardBounty,
   'market/:contractId/answer': createAnswerCPMM,
+  'market/:contractId/block': blockMarket,
+  'market/:contractId/unblock': unblockMarket,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,
@@ -225,13 +235,20 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   manalink: createManalink,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
+  'me/private': getCurrentPrivateUser,
+  'update-private-user': updatePrivateUser,
+  'delete-account': deleteAccount,
   'user/:username': getUser,
   'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
+  'block-user': blockUser,
+  'unblock-user': unblockUser,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
+  'set-push-token': setPushToken,
+  'update-notif-settings': updateNotifSettings,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,

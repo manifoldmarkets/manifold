@@ -19,7 +19,6 @@ import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-import { deleteField } from 'firebase/firestore'
 import { uniq } from 'lodash'
 import {
   createContext,
@@ -34,7 +33,6 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
@@ -42,6 +40,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { api } from 'web/lib/firebase/api'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',
@@ -457,11 +456,7 @@ export const PushNotificationsBanner = () => {
             size={'2xs'}
             className={'ml-2 inline-block whitespace-nowrap'}
             onClick={() => {
-              updatePrivateUser(privateUser.id, {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                interestedInPushNotifications: deleteField(),
-              })
+              updatePrivateUser({ interestedInPushNotifications: false })
             }}
           >
             Turn on
@@ -589,13 +584,10 @@ export const changeSetting = (props: {
   const success = 'Changed Notification Settings!'
   toast
     .promise(
-      updatePrivateUser(privateUser.id, {
-        notificationPreferences: {
-          ...privateUser.notificationPreferences,
-          [subscriptionTypeKey]: destinations.includes(setting)
-            ? destinations.filter((d) => d !== setting)
-            : uniq([...destinations, setting]),
-        },
+      api('update-notif-settings', {
+        [subscriptionTypeKey]: destinations.includes(setting)
+          ? destinations.filter((d) => d !== setting)
+          : uniq([...destinations, setting]),
       }),
       {
         success,
