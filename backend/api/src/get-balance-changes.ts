@@ -18,8 +18,10 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
   const { after, userId } = props
-  const betBalanceChanges = await getBetBalanceChanges(after, userId)
-  const txnBalanceChanges = await getTxnBalanceChanges(after, userId)
+  const [betBalanceChanges, txnBalanceChanges] = await Promise.all([
+    getBetBalanceChanges(after, userId),
+    getTxnBalanceChanges(after, userId),
+  ])
   return orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
     (change) => change.createdTime,
