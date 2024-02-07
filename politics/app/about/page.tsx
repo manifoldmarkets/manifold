@@ -67,12 +67,12 @@ export default function AboutPage() {
               </>
             }
           >
-            No, not on manifold.politics.
-            <br />
-            However, our main site,
+            <div className="pb-2"> No, not on Manifold Politics.</div>
+            However, our main site, {''}
             <a
               className="text-primary-700 hover:underline"
               href="https://manifold.markets"
+              target="_blank"
             >
               Manifold Markets
             </a>
@@ -173,7 +173,7 @@ const SocialLink = (props: {
       href={href}
       onClick={onClick}
       target={target}
-      className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
+      className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 mt-4 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
     >
       <Icon className="h-6 w-6" />
       {children}

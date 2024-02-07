@@ -32,10 +32,12 @@ export const ExpandSection = (props: {
       <details className="group flex flex-col gap-2">
         <summary className="flex list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
           <Row className="items-center text-lg font-semibold">{title}</Row>
-          <ChevronDoubleDownIcon
-            className="ml-auto inline-block h-4 w-4 transition group-open:-rotate-180"
-            aria-hidden
-          />
+          <span className="ml-auto inline-block h-4 w-4 flex-shrink-0">
+            <ChevronDoubleDownIcon
+              className="h-full w-full transition group-open:-rotate-180"
+              aria-hidden
+            />
+          </span>
         </summary>
         <div className="text-ink-900 px-4 pb-3">{children}</div>
       </details>
