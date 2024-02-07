@@ -11,6 +11,7 @@ import { StateDataType } from './usa-map-data'
 type TextCoordinates = { x: number; y: number }
 
 export const OFFSET_TEXT_COLOR = '#9E9FBD'
+export const DEFAULT_STATE_FILL = '#e7dfe6'
 
 export function USAState(props: {
   state: string
@@ -35,7 +36,7 @@ export function USAState(props: {
   } = props
 
   const { dimensions, textCoordinates, abbreviation, line } = stateData
-  const fill = props.fill ?? '#e7dfe6'
+  const fill = props.fill ?? DEFAULT_STATE_FILL
   return (
     <>
       <path

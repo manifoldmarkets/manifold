@@ -2,18 +2,17 @@
 // MIT License
 
 import clsx from 'clsx'
-import { MultiContract } from 'common/contract'
-import { MouseEvent } from 'react'
-import { DATA } from './usa-map-data'
-import { USAState } from './usa-state'
-import { Col } from 'web/components/layout/col'
-import { ElectoralCollegeVisual } from './electoral-college-visual'
-import { Spacer } from 'web/components/layout/spacer'
 import { MapContractsDictionary } from 'common/politics/elections-data'
-import { probToColor } from './state-election-map'
+import { MouseEvent } from 'react'
+import { Col } from 'web/components/layout/col'
+import { StateProps } from './presidential-state'
+import { DEM_DARK_HEX, REP_DARK_HEX } from './state-election-map'
+import { DATA } from './usa-map-data'
+import { DEFAULT_STATE_FILL } from './usa-state'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
+const PATTERN_SIZE = 5
 
 export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,
@@ -28,6 +27,7 @@ export const USAMap = (props: {
   onMouseLeave: () => void
   targetState: string | undefined | null
   hoveredState: string | undefined | null
+  CustomStateComponent: React.ComponentType<StateProps>
 }) => {
   const {
     hideStateTitle,
@@ -37,6 +37,7 @@ export const USAMap = (props: {
     onMouseLeave,
     targetState,
     hoveredState,
+    CustomStateComponent,
   } = props
 
   return (
@@ -51,40 +52,83 @@ export const USAMap = (props: {
           viewBox="0 0 959 593"
           preserveAspectRatio="xMidYMid meet"
         >
+          <defs>
+            <pattern
+              id="crossHatchRed"
+              patternUnits="userSpaceOnUse"
+              width={PATTERN_SIZE}
+              height={PATTERN_SIZE}
+            >
+              <rect
+                width={PATTERN_SIZE}
+                height={PATTERN_SIZE}
+                fill={DEFAULT_STATE_FILL}
+              />
+              {/* Horizontal line */}
+              <line
+                x1="0"
+                y1="0"
+                x2={PATTERN_SIZE}
+                y2={PATTERN_SIZE}
+                stroke={REP_DARK_HEX}
+                strokeWidth="1"
+              />
+              {/* Vertical line */}
+              <line
+                x1={PATTERN_SIZE}
+                y1="0"
+                x2="0"
+                y2={PATTERN_SIZE}
+                stroke={REP_DARK_HEX}
+                strokeWidth="1"
+              />
+            </pattern>
+            <pattern
+              id="crossHatchBlue"
+              patternUnits="userSpaceOnUse"
+              width={PATTERN_SIZE}
+              height={PATTERN_SIZE}
+            >
+              {/* Horizontal line */}
+              <rect
+                width={PATTERN_SIZE}
+                height={PATTERN_SIZE}
+                fill={DEFAULT_STATE_FILL}
+              />
+              <line
+                x1="0"
+                y1="0"
+                x2={PATTERN_SIZE}
+                y2={PATTERN_SIZE}
+                stroke={DEM_DARK_HEX}
+                strokeWidth="1"
+              />
+              {/* Vertical line */}
+              <line
+                x1={PATTERN_SIZE}
+                y1="0"
+                x2="0"
+                y2={PATTERN_SIZE}
+                stroke={DEM_DARK_HEX}
+                strokeWidth="1"
+              />
+            </pattern>
+          </defs>
           <g className="outlines">
             {Object.entries(DATA).map(([stateKey, data]) => {
               const stateContract = mapContractsDictionary[stateKey]
-              if (!!stateContract) {
-                return (
-                  <USAState
-                    key={stateKey}
-                    stateData={data}
-                    hideStateTitle={hideStateTitle}
-                    state={stateKey}
-                    fill={probToColor(stateContract)}
-                    onClickState={() => {
-                      handleClick(stateKey)
-                    }}
-                    onMouseEnterState={() => {
-                      onMouseEnter(stateKey)
-                    }}
-                    onMouseLeaveState={() => {
-                      onMouseLeave()
-                    }}
-                    selected={!!targetState && targetState == stateKey}
-                    hovered={!!hoveredState && hoveredState == stateKey}
-                  />
-                )
-              }
               return (
-                <USAState
+                <CustomStateComponent
                   key={stateKey}
-                  stateData={data}
+                  stateKey={stateKey}
+                  data={data}
+                  stateContract={stateContract}
                   hideStateTitle={hideStateTitle}
-                  state={stateKey}
-                  selected={!!targetState && targetState == stateKey}
-                  hovered={!!hoveredState && hoveredState == stateKey}
-              
+                  handleClick={handleClick}
+                  onMouseEnter={onMouseEnter}
+                  onMouseLeave={onMouseLeave}
+                  targetState={targetState}
+                  hoveredState={hoveredState}
                 />
               )
             })}
