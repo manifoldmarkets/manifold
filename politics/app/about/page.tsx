@@ -3,7 +3,6 @@ import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useState } from 'react'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
-import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
@@ -19,12 +18,12 @@ import {
   TbBrandAndroid,
   TbBrandApple,
   TbBrandDiscord,
-  TbBrandGithub,
   TbBrandTwitter,
   TbGraph,
 } from 'react-icons/tb'
 import { PoliticsPage } from 'politics/components/politics-page'
 import { PoliticsExplainerPanel } from 'politics/components/politics-explainer-panel'
+import { PoliticsLogo } from 'politics/components/nav/politics-logo'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -46,11 +45,11 @@ export default function AboutPage() {
 
   return (
     <PoliticsPage trackPageView={'about page'}>
-      <SEO title="About" description="About Manifold" />
+      <SEO title="About" description="About Manifold Politics" />
 
       <Col className="p-4">
         <Title className="hidden sm:flex">About</Title>
-        <ManifoldLogo className="mb-4 flex sm:hidden" />
+        <PoliticsLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
           Manifold Politics is a play-money prediction market platform where you
