@@ -25,12 +25,9 @@ import { SEO } from 'web/components/SEO'
 import Head from 'next/head'
 import { Row } from 'web/components/layout/row'
 import { BackButton } from 'web/components/contract/back-button'
-import { UserLink } from 'web/components/widgets/user-link'
 import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { Avatar } from 'web/components/widgets/avatar'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
@@ -44,6 +41,7 @@ import {
   FaArrowTrendUp,
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 
 export const getStaticProps = async (props: {
   params: {
@@ -99,7 +97,6 @@ function UserPortfolioInternal(props: {
   balanceChanges: AnyBalanceChangeType[]
 }) {
   const { user, shouldIgnoreUser, balanceChanges } = props
-  const isMobile = useIsMobile()
   const [showBalanceChanges, setShowBalanceChanges] = useState(false)
   const [showAddFunds, setShowAddFunds] = useState(false)
   const { ref: titleRef } = useHeaderIsStuck()
@@ -125,44 +122,26 @@ function UserPortfolioInternal(props: {
       )}
 
       <Col className="relative mt-1">
-        {isMobile ? (
-          <Row
-            className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
-            }
-            ref={titleRef}
-          >
-            <BackButton />
+        <Row
+          className={
+            'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2'
+          }
+          ref={titleRef}
+        >
+          <BackButton />
 
-            <Row className={'items-center gap-2'}>
-              <Avatar
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                size={'md'}
-                className="bg-ink-1000"
-              />
-              <UserLink user={user} noLink />
-            </Row>
+          <Row className={'items-center gap-2'}>
+            <Link
+              className={clsx('text-ink-500', linkClass)}
+              href={'/' + user.username}
+            >
+              <Row className={'items-center gap-1'}>
+                See profile
+                <ArrowRightIcon className={'h-4 w-4'} />
+              </Row>
+            </Link>
           </Row>
-        ) : (
-          <Row
-            className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2'
-            }
-            ref={titleRef}
-          >
-            <BackButton />
-
-            <Row className={'items-center gap-2'}>
-              <Avatar
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                size={'md'}
-                className="bg-ink-1000"
-              />
-            </Row>
-          </Row>
-        )}
+        </Row>
         <Col className={'gap-4 sm:mt-4 sm:flex-row'}>
           <Row
             className={
@@ -184,15 +163,6 @@ function UserPortfolioInternal(props: {
               </button>
             </Col>
             <Col className={'items-end justify-end'}>
-              {/*<Link*/}
-              {/*  className={'text-ink-400 text-sm'}*/}
-              {/*  href={'/' + user.username}*/}
-              {/*>*/}
-              {/*  <Row className={'items-center gap-1'}>*/}
-              {/*    See profile*/}
-              {/*    <ArrowRightIcon className={'h-4 w-4'} />*/}
-              {/*  </Row>*/}
-              {/*</Link>*/}
               <Button
                 color="gray-outline"
                 onClick={() => setShowAddFunds(true)}
