@@ -44,7 +44,7 @@ export const InvestmentValueCard = memo(function (props: {
       return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [data])
   )
-
+  const percentChange = dailyProfit / investment
   return (
     <Col>
       <span className={'text-5xl'}>{formatMoney(investment)}</span>
@@ -55,19 +55,21 @@ export const InvestmentValueCard = memo(function (props: {
             setOpen(true)
           }, DAILY_INVESTMENT_CLICK_EVENT)}
         >
-          <Row
-            className={clsx(
-              'mt-1 items-center',
-              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
-            )}
-          >
-            {dailyProfit > 0 ? (
-              <ArrowUpIcon className={'h-4 w-4'} />
-            ) : (
-              <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-            )}
-            {formatPercent(dailyProfit / investment)} today
-          </Row>
+          {investment !== 0 && (
+            <Row
+              className={clsx(
+                'mt-1 items-center',
+                dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+              )}
+            >
+              {dailyProfit > 0 ? (
+                <ArrowUpIcon className={'h-4 w-4'} />
+              ) : dailyProfit < 0 ? (
+                <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
+              ) : null}
+              {formatPercent(percentChange)} today
+            </Row>
+          )}
         </button>
       </Row>
       {open && (

@@ -155,15 +155,17 @@ function UserPortfolioInternal(props: {
                 color={'gray-white'}
                 onClick={() => setShowBalanceChanges(true)}
               >
-                <Row className={clsx('items-center')}>
-                  {formatMoney(changeToday).replace('-', '')}{' '}
-                  {changeToday > 0
-                    ? 'earned '
-                    : changeToday < 0
-                    ? 'spent '
-                    : ''}
-                  today
-                </Row>
+                {changeToday !== 0 && (
+                  <Row className={clsx('items-center')}>
+                    {formatMoney(changeToday).replace('-', '')}{' '}
+                    {changeToday > 0
+                      ? 'earned '
+                      : changeToday < 0
+                      ? 'spent '
+                      : ''}
+                    today
+                  </Row>
+                )}
               </button>
             </Col>
             <Col className={'items-end justify-end'}>
