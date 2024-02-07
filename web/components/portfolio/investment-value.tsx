@@ -10,9 +10,10 @@ import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
+import { ArrowUpIcon } from '@heroicons/react/solid'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
@@ -60,8 +61,12 @@ export const InvestmentValueCard = memo(function (props: {
               dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
             )}
           >
-            {dailyProfit > 0 ? '+' : ''}
-            {formatMoney(dailyProfit)} today
+            {dailyProfit > 0 ? (
+              <ArrowUpIcon className={'h-4 w-4'} />
+            ) : (
+              <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
+            )}
+            {formatPercent(dailyProfit / investment)} today
           </Row>
         </button>
       </Row>

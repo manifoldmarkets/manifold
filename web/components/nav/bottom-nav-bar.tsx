@@ -40,7 +40,7 @@ function getNavigation(user: User) {
     { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
       name: 'Profile',
-      href: `/${user.username}`,
+      href: `/${user.username}/portfolio`,
     },
     {
       name: 'Notifs',

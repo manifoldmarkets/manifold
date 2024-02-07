@@ -3,7 +3,11 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  shortFormatNumber,
+} from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
@@ -19,6 +23,7 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { Table } from '../widgets/table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { ArrowUpIcon } from '@heroicons/react/solid'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -118,12 +123,16 @@ export function DailyProfitModal(props: {
           <span className={'ml-1'}>Profit today</span>
           <span
             className={clsx(
-              'mb-1 text-2xl',
+              'mb-1 inline-flex items-center text-2xl',
               dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
             )}
           >
-            {dailyProfit > 0 ? '+' : ''}
-            {formatMoney(dailyProfit)}
+            {dailyProfit > 0 ? (
+              <ArrowUpIcon className={'mr-1 h-4 w-4'} />
+            ) : (
+              <ArrowUpIcon className={'mr-1 h-4 w-4 rotate-180 transform'} />
+            )}
+            {formatPercent(dailyProfit / investment)}
           </span>
         </Col>
       </Row>
