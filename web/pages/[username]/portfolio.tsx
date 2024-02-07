@@ -42,6 +42,8 @@ import {
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
 import { ArrowRightIcon } from '@heroicons/react/solid'
+import { UserBetsTable } from 'web/components/bet/user-bets-table'
+import { ScaleIcon } from '@heroicons/react/outline'
 
 export const getStaticProps = async (props: {
   params: {
@@ -135,17 +137,17 @@ function UserPortfolioInternal(props: {
               className={clsx('text-ink-500', linkClass)}
               href={'/' + user.username}
             >
-              <Row className={'items-center gap-1'}>
-                See profile
-                <ArrowRightIcon className={'h-4 w-4'} />
+              <Row className={'items-center gap-1 px-3'}>
+                Profile
+                <ArrowRightIcon className={'h-5 w-5'} />
               </Row>
             </Link>
           </Row>
         </Row>
-        <Col className={'gap-4 sm:mt-4 sm:flex-row'}>
+        <Col className={'mb-2 gap-4 px-2 sm:mt-4 sm:flex-row'}>
           <Row
             className={
-              'bg-canvas-0 mx-4 min-w-[45%] max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-0 min-w-[45%] max-w-sm justify-between rounded-md p-2'
             }
           >
             <Col>
@@ -158,7 +160,13 @@ function UserPortfolioInternal(props: {
                 onClick={() => setShowBalanceChanges(true)}
               >
                 <Row className={clsx('items-center')}>
-                  {formatMoney(changeToday).replace('-', '')} today
+                  {formatMoney(changeToday).replace('-', '')}{' '}
+                  {changeToday > 0
+                    ? 'earned '
+                    : changeToday < 0
+                    ? 'spent '
+                    : ''}
+                  today
                 </Row>
               </button>
             </Col>
@@ -175,7 +183,7 @@ function UserPortfolioInternal(props: {
           </Row>
           <Row
             className={
-              'bg-canvas-0 mx-4 min-w-[45%] max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-0 min-w-[45%] max-w-sm justify-between rounded-md p-2'
             }
           >
             <Col className={''}>
@@ -183,6 +191,24 @@ function UserPortfolioInternal(props: {
               <InvestmentValueCard user={user} />
             </Col>
           </Row>
+        </Col>
+        <Col className={'mt-4 border-t-2 px-2 pt-4'}>
+          <Row className={'mb-2 justify-between'}>
+            <span className={'text-2xl'}>Your trades</span>
+            {(user.creatorTraders.allTime > 0 ||
+              (user.freeQuestionsCreated ?? 0) > 0) && (
+              <Col className={'mb-0.5 justify-end'}>
+                <Link
+                  className={clsx('text-ink-500', linkClass)}
+                  href={'/' + user.username + '?tab=questions'}
+                >
+                  <Row className={'items-center gap-1 px-3'}>See questions</Row>
+                </Link>
+              </Col>
+            )}
+          </Row>
+          {/* It would be awesome to be able to search your questions here too*/}
+          <UserBetsTable user={user} />
         </Col>
         {showBalanceChanges && (
           <BalanceChangesModal
@@ -207,20 +233,24 @@ const BalanceChangesModal = (props: {
     'amount'
   )
   return (
-    <Modal open={true} setOpen={setOpen} className={MODAL_CLASS}>
+    <Modal size={'lg'} open={true} setOpen={setOpen} className={MODAL_CLASS}>
       <Col className={'w-full justify-center'}>
-        <div className="mb-2 grid w-full grid-cols-10 text-xl">
-          <div className="col-span-4">
-            <div>Balance</div>
-            <div>Daily change</div>
-          </div>
-          <div className="col-span-6">
-            <div>{formatMoney(user.balance)}</div>
-            <Row className={clsx('items-center')}>
+        <Row className={'ml-2 justify-around'}>
+          <Col>
+            <span className={'ml-1'}>Mana balance</span>
+            <span className={'mb-1 text-2xl'}>{formatMoney(user.balance)}</span>
+          </Col>
+          <Col>
+            <span className={'ml-1'}>
+              {changeToday > 0 ? 'Earned ' : 'Spent '}
+              today
+            </span>
+            <span className={clsx('mb-1 text-2xl')}>
               {formatMoney(changeToday).replace('-', '')}
-            </Row>
-          </div>
-        </div>
+            </span>
+          </Col>
+        </Row>
+
         <Col className={'gap-4 border-t-2 pt-4'}>
           {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
             const { type } = change
@@ -343,32 +373,39 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
 
 const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
   const { change } = props
-  const txnChange = change
-  const { contract, amount, user: changeUser } = txnChange
+  const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
   } = {
     QUEST_REWARD: 'bg-amber-400',
     BETTING_STREAK_BONUS: 'bg-red-400',
-    CREATE_CONTRACT_ANTE: 'bg-blue-400',
+    CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
     CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
     MARKET_BOOST_CREATE: 'bg-purple-400',
     LEAGUE_PRIZE: 'bg-indigo-400',
-    BOUNTY_POSTED: 'bg-ink-1000',
+    BOUNTY_POSTED: 'bg-indigo-400',
     BOUNTY_AWARDED: 'bg-teal-600',
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
-    UNIQUE_BETTOR_BONUS: 'bg-fuchsia-400',
+    UNIQUE_BETTOR_BONUS: 'bg-sky-400',
   }
   return (
     <Row className={'gap-2'}>
       <Col>
         <ChangeIcon
           slug={contract?.slug ?? changeUser?.username ?? ''}
-          symbol={'🎁'}
-          className={reasonToBgClassNameMap[txnChange.type]}
+          symbol={
+            type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
+              '🎉'
+            ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
+              <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+            ) : (
+              '🎁'
+            )
+          }
+          className={reasonToBgClassNameMap[type]}
         />
       </Col>
       <Col className={'w-full'}>
@@ -381,18 +418,18 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
               )}
               className={clsx('line-clamp-1', linkClass)}
             >
-              {txnTitle(txnChange)}
+              {txnTitle(change)}
             </Link>
           ) : changeUser ? (
             <Link
               href={'/' + changeUser.username}
               className={clsx('line-clamp-1', linkClass)}
             >
-              {txnTitle(txnChange)}
+              {txnTitle(change)}
             </Link>
           ) : (
             <div className={clsx(' truncate')}>
-              {txnTitle(txnChange) ?? txnTypeToDescription(change.type)}
+              {txnTitle(change) ?? txnTypeToDescription(type)}
             </div>
           )}
           <span className={clsx('shrink-0')}>
@@ -400,9 +437,7 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
             {formatMoney(amount).replace('-', '')}
           </span>
         </Row>
-        <Row className={'text-ink-500'}>
-          {txnTypeToDescription(change.type)}
-        </Row>
+        <Row className={'text-ink-500'}>{txnTypeToDescription(type)}</Row>
       </Col>
     </Row>
   )

@@ -7,7 +7,7 @@ import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
-import { Modal } from 'web/components/layout/modal'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
@@ -108,39 +108,37 @@ export function DailyProfitModal(props: {
   const { open, setOpen, metrics, contracts, dailyProfit, investment } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="bg-canvas-0 text-ink-1000 rounded-lg px-4 py-2">
-        <Col className={'mb-2 ml-2'}>
-          <div className="grid w-full grid-cols-10 text-xl">
-            <div className="col-span-5">
-              <div>Investment value</div>
-              <div>Unrealized profit</div>
-            </div>
-            <div className="col-span-5">
-              <div>{formatMoney(investment)}</div>
-              <div
-                className={clsx(
-                  dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                )}
-              >
-                {formatMoney(dailyProfit)}
-              </div>
-            </div>
-          </div>
+    <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
+      <Row className={'ml-2 justify-around'}>
+        <Col>
+          <span className={'ml-1'}>Investment value</span>
+          <span className={'mb-1 text-2xl'}>{formatMoney(investment)}</span>
         </Col>
+        <Col>
+          <span className={'ml-1'}>Profit today</span>
+          <span
+            className={clsx(
+              'mb-1 text-2xl',
+              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+            )}
+          >
+            {dailyProfit > 0 ? '+' : ''}
+            {formatMoney(dailyProfit)}
+          </span>
+        </Col>
+      </Row>
 
-        {!metrics || !contracts ? (
-          <LoadingIndicator />
-        ) : (
-          <ProfitChangeTable
-            contracts={contracts}
-            metrics={metrics}
-            from={'day'}
-            rowsPerSection={4}
-            showPagination={true}
-          />
-        )}
-      </div>
+      {!metrics || !contracts ? (
+        <LoadingIndicator />
+      ) : (
+        <ProfitChangeTable
+          contracts={contracts}
+          metrics={metrics}
+          from={'day'}
+          rowsPerSection={5}
+          showPagination={true}
+        />
+      )}
     </Modal>
   )
 }
@@ -248,7 +246,7 @@ const ProfitCell = (props: { profit: number }) => (
   <td
     className={clsx(
       'mx-2 min-w-[2rem] text-right',
-      props.profit > 0 ? 'text-teal-500' : 'text-scarlet-600'
+      props.profit > 0 ? 'text-teal-600' : 'text-ink-600'
     )}
   >
     {formatMoney(props.profit)}
