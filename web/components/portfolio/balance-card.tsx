@@ -149,18 +149,19 @@ const BalanceChangesModal = (props: {
                 'create_bet',
                 'redeem_shares',
                 'fill_bet',
+                'loan_payment',
               ].includes(type)
             ) {
               return (
                 <BetBalanceChangeRow
-                  key={change.createdTime + change.amount + type}
+                  key={change.key ?? change.createdTime + change.amount + type}
                   change={change as BetBalanceChange}
                 />
               )
             } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
               return (
                 <TxnBalanceChangeRow
-                  key={change.createdTime + change.amount + type}
+                  key={change.key ?? change.createdTime + change.amount + type}
                   change={change as TxnBalanceChange}
                   avatarlUrl={user.avatarUrl}
                 />
@@ -253,6 +254,8 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
           <div className={clsx('text-ink-500 line-clamp-1')}>
             {type === 'redeem_shares'
               ? `Redeem shares`
+              : type === 'loan_payment'
+              ? `Pay back loan`
               : type === 'fill_bet'
               ? `Fill ${outcome} order`
               : type === 'sell_shares'

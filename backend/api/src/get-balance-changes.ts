@@ -41,6 +41,7 @@ const getTxnBalanceChanges = async (
   const balanceChanges = [] as TxnBalanceChange[]
   if (user.createdTime > after) {
     balanceChanges.push({
+      key: 'starting-balance',
       type: 'STARTING_BALANCE',
       amount: STARTING_BALANCE,
       createdTime: user.createdTime,
@@ -84,6 +85,7 @@ const getTxnBalanceChanges = async (
     const contract = contracts.find((c) => c.id === getContractIdFromTxn(txn))
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
+      key: txn.id,
       type: txn.category,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
@@ -167,18 +169,22 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
     const { bets, contract } = contractToBets[contractId]
 
     for (let i = 0; i < bets.length; i++) {
-      const nextBetExists = i < bets.length - 1
-      const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
       const bet = bets[i]
       const { isRedemption, outcome, createdTime, amount, shares } = bet
+      // Bets get their loan amount updated recently, we want to discard them
+      if (bet.limitProb === undefined && bet.createdTime < after) continue
 
+      const nextBetExists = i < bets.length - 1
+      const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
       if (isRedemption && nextBetIsRedemption) continue
+
       const { question, visibility, creatorUsername, slug } = contract
       const text =
         contract.mechanism === 'cpmm-multi-1' && bet.answerId
           ? contract.answers.find((a) => a.id === bet.answerId)?.text
           : undefined
       const balanceChangeProps = {
+        key: bet.id,
         bet: {
           outcome,
           shares,
@@ -191,13 +197,14 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         },
         answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
       }
-      if (!!bet.limitProb && bet.fills) {
+      if (bet.limitProb !== undefined && bet.fills) {
         const fillsInTimeframe = bet.fills.filter(
           (fill) => fill.timestamp > after
         )
         for (const fill of fillsInTimeframe) {
           const balanceChange = {
             ...balanceChangeProps,
+            key: `${bet.id}-${fill.timestamp}`,
             type: 'fill_bet',
             amount: -fill.amount,
             createdTime: fill.timestamp,
@@ -218,6 +225,15 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         } as BetBalanceChange
 
         balanceChanges.push(balanceChange)
+        if ((bet.loanAmount ?? 0) < 0) {
+          balanceChanges.push({
+            ...balanceChangeProps,
+            key: `${bet.id}-loan-payment`,
+            type: 'loan_payment',
+            amount: bet.loanAmount,
+            createdTime: createdTime,
+          } as BetBalanceChange)
+        }
       }
     }
   }

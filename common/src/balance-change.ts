@@ -9,6 +9,7 @@ export type AnyBalanceChangeType =
   | TxnBalanceChange
 
 export type BalanceChange = {
+  key: string
   amount: number
   type: string
   createdTime: number
@@ -20,7 +21,12 @@ type MinimalContract = Pick<
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
 
 export type BetBalanceChange = CustomBalanceChange & {
-  type: 'create_bet' | 'sell_shares' | 'redeem_shares' | 'fill_bet'
+  type:
+    | 'create_bet'
+    | 'sell_shares'
+    | 'redeem_shares'
+    | 'fill_bet'
+    | 'loan_payment'
   bet: Pick<Bet, 'outcome' | 'shares'>
   answer: Pick<Answer, 'text' | 'id'> | undefined
   contract: MinimalContract
