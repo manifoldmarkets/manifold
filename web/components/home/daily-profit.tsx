@@ -116,7 +116,7 @@ export function DailyProfitModal(props: {
     <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
       <Row className={'ml-2 justify-around'}>
         <Col>
-          <span className={'ml-1'}>Investment value</span>
+          <span className={'ml-1'}>Your investments</span>
           <span className={'mb-1 text-2xl'}>{formatMoney(investment)}</span>
         </Col>
         <Col>

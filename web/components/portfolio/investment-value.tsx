@@ -17,9 +17,9 @@ import { ArrowUpIcon } from '@heroicons/react/solid'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
-  isCurrentUser?: boolean
+  className: string
 }) {
-  const { user } = props
+  const { user, className } = props
 
   const portfolio = useCurrentPortfolio(user.id)
   const investment = portfolio
@@ -46,15 +46,17 @@ export const InvestmentValueCard = memo(function (props: {
   )
   const percentChange = dailyProfit / investment
   return (
-    <Col>
-      <span className={'text-5xl'}>{formatMoney(investment)}</span>
+    <Row
+      className={className}
+      onClick={withTracking(() => {
+        setOpen(true)
+      }, DAILY_INVESTMENT_CLICK_EVENT)}
+    >
+      <Col>
+        <span className={'ml-1'}>Your investments</span>
+        <Col>
+          <span className={'text-5xl'}>{formatMoney(investment)}</span>
 
-      <Row>
-        <button
-          onClick={withTracking(() => {
-            setOpen(true)
-          }, DAILY_INVESTMENT_CLICK_EVENT)}
-        >
           {investment !== 0 && (
             <Row
               className={clsx(
@@ -70,18 +72,18 @@ export const InvestmentValueCard = memo(function (props: {
               {formatPercent(percentChange)} today
             </Row>
           )}
-        </button>
-      </Row>
-      {open && (
-        <DailyProfitModal
-          setOpen={setOpen}
-          open={open}
-          metrics={data?.metrics}
-          contracts={data?.contracts}
-          dailyProfit={dailyProfit}
-          investment={investment}
-        />
-      )}
-    </Col>
+          {open && (
+            <DailyProfitModal
+              setOpen={setOpen}
+              open={open}
+              metrics={data?.metrics}
+              contracts={data?.contracts}
+              dailyProfit={dailyProfit}
+              investment={investment}
+            />
+          )}
+        </Col>
+      </Col>
+    </Row>
   )
 })

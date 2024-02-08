@@ -32,8 +32,6 @@ import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { ReactNode, useState } from 'react'
-import { Button } from 'web/components/buttons/button'
-import { AddFundsModal } from 'web/components/add-funds-modal'
 import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 import {
   FaArrowRightArrowLeft,
@@ -44,6 +42,8 @@ import { contractPathWithoutContract } from 'common/contract'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Button } from 'web/components/buttons/button'
+import { AddFundsModal } from 'web/components/add-funds-modal'
 
 export const getStaticProps = async (props: {
   params: {
@@ -102,6 +102,19 @@ function UserPortfolioInternal(props: {
   const [showBalanceChanges, setShowBalanceChanges] = useState(false)
   const [showAddFunds, setShowAddFunds] = useState(false)
   const { ref: titleRef } = useHeaderIsStuck()
+  const spentToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
+    ),
+    'amount'
+  )
+  const earnedToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
+    ),
+    'amount'
+  )
+
   const changeToday = sumBy(
     balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
     'amount'
@@ -141,56 +154,53 @@ function UserPortfolioInternal(props: {
             </Link>
           </Row>
         </Row>
-        <Col className={'mb-2 gap-4 px-2 sm:mt-4 sm:flex-row'}>
+        <span className={'text-primary-700 mb-3 ml-2 text-2xl'}>
+          Your portfolio
+        </span>
+        <Row className={'mb-2 flex-wrap gap-4 px-2'}>
           <Row
             className={
-              'bg-canvas-0 min-w-[45%] max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
             }
+            onClick={() => setShowBalanceChanges(true)}
           >
             <Col>
-              <span className={'ml-1'}>Mana balance</span>
+              <span className={'ml-1'}>Your balance</span>
               <span className={'mb-1 text-5xl'}>
                 {formatMoney(user.balance)}
               </span>
-              <button
-                color={'gray-white'}
-                onClick={() => setShowBalanceChanges(true)}
-              >
-                {changeToday !== 0 && (
-                  <Row className={clsx('items-center')}>
-                    {formatMoney(changeToday).replace('-', '')}{' '}
-                    {changeToday > 0
-                      ? 'earned '
-                      : changeToday < 0
-                      ? 'spent '
-                      : ''}
-                    today
-                  </Row>
-                )}
-              </button>
+              <Row className={'float-left w-full gap-1'}>
+                <Col className={clsx('')}>{formatMoney(earnedToday)} spent</Col>
+                &
+                <Col className={clsx('')}>
+                  {formatMoney(spentToday).replace('-', '')} earned
+                </Col>
+                today
+              </Row>
             </Col>
-            <Col className={'items-end justify-end'}>
+            <div className={'top-1 float-right'}>
               <Button
                 color="gray-outline"
-                onClick={() => setShowAddFunds(true)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowAddFunds(true)
+                }}
                 size="2xs"
+                className={'whitespace-nowrap'}
               >
                 Add funds
               </Button>
               <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
-            </Col>
+            </div>
           </Row>
-          <Row
+
+          <InvestmentValueCard
+            user={user}
             className={
-              'bg-canvas-0 min-w-[45%] max-w-sm justify-between rounded-md p-2'
+              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
             }
-          >
-            <Col className={''}>
-              <span className={'ml-1'}>Investment value</span>
-              <InvestmentValueCard user={user} />
-            </Col>
-          </Row>
-        </Col>
+          />
+        </Row>
         <Col className={'mt-4 border-t-2 pt-4'}>
           <Row className={'mb-2 justify-between px-1'}>
             <span className={'text-2xl'}>Your trades</span>
@@ -236,7 +246,7 @@ const BalanceChangesModal = (props: {
       <Col className={'w-full justify-center'}>
         <Row className={'ml-2 justify-around'}>
           <Col>
-            <span className={'ml-1'}>Mana balance</span>
+            <span className={'ml-1'}>Your balance</span>
             <span className={'mb-1 text-2xl'}>{formatMoney(user.balance)}</span>
           </Col>
           <Col>
