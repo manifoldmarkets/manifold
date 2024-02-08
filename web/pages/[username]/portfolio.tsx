@@ -44,6 +44,8 @@ import { ScaleIcon } from '@heroicons/react/outline'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
+import { useUser } from 'web/hooks/use-user'
 
 export const getStaticProps = async (props: {
   params: {
@@ -99,6 +101,7 @@ function UserPortfolioInternal(props: {
   balanceChanges: AnyBalanceChangeType[]
 }) {
   const { user, shouldIgnoreUser, balanceChanges } = props
+  const currentUser = useUser()
   const [showBalanceChanges, setShowBalanceChanges] = useState(false)
   const [showAddFunds, setShowAddFunds] = useState(false)
   const { ref: titleRef } = useHeaderIsStuck()
@@ -202,8 +205,21 @@ function UserPortfolioInternal(props: {
           />
         </Row>
         <Col className={'mt-4 border-t-2 pt-4'}>
-          <Row className={'mb-2 justify-between px-1'}>
-            <span className={'text-2xl'}>Your trades</span>
+          {!!user.metricsLastUpdated && (
+            <Col className={' px-1'}>
+              <PortfolioValueSection
+                userId={user.id}
+                defaultTimePeriod={
+                  currentUser?.id === user.id ? 'weekly' : 'monthly'
+                }
+                lastUpdatedTime={user.metricsLastUpdated}
+                isCurrentUser={currentUser?.id === user.id}
+                hideAddFundsButton={true}
+              />
+            </Col>
+          )}
+          <Row className={'mt-4 justify-between px-1'}>
+            <span className={'mb-1 text-2xl'}>Your trades</span>
             {(user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && (
               <Col className={'mb-0.5 justify-end'}>

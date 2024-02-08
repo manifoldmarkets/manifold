@@ -13,11 +13,11 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { useZoom } from '../charts/helpers'
 import { periodDurations } from 'web/lib/util/time'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -25,8 +25,15 @@ export const PortfolioValueSection = memo(
     defaultTimePeriod: Period
     isCurrentUser: boolean
     lastUpdatedTime: number | undefined
+    hideAddFundsButton?: boolean
   }) {
-    const { userId, isCurrentUser, defaultTimePeriod, lastUpdatedTime } = props
+    const {
+      userId,
+      hideAddFundsButton,
+      isCurrentUser,
+      defaultTimePeriod,
+      lastUpdatedTime,
+    } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
@@ -93,6 +100,7 @@ export const PortfolioValueSection = memo(
       const showDisclaimer = portfolioHistory || !lastUpdatedTime
       return (
         <PortfolioValueSkeleton
+          hideAddFundsButton={hideAddFundsButton}
           userId={userId}
           graphMode={graphMode}
           onClickNumber={onClickNumber}
@@ -142,6 +150,7 @@ export const PortfolioValueSection = memo(
     const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
+        hideAddFundsButton={hideAddFundsButton}
         userId={userId}
         graphMode={graphMode}
         onClickNumber={onClickNumber}
@@ -218,6 +227,7 @@ function PortfolioValueSkeleton(props: {
   userId?: string
   disabled?: boolean
   placement?: 'bottom'
+  hideAddFundsButton?: boolean
 }) {
   const {
     graphMode,
@@ -234,6 +244,7 @@ function PortfolioValueSkeleton(props: {
     disabled,
     placement,
     className,
+    hideAddFundsButton,
   } = props
 
   const profitLabel = {
@@ -292,10 +303,12 @@ function PortfolioValueSkeleton(props: {
           {balanceElement}
         </Col>
 
-        <AddFundsButton
-          userId={userId}
-          className=" self-center whitespace-nowrap"
-        />
+        {!hideAddFundsButton && (
+          <AddFundsButton
+            userId={userId}
+            className=" self-center whitespace-nowrap"
+          />
+        )}
 
         {!placement && !hideSwitcher && (
           <TimeRangePicker
