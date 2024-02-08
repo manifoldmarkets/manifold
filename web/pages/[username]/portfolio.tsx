@@ -46,6 +46,7 @@ import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { useUser } from 'web/hooks/use-user'
+import { RxAvatar } from 'react-icons/rx'
 
 export const getStaticProps = async (props: {
   params: {
@@ -138,24 +139,38 @@ function UserPortfolioInternal(props: {
       <Col className="relative mt-1">
         <Row
           className={
-            'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2'
+            ' bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2 md:hidden'
           }
           ref={titleRef}
         >
-          <BackButton />
-
           <Row className={'items-center gap-2'}>
-            <Link
-              className={clsx('text-ink-500', linkClass)}
-              href={'/' + user.username}
-            >
-              <Row className={'items-center gap-1 px-3'}>View profile</Row>
-            </Link>
+            <BackButton />
+            <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
           </Row>
+          <Link
+            className={clsx('text-ink-500 hover:text-primary-500')}
+            href={'/' + user.username}
+          >
+            <Col className={'items-center px-3 text-sm'}>
+              <RxAvatar className={'h-7 w-7'} />
+            </Col>
+          </Link>
         </Row>
-        <span className={'text-primary-700 mb-3 ml-2 text-2xl'}>
-          Your portfolio
-        </span>
+        <Row
+          className={
+            'mx-1 my-4 hidden items-center justify-between md:inline-flex'
+          }
+        >
+          <span className={'text-primary-700   text-2xl'}>Your portfolio</span>
+          <Link
+            className={clsx('text-ink-500 hover:text-primary-500')}
+            href={'/' + user.username}
+          >
+            <Col className={'items-center px-3 text-sm'}>
+              <RxAvatar className={'h-7 w-7'} />
+            </Col>
+          </Link>
+        </Row>
         <Row className={'flex-wrap gap-4 px-2'}>
           <Row
             className={
