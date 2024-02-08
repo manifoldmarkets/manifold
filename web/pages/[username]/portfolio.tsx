@@ -156,7 +156,7 @@ function UserPortfolioInternal(props: {
         <span className={'text-primary-700 mb-3 ml-2 text-2xl'}>
           Your portfolio
         </span>
-        <Row className={'mb-2 flex-wrap gap-4 px-2'}>
+        <Row className={'flex-wrap gap-4 px-2'}>
           <Row
             className={
               'bg-canvas-0 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
@@ -202,11 +202,13 @@ function UserPortfolioInternal(props: {
             }
           />
         </Row>
-        <Col className={'mt-4 border-t-2 pt-4'}>
+        <div className={'my-5 border-t-2'} />
+        <Col className={''}>
           {!!user.metricsLastUpdated && (
-            <Col className={' px-1'}>
+            <Col className={'px-1'}>
               <PortfolioValueSection
                 userId={user.id}
+                onlyShowProfit={true}
                 defaultTimePeriod={
                   currentUser?.id === user.id ? 'weekly' : 'monthly'
                 }
@@ -216,8 +218,11 @@ function UserPortfolioInternal(props: {
               />
             </Col>
           )}
-          <Row className={'mt-4 justify-between px-1'}>
-            <span className={'mb-1 text-2xl'}>Your trades</span>
+          <div className={'my-5 border-t-2'} />
+          <Row className={' justify-between px-1'}>
+            <span className={'text-primary-700 mb-1 text-2xl'}>
+              Your trades
+            </span>
             {(user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && (
               <Col className={'mb-0.5 justify-end'}>

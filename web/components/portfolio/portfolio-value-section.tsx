@@ -26,6 +26,7 @@ export const PortfolioValueSection = memo(
     isCurrentUser: boolean
     lastUpdatedTime: number | undefined
     hideAddFundsButton?: boolean
+    onlyShowProfit?: boolean
   }) {
     const {
       userId,
@@ -33,6 +34,7 @@ export const PortfolioValueSection = memo(
       isCurrentUser,
       defaultTimePeriod,
       lastUpdatedTime,
+      onlyShowProfit,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
@@ -108,8 +110,8 @@ export const PortfolioValueSection = memo(
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={placeholderSection}
-          balanceElement={placeholderSection}
-          valueElement={placeholderSection}
+          balanceElement={!onlyShowProfit ? placeholderSection : undefined}
+          valueElement={!onlyShowProfit ? placeholderSection : undefined}
           className={showDisclaimer ? 'h-8' : ''}
           graphElement={(_width, height) => {
             if (showDisclaimer) {
@@ -182,18 +184,22 @@ export const PortfolioValueSection = memo(
           </div>
         }
         balanceElement={
-          <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
-            {graphMode === 'balance' && graphDisplayNumber
-              ? graphDisplayNumber
-              : formatMoney(balance)}
-          </div>
+          !onlyShowProfit ? (
+            <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
+              {graphMode === 'balance' && graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(balance)}
+            </div>
+          ) : undefined
         }
         valueElement={
-          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
-            {graphMode === 'value' && graphDisplayNumber
-              ? graphDisplayNumber
-              : formatMoney(totalValue)}
-          </div>
+          !onlyShowProfit ? (
+            <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
+              {graphMode === 'value' && graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(totalValue)}
+            </div>
+          ) : undefined
         }
         graphElement={(width, height) => (
           <PortfolioGraph
@@ -217,9 +223,9 @@ function PortfolioValueSkeleton(props: {
   onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
-  valueElement: ReactNode
+  valueElement?: ReactNode
   profitElement: ReactNode
-  balanceElement: ReactNode
+  balanceElement?: ReactNode
   graphElement: (width: number, height: number) => ReactNode
   hideSwitcher?: boolean
   className?: string
@@ -260,6 +266,7 @@ function PortfolioValueSkeleton(props: {
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
+            !balanceElement && !valueElement ? 'mx-auto sm:ml-2' : '',
             graphMode != 'profit'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
               : ''
@@ -273,35 +280,39 @@ function PortfolioValueSkeleton(props: {
           {profitElement}
         </Col>
 
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
-          {valueElement}
-        </Col>
+        {valueElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28',
+              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+            )}
+            onClick={() => {
+              onClickNumber('value')
+              track('Portfolio Value Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
+            {valueElement}
+          </Col>
+        )}
 
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28 ',
-            graphMode != 'balance'
-              ? 'cursor-pointer opacity-40 hover:opacity-80'
-              : ''
-          )}
-          onClick={() => {
-            onClickNumber('balance')
-            track('Graph Balance Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
-          {balanceElement}
-        </Col>
+        {balanceElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28 ',
+              graphMode != 'balance'
+                ? 'cursor-pointer opacity-40 hover:opacity-80'
+                : ''
+            )}
+            onClick={() => {
+              onClickNumber('balance')
+              track('Graph Balance Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+            {balanceElement}
+          </Col>
+        )}
 
         {!hideAddFundsButton && (
           <AddFundsButton
