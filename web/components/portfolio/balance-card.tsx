@@ -214,19 +214,23 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
         <ChangeIcon
           slug={contract.slug}
           symbol={
-            <div
-              className={clsx(
-                direction === 'sideways' ? 'mb-1.5 ml-0.5' : 'mb-1'
-              )}
-            >
-              {direction === 'up' ? (
-                <FaArrowTrendUp className={'h-5 w-5 '} />
-              ) : direction === 'down' ? (
-                <FaArrowTrendDown className={'h-5 w-5'} />
-              ) : (
-                <FaArrowRightArrowLeft className={'h-4 w-4'} />
-              )}
-            </div>
+            type === 'loan_payment' ? (
+              '🏦'
+            ) : (
+              <div
+                className={clsx(
+                  direction === 'sideways' ? 'mb-1.5 ml-0.5' : 'mb-1'
+                )}
+              >
+                {direction === 'up' ? (
+                  <FaArrowTrendUp className={'h-5 w-5 '} />
+                ) : direction === 'down' ? (
+                  <FaArrowTrendDown className={'h-5 w-5'} />
+                ) : (
+                  <FaArrowRightArrowLeft className={'h-4 w-4'} />
+                )}
+              </div>
+            )
           }
           className={
             direction === 'up'
