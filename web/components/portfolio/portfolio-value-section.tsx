@@ -212,6 +212,7 @@ export const PortfolioValueSection = memo(
             onMouseOver={handleGraphDisplayChange}
           />
         )}
+        onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
       />
     )
@@ -234,6 +235,7 @@ function PortfolioValueSkeleton(props: {
   disabled?: boolean
   placement?: 'bottom'
   hideAddFundsButton?: boolean
+  onlyShowProfit?: boolean
 }) {
   const {
     graphMode,
@@ -251,14 +253,22 @@ function PortfolioValueSkeleton(props: {
     placement,
     className,
     hideAddFundsButton,
+    onlyShowProfit,
   } = props
 
-  const profitLabel = {
-    daily: 'Profit 1D',
-    weekly: 'Profit 1W',
-    monthly: 'Profit 1M',
-    allTime: 'Profit',
-  }[currentTimePeriod]
+  const profitLabel = onlyShowProfit
+    ? {
+        daily: 'Profit today',
+        weekly: 'Profit this week',
+        monthly: 'Profit this month',
+        allTime: 'Profit',
+      }[currentTimePeriod]
+    : {
+        daily: 'Profit 1D',
+        weekly: 'Profit 1W',
+        monthly: 'Profit 1M',
+        allTime: 'Profit',
+      }[currentTimePeriod]
 
   return (
     <>
@@ -327,7 +337,8 @@ function PortfolioValueSkeleton(props: {
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="ml-auto gap-4 border-0"
+            className="bg-canvas-50 ml-auto border-0"
+            toggleClassName={'w-12 justify-center'}
           />
         )}
       </Row>
@@ -344,7 +355,7 @@ function PortfolioValueSkeleton(props: {
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="mt-1 border-0"
+          className="bg-canvas-50 mt-1 border-0"
           toggleClassName="grow justify-center"
         />
       )}
