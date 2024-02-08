@@ -14,6 +14,7 @@ import { EmptyStateContract, StateContract } from './state-contract'
 import { USAMap } from './usa-map'
 import { PresidentialState } from './presidential-state'
 import { SenateCurrentOrContract, SenateState } from './senate-state'
+import { SenateBar } from './senate-bar'
 
 type MapMode = 'presidency' | 'senate'
 
@@ -110,6 +111,15 @@ export function HomepageMap(props: {
           <div className="mx-auto font-serif font-semibold sm:text-xl">
             Which party will win Senate?
           </div>
+          <SenateBar
+            mapContractsDictionary={senateContractsDictionary}
+            handleClick={handleClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            targetState={targetState}
+            hoveredState={hoveredState}
+          />
+          <Spacer h={4} />
           <USAMap
             mapContractsDictionary={senateContractsDictionary}
             handleClick={handleClick}
@@ -127,6 +137,7 @@ export function HomepageMap(props: {
                 ] as Contract
               }
               targetState={targetState}
+              hoveredState={hoveredState}
               setTargetState={setTargetState}
             />
           ) : (

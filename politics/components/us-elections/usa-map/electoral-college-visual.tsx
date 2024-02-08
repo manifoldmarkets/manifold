@@ -16,7 +16,7 @@ export function ElectoralCollegeVisual(props: {
   targetState: string | null | undefined
   hoveredState: string | null | undefined
 }) {
-  const sortedContractsDictionary = sortByDemocraticRatio(
+  const sortedContractsDictionary = sortByDemocraticDiff(
     props.mapContractsDictionary
   )
   const { handleClick, onMouseEnter, onMouseLeave, targetState, hoveredState } =
@@ -24,7 +24,7 @@ export function ElectoralCollegeVisual(props: {
 
   const isMobile = useIsMobile()
   return (
-    <Col className="mt-2 w-full text-xs sm:text-base">
+    <Col className="mt-2 w-full font-mono text-xs sm:text-base">
       <Col className="text-ink-700 mx-auto items-center">
         <div className="-mb-1">270 to win</div>
         <ChevronDownIcon className="h-5 w-5" />
@@ -83,7 +83,7 @@ export function ElectoralCollegeVisual(props: {
   )
 }
 
-function sortByDemocraticRatio(
+export function sortByDemocraticDiff(
   unsortedContractsDictionary: MapContractsDictionary
 ): MapContractsDictionary {
   return Object.entries(unsortedContractsDictionary)
@@ -97,14 +97,14 @@ function sortByDemocraticRatio(
         (answer) => answer.text === 'Republican Party'
       )
 
-      const ratio =
+      const diff =
         democraticAnswer && republicanAnswer
-          ? democraticAnswer.prob / republicanAnswer.prob
+          ? democraticAnswer.prob - republicanAnswer.prob
           : 0
 
-      return { state, contract, ratio }
+      return { state, contract, diff }
     })
-    .sort((a, b) => b.ratio! - a.ratio!)
+    .sort((a, b) => b.diff! - a.diff!)
     .reduce((sortedData, data) => {
       sortedData[data.state] = data?.contract
       return sortedData
