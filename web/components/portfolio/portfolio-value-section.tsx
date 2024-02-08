@@ -212,7 +212,7 @@ export const PortfolioValueSection = memo(
             onMouseOver={handleGraphDisplayChange}
           />
         )}
-        placement={isMobile ? 'bottom' : undefined}
+        placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
       />
     )
   }
@@ -266,7 +266,7 @@ function PortfolioValueSkeleton(props: {
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
-            !balanceElement && !valueElement ? 'mx-auto sm:ml-2' : '',
+            !balanceElement && !valueElement ? 'ml-3 sm:ml-2' : '',
             graphMode != 'profit'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
               : ''
@@ -327,7 +327,7 @@ function PortfolioValueSkeleton(props: {
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="ml-auto"
+            className="ml-auto gap-4 border-0"
           />
         )}
       </Row>
@@ -344,7 +344,7 @@ function PortfolioValueSkeleton(props: {
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="mt-1"
+          className="mt-1 border-0"
           toggleClassName="grow justify-center"
         />
       )}
