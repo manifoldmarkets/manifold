@@ -110,7 +110,6 @@ export function SenateCurrentOrContract(props: {
   setTargetState: (state?: string) => void
 }) {
   const { targetContract, targetState, setTargetState, hoveredState } = props
-  console.log('UM HELLO', hoveredState, targetState, targetContract)
   if (!targetContract) {
     return (
       <SenateCurrentCard
