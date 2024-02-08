@@ -26,7 +26,7 @@ export function MatchBetButton(props: {
     <>
       <Button
         size={'2xs'}
-        color={'indigo-outline'}
+        color={'indigo'}
         onClick={() => {
           setOpen(true)
           track('love bet button click')

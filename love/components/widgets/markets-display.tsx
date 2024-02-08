@@ -1,7 +1,7 @@
 import { keyBy, orderBy } from 'lodash'
 import Link from 'next/link'
 import Image from 'next/image'
-import { UserIcon } from '@heroicons/react/solid'
+import { UserIcon, ExternalLinkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Lover } from 'common/love/lover'
@@ -39,8 +39,19 @@ export const MarketsDisplay = ({
 
   return (
     <Col className="gap-2">
-      <Subtitle>Predicted matches</Subtitle>
+      <Link
+        className={clsx(linkClass, 'text-ink-500')}
+        href={contractPath(contract)}
+      >
+        <Row className="items-center gap-1">
+          <Subtitle>Predicted matches</Subtitle>{' '}
+          <ExternalLinkIcon className="h-5 w-5" />
+        </Row>
+      </Link>
       <Carousel>
+        {sortedAnswers.length === 0 && (
+          <div className="text-ink-500 px-2">None yet</div>
+        )}
         {sortedAnswers.map((answer) => {
           if (!answer.loverUserId) return null
           const matchLover = loversByUserId[answer.loverUserId]
@@ -111,48 +122,36 @@ const MatchTile = (props: {
             <RejectButton lover={lover} />
           </Col>
         )}
+        {!isYourMatch && (
+          <Col className="absolute right-3 top-2">
+            <MatchBetButton
+              contract={contract}
+              answer={answer}
+              user={user}
+              modalHeader={
+                <MatchAvatars
+                  profileLover={profileLover}
+                  matchedLover={lover}
+                  className="mb-3"
+                />
+              }
+            />
+          </Col>
+        )}
       </Col>
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
-        <Row className="w-full justify-between">
-          <Link className={linkClass} href={contractPath(contract)}>
-            <span className="text-ink-500 font-semibold">
-              Chance of 3rd date
-            </span>
-          </Link>
-
-          <div
-            className={clsx(
-              'font-semibold',
-              answer.resolution
-                ? answer.resolution == 'YES'
-                  ? 'text-teal-300'
-                  : answer.resolution == 'NO'
-                  ? 'text-scarlet-300'
-                  : ''
-                : ''
-            )}
-          >
-            {formatPercent(answer.prob)}
-          </div>
-        </Row>
         <Row className="w-full items-center justify-between gap-2">
+          <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
+            <span className="font-semibold">
+              {answer.prob <= 0.02 ? '<2%' : formatPercent(answer.prob)}
+            </span>{' '}
+            <span className="text-xs">chance of 3rd date</span>
+          </Link>
           <MatchPositionsButton
             contract={contract}
             answer={answer}
             modalHeader={
               <MatchAvatars profileLover={profileLover} matchedLover={lover} />
-            }
-          />
-          <MatchBetButton
-            contract={contract}
-            answer={answer}
-            user={user}
-            modalHeader={
-              <MatchAvatars
-                profileLover={profileLover}
-                matchedLover={lover}
-                className="mb-3"
-              />
             }
           />
         </Row>
