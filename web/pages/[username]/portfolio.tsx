@@ -159,7 +159,7 @@ function UserPortfolioInternal(props: {
         <Row className={'mb-2 flex-wrap gap-4 px-2'}>
           <Row
             className={
-              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
+              'bg-canvas-0 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
             }
             onClick={() => setShowBalanceChanges(true)}
           >
@@ -179,7 +179,7 @@ function UserPortfolioInternal(props: {
                 today
               </Row>
             </Col>
-            <div className={'top-1 float-right'}>
+            <div className={'absolute right-2 top-2'}>
               <Button
                 color="gray-outline"
                 onClick={(e) => {
