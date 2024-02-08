@@ -149,7 +149,7 @@ function UserPortfolioInternal(props: {
               className={clsx('text-ink-500', linkClass)}
               href={'/' + user.username}
             >
-              <Row className={'items-center gap-1 px-3'}>See profile</Row>
+              <Row className={'items-center gap-1 px-3'}>View profile</Row>
             </Link>
           </Row>
         </Row>
@@ -230,7 +230,9 @@ function UserPortfolioInternal(props: {
                   className={clsx('text-ink-500', linkClass)}
                   href={'/' + user.username + '?tab=questions'}
                 >
-                  <Row className={'items-center gap-1 px-2'}>See questions</Row>
+                  <Row className={'mb-0.5 items-center gap-1 px-2'}>
+                    View questions
+                  </Row>
                 </Link>
               </Col>
             )}
