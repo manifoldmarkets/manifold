@@ -12,6 +12,8 @@ import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { EmptyStateContract, StateContract } from './state-contract'
 import { USAMap } from './usa-map'
+import { PresidentialState } from './presidential-state'
+import { SenateState } from './senate-state'
 
 type MapMode = 'presidency' | 'senate'
 
@@ -87,6 +89,7 @@ export function HomepageMap(props: {
             onMouseLeave={onMouseLeave}
             targetState={targetState}
             hoveredState={hoveredState}
+            CustomStateComponent={PresidentialState}
           />
           {!!hoveredState || !!targetState ? (
             <StateContract
@@ -114,6 +117,7 @@ export function HomepageMap(props: {
             onMouseLeave={onMouseLeave}
             targetState={targetState}
             hoveredState={hoveredState}
+            CustomStateComponent={SenateState}
           />
           {!!hoveredState || !!targetState ? (
             <StateContract
