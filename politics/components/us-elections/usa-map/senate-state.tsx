@@ -106,12 +106,17 @@ function getSenateFill(stateKey: string) {
 export function SenateCurrentOrContract(props: {
   targetContract: Contract | null
   targetState?: string | null
+  hoveredState?: string | null
   setTargetState: (state?: string) => void
 }) {
-  const { targetContract, targetState, setTargetState } = props
+  const { targetContract, targetState, setTargetState, hoveredState } = props
+  console.log('UM HELLO', hoveredState, targetState, targetContract)
   if (!targetContract) {
     return (
-      <SenateCurrentCard state={targetState} setTargetState={setTargetState} />
+      <SenateCurrentCard
+        state={hoveredState ?? targetState}
+        setTargetState={setTargetState}
+      />
     )
   }
 
