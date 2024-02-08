@@ -456,7 +456,7 @@ export const PushNotificationsBanner = () => {
             size={'2xs'}
             className={'ml-2 inline-block whitespace-nowrap'}
             onClick={() => {
-              updatePrivateUser({ interestedInPushNotifications: false })
+              updatePrivateUser({ interestedInPushNotifications: null })
             }}
           >
             Turn on
