@@ -20,7 +20,7 @@ export const getLikesAndShipsMain = async (userId: string) => {
     created_time: number
   }>(
     `
-      select target_id, lovers.created_time
+      select target_id, love_likes.created_time
       from love_likes
       join lovers on lovers.user_id = love_likes.target_id
       join users on users.id = love_likes.target_id
@@ -42,7 +42,7 @@ export const getLikesAndShipsMain = async (userId: string) => {
     created_time: number
   }>(
     `
-      select creator_id, lovers.created_time
+      select creator_id, love_likes.created_time
       from love_likes
       join lovers on lovers.user_id = love_likes.creator_id
       join users on users.id = love_likes.creator_id

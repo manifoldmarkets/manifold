@@ -20,6 +20,7 @@ import { MatchPositionsButton } from '../matches/match-positions'
 import { MatchAvatars } from '../matches/match-avatars'
 import { MatchBetButton } from '../matches/match-bet'
 import { linkClass } from 'web/components/widgets/site-link'
+import { Subtitle } from './lover-subtitle'
 
 export const MarketsDisplay = ({
   profileLover,
@@ -37,7 +38,8 @@ export const MarketsDisplay = ({
   const loversByUserId = keyBy(lovers, 'user_id')
 
   return (
-    <Col>
+    <Col className="gap-2">
+      <Subtitle>Predicted matches</Subtitle>
       <Carousel>
         {sortedAnswers.map((answer) => {
           if (!answer.loverUserId) return null
