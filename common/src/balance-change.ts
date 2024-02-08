@@ -10,21 +10,7 @@ export type AnyBalanceChangeType =
 
 export type BalanceChange = {
   amount: number
-  type: // txns:
-  | 'managram'
-    | 'manalink'
-    | 'contract_payout'
-    | 'create_contract_quest_bonus'
-    | 'contract_unique_trader_bonus'
-    | 'prediction_bonus'
-    | 'share_bonus'
-    // contracts
-    | 'create_contract_ante'
-    // liquidites? or maybe txns too
-    | 'subsidize_contract'
-
-  user?: Pick<User, 'username'>
-
+  type: string
   createdTime: number
 }
 type MinimalContract = Pick<
@@ -55,6 +41,7 @@ export const TXN_BALANCE_CHANGE_TYPES = [
   'MANA_PAYMENT',
   'LOAN',
   'STARTING_BALANCE',
+  'ADD_SUBSIDY',
 ]
 export type TxnType = (typeof TXN_BALANCE_CHANGE_TYPES)[number]
 export type TxnBalanceChange = CustomBalanceChange & {

@@ -394,6 +394,7 @@ const TxnBalanceChangeRow = (props: {
     BOUNTY_AWARDED: 'bg-teal-600',
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
+    ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
   }
   return (
@@ -410,7 +411,13 @@ const TxnBalanceChangeRow = (props: {
           <ChangeIcon
             slug={contract?.slug ?? changeUser?.username ?? ''}
             symbol={
-              type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
+              type === 'MANA_PAYMENT' ? (
+                '💸'
+              ) : type === 'MARKET_BOOST_CREATE' ? (
+                '🚀'
+              ) : type === 'ADD_SUBSIDY' ? (
+                '💰'
+              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
                 '🎉'
               ) : type === 'CREATE_CONTRACT_ANTE' ||
                 type === 'BOUNTY_POSTED' ? (
@@ -476,7 +483,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'LOAN':
       return <span>Loan</span>
     case 'MARKET_BOOST_REDEEM':
-      return <span>Ad claim</span>
+      return <span>Claim boost</span>
     case 'SIGNUP_BONUS':
       return <span>Question exploration bonus</span>
     case 'STARTING_BALANCE':
@@ -485,23 +492,11 @@ const txnTitle = (change: TxnBalanceChange) => {
       return <span>{contract?.question}</span>
   }
 }
-const questTypeToDescription = (questType: QuestType) => {
-  switch (questType) {
-    case 'BETTING_STREAK':
-      return <span>Prediction streak</span>
-    case 'SHARES':
-      return <span>Question share</span>
-    case 'MARKETS_CREATED':
-      return <span>Question creation</span>
-    case 'REFERRALS':
-      return <span>Referral</span>
-    default:
-      return <span>{questType}</span>
-  }
-}
 
 const txnTypeToDescription = (txnCategory: TxnType) => {
   switch (txnCategory) {
+    case 'MARKET_BOOST_CREATE':
+      return <span>Boost</span>
     case 'CONTRACT_RESOLUTION_PAYOUT':
       return <span>Payout</span>
     case 'CREATE_CONTRACT_ANTE':
@@ -518,8 +513,8 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return <span></span>
     case 'MARKET_BOOST_REDEEM':
       return <span></span>
-    case 'MARKET_BOOST_CREATE':
-      return <span>Ad create</span>
+    case 'ADD_SUBSIDY':
+      return <span>Subsidy</span>
     case 'QUEST_REWARD':
       return <span>Quest</span>
     case 'LEAGUE_PRIZE':
@@ -534,5 +529,20 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return <span></span>
     default:
       return <span>{txnCategory}</span>
+  }
+}
+
+const questTypeToDescription = (questType: QuestType) => {
+  switch (questType) {
+    case 'BETTING_STREAK':
+      return <span>Prediction streak</span>
+    case 'SHARES':
+      return <span>Question share</span>
+    case 'MARKETS_CREATED':
+      return <span>Question creation</span>
+    case 'REFERRALS':
+      return <span>Referral</span>
+    default:
+      return <span>{questType}</span>
   }
 }
