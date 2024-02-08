@@ -1,7 +1,7 @@
 import { keyBy, orderBy } from 'lodash'
 import Link from 'next/link'
 import Image from 'next/image'
-import { UserIcon, ExternalLinkIcon } from '@heroicons/react/solid'
+import { UserIcon, ExternalLinkIcon, CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 
 import { Lover } from 'common/love/lover'
@@ -26,10 +26,12 @@ export const MarketsDisplay = ({
   profileLover,
   contract,
   lovers,
+  mutuallyMessagedUserIds,
 }: {
   profileLover: Lover
   contract: CPMMMultiContract
   lovers: Lover[]
+  mutuallyMessagedUserIds: string[]
 }) => {
   const currentUser = useUser()
   const answers = useAnswersCpmm(contract.id) ?? contract.answers
@@ -64,6 +66,9 @@ export const MarketsDisplay = ({
               answer={answer}
               lover={matchLover}
               isYourMatch={currentUser?.id === profileLover.user_id}
+              haveMutuallyMessaged={mutuallyMessagedUserIds.includes(
+                matchLover.user_id
+              )}
             />
           )
         })}
@@ -78,8 +83,16 @@ const MatchTile = (props: {
   answer: Answer
   lover: Lover
   isYourMatch: boolean
+  haveMutuallyMessaged: boolean
 }) => {
-  const { contract, answer, lover, isYourMatch, profileLover } = props
+  const {
+    contract,
+    answer,
+    lover,
+    isYourMatch,
+    profileLover,
+    haveMutuallyMessaged,
+  } = props
 
   const { user, pinned_url } = lover
   const currentUser = useUser()
@@ -111,6 +124,12 @@ const MatchTile = (props: {
           <Col className="bg-ink-300 h-full w-full items-center justify-center">
             <UserIcon className="h-20 w-20" />
           </Col>
+        )}
+        {haveMutuallyMessaged && (
+          <Row className="bg-primary-500 absolute bottom-2 right-3 gap-1 rounded px-2 py-1 text-xs text-white">
+            <CheckIcon className="h-4 w-4 text-white" />
+            <div>Mutual messages</div>
+          </Row>
         )}
         {isYourMatch && (
           <Col className="absolute right-3 top-2 gap-2">

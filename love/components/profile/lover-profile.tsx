@@ -163,6 +163,7 @@ function LoverContent(props: {
           profileLover={lover}
           lovers={contractData.lovers}
           contract={contractData.contract}
+          mutuallyMessagedUserIds={contractData.mutuallyMessagedUserIds}
         />
       )}
       <LikesDisplay

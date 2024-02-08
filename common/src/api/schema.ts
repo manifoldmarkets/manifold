@@ -770,6 +770,7 @@ export const API = (_apiTypeCheck = {
       status: 'success'
       contract: CPMMMultiContract | null
       lovers: Lover[]
+      mutuallyMessagedUserIds: string[]
     },
   },
 } as const)
