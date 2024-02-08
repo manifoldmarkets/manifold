@@ -16,7 +16,7 @@ import {
   shortFormatNumber,
 } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
-import { DAY_MS, WEEK_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { orderBy, sumBy } from 'lodash'
 import { QuestType } from 'common/quest'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -59,7 +59,7 @@ export const getStaticProps = async (props: {
   const balanceChanges = user
     ? await api('get-balance-changes', {
         userId: user.id,
-        after: Date.now() - WEEK_MS,
+        after: Date.now() - DAY_MS,
       })
     : []
   return {
@@ -266,8 +266,13 @@ const BalanceChangesModal = (props: {
     'amount'
   )
   return (
-    <Modal size={'lg'} open={true} setOpen={setOpen} className={MODAL_CLASS}>
-      <Col className={'w-full justify-center'}>
+    <Modal
+      size={'lg'}
+      open={true}
+      setOpen={setOpen}
+      className={clsx(MODAL_CLASS)}
+    >
+      <Col className={' w-full justify-center'}>
         <Row className={'ml-2 justify-around'}>
           <Col>
             <span className={'ml-1'}>Your balance</span>
@@ -287,24 +292,23 @@ const BalanceChangesModal = (props: {
           </Col>
         </Row>
 
-        <Col className={'gap-4 border-t-2 pt-4'}>
+        <Col
+          className={'max-h-[70vh] gap-4 overflow-auto border-t-2 px-3 pt-4'}
+        >
           {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
             const { type } = change
 
-            // BetBalanceChanges
             if (['sell_shares', 'create_bet', 'redeem_shares'].includes(type)) {
               return (
                 <BetBalanceChangeRow
-                  key={change.createdTime}
+                  key={change.createdTime + change.amount + type}
                   change={change as BetBalanceChange}
                 />
               )
-            }
-            // TxnBalanceChanges
-            else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+            } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
               return (
                 <TxnBalanceChangeRow
-                  key={change.createdTime}
+                  key={change.createdTime + change.amount + type}
                   change={change as TxnBalanceChange}
                   avatarlUrl={user.avatarUrl}
                 />
