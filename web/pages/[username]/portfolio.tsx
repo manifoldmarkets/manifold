@@ -131,7 +131,7 @@ function UserPortfolioInternal(props: {
             </Col>
           </Link>
         </Row>
-        <Row className={'flex-wrap gap-4 px-2'}>
+        <Row className={'flex-wrap gap-4 px-2 sm:px-0 '}>
           <BalanceCard
             user={user}
             balanceChanges={balanceChanges}
@@ -142,14 +142,14 @@ function UserPortfolioInternal(props: {
           <InvestmentValueCard
             user={user}
             className={
-              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
+              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[49%]'
             }
           />
         </Row>
-        <div className={'my-5 border-t-2'} />
+        <div className={'my-5'} />
         <Col className={''}>
           {!!user.metricsLastUpdated && (
-            <Col className={'px-1'}>
+            <Col className={'px-1 md:pr-8'}>
               <PortfolioValueSection
                 userId={user.id}
                 onlyShowProfit={true}
@@ -162,7 +162,7 @@ function UserPortfolioInternal(props: {
               />
             </Col>
           )}
-          <div className={'my-5 border-t-2'} />
+          <div className={'my-5 '} />
           <Row className={' justify-between px-1'}>
             <span className={'text-primary-700 mb-1 text-2xl'}>
               Your trades
