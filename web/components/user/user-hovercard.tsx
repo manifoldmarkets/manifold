@@ -23,7 +23,7 @@ export function UserHovercard({
   className,
 }: UserHovercardProps) {
   return (
-    <HoverCard.Root>
+    <HoverCard.Root openDelay={150}>
       <HoverCard.Trigger asChild className={className}>
         {children}
       </HoverCard.Trigger>
