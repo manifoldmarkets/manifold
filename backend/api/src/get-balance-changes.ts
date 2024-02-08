@@ -149,7 +149,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
      select json_agg(cb.data) as bets, c.data as contract
      from contract_bets cb
               join contracts c on cb.contract_id = c.id
-     where cb.created_time > millis_to_ts($1)
+     where cb.fs_updated_time > millis_to_ts($1)
         and cb.user_id = $2
      group by c.id;
     `,
@@ -165,12 +165,11 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
   const balanceChanges = [] as BetBalanceChange[]
   for (const contractId of Object.keys(contractToBets)) {
     const { bets, contract } = contractToBets[contractId]
-    const betsThusFar = []
-    for (const bet of bets) {
-      betsThusFar.push(bet)
-      const nextBetExists = betsThusFar.length < bets.length
-      const nextBetIsRedemption =
-        nextBetExists && bets[betsThusFar.length].isRedemption
+
+    for (let i = 0; i < bets.length; i++) {
+      const nextBetExists = i < bets.length - 1
+      const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
+      const bet = bets[i]
       const { isRedemption, outcome, createdTime, amount, shares } = bet
 
       if (isRedemption && nextBetIsRedemption) continue
@@ -180,11 +179,6 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           ? contract.answers.find((a) => a.id === bet.answerId)?.text
           : undefined
       const balanceChangeProps = {
-        type: isRedemption
-          ? 'redeem_shares'
-          : amount < 0
-          ? 'sell_shares'
-          : 'create_bet',
         bet: {
           outcome,
           shares,
@@ -197,10 +191,14 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         },
         answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
       }
-      if (bet.fills?.length) {
-        for (const fill of bet.fills) {
+      if (!!bet.limitProb && bet.fills) {
+        const fillsInTimeframe = bet.fills.filter(
+          (fill) => fill.timestamp > after
+        )
+        for (const fill of fillsInTimeframe) {
           const balanceChange = {
             ...balanceChangeProps,
+            type: 'fill_bet',
             amount: -fill.amount,
             createdTime: fill.timestamp,
           } as BetBalanceChange
@@ -210,6 +208,11 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         const changeToBalance = isRedemption ? -shares : -amount
         const balanceChange = {
           ...balanceChangeProps,
+          type: isRedemption
+            ? 'redeem_shares'
+            : amount < 0
+            ? 'sell_shares'
+            : 'create_bet',
           amount: changeToBalance,
           createdTime,
         } as BetBalanceChange

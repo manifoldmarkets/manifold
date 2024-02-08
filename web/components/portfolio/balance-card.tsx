@@ -143,7 +143,14 @@ const BalanceChangesModal = (props: {
           {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
             const { type } = change
 
-            if (['sell_shares', 'create_bet', 'redeem_shares'].includes(type)) {
+            if (
+              [
+                'sell_shares',
+                'create_bet',
+                'redeem_shares',
+                'fill_bet',
+              ].includes(type)
+            ) {
               return (
                 <BetBalanceChangeRow
                   key={change.createdTime + change.amount + type}
@@ -246,6 +253,8 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
           <div className={clsx('text-ink-500 line-clamp-1')}>
             {type === 'redeem_shares'
               ? `Redeem shares`
+              : type === 'fill_bet'
+              ? `Fill ${outcome} order`
               : type === 'sell_shares'
               ? `Sell ${outcome} shares`
               : `Buy ${outcome}`}

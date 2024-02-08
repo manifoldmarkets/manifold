@@ -20,7 +20,7 @@ type MinimalContract = Pick<
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
 
 export type BetBalanceChange = CustomBalanceChange & {
-  type: 'create_bet' | 'sell_shares' | 'redeem_shares'
+  type: 'create_bet' | 'sell_shares' | 'redeem_shares' | 'fill_bet'
   bet: Pick<Bet, 'outcome' | 'shares'>
   answer: Pick<Answer, 'text' | 'id'> | undefined
   contract: MinimalContract
