@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin'
 import { arrayRemove, deleteField } from 'firebase/firestore'
+import { APIHandler } from './helpers/endpoint'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
