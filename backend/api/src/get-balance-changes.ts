@@ -175,13 +175,11 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
 
       if (isRedemption && nextBetIsRedemption) continue
       const { question, visibility, creatorUsername, slug } = contract
-      const changeToBalance = !isRedemption ? -amount : -shares
       const text =
         contract.mechanism === 'cpmm-multi-1' && bet.answerId
           ? contract.answers.find((a) => a.id === bet.answerId)?.text
           : undefined
-      const balanceChange: BetBalanceChange = {
-        amount: changeToBalance,
+      const balanceChangeProps = {
         type: isRedemption
           ? 'redeem_shares'
           : amount < 0
@@ -197,10 +195,27 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           visibility,
           creatorUsername,
         },
-        createdTime,
         answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
       }
-      balanceChanges.push(balanceChange)
+      if (bet.fills?.length) {
+        for (const fill of bet.fills) {
+          const balanceChange = {
+            ...balanceChangeProps,
+            amount: -fill.amount,
+            createdTime: fill.timestamp,
+          } as BetBalanceChange
+          balanceChanges.push(balanceChange)
+        }
+      } else {
+        const changeToBalance = isRedemption ? -shares : -amount
+        const balanceChange = {
+          ...balanceChangeProps,
+          amount: changeToBalance,
+          createdTime,
+        } as BetBalanceChange
+
+        balanceChanges.push(balanceChange)
+      }
     }
   }
   return balanceChanges

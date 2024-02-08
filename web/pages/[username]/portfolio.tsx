@@ -117,17 +117,7 @@ function UserPortfolioInternal(props: {
     ),
     'amount'
   )
-  console.log(
-    'spentToday today',
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
-    )
-  )
 
-  const changeToday = sumBy(
-    balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
-    'amount'
-  )
   return (
     <Page
       key={user.id}
@@ -247,7 +237,6 @@ function UserPortfolioInternal(props: {
         </Col>
         {showBalanceChanges && (
           <BalanceChangesModal
-            changeToday={changeToday}
             user={user}
             balanceChanges={balanceChanges}
             setOpen={() => setShowBalanceChanges(false)}
@@ -260,26 +249,40 @@ function UserPortfolioInternal(props: {
 
 const BalanceChangesModal = (props: {
   user: User
-  changeToday: number
   balanceChanges: AnyBalanceChangeType[]
   setOpen: () => void
 }) => {
-  const { balanceChanges, changeToday, setOpen, user } = props
+  const { balanceChanges, setOpen, user } = props
+  const spentToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
+    ),
+    'amount'
+  )
+  const earnedToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
+    ),
+    'amount'
+  )
   return (
     <Modal size={'lg'} open={true} setOpen={setOpen} className={MODAL_CLASS}>
       <Col className={'w-full justify-center'}>
         <Row className={'ml-2 justify-around'}>
           <Col>
             <span className={'ml-1'}>Your balance</span>
-            <span className={'mb-1 text-2xl'}>{formatMoney(user.balance)}</span>
+            <span className={'mb-1 text-xl'}>{formatMoney(user.balance)}</span>
           </Col>
           <Col>
-            <span className={'ml-1'}>
-              {changeToday > 0 ? 'Earned ' : 'Spent '}
-              today
+            <span className={'ml-1'}>Spent today</span>
+            <span className={clsx('mb-1 text-xl')}>
+              {formatMoney(spentToday).replace('-', '')}
             </span>
-            <span className={clsx('mb-1 text-2xl')}>
-              {formatMoney(changeToday).replace('-', '')}
+          </Col>
+          <Col>
+            <span className={'ml-1'}>Earned today</span>
+            <span className={clsx('mb-1 text-xl')}>
+              {formatMoney(earnedToday).replace('-', '')}
             </span>
           </Col>
         </Row>
