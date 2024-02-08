@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react'
-import clsx from 'clsx'
-import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import { requestLoan } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
-import { dailyStatsClass } from 'web/components/home/daily-stats'
-import { Row } from 'web/components/layout/row'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
@@ -15,9 +11,9 @@ import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { updateUser } from 'web/lib/firebase/users'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { track } from 'web/lib/service/analytics'
 import { DAY_MS } from 'common/util/time'
+import { Button } from 'web/components/buttons/button'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -65,19 +61,21 @@ export function DailyLoan(props: { user: User }) {
       updateUser(user.id, { hasSeenLoanModal: true })
   }, [showLoansModal])
 
-  const createdRecently = user.createdTime > Date.now() - DAY_MS
+  const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
   if (createdRecently) {
     return null
   }
 
   return (
-    <Col
-      className={clsx(
-        dailyStatsClass,
-        receivedLoanToday || notEligibleForLoan
-          ? ''
-          : 'hover:bg-canvas-100 ring-[1.7px] ring-amber-300'
-      )}
+    <Button
+      color={'gray-outline'}
+      size={'2xs'}
+      loading={loaning}
+      disabled={loaning || receivedLoanToday || notEligibleForLoan}
+      onClick={(e) => {
+        e.stopPropagation()
+        getLoan()
+      }}
     >
       <Tooltip
         text={
@@ -89,20 +87,7 @@ export function DailyLoan(props: { user: User }) {
         }
         placement={'bottom'}
       >
-        <button disabled={loaning} onClick={getLoan}>
-          <Row
-            className={clsx(
-              'items-center justify-center whitespace-nowrap px-1'
-            )}
-          >
-            {receivedLoanToday || notEligibleForLoan ? (
-              <GiOpenChest className="h-6 w-6 text-yellow-900" />
-            ) : (
-              <GiTwoCoins className="h-6 w-6 text-yellow-300" />
-            )}
-          </Row>
-          <div className="text-ink-600 text-xs">Loan</div>
-        </button>
+        Get loan
       </Tooltip>
       {showLoansModal && (
         <LoansModal
@@ -111,6 +96,6 @@ export function DailyLoan(props: { user: User }) {
           setOpen={setShowLoansModal}
         />
       )}
-    </Col>
+    </Button>
   )
 }

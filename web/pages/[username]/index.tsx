@@ -69,7 +69,6 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { DailyLoan } from 'web/components/home/daily-loan'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage } from 'common/user'
 
@@ -266,7 +265,6 @@ function UserProfile(props: {
           </Row>
           {isCurrentUser ? (
             <Row className={'items-center gap-1 sm:gap-2'}>
-              <DailyLoan user={user} />
               <DailyLeagueStat user={user} />
               <QuestsOrStreak user={user} />
             </Row>

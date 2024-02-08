@@ -14,6 +14,7 @@ import { formatMoney, formatPercent } from 'common/util/format'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
 import { ArrowUpIcon } from '@heroicons/react/solid'
+import { DailyLoan } from 'web/components/home/daily-loan'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
@@ -47,7 +48,7 @@ export const InvestmentValueCard = memo(function (props: {
   const percentChange = dailyProfit / investment
   return (
     <Row
-      className={className}
+      className={clsx(className, 'relative')}
       onClick={withTracking(() => {
         setOpen(true)
       }, DAILY_INVESTMENT_CLICK_EVENT)}
@@ -72,6 +73,9 @@ export const InvestmentValueCard = memo(function (props: {
               {formatPercent(percentChange)} today
             </Row>
           )}
+          <div className={'absolute right-2 top-2'}>
+            <DailyLoan user={user} />
+          </div>
           {open && (
             <DailyProfitModal
               setOpen={setOpen}
