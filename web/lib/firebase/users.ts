@@ -26,13 +26,12 @@ import { app, db } from './init'
 import { coll, getValues, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
-
-export { updatePrivateUser } from './api'
+import { APIParams } from 'common/api/schema'
+import { useRefreshPrivateUser } from 'web/components/auth-context'
 
 dayjs.extend(utc)
 
 export const users = coll<User>('users')
-const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
 
@@ -52,20 +51,22 @@ export async function updateUser(userId: string, update: Partial<User>) {
   await updateDoc(doc(users, userId), { ...update })
 }
 
+export async function updatePrivateUser(
+  props: APIParams<'update-private-user'>
+) {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const refresh = useRefreshPrivateUser()
+
+  await api('update-private-user', props)
+  refresh()
+}
+
 export function listenForUser(
   userId: string,
   setUser: (user: User | null) => void
 ) {
   const userRef = doc(users, userId)
   return listenForValue<User>(userRef, setUser)
-}
-
-export function listenForPrivateUser(
-  userId: string,
-  setPrivateUser: (privateUser: PrivateUser | null) => void
-) {
-  const userRef = doc(privateUsers, userId)
-  return listenForValue<PrivateUser>(userRef, setPrivateUser)
 }
 
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'

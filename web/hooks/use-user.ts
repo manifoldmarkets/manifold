@@ -1,24 +1,24 @@
 'use client'
 import { PrivateUser } from 'common/user'
-import { useContext, useEffect, useState } from 'react'
-import { AuthContext } from 'web/components/auth-context'
+import { useEffect, useState } from 'react'
+import { useAuthUser } from 'web/components/auth-context'
 import { listenForUser } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useStore, useStoreItems } from './use-store'
 
 export const useUser = () => {
-  const authUser = useContext(AuthContext)
+  const authUser = useAuthUser()
   return authUser ? authUser.user : authUser
 }
 
 export const usePrivateUser = () => {
-  const authUser = useContext(AuthContext)
+  const authUser = useAuthUser()
   return authUser ? authUser.privateUser : authUser
 }
 
 export const useIsAuthorized = () => {
-  const authUser = useContext(AuthContext)
+  const authUser = useAuthUser()
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 

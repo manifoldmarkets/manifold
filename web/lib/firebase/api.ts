@@ -144,8 +144,6 @@ export function registerDiscordId(params: any) {
   return call(getApiUrl('registerdiscordid'), 'POST', params)
 }
 
-export const updatePrivateUser = curriedAPI('update-private-user')
-
 export function getUserIsGroupMember(params: { groupSlug: string }) {
   return call(getApiUrl('getuserisgroupmember'), 'POST', params)
 }
