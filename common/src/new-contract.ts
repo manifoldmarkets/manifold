@@ -91,7 +91,7 @@ export function getNewContract(props: {
         ante
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
     POLL: () => getPollProps(answers),
   }[outcomeType]()
 
@@ -299,13 +299,13 @@ function createAnswers(
   })
 }
 
-const getBountiedQuestionProps = () => {
+const getBountiedQuestionProps = (ante: number) => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
     bountyTxns: [],
-    totalBounty: 0,
-    bountyLeft: 0,
+    totalBounty: ante,
+    bountyLeft: ante,
   }
 
   return system

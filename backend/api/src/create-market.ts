@@ -1,11 +1,6 @@
 import * as admin from 'firebase-admin'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  getCpmmInitialLiquidity,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   add_answers_mode,
   Contract,
@@ -25,7 +20,7 @@ import {
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
+import { GCPLog, getUser, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -229,67 +224,27 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
-    if (amountSuppliedByHouse > 0) {
-      await runTxnFromBank(trans, {
-        amount: amountSuppliedByHouse,
-        category: 'CREATE_CONTRACT_ANTE',
-        toId: contract.id,
-        toType: 'CONTRACT',
-        fromType: 'BANK',
-        token: 'M$',
-      })
-    }
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
+    })
+  }
 
-    if (amountSuppliedByUser > 0) {
-      await runTxn(trans, {
-        fromId: user.id,
-        fromType: 'USER',
-        toId: contract.id,
-        toType: 'CONTRACT',
-        amount: amountSuppliedByUser,
-        token: 'M$',
-        category: 'CREATE_CONTRACT_ANTE',
-      })
-    }
-  } else {
-    // Even if their debit is 0, it seems important that the user posts the bounty
-    await runPostBountyTxn(
-      trans,
-      {
-        fromId: user.id,
-        fromType: 'USER',
-        toId: contract.id,
-        toType: 'CONTRACT',
-        amount: amountSuppliedByUser,
-        token: 'M$',
-        category: 'BOUNTY_POSTED',
-      },
-      contractRef,
-      userDocRef
-    )
-    if (amountSuppliedByHouse > 0) {
-      const houseId = isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-      const houseDoc = await trans.get(
-        firestore.collection('users').doc(houseId)
-      )
-      await runPostBountyTxn(
-        trans,
-        {
-          fromId: houseDoc.id,
-          fromType: 'USER',
-          toId: contract.id,
-          toType: 'CONTRACT',
-          amount: amountSuppliedByHouse,
-          token: 'M$',
-          category: 'BOUNTY_ADDED',
-        },
-        contractRef,
-        houseDoc.ref
-      )
-    }
+  if (amountSuppliedByUser > 0) {
+    await runTxn(trans, {
+      fromId: user.id,
+      fromType: 'USER',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      amount: amountSuppliedByUser,
+      token: 'M$',
+      category: 'CREATE_CONTRACT_ANTE',
+    })
   }
 
   if (amountSuppliedByHouse > 0)
