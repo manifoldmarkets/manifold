@@ -117,6 +117,12 @@ function UserPortfolioInternal(props: {
     ),
     'amount'
   )
+  console.log(
+    'spentToday today',
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
+    )
+  )
 
   const changeToday = sumBy(
     balanceChanges.filter((change) => change.createdTime > Date.now() - DAY_MS),
@@ -173,10 +179,12 @@ function UserPortfolioInternal(props: {
                 {formatMoney(user.balance)}
               </span>
               <Row className={'float-left w-full gap-1'}>
-                <Col className={clsx('')}>{formatMoney(earnedToday)} spent</Col>
+                <Col className={clsx('')}>
+                  {formatMoney(earnedToday)} earned
+                </Col>
                 &
                 <Col className={clsx('')}>
-                  {formatMoney(spentToday).replace('-', '')} earned
+                  {formatMoney(spentToday).replace('-', '')} spent
                 </Col>
                 today
               </Row>
