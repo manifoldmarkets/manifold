@@ -32,6 +32,7 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -787,6 +788,18 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: [] as { topic: Topic; contracts: Contract[] }[],
     props: z.object({}),
+  },
+  'get-balance-changes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as AnyBalanceChangeType[],
+    props: z
+      .object({
+        after: z.coerce.number(),
+        userId: z.string(),
+      })
+      .strict(),
   },
 } as const)
 

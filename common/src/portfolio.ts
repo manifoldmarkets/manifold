@@ -24,5 +24,5 @@ export const convertPortfolio = (portfolioRow: any) => {
 }
 
 export function portfolioPath(portfolioSlug: string) {
-  return `/portfolio/${portfolioSlug}`
+  return `/portfolios/${portfolioSlug}`
 }
