@@ -13,7 +13,7 @@ import { DEFAULT_STATE_FILL } from './usa-state'
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
 export const DEM_REP_PURPLE = '#73496f'
-const PATTERN_SIZE = 4
+const PATTERN_SIZE = 5
 
 export type ClickHandler<
   E = SVGPathElement | SVGTextElement | SVGCircleElement,

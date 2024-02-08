@@ -13,7 +13,7 @@ import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { EmptyStateContract, StateContract } from './state-contract'
 import { USAMap } from './usa-map'
 import { PresidentialState } from './presidential-state'
-import { SenateState } from './senate-state'
+import { SenateCurrentOrContract, SenateState } from './senate-state'
 
 type MapMode = 'presidency' | 'senate'
 
@@ -34,7 +34,7 @@ export function HomepageMap(props: {
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      acc[key] = useLiveContract(rawPresidencyStateContracts[key]!)
+      acc[key] = useLiveContract(rawSenateStateContracts[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -102,7 +102,7 @@ export function HomepageMap(props: {
               setTargetState={setTargetState}
             />
           ) : (
-            <div className=" h-[183px] w-full" />
+            <EmptyStateContract />
           )}
         </>
       ) : (
@@ -120,7 +120,7 @@ export function HomepageMap(props: {
             CustomStateComponent={SenateState}
           />
           {!!hoveredState || !!targetState ? (
-            <StateContract
+            <SenateCurrentOrContract
               targetContract={
                 senateContractsDictionary[
                   hoveredState! ?? targetState
