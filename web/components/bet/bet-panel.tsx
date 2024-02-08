@@ -102,6 +102,8 @@ export function BuyPanel(props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
+  const [isYesNoSelectorVisible, setIsYesNoSelectorVisible] = useState(true)
+
   useEffect(() => {
     if (initialOutcome) {
       setOption(initialOutcome)
@@ -111,12 +113,11 @@ export function BuyPanel(props: {
   function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
     if (option === choice && !initialOutcome) {
       setOption(undefined)
+      setIsYesNoSelectorVisible(true)
     } else {
-      // Skip for modals, we are tracking intent at the trigger call sites
-      if (!inModal) {
-        track('bet intent', { location, option })
-      }
+      track('bet intent', { location, option })
       setOption(choice)
+      setIsYesNoSelectorVisible(false)
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -257,178 +258,194 @@ export function BuyPanel(props: {
 
   return (
     <Col>
-      <Row
-        className={clsx(
-          'mb-2 w-full items-center gap-2',
-          singularView ? 'hidden' : ''
-        )}
-      >
-        <YesNoSelector
-          className="flex-1"
-          btnClassName="flex-1 px-2 sm:px-6"
-          selected={selected}
-          highlight
-          onSelect={(choice) => {
-            onOptionChoice(choice)
-          }}
-          yesLabel={
-            isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
-          }
-          noLabel={
-            isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-          }
-        />
-        {!!user && !isStonk && (
-          <Button
-            color={seeLimit ? 'indigo' : 'indigo-outline'}
-            onClick={() => onOptionChoice('LIMIT')}
-            className={clsx(
-              'px-2 text-lg sm:px-6',
-              selected !== undefined ? '!rounded-full' : ''
-            )}
-            size="lg"
-          >
-            %
-          </Button>
-        )}
-      </Row>
-      <Col
-        className={clsx(
-          !singularView
-            ? outcome === 'NO'
-              ? 'bg-scarlet-50'
-              : outcome === 'YES'
-              ? 'bg-teal-50'
-              : 'hidden'
-            : '',
-          'rounded-xl',
-          singularView ? '' : ' px-4 py-2',
-          singularView && option === 'LIMIT' ? 'hidden' : ''
-        )}
-      >
-        <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
-
-        <Row className="mb-6 flex-wrap gap-x-8 gap-y-4">
-          <BuyAmountInput
-            amount={betAmount}
-            onChange={onBetChange}
-            error={error}
-            setError={setError}
-            disabled={isSubmitting}
-            inputRef={inputRef}
-            binaryOutcome={outcome}
-            showBalance
-            showSlider
+      {isYesNoSelectorVisible ? (
+        <Row
+          className={clsx(
+            'mb-2 w-full items-center gap-2',
+            singularView ? 'hidden' : ''
+          )}
+        >
+          <YesNoSelector
+            className="flex-1"
+            btnClassName="flex-1 px-2 sm:px-6"
+            selected={selected}
+            highlight
+            onSelect={(choice) => {
+              onOptionChoice(choice)
+            }}
+            yesLabel={
+              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+            }
+            noLabel={
+              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+            }
           />
+          {!!user && !isStonk && (
+            <Button
+              color={seeLimit ? 'indigo' : 'indigo-outline'}
+              onClick={() => onOptionChoice('LIMIT')}
+              className={clsx(
+                'px-2 text-lg sm:px-6',
+                selected !== undefined ? '!rounded-full' : ''
+              )}
+              size="lg"
+            >
+              %
+            </Button>
+          )}
+        </Row>
+      ) : (
+        <Col
+          className={clsx(
+            !singularView
+              ? outcome === 'NO'
+                ? 'bg-scarlet-50'
+                : outcome === 'YES'
+                ? 'bg-teal-50'
+                : 'hidden'
+              : '',
+            'rounded-xl',
+            singularView ? '' : ' px-4 py-2',
+            singularView && option === 'LIMIT' ? 'hidden' : ''
+          )}
+        >
+          <div className="text-ink-700 mb-1 mt-2 text-sm">Amount</div>
 
-          <Row className="mt-2 flex-1 gap-2">
-            <Col className="min-w-[128px]">
-              <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
-                {isPseudoNumeric || isStonk ? (
-                  'Shares'
+          <Row className="mb-6 flex-wrap gap-x-8 gap-y-4">
+            <BuyAmountInput
+              amount={betAmount}
+              onChange={onBetChange}
+              error={error}
+              setError={setError}
+              disabled={isSubmitting}
+              inputRef={inputRef}
+              binaryOutcome={outcome}
+              showBalance
+              showSlider
+            />
+
+            <Row className="mt-2 flex-1 gap-2">
+              <Col className="min-w-[128px]">
+                <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
+                  {isPseudoNumeric || isStonk ? (
+                    'Shares'
+                  ) : (
+                    <>Payout if {outcome ?? 'YES'}</>
+                  )}
+                </Col>
+                <div>
+                  <span className="whitespace-nowrap text-lg font-semibold">
+                    {isStonk
+                      ? getStonkDisplayShares(contract, currentPayout, 2)
+                      : isPseudoNumeric
+                      ? Math.floor(currentPayout)
+                      : formatMoney(currentPayout)}
+                  </span>
+                  <span className="text-ink-500 pr-3 text-sm">
+                    {isStonk || isPseudoNumeric
+                      ? ''
+                      : ' +' + currentReturnPercent}
+                  </span>
+                </div>
+              </Col>
+              <Col className="min-w-[120px] text-sm">
+                <Row>
+                  <span className="text-ink-700 whitespace-nowrap text-sm">
+                    {isPseudoNumeric
+                      ? 'Estimated value'
+                      : isStonk
+                      ? 'New stock price'
+                      : 'New probability'}
+                  </span>
+                  {!isPseudoNumeric && !isStonk && (
+                    <InfoTooltip
+                      text={`The probability of YES after your ${SINGULAR_BET}`}
+                      className="text-ink-400 ml-1"
+                      size="sm"
+                    />
+                  )}
+                </Row>
+                {probStayedSame ? (
+                  <div className="text-lg font-semibold">
+                    {getFormattedMappedValue(contract, probBefore)}
+                  </div>
                 ) : (
-                  <>Payout if {outcome ?? 'YES'}</>
+                  <div>
+                    <span className="text-lg font-semibold">
+                      {getFormattedMappedValue(contract, probAfter)}
+                    </span>
+                    <span
+                      className={clsx(
+                        'text-sm',
+                        highProbMove
+                          ? 'text-warning font-semibold'
+                          : 'text-ink-500'
+                      )}
+                    >
+                      {isPseudoNumeric ? (
+                        <></>
+                      ) : (
+                        <>
+                          {' '}
+                          {outcome != 'NO' && '+'}
+                          {getFormattedMappedValue(
+                            contract,
+                            probAfter - probBefore
+                          )}
+                        </>
+                      )}
+                    </span>
+                  </div>
                 )}
               </Col>
-              <div>
-                <span className="whitespace-nowrap text-lg font-semibold">
-                  {isStonk
-                    ? getStonkDisplayShares(contract, currentPayout, 2)
-                    : isPseudoNumeric
-                    ? Math.floor(currentPayout)
-                    : formatMoney(currentPayout)}
-                </span>
-                <span className="text-ink-500 pr-3 text-sm">
-                  {isStonk || isPseudoNumeric
-                    ? ''
-                    : ' +' + currentReturnPercent}
-                </span>
-              </div>
-            </Col>
-            <Col className="min-w-[120px] text-sm">
-              <Row>
-                <span className="text-ink-700 whitespace-nowrap text-sm">
-                  {isPseudoNumeric
-                    ? 'Estimated value'
-                    : isStonk
-                    ? 'New stock price'
-                    : 'New probability'}
-                </span>
-                {!isPseudoNumeric && !isStonk && (
-                  <InfoTooltip
-                    text={`The probability of YES after your ${SINGULAR_BET}`}
-                    className="text-ink-400 ml-1"
-                    size="sm"
-                  />
-                )}
-              </Row>
-              {probStayedSame ? (
-                <div className="text-lg font-semibold">
-                  {getFormattedMappedValue(contract, probBefore)}
-                </div>
-              ) : (
-                <div>
-                  <span className="text-lg font-semibold">
-                    {getFormattedMappedValue(contract, probAfter)}
-                  </span>
-                  <span
-                    className={clsx(
-                      'text-sm',
-                      highProbMove
-                        ? 'text-warning font-semibold'
-                        : 'text-ink-500'
-                    )}
-                  >
-                    {isPseudoNumeric ? (
-                      <></>
-                    ) : (
-                      <>
-                        {' '}
-                        {outcome != 'NO' && '+'}
-                        {getFormattedMappedValue(
-                          contract,
-                          probAfter - probBefore
-                        )}
-                      </>
-                    )}
-                  </span>
-                </div>
-              )}
-            </Col>
+            </Row>
           </Row>
-        </Row>
+          <Row>
+            {user ? (
+              <WarningConfirmationButton
+                marketType="binary"
+                amount={betAmount}
+                warning={warning}
+                userOptedOutOfWarning={user.optOutBetWarnings}
+                onSubmit={submitBet}
+                isSubmitting={isSubmitting}
+                disabled={betDisabled}
+                size="xl"
+                color={outcome === 'NO' ? 'red' : 'green'}
+                actionLabel={
+                  betDisabled
+                    ? `Select ${formatOutcomeLabel(
+                        contract,
+                        'YES'
+                      )} or ${formatOutcomeLabel(contract, 'NO')}`
+                    : `Bet ${outcome}`
+                }
+                inModal={inModal}
+              />
+            ) : (
+              <Button
+                color={outcome === 'NO' ? 'red' : 'green'}
+                size="xl"
+                onClick={withTracking(firebaseLogin, 'login from bet panel')}
+              >
+                Sign up to predict
+              </Button>
+            )}
 
-        {user ? (
-          <WarningConfirmationButton
-            marketType="binary"
-            amount={betAmount}
-            warning={warning}
-            userOptedOutOfWarning={user.optOutBetWarnings}
-            onSubmit={submitBet}
-            isSubmitting={isSubmitting}
-            disabled={betDisabled}
-            size="xl"
-            color={outcome === 'NO' ? 'red' : 'green'}
-            actionLabel={
-              betDisabled
-                ? `Select ${formatOutcomeLabel(
-                    contract,
-                    'YES'
-                  )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : `Bet ${formatMoney(betAmount)} on ${outcome}`
-            }
-            inModal={inModal}
-          />
-        ) : (
-          <Button
-            color={outcome === 'NO' ? 'red' : 'green'}
-            size="xl"
-            onClick={withTracking(firebaseLogin, 'login from bet panel')}
-          >
-            Sign up to predict
-          </Button>
-        )}
-      </Col>
+            <Button
+              color="gray"
+              size="xl"
+              className="ml-2"
+              onClick={() => {
+                setIsYesNoSelectorVisible(true)
+                setOption(undefined)
+              }}
+            >
+              Cancel
+            </Button>
+          </Row>
+        </Col>
+      )}
       <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
         <LimitOrderPanel
           className={clsx(

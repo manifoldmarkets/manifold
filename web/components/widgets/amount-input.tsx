@@ -12,6 +12,7 @@ import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementDecrementAmountButton } from './increment-button'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 export function AmountInput(
   props: {
@@ -47,6 +48,8 @@ export function AmountInput(
   const [amountString, setAmountString] = useState(amount?.toString() ?? '')
 
   const parse = allowFloat ? parseFloat : parseInt
+
+  const isAdvancedTrader = useIsAdvancedTrader()
 
   const bannedChars = new RegExp(
     `[^\\d${allowFloat && '.'}${allowNegative && '-'}]`,
@@ -107,7 +110,7 @@ export function AmountInput(
                 )}
                 onClick={() => onChangeAmount(undefined)}
               />
-              {quickAddMoreButton}
+              {isAdvancedTrader && quickAddMoreButton}
             </Row>
           </div>
         </label>
