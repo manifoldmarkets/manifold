@@ -138,7 +138,7 @@ const MatchTile = (props: {
               currentUser={currentUser}
               circleButton
             />
-            <RejectButton lover={lover} />
+            {/* <RejectButton lover={lover} /> */}
           </Col>
         )}
         {!isYourMatch && (
