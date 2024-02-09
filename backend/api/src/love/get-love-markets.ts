@@ -20,7 +20,7 @@ export const getLoveMarketsMain = async () => {
     where
       data->>'isLove' = 'true'
       and resolution is null
-    order by last_bet_time desc nulls last
+    order by importance_score desc nulls last
     `,
     [],
     (r) => r.data
