@@ -72,7 +72,7 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
             className={clsx(
               activeIndex === i
                 ? 'text-primary-600'
-                : 'text-ink-500 hover:text-ink-700',
+                : 'text-ink-400 hover:text-ink-700',
               'cursor-pointer whitespace-nowrap text-lg ',
               labelClassName
             )}

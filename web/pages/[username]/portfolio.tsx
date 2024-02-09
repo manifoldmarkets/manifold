@@ -183,12 +183,12 @@ function UserPortfolioInternal(props: {
               minimalist={true}
               tabs={buildArray([
                 (!!user.lastBetTime || hasBetBalanceChanges) && {
-                  title: 'Portfolio',
+                  title: 'Your trades',
                   content: <UserBetsTable user={user} />,
                 },
                 (user.creatorTraders.allTime > 0 ||
                   (user.freeQuestionsCreated ?? 0) > 0) && {
-                  title: 'Questions',
+                  title: 'Your questions',
                   content: (
                     <SupabaseSearch
                       defaultFilter="all"
