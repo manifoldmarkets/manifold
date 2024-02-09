@@ -1,5 +1,7 @@
 import { User } from 'common/user'
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+dayjs.extend(timezone)
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useCallback, useEffect } from 'react'
 import { run } from 'common/supabase/utils'
