@@ -15,6 +15,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { DailyProfitModal } from 'web/components/home/daily-profit'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { DailyLoan } from 'web/components/home/daily-loan'
+import { DAY_MS } from 'common/util/time'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
@@ -23,9 +24,6 @@ export const InvestmentValueCard = memo(function (props: {
   const { user, className } = props
 
   const portfolio = useCurrentPortfolio(user.id)
-  const investment = portfolio
-    ? portfolio.investmentValue + (portfolio.loanTotal ?? 0)
-    : 0
 
   const [open, setOpen] = useState(false)
 
@@ -45,6 +43,19 @@ export const InvestmentValueCard = memo(function (props: {
       return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [data])
   )
+
+  // If a user is new and we haven't calculated their portfolio value recently enough, show the metrics value instead
+  const portfolioValue = portfolio
+    ? portfolio.investmentValue + portfolio.loanTotal
+    : 0
+  const metricsValue = data ? sum(data.metrics.map((m) => m.payout ?? 0)) : 0
+  const investment =
+    metricsValue !== portfolioValue &&
+    metricsValue !== 0 &&
+    user.createdTime > Date.now() - DAY_MS
+      ? metricsValue
+      : portfolioValue
+
   const percentChange = dailyProfit / investment
   return (
     <Row
