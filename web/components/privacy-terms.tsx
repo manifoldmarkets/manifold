@@ -46,9 +46,5 @@ export const PrivacyTermsLab = () => (
     >
       Privacy policy
     </a>
-    <span className="mx-2">&bull;</span>
-    <Link href="/lab" className="hover:underline">
-      Lab
-    </Link>
   </div>
 )

@@ -10,7 +10,7 @@ import * as crypto from 'crypto'
 import {
   API,
   APIPath,
-  APIResponse,
+  APIResponseOptionalContinue,
   APISchema,
   ValidatedAPIParams,
 } from 'common/api/schema'
@@ -191,7 +191,7 @@ export type APIHandler<N extends APIPath> = (
     : AuthedUser | undefined,
   { log, logError }: { log: GCPLog; logError: GCPLog },
   res: Response
-) => Promise<APIResponse<N>>
+) => Promise<APIResponseOptionalContinue<N>>
 
 export const typedEndpoint = <N extends APIPath>(
   name: N,
@@ -215,18 +215,30 @@ export const typedEndpoint = <N extends APIPath>(
     const logs = getLogs(req)
 
     try {
-      const result = await handler(
+      const resultOptionalContinue = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
         logs,
         res
       )
 
+      const hasContinue =
+        resultOptionalContinue &&
+        'continue' in resultOptionalContinue &&
+        'result' in resultOptionalContinue
+      const result = hasContinue
+        ? resultOptionalContinue.result
+        : resultOptionalContinue
+
       if (!res.headersSent) {
         // Convert bigint to number, b/c JSON doesn't support bigint.
         const convertedResult = deepConvertBigIntToNumber(result)
 
         res.status(200).json(convertedResult ?? { success: true })
+      }
+
+      if (hasContinue) {
+        await resultOptionalContinue.continue()
       }
     } catch (e) {
       logs.logError('Error in api endpoint', { error: e })

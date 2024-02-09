@@ -20,7 +20,7 @@ export default function MarketsPage() {
   return (
     <LovePage trackPageView="love markets" className={'p-2 sm:pt-0'}>
       <Col className="gap-4">
-        <Title className='!mb-2'>Markets</Title>
+        <Title className="!mb-2">Markets</Title>
 
         {data &&
           data.contracts.map((contract) => {

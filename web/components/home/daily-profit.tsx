@@ -3,11 +3,15 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  shortFormatNumber,
+} from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
-import { Modal } from 'web/components/layout/modal'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { keyBy, partition, sortBy, sum } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
@@ -15,11 +19,11 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { Table } from '../widgets/table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { ArrowUpIcon } from '@heroicons/react/solid'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -98,7 +102,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
   )
 })
 
-function DailyProfitModal(props: {
+export function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   metrics?: ContractMetric[]
@@ -109,47 +113,41 @@ function DailyProfitModal(props: {
   const { open, setOpen, metrics, contracts, dailyProfit, investment } = props
 
   return (
-    <Modal open={open} setOpen={setOpen} size={'lg'}>
-      <div className="bg-canvas-0 text-ink-1000 rounded-lg p-4">
-        <Col className={'mb-4'}>
-          <Row className="gap-2 text-2xl">
-            <Col className="gap-2">
-              <div>Invested</div>
-              <div>Daily profit</div>
-            </Col>
-            <Col className="text-ink-600 items-end gap-2">
-              <div>{formatMoney(investment)}</div>
-              <div
-                className={clsx(
-                  dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                )}
-              >
-                {formatMoney(dailyProfit)}
-              </div>
-            </Col>
-          </Row>
-
-          <div className="text-ink-500 mt-4 text-sm">
-            Change in profit over the last 24 hours.{' '}
-            <InfoTooltip
-              text="I.e. the change in the value of your
-            shares in Yes/No questions. (Updates every 30 min)"
-            />
-          </div>
+    <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
+      <Row className={'ml-2 justify-around'}>
+        <Col>
+          <span className={'ml-1'}>Your investments</span>
+          <span className={'mb-1 text-2xl'}>{formatMoney(investment)}</span>
         </Col>
+        <Col>
+          <span className={'ml-1'}>Profit today</span>
+          <span
+            className={clsx(
+              'mb-1 inline-flex items-center text-2xl',
+              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+            )}
+          >
+            {dailyProfit > 0 ? (
+              <ArrowUpIcon className={'mr-1 h-4 w-4'} />
+            ) : (
+              <ArrowUpIcon className={'mr-1 h-4 w-4 rotate-180 transform'} />
+            )}
+            {formatPercent(dailyProfit / investment)}
+          </span>
+        </Col>
+      </Row>
 
-        {!metrics || !contracts ? (
-          <LoadingIndicator />
-        ) : (
-          <ProfitChangeTable
-            contracts={contracts}
-            metrics={metrics}
-            from={'day'}
-            rowsPerSection={4}
-            showPagination={true}
-          />
-        )}
-      </div>
+      {!metrics || !contracts ? (
+        <LoadingIndicator />
+      ) : (
+        <ProfitChangeTable
+          contracts={contracts}
+          metrics={metrics}
+          from={'day'}
+          rowsPerSection={5}
+          showPagination={true}
+        />
+      )}
     </Modal>
   )
 }
@@ -257,7 +255,7 @@ const ProfitCell = (props: { profit: number }) => (
   <td
     className={clsx(
       'mx-2 min-w-[2rem] text-right',
-      props.profit > 0 ? 'text-teal-500' : 'text-scarlet-600'
+      props.profit > 0 ? 'text-teal-600' : 'text-ink-600'
     )}
   >
     {formatMoney(props.profit)}

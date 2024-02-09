@@ -4,6 +4,7 @@ import { User } from 'common/user'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
+import { runTxn } from 'shared/txn/run-txn'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -48,22 +49,26 @@ export const addLiquidity: APIHandler<
         newLiquidityProvisionDoc.id
       )
 
+    await runTxn(transaction, {
+      fromId: user.id,
+      amount: amount,
+      toId: contractId,
+      toType: 'CONTRACT',
+      category: 'ADD_SUBSIDY',
+      token: 'M$',
+      fromType: 'USER',
+    })
+
     transaction.update(contractDoc, {
       subsidyPool: newSubsidyPool,
       totalLiquidity: newTotalLiquidity,
     } as Partial<CPMMContract>)
 
     const newBalance = user.balance - amount
-    const newTotalDeposits = user.totalDeposits - amount
 
     if (!isFinite(newBalance)) {
       throw new APIError(500, 'Invalid user balance for ' + user.username)
     }
-
-    transaction.update(userDoc, {
-      balance: newBalance,
-      totalDeposits: newTotalDeposits,
-    })
 
     transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
     return newLiquidityProvision

@@ -1,19 +1,17 @@
-import { PoliticsPage } from 'politics/components/politics-page'
-import { USElectionsPage } from 'politics/components/elections-page'
-import {
-  getElectionsPageProps,
-  REVALIDATE_CONTRACTS_SECONDS,
-} from 'web/lib/politics/home'
 import {
   ELECTION_DASHBOARD_DESCRIPTION,
   ELECTION_DASHBOARD_TITLE,
 } from 'common/politics/elections-data'
-import { api } from 'web/lib/firebase/api'
-import { HeadlineTabs } from 'politics/components/home-dashboard/news-sections'
-import { unstable_cache } from 'next/cache'
 import { HOUR_SECONDS } from 'common/util/time'
-import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+import { unstable_cache } from 'next/cache'
+import { USElectionsPage } from 'politics/components/elections-page'
 import { NewsDashboard } from 'politics/components/home-dashboard/news-dashboard'
+import { HeadlineTabs } from 'politics/components/home-dashboard/news-sections'
+import { PoliticsPage } from 'politics/components/politics-page'
+import { getHomeProps } from 'politics/lib/home/get-home-props'
+import { api } from 'web/lib/firebase/api'
+import { REVALIDATE_CONTRACTS_SECONDS } from 'web/lib/politics/home'
+import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 
 export const revalidate = REVALIDATE_CONTRACTS_SECONDS
 
@@ -26,7 +24,7 @@ export async function generateMetadata() {
 }
 
 export default async function Page() {
-  const props = await getElectionsPageProps(true)
+  const props = await getHomeProps()
   const headlines = await unstable_cache(
     async () => api('politics-headlines', {}),
     ['politics-headlines'],
@@ -47,11 +45,14 @@ export default async function Page() {
     <PoliticsPage trackPageView={'home'}>
       <div id={'#'} />
       <HeadlineTabs headlines={headlines} />
+
       <USElectionsPage {...props} />
+
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
           <NewsDashboard
             key={dashboard.slug + 'section'}
+            className="my-4"
             {...(dashboard as any)}
           />
         )

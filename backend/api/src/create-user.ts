@@ -76,8 +76,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
   const fromPolitics =
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_POLITICS === 'true'
-      : host?.includes(ENV_CONFIG.politicsDomain) ||
-        host?.includes(ENV_CONFIG.politicsDomainAlternate)) || undefined
+      : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
 
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
@@ -179,7 +178,7 @@ export const createuser = authEndpoint(async (req, auth, log) => {
   if (fromLove) await onboardLover(user, ip, log)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
   await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg, log)
-  const interestingContractIds = await getImportantContractsForNewUsers(100, pg)
+  const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
   await generateNewUserFeedFromContracts(
     auth.uid,
     pg,

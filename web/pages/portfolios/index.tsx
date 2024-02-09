@@ -234,7 +234,7 @@ function PortfolioCard(props: { portfolio: Portfolio }) {
 
   return (
     <Link
-      href={`/portfolio/${portfolio.slug}`}
+      href={`/portfolios/${portfolio.slug}`}
       className="bg-canvas-0 rounded border px-3 py-2 shadow"
     >
       <div className="text-ink-1000">{portfolio.name}</div>

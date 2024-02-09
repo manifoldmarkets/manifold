@@ -70,9 +70,7 @@ export default function Sidebar(props: {
           setIsModalOpen={setIsModalOpen}
         />
 
-        {user === null && (
-          <SignUpButton className="mt-4" text="Sign up" />
-        )}
+        {user === null && <SignUpButton className="mt-4" text="Sign up" />}
         {user === null && <SignUpAsMatchmaker className="mt-2" />}
 
         {user && lover === null && (
@@ -107,7 +105,11 @@ const bottomNav = (
   toggleTheme: () => void
 ) =>
   buildArray(
-    { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
+    loggedIn && {
+      name: 'Share with friends',
+      href: '/referrals',
+      icon: HeartIcon,
+    },
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {

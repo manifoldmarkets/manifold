@@ -13,7 +13,7 @@ import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 
 import Sidebar from './sidebar'
-import { Item } from './sidebar-item'
+import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
@@ -40,7 +40,7 @@ function getNavigation(user: User) {
     { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
       name: 'Profile',
-      href: `/${user.username}`,
+      href: `/${user.username}/portfolio`,
     },
     {
       name: 'Notifs',
@@ -64,8 +64,8 @@ const signedOutNavigation = () => [
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar(props: {
-  navigationOptions?: Item[]
-  sidebarNavigationOptions?: Item[]
+  navigationOptions?: NavItem[]
+  sidebarNavigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { hideCreateQuestionButton } = props
@@ -121,7 +121,7 @@ export function BottomNavBar(props: {
 }
 
 function NavBarItem(props: {
-  item: Item
+  item: NavItem
   currentPage: string
   children?: any
   user?: User | null
@@ -203,7 +203,7 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
-  sidebarNavigationOptions?: Item[]
+  sidebarNavigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { sidebarOpen, setSidebarOpen, hideCreateQuestionButton } = props

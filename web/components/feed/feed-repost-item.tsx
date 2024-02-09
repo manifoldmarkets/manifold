@@ -139,6 +139,7 @@ export const FeedRepost = memo(function (props: {
                 className="border-ink-200 max-w-full border-[.1rem] pb-2 "
                 hideBottomRow={true}
                 size={'xs'}
+                hideReason={true}
               />
             </Col>
             <Col>

@@ -67,7 +67,10 @@ export const likeLover: APIHandler<'like-lover'> = async (
     throw new APIError(500, 'Failed to add like: ' + error.message)
   }
 
-  await createLoveLikeNotification(data)
-
-  return { status: 'success' }
+  return {
+    result: { status: 'success' },
+    continue: async () => {
+      await createLoveLikeNotification(data)
+    },
+  }
 }

@@ -36,6 +36,7 @@ export function PoliticsCard(props: {
     className,
     maxAnswers,
     viewType,
+    children,
   } = props
 
   const contract =
@@ -76,18 +77,14 @@ export function PoliticsCard(props: {
 
   if (viewType == 'PARTY') {
     return (
-      <ClickFrame
+      <Col
         className={clsx(
           className,
-          'relative rounded-xl',
+          'relative',
           'cursor-pointer ',
-          'fade-in group'
+          'fade-in group',
+          ' bg-ink-0 gap-4 p-4'
         )}
-        onClick={(e) => {
-          trackClick()
-          Router.push(path)
-          e.currentTarget.focus() // focus the div like a button, for style
-        }}
       >
         <Link
           className={clsx(
@@ -99,14 +96,23 @@ export function PoliticsCard(props: {
         >
           {contract.question}
         </Link>
-        <Spacer h={4} />
-        <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
-      </ClickFrame>
+
+        {children}
+        <ClickFrame
+          onClick={(e) => {
+            trackClick()
+            Router.push(path)
+            e.currentTarget.focus() // focus the div like a button, for style
+          }}
+        >
+          <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
+        </ClickFrame>
+      </Col>
     )
   }
   if (viewType == 'CANDIDATE') {
     return (
-      <Col className={'group w-full flex-col gap-1.5 '}>
+      <Col className={'group w-full flex-col gap-1.5 px-2 sm:px-0'}>
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
           className={clsx(

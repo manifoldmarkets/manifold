@@ -430,7 +430,7 @@ function Answer(props: {
           </Row>
         }
         end={
-          <Row className={'items-center gap-1 sm:gap-2'}>
+          <Row className={'items-center gap-1.5 sm:gap-2'}>
             <AnswerStatus contract={contract} answer={answer} />
             {selected && (
               <PresentationChartLineIcon

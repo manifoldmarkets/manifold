@@ -8,12 +8,16 @@ import { Title } from 'web/components/widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { FeedTimeline } from 'web/components/feed-timeline'
 import { api } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
+import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
+import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps() {
   const headlines = await api('headlines', {})
@@ -30,11 +34,13 @@ export default function Home(props: { headlines: Headline[] }) {
 
   useRedirectIfSignedOut()
   const user = useUser()
+  const privateUser = usePrivateUser()
   useSaveReferral(user)
 
   const { headlines } = props
   const isMobile = useIsMobile()
-
+  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
+  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
   return (
     <>
       <Welcome />
@@ -57,7 +63,22 @@ export default function Home(props: { headlines: Headline[] }) {
 
           <DailyStats user={user} />
         </Row>
-        {isClient && <FeedTimeline />}
+        {!user ? (
+          <LoadingIndicator />
+        ) : !createdRecently ? (
+          isClient ? (
+            <FeedTimeline user={user} privateUser={privateUser} />
+          ) : null
+        ) : !memberTopicsWithContracts ? (
+          <LoadingIndicator />
+        ) : (
+          <>
+            <WelcomeTopicSections
+              memberTopicsWithContracts={memberTopicsWithContracts}
+            />
+            {isClient && <FeedTimeline user={user} privateUser={privateUser} />}
+          </>
+        )}
       </Page>
     </>
   )

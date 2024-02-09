@@ -1,5 +1,13 @@
 import { z } from 'zod'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import {
+  Group,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  LiteGroup,
+  SearchGroupParams,
+  SearchGroupShape,
+  Topic,
+} from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -8,7 +16,6 @@ import {
   updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
-import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
@@ -25,6 +32,7 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -463,7 +471,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({}),
-    returns: {} as User,
+    returns: {} as LiteUser,
   },
   'user/:username': {
     method: 'GET',
@@ -747,6 +755,52 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
+  'update-user-embedding': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+  },
+  'search-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Is there a way to infer return { lite:[] as LiteGroup[] } if type is 'lite'?
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(SearchGroupShape),
+  },
+  'search-my-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(MySearchGroupShape),
+  },
+  'get-groups-with-top-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as { topic: Topic; contracts: Contract[] }[],
+    props: z.object({}),
+  },
+  'get-balance-changes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as AnyBalanceChangeType[],
+    props: z
+      .object({
+        after: z.coerce.number(),
+        userId: z.string(),
+      })
+      .strict(),
+  },
   'create-your-love-market': {
     method: 'POST',
     visibility: 'private',
@@ -801,3 +855,7 @@ export type APIResponse<N extends APIPath> = APISchema<N> extends {
 }
   ? APISchema<N>['returns']
   : void
+
+export type APIResponseOptionalContinue<N extends APIPath> =
+  | { continue: () => Promise<void>; result: APIResponse<N> }
+  | APIResponse<N>

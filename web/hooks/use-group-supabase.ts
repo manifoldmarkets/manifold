@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { Group, GroupRole } from 'common/group'
+import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { getUserIsGroupMember } from 'web/lib/firebase/api'
@@ -24,8 +24,8 @@ import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { difference, orderBy } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -105,37 +105,57 @@ export const useGroupsWithContract = (
   return groups
 }
 
-export function useRealtimeMemberGroups(userId: string | undefined | null) {
-  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
+export function useRealtimeMemberTopics(
+  userId: string | undefined | null,
+  limit: number = 20
+) {
+  const [groups, setGroups] = usePersistentInMemoryState<
+    LiteGroup[] | undefined
+  >(undefined, `member-topics-${userId ?? ''}`)
 
-  const { rows } = useSubscription('group_members', {
-    k: 'member_id',
-    v: userId ?? '_',
+  // Listen for changes in membership to re-fetch their topics
+  const ids = useRealtimeMemberGroupIds(userId)
+  const { data, refresh } = useAPIGetter('search-my-groups', {
+    limit,
+    term: '',
+    type: 'lite',
   })
-  const ids = rows?.map((row) => row.group_id) ?? []
+  useEffect(() => {
+    if (!ids) return
+    refresh()
+  }, [ids])
+  useEffect(() => {
+    if (data) {
+      setGroups(data.lite)
+    }
+  }, [JSON.stringify(data)])
+
+  return groups
+}
+
+export function useNewUserMemberTopicsAndContracts(
+  user: User | null | undefined
+) {
+  type TopicWithContracts = {
+    topic: Topic
+    contracts: Contract[]
+  }
+  const [groups, setGroups] = usePersistentInMemoryState<
+    TopicWithContracts[] | undefined
+  >(undefined, `member-topics-and-contracts-${user?.id ?? ''}`)
+
+  const { data, refresh } = useAPIGetter('get-groups-with-top-contracts', {})
 
   useEffect(() => {
-    if (!userId) return
-    const newIds = difference(ids, groups?.map((g) => g.id) ?? [])
-    const oldIds = difference(groups?.map((g) => g.id) ?? [], ids)
-    if (groups?.length && oldIds.length > 0) {
-      setGroups((groups) => groups?.filter((g) => !oldIds.includes(g.id)))
-    } else if (newIds.length > 0) {
-      db.from('groups')
-        .select('*')
-        .in('id', newIds)
-        .then((result) => {
-          const newGroups = result.data?.map(convertGroup) ?? []
-          setGroups((groups) =>
-            orderBy(
-              [...(groups ?? []), ...newGroups],
-              'importanceScore',
-              'desc'
-            )
-          )
-        })
+    if (!data?.length) setGroups(undefined) // Show loading indicator right after selecting topics
+    refresh()
+  }, [user?.shouldShowWelcome])
+
+  useEffect(() => {
+    if (data) {
+      setGroups(data)
     }
-  }, [JSON.stringify(ids)])
+  }, [JSON.stringify(data)])
 
   return groups
 }

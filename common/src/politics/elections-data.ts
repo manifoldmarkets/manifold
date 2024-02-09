@@ -1,9 +1,13 @@
+import { Bet } from 'common/bet'
+import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
 import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 export interface StateElectionMarket {
   slug: string
   state: string
+  additionalSlugs?: string[]
 }
 export const ELECTION_DASHBOARD_TITLE = '2024 Election Forecast'
 export const ELECTION_DASHBOARD_DESCRIPTION =
@@ -235,4 +239,13 @@ export type ElectionsPageProps = {
   republicanVPContract: Contract | null
   democraticVPContract: Contract | null
   linkPreviews: LinkPreviews
+  partyChartParams?: ChartParams
+}
+
+export type ChartParams = {
+  historyData: {
+    bets: Bet[]
+    points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
+  }
+  chartAnnotations: ChartAnnotation[]
 }

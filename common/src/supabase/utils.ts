@@ -46,7 +46,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     answers: 'contract_answers',
     answersCpmm: 'answers',
     bets: 'contract_bets',
-    comments: 'contract_comments',
     follows: 'contract_follows',
     liquidity: 'contract_liquidity',
   },

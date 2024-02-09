@@ -42,7 +42,10 @@ import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
-import { supabasesearchgroups } from './supabase-search-groups'
+import {
+  supabasesearchgroups,
+  supabasesearchmygroups,
+} from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -134,14 +137,13 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
-
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-
+import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getBalanceChanges } from 'api/get-balance-changes'
 import { getLoverAnswers } from './love/get-lover-answers'
 import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
-
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -252,6 +254,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-lovers': getLovers,
   'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
+  'update-user-embedding': updateUserEmbedding,
+  'search-groups': supabasesearchgroups,
+  'search-my-groups': supabasesearchmygroups,
+  'get-groups-with-top-contracts': getGroupsWithTopContracts,
+  'get-balance-changes': getBalanceChanges,
   'create-your-love-market': createYourLoveMarket,
   'get-love-market': getLoveMarket,
   'get-love-markets': getLoveMarkets,
@@ -301,7 +308,6 @@ app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
-app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
   '/update-user-disinterest-embedding',
   ...apiRoute(updateUserDisinterestEmbedding)
@@ -322,7 +328,6 @@ app.post(
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
-app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))

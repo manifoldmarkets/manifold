@@ -1,9 +1,6 @@
 import clsx from 'clsx'
-import {
-  useRouter,
-  usePathname,
-  ReadonlyURLSearchParams,
-} from 'next/navigation'
+import { usePathname, ReadonlyURLSearchParams } from 'next/navigation'
+import { useRouter } from 'next/router'
 
 import { ReactNode, useEffect, useRef } from 'react'
 import { track } from 'web/lib/service/analytics'
@@ -33,6 +30,72 @@ type TabProps = {
   trackingName?: string
   // Default is to lazy render tabs as they are selected. If true, it will render all tabs at once.
   renderAllTabs?: boolean
+}
+
+export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
+  const {
+    tabs,
+    activeIndex,
+    labelClassName,
+    onClick,
+    className,
+    renderAllTabs,
+    trackingName,
+  } = props
+
+  const hasRenderedIndexRef = useRef(new Set<number>())
+  hasRenderedIndexRef.current.add(activeIndex)
+
+  return (
+    <>
+      <Row className={className}>
+        {tabs.map((tab, i) => (
+          <a
+            href="#"
+            key={tab.queryString ?? tab.title}
+            onClick={(e) => {
+              e.preventDefault()
+              onClick?.(
+                tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
+                i
+              )
+              if (trackingName) {
+                track(trackingName, {
+                  tab: tab.title,
+                })
+              }
+            }}
+            aria-current={activeIndex === i ? 'page' : undefined}
+            className={clsx(
+              activeIndex === i
+                ? 'text-primary-600'
+                : 'text-ink-400 hover:text-ink-700',
+              'cursor-pointer whitespace-nowrap text-lg ',
+              labelClassName
+            )}
+          >
+            <Tooltip text={tab.tooltip}>
+              <Row className={'items-center'}>{tab.title}</Row>
+            </Tooltip>
+          </a>
+        ))}
+      </Row>
+      {tabs
+        .map((tab, i) => ({ tab, i }))
+        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .map(({ tab, i }) => (
+          <div
+            key={i}
+            className={clsx(
+              i === activeIndex ? 'contents' : 'hidden',
+              tab.className
+            )}
+          >
+            {tab.content}
+          </div>
+        ))}
+    </>
+  )
 }
 
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
@@ -154,9 +217,14 @@ const isTabSelected = (
 }
 
 export function QueryUncontrolledTabs(
-  props: TabProps & { defaultIndex?: number; scrollToTop?: boolean }
+  props: TabProps & {
+    defaultIndex?: number
+    scrollToTop?: boolean
+    minimalist?: boolean
+  }
 ) {
-  const { tabs, defaultIndex, onClick, scrollToTop, ...rest } = props
+  const { tabs, defaultIndex, minimalist, onClick, scrollToTop, ...rest } =
+    props
   const router = useRouter()
   const pathName = usePathname()
   const { searchParams, createQueryString } = useDefinedSearchParams()
@@ -173,7 +241,23 @@ export function QueryUncontrolledTabs(
       )
     }
   }, [activeIndex])
-
+  if (minimalist) {
+    return (
+      <MinimalistTabs
+        {...rest}
+        tabs={tabs}
+        activeIndex={activeIndex}
+        onClick={(title) => {
+          if (scrollToTop) window.scrollTo({ top: 0 })
+          router.replace(
+            pathName + '?' + createQueryString('tab', title),
+            undefined,
+            { shallow: true }
+          )
+        }}
+      />
+    )
+  }
   return (
     <ControlledTabs
       {...rest}
@@ -181,7 +265,11 @@ export function QueryUncontrolledTabs(
       activeIndex={activeIndex}
       onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
-        router.replace(pathName + '?' + createQueryString('tab', title))
+        router.replace(
+          pathName + '?' + createQueryString('tab', title),
+          undefined,
+          { shallow: true }
+        )
       }}
     />
   )
