@@ -19,8 +19,8 @@ export default function MarketsPage() {
   const { data } = useAPIGetter('get-love-markets', {})
   return (
     <LovePage trackPageView="love markets" className={'p-2 sm:pt-0'}>
-      <Col className="gap-2">
-        <Title>Markets</Title>
+      <Col className="gap-4">
+        <Title className='!mb-2'>Markets</Title>
 
         {data &&
           data.contracts.map((contract) => {

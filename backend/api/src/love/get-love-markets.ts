@@ -20,9 +20,10 @@ export const getLoveMarketsMain = async () => {
     where
       data->>'isLove' = 'true'
       and resolution is null
+    order by last_bet_time desc nulls last
     `,
     [],
-    (r) => (r ? r.data : null)
+    (r) => r.data
   )
 
   const creatorIds = contracts.map((c) => c.creatorId)
