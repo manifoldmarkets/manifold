@@ -86,6 +86,15 @@ export default function ProfilesPage() {
               <SignUpAsMatchmaker className="flex-1" />
             </Col>
           )}
+          {user && allLovers && lover && (
+            <Button
+              className="mb-4"
+              color="indigo-outline"
+              onClick={() => Router.push('/markets')}
+            >
+              New! Browse markets
+            </Button>
+          )}
           <Title className="!mb-2 text-3xl">Profiles</Title>
           <Search
             allLovers={allLovers}
