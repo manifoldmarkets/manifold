@@ -222,6 +222,18 @@ export const placeBetMain = async (
       newPool &&
       contract.outcomeType === 'MULTIPLE_CHOICE'
     ) {
+      const answer = contract.answers.find((a) => a.id === newBet.answerId) as
+        | Answer
+        | undefined
+      if (
+        user.id === contract.creatorId ||
+        (answer && user.id === answer.loverUserId)
+      ) {
+        throw new APIError(
+          403,
+          'You cannot bet on your own relationship market.'
+        )
+      }
       const prob = getCpmmProbability(newPool, 0.5)
       if (prob < 0.02) {
         throw new APIError(
