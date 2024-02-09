@@ -116,6 +116,7 @@ const MatchTile = (props: {
 
   const { user, pinned_url } = lover
   const currentUser = useUser()
+  const isYou = currentUser?.id === user.id
 
   return (
     <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded">
@@ -161,7 +162,7 @@ const MatchTile = (props: {
             {/* <RejectButton lover={lover} /> */}
           </Col>
         )}
-        {!isYourMatch && (
+        {!isYourMatch && !isYou && (
           <Col className="absolute right-3 top-2">
             <MatchBetButton
               contract={contract}

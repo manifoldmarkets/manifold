@@ -217,6 +217,20 @@ export const placeBetMain = async (
     }
 
     // Special case for relationship markets.
+    if (
+      contract.isLove &&
+      newPool &&
+      contract.outcomeType === 'MULTIPLE_CHOICE'
+    ) {
+      const prob = getCpmmProbability(newPool, 0.5)
+      if (prob < 0.02) {
+        throw new APIError(
+          403,
+          'Minimum of 2% probability in relationship markets.'
+        )
+      }
+    }
+    // Special case for relationship markets. (Old markets.)
     if (contract.loverUserId1 && newPool) {
       if (contract.outcomeType === 'BINARY') {
         // Binary relationship markets deprecated.
