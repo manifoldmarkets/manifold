@@ -13,6 +13,7 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementDecrementAmountButton } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { Button } from '../buttons/button'
 
 export function AmountInput(
   props: {
@@ -154,7 +155,7 @@ export function BuyAmountInput(props: {
   quickButtonValues?: number[] | 'large'
 }) {
   const {
-    amount,
+    amount = 10,
     onChange,
     error,
     setError,
@@ -191,6 +192,12 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
+  const [selectedQuickAmount, setSelectedQuickAmount] = useState<number>(10)
+  const quickAmounts = [10, 25, 100]
+  const handleQuickAmountSelect = (amount: number) => {
+    onChange(amount)
+    setSelectedQuickAmount(amount)
+  }
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
@@ -208,13 +215,41 @@ export function BuyAmountInput(props: {
       ? [100, 500]
       : quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+
+  useEffect(() => {
+    if (props.amount === undefined) {
+      onChange(10)
+    }
+  }, [])
+
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
+        <Row className=" space-x-1">
+          <div className="text-ink-700 mb-1 mt-2 mr-2 ">Amount</div>
+          {!isAdvancedTrader && (
+            <>
+              {quickAmounts.map((value) => (
+                <Button
+                  key={value}
+                  color={
+                    selectedQuickAmount === value ? 'indigo' : 'indigo-outline'
+                  }
+                  onClick={() => handleQuickAmountSelect(value)}
+                >
+                  {value}
+                </Button>
+              ))}
+            </>
+          )}
+        </Row>
+
         <AmountInput
           className={className}
           inputClassName={clsx(
-            '!h-[72px] w-full',
+            ' w-full',
+            isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
             hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]',
             inputClassName
           )}
@@ -236,7 +271,6 @@ export function BuyAmountInput(props: {
             </Row>
           }
         />
-
         {showSlider && (
           <BetSlider
             className="-mt-2"
@@ -247,7 +281,6 @@ export function BuyAmountInput(props: {
             smallManaAmounts={!hasLotsOfMana}
           />
         )}
-
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
