@@ -257,8 +257,13 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
           >
             {question}
           </Link>
-          <span className={'inline-flex whitespace-nowrap'}>
-            {amount > 0 ? '+ ' : ''}
+          <span
+            className={clsx(
+              'inline-flex whitespace-nowrap',
+              amount > 0 ? 'text-teal-700' : 'text-ink-600'
+            )}
+          >
+            {amount > 0 ? '+' : '-'}
             {niceAmount}
           </span>
         </Row>
@@ -356,8 +361,13 @@ const TxnBalanceChangeRow = (props: {
               {txnTitle(change) ?? txnTypeToDescription(type)}
             </div>
           )}
-          <span className={clsx('shrink-0')}>
-            {amount > 0 ? '+ ' : ''}
+          <span
+            className={clsx(
+              'shrink-0',
+              amount > 0 ? 'text-teal-700' : 'text-ink-600'
+            )}
+          >
+            {amount > 0 ? '+' : '-'}
             {formatMoney(amount).replace('-', '')}
           </span>
         </Row>
