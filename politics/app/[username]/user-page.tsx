@@ -31,7 +31,10 @@ import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { Linkify } from 'web/components/widgets/linkify'
 import { UserHandles } from 'web/components/user/user-handles'
-import { QueryUncontrolledTabs, Tabs } from 'politics/components/layout/tabs'
+import {
+  QueryUncontrolledTabs,
+  UncontrolledTabs,
+} from 'politics/components/layout/tabs'
 import { Spacer } from 'web/components/layout/spacer'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
@@ -394,7 +397,7 @@ function FollowsDialog(props: {
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
         <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
-        <Tabs
+        <UncontrolledTabs
           className="mx-6"
           tabs={[
             {
