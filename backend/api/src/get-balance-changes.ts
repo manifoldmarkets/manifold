@@ -225,12 +225,14 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         } as BetBalanceChange
 
         balanceChanges.push(balanceChange)
-        if ((bet.loanAmount ?? 0) < 0) {
+        if (!!bet.loanAmount && bet.loanAmount < 0) {
           balanceChanges.push({
             ...balanceChangeProps,
             key: `${bet.id}-loan-payment`,
             type: 'loan_payment',
-            amount: bet.loanAmount,
+            amount:
+              bet.loanAmount +
+              (isRedemption ? bets[i - 1]?.loanAmount ?? 0 : 0),
             createdTime: createdTime,
           } as BetBalanceChange)
         }
