@@ -816,3 +816,7 @@ export type APIResponse<N extends APIPath> = APISchema<N> extends {
 }
   ? APISchema<N>['returns']
   : void
+
+export type APIResponseOptionalContinue<N extends APIPath> =
+  | { continue: () => Promise<void>; result: APIResponse<N> }
+  | APIResponse<N>
