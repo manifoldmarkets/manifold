@@ -1,9 +1,6 @@
 import clsx from 'clsx'
-import {
-  useRouter,
-  usePathname,
-  ReadonlyURLSearchParams,
-} from 'next/navigation'
+import { usePathname, ReadonlyURLSearchParams } from 'next/navigation'
+import { useRouter } from 'next/router'
 
 import { ReactNode, useEffect, useRef } from 'react'
 import { track } from 'web/lib/service/analytics'
@@ -183,28 +180,14 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   )
 }
 
-export function UncontrolledTabs(
-  props: TabProps & { defaultIndex?: number; minimalist?: boolean }
-) {
-  const { defaultIndex, minimalist, onClick, ...rest } = props
+export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
+  const { defaultIndex, onClick, ...rest } = props
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     defaultIndex ?? 0,
     `tab-${props.trackingName}-${props.tabs[0]?.title}`
   )
   if ((defaultIndex ?? 0) > props.tabs.length - 1) {
     console.error('default index greater than tabs length')
-  }
-  if (minimalist) {
-    return (
-      <MinimalistTabs
-        {...rest}
-        activeIndex={activeIndex}
-        onClick={(titleOrQueryTitle, i) => {
-          setActiveIndex(i)
-          onClick?.(titleOrQueryTitle, i)
-        }}
-      />
-    )
   }
   return (
     <ControlledTabs
@@ -234,9 +217,14 @@ const isTabSelected = (
 }
 
 export function QueryUncontrolledTabs(
-  props: TabProps & { defaultIndex?: number; scrollToTop?: boolean }
+  props: TabProps & {
+    defaultIndex?: number
+    scrollToTop?: boolean
+    minimalist?: boolean
+  }
 ) {
-  const { tabs, defaultIndex, onClick, scrollToTop, ...rest } = props
+  const { tabs, defaultIndex, minimalist, onClick, scrollToTop, ...rest } =
+    props
   const router = useRouter()
   const pathName = usePathname()
   const { searchParams, createQueryString } = useDefinedSearchParams()
@@ -253,7 +241,23 @@ export function QueryUncontrolledTabs(
       )
     }
   }, [activeIndex])
-
+  if (minimalist) {
+    return (
+      <MinimalistTabs
+        {...rest}
+        tabs={tabs}
+        activeIndex={activeIndex}
+        onClick={(title) => {
+          if (scrollToTop) window.scrollTo({ top: 0 })
+          router.replace(
+            pathName + '?' + createQueryString('tab', title),
+            undefined,
+            { shallow: true }
+          )
+        }}
+      />
+    )
+  }
   return (
     <ControlledTabs
       {...rest}
@@ -261,7 +265,11 @@ export function QueryUncontrolledTabs(
       activeIndex={activeIndex}
       onClick={(title) => {
         if (scrollToTop) window.scrollTo({ top: 0 })
-        router.replace(pathName + '?' + createQueryString('tab', title))
+        router.replace(
+          pathName + '?' + createQueryString('tab', title),
+          undefined,
+          { shallow: true }
+        )
       }}
     />
   )

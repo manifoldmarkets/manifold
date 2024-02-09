@@ -19,7 +19,6 @@ import {
   TxnBalanceChange,
   TxnType,
 } from 'common/balance-change'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import Link from 'next/link'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
@@ -32,14 +31,15 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
+import { Input } from 'web/components/widgets/input'
 
 export const BalanceCard = (props: {
   user: User
   balanceChanges: AnyBalanceChangeType[]
+  onSeeChanges: () => void
   className?: string
 }) => {
-  const { user, className, balanceChanges } = props
-  const [showBalanceChanges, setShowBalanceChanges] = useState(false)
+  const { user, className, onSeeChanges, balanceChanges } = props
   const [showAddFunds, setShowAddFunds] = useState(false)
   const spentToday = sumBy(
     balanceChanges.filter(
@@ -55,19 +55,23 @@ export const BalanceCard = (props: {
   )
 
   return (
-    <Row className={className} onClick={() => setShowBalanceChanges(true)}>
-      <Col>
-        <span className={'ml-1'}>Your balance</span>
-        <span className={'mb-1 text-5xl'}>{formatMoney(user.balance)}</span>
-        <Row className={'float-left w-full gap-1'}>
-          <Col className={clsx('')}>{formatMoney(earnedToday)} earned</Col>&
-          <Col className={clsx('')}>
-            {formatMoney(spentToday).replace('-', '')} spent
-          </Col>
-          today
+    <Row className={className} onClick={onSeeChanges}>
+      <Col className={'w-full gap-1.5'}>
+        <span className={'text-ink-800 ml-1'}>Your balance</span>
+        <span className={'text-ink-800 mb-1 text-5xl'}>
+          {formatMoney(user.balance)}
+        </span>
+        <Row className={'text-ink-600 w-full flex-wrap justify-between'}>
+          <Row className={'gap-1'}>
+            {formatMoney(earnedToday)} earned &{' '}
+            {formatMoney(spentToday).replace('-', '')} spent today
+          </Row>
+          <Row className={'text-ink-600 ml-auto mt-[3px] text-sm'}>
+            See changes
+          </Row>
         </Row>
       </Col>
-      <div className={'absolute right-2 top-2'}>
+      <div className={'absolute right-4 top-3'}>
         <Button
           color="gray-outline"
           onClick={(e) => {
@@ -81,98 +85,90 @@ export const BalanceCard = (props: {
         </Button>
         <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
       </div>
-      {showBalanceChanges && (
-        <BalanceChangesModal
-          user={user}
-          balanceChanges={balanceChanges}
-          setOpen={() => setShowBalanceChanges(false)}
-        />
-      )}
     </Row>
   )
 }
 
-const BalanceChangesModal = (props: {
+export const BalanceChangeTable = (props: {
   user: User
-  balanceChanges: AnyBalanceChangeType[]
-  setOpen: () => void
+  balanceChanges: TxnBalanceChange[] | BetBalanceChange[]
 }) => {
-  const { balanceChanges, setOpen, user } = props
-  const spentToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
-    ),
-    'amount'
-  )
-  const earnedToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
-    ),
-    'amount'
-  )
+  const { user } = props
+  const [query, setQuery] = useState('')
+  const balanceChanges = props.balanceChanges.filter((change) => {
+    const { type, contract } = change
+    const contractQuestion = contract?.question ?? ''
+    const changeType = type
+    const userName = 'user' in change ? change.user?.name ?? '' : ''
+    const userUsername = 'user' in change ? change.user?.username ?? '' : ''
+    const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
+    const betText = 'bet' in change ? betChangeToText(change) : ''
+    return (
+      contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
+      changeType.toLowerCase().includes(query.toLowerCase()) ||
+      txnTypeToDescription(changeType)
+        .toLowerCase()
+        .includes(query.toLowerCase()) ||
+      answerText.toLowerCase().includes(query.toLowerCase()) ||
+      (txnTitle(change) ?? '').toLowerCase().includes(query.toLowerCase()) ||
+      userName.toLowerCase().includes(query.toLowerCase()) ||
+      userUsername.toLowerCase().includes(query.toLowerCase()) ||
+      betText.toLowerCase().includes(query.toLowerCase())
+    )
+  })
   return (
-    <Modal
-      size={'lg'}
-      open={true}
-      setOpen={setOpen}
-      className={clsx(MODAL_CLASS)}
-    >
-      <Col className={' w-full justify-center'}>
-        <Row className={'ml-2 justify-around'}>
-          <Col>
-            <span className={'ml-1'}>Your balance</span>
-            <span className={'mb-1 text-xl'}>{formatMoney(user.balance)}</span>
-          </Col>
-          <Col>
-            <span className={'ml-1'}>Spent today</span>
-            <span className={clsx('mb-1 text-xl')}>
-              {formatMoney(spentToday).replace('-', '')}
-            </span>
-          </Col>
-          <Col>
-            <span className={'ml-1'}>Earned today</span>
-            <span className={clsx('mb-1 text-xl')}>
-              {formatMoney(earnedToday).replace('-', '')}
-            </span>
-          </Col>
-        </Row>
-
-        <Col
-          className={'max-h-[70vh] gap-4 overflow-auto border-t-2 px-3 pt-4'}
-        >
-          {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
-            const { type } = change
-
-            if (
-              [
-                'sell_shares',
-                'create_bet',
-                'redeem_shares',
-                'fill_bet',
-                'loan_payment',
-              ].includes(type)
-            ) {
-              return (
-                <BetBalanceChangeRow
-                  key={change.key ?? change.createdTime + change.amount + type}
-                  change={change as BetBalanceChange}
-                />
-              )
-            } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
-              return (
-                <TxnBalanceChangeRow
-                  key={change.key ?? change.createdTime + change.amount + type}
-                  change={change as TxnBalanceChange}
-                  avatarlUrl={user.avatarUrl}
-                />
-              )
-            }
-          })}
-        </Col>
+    <Col className={' w-full justify-center'}>
+      <Input
+        type={'text'}
+        placeholder={'Search your balance changes'}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <Col className={'gap-4 px-3 pt-4'}>
+        <RenderBalanceChanges balanceChanges={balanceChanges} user={user} />
       </Col>
-    </Modal>
+    </Col>
   )
 }
+function RenderBalanceChanges(props: {
+  balanceChanges: AnyBalanceChangeType[]
+  user: User
+}) {
+  const { balanceChanges, user } = props
+  return (
+    <>
+      {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
+        const { type } = change
+
+        if (
+          [
+            'sell_shares',
+            'create_bet',
+            'redeem_shares',
+            'fill_bet',
+            'loan_payment',
+          ].includes(type)
+        ) {
+          return (
+            <BetBalanceChangeRow
+              key={change.key ?? change.createdTime + change.amount + type}
+              change={change as BetBalanceChange}
+            />
+          )
+        } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+          return (
+            <TxnBalanceChangeRow
+              key={change.key ?? change.createdTime + change.amount + type}
+              change={change as TxnBalanceChange}
+              avatarlUrl={user.avatarUrl}
+            />
+          )
+        }
+      })}
+    </>
+  )
+}
+
 function ChangeIcon(props: {
   slug: string
   symbol: string | ReactNode
@@ -188,7 +184,19 @@ function ChangeIcon(props: {
     </div>
   )
 }
-
+const betChangeToText = (change: BetBalanceChange) => {
+  const { type, bet } = change
+  const { outcome } = bet
+  return type === 'redeem_shares'
+    ? `Redeem shares`
+    : type === 'loan_payment'
+    ? `Pay back loan`
+    : type === 'fill_bet'
+    ? `Fill ${outcome} order`
+    : type === 'sell_shares'
+    ? `Sell ${outcome} shares`
+    : `Buy ${outcome}`
+}
 const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
   const { change } = props
   const { amount, contract, answer, bet, type } = change
@@ -256,15 +264,7 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
         </Row>
         <Row>
           <div className={clsx('text-ink-500 line-clamp-1')}>
-            {type === 'redeem_shares'
-              ? `Redeem shares`
-              : type === 'loan_payment'
-              ? `Pay back loan`
-              : type === 'fill_bet'
-              ? `Fill ${outcome} order`
-              : type === 'sell_shares'
-              ? `Sell ${outcome} shares`
-              : `Buy ${outcome}`}
+            {betChangeToText(change)}
             {answer ? ` on ${answer.text}` : ''}
           </div>
         </Row>
@@ -371,80 +371,76 @@ const txnTitle = (change: TxnBalanceChange) => {
   const { type, contract, questType } = change
 
   if (change.user) {
-    return <span>{change.user.username}</span>
+    return change.user.username
   }
   switch (type) {
     case 'QUEST_REWARD':
-      return <span>{questType ? questTypeToDescription(questType) : ''}</span>
+      return questType ? questTypeToDescription(questType) : ''
     case 'BETTING_STREAK_BONUS':
-      return !contract ? (
-        <span>Prediction streak bonus</span>
-      ) : (
-        <span>{contract?.question}</span>
-      )
+      return !contract ? 'Prediction streak bonus' : contract?.question
     case 'LOAN':
-      return <span>Loan</span>
+      return 'Loan'
     case 'MARKET_BOOST_REDEEM':
-      return <span>Claim boost</span>
+      return 'Claim boost'
     case 'SIGNUP_BONUS':
-      return <span>Question exploration bonus</span>
+      return 'Question exploration bonus'
     case 'STARTING_BALANCE':
-      return <span>Starting balance</span>
+      return 'Starting balance'
     default:
-      return <span>{contract?.question}</span>
+      return contract?.question
   }
 }
 
 const txnTypeToDescription = (txnCategory: TxnType) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
-      return <span>Boost</span>
+      return 'Boost'
     case 'CONTRACT_RESOLUTION_PAYOUT':
-      return <span>Payout</span>
+      return 'Payout'
     case 'CREATE_CONTRACT_ANTE':
-      return <span>Ante</span>
+      return 'Ante'
     case 'UNIQUE_BETTOR_BONUS':
-      return <span>Trader bonus</span>
+      return 'Trader bonus'
     case 'BETTING_STREAK_BONUS':
-      return <span>Quest</span>
+      return 'Quest'
     case 'SIGNUP_BONUS':
-      return <span>New user quest</span>
+      return 'New user quest'
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
-      return <span>Unresolve</span>
+      return 'Unresolve'
     case 'STARTING_BALANCE':
-      return <span></span>
+      return ''
     case 'MARKET_BOOST_REDEEM':
-      return <span></span>
+      return ''
     case 'ADD_SUBSIDY':
-      return <span>Subsidy</span>
+      return 'Subsidy'
     case 'QUEST_REWARD':
-      return <span>Quest</span>
+      return 'Quest'
     case 'LEAGUE_PRIZE':
-      return <span>Leagues</span>
+      return 'Leagues'
     case 'BOUNTY_POSTED':
-      return <span>Ante</span>
+      return 'Ante'
     case 'BOUNTY_AWARDED':
-      return <span>Bounty awarded</span>
+      return 'Bounty awarded'
     case 'MANA_PAYMENT':
-      return <span>User payment</span>
+      return 'User payment'
     case 'LOAN':
-      return <span></span>
+      return ''
     default:
-      return <span>{txnCategory}</span>
+      return txnCategory
   }
 }
 
 const questTypeToDescription = (questType: QuestType) => {
   switch (questType) {
     case 'BETTING_STREAK':
-      return <span>Prediction streak</span>
+      return 'Prediction streak'
     case 'SHARES':
-      return <span>Question share</span>
+      return 'Question share'
     case 'MARKETS_CREATED':
-      return <span>Question creation</span>
+      return 'Question creation'
     case 'REFERRALS':
-      return <span>Referral</span>
+      return 'Referral'
     default:
-      return <span>{questType}</span>
+      return 'questType'
   }
 }

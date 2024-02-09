@@ -92,8 +92,7 @@ export const getStaticProps = async (props: {
       averageRating: averageRating,
       shouldIgnoreUser,
     }),
-    // revalidate: 60 * 5, // Regenerate after 5 minutes
-    revalidate: 4,
+    revalidate: 60,
   }
 }
 

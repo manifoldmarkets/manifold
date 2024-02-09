@@ -24,10 +24,16 @@ import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { useUser } from 'web/hooks/use-user'
 import { RxAvatar } from 'react-icons/rx'
-import { BalanceCard } from 'web/components/portfolio/balance-card'
-import { UncontrolledTabs } from 'web/components/layout/tabs'
+import {
+  BalanceCard,
+  BalanceChangeTable,
+} from 'web/components/portfolio/balance-card'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { buildArray } from 'common/util/array'
+import { useRef } from 'react'
+import { usePathname } from 'next/navigation'
+import { useRouter } from 'next/router'
 
 export const getStaticProps = async (props: {
   params: {
@@ -57,8 +63,7 @@ export const getStaticProps = async (props: {
       balanceChanges,
       portfolioPoints: portfolioPoints ?? 0,
     }),
-    // revalidate: 60 * 5, // Regenerate after 5 minutes
-    revalidate: 4,
+    revalidate: 60, // Regenerate after a minute
   }
 }
 
@@ -96,6 +101,10 @@ function UserPortfolioInternal(props: {
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
   )
+  const router = useRouter()
+  const pathName = usePathname()
+  const balanceChangesKey = 'balance-changes'
+  const ref = useRef<HTMLDivElement>(null)
   return (
     <Page
       key={user.id}
@@ -149,16 +158,24 @@ function UserPortfolioInternal(props: {
         </Row>
         <Row className={'flex-wrap gap-4 px-2 sm:px-0 '}>
           <BalanceCard
+            onSeeChanges={() => {
+              router.replace(
+                pathName + '?tab=' + balanceChangesKey,
+                undefined,
+                { shallow: true }
+              )
+              ref.current?.scrollIntoView({ behavior: 'smooth' })
+            }}
             user={user}
             balanceChanges={balanceChanges}
             className={
-              'bg-canvas-0 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[48%]'
+              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3 sm:w-[48%]'
             }
           />
           <InvestmentValueCard
             user={user}
             className={
-              'bg-canvas-0 w-full min-w-[300px] cursor-pointer justify-between rounded-md p-2 sm:w-[49%]'
+              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3  sm:w-[49%]'
             }
           />
         </Row>
@@ -177,18 +194,29 @@ function UserPortfolioInternal(props: {
               />
             </Col>
           )}
+          <div ref={ref} className={'h-0.5'} />
           <Col className={'px-1'}>
-            <UncontrolledTabs
-              className={'mx-2 mb-3 mt-2 gap-6'}
+            <QueryUncontrolledTabs
               minimalist={true}
+              className={'mx-2 mb-3 mt-2 gap-6 sm:mt-6'}
               tabs={buildArray([
                 (!!user.lastBetTime || hasBetBalanceChanges) && {
-                  title: 'Your trades',
+                  title: 'Trades',
                   content: <UserBetsTable user={user} />,
+                },
+                {
+                  title: 'Balance changes',
+                  content: (
+                    <BalanceChangeTable
+                      user={user}
+                      balanceChanges={balanceChanges}
+                    />
+                  ),
+                  queryString: balanceChangesKey,
                 },
                 (user.creatorTraders.allTime > 0 ||
                   (user.freeQuestionsCreated ?? 0) > 0) && {
-                  title: 'Your questions',
+                  title: 'Questions',
                   content: (
                     <SupabaseSearch
                       defaultFilter="all"
