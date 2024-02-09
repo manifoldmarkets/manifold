@@ -13,7 +13,6 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { CPMMMultiContract, contractPath } from 'common/contract'
 import { UserLink } from 'web/components/widgets/user-link'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { RejectButton } from '../reject-button'
 import { Row } from 'web/components/layout/row'
 import { formatPercent } from 'common/util/format'
 import { MatchPositionsButton } from '../matches/match-positions'
@@ -33,14 +32,8 @@ export const MarketsDisplay = ({
   lovers: Lover[]
   mutuallyMessagedUserIds: string[]
 }) => {
-  const currentUser = useUser()
-  const answers = useAnswersCpmm(contract.id) ?? contract.answers
-  const sortedAnswers = orderBy(answers, 'prob', 'desc')
-
-  const loversByUserId = keyBy(lovers, 'user_id')
-
   return (
-    <Col className="gap-2">
+    <Col className="w-full gap-2">
       <Link
         className={clsx(linkClass, 'text-ink-500')}
         href={contractPath(contract)}
@@ -50,30 +43,57 @@ export const MarketsDisplay = ({
           <ExternalLinkIcon className="h-5 w-5" />
         </Row>
       </Link>
-      <Carousel>
-        {sortedAnswers.length === 0 && (
-          <div className="text-ink-500 px-2">None yet</div>
-        )}
-        {sortedAnswers.map((answer) => {
-          if (!answer.loverUserId) return null
-          const matchLover = loversByUserId[answer.loverUserId]
-          if (!matchLover) return null
-          return (
-            <MatchTile
-              key={matchLover.user_id}
-              profileLover={profileLover}
-              contract={contract}
-              answer={answer}
-              lover={matchLover}
-              isYourMatch={currentUser?.id === profileLover.user_id}
-              haveMutuallyMessaged={mutuallyMessagedUserIds.includes(
-                matchLover.user_id
-              )}
-            />
-          )
-        })}
-      </Carousel>
+
+      <LoveMarketCarousel
+        profileLover={profileLover}
+        contract={contract}
+        lovers={lovers}
+        mutuallyMessagedUserIds={mutuallyMessagedUserIds}
+      />
     </Col>
+  )
+}
+
+export const LoveMarketCarousel = ({
+  profileLover,
+  contract,
+  lovers,
+  mutuallyMessagedUserIds,
+}: {
+  profileLover: Lover
+  contract: CPMMMultiContract
+  lovers: Lover[]
+  mutuallyMessagedUserIds: string[]
+}) => {
+  const currentUser = useUser()
+  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const sortedAnswers = orderBy(answers, 'prob', 'desc')
+
+  const loversByUserId = keyBy(lovers, 'user_id')
+  return (
+    <Carousel>
+      {sortedAnswers.length === 0 && (
+        <div className="text-ink-500 px-2">None yet</div>
+      )}
+      {sortedAnswers.map((answer) => {
+        if (!answer.loverUserId) return null
+        const matchLover = loversByUserId[answer.loverUserId]
+        if (!matchLover) return null
+        return (
+          <MatchTile
+            key={matchLover.user_id}
+            profileLover={profileLover}
+            contract={contract}
+            answer={answer}
+            lover={matchLover}
+            isYourMatch={currentUser?.id === profileLover.user_id}
+            haveMutuallyMessaged={mutuallyMessagedUserIds.includes(
+              matchLover.user_id
+            )}
+          />
+        )
+      })}
+    </Carousel>
   )
 }
 

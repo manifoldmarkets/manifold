@@ -773,6 +773,19 @@ export const API = (_apiTypeCheck = {
       mutuallyMessagedUserIds: string[]
     },
   },
+  'get-love-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      contracts: CPMMMultiContract[]
+      creatorLovers: Lover[]
+      lovers: Lover[]
+      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
