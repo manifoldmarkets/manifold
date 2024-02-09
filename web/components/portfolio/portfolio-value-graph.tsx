@@ -31,6 +31,7 @@ export const PortfolioGraph = (props: {
   zoomParams?: ZoomParams
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
+  hideXAxis?: boolean
 }) => {
   const {
     mode,
@@ -40,6 +41,7 @@ export const PortfolioGraph = (props: {
     height,
     zoomParams,
     negativeThreshold,
+    hideXAxis,
   } = props
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -52,9 +54,12 @@ export const PortfolioGraph = (props: {
     const maxValue = max(points.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
   }, [points])
-
+  const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
-  const yScale = scaleLinear([minValue, maxValue], [height, 0])
+  const yScale = scaleLinear(
+    [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
+    [height, 0]
+  )
 
   useEffect(() => {
     zoomParams?.setXScale(xScale)
@@ -81,6 +86,7 @@ export const PortfolioGraph = (props: {
           : '#4f46e5'
       }
       negativeThreshold={negativeThreshold}
+      hideXAxis={hideXAxis}
     />
   )
 }

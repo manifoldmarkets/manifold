@@ -3,7 +3,10 @@ import { shouldIgnoreUserPage, User } from 'common/user'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/firebase/api'
-import { AnyBalanceChangeType } from 'common/balance-change'
+import {
+  AnyBalanceChangeType,
+  BET_BALANCE_CHANGE_TYPES,
+} from 'common/balance-change'
 
 import { Col } from 'web/components/layout/col'
 import { DAY_MS } from 'common/util/time'
@@ -15,7 +18,6 @@ import { BackButton } from 'web/components/contract/back-button'
 import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
 import Link from 'next/link'
-import { linkClass } from 'web/components/widgets/site-link'
 import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
@@ -23,6 +25,9 @@ import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-
 import { useUser } from 'web/hooks/use-user'
 import { RxAvatar } from 'react-icons/rx'
 import { BalanceCard } from 'web/components/portfolio/balance-card'
+import { UncontrolledTabs } from 'web/components/layout/tabs'
+import { SupabaseSearch } from 'web/components/supabase-search'
+import { buildArray } from 'common/util/array'
 
 export const getStaticProps = async (props: {
   params: {
@@ -32,7 +37,12 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getFullUserByUsername(username)
   const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
-
+  const { count: portfolioPoints } = user
+    ? await db
+        .from('user_portfolio_history')
+        .select('*', { head: true, count: 'exact' })
+        .eq('user_id', user.id)
+    : { count: 0 }
   const balanceChanges = user
     ? await api('get-balance-changes', {
         userId: user.id,
@@ -45,6 +55,7 @@ export const getStaticProps = async (props: {
       username,
       shouldIgnoreUser,
       balanceChanges,
+      portfolioPoints: portfolioPoints ?? 0,
     }),
     // revalidate: 60 * 5, // Regenerate after 5 minutes
     revalidate: 4,
@@ -60,6 +71,7 @@ export default function UserPortfolio(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
+  portfolioPoints: number
 }) {
   if (!props.user) return <Custom404 />
   return (
@@ -68,6 +80,7 @@ export default function UserPortfolio(props: {
       username={props.username}
       shouldIgnoreUser={props.shouldIgnoreUser}
       balanceChanges={props.balanceChanges}
+      portfolioPoints={props.portfolioPoints}
     />
   )
 }
@@ -76,10 +89,13 @@ function UserPortfolioInternal(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
+  portfolioPoints: number
 }) {
-  const { user, shouldIgnoreUser, balanceChanges } = props
+  const { user, shouldIgnoreUser, balanceChanges, portfolioPoints } = props
   const currentUser = useUser()
-
+  const hasBetBalanceChanges = balanceChanges.some((b) =>
+    BET_BALANCE_CHANGE_TYPES.includes(b.type)
+  )
   return (
     <Page
       key={user.id}
@@ -146,9 +162,8 @@ function UserPortfolioInternal(props: {
             }
           />
         </Row>
-        <div className={'my-5'} />
-        <Col className={''}>
-          {!!user.metricsLastUpdated && (
+        <Col className={'mt-5'}>
+          {portfolioPoints > 1 && (
             <Col className={'px-1 md:pr-8'}>
               <PortfolioValueSection
                 userId={user.id}
@@ -162,28 +177,42 @@ function UserPortfolioInternal(props: {
               />
             </Col>
           )}
-          <div className={'my-5 '} />
-          <Row className={' justify-between px-1'}>
-            <span className={'text-primary-700 mb-1 text-2xl'}>
-              Your trades
-            </span>
-            {(user.creatorTraders.allTime > 0 ||
-              (user.freeQuestionsCreated ?? 0) > 0) && (
-              <Col className={'mb-0.5 justify-end'}>
-                <Link
-                  className={clsx('text-ink-500', linkClass)}
-                  href={'/' + user.username + '?tab=questions'}
-                >
-                  <Row className={'mb-0.5 items-center gap-1 px-2'}>
-                    View questions
-                  </Row>
-                </Link>
-              </Col>
-            )}
-          </Row>
-          {/* It would be awesome to be able to search your questions here too*/}
           <Col className={'px-1'}>
-            <UserBetsTable user={user} />
+            <UncontrolledTabs
+              className={'mx-2 mb-3 mt-2 gap-6'}
+              minimalist={true}
+              tabs={buildArray([
+                (!!user.lastBetTime || hasBetBalanceChanges) && {
+                  title: 'Portfolio',
+                  content: <UserBetsTable user={user} />,
+                },
+                (user.creatorTraders.allTime > 0 ||
+                  (user.freeQuestionsCreated ?? 0) > 0) && {
+                  title: 'Questions',
+                  content: (
+                    <SupabaseSearch
+                      defaultFilter="all"
+                      hideAvatars={true}
+                      defaultSearchType={'Questions'}
+                      defaultSort="newest"
+                      additionalFilter={{
+                        creatorId: user.id,
+                      }}
+                      persistPrefix={`user-contracts-list-${user.id}`}
+                      useUrlParams
+                      emptyState={
+                        <>
+                          <div className="text-ink-700 mx-2 mt-3 text-center">
+                            No questions found
+                          </div>
+                        </>
+                      }
+                      contractsOnly
+                    />
+                  ),
+                },
+              ])}
+            />
           </Col>
         </Col>
       </Col>

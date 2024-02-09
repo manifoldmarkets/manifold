@@ -417,6 +417,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  hideXAxis?: boolean
 }) => {
   const {
     contractId,
@@ -434,6 +435,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations = [],
+    hideXAxis,
   } = props
 
   useEffect(() => {
@@ -545,6 +547,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
+        hideXAxis={hideXAxis}
       >
         {typeof color !== 'string' && (
           <defs>

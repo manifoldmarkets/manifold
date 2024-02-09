@@ -19,18 +19,20 @@ type MinimalContract = Pick<
   'question' | 'slug' | 'visibility' | 'creatorUsername'
 >
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
-
+export const BET_BALANCE_CHANGE_TYPES = [
+  'create_bet',
+  'sell_shares',
+  'redeem_shares',
+  'fill_bet',
+  'loan_payment',
+]
 export type BetBalanceChange = CustomBalanceChange & {
-  type:
-    | 'create_bet'
-    | 'sell_shares'
-    | 'redeem_shares'
-    | 'fill_bet'
-    | 'loan_payment'
+  type: (typeof BET_BALANCE_CHANGE_TYPES)[number]
   bet: Pick<Bet, 'outcome' | 'shares'>
   answer: Pick<Answer, 'text' | 'id'> | undefined
   contract: MinimalContract
 }
+
 export const TXN_BALANCE_CHANGE_TYPES = [
   'UNIQUE_BETTOR_BONUS',
   'BETTING_STREAK_BONUS',

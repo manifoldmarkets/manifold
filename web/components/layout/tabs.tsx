@@ -35,6 +35,72 @@ type TabProps = {
   renderAllTabs?: boolean
 }
 
+export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
+  const {
+    tabs,
+    activeIndex,
+    labelClassName,
+    onClick,
+    className,
+    renderAllTabs,
+    trackingName,
+  } = props
+
+  const hasRenderedIndexRef = useRef(new Set<number>())
+  hasRenderedIndexRef.current.add(activeIndex)
+
+  return (
+    <>
+      <Row className={className}>
+        {tabs.map((tab, i) => (
+          <a
+            href="#"
+            key={tab.queryString ?? tab.title}
+            onClick={(e) => {
+              e.preventDefault()
+              onClick?.(
+                tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
+                i
+              )
+              if (trackingName) {
+                track(trackingName, {
+                  tab: tab.title,
+                })
+              }
+            }}
+            aria-current={activeIndex === i ? 'page' : undefined}
+            className={clsx(
+              activeIndex === i
+                ? 'text-primary-600'
+                : 'text-ink-500 hover:text-ink-700',
+              'cursor-pointer whitespace-nowrap text-lg ',
+              labelClassName
+            )}
+          >
+            <Tooltip text={tab.tooltip}>
+              <Row className={'items-center'}>{tab.title}</Row>
+            </Tooltip>
+          </a>
+        ))}
+      </Row>
+      {tabs
+        .map((tab, i) => ({ tab, i }))
+        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .map(({ tab, i }) => (
+          <div
+            key={i}
+            className={clsx(
+              i === activeIndex ? 'contents' : 'hidden',
+              tab.className
+            )}
+          >
+            {tab.content}
+          </div>
+        ))}
+    </>
+  )
+}
+
 export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   const {
     tabs,
@@ -117,14 +183,28 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   )
 }
 
-export function UncontrolledTabs(props: TabProps & { defaultIndex?: number }) {
-  const { defaultIndex, onClick, ...rest } = props
+export function UncontrolledTabs(
+  props: TabProps & { defaultIndex?: number; minimalist?: boolean }
+) {
+  const { defaultIndex, minimalist, onClick, ...rest } = props
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     defaultIndex ?? 0,
     `tab-${props.trackingName}-${props.tabs[0]?.title}`
   )
   if ((defaultIndex ?? 0) > props.tabs.length - 1) {
     console.error('default index greater than tabs length')
+  }
+  if (minimalist) {
+    return (
+      <MinimalistTabs
+        {...rest}
+        activeIndex={activeIndex}
+        onClick={(titleOrQueryTitle, i) => {
+          setActiveIndex(i)
+          onClick?.(titleOrQueryTitle, i)
+        }}
+      />
+    )
   }
   return (
     <ControlledTabs

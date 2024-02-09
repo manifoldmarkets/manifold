@@ -31,7 +31,6 @@ export const PortfolioValueSection = memo(
     const {
       userId,
       hideAddFundsButton,
-      isCurrentUser,
       defaultTimePeriod,
       lastUpdatedTime,
       onlyShowProfit,
@@ -118,13 +117,7 @@ export const PortfolioValueSection = memo(
               return (
                 <Col className={'text-ink-500 mt-2'}>
                   <Row className={'gap-2'}>
-                    {isCurrentUser ? (
-                      <span>
-                        Portfolio history is available ~20m after your 1st bet.
-                      </span>
-                    ) : (
-                      <span>User has no portfolio history, yet.</span>
-                    )}
+                    <span>No portfolio history, yet.</span>
                   </Row>
                 </Col>
               )
@@ -172,7 +165,7 @@ export const PortfolioValueSection = memo(
                 ? graphDisplayNumber.toString().includes('-')
                   ? 'text-scarlet-500'
                   : 'text-teal-500'
-                : profit < 0
+                : profit <= -1
                 ? 'text-scarlet-500'
                 : 'text-teal-500',
               'text-lg sm:text-xl'
@@ -210,6 +203,7 @@ export const PortfolioValueSection = memo(
             height={height}
             zoomParams={zoomParams}
             onMouseOver={handleGraphDisplayChange}
+            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
           />
         )}
         onlyShowProfit={onlyShowProfit}
@@ -258,10 +252,10 @@ function PortfolioValueSkeleton(props: {
 
   const profitLabel = onlyShowProfit
     ? {
-        daily: 'Profit today',
-        weekly: 'Profit this week',
-        monthly: 'Profit this month',
-        allTime: 'Profit',
+        daily: 'Daily profit',
+        weekly: 'Weekly profit',
+        monthly: 'Monthly profit',
+        allTime: 'All-time profit',
       }[currentTimePeriod]
     : {
         daily: 'Profit 1D',
