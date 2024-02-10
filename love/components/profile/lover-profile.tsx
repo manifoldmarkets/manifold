@@ -73,7 +73,7 @@ export function LoverProfile(props: {
   return (
     <>
       {isCurrentUser && !fromLoverPage && contractData?.contract === null && (
-        <CreateYourMarketButton className="w-full" />
+        <CreateYourMarketButton className="absolute right-2 top-2 self-end" />
       )}
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
       <LoverProfileHeader

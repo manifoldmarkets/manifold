@@ -14,13 +14,25 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { contractPath } from 'common/contract'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
+import { useUser } from 'web/hooks/use-user'
+import { CreateYourMarketButton } from 'love/components/widgets/create-your-market-button'
 
 export default function MarketsPage() {
   const { data } = useAPIGetter('get-love-markets', {})
+  const user = useUser()
+
   return (
     <LovePage trackPageView="love markets" className={'p-2 sm:pt-0'}>
       <Col className="gap-4">
-        <Title className="!mb-2">Markets</Title>
+        <Row className="my-2 items-center justify-between">
+          <Title className="!mb-0">Markets</Title>
+
+          {user &&
+            data &&
+            data.creatorLovers.every((l) => l.user_id !== user.id) && (
+              <CreateYourMarketButton className="self-end" />
+            )}
+        </Row>
 
         {data &&
           data.contracts.map((contract) => {
