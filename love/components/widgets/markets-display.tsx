@@ -67,7 +67,9 @@ export const LoveMarketCarousel = ({
 }) => {
   const currentUser = useUser()
   const answers = useAnswersCpmm(contract.id) ?? contract.answers
-  const sortedAnswers = orderBy(answers, 'prob', 'desc')
+  const sortedAnswers = orderBy(answers, 'prob', 'desc').filter(
+    (a) => a.resolution === undefined || a.resolution === 'YES'
+  )
 
   const loversByUserId = keyBy(lovers, 'user_id')
   return (
@@ -183,7 +185,9 @@ const MatchTile = (props: {
         <Row className="w-full items-center justify-between gap-2">
           <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
             <span className="font-semibold">
-              {answer.prob <= 0.0205 ? '<2%' : formatPercent(answer.prob)}
+              {answer.prob <= 0.0205
+                ? '<2%'
+                : formatPercent(answer.resolution === 'YES' ? 1 : answer.prob)}
             </span>{' '}
             <span className="text-xs">chance of 3rd date</span>
           </Link>

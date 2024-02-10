@@ -14,6 +14,7 @@ import {
   resolveNumericSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
+import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -65,6 +66,22 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
     contractId,
     resolutionParams,
   })
+
+  if (
+    contract.isLove &&
+    resolutionParams.outcome === 'YES' &&
+    'answerId' in resolutionParams
+  ) {
+    // For Love Markets:
+    // When resolving one answer YES, first resolve all other answers.
+    await resolveLoveMarketOtherAnswers(
+      contract,
+      caller,
+      creator,
+      resolutionParams,
+      log
+    )
+  }
 
   await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
   // TODO: return?
