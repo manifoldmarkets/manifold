@@ -1,4 +1,5 @@
 import { useState, ReactNode } from 'react'
+import Router from 'next/router'
 
 import { LOVE_MARKET_COST } from 'common/love/constants'
 import { formatMoney } from 'common/util/format'
@@ -16,10 +17,17 @@ import { useUser } from 'web/hooks/use-user'
 export default function CreateYourDatingMarket() {
   const user = useUser()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const submit = async () => {
     setIsSubmitting(true)
     await api('create-your-love-market', {})
+      .then(() => {
+        Router.push(`/${user?.username}`)
+      })
+      .catch((e) => {
+        setError(e.message)
+      })
     setIsSubmitting(false)
   }
 
@@ -95,6 +103,7 @@ export default function CreateYourDatingMarket() {
             ) : (
               <BuyManaButton amount={10000} />
             )}
+            <div className="text-xs text-red-500">{error}</div>
           </Col>
         </Row>
       </Col>
