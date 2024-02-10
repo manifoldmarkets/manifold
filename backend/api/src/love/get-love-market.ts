@@ -1,6 +1,6 @@
 import { type APIHandler } from 'api/helpers/endpoint'
-import { CPMMMultiContract } from 'common/contract'
 import { Lover } from 'common/love/lover'
+import { getUserLoveMarket } from 'shared/love/love-markets'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getLoveMarket: APIHandler<'get-love-market'> = async (props) => {
@@ -15,16 +15,7 @@ export const getLoveMarket: APIHandler<'get-love-market'> = async (props) => {
 export const getLoveMarketMain = async (userId: string) => {
   const pg = createSupabaseDirectClient()
 
-  const contract = await pg.oneOrNone<CPMMMultiContract>(
-    `select data from contracts
-    where
-      creator_id = $1
-      and data->>'isLove' = 'true'
-      and resolution is null
-    `,
-    [userId],
-    (r) => (r ? r.data : null)
-  )
+  const contract = await getUserLoveMarket(userId)
 
   let lovers: Lover[] = []
   let mutuallyMessagedUserIds: string[] = []
