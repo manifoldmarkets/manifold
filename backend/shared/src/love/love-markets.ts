@@ -105,7 +105,9 @@ export const resolveLoveMarketOtherAnswers = async (
   log(`Resolving other answers for love market ${contract.slug}`)
 
   const { answerId } = resolutionParams
-  const otherAnswers = contract.answers.filter((a) => a.id !== answerId)
+  const otherAnswers = contract.answers.filter(
+    (a) => a.id !== answerId && !a.resolution
+  )
   const mutuallyMessagedUserIds = await getMutuallyMessagedUserIds(
     contract.creatorId
   )
