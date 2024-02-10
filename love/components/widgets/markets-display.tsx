@@ -34,15 +34,18 @@ export const MarketsDisplay = ({
 }) => {
   return (
     <Col className="w-full gap-2">
-      <Link
-        className={clsx(linkClass, 'text-ink-500')}
-        href={contractPath(contract)}
-      >
-        <Row className="items-center gap-1">
-          <Subtitle>Predicted matches</Subtitle>{' '}
-          <ExternalLinkIcon className="h-5 w-5" />
-        </Row>
-      </Link>
+      <Row className="items-center justify-between">
+        <Subtitle>Predicted matches</Subtitle>{' '}
+        <Link
+          className={clsx(linkClass, 'text-ink-500')}
+          href={contractPath(contract)}
+        >
+          <Row className="items-center gap-1">
+            <div className="">See market</div>{' '}
+            <ExternalLinkIcon className="h-5 w-5" />
+          </Row>
+        </Link>
+      </Row>
 
       <LoveMarketCarousel
         profileLover={profileLover}
