@@ -92,9 +92,9 @@ export const resolveMarketHelper = async (
       .filter((a) => a.id !== answerId)
       .every((a) => a.resolution)
 
-    const hasAnswerResolvedYes = unresolvedContract.answers.some(
-      (a) => a.resolution === 'YES'
-    ) || outcome === 'YES'
+    const hasAnswerResolvedYes =
+      unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
+      outcome === 'YES'
     if (
       allAnswersResolved &&
       // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
@@ -235,10 +235,12 @@ export const getDataAndPayoutInfo = async (
     (doc) => doc.data() as LiquidityProvision
   )
 
-  const liquidities = unresolvedContract.specialLiquidityPerAnswer
-    ? // Filter out initial liquidity if set up with special liquidity per answer.
-      liquidityDocs.filter((l) => !l.isAnte)
-    : liquidityDocs
+  const liquidities =
+    unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    unresolvedContract.specialLiquidityPerAnswer
+      ? // Filter out initial liquidity if set up with special liquidity per answer.
+        liquidityDocs.filter((l) => !l.isAnte)
+      : liquidityDocs
 
   let bets: Bet[]
   if (

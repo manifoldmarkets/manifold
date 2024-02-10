@@ -128,7 +128,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  specialLiquidityPerAnswer?: number // Special market type where all answers are bet down to 1% and have the same liquidity while only one resolves yes. Implemented as independent multi.
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
@@ -229,6 +228,7 @@ export type CPMMMulti = {
 
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
+  specialLiquidityPerAnswer?: number // Special liquidity mode, where initial ante is copied into each answer's pool, with a min probability, and only one answer can resolve YES. shouldAnswersSumToOne must be false.
 
   // Answers chosen on resolution, with the weights of each answer.
   // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.

@@ -249,6 +249,7 @@ const getMultipleChoiceProps = (
     answers: answerObjects,
     totalLiquidity: specialLiquidityPerAnswer ?? ante,
     subsidyPool: 0,
+    specialLiquidityPerAnswer,
   }
 
   return system
