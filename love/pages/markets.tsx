@@ -16,6 +16,7 @@ import ProfileCarousel from 'love/components/profile-carousel'
 import { Subtitle } from 'love/components/widgets/lover-subtitle'
 import { useUser } from 'web/hooks/use-user'
 import { CreateYourMarketButton } from 'love/components/widgets/create-your-market-button'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export default function MarketsPage() {
   const { data } = useAPIGetter('get-love-markets', {})
@@ -33,7 +34,7 @@ export default function MarketsPage() {
               <CreateYourMarketButton className="self-end" />
             )}
         </Row>
-
+        {!data && <LoadingIndicator />}
         {data &&
           data.contracts.map((contract) => {
             const loverUserIds = new Set(
