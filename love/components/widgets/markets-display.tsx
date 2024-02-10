@@ -183,7 +183,7 @@ const MatchTile = (props: {
         <Row className="w-full items-center justify-between gap-2">
           <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
             <span className="font-semibold">
-              {answer.prob <= 0.02 ? '<2%' : formatPercent(answer.prob)}
+              {answer.prob <= 0.0205 ? '<2%' : formatPercent(answer.prob)}
             </span>{' '}
             <span className="text-xs">chance of 3rd date</span>
           </Link>
