@@ -23,6 +23,7 @@ import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
 import { CreateYourMarketButton } from '../widgets/create-your-market-button'
 import { MarketsDisplay } from '../widgets/markets-display'
+import { APIResponse } from 'common/api/schema'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -42,6 +43,11 @@ export function LoverProfile(props: {
     currentUser?.id,
     getStars
   )
+
+  const { data: contractData } = useAPIGetter('get-love-market', {
+    userId: lover.user_id,
+  })
+
   const { data, refresh } = useAPIGetter('get-likes-and-ships', {
     userId: user.id,
   })
@@ -66,7 +72,7 @@ export function LoverProfile(props: {
 
   return (
     <>
-      {isCurrentUser && !fromLoverPage && (
+      {isCurrentUser && !fromLoverPage && contractData?.contract === null && (
         <CreateYourMarketButton className="w-full" />
       )}
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
@@ -84,6 +90,7 @@ export function LoverProfile(props: {
         refreshLover={refreshLover}
         fromLoverPage={fromLoverPage}
         fromSignup={fromSignup}
+        contractData={contractData}
         likesGiven={likesGiven ?? []}
         likesReceived={likesReceived ?? []}
         ships={ships ?? []}
@@ -118,6 +125,7 @@ function LoverContent(props: {
   refreshLover: () => void
   fromLoverPage?: Lover
   fromSignup?: boolean
+  contractData: APIResponse<'get-love-market'> | undefined
   likesGiven: LikeData[]
   likesReceived: LikeData[]
   ships: ShipData[]
@@ -129,6 +137,7 @@ function LoverContent(props: {
     refreshLover,
     fromLoverPage,
     fromSignup,
+    contractData,
     likesGiven,
     likesReceived,
     ships,
@@ -136,10 +145,6 @@ function LoverContent(props: {
   } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
-
-  const { data: contractData } = useAPIGetter('get-love-market', {
-    userId: lover.user_id,
-  })
 
   if (!currentUser) {
     return (
