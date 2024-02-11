@@ -69,6 +69,7 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
 
   if (
     contract.isLove &&
+    contract.mechanism === 'cpmm-multi-1' &&
     resolutionParams.outcome === 'YES' &&
     'answerId' in resolutionParams
   ) {
@@ -81,6 +82,12 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
       resolutionParams,
       log
     )
+
+    // Refresh answers.
+    const answersSnap = await firestore
+      .collection(`contracts/${contractId}/answersCpmm`)
+      .get()
+    contract.answers = answersSnap.docs.map((doc) => doc.data() as Answer)
   }
 
   await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
