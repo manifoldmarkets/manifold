@@ -193,7 +193,7 @@ function RenderBalanceChanges(props: {
   )
 }
 
-function ChangeIcon(props: {
+export function ChangeIcon(props: {
   slug: string
   symbol: string | ReactNode
   className: string

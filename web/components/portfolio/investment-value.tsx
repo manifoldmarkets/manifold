@@ -4,18 +4,23 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { ContractMetric } from 'common/contract-metric'
-import { CPMMContract } from 'common/contract'
-import { sum } from 'lodash'
+import { Contract, contractPath, CPMMContract } from 'common/contract'
+import { orderBy, sum } from 'lodash'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney, getMoneyNumber } from 'common/util/format'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { DailyLoan } from 'web/components/home/daily-loan'
 import { DAY_MS } from 'common/util/time'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import Link from 'next/link'
+import { linkClass } from 'web/components/widgets/site-link'
+import { ChangeIcon } from 'web/components/portfolio/balance-card'
+import { Button } from 'web/components/buttons/button'
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
@@ -27,36 +32,45 @@ export const InvestmentValueCard = memo(function (props: {
 
   const [open, setOpen] = useState(false)
 
-  const [data, setData] = usePersistentInMemoryState<
+  const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
     { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
   >(undefined, `daily-profit-${user?.id}`)
 
   useEffect(() => {
     getUserContractMetricsByProfitWithContracts(user.id, db, 'day').then(
-      setData
+      setContractMetrics
     )
-  }, [setData])
+  }, [setContractMetrics])
 
   const dailyProfit = Math.round(
     useMemo(() => {
-      if (!data) return 0
-      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-    }, [data])
+      if (!contractMetrics) return 0
+      return sum(contractMetrics.metrics.map((m) => m.from?.day.profit ?? 0))
+    }, [contractMetrics])
   )
 
   // If a user is new and we haven't calculated their portfolio value recently enough, show the metrics value instead
   const portfolioValue = portfolio
     ? portfolio.investmentValue + portfolio.loanTotal
     : 0
-  const metricsValue = data ? sum(data.metrics.map((m) => m.payout ?? 0)) : 0
+  const metricsValue = contractMetrics
+    ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
+    : 0
   const investment =
     metricsValue !== portfolioValue &&
     metricsValue !== 0 &&
     user.createdTime > Date.now() - DAY_MS
       ? metricsValue
       : portfolioValue
+  const viableMetrics = contractMetrics?.metrics.filter(
+    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
+  )
+  const previewMetrics = orderBy(
+    viableMetrics ?? [],
+    (c) => Math.abs(c.from?.day.profit ?? 0),
+    'desc'
+  ).slice(0, 3)
 
-  const percentChange = dailyProfit / investment
   return (
     <Row
       className={clsx(className, 'relative')}
@@ -72,7 +86,7 @@ export const InvestmentValueCard = memo(function (props: {
         {investment !== 0 && (
           <Row
             className={clsx(
-              'items-center',
+              'mb-1 items-center',
               dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
             )}
           >
@@ -81,18 +95,52 @@ export const InvestmentValueCard = memo(function (props: {
             ) : dailyProfit < 0 ? (
               <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
             ) : null}
-            {formatPercent(percentChange)} today
+            {formatMoney(dailyProfit)} today
           </Row>
         )}
         <div className={'absolute right-4 top-3'}>
           <DailyLoan user={user} />
         </div>
+        {(viableMetrics?.length ?? 0) > 0 && (
+          <Col className={' border-ink-300 gap-2 border-t-2 pt-3'}>
+            {contractMetrics &&
+              previewMetrics.map((change) => (
+                <MetricChangeRow
+                  key={change.contractId}
+                  change={change}
+                  contract={
+                    contractMetrics.contracts.find(
+                      (c) => c.id === change.contractId
+                    )!
+                  }
+                  avatarSize={'sm'}
+                />
+              ))}
+            <Row className={'justify-end'}>
+              <Button
+                color={'gray-white'}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setOpen(true)
+                }}
+              >
+                See{' '}
+                {Math.max(
+                  (viableMetrics?.length ?? 0) - previewMetrics.length,
+                  0
+                )}{' '}
+                more changes
+              </Button>
+            </Row>
+          </Col>
+        )}
+
         {open && (
           <DailyProfitModal
             setOpen={setOpen}
             open={open}
-            metrics={data?.metrics}
-            contracts={data?.contracts}
+            metrics={contractMetrics?.metrics}
+            contracts={contractMetrics?.contracts}
             dailyProfit={dailyProfit}
             investment={investment}
           />
@@ -101,3 +149,59 @@ export const InvestmentValueCard = memo(function (props: {
     </Row>
   )
 })
+
+const MetricChangeRow = (props: {
+  change: ContractMetric
+  contract: Contract
+  avatarSize: 'sm' | 'md'
+}) => {
+  const { change, avatarSize, contract } = props
+  const dayProfit = change.from?.day.profit ?? 0
+  const direction = dayProfit > 0 ? 'up' : 'down'
+  if (getMoneyNumber(dayProfit) === 0) return null
+  return (
+    <Row className={'gap-2'}>
+      <Col>
+        <ChangeIcon
+          avatarSize={avatarSize}
+          slug={contract.slug}
+          symbol={
+            <div>
+              {direction === 'up' ? (
+                <FaArrowTrendUp className={'h-5 w-5 '} />
+              ) : (
+                <FaArrowTrendDown className={'h-5 w-5'} />
+              )}
+            </div>
+          }
+          className={
+            direction === 'up'
+              ? 'bg-teal-500'
+              : direction === 'down'
+              ? 'bg-scarlet-400'
+              : 'bg-blue-400'
+          }
+        />
+      </Col>
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          <Link
+            href={contractPath(contract)}
+            className={clsx('line-clamp-1', linkClass)}
+          >
+            {contract.question}
+          </Link>
+          <span
+            className={clsx(
+              'inline-flex whitespace-nowrap',
+              dayProfit > 0 ? 'text-teal-700' : 'text-ink-600'
+            )}
+          >
+            {dayProfit > 0 ? '+' : '-'}
+            {formatMoney(dayProfit)}
+          </span>
+        </Row>
+      </Col>
+    </Row>
+  )
+}
