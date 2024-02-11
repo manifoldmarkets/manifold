@@ -97,7 +97,11 @@ export default function CreateYourDatingMarket() {
             </div>
 
             {hasEnoughMana ? (
-              <Button disabled={isSubmitting} onClick={submit}>
+              <Button
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                onClick={submit}
+              >
                 Pay {formatMoney(LOVE_MARKET_COST)} & submit
               </Button>
             ) : (
