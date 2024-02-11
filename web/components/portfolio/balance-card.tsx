@@ -53,6 +53,7 @@ export const BalanceCard = (props: {
     ),
     'amount'
   )
+  const previewChanges = balanceChanges.slice(0, 3)
 
   return (
     <Row className={className} onClick={onSeeChanges}>
@@ -61,15 +62,31 @@ export const BalanceCard = (props: {
         <span className={'text-ink-800 mb-1 text-5xl'}>
           {formatMoney(user.balance)}
         </span>
-        <Row className={'text-ink-600 w-full flex-wrap justify-between'}>
+        <Row className={'text-ink-600 mb-1 w-full flex-wrap justify-between'}>
           <Row className={'gap-1'}>
             {formatMoney(earnedToday)} earned &{' '}
             {formatMoney(spentToday).replace('-', '')} spent today
           </Row>
-          <Row className={'text-ink-600 ml-auto mt-[3px] text-sm'}>
-            See changes
-          </Row>
         </Row>
+        <Col className={' border-ink-300 border-t-2 pt-3'}>
+          <RenderBalanceChanges
+            balanceChanges={previewChanges}
+            user={user}
+            avatarSize={'sm'}
+          />
+          <Row className={'justify-end'}>
+            <Button
+              color={'gray-white'}
+              onClick={(e) => {
+                e.stopPropagation()
+                onSeeChanges()
+              }}
+            >
+              See {Math.max(balanceChanges.length - previewChanges.length, 0)}{' '}
+              more changes
+            </Button>
+          </Row>
+        </Col>
       </Col>
       <div className={'absolute right-4 top-3'}>
         <Button
@@ -125,7 +142,11 @@ export const BalanceChangeTable = (props: {
         onChange={(e) => setQuery(e.target.value)}
       />
       <Col className={'gap-4 px-3 pt-4'}>
-        <RenderBalanceChanges balanceChanges={balanceChanges} user={user} />
+        <RenderBalanceChanges
+          avatarSize={'md'}
+          balanceChanges={balanceChanges}
+          user={user}
+        />
       </Col>
     </Col>
   )
@@ -133,8 +154,9 @@ export const BalanceChangeTable = (props: {
 function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
   user: User
+  avatarSize: 'sm' | 'md'
 }) {
-  const { balanceChanges, user } = props
+  const { balanceChanges, user, avatarSize } = props
   return (
     <>
       {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
@@ -153,6 +175,7 @@ function RenderBalanceChanges(props: {
             <BetBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as BetBalanceChange}
+              avatarSize={avatarSize}
             />
           )
         } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
@@ -161,6 +184,7 @@ function RenderBalanceChanges(props: {
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as TxnBalanceChange}
               avatarlUrl={user.avatarUrl}
+              avatarSize={avatarSize}
             />
           )
         }
@@ -173,13 +197,29 @@ function ChangeIcon(props: {
   slug: string
   symbol: string | ReactNode
   className: string
+  avatarSize: 'sm' | 'md'
 }) {
-  const { symbol, slug, className } = props
+  const { symbol, slug, avatarSize, className } = props
   return (
     <div className="relative">
       <Link href={slug} onClick={(e) => e.stopPropagation}>
-        <div className={clsx('h-10 w-10 rounded-full', className)} />
-        <div className="absolute bottom-1.5 left-[12px] text-lg">{symbol}</div>
+        <div
+          className={clsx(
+            avatarSize === 'sm' ? 'h-8 w-8' : 'h-10 w-10',
+            'rounded-full',
+            className
+          )}
+        />
+        <div
+          className="absolute  self-center text-lg"
+          style={{
+            top: '50%',
+            right: '50%',
+            transform: 'translate(50%, -50%)',
+          }}
+        >
+          {symbol}
+        </div>
       </Link>
     </div>
   )
@@ -197,8 +237,11 @@ const betChangeToText = (change: BetBalanceChange) => {
     ? `Sell ${outcome} shares`
     : `Buy ${outcome}`
 }
-const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
-  const { change } = props
+const BetBalanceChangeRow = (props: {
+  change: BetBalanceChange
+  avatarSize: 'sm' | 'md'
+}) => {
+  const { change, avatarSize } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
@@ -220,16 +263,13 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
     <Row className={'gap-2'}>
       <Col>
         <ChangeIcon
+          avatarSize={avatarSize}
           slug={contract.slug}
           symbol={
             type === 'loan_payment' ? (
               '🏦'
             ) : (
-              <div
-                className={clsx(
-                  direction === 'sideways' ? 'mb-1.5 ml-0.5' : 'mb-1'
-                )}
-              >
+              <div>
                 {direction === 'up' ? (
                   <FaArrowTrendUp className={'h-5 w-5 '} />
                 ) : direction === 'down' ? (
@@ -281,8 +321,9 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
   avatarlUrl: string
+  avatarSize: 'sm' | 'md'
 }) => {
-  const { change, avatarlUrl } = props
+  const { change, avatarSize, avatarlUrl } = props
   const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
@@ -316,6 +357,7 @@ const TxnBalanceChangeRow = (props: {
           />
         ) : (
           <ChangeIcon
+            avatarSize={avatarSize}
             slug={contract?.slug ?? changeUser?.username ?? ''}
             symbol={
               type === 'MANA_PAYMENT' ? (
@@ -412,9 +454,11 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'UNIQUE_BETTOR_BONUS':
       return 'Trader bonus'
     case 'BETTING_STREAK_BONUS':
-      return 'Quest'
+      return 'Quests'
     case 'SIGNUP_BONUS':
-      return 'New user quest'
+      return 'Quests'
+    case 'QUEST_REWARD':
+      return 'Quests'
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return 'Unresolve'
     case 'STARTING_BALANCE':
@@ -423,8 +467,6 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return ''
     case 'ADD_SUBSIDY':
       return 'Subsidy'
-    case 'QUEST_REWARD':
-      return 'Quest'
     case 'LEAGUE_PRIZE':
       return 'Leagues'
     case 'BOUNTY_POSTED':
@@ -442,14 +484,12 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
 
 const questTypeToDescription = (questType: QuestType) => {
   switch (questType) {
-    case 'BETTING_STREAK':
-      return 'Prediction streak'
     case 'SHARES':
-      return 'Question share'
+      return 'Sharing bonus'
     case 'MARKETS_CREATED':
-      return 'Question creation'
+      return 'Creation bonus'
     case 'REFERRALS':
-      return 'Referral'
+      return 'Referral bonus'
     default:
       return 'questType'
   }

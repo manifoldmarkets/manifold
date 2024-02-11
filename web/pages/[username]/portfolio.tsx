@@ -157,7 +157,7 @@ function UserPortfolioInternal(props: {
             </Col>
           </Link>
         </Row>
-        <Row className={'flex-wrap gap-4 px-2 sm:px-0 '}>
+        <Row className={'flex-wrap gap-4 px-3 sm:px-0 '}>
           <BalanceCard
             onSeeChanges={() => {
               router.replace(
@@ -176,7 +176,7 @@ function UserPortfolioInternal(props: {
           <InvestmentValueCard
             user={user}
             className={
-              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3  sm:w-[49%]'
+              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3  sm:w-[48%]'
             }
           />
         </Row>
