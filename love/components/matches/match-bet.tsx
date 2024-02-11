@@ -40,7 +40,7 @@ export function MatchBetButton(props: {
         setOpen={setOpen}
         className={clsx(
           MODAL_CLASS,
-          'pointer-events-auto max-h-[32rem] overflow-auto'
+          'pointer-events-auto max-h-[40rem] overflow-auto'
         )}
       >
         <Col>
