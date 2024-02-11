@@ -137,12 +137,13 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
-
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-
-import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
+import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
+import { getLoveMarket } from './love/get-love-market'
+import { getLoveMarkets } from './love/get-love-markets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -258,6 +259,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
+  'create-your-love-market': createYourLoveMarket,
+  'get-love-market': getLoveMarket,
+  'get-love-markets': getLoveMarkets,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

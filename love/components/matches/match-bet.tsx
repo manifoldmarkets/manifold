@@ -17,17 +17,16 @@ import { useState } from 'react'
 export function MatchBetButton(props: {
   contract: CPMMMultiContract
   answer: Answer
-  answers: Answer[]
   user: User
   modalHeader?: React.ReactNode
 }) {
-  const { contract, answer, answers, user, modalHeader } = props
+  const { contract, answer, user, modalHeader } = props
   const [open, setOpen] = useState(false)
   return (
     <>
       <Button
         size={'2xs'}
-        color={'indigo-outline'}
+        color={'indigo'}
         onClick={() => {
           setOpen(true)
           track('love bet button click')
@@ -41,7 +40,7 @@ export function MatchBetButton(props: {
         setOpen={setOpen}
         className={clsx(
           MODAL_CLASS,
-          'pointer-events-auto max-h-[32rem] overflow-auto'
+          'pointer-events-auto max-h-[40rem] overflow-auto'
         )}
       >
         <Col>
@@ -53,7 +52,7 @@ export function MatchBetButton(props: {
           </Link>
           <BuyPanel
             contract={contract}
-            multiProps={{ answers, answerToBuy: answer }}
+            multiProps={{ answers: contract.answers, answerToBuy: answer }}
             user={user}
             initialOutcome="YES"
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}

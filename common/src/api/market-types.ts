@@ -117,6 +117,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -170,6 +171,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   })
 }
 
@@ -323,6 +325,8 @@ export const createMarketProps = z
     loverUserId1: z.string().optional(),
     loverUserId2: z.string().optional(),
     matchCreatorId: z.string().optional(),
+    isLove: z.boolean().optional(),
+    specialLiquidityPerAnswer: z.number().positive().optional(),
   })
   .and(
     z.union([
