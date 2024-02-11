@@ -71,7 +71,8 @@ export const getCreatorMutuallyMessagedUserIds = async (
     JOIN
         private_user_messages p2 ON p1.channel_id = p2.channel_id AND p1.user_id != p2.user_id
     WHERE
-        p1.user_id = any($1)
+        p1.user_id = any($1) and
+        p1.channel_id != 638
     GROUP BY
         p1.user_id, p2.user_id, p1.channel_id
     `,
