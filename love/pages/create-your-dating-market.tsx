@@ -42,11 +42,11 @@ export default function CreateYourDatingMarket() {
 
       <BackButton className="self-start" />
       <Col className="bg-canvas-0 border-ink-100 max-w-xl gap-4 self-center border shadow sm:mb-6 sm:rounded-lg">
-        <Title className="mx-4 !mb-0 mt-4 !text-4xl sm:text-3xl">
+        <Title className="mx-5 !mb-0 mt-4 !text-4xl sm:text-3xl">
           Your dating prediction market
         </Title>
 
-        <div className="mx-4 text-lg font-semibold">
+        <div className="mx-5 text-lg font-semibold">
           Find your match through the wisdom of the crowds.
         </div>
 
@@ -120,10 +120,10 @@ const Section = ({
 }) => {
   return (
     <Col className="gap-2">
-      <div className="text-ink-700 bg-canvas-50 px-3 py-1.5 font-semibold">
+      <div className="text-ink-700 bg-canvas-50 px-5 py-1.5 font-semibold">
         {title}
       </div>
-      <Col className="gap-3 px-3">{children}</Col>
+      <Col className="gap-4 px-5">{children}</Col>
     </Col>
   )
 }
