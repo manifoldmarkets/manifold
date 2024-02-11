@@ -22,7 +22,7 @@ import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { useUser } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { RxAvatar } from 'react-icons/rx'
 import {
   BalanceCard,
@@ -96,7 +96,8 @@ function UserPortfolioInternal(props: {
   balanceChanges: AnyBalanceChangeType[]
   portfolioPoints: number
 }) {
-  const { user, shouldIgnoreUser, balanceChanges, portfolioPoints } = props
+  const { shouldIgnoreUser, balanceChanges, portfolioPoints } = props
+  const user = useUserById(props.user.id) ?? props.user
   const currentUser = useUser()
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
