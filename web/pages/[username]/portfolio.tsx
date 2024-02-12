@@ -141,7 +141,7 @@ function UserPortfolioInternal(props: {
           >
             <Col className={'items-center px-3 text-sm'}>
               <Avatar
-                size={'md'}
+                size={'sm'}
                 noLink={true}
                 username={user.username}
                 avatarUrl={user.avatarUrl}
