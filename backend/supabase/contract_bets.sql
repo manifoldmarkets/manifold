@@ -83,16 +83,6 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
 alter table contract_bets
     cluster on contract_bets_created_time;
 
-create or replace trigger "on_create_bet" after insert
-    on "public"."contract_bets" for each row
-execute function "supabase_functions"."http_request"(
-        'https://api.manifold.markets/on-create-bet',
-        'POST',
-        '{"Content-Type":"application/json"}',
-        '{}',
-        '1000'
-         );
-
 drop policy if exists "Enable read access for non private bets" on public.contract_bets;
 
 create policy "Enable read access for non private bets" on public.contract_bets for

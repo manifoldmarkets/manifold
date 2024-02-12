@@ -27,12 +27,14 @@ import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { onCreateBet } from 'api/on-create-bet'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
   return await placeBetMain(props, auth.uid, isApi, log)
 }
 
+// Note: this returns a continuation function that should be run for consistency.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
@@ -395,21 +397,31 @@ export const placeBetMain = async (
     )
     log(`Share redemption transaction finished - auth ${uid}.`)
   }
-  if (ordersToCancel) {
-    await Promise.all(
-      ordersToCancel.map((order) => {
-        createLimitBetCanceledNotification(
-          user,
-          order.userId,
-          order,
-          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-          contract
-        )
-      })
-    )
+
+  const continuation = async () => {
+    if (ordersToCancel) {
+      await Promise.all(
+        ordersToCancel.map((order) => {
+          createLimitBetCanceledNotification(
+            user,
+            order.userId,
+            order,
+            makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+            contract
+          )
+        })
+      )
+    }
+    const bet = await firestore
+      .doc(`contracts/${contract.id}/bets/${betId}`)
+      .get()
+    await onCreateBet(bet.data() as Bet, contract, user, log)
   }
 
-  return { ...newBet, betId: betId }
+  return {
+    result: { ...newBet, betId },
+    continue: continuation,
+  }
 }
 
 const firestore = admin.firestore()

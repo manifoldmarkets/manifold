@@ -94,7 +94,6 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
-import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
@@ -389,19 +388,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-const publicApiRoute = (endpoint: RequestHandler) => {
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// Ian: not sure how to restrict triggers to supabase origin, yet
-app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res
