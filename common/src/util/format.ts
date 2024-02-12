@@ -38,7 +38,8 @@ export function getMoneyNumber(amount: number) {
 }
 
 export function formatMoneyWithDecimals(amount: number) {
-  return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
+  const newAmount = getMoneyNumber(amount)
+  return ENV_CONFIG.moneyMoniker + newAmount.toFixed(2)
 }
 
 export function formatMoneyToDecimal(amount: number) {
