@@ -30,7 +30,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
 
   const portfolio = useCurrentPortfolio(user?.id)
   const investment = portfolio
-    ? portfolio.investmentValue + (portfolio.loanTotal ?? 0)
+    ? portfolio.investmentValue + (user?.balance ?? 0)
     : 0
 
   const [open, setOpen] = useState(false)
@@ -68,7 +68,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         <Row>
           <Col className="items-start">
             <div>{formatMoney(investment)}</div>
-            <div className="text-ink-600 text-xs ">Invested</div>
+            <div className="text-ink-600 text-xs ">Net worth</div>
           </Col>
 
           {dailyProfit !== 0 && (
