@@ -41,6 +41,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -255,6 +256,8 @@ export function BuyPanel(props: {
 
   const selected = seeLimit ? 'LIMIT' : outcome
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+
   return (
     <Col>
       <Row
@@ -336,6 +339,8 @@ export function BuyPanel(props: {
                     ? getStonkDisplayShares(contract, currentPayout, 2)
                     : isPseudoNumeric
                     ? Math.floor(currentPayout)
+                    : isAdvancedTrader
+                    ? formatMoneyWithDecimals(currentPayout)
                     : formatMoney(currentPayout)}
                 </span>
                 <span className="text-ink-500 pr-3 text-sm">
