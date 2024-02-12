@@ -106,6 +106,8 @@ function UserPortfolioInternal(props: {
   const pathName = usePathname()
   const balanceChangesKey = 'balance-changes'
   const ref = useRef<HTMLDivElement>(null)
+  const CARD_CLASS =
+    'h-fit bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3 sm:w-[48%]'
   return (
     <Page
       key={user.id}
@@ -169,16 +171,9 @@ function UserPortfolioInternal(props: {
             }}
             user={user}
             balanceChanges={balanceChanges}
-            className={
-              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3 sm:w-[48%]'
-            }
+            className={CARD_CLASS}
           />
-          <InvestmentValueCard
-            user={user}
-            className={
-              'bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3  sm:w-[48%]'
-            }
-          />
+          <InvestmentValueCard user={user} className={CARD_CLASS} />
         </Row>
         <Col className={'mt-5'}>
           {portfolioPoints > 1 && (

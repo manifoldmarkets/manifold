@@ -62,14 +62,15 @@ export const InvestmentValueCard = memo(function (props: {
     user.createdTime > Date.now() - DAY_MS
       ? metricsValue
       : portfolioValue
-  const viableMetrics = contractMetrics?.metrics.filter(
+  const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
     (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
   )
   const previewMetrics = orderBy(
-    viableMetrics ?? [],
+    visibleMetrics,
     (c) => Math.abs(c.from?.day.profit ?? 0),
     'desc'
   ).slice(0, 3)
+  const moreChanges = Math.max(visibleMetrics.length - previewMetrics.length, 0)
 
   return (
     <Row
@@ -101,8 +102,8 @@ export const InvestmentValueCard = memo(function (props: {
         <div className={'absolute right-4 top-3'}>
           <DailyLoan user={user} />
         </div>
-        {(viableMetrics?.length ?? 0) > 0 && (
-          <Col className={' border-ink-300 gap-2 border-t-2 pt-3'}>
+        {visibleMetrics.length > 0 && (
+          <Col className={' border-ink-300 gap-4 border-t-2 pt-3'}>
             {contractMetrics &&
               previewMetrics.map((change) => (
                 <MetricChangeRow
@@ -116,22 +117,19 @@ export const InvestmentValueCard = memo(function (props: {
                   avatarSize={'sm'}
                 />
               ))}
-            <Row className={'justify-end'}>
-              <Button
-                color={'gray-white'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setOpen(true)
-                }}
-              >
-                See{' '}
-                {Math.max(
-                  (viableMetrics?.length ?? 0) - previewMetrics.length,
-                  0
-                )}{' '}
-                more changes
-              </Button>
-            </Row>
+            {moreChanges > 0 && (
+              <Row className={'justify-end'}>
+                <Button
+                  color={'gray-white'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setOpen(true)
+                  }}
+                >
+                  See {moreChanges} more changes
+                </Button>
+              </Row>
+            )}
           </Col>
         )}
 
@@ -178,7 +176,7 @@ const MetricChangeRow = (props: {
             direction === 'up'
               ? 'bg-teal-500'
               : direction === 'down'
-              ? 'bg-scarlet-400'
+              ? 'bg-ink-400'
               : 'bg-blue-400'
           }
         />
@@ -197,7 +195,7 @@ const MetricChangeRow = (props: {
               dayProfit > 0 ? 'text-teal-700' : 'text-ink-600'
             )}
           >
-            {dayProfit > 0 ? '+' : '-'}
+            {dayProfit > 0 ? '+' : ''}
             {formatMoney(dayProfit)}
           </span>
         </Row>

@@ -39,7 +39,10 @@ export const BalanceCard = (props: {
   onSeeChanges: () => void
   className?: string
 }) => {
-  const { user, className, onSeeChanges, balanceChanges } = props
+  const { user, className, onSeeChanges } = props
+  const balanceChanges = props.balanceChanges.filter(
+    (b) => getMoneyNumber(b.amount) !== 0
+  )
   const [showAddFunds, setShowAddFunds] = useState(false)
   const spentToday = sumBy(
     balanceChanges.filter(
@@ -54,7 +57,7 @@ export const BalanceCard = (props: {
     'amount'
   )
   const previewChanges = balanceChanges.slice(0, 3)
-
+  const moreChanges = Math.max(balanceChanges.length - previewChanges.length, 0)
   return (
     <Row className={className} onClick={onSeeChanges}>
       <Col className={'w-full gap-1.5'}>
@@ -68,25 +71,28 @@ export const BalanceCard = (props: {
             {formatMoney(spentToday).replace('-', '')} spent today
           </Row>
         </Row>
-        <Col className={' border-ink-300 border-t-2 pt-3'}>
-          <RenderBalanceChanges
-            balanceChanges={previewChanges}
-            user={user}
-            avatarSize={'sm'}
-          />
-          <Row className={'justify-end'}>
-            <Button
-              color={'gray-white'}
-              onClick={(e) => {
-                e.stopPropagation()
-                onSeeChanges()
-              }}
-            >
-              See {Math.max(balanceChanges.length - previewChanges.length, 0)}{' '}
-              more changes
-            </Button>
-          </Row>
-        </Col>
+        {previewChanges.length > 0 && (
+          <Col className={'border-ink-300 border-t-2 pt-3'}>
+            <RenderBalanceChanges
+              balanceChanges={previewChanges}
+              user={user}
+              avatarSize={'sm'}
+            />
+            {moreChanges > 0 && (
+              <Row className={'justify-end'}>
+                <Button
+                  color={'gray-white'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSeeChanges()
+                  }}
+                >
+                  See {moreChanges} more changes
+                </Button>
+              </Row>
+            )}
+          </Col>
+        )}
       </Col>
       <div className={'absolute right-4 top-3'}>
         <Button
@@ -246,8 +252,7 @@ const BetBalanceChangeRow = (props: {
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
   const niceAmount =
-    ENV_CONFIG.moneyMoniker +
-    shortFormatNumber(Math.round(amount)).replace('-', '')
+    ENV_CONFIG.moneyMoniker + shortFormatNumber(amount).replace('-', '')
   const direction =
     type === 'redeem_shares'
       ? 'sideways'
@@ -258,10 +263,9 @@ const BetBalanceChangeRow = (props: {
       : outcome === 'YES'
       ? 'up'
       : 'down'
-  if (getMoneyNumber(amount) === 0) return null
   return (
     <Row className={'gap-2'}>
-      <Col>
+      <Col className={'mt-0.5'}>
         <ChangeIcon
           avatarSize={avatarSize}
           slug={contract.slug}
@@ -289,7 +293,7 @@ const BetBalanceChangeRow = (props: {
           }
         />
       </Col>
-      <Col className={'w-full'}>
+      <Col className={'w-full overflow-x-hidden'}>
         <Row className={'justify-between'}>
           <Link
             href={contractPathWithoutContract(creatorUsername, slug)}
@@ -347,13 +351,13 @@ const TxnBalanceChangeRow = (props: {
   }
   return (
     <Row className={'gap-2'}>
-      <Col>
+      <Col className={'mt-0.5'}>
         {type === 'STARTING_BALANCE' ? (
           <Avatar
             className={''}
             avatarUrl={avatarlUrl}
             noLink={true}
-            size={'md'}
+            size={avatarSize}
           />
         ) : (
           <ChangeIcon
@@ -420,10 +424,10 @@ const TxnBalanceChangeRow = (props: {
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
-  const { type, contract, questType } = change
+  const { type, contract, user, questType } = change
 
-  if (change.user) {
-    return change.user.username
+  if (user) {
+    return user.username
   }
   switch (type) {
     case 'QUEST_REWARD':

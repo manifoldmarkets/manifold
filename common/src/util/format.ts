@@ -103,6 +103,7 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
 }
 
 export function shortFormatNumber(num: number): string {
+  if (num < 1 && num > -1) return showPrecision(num, 1)
   if (num < 1000 && num > -1000) return showPrecision(num, 3)
 
   const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
@@ -112,7 +113,11 @@ export function shortFormatNumber(num: number): string {
   return `${numStr}${suffix[i] ?? ''}`
 }
 
-export function maybePluralize(word: string, num: number, plural: string = 's'): string {
+export function maybePluralize(
+  word: string,
+  num: number,
+  plural: string = 's'
+): string {
   return num === 1 ? word : word + plural
 }
 
