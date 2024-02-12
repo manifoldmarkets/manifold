@@ -1,6 +1,9 @@
 import clsx from 'clsx'
 
-import { formatMoney } from 'common/util/format'
+import { 
+  formatMoney,
+  formatMoneyWithDecimals,
+} from 'common/util/format'
 import { Col } from '../layout/col'
 import { Contract } from 'web/lib/firebase/contracts'
 import { Row } from '../layout/row'
@@ -15,6 +18,7 @@ import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
 import { CPMMContract } from 'common/contract'
 import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -80,6 +84,8 @@ export function BetsSummary(props: {
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+
   if (metrics.invested === 0 && metrics.profit === 0) return null
 
   return (
@@ -89,7 +95,9 @@ export function BetsSummary(props: {
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
             <div className="whitespace-nowrap">
-              {formatMoney(payout)}{' '}
+              {isAdvancedTrader
+                ? formatMoneyWithDecimals(payout)
+                : formatMoney(payout)}{' '}
               <ProfitBadge profitPercent={profitPercent} />
             </div>
           </Col>
@@ -128,11 +136,11 @@ export function BetsSummary(props: {
                 <div className="whitespace-nowrap">
                   {position > 1e-7 ? (
                     <>
-                      {formatMoney(position)} on <YesLabel />
+                      {isAdvancedTrader ? formatMoneyWithDecimals(position) : formatMoney(position)} on <YesLabel />
                     </>
                   ) : position < -1e-7 ? (
                     <>
-                      {formatMoney(-position)} on <NoLabel />
+                      {isAdvancedTrader ? formatMoneyWithDecimals(-position) : formatMoney(-position)} on <NoLabel />
                     </>
                   ) : (
                     '——'
@@ -150,7 +158,7 @@ export function BetsSummary(props: {
                       } position in the question is worth right now according to the current probability.`}
                     />
                   </div>
-                  <div className="whitespace-nowrap">{formatMoney(payout)}</div>
+                  <div className="whitespace-nowrap">{isAdvancedTrader ? formatMoneyWithDecimals(payout) : formatMoney(payout)}</div>
                 </Col>
               )
             )}
@@ -171,7 +179,7 @@ export function BetsSummary(props: {
             Spent{' '}
             <InfoTooltip text="Cost basis. Cash originally invested in this question, using average cost accounting." />
           </div>
-          <div className="whitespace-nowrap">{formatMoney(invested)}</div>
+          <div className="whitespace-nowrap">{isAdvancedTrader ? formatMoneyWithDecimals(invested) : formatMoney(invested)}</div>
         </Col>
 
         {isBinary && !resolution && !hideValue && (
@@ -184,7 +192,7 @@ export function BetsSummary(props: {
                 } position in the question is worth right now according to the current probability.`}
               />
             </div>
-            <div className="whitespace-nowrap">{formatMoney(expectation)}</div>
+            <div className="whitespace-nowrap">{isAdvancedTrader ? formatMoneyWithDecimals(expectation) : formatMoney(expectation)}</div>
           </Col>
         )}
 
@@ -199,7 +207,7 @@ export function BetsSummary(props: {
               />
             </div>
             <div className="whitespace-nowrap">
-              {formatMoney(profit)}
+              {isAdvancedTrader ? formatMoneyWithDecimals(profit) : formatMoney(profit)}
               <ProfitBadge profitPercent={profitPercent} round={true} />
             </div>
           </Col>
