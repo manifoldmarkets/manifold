@@ -23,7 +23,6 @@ import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { useUser, useUserById } from 'web/hooks/use-user'
-import { RxAvatar } from 'react-icons/rx'
 import {
   BalanceCard,
   BalanceChangeTable,
@@ -34,6 +33,7 @@ import { buildArray } from 'common/util/array'
 import { useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export const getStaticProps = async (props: {
   params: {
@@ -140,7 +140,12 @@ function UserPortfolioInternal(props: {
             href={'/' + user.username}
           >
             <Col className={'items-center px-3 text-sm'}>
-              <RxAvatar className={'h-7 w-7'} />
+              <Avatar
+                size={'md'}
+                noLink={true}
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+              />
             </Col>
           </Link>
         </Row>
@@ -155,7 +160,12 @@ function UserPortfolioInternal(props: {
             href={'/' + user.username}
           >
             <Col className={'items-center px-3 text-sm'}>
-              <RxAvatar className={'h-7 w-7'} />
+              <Avatar
+                size={'md'}
+                noLink={true}
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+              />{' '}
             </Col>
           </Link>
         </Row>

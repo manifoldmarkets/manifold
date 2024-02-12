@@ -18,6 +18,7 @@ import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections
 import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export async function getStaticProps() {
   const headlines = await api('headlines', {})
@@ -51,12 +52,19 @@ export default function Home(props: { headlines: Headline[] }) {
             {user ? (
               <ProfileSummary
                 user={user}
-                avatarSize={isMobile ? 'sm' : undefined}
+                showProfile={isMobile ? true : undefined}
               />
             ) : (
               <Spacer w={4} />
             )}
           </div>
+          {user && !isMobile && (
+            <Avatar
+              avatarUrl={user.avatarUrl}
+              username={user.username}
+              size={'sm'}
+            />
+          )}
           <Title className="!mb-0 hidden whitespace-nowrap md:flex">
             For You
           </Title>
