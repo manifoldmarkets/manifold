@@ -52,7 +52,7 @@ const getTxnBalanceChanges = async (
     `
     select data
     from txns
-    where fs_updated_time > millis_to_ts($1)
+    where ((data->'createdTime')::bigint) >$1
       and (data->>'toId' = $2 or data->>'fromId' = $2)
     and data->>'category' = ANY ($3);
     `,
