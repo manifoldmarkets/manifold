@@ -49,19 +49,17 @@ export const InvestmentValueCard = memo(function (props: {
     }, [contractMetrics])
   )
 
-  // If a user is new and we haven't calculated their portfolio value recently enough, show the metrics value instead
-  const portfolioValue = portfolio
-    ? portfolio.investmentValue + portfolio.loanTotal
-    : 0
+  // If a user is new, then their portfolio value may be out of date, so show the metrics value instead
+  const portfolioValue = portfolio ? portfolio.investmentValue : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
     : 0
-  const investment =
+  const netWorth =
     metricsValue !== portfolioValue &&
     metricsValue !== 0 &&
     user.createdTime > Date.now() - DAY_MS
-      ? metricsValue
-      : portfolioValue
+      ? metricsValue + user.balance
+      : portfolioValue + user.balance
   const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
     (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
   )
@@ -79,12 +77,12 @@ export const InvestmentValueCard = memo(function (props: {
         setOpen(true)
       }, DAILY_INVESTMENT_CLICK_EVENT)}
     >
-      <Col className={'gap-1.5'}>
-        <span className={'text-ink-800 ml-1'}>Your investments</span>
+      <Col className={'w-full gap-1.5'}>
+        <span className={'text-ink-800 ml-1'}>Your net worth</span>
         <span className={'text-ink-800 mb-1 text-5xl'}>
-          {formatMoney(investment)}
+          {formatMoney(netWorth)}
         </span>
-        {investment !== 0 && (
+        {netWorth !== 0 && (
           <Row
             className={clsx(
               'mb-1 items-center',
@@ -96,7 +94,7 @@ export const InvestmentValueCard = memo(function (props: {
             ) : dailyProfit < 0 ? (
               <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
             ) : null}
-            {formatMoney(dailyProfit)} today
+            {formatMoney(dailyProfit)} profit today
           </Row>
         )}
         <div className={'absolute right-4 top-3'}>
@@ -140,7 +138,7 @@ export const InvestmentValueCard = memo(function (props: {
             metrics={contractMetrics?.metrics}
             contracts={contractMetrics?.contracts}
             dailyProfit={dailyProfit}
-            investment={investment}
+            investment={netWorth}
           />
         )}
       </Col>

@@ -67,8 +67,8 @@ export const BalanceCard = (props: {
         </span>
         <Row className={'text-ink-600 mb-1 w-full flex-wrap justify-between'}>
           <Row className={'gap-1'}>
-            {formatMoney(earnedToday)} earned &{' '}
-            {formatMoney(spentToday).replace('-', '')} spent today
+            {formatMoney(earnedToday)} in &{' '}
+            {formatMoney(spentToday).replace('-', '')} out today
           </Row>
         </Row>
         {previewChanges.length > 0 && (

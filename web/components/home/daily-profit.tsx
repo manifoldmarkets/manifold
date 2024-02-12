@@ -3,11 +3,7 @@ import { User } from 'common/user'
 import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
-import {
-  formatMoney,
-  formatPercent,
-  shortFormatNumber,
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
 import { CPMMContract } from 'common/contract'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
@@ -114,9 +110,9 @@ export function DailyProfitModal(props: {
 
   return (
     <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
-      <Row className={'ml-2 justify-around'}>
+      <Row className={'mx-2 justify-between'}>
         <Col>
-          <span className={'ml-1'}>Your investments</span>
+          <span className={'ml-1'}>Your net worth</span>
           <span className={'mb-1 text-2xl'}>{formatMoney(investment)}</span>
         </Col>
         <Col>
@@ -132,7 +128,7 @@ export function DailyProfitModal(props: {
             ) : (
               <ArrowUpIcon className={'mr-1 h-4 w-4 rotate-180 transform'} />
             )}
-            {formatPercent(dailyProfit / investment)}
+            {formatMoney(dailyProfit)}
           </span>
         </Col>
       </Row>
