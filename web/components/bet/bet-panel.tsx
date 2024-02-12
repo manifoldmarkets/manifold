@@ -17,6 +17,7 @@ import {
   formatMoney,
   formatOutcomeLabel,
   formatPercent,
+  formatMoneyWithDecimals,
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
