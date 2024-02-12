@@ -105,7 +105,7 @@ export async function createMarketHelper(
   const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, userId)
+          getGroupCheckPermissions(gId, visibility, userId, { isLove })
         )
       )
     : null
@@ -448,8 +448,10 @@ function validateMarketType<T extends z.ZodType>(
 async function getGroupCheckPermissions(
   groupId: string,
   visibility: string,
-  userId: string
+  userId: string,
+  options: { isLove?: boolean } = {}
 ) {
+  const { isLove } = options
   const db = createSupabaseClient()
 
   const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
@@ -482,6 +484,7 @@ async function getGroupCheckPermissions(
       userId,
       group,
       membership,
+      isLove,
     })
   ) {
     throw new APIError(
