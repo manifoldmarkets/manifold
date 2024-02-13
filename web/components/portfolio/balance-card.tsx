@@ -295,12 +295,16 @@ const BetBalanceChangeRow = (props: {
       </Col>
       <Col className={'w-full overflow-x-hidden'}>
         <Row className={'justify-between'}>
-          <Link
-            href={contractPathWithoutContract(creatorUsername, slug)}
-            className={clsx('line-clamp-1', linkClass)}
-          >
-            {question}
-          </Link>
+          {slug.length > 0 ? (
+            <Link
+              href={contractPathWithoutContract(creatorUsername, slug)}
+              className={clsx('line-clamp-1', linkClass)}
+            >
+              {question}
+            </Link>
+          ) : (
+            <div className={clsx('line-clamp-1')}>{question}</div>
+          )}
           <span
             className={clsx(
               'inline-flex whitespace-nowrap',
@@ -385,7 +389,7 @@ const TxnBalanceChangeRow = (props: {
       </Col>
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
-          {contract ? (
+          {contract && contract.slug.length > 0 ? (
             <Link
               href={contractPathWithoutContract(
                 contract.creatorUsername,
@@ -403,7 +407,7 @@ const TxnBalanceChangeRow = (props: {
               {txnTitle(change)}
             </Link>
           ) : (
-            <div className={clsx(' truncate')}>
+            <div className={clsx('line-clamp-1')}>
               {txnTitle(change) ?? txnTypeToDescription(type)}
             </div>
           )}

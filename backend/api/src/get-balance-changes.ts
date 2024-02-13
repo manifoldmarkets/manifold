@@ -96,8 +96,7 @@ const getTxnBalanceChanges = async (
                 ? contract.question
                 : '[unlisted question]',
             visibility: contract.visibility,
-            slug:
-              contract.visibility === 'public' ? contract.slug : '[unlisted]',
+            slug: contract.visibility === 'public' ? contract.slug : '',
             creatorUsername: contract.creatorUsername,
           }
         : undefined,
@@ -191,7 +190,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         },
         contract: {
           question: visibility === 'public' ? question : '[unlisted question]',
-          slug: visibility === 'public' ? slug : '[unlisted]',
+          slug: visibility === 'public' ? slug : '',
           visibility,
           creatorUsername,
         },
