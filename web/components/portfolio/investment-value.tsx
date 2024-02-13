@@ -160,7 +160,7 @@ const MetricChangeRow = (props: {
       <Col>
         <ChangeIcon
           avatarSize={avatarSize}
-          slug={contract.slug}
+          slug={contractPath(contract)}
           symbol={
             <div>
               {direction === 'up' ? (

@@ -200,36 +200,47 @@ function RenderBalanceChanges(props: {
 }
 
 export function ChangeIcon(props: {
-  slug: string
+  slug: string | undefined
   symbol: string | ReactNode
   className: string
   avatarSize: 'sm' | 'md'
 }) {
   const { symbol, slug, avatarSize, className } = props
+  const image = (
+    <>
+      <div
+        className={clsx(
+          avatarSize === 'sm' ? 'h-8 w-8' : 'h-10 w-10',
+          'rounded-full',
+          className
+        )}
+      />
+      <div
+        className="absolute  self-center text-lg"
+        style={{
+          top: '50%',
+          right: '50%',
+          transform: 'translate(50%, -50%)',
+        }}
+      >
+        {symbol}
+      </div>
+    </>
+  )
+
   return (
     <div className="relative">
-      <Link href={slug} onClick={(e) => e.stopPropagation}>
-        <div
-          className={clsx(
-            avatarSize === 'sm' ? 'h-8 w-8' : 'h-10 w-10',
-            'rounded-full',
-            className
-          )}
-        />
-        <div
-          className="absolute  self-center text-lg"
-          style={{
-            top: '50%',
-            right: '50%',
-            transform: 'translate(50%, -50%)',
-          }}
-        >
-          {symbol}
-        </div>
-      </Link>
+      {slug ? (
+        <Link href={slug} onClick={(e) => e.stopPropagation}>
+          {image}
+        </Link>
+      ) : (
+        image
+      )}
     </div>
   )
 }
+
 const betChangeToText = (change: BetBalanceChange) => {
   const { type, bet } = change
   const { outcome } = bet
@@ -268,7 +279,11 @@ const BetBalanceChangeRow = (props: {
       <Col className={'mt-0.5'}>
         <ChangeIcon
           avatarSize={avatarSize}
-          slug={contract.slug}
+          slug={
+            slug
+              ? contractPathWithoutContract(creatorUsername, slug)
+              : undefined
+          }
           symbol={
             type === 'loan_payment' ? (
               '🏦'
@@ -295,7 +310,7 @@ const BetBalanceChangeRow = (props: {
       </Col>
       <Col className={'w-full overflow-x-hidden'}>
         <Row className={'justify-between'}>
-          {slug.length > 0 ? (
+          {slug ? (
             <Link
               href={contractPathWithoutContract(creatorUsername, slug)}
               className={clsx('line-clamp-1', linkClass)}
@@ -366,7 +381,14 @@ const TxnBalanceChangeRow = (props: {
         ) : (
           <ChangeIcon
             avatarSize={avatarSize}
-            slug={contract?.slug ?? changeUser?.username ?? ''}
+            slug={
+              contract?.slug
+                ? contractPathWithoutContract(
+                    contract.creatorUsername,
+                    contract.slug
+                  )
+                : changeUser?.username
+            }
             symbol={
               type === 'MANA_PAYMENT' ? (
                 '💸'
@@ -389,7 +411,7 @@ const TxnBalanceChangeRow = (props: {
       </Col>
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
-          {contract && contract.slug.length > 0 ? (
+          {contract && contract.slug ? (
             <Link
               href={contractPathWithoutContract(
                 contract.creatorUsername,
@@ -407,9 +429,7 @@ const TxnBalanceChangeRow = (props: {
               {txnTitle(change)}
             </Link>
           ) : (
-            <div className={clsx('line-clamp-1')}>
-              {txnTitle(change) ?? txnTypeToDescription(type)}
-            </div>
+            <div className={clsx('line-clamp-1')}>{txnTitle(change)}</div>
           )}
           <span
             className={clsx(

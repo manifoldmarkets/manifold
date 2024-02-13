@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
-import { Contract } from 'common/contract'
+import { Visibility } from 'common/contract'
 import { QuestType } from 'common/quest'
 import { Answer } from 'common/answer'
 export type AnyBalanceChangeType =
@@ -14,10 +14,13 @@ export type BalanceChange = {
   type: string
   createdTime: number
 }
-type MinimalContract = Pick<
-  Contract,
-  'question' | 'slug' | 'visibility' | 'creatorUsername'
->
+type MinimalContract = {
+  question: string
+  slug?: string
+  visibility: Visibility
+  creatorUsername: string
+}
+
 type CustomBalanceChange = Omit<BalanceChange, 'type'>
 export const BET_BALANCE_CHANGE_TYPES = [
   'create_bet',
