@@ -227,9 +227,10 @@ export function BuyAmountInput(props: {
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
         <Row className=" space-x-1">
-          <div className="text-ink-700 mb-1 mt-2 mr-2 ">Amount</div>
           {!isAdvancedTrader && (
             <>
+              <div className="text-ink-700 mb-1 mr-2 mt-2 ">Amount</div>
+
               {quickAmounts.map((value) => (
                 <Button
                   key={value}

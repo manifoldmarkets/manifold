@@ -19,7 +19,7 @@ import {
   formatPercent,
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User, firebaseLogin, updateUser } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -42,6 +42,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import ShortToggle from '../widgets/short-toggle'
+import { ChevronDownIcon } from '@heroicons/react/outline'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -105,13 +107,22 @@ export function BuyPanel(props: {
 
   const [isYesNoSelectorVisible, setIsYesNoSelectorVisible] = useState(true)
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+  const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
+
+  const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
+
+  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
+    setBetType(type)
+  }
+
   useEffect(() => {
     if (initialOutcome) {
       setOption(initialOutcome)
     }
   }, [initialOutcome])
 
-  function onOptionChoice(choice: 'YES' | 'NO' | 'LIMIT') {
+  function onOptionChoice(choice: 'YES' | 'NO') {
     if (option === choice && !initialOutcome) {
       setOption(undefined)
       setIsYesNoSelectorVisible(true)
@@ -123,6 +134,16 @@ export function BuyPanel(props: {
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
     }
+  }
+
+  useEffect(() => {
+    if (user) {
+      setAdvancedTraderMode(user.isAdvancedTrader ?? false)
+    }
+  }, [user])
+
+  if (!user) {
+    return null
   }
 
   function onBetChange(newAmount: number | undefined) {
@@ -257,8 +278,6 @@ export function BuyPanel(props: {
 
   const selected = seeLimit ? 'LIMIT' : outcome
 
-  const isAdvancedTrader = useIsAdvancedTrader()
-
   return (
     <Col>
       {isYesNoSelectorVisible ? (
@@ -283,19 +302,6 @@ export function BuyPanel(props: {
               isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
             }
           />
-          {!!user && !isStonk && (
-            <Button
-              color={seeLimit ? 'indigo' : 'indigo-outline'}
-              onClick={() => onOptionChoice('LIMIT')}
-              className={clsx(
-                'px-2 text-lg sm:px-6',
-                selected !== undefined ? '!rounded-full' : ''
-              )}
-              size="lg"
-            >
-              %
-            </Button>
-          )}
         </Row>
       ) : (
         <Col
@@ -312,44 +318,93 @@ export function BuyPanel(props: {
             singularView && option === 'LIMIT' ? 'hidden' : ''
           )}
         >
-          <Row className="mb-6 flex-wrap items-end gap-x-8 gap-y-4 ">
-            <BuyAmountInput
-              amount={betAmount}
-              onChange={onBetChange}
-              error={error}
-              setError={setError}
-              disabled={isSubmitting}
-              inputRef={inputRef}
-              binaryOutcome={outcome}
-              showSlider={isAdvancedTrader}
-            />
+          {isAdvancedTrader && (
+            <Row className=" mb-2 space-x-1">
+              <div className="text-ink-700 mb-1 mr-2 mt-2 ">Bet Type</div>
+              <Button
+                color={betType === 'Market' ? 'indigo' : 'indigo-outline'}
+                onClick={() => handleBetTypeChange('Market')}
+              >
+                Market
+              </Button>
+              <Button
+                color={betType === 'Limit' ? 'indigo' : 'indigo-outline'}
+                onClick={() => handleBetTypeChange('Limit')}
+              >
+                Limit
+              </Button>
+            </Row>
+          )}
+          {betType === 'Market' ? (
+            <>
+              <Row
+                className={clsx(
+                  'mb-6 flex-wrap gap-x-8 gap-y-4',
+                  isAdvancedTrader ? 'items-center' : 'items-end'
+                )}
+              >
+                <BuyAmountInput
+                  amount={betAmount}
+                  onChange={onBetChange}
+                  error={error}
+                  setError={setError}
+                  disabled={isSubmitting}
+                  inputRef={inputRef}
+                  binaryOutcome={outcome}
+                  showSlider={isAdvancedTrader}
+                />
 
-            <Row className="mt-2 flex-1 gap-2">
-              <Row className="min-w-[128px] gap-x-2">
-                <div className="text-ink-700 flex-nowrap whitespace-nowrap ">
-                  {isPseudoNumeric || isStonk ? 'Shares' : <>Max Payout</>}
-                </div>
-                <div>
-                  <span className="whitespace-nowrap text-xl font-semibold">
+                <Row className="min-w-[128px] items-baseline">
+                  <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                    {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
+                  </div>
+
+                  <span className="mr-1 whitespace-nowrap text-lg">
                     {isStonk
                       ? getStonkDisplayShares(contract, currentPayout, 2)
                       : isPseudoNumeric
                       ? Math.floor(currentPayout)
                       : formatMoney(currentPayout)}
                   </span>
-                  <span className="text-ink-500 text-md pr-3">
+                  <span className="text-green-500 ">
                     {isStonk || isPseudoNumeric
                       ? ''
                       : ' +' + currentReturnPercent}
                   </span>
-                </div>
+                </Row>
               </Row>
-            </Row>
-          </Row>
+            </>
+          ) : (
+            <>
+              <LimitOrderPanel
+                contract={contract}
+                multiProps={multiProps}
+                user={user}
+                unfilledBets={unfilledBets}
+                balanceByUserId={balanceByUserId}
+                outcome={outcome}
+                setOutcome={onOptionChoice}
+              />
+              <YourOrders
+                className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+                contract={contract}
+                bets={unfilledBetsMatchingAnswer}
+              />
+              {/* Stonks don't allow limit orders but users may have them from before the conversion */}
+              {isStonk && unfilledBets.length > 0 && (
+                <YourOrders
+                  className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+                  contract={contract}
+                  bets={unfilledBets as LimitBet[]}
+                />
+              )}
+            </>
+          )}
           <Row className="items-center justify-between gap-2">
             <Button
-              color="gray-white"
+              color="gray"
               size="xl"
+              className="text-white"
               onClick={() => {
                 setIsYesNoSelectorVisible(true)
                 setOption(undefined)
@@ -394,50 +449,74 @@ export function BuyPanel(props: {
           {user ? (
             <div className="text-ink-700 mt-4 whitespace-nowrap text-sm">
               Balance{' '}
-              <span className="text-ink-700">{formatMoney(user.balance)}</span>
+              <span className="text-ink-700 font-semibold">
+                {formatMoney(user.balance)}
+              </span>
             </div>
           ) : null}
-
-          <Row className=" items-start">
-            <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
-              {isPseudoNumeric
-                ? 'Estimated value'
-                : isStonk
-                ? 'New stock price'
-                : 'New probability'}
-            </span>
-
-            <span className="text-sm font-semibold">
-              {getFormattedMappedValue(
-                contract,
-                probStayedSame ? probBefore : probAfter
-              )}
-            </span>
-            {!probStayedSame && !isPseudoNumeric && (
-              <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                {outcome !== 'NO' && '+'}
-                {getFormattedMappedValue(contract, probAfter - probBefore)}
+          <Row className=" items-start justify-between">
+            <div className="aksdjflkfs flex-grow">
+              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+                {isPseudoNumeric
+                  ? 'Estimated value'
+                  : isStonk
+                  ? 'New stock price'
+                  : 'New probability'}
               </span>
-            )}
 
-            {!isAdvancedTrader && !isPseudoNumeric && !isStonk && (
-              <InfoTooltip
-                text={`Your ${SINGULAR_BET} will move the probability of Yes from ${getFormattedMappedValue(
+              <span className="text-sm font-semibold">
+                {getFormattedMappedValue(
                   contract,
-                  probBefore
-                )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                className="text-ink-600 ml-1 mt-0.5"
-                size="sm"
-              />
+                  probStayedSame ? probBefore : probAfter
+                )}
+              </span>
+              {!probStayedSame && !isPseudoNumeric && (
+                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                  {outcome !== 'NO' ? '↑' : '↓'}
+                  {getFormattedMappedValue(
+                    contract,
+                    Math.abs(probAfter - probBefore)
+                  )}
+                </span>
+              )}
+
+              {!isAdvancedTrader && !isPseudoNumeric && !isStonk && (
+                <InfoTooltip
+                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                    contract,
+                    probBefore
+                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                  className="text-ink-600 ml-1 mt-0.5"
+                  size="sm"
+                />
+              )}
+            </div>
+            {user && (
+              <div>
+                <button
+                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                  onClick={() => {
+                    const tradingMode = !advancedTraderMode
+                    setAdvancedTraderMode(tradingMode)
+                    if (!tradingMode) {
+                      setBetType('Market')
+                    }
+                    updateUser(user.id, { isAdvancedTrader: tradingMode })
+                  }}
+                >
+                  <span className="hover:underline">
+                    {advancedTraderMode ? 'Advanced' : 'Default'}
+                  </span>
+                  <ChevronDownIcon className="ml-1 h-3 w-3" />
+                </button>
+              </div>
             )}
           </Row>
         </Col>
       )}
-      <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
+      {/* <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
         <LimitOrderPanel
-          className={clsx(
-            singularView ? '' : 'rounded-lg bg-indigo-400/10 px-4 py-2'
-          )}
+        
           contract={contract}
           multiProps={multiProps}
           hidden={!seeLimit}
@@ -451,15 +530,7 @@ export function BuyPanel(props: {
           contract={contract}
           bets={unfilledBetsMatchingAnswer}
         />
-      </Col>
-      {/* Stonks don't allow limit orders but users may have them from before the conversion*/}
-      {isStonk && unfilledBets.length > 0 && (
-        <YourOrders
-          className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-          contract={contract}
-          bets={unfilledBets as LimitBet[]}
-        />
-      )}
+      </Col> */}
     </Col>
   )
 }
