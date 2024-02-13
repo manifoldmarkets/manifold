@@ -43,7 +43,7 @@ export function ProfileSummary(props: {
           size={'sm'}
         />
       ) : (
-        <TiChartLine className=" h-8 w-10 shrink-0 border-0 ring-0" />
+        <TiChartLine className="text-ink-500 h-8 w-10 shrink-0 border-0 ring-0" />
       )}
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
