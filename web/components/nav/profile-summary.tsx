@@ -10,8 +10,8 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import clsx from 'clsx'
-import { FaWallet } from 'react-icons/fa'
 import { usePathname } from 'next/navigation'
+import { TiChartLine } from 'react-icons/ti'
 
 export function ProfileSummary(props: {
   user: User
@@ -43,7 +43,7 @@ export function ProfileSummary(props: {
           size={'sm'}
         />
       ) : (
-        <FaWallet className="h-6 w-6 shrink-0" />
+        <TiChartLine className=" h-8 w-10 shrink-0 border-0 ring-0" />
       )}
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">

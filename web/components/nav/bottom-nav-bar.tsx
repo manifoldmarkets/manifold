@@ -25,7 +25,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
-import { FaWallet } from 'react-icons/fa'
+import { TiChartLine } from 'react-icons/ti'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -146,7 +146,7 @@ function NavBarItem(props: {
       >
         <Col>
           <div className="mx-auto my-1">
-            <FaWallet className="h-6 w-6" />
+            <TiChartLine className="h-6 w-6" />
           </div>
           <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
         </Col>
