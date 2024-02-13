@@ -14,11 +14,16 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
+import clsx from 'clsx'
+import { dailyStatsClass } from 'web/components/home/daily-stats'
+import { Row } from 'web/components/layout/row'
+import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { Col } from 'web/components/layout/col'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
-export function DailyLoan(props: { user: User }) {
-  const { user } = props
+export function DailyLoan(props: { user: User; showChest?: boolean }) {
+  const { user, showChest } = props
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [loaning, setLoaning] = useState(false)
@@ -65,7 +70,51 @@ export function DailyLoan(props: { user: User }) {
   if (createdRecently) {
     return null
   }
-
+  if (showChest) {
+    return (
+      <Col
+        className={clsx(
+          dailyStatsClass,
+          receivedLoanToday || notEligibleForLoan
+            ? ''
+            : 'hover:bg-canvas-100 ring-[1.7px] ring-amber-300'
+        )}
+      >
+        <Tooltip
+          text={
+            receivedLoanToday
+              ? 'Loan already collected'
+              : notEligibleForLoan
+              ? 'Daily loans'
+              : 'Collect a loan on your bets'
+          }
+          placement={'bottom'}
+        >
+          <button disabled={loaning} onClick={getLoan}>
+            <Row
+              className={clsx(
+                'items-center justify-center whitespace-nowrap px-1'
+              )}
+            >
+              {receivedLoanToday || notEligibleForLoan ? (
+                <GiOpenChest className="h-6 w-6 text-yellow-900" />
+              ) : (
+                <GiTwoCoins className="h-6 w-6 text-yellow-300" />
+              )}
+            </Row>
+            <div className="text-ink-600 text-xs">Loan</div>
+          </button>
+        </Tooltip>
+        {showLoansModal && (
+          <LoansModal
+            isOpen={showLoansModal}
+            user={user}
+            setOpen={setShowLoansModal}
+          />
+        )}
+      </Col>
+    )
+  }
   return (
     <Button
       color={'gray-outline'}
