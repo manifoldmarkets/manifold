@@ -72,18 +72,19 @@ export const resolveMarketHelper = async (
     answerId
   )
 
-  let updatedAttrs: Partial<Contract> | undefined = removeUndefinedProps({
-    isResolved: true,
-    resolution: outcome,
-    resolutionValue: value,
-    resolutionTime,
-    closeTime: newCloseTime,
-    resolutionProbability,
-    resolutions,
-    collectedFees,
-    resolverId: resolver.id,
-    subsidyPool: 0,
-  })
+  let updatedContractAttrs: Partial<Contract> | undefined =
+    removeUndefinedProps({
+      isResolved: true,
+      resolution: outcome,
+      resolutionValue: value,
+      resolutionTime,
+      closeTime: newCloseTime,
+      resolutionProbability,
+      resolutions,
+      collectedFees,
+      resolverId: resolver.id,
+      subsidyPool: 0,
+    })
   let updateAnswerAttrs: Partial<Answer> | undefined
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
@@ -100,11 +101,11 @@ export const resolveMarketHelper = async (
       // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
       (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
     )
-      updatedAttrs = {
-        ...updatedAttrs,
+      updatedContractAttrs = {
+        ...updatedContractAttrs,
         resolution: 'MKT',
       }
-    else updatedAttrs = undefined
+    else updatedContractAttrs = undefined
 
     const finalProb =
       resolutionProbability ??
@@ -117,8 +118,8 @@ export const resolveMarketHelper = async (
       resolverId: resolver.id,
     }) as Partial<Answer>
     // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-    updatedAttrs = {
-      ...(updatedAttrs ?? {}),
+    updatedContractAttrs = {
+      ...(updatedContractAttrs ?? {}),
       answers: unresolvedContract.answers.map((a) =>
         a.id === answerId
           ? {
@@ -132,7 +133,7 @@ export const resolveMarketHelper = async (
 
   const contract = {
     ...unresolvedContract,
-    ...updatedAttrs,
+    ...updatedContractAttrs,
   } as Contract
 
   // handle exploit where users can get negative payouts
@@ -161,9 +162,9 @@ export const resolveMarketHelper = async (
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
 
-  if (updatedAttrs) {
-    log('updating contract', { updatedAttrs })
-    await contractDoc.update(updatedAttrs)
+  if (updatedContractAttrs) {
+    log('updating contract', { updatedContractAttrs })
+    await contractDoc.update(updatedContractAttrs)
     log('contract resolved')
   }
   if (updateAnswerAttrs) {
@@ -196,7 +197,7 @@ export const resolveMarketHelper = async (
   await recordContractEdit(
     unresolvedContract,
     resolver.id,
-    Object.keys(updatedAttrs ?? {})
+    Object.keys(updatedContractAttrs ?? {})
   )
 
   await createContractResolvedNotifications(
@@ -317,6 +318,7 @@ export const getDataAndPayoutInfo = async (
     creatorPayout,
     collectedFees,
     bets,
+    resolutionProbs,
     resolutionProbability,
     payouts,
   }
