@@ -10,10 +10,10 @@ import { CloseDate } from 'web/components/contract/contract-details'
 import { isEqual, uniqBy } from 'lodash'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Row } from '../layout/row'
-import { UserFromId } from 'web/components/user-from-id'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
+import { UserAvatarAndBadge } from '../widgets/user-link'
 
 type ContractEdit = {
   id: string
@@ -159,7 +159,7 @@ export const ContractHistoryButton = (props: {
               return (
                 <div key={edit.id}>
                   <Row className={'items-center gap-1 text-sm'}>
-                    <UserFromId userId={edit.editorId} />
+                    <UserAvatarAndBadge userId={edit.editorId} />
 
                     <div className="text-ink-500 flex gap-1 ">
                       {i === edits.length - 1 ? 'created' : 'updated'}

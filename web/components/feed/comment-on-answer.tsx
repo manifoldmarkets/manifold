@@ -6,7 +6,6 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import Curve from 'web/lib/icons/comment-curve.svg'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 
@@ -44,7 +43,6 @@ function AnswerSectionForCommentOnAnswer(props: {
 }) {
   const { answer, color } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
 
   return (
     <Row>
@@ -52,11 +50,7 @@ function AnswerSectionForCommentOnAnswer(props: {
       <Col className="bg-ink-100 w-fit py-1 pl-2 pr-2">
         <Row className="gap-2">
           <div className="text-ink-400 text-xs">
-            {user && (
-              <>
-                <UserLink user={user} /> answered
-              </>
-            )}
+            <UserLink userId={answer.userId} /> answered
             <RelativeTimestamp time={answer.createdTime} shortened={true} />
           </div>
         </Row>

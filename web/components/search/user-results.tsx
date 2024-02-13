@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { FollowButton } from '../buttons/follow-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { StackedUserNames } from '../widgets/user-link'
 
 export const UserResults = (props: { users: LiteUser[] }) => {
@@ -30,7 +30,7 @@ function UserResult(props: { user: LiteUser }) {
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
           <Row className={'gap-1'}>
-            <Avatar
+            <RawAvatar
               username={username}
               avatarUrl={avatarUrl}
               className={'mt-1'}

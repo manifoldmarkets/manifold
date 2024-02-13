@@ -94,9 +94,8 @@ export const RepostModal = (props: {
               ))}
             <Row className={'gap-1'}>
               <Avatar
-                username={comment.userUsername}
+                userId={comment.userId}
                 size={'sm'}
-                avatarUrl={comment.userAvatarUrl}
                 className={clsx('z-10 mt-1')}
               />
               <Col

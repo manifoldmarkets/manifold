@@ -8,7 +8,6 @@ import {
 import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
-
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
@@ -17,7 +16,6 @@ import {
   AvatarNotificationIcon,
   NotificationFrame,
   NotificationIcon,
-  NotificationUserLink,
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
@@ -319,7 +317,7 @@ export function ManaPaymentReceivedNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { data, sourceId, sourceUserName, sourceUserUsername } = notification
+  const { data, sourceId, sourceUserUsername } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -332,12 +330,7 @@ export function ManaPaymentReceivedNotification(props: {
       link={`/${sourceUserUsername}`}
     >
       <span>
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-          className=""
-        />
+        <UserLink userId={sourceId} />
         <PrimaryNotificationLink text=" sent you " />
         <IncomeNotificationLabel notification={notification} />
       </span>
@@ -352,14 +345,7 @@ export function UserJoinedNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceId,
-    sourceUserName,
-    sourceUserUsername,
-    sourceSlug,
-    reason,
-    sourceText,
-  } = notification
+  const { sourceId, sourceSlug, reason, sourceText } = notification
   let reasonBlock = <span>because of a link you shared</span>
   if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
     reasonBlock = (
@@ -405,12 +391,7 @@ export function UserJoinedNotification(props: {
       }
     >
       <div className="line-clamp-3">
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        joined Manifold {reasonBlock}
+        <UserLink userId={sourceId} /> joined Manifold {reasonBlock}
       </div>
     </NotificationFrame>
   )
@@ -551,19 +532,8 @@ function MultiUserNotificationModal(props: {
                     +{formatMoney(parseInt(notif.sourceText))}
                   </span>
                 )}
-                <Avatar
-                  username={notif.sourceUserUsername}
-                  avatarUrl={notif.sourceUserAvatarUrl}
-                  size={'sm'}
-                />
-                <UserLink
-                  user={{
-                    id: notif.sourceId,
-                    username: notif.sourceUserUsername,
-                    name: notif.sourceUserName,
-                  }}
-                  short={short}
-                />
+                <Avatar userId={notif.sourceId} size={'sm'} />
+                <UserLink userId={notif.sourceId} short={short} />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel
                     uniqueBettorData={notif.data as UniqueBettorData}

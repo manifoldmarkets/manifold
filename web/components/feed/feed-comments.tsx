@@ -35,7 +35,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink, UserLink } from 'web/components/widgets/user-link'
 import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -266,7 +266,6 @@ export const FeedComment = memo(function FeedComment(props: {
   const [comment, updateComment] = usePartialUpdater(props.comment)
   useEffect(() => updateComment(props.comment), [props.comment])
 
-  const { userUsername, userAvatarUrl } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
@@ -303,9 +302,8 @@ export const FeedComment = memo(function FeedComment(props: {
             />
           )}
           <Avatar
-            username={userUsername}
+            userId={comment.userId}
             size={isParent ? 'sm' : '2xs'}
-            avatarUrl={userAvatarUrl}
             className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
           />
 
@@ -403,7 +401,6 @@ export const FeedComment = memo(function FeedComment(props: {
                   />
                   <FeedReplyBet
                     className={'bg-canvas-50'}
-                    avatarSize={'2xs'}
                     contract={contract}
                     bets={bets}
                   />
@@ -964,7 +961,6 @@ export function FeedCommentHeader(props: {
   const { comment, updateComment, contract, inTimeline } = props
   const {
     userUsername,
-    userName,
     createdTime,
     editedTime,
     bettorUsername,
@@ -992,11 +988,7 @@ export function FeedCommentHeader(props: {
         <Row className=" gap-1">
           <span>
             <UserLink
-              user={{
-                id: userId,
-                name: userName,
-                username: userUsername,
-              }}
+              userId={userId}
               marketCreator={inTimeline ? false : marketCreator}
               className={'font-semibold'}
             />
@@ -1221,7 +1213,7 @@ export function ReplyToBetRow(props: {
         )}
       >
         {!commenterIsBettor && (
-          <UserLink
+          <RawUserLink
             short={(isLimitBet || betAnswerId !== undefined) && isMobile}
             user={{ id: '', name: bettorName, username: bettorUsername }}
           />

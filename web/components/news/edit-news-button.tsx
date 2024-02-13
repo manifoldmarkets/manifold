@@ -7,7 +7,7 @@ import { api, supabaseSearchDashboards } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { Input } from '../widgets/input'
 import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
@@ -188,7 +188,7 @@ const DashboardFinder = (props: {
               onClick={() => onSelect(d)}
               key={d.id}
             >
-              <Avatar
+              <RawAvatar
                 username={d.creatorUsername}
                 avatarUrl={d.creatorAvatarUrl}
                 size="2xs"

@@ -3,7 +3,7 @@ import { getSourceUrl, Notification } from 'common/notification'
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import { Col } from 'web/components/layout/col'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
@@ -13,7 +13,6 @@ import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 import { SparklesIcon } from '@heroicons/react/solid'
-import { UserLink } from '../widgets/user-link'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 
@@ -23,26 +22,6 @@ function getHighlightClass(highlight: boolean) {
 export const NUM_SUMMARY_LINES = 3
 
 export const NOTIFICATION_ICON_SIZE = 'md'
-
-// TODO: fix badges (id based)
-export function NotificationUserLink(props: {
-  userId?: string
-  name?: string
-  username?: string
-  className?: string
-  hideBadge?: boolean
-}) {
-  const { userId, name, username, className, hideBadge } = props
-  return (
-    <UserLink
-      user={{ id: userId || '', name: name || '', username: username || '' }}
-      className={clsx(
-        className ?? 'hover:text-primary-500 relative flex-shrink-0'
-      )}
-      hideBadge={hideBadge}
-    />
-  )
-}
 
 export function PrimaryNotificationLink(props: {
   text: string | undefined
@@ -131,7 +110,7 @@ export function AvatarNotificationIcon(props: {
         target={href.startsWith('http') ? '_blank' : undefined}
         onClick={(e) => e.stopPropagation}
       >
-        <Avatar
+        <RawAvatar
           username={sourceUserName}
           avatarUrl={sourceUserAvatarUrl}
           size={NOTIFICATION_ICON_SIZE}

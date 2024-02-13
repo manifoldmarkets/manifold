@@ -8,7 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { Lover } from 'common/love/lover'
 import { useLoverByUserId } from 'love/hooks/use-lover'
 import { Col } from 'web/components/layout/col'
-import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
+import { EmptyAvatar, RawAvatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser, useUserById } from 'web/hooks/use-user'
@@ -102,11 +102,11 @@ const ShipsTargetDisplay = (props: {
                 />
                 <Row className="w-full items-baseline justify-stretch gap-2 text-lg font-semibold">
                   <Row className="flex-1 justify-end">
-                    <UserLink hideBadge user={profileLover.user} noLink />
+                    <UserLink hideBadge userId={profileLover.user.id} noLink />
                   </Row>
                   &
                   <Row className="flex-1 justify-start">
-                    <UserLink hideBadge user={targetUser} />
+                    <UserLink hideBadge userId={targetUser.id} />
                   </Row>
                 </Row>
               </>
@@ -148,7 +148,7 @@ const UserAvatar = (props: { userId: string; className?: string }) => {
   if (!lover || !lover.pinned_url)
     return <EmptyAvatar className={className} size={10} />
   return (
-    <Avatar
+    <RawAvatar
       className={className}
       avatarUrl={lover.pinned_url}
       username={user?.username}
@@ -167,9 +167,9 @@ const UserInfoRow = (props: { userId: string; className?: string }) => {
       {!lover || !lover.pinned_url ? (
         <EmptyAvatar size={10} />
       ) : (
-        <Avatar avatarUrl={lover.pinned_url} username={user?.username} />
+        <RawAvatar avatarUrl={lover.pinned_url} username={user?.username} />
       )}
-      {user && <UserLink user={user} hideBadge />}
+      {user && <UserLink userId={userId} hideBadge />}
     </Row>
   )
 }

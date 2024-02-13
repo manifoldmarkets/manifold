@@ -8,11 +8,11 @@ import Link from 'next/link'
 import { NoSEO } from 'web/components/NoSEO'
 import { Page } from 'web/components/layout/page'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
+import { BannedBadge, RawUserLink } from 'web/components/widgets/user-link'
 import { getComment } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
@@ -49,12 +49,12 @@ export default function Reports(props: { reports: LiteReport[] }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex items-center">
-                  <Avatar
+                  <RawAvatar
                     username={owner.username}
                     avatarUrl={owner.avatarUrl}
                     size="sm"
                   />
-                  <UserLink user={owner} className="text-ink-800 ml-2" />
+                  <RawUserLink user={owner} className="text-ink-800 ml-2" />
                   {owner.isBannedFromPosting && <BannedBadge />}
                 </div>
 

@@ -5,7 +5,7 @@ import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { ReplyToUserInfo } from '../feed/feed-comments'
 import { Row } from '../layout/row'
@@ -85,7 +85,11 @@ export function CommentInput(props: {
     </div>
   ) : (
     <Row className={clsx(className, 'mb-2 w-full gap-1 sm:gap-2')}>
-      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
+      <RawAvatar
+        avatarUrl={user?.avatarUrl}
+        username={user?.username}
+        size="sm"
+      />
       <CommentInputTextArea
         editor={editor}
         replyTo={replyToUserInfo}

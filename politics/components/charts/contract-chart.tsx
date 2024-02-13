@@ -378,16 +378,7 @@ const ChartAnnotation = (props: {
   carouselRef: HTMLDivElement | null
 }) => {
   const { annotation, hovered, carouselRef, setHoveredAnnotation } = props
-  const {
-    text,
-    user_avatar_url,
-    creator_avatar_url,
-    id,
-    prob_change,
-    creator_username,
-    event_time,
-    user_username,
-  } = annotation
+  const { text, user_id, id, prob_change, creator_id, event_time } = annotation
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -431,8 +422,7 @@ const ChartAnnotation = (props: {
       <div className={'relative w-[175px] p-1'}>
         <div className={'h-16 overflow-hidden p-1 text-sm'}>
           <Avatar
-            avatarUrl={user_avatar_url ?? creator_avatar_url}
-            username={user_username ?? creator_username}
+            userId={user_id ?? creator_id}
             noLink={true}
             size={'2xs'}
             className={'float-left mr-1 mt-0.5'}

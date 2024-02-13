@@ -2,7 +2,7 @@ import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Avatar } from '../../widgets/avatar'
+import { RawAvatar } from '../../widgets/avatar'
 
 type LiteUser = Pick<User, 'id' | 'name' | 'username' | 'avatarUrl'>
 
@@ -58,7 +58,7 @@ export const MentionList = forwardRef(
               onClick={() => submitUser(i)}
               key={user.id}
             >
-              <Avatar avatarUrl={user.avatarUrl} size="xs" noLink />
+              <RawAvatar avatarUrl={user.avatarUrl} size="xs" noLink />
               {user.username}
             </button>
           ))

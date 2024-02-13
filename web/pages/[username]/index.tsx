@@ -40,14 +40,14 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink, StackedUserNames } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -223,7 +223,7 @@ function UserProfile(props: {
                 headerStuck && 'opacity-100'
               )}
             >
-              <UserLink user={user} noLink />
+              <RawUserLink user={user} noLink />
             </div>
 
             <div>
@@ -237,7 +237,7 @@ function UserProfile(props: {
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
                 image={
-                  <Avatar
+                  <RawAvatar
                     username={user.username}
                     avatarUrl={user.avatarUrl}
                     size={'lg'}

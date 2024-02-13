@@ -307,24 +307,12 @@ const LivePillOptions = (props: {
   )
 }
 const MarketCreatedLog = memo((props: { contract: Contract }) => {
-  const {
-    creatorId,
-    creatorAvatarUrl,
-    creatorUsername,
-    creatorName,
-    createdTime,
-  } = props.contract
+  const { creatorId, createdTime } = props.contract
 
   return (
     <Row className="text-ink-600 items-center gap-2 text-sm">
-      <Avatar
-        avatarUrl={creatorAvatarUrl}
-        username={creatorUsername}
-        size="xs"
-      />
-      <UserLink
-        user={{ id: creatorId, name: creatorName, username: creatorUsername }}
-      />
+      <Avatar userId={creatorId} size="xs" />
+      <UserLink userId={creatorId} />
       <Row className="text-ink-400">
         created
         <RelativeTimestamp time={createdTime} />
@@ -337,15 +325,7 @@ const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
 }) {
   const { comment } = props
-  const {
-    userName,
-    text,
-    content,
-    userId,
-    userUsername,
-    userAvatarUrl,
-    createdTime,
-  } = comment
+  const { text, content, userId, createdTime } = comment
 
   return (
     <Col>
@@ -353,12 +333,9 @@ const CommentLog = memo(function FeedComment(props: {
         id={comment.id}
         className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
-        <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+        <Avatar userId={userId} size="xs" />
         <span>
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-          />{' '}
-          commented
+          <UserLink userId={userId} /> commented
         </span>
         <RelativeTimestamp time={createdTime} />
       </Row>

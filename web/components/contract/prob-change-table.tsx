@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { forwardRef } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
@@ -78,7 +78,7 @@ const ContractWithProbChange = forwardRef(
           className
         )}
       >
-        <Avatar
+        <RawAvatar
           className="hidden lg:mr-1 lg:flex"
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
@@ -93,7 +93,7 @@ const ContractWithProbChange = forwardRef(
           {question}
         </div>
         <Row className="gap-3">
-          <Avatar
+          <RawAvatar
             className="lg:hidden"
             username={creatorUsername}
             avatarUrl={creatorAvatarUrl}

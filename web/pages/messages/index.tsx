@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
+import { User } from 'common/user'
 import { parseJsonContentToText } from 'common/util/parse'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
@@ -15,11 +15,10 @@ import {
   useRealtimePrivateMessagesPolling,
 } from 'web/hooks/use-private-messages'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Row as rowFor } from 'common/supabase/utils'
-import { BannedBadge } from 'web/components/widgets/user-link'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export default function MessagesPage() {
   return (
@@ -80,16 +79,6 @@ export const MessageChannelRow = (props: {
 }) => {
   const { otherUserIds, currentUser, channel } = props
   const channelId = channel.id
-  const otherUsers = channel.title
-    ? [
-        {
-          id: 'manifold',
-          name: 'Manifold',
-          avatarUrl: MANIFOLD_LOVE_LOGO,
-        } as User,
-      ]
-    : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useUsersInStore(otherUserIds, `${channelId}`, 100)
 
   const messages = useRealtimePrivateMessagesPolling(
     channelId,
@@ -100,11 +89,7 @@ export const MessageChannelRow = (props: {
   )
   const unseen = useHasUnseenPrivateMessage(currentUser.id, channelId, messages)
   const chat = messages?.[0]
-  const numOthers = otherUsers?.length ?? 0
-
-  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
-
-  if (isBanned) return null
+  const numOthers = otherUserIds?.length ?? 0
 
   return (
     <Link
@@ -117,7 +102,7 @@ export const MessageChannelRow = (props: {
           size="md"
           spacing={numOthers === 2 ? 0.3 : 0.15}
           startLeft={numOthers === 2 ? 2.2 : 1.2}
-          avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
+          userIds={otherUserIds}
           className={numOthers > 1 ? '-ml-2' : ''}
         />
         <Col className={'w-full'}>
@@ -126,18 +111,15 @@ export const MessageChannelRow = (props: {
               {channel.title ? (
                 <span className={'font-semibold'}>{channel.title}</span>
               ) : (
-                otherUsers && (
-                  <span>
-                    {otherUsers
-                      .map((user) => user.name.split(' ')[0].trim())
-                      .slice(0, 2)
-                      .join(', ')}
-                    {otherUsers.length > 2 &&
-                      ` & ${otherUsers.length - 2} more`}
-                  </span>
-                )
+                <span>
+                  {otherUserIds
+                    .slice(0, 2)
+                    .map((id) => <UserLink key={id} userId={id} />)
+                    .join(', ')}
+                  {otherUserIds.length > 2 &&
+                    ` & ${otherUserIds.length - 2} more`}
+                </span>
               )}
-              {isBanned && <BannedBadge />}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}

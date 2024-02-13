@@ -34,6 +34,102 @@ export const usePrefetchUsers = (userIds: string[]) => {
   useStoreItems(userIds, listenForUser)
 }
 
+export type DisplayUser = {
+  id: string
+  name: string
+  username: string
+  avatarUrl?: string
+  createdTime?: number
+  isBannedFromPosting?: boolean
+}
+
+const cache: {
+  [userId: string]: DisplayUser | 'loading' | 'not-found' | null
+} = {}
+
+export const cacheDisplayUser = (user: DisplayUser) => {
+  cache[user.id] = user
+}
+
+export const cacheDisplayUsers = (users: DisplayUser[]) => {
+  users.forEach((user) => {
+    cache[user.id] = user
+  })
+}
+
+export const useDisplayUser = (userId: string) => {
+  useEffect(() => {
+    fetchAndCacheUsers([userId])
+    return () => {
+      if (cache[userId] === 'loading') {
+        delete cache[userId]
+      }
+    }
+  }, [userId])
+
+  return cache[userId] ?? 'loading'
+}
+
+export const useDisplayUsers = (userIds: string[]) => {
+  useEffect(() => {
+    fetchAndCacheUsers(userIds)
+    return () => {
+      userIds.forEach((id) => {
+        if (cache[id] === 'loading') {
+          delete cache[id]
+        }
+      })
+    }
+  }, [userIds])
+
+  return userIds.map((id) => cache[id] ?? 'loading')
+}
+
+export const fetchAndCacheUsers = async (userIds: string[]) => {
+  const missingUserIds = userIds.filter((userId) => cache[userId] == undefined)
+  if (missingUserIds.length == 0) {
+    return
+  }
+  missingUserIds.forEach((id) => {
+    cache[id] = 'loading'
+  })
+
+  const { error, data } = await fetchUsers(missingUserIds)
+  if (error) {
+    console.error('Error fetching users', error)
+    missingUserIds.forEach((id) => {
+      cache[id] = null
+    })
+  } else {
+    data.forEach((user) => {
+      cache[user.id] = {
+        ...user,
+        isBannedFromPosting: user.isBannedFromPosting === 'true',
+      }
+    })
+    missingUserIds
+      .filter((id) => cache[id] === 'loading')
+      .forEach((id) => {
+        cache[id] = 'not-found'
+      })
+  }
+}
+
+// safe to use in static props
+export const fetchUsers = async (userIds: string[]) => {
+  const q = db
+    .from('users')
+    .select('id, name, username, data->>avatarUrl, data->>isBannedFromPosting')
+
+  if (userIds.length === 1) {
+    q.eq('id', userIds[0])
+  } else {
+    q.in('id', userIds)
+  }
+
+  return q
+}
+
 export const isBlocked = (
   privateUser: PrivateUser | null | undefined,
   otherUserId: string

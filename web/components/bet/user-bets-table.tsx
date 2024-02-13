@@ -561,11 +561,7 @@ function BetsTable(props: {
                       </Link>
                       <UserLink
                         className={'text-ink-600 w-fit text-sm'}
-                        user={{
-                          id: contract.creatorId,
-                          name: contract.creatorName,
-                          username: contract.creatorUsername,
-                        }}
+                        userId={contract.creatorId}
                       />
                     </Col>
                   </Row>

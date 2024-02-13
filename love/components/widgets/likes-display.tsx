@@ -6,10 +6,10 @@ import { UserIcon } from '@heroicons/react/solid'
 import { Lover } from 'common/love/lover'
 import { useLoverByUserId } from 'love/hooks/use-lover'
 import { Col } from 'web/components/layout/col'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { Avatar, EmptyAvatar, RawAvatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
-import { UserLink } from 'web/components/widgets/user-link'
-import { useUser } from 'web/hooks/use-user'
+import { RawUserLink, UserLink } from 'web/components/widgets/user-link'
+import { useDisplayUser, useUser } from 'web/hooks/use-user'
 import { useUserById } from 'web/hooks/use-user-supabase'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { ShipsList } from './ships-display'
@@ -123,12 +123,12 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
 const UserAvatar = (props: { userId: string; className?: string }) => {
   const { userId, className } = props
   const lover = useLoverByUserId(userId)
-  const user = useUserById(userId)
+  const user = useDisplayUser(userId)
 
-  if (!lover || !lover.pinned_url)
+  if (!lover || !lover.pinned_url || user === 'loading' || user === 'not-found')
     return <EmptyAvatar className={className} size={10} />
   return (
-    <Avatar
+    <RawAvatar
       className={className}
       avatarUrl={lover.pinned_url}
       username={user?.username}
@@ -153,7 +153,7 @@ export const MatchTile = (props: {
   return (
     <Col className="mb-2 w-[200px] shrink-0 overflow-hidden rounded">
       <Col className="bg-canvas-0 w-full px-4 py-2">
-        <UserLink
+        <RawUserLink
           className={
             'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
           }

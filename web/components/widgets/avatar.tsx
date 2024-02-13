@@ -4,9 +4,60 @@ import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
+import { useDisplayUser } from 'web/hooks/use-user'
+
+export const Avatar = (props: {
+  userId: string
+  noLink?: boolean
+  size?: AvatarSizeType
+  className?: string
+  preventDefault?: boolean
+}) => {
+  const { userId, noLink, size = 'md', className, preventDefault } = props
+  const user = useDisplayUser(userId)
+
+  const s = sizeToPx(size)
+
+  if (user === null || user === 'not-found') {
+    return <EmptyAvatar size={s} />
+  }
+
+  if (user === 'loading') {
+    return <LoadingAvatar size={size} className={className} />
+  }
+
+  return (
+    <RawAvatar
+      username={user?.username}
+      avatarUrl={user?.avatarUrl}
+      noLink={noLink}
+      size={size}
+      className={className}
+      preventDefault={preventDefault}
+    />
+  )
+}
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
-export const Avatar = memo(
+
+const sizeToPx = (size: AvatarSizeType) => {
+  switch (size) {
+    case '2xs':
+      return 4
+    case 'xs':
+      return 6
+    case 'sm':
+      return 8
+    case 'md':
+      return 10
+    case 'lg':
+      return 12
+    case 'xl':
+      return 24
+  }
+}
+
+export const RawAvatar = memo(
   (props: {
     username?: string
     avatarUrl?: string
@@ -15,24 +66,10 @@ export const Avatar = memo(
     className?: string
     preventDefault?: boolean
   }) => {
-    const { username, noLink, size, className, preventDefault } = props
+    const { username, noLink, size = 'md', className, preventDefault } = props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
-    const s =
-      size == '2xs'
-        ? 4
-        : size == 'xs'
-        ? 6
-        : size == 'sm'
-        ? 8
-        : size == 'md'
-        ? 10
-        : size == 'lg'
-        ? 12
-        : size == 'xl'
-        ? 24
-        : 10
-    const sizeInPx = s * 4
+    const s = sizeToPx(size)
 
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
@@ -48,8 +85,8 @@ export const Avatar = memo(
     // item with a fake grey user circle guy even if you aren't signed in
     return avatarUrl ? (
       <Image
-        width={sizeInPx}
-        height={sizeInPx}
+        width={s * 4}
+        height={s * 4}
         className={clsx(
           'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
           `w-${s} h-${s}`,
@@ -77,6 +114,24 @@ export const Avatar = memo(
     )
   }
 )
+
+export function LoadingAvatar(props: {
+  className?: string
+  size?: AvatarSizeType
+}) {
+  const { className, size = 'md' } = props
+
+  const s = sizeToPx(size)
+
+  return (
+    <div
+      className={clsx(
+        `dark:bg-ink-400 bg-ink-200 flex-shrink-0 rounded-full w-${s} h-${s} animate-pulse`,
+        className
+      )}
+    />
+  )
+}
 
 export function EmptyAvatar(props: {
   className?: string

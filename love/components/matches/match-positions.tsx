@@ -1,4 +1,3 @@
-
 import clsx from 'clsx'
 import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
@@ -107,20 +106,8 @@ function MatchPositionsContent(props: {
         {positions.YES.map((position) => (
           <Row key={position.userId} className="justify-between gap-4">
             <Row className="items-center gap-2">
-              <Avatar
-                avatarUrl={position.userAvatarUrl}
-                username={position.userUsername}
-                size="xs"
-              />
-              <UserLink
-                user={{
-                  id: position.userId,
-                  name: position.userName,
-                  username: position.userUsername,
-                }}
-                hideBadge
-                short
-              />
+              <Avatar userId={position.userId} size="xs" />
+              <UserLink userId={position.userId} hideBadge short />
             </Row>
             <div>{formatMoney(position.invested)}</div>
           </Row>
@@ -134,20 +121,8 @@ function MatchPositionsContent(props: {
         {positions.NO.map((position) => (
           <Row key={position.userId} className="justify-between gap-4">
             <Row className="items-center gap-2">
-              <Avatar
-                avatarUrl={position.userAvatarUrl}
-                username={position.userUsername}
-                size="xs"
-              />
-              <UserLink
-                user={{
-                  id: position.userId,
-                  name: position.userName,
-                  username: position.userUsername,
-                }}
-                hideBadge
-                short
-              />
+              <Avatar userId={position.userId} size="xs" />
+              <UserLink userId={position.userId} hideBadge short />
             </Row>
             <div>{formatMoney(position.invested)}</div>
           </Row>

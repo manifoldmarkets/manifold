@@ -18,6 +18,7 @@ import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
+import { DisplayUser, useDisplayUser } from 'web/hooks/use-user'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -37,44 +38,62 @@ export function shortenName(name: string) {
 }
 
 export function UserAvatarAndBadge(props: {
-  user: { id: string; name: string; username: string; avatarUrl?: string }
+  userId: string
   noLink?: boolean
   className?: string
 }) {
-  const { user, noLink, className } = props
-  const { username, avatarUrl } = user
+  const { userId, noLink, className } = props
 
   return (
     <Row className={clsx('items-center gap-2', className)}>
-      <Avatar
-        avatarUrl={avatarUrl}
-        username={username}
-        size={'sm'}
-        noLink={noLink}
-      />
-      <UserLink user={user} noLink={noLink} />
+      <Avatar userId={userId} size={'sm'} noLink={noLink} />
+      <UserLink userId={userId} noLink={noLink} />
     </Row>
   )
 }
 
-export function UserLink(props: {
-  user: { id: string; name: string; username: string }
+type UserLinkProps = {
+  userId: string
   className?: string
   short?: boolean
   noLink?: boolean
   createdTime?: number
   hideBadge?: boolean
   marketCreator?: boolean
-}) {
+}
+
+export function UserLink(props: UserLinkProps) {
+  const user = useDisplayUser(props.userId)
+  if (user === 'loading') {
+    return (
+      <div className="dark:bg-ink-400 bg-ink-200 h-3 w-16 animate-pulse rounded-full" />
+    )
+  }
+  if (user === 'not-found' || user == null) {
+    return <div className="text-ink-500">---</div>
+  }
+
+  return <RawUserLink user={user} {...props} />
+}
+
+export function RawUserLink(
+  props: Omit<UserLinkProps, 'userId'> & {
+    user: DisplayUser
+  }
+) {
   const {
-    user: { id, name, username },
+    user: { id, name, username, createdTime },
     className,
     short,
     noLink,
-    createdTime,
     hideBadge,
     marketCreator,
   } = props
+
+  if (!props.user) {
+    console.trace('user not found')
+  }
+
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   const children = (
@@ -228,13 +247,7 @@ function MarketCreatorBadge() {
 }
 
 export const StackedUserNames = (props: {
-  user: {
-    id: string
-    name: string
-    username: string
-    createdTime: number
-    isBannedFromPosting?: boolean
-  }
+  user: DisplayUser
   followsYou?: boolean
   className?: string
   usernameClassName?: string
@@ -248,7 +261,7 @@ export const StackedUserNames = (props: {
           <UserBadge
             userId={user.id}
             username={user.username}
-            fresh={isFresh(user.createdTime)}
+            fresh={!!user.createdTime && isFresh(user.createdTime)}
           />
         }
         {user.isBannedFromPosting && <BannedBadge />}

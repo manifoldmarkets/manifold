@@ -10,7 +10,7 @@ import Sidebar from './politics-sidebar'
 import { Item } from './politics-sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
@@ -98,7 +98,7 @@ function ProfileItem(props: {
     >
       <Col>
         <div className="mx-auto my-1">
-          <Avatar
+          <RawAvatar
             size="xs"
             username={user.username}
             avatarUrl={user.avatarUrl}

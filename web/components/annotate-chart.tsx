@@ -120,19 +120,8 @@ export const ReadChartAnnotationModal = (props: {
   const user = useUser()
   const [loading, setLoading] = useState(false)
   const { chartAnnotation, open, setOpen } = props
-  const {
-    event_time,
-    creator_username,
-    creator_id,
-    creator_name,
-    creator_avatar_url,
-    comment_id,
-    user_username,
-    user_id,
-    user_name,
-    user_avatar_url,
-    prob_change,
-  } = chartAnnotation
+  const { event_time, creator_id, comment_id, user_id, prob_change } =
+    chartAnnotation
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const comment = comment_id ? useCommentOnContract(comment_id) : undefined
   return (
@@ -141,19 +130,9 @@ export const ReadChartAnnotationModal = (props: {
         <Col className={'w-full'}>
           <Row className={' justify-between'}>
             <Row className={'items-center gap-2'}>
-              <Avatar
-                username={user_username ?? creator_username}
-                avatarUrl={user_avatar_url ?? creator_avatar_url}
-                size={'md'}
-              />
+              <Avatar userId={user_id ?? creator_id} size={'md'} />
               <Col>
-                <UserLink
-                  user={{
-                    id: user_id ?? creator_id,
-                    username: user_username ?? creator_username,
-                    name: user_name ?? creator_name,
-                  }}
-                />
+                <UserLink userId={user_id ?? creator_id} />
                 <span className={'text-ink-500 text-xs'}>
                   {new Date(event_time).toLocaleDateString('en-US', {
                     month: 'short',

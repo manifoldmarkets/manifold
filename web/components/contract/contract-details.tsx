@@ -19,44 +19,24 @@ import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
-import { useUserById } from 'web/hooks/use-user'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
-  const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
-  const resolver = useUserById(contract.resolverId)
+  const { creatorId, isResolved, resolverId } = contract
+
   return (
     <Row className="grow flex-wrap items-center gap-1">
       <div className="relative">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size={'xs'}
-        />
+        <Avatar userId={creatorId} size="xs" />
       </div>
-      <UserLink
-        user={{
-          id: creatorId,
-          name: creatorName,
-          username: creatorUsername,
-        }}
-        className={'mr-1'}
-      />
-      <FollowButton userId={contract.creatorId} size="2xs" />
-      {contract.isResolved &&
-        contract.resolverId! !== contract.creatorId &&
-        resolver && (
-          <>
-            <span className={'ml-1'}>resolved by </span>
-            <UserLink
-              user={{
-                id: resolver.id,
-                name: resolver.name,
-                username: resolver.username,
-              }}
-            />
-          </>
-        )}
+      <UserLink userId={creatorId} className="mr-1" />
+      <FollowButton userId={creatorId} size="2xs" />
+      {isResolved && resolverId && resolverId !== contract.creatorId && (
+        <>
+          <span className={'ml-1'}>resolved by </span>
+          <UserLink userId={resolverId} />
+        </>
+      )}
     </Row>
   )
 }

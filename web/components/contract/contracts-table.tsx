@@ -13,7 +13,7 @@ import { getTextColor } from './text-color'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
 import { BinaryContractOutcomeLabel } from '../outcome-label'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
 import {
@@ -270,7 +270,7 @@ function ContractQuestion(props: {
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (
-        <Avatar
+        <RawAvatar
           username={contract.creatorUsername}
           avatarUrl={contract.creatorAvatarUrl}
           size="xs"

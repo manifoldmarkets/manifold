@@ -327,8 +327,7 @@ const SidebarRelatedContractCard = memo(function (props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
-    contract
+  const { creatorId, question } = contract
 
   return (
     <Link
@@ -351,20 +350,10 @@ const SidebarRelatedContractCard = memo(function (props: {
       </div>
       <Row className="w-full items-end justify-between">
         <Row className="items-center gap-1.5">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-            noLink
-          />
+          <Avatar userId={creatorId} size="xs" noLink />
           <UserLink
-            user={{
-              id: contract.creatorId,
-              name: contract.creatorName,
-              username: contract.creatorUsername,
-            }}
+            userId={creatorId}
             className="text-ink-500 text-sm"
-            createdTime={creatorCreatedTime}
             noLink
           />
         </Row>
@@ -391,8 +380,7 @@ const RelatedContractCard = memo(function (props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
-    contract
+  const { creatorId, question } = contract
   const probChange =
     contract.outcomeType === 'BINARY' &&
     showGraph &&
@@ -421,22 +409,8 @@ const RelatedContractCard = memo(function (props: {
       </div>
       <Row className="w-full items-end justify-between">
         <Row className="items-center gap-1.5">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-            noLink
-          />
-          <UserLink
-            user={{
-              id: contract.creatorId,
-              name: contract.creatorName,
-              username: contract.creatorUsername,
-            }}
-            className="text-ink-500 text-sm"
-            createdTime={creatorCreatedTime}
-            noLink
-          />
+          <Avatar userId={creatorId} size="xs" noLink />
+          <UserLink userId={creatorId} noLink />
         </Row>
 
         <Row className={'items-baseline gap-1'}>

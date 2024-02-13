@@ -25,8 +25,11 @@ export type ContractMetric = {
     [outcome: string]: number
   }
   userId: string
+  /**  @depreacted */
   userUsername: string
+  /**  @depreacted */
   userName: string
+  /**  @depreacted */
   userAvatarUrl: string
   lastBetTime: number
   answerId: string | null

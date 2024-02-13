@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
 import { useIsFollowing } from 'web/hooks/use-follows'
-import { useUser } from 'web/hooks/use-user'
+import { useDisplayUser, useUser } from 'web/hooks/use-user'
 import {
   DotsVerticalIcon,
   MinusCircleIcon,
@@ -17,7 +17,6 @@ import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { useAdmin } from 'web/hooks/use-admin'
 import { InformationCircleIcon } from '@heroicons/react/outline'
-import { useUserById } from 'web/hooks/use-user-supabase'
 
 export function FeedDropdown(props: {
   contract: Contract
@@ -31,7 +30,10 @@ export function FeedDropdown(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const creatorId = item?.creatorId ?? contract.creatorId
-  const creator = useUserById(creatorId)
+  const creator = useDisplayUser(creatorId)
+  const creatorName =
+    (creator !== 'loading' && creator !== 'not-found' && creator?.name) ||
+    contract.creatorName
   const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
 
   const markUninteresting = async () => {
@@ -51,9 +53,7 @@ export function FeedDropdown(props: {
 
   const feedCardOptions = buildArray(
     user && {
-      name: isFollowing
-        ? `Unfollow ${creator?.name ?? contract.creatorName}`
-        : `Follow ${creator?.name ?? contract.creatorName}`,
+      name: isFollowing ? `Unfollow ${creatorName}` : `Follow ${creatorName}`,
       icon: isFollowing ? (
         <MinusCircleIcon className="h-5 w-5" aria-hidden />
       ) : (

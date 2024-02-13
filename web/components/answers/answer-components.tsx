@@ -29,7 +29,7 @@ import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import { formatTimeShort } from 'web/lib/util/time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar, EmptyAvatar } from '../widgets/avatar'
+import { EmptyAvatar, Avatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
 import { animated } from '@react-spring/web'
@@ -113,10 +113,10 @@ export const CreatorAndAnswerLabel = (props: {
   text: string
   createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
-  creator?: { name: string; username: string; avatarUrl?: string } | false
+  creatorId?: string | false
   className?: string
 }) => {
-  const { text, createdTime, truncate = 'none', creator, className } = props
+  const { text, createdTime, truncate = 'none', creatorId, className } = props
 
   const ELLIPSES_LENGTH = 3
   const maxLength = { short: 20, long: 75, none: undefined }[truncate]
@@ -127,22 +127,16 @@ export const CreatorAndAnswerLabel = (props: {
 
   const answerTextTooltip = truncated === text ? false : text
 
-  const dateText = `created ${formatTimeShort(createdTime)}`
-  const dateTooltip = creator ? `${creator.name} ${dateText}` : dateText
+  const dateTooltip = `created ${formatTimeShort(createdTime)}`
 
   return (
     <Tooltip text={answerTextTooltip}>
       <Row className={clsx('my-1', className)}>
         <Tooltip text={dateTooltip}>
-          {creator === false ? (
+          {creatorId === false ? (
             <EmptyAvatar className="mr-2 inline" size={4} />
-          ) : creator ? (
-            <Avatar
-              className="mr-2 inline"
-              size="2xs"
-              username={creator.username}
-              avatarUrl={creator.avatarUrl}
-            />
+          ) : creatorId ? (
+            <Avatar className="mr-2 inline" size="2xs" userId={creatorId} />
           ) : null}
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />

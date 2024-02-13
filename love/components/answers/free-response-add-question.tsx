@@ -92,7 +92,6 @@ function AddQuestionModal(props: {
             </Row>
             <OtherLoverAnswers
               question={expandedQuestion}
-              user={user}
               className={SCROLLABLE_MODAL_CLASS}
             />
           </Col>

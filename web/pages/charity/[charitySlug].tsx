@@ -27,7 +27,7 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 
-type DonationItem = { user: User; ts: number; amount: number }
+type DonationItem = { userId: string; ts: number; amount: number }
 
 const PAGE_SIZE = 50
 
@@ -54,6 +54,8 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
   }
   console.log(charity.id, stats)
   const donations = await getDonationsPageQuery(charity.id)(PAGE_SIZE)
+  // TODO: get users in static props
+
   return {
     props: { charity, donations, stats },
     revalidate: 60,
@@ -92,6 +94,7 @@ function CharityPage(props: {
     q: paginationCallback,
     preload: donations,
   })
+
   return (
     <Page
       trackPageView={'charity slug page'}
@@ -115,7 +118,7 @@ function CharityPage(props: {
             user={user}
             charity={charity}
             onDonated={(user, ts, amount) => {
-              pagination.prepend({ user, ts, amount })
+              pagination.prepend({ userId: user.id, ts, amount })
               setShowConfetti(true)
             }}
           />
@@ -124,8 +127,8 @@ function CharityPage(props: {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {(pagination.items ?? []).map((d, i) => (
-            <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
+          {(pagination.items ?? []).map((d) => (
+            <Donation key={d.userId} {...d} />
           ))}
           <PaginationNextPrev {...pagination} />
         </Col>

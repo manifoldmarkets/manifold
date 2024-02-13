@@ -29,24 +29,20 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
 import { Row as rowFor, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { BackButton } from 'web/components/contract/back-button'
 import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import {
-  BannedBadge,
-  UserAvatarAndBadge,
-} from 'web/components/widgets/user-link'
+import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsVerticalIcon } from '@heroicons/react/solid'
 import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
 import { buildArray, filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { richTextToString } from 'common/util/parse'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { getNativePlatform } from 'web/lib/native/is-native'
@@ -84,6 +80,7 @@ export function PrivateMessagesContent() {
     </>
   )
 }
+
 const systemStatusType = (message: ChatMessage) => {
   const chatContent = richTextToString(message.content)
   return chatContent.includes('left the chat')
@@ -147,18 +144,6 @@ export const PrivateChat = (props: {
       .map((membership) => membership.user_id) ?? []
   )
 
-  // Note: we may have messages from users not in the channel, e.g. a system message from manifold
-  const otherUsers = useUsersInStore(
-    otherUserIds,
-    `${channelId}`,
-    maxUsersToGet
-  )
-  const remainingUsers = filterDefined(
-    otherUsers?.filter((user) => !usersThatLeft.includes(user.id)) ?? []
-  )
-  const members = filterDefined(
-    otherUsers?.filter((user) => membershipUserIds.includes(user.id)) ?? []
-  )
   const router = useRouter()
   const messages = useMemo(
     () => (realtimeMessages ?? []).slice(0, messagesPerPage * page).reverse(),
@@ -316,36 +301,32 @@ export const PrivateChat = (props: {
       >
         <BackButton />
         {channel.title ? (
-          <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
+          <RawAvatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
         ) : (
           <MultipleOrSingleAvatars
             size="sm"
             spacing={0.5}
             startLeft={1}
-            avatarUrls={members?.map((user) => user.avatarUrl) ?? []}
+            userIds={otherUserIds}
             onClick={() => setShowUsers(true)}
           />
         )}
         {channel.title ? (
           <span className={'ml-1 font-semibold'}>{channel.title}</span>
         ) : (
-          members && (
-            <span
-              className={'ml-1 cursor-pointer hover:underline'}
-              onClick={() => setShowUsers(true)}
-            >
-              {members
-                .map((user) => user.name.split(' ')[0].trim())
-                .slice(0, 2)
-                .join(', ')}
-              {members.length > 2 && ` & ${members.length - 2} more`}
-              {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
-            </span>
-          )
+          <span
+            className={'ml-1 cursor-pointer hover:underline'}
+            onClick={() => setShowUsers(true)}
+          >
+            {otherUserIds
+              .slice(0, 2)
+              .map((id) => <UserLink key={id} userId={id} />)
+              .join(', ')}
+            {otherUserIds.length > 2 && ` & ${otherUserIds.length - 2} more`}
+            {usersThatLeft.length > 0 && ` (${usersThatLeft.length} left)`}
+          </span>
         )}
-        {members?.length == 1 && members[0].isBannedFromPosting && (
-          <BannedBadge />
-        )}
+
         <DropdownMenu
           className={'ml-auto'}
           menuWidth={'w-44'}
@@ -405,15 +386,15 @@ export const PrivateChat = (props: {
         {showUsers && (
           <Modal open={showUsers} setOpen={setShowUsers}>
             <Col className={clsx(MODAL_CLASS)}>
-              {members?.map((user) => (
+              {otherUserIds?.map((userId) => (
                 <Row
                   key={user.id}
                   className={'w-full items-center justify-start gap-2'}
                 >
-                  <UserAvatarAndBadge user={user} />
+                  <UserAvatarAndBadge userId={userId} />
                   {channelMemberships?.[channelId].map(
                     (membership) =>
-                      membership.user_id === user.id &&
+                      membership.user_id === userId &&
                       membership.status === 'left' && (
                         <span
                           key={membership.user_id + 'status'}
@@ -466,22 +447,22 @@ export const PrivateChat = (props: {
                       <SystemChatMessageItem
                         key={firstMessage.id}
                         chats={messages}
-                        otherUsers={otherUsers
-                          ?.concat([user])
-                          .filter((user) =>
-                            messages.some((m) => m.userId === user.id)
+                        otherUsers={otherUserIds
+                          ?.concat(user.id)
+                          .filter((userId) =>
+                            messages.some((m) => m.userId === userId)
                           )}
                       />
                     )
                   }
-                  const otherUser = otherUsers?.find(
-                    (user) => user.id === firstMessage.userId
+                  const otherUser = otherUserIds?.find(
+                    (id) => id === firstMessage.userId
                   )
                   return (
                     <ChatMessageItem
                       key={firstMessage.id}
                       chats={messages}
-                      currentUser={user}
+                      currentUser={user.id}
                       otherUser={otherUser}
                       beforeSameUser={
                         groupedMessages[i + 1]?.[0].userId ===
@@ -491,15 +472,15 @@ export const PrivateChat = (props: {
                         groupedMessages[i - 1]?.[0].userId !==
                         firstMessage.userId
                       }
-                      onReplyClick={
-                        remainingUsers.length > 1
-                          ? (chat) =>
-                              setReplyToUserInfo({
-                                id: chat.userId,
-                                username: otherUser?.username ?? '',
-                              })
-                          : undefined
-                      }
+                      // onReplyClick={
+                      //   otherUserIds.length > 1
+                      //     ? (chat) =>
+                      //         setReplyToUserInfo({
+                      //           id: chat.userId,
+                      //           username: otherUser?.username ?? '',
+                      //         })
+                      //     : undefined
+                      // }
                     />
                   )
                 })}

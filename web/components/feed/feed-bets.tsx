@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import {
-  Avatar,
+  RawAvatar,
   AvatarSizeType,
   EmptyAvatar,
 } from 'web/components/widgets/avatar'
@@ -45,7 +45,7 @@ export const FeedBet = memo(function FeedBet(props: {
       <Row className={'justify-between'}>
         <Row className={clsx(className, 'items-center gap-2')}>
           {showUser ? (
-            <Avatar
+            <RawAvatar
               size={avatarSize}
               avatarUrl={userAvatarUrl}
               username={userUsername}
@@ -68,36 +68,24 @@ export const FeedBet = memo(function FeedBet(props: {
 export const FeedReplyBet = memo(function FeedReplyBet(props: {
   contract: Contract
   bets: Bet[]
-  avatarSize?: AvatarSizeType
   className?: string
   onReply?: (bet: Bet) => void
 }) {
-  const { contract, bets, avatarSize, className } = props
+  const { contract, bets, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  const avatarUrls = filterDefined(uniq(bets.map((b) => b.userAvatarUrl)))
+  const userIds = filterDefined(uniq(bets.map((b) => b.userId)))
   const [showBets, setShowBets] = useState(false)
   return (
     <Col className={'w-full'}>
       <Row className={'w-full gap-2'}>
-        {!showUser || avatarUrls.length === 0 ? (
-          <EmptyAvatar className="mx-1" />
-        ) : avatarUrls.length === 1 ? (
-          <Avatar
-            size={avatarSize}
-            avatarUrl={bets[0].userAvatarUrl}
-            username={bets[0].userUsername}
-          />
-        ) : (
-          avatarUrls.length > 1 && (
-            <MultipleOrSingleAvatars
-              size={'2xs'}
-              spacing={-0.2}
-              startLeft={0.2}
-              onClick={() => setShowBets(true)}
-              avatarUrls={avatarUrls}
-            />
-          )
-        )}
+        <MultipleOrSingleAvatars
+          size="2xs"
+          spacing={-0.2}
+          startLeft={0.2}
+          onClick={() => setShowBets(true)}
+          userIds={userIds}
+        />
+
         {showBets && (
           <Modal open={showBets} setOpen={setShowBets}>
             <Col className={MODAL_CLASS}>
@@ -140,15 +128,7 @@ export function BetStatusesText(props: {
   inTimeline?: boolean
 }) {
   const { bets, contract, className, inTimeline } = props
-  const {
-    amount,
-    outcome,
-    createdTime,
-    answerId,
-    userId,
-    userName,
-    userUsername,
-  } = bets[0]
+  const { amount, outcome, createdTime, answerId, userId } = bets[0]
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
@@ -159,10 +139,7 @@ export function BetStatusesText(props: {
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-            className={'font-semibold'}
-          />
+          <UserLink userId={userId} className={'font-semibold'} />
         ) : (
           <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
         ))}{' '}
@@ -218,14 +195,7 @@ export function BetStatusText(props: {
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline ? (
         !hideUser ? (
-          <UserLink
-            user={{
-              id: bet.userId,
-              name: bet.userName,
-              username: bet.userUsername,
-            }}
-            className={'font-semibold'}
-          />
+          <UserLink userId={bet.userId} className={'font-semibold'} />
         ) : (
           <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
         )

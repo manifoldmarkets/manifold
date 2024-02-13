@@ -16,7 +16,6 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import {
@@ -419,7 +418,6 @@ function Answer(props: {
     shouldShowLimitOrderChart,
   } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
   const [editAnswer, setEditAnswer] = useState<Answer>()
 
@@ -538,12 +536,11 @@ function Answer(props: {
 
       {expanded && (
         <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
-          {showAvatars && answerCreator && (
+          {showAvatars && (
             <Row className={'items-center self-start'}>
-              <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
+              <Avatar userId={answer.userId} size={'xs'} />
               <UserLink
-                user={answerCreator}
-                noLink={false}
+                userId={answer.userId}
                 className="ml-1 text-sm"
                 short={isMobile}
               />

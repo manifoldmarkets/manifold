@@ -120,8 +120,8 @@ export function FeedTimelineContent(props: {
   }, [pageVisible, topIsVisible, isAuthed])
 
   if (!savedFeedItems) return <LoadingIndicator />
-  const newAvatarUrls = uniq(
-    filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
+  const newUserIds = uniq(
+    filterDefined(newerTimelineItems.map((item) => item.creatorId))
   ).slice(0, 3)
   const fetchMoreOlderContent = async () => {
     if (!user) return
@@ -149,9 +149,9 @@ export function FeedTimelineContent(props: {
           if (!visible) setTopIsVisible(false)
         }}
       />
-      {newAvatarUrls.length > 2 && !topIsVisible && (
+      {newUserIds.length > 2 && !topIsVisible && (
         <NewActivityButton
-          avatarUrls={newAvatarUrls}
+          userIds={newUserIds}
           onClick={() => setLastSeen(Date.now)}
         />
       )}
@@ -188,10 +188,10 @@ export function FeedTimelineContent(props: {
 }
 
 const NewActivityButton = (props: {
-  avatarUrls: string[]
+  userIds: string[]
   onClick: () => void
 }) => {
-  const { avatarUrls, onClick } = props
+  const { userIds, onClick } = props
   const scrollToTop = () => {
     onClick()
     window.scrollTo({
@@ -210,13 +210,8 @@ const NewActivityButton = (props: {
     >
       <Row className="text-ink-600 items-center ">
         <ArrowUpIcon className="text-ink-400 mr-3 h-5 w-5" />
-        {avatarUrls.map((url) => (
-          <Avatar
-            key={url + 'new-feed-activity-button'}
-            size={'xs'}
-            className={'-ml-2'}
-            avatarUrl={url}
-          />
+        {userIds.map((id) => (
+          <Avatar key={id} size={'xs'} className={'-ml-2'} userId={id} />
         ))}
         <div className="ml-1">New updates</div>
       </Row>

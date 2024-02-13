@@ -5,7 +5,7 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import { User } from 'common/user'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { FollowButton } from '../buttons/follow-button'
 import { StackedUserNames } from '../widgets/user-link'
 import { Linkify } from '../widgets/linkify'
@@ -54,7 +54,7 @@ function FetchUserHovercardContent({ userId }: { userId: string }) {
       >
         <div className="px-4 py-3">
           <Row className="items-start justify-between">
-            <Avatar
+            <RawAvatar
               username={user.username}
               avatarUrl={user.avatarUrl}
               size="lg"

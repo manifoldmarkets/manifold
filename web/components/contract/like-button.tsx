@@ -8,19 +8,13 @@ import useLongTouch from 'web/hooks/use-long-touch'
 import { like, unLike } from 'web/lib/firebase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import {
-  MultiUserLinkInfo,
-  MultiUserTransactionModal,
-} from '../multi-user-transaction-link'
+import { MultiUserList } from '../multi-user-transaction-link'
 import { Avatar } from '../widgets/avatar'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button, SizeType } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
 import { track } from '@amplitude/analytics-browser'
-import { useUsersById } from 'web/hooks/use-user'
-import { buildArray } from 'common/util/array'
 
 const LIKES_SHOWN = 3
 
@@ -153,7 +147,6 @@ export const LikeButton = memo(function LikeButton(props: {
           contentId={contentId}
           user={user}
           userLiked={liked}
-          setOpen={setModalOpen}
           titleName={contentText}
         />
       )}
@@ -161,17 +154,16 @@ export const LikeButton = memo(function LikeButton(props: {
   )
 })
 
-function useLikeDisplayList(
+function likeDisplayList(
   reacts: Reaction[] = [],
   self?: User | null,
   prependSelf?: boolean
 ) {
-  const users = useUsersById(reacts.map((r) => r.user_id))
+  const userIds = reacts.map((r) => r.user_id)
 
-  return buildArray([
-    prependSelf && self,
-    users.filter((u): u is User => !!u && u.id !== self?.id),
-  ])
+  return self && prependSelf
+    ? [self.id, ...userIds.filter((id) => id !== self.id)]
+    : userIds
 }
 
 function UserLikedFullList(props: {
@@ -179,16 +171,15 @@ function UserLikedFullList(props: {
   contentId: string
   user?: User | null
   userLiked?: boolean
-  setOpen: (isOpen: boolean) => void
   titleName?: string
 }) {
-  const { contentType, contentId, user, userLiked, setOpen, titleName } = props
+  const { contentType, contentId, titleName, user, userLiked } = props
   const reacts = useLikesOnContent(contentType, contentId)
-  const displayInfos = useLikeDisplayList(reacts, user, userLiked)
+  const userIds = likeDisplayList(reacts, user, userLiked)
 
   return (
-    <MultiUserTransactionModal
-      userInfos={displayInfos}
+    <MultiUserList
+      users={userIds}
       modalLabel={
         <span>
           💖 Liked{' '}
@@ -201,9 +192,6 @@ function UserLikedFullList(props: {
           </span>
         </span>
       }
-      open={true}
-      setOpen={setOpen}
-      short={true}
     />
   )
 }
@@ -217,51 +205,37 @@ function UserLikedPopup(props: {
 }) {
   const { contentType, contentId, onRequestModal, user, userLiked } = props
   const reacts = useLikesOnContent(contentType, contentId)
-  const displayInfos = useLikeDisplayList(reacts, user, userLiked)
-
-  if (displayInfos == null) {
-    return (
-      <Col className="min-w-[6rem] items-start">
-        <div className="mb-1 font-bold">Like</div>
-        <LoadingIndicator className="mx-auto my-2" size="sm" />
-      </Col>
-    )
-  }
+  const userIds = likeDisplayList(reacts, user, userLiked)
+  console.log(userIds)
 
   // only show "& n more" for n > 1
   const shown =
-    displayInfos.length <= LIKES_SHOWN + 1
-      ? displayInfos
-      : displayInfos.slice(0, LIKES_SHOWN)
+    userIds.length <= LIKES_SHOWN + 1 ? userIds : userIds.slice(0, LIKES_SHOWN)
 
   return (
     <Col className="min-w-[6rem] items-start">
       <div className="mb-1 font-bold">Like</div>
-      {shown.map((u, i) => {
-        return <UserLikedItem key={i} userInfo={u} />
+      {shown.map((id) => {
+        return <UserLikedItem key={id} userId={id} />
       })}
-      {displayInfos.length > shown.length && (
+      {userIds.length > shown.length && (
         <div
           className="text-primary-300 hover:text-primary-200 w-full cursor-pointer text-left"
           onClick={onRequestModal}
         >
-          & {displayInfos.length - shown.length} more
+          & {userIds.length - shown.length} more
         </div>
       )}
     </Col>
   )
 }
 
-function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
-  const { userInfo } = props
+function UserLikedItem(props: { userId: string }) {
+  const { userId } = props
   return (
     <Row className="items-center gap-1.5">
-      <Avatar
-        username={userInfo.username}
-        avatarUrl={userInfo.avatarUrl}
-        size="2xs"
-      />
-      <UserLink user={userInfo} short={true} />
+      <Avatar userId={userId} size="2xs" />
+      <UserLink userId={userId} short />
     </Row>
   )
 }

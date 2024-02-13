@@ -1,8 +1,8 @@
 import dayjs from 'dayjs'
-import { BETTOR, User } from 'common/user'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { BETTOR } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -17,18 +17,18 @@ export function FeedLiquidity(props: {
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId) ?? undefined
+  const bettorId = isBeforeJune2022 ? undefined : userId ?? undefined
 
-  const user = useUser()
-  const isSelf = user?.id === userId
+  const me = useUser()
+  const isSelf = me?.id === userId
 
   return (
     <div className="to-primary-300 -ml-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 p-2">
       <Row className="bg-ink-100 items-stretch gap-2 rounded-full">
         {isSelf ? (
-          <Avatar avatarUrl={user.avatarUrl} username={user.username} />
-        ) : bettor ? (
-          <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+          <Avatar userId={me.id} />
+        ) : bettorId ? (
+          <Avatar userId={bettorId} />
         ) : (
           <div className="relative px-1">
             <EmptyAvatar />
@@ -37,7 +37,7 @@ export function FeedLiquidity(props: {
         <LiquidityStatusText
           liquidity={liquidity}
           isSelf={isSelf}
-          bettor={bettor}
+          bettorId={bettorId}
         />
       </Row>
     </div>
@@ -47,9 +47,9 @@ export function FeedLiquidity(props: {
 function LiquidityStatusText(props: {
   liquidity: LiquidityProvision
   isSelf: boolean
-  bettor?: User
+  bettorId?: string
 }) {
-  const { liquidity, bettor, isSelf } = props
+  const { liquidity, bettorId, isSelf } = props
   const { amount, createdTime } = liquidity
 
   const bought = amount >= 0 ? 'added' : 'withdrew'
@@ -57,8 +57,8 @@ function LiquidityStatusText(props: {
 
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
-      {bettor ? (
-        <UserLink user={bettor} />
+      {bettorId ? (
+        <UserLink userId={bettorId} />
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}

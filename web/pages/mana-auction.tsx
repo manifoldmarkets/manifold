@@ -6,7 +6,7 @@ import { Title } from 'web/components/widgets/title'
 import { formatMoney } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Spacer } from 'web/components/layout/spacer'
 import { Bid } from 'common/bid'
 import { groupBy, max } from 'lodash'
@@ -403,7 +403,7 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
             )}
           >
             <Row className="text-ink-700 max-w-sm truncate">
-              <Avatar
+              <RawAvatar
                 username={bid.username}
                 avatarUrl={bid.avatar}
                 size="xs"

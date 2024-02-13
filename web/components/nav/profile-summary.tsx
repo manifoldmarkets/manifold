@@ -5,7 +5,7 @@ import { animated } from '@react-spring/web'
 
 import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
-import { Avatar, AvatarSizeType } from '../widgets/avatar'
+import { RawAvatar, AvatarSizeType } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
@@ -31,7 +31,7 @@ export function ProfileSummary(props: {
       )}
     >
       <div className="w-2 shrink" />
-      <Avatar
+      <RawAvatar
         avatarUrl={user.avatarUrl}
         username={user.username}
         noLink

@@ -12,7 +12,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink } from 'web/components/widgets/user-link'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
@@ -74,7 +74,7 @@ export default function PostPage(props: {
         <Row className="mt-4 items-center">
           <div className="flex px-2">
             <div className="text-ink-500 mr-1">Created by</div>
-            <UserLink className="text-ink-700" user={creator} />
+            <RawUserLink className="text-ink-700" user={creator} />
           </div>
           <Row className="items-center sm:pr-2">
             <CopyLinkOrShareButton

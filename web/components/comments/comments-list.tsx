@@ -141,16 +141,7 @@ function ProfileComment(props: {
   contractSlug: string
 }) {
   const { comment, contractSlug } = props
-  const {
-    text,
-    content,
-    userId,
-    userUsername,
-    userName,
-    userAvatarUrl,
-    createdTime,
-    id,
-  } = comment
+  const { text, content, userId, createdTime, id } = comment
 
   return (
     <Link
@@ -159,18 +150,10 @@ function ProfileComment(props: {
         'hover:bg-canvas-100 relative flex flex-row items-start space-x-3 rounded-lg p-2'
       }
     >
-      <Avatar noLink={true} username={userUsername} avatarUrl={userAvatarUrl} />
+      <Avatar userId={userId} noLink />
       <div className="min-w-0 flex-1">
         <div className="text-ink-500 mt-0.5 text-sm">
-          <UserLink
-            className="text-ink-500"
-            user={{
-              id: userId,
-              name: userName,
-              username: userUsername,
-            }}
-            noLink={true}
-          />{' '}
+          <UserLink className="text-ink-500" userId={userId} noLink />
           <RelativeTimestamp time={createdTime} />
         </div>
         <Content content={content || text} size="sm" />

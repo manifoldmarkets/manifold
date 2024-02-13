@@ -3,7 +3,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Notification } from 'common/notification'
-import { NotificationUserLink } from './notifications/notification-helpers'
+import { UserLink } from './widgets/user-link'
 
 export function MultiUserReactionModal(props: {
   similarNotifications: Notification[]
@@ -21,14 +21,8 @@ export function MultiUserReactionModal(props: {
             key={notif.sourceUserUsername + 'list'}
             className="w-full items-center gap-2"
           >
-            <Avatar
-              username={notif.sourceUserUsername}
-              avatarUrl={notif.sourceUserAvatarUrl}
-            />
-            <NotificationUserLink
-              name={notif.sourceUserName}
-              username={notif.sourceUserUsername}
-            />
+            <Avatar userId={notif.sourceId} size="sm" />
+            <UserLink userId={notif.sourceId} />
           </Row>
         ))}
       </Col>

@@ -25,7 +25,7 @@ import { SEO } from 'web/components/SEO'
 import { SizedContainer } from 'web/components/sized-container'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink } from 'web/components/widgets/user-link'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { coll, getValues } from 'web/lib/firebase/utils'
@@ -172,7 +172,7 @@ export default function RangePerformancePage(props: {
       <Col className={'p-2'}>
         <Row className={'w-full items-start justify-between pb-6'}>
           <Title>
-            <UserLink user={user} hideBadge={true} /> {date} Profit
+            <RawUserLink user={user} hideBadge={true} /> {date} Profit
           </Title>
           <CopyLinkOrShareButton
             url={`https://${ENV_CONFIG.domain}/week/${user.username}/${rangeEndDateSlug}`}

@@ -28,7 +28,7 @@ import {
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
-import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
+import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
 import { Pagination } from 'web/components/widgets/pagination'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
@@ -495,7 +495,7 @@ const PositionRow = memo(function PositionRow(props: {
   followedUsers: string[] | undefined
 }) {
   const { position, outcome, currentUser, followedUsers, numberToShow } = props
-  const { userId, userName, userUsername, userAvatarUrl } = position
+  const { userId } = position
   const isMobile = useIsMobile(800)
 
   return (
@@ -511,15 +511,8 @@ const PositionRow = memo(function PositionRow(props: {
           'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
         )}
       >
-        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
-        {userName && userUsername ? (
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-            short={isMobile}
-          />
-        ) : (
-          <span>Loading..</span>
-        )}
+        <Avatar userId={userId} size={'sm'} />
+        <UserLink userId={userId} short={isMobile} />
       </Row>
       <span
         className={clsx(

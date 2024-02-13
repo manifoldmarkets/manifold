@@ -1,7 +1,7 @@
 import { HistoryPoint } from 'common/chart'
 import { TooltipProps, formatDateInRange } from '../helpers'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 
 // for markets over a single value
 
@@ -23,7 +23,7 @@ export const SingleContractChartTooltip = (props: {
   return (
     <Row className="items-center gap-2">
       {prev.obj?.userAvatarUrl && (
-        <Avatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
+        <RawAvatar size="xs" avatarUrl={prev.obj.userAvatarUrl} />
       )}
       <span className="font-semibold">{next ? dateLabel : 'Now'}</span>
       <span className="text-ink-600">{formatY(prev.y)}</span>

@@ -12,7 +12,11 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useIsAuthorized, useUsersById } from 'web/hooks/use-user'
+import {
+  cacheDisplayUsers,
+  useIsAuthorized,
+  useUsersById,
+} from 'web/hooks/use-user'
 import { filterDefined } from 'common/util/array'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
@@ -119,6 +123,7 @@ export default function Journeys() {
       db.from('users').select('data').in('id', Object.keys(eventsByUser))
     )
     const users = userData.data.map((d) => d.data as User)
+    cacheDisplayUsers(users)
     setBannedUsers(users.filter((u) => u.isBannedFromPosting))
     setUnBannedUsers(users.filter((u) => !u.isBannedFromPosting))
   }
@@ -199,7 +204,7 @@ export default function Journeys() {
               return (
                 <tr key={r.id}>
                   <td className="py-2">
-                    <UserAvatarAndBadge user={r} />
+                    <UserAvatarAndBadge userId={r.id} />
                   </td>
                   <td>{referredUsersCount}</td>
                   <td>{fractionThatBet}</td>
@@ -259,11 +264,11 @@ export default function Journeys() {
                   )}
                 >
                   <Row className={'items-center gap-1'}>
-                    {user ? <UserAvatarAndBadge user={user} /> : userId}
+                    {user ? <UserAvatarAndBadge userId={user.id} /> : userId}
                     {referrer && (
                       <>
                         (Referrer:
-                        <UserAvatarAndBadge user={referrer} />)
+                        <UserAvatarAndBadge userId={referrer.id} />)
                       </>
                     )}
                   </Row>

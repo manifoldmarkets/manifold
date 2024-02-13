@@ -37,7 +37,6 @@ export const FeedRepost = memo(function (props: {
 }) {
   const { contract, user, item, hide, inTimeline, comment } = props
   const privateUser = usePrivateUser()
-  const { userUsername, userAvatarUrl } = comment
   const { bet, dataType } = item
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
@@ -101,9 +100,8 @@ export const FeedRepost = memo(function (props: {
             <Row className="justify-between gap-2">
               <Row className="gap-2">
                 <Avatar
-                  username={userUsername}
+                  userId={comment.userId}
                   size={'sm'}
-                  avatarUrl={userAvatarUrl}
                   className={clsx(marketCreator && 'shadow shadow-amber-300')}
                 />
                 <Col className={''}>

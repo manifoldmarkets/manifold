@@ -1,8 +1,5 @@
-import { uniq } from 'lodash'
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
-import { filterDefined } from 'common/util/array'
-import { getUsers } from './user'
 
 export async function getDonationsByCharity() {
   const { data, error } = await db.rpc('get_donations_by_charity')
@@ -18,7 +15,10 @@ export async function getDonationsByCharity() {
 }
 
 export function getDonationsPageQuery(charityId: string) {
-  return async (limit: number, after?: { ts: number }) => {
+  return async (
+    limit: number,
+    after?: { userId: string; ts: number; amount: number }
+  ) => {
     let q = selectFrom(db, 'txns', 'fromId', 'createdTime', 'amount')
       .eq('data->>category', 'CHARITY')
       .eq('data->>toId', charityId)
@@ -28,13 +28,9 @@ export function getDonationsPageQuery(charityId: string) {
       q = q.lt('data->createdTime', after.ts)
     }
     const txnData = (await run(q)).data
-    const userIds = uniq(txnData.map((t) => t.fromId))
-    const users = await getUsers(userIds)
-    const usersById = Object.fromEntries(
-      filterDefined(users).map((u) => [u.id, u])
-    )
+
     const donations = txnData.map((t) => ({
-      user: usersById[t.fromId],
+      userId: t.fromId,
       ts: t.createdTime,
       amount: t.amount,
     }))

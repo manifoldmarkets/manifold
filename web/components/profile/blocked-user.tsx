@@ -1,7 +1,7 @@
 import { User } from 'web/lib/firebase/users'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { FollowButton } from 'web/components/buttons/follow-button'
@@ -22,7 +22,7 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
 
       <Col className="relative">
         <Row className="relative px-4 pt-4">
-          <Avatar
+          <RawAvatar
             username={user.username}
             avatarUrl={user.avatarUrl}
             size={'xl'}

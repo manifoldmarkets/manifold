@@ -166,7 +166,6 @@ function AnswerBlock(props: {
           <span className="font-semibold">{question.question}</span>
           <OtherLoverAnswers
             question={question}
-            user={user}
             className={SCROLLABLE_MODAL_CLASS}
           />
         </Col>

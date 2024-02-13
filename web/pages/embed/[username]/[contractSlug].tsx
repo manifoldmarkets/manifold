@@ -24,7 +24,7 @@ import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { track } from 'web/lib/service/analytics'
@@ -212,7 +212,7 @@ function ContractSmolView(props: {
   return (
     <Col className="bg-canvas-0 h-[100vh] w-full gap-1 px-6 py-4">
       <Row className="text-ink-500 items-center gap-1 text-sm">
-        <Avatar
+        <RawAvatar
           size="2xs"
           avatarUrl={contract.creatorAvatarUrl}
           username={contract.creatorUsername}

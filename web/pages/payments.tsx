@@ -13,8 +13,7 @@ import { AmountInput } from 'web/components/widgets/amount-input'
 import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
-import { uniq } from 'lodash'
-import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { useUserById } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
@@ -28,7 +27,6 @@ import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
-import { filterDefined } from 'common/util/array'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -71,9 +69,6 @@ export const PaymentsContent = (props: {
 }) => {
   const { payments, forUser, refresh } = props
   const user = useUser()
-  const users = useUsers(
-    uniq(payments.map((payment) => [payment.fromId, payment.toId]).flat())
-  )
 
   const [showPayModal, setShowPayModal] = useState(false)
   const [showQRModal, setShowQRModal] = useState(false)
@@ -115,11 +110,7 @@ export const PaymentsContent = (props: {
       {payments.length === 0 ? (
         <span className="text-ink-500">No Payments</span>
       ) : (
-        <PaymentCards
-          payments={payments}
-          users={filterDefined(users ?? [])}
-          forUser={forUser}
-        />
+        <PaymentCards payments={payments} forUser={forUser} />
       )}
       {user && (
         <>
@@ -152,48 +143,38 @@ export const PaymentsContent = (props: {
 
 const PaymentCards = (props: {
   payments: ManaPayTxn[]
-  users: User[] | undefined
   forUser: User | undefined | null
 }) => {
-  const { payments, users, forUser } = props
+  const { payments, forUser } = props
   return (
     <Col className={'gap-2'}>
       {payments.map((payment) => {
-        const fromUser = users?.find((u) => u.id === payment.fromId)
-        const toUser = users?.find((u) => u.id === payment.toId)
         const decreasedBalance =
           (payment.fromId === forUser?.id) !== payment.amount < 0
         return (
           <Col key={payment.id} className="bg-canvas-0 w-full rounded-md p-2">
             <Row className={'justify-between'}>
-              {fromUser && toUser ? (
-                <Row className="gap-1">
-                  <Avatar
-                    avatarUrl={fromUser.avatarUrl}
-                    username={fromUser.username}
-                  />
-                  <Col className={'w-full'}>
-                    <Row className={'flex-wrap gap-x-1'}>
-                      <span className={'ml-1'}>
-                        <UserLink user={fromUser} />
-                      </span>
-                      <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
-                      <span>
-                        <UserLink user={toUser} />
-                      </span>
-                    </Row>
-                    <span className={'-mt-1'}>
-                      <RelativeTimestamp
-                        time={payment.createdTime}
-                        shortened={true}
-                        className={'text-sm'}
-                      />
+              <Row className="gap-1">
+                <Avatar userId={payment.fromId} />
+                <Col className={'w-full'}>
+                  <Row className={'flex-wrap gap-x-1'}>
+                    <span className={'ml-1'}>
+                      <UserLink userId={payment.fromId} />
                     </span>
-                  </Col>
-                </Row>
-              ) : (
-                <span>Loading...</span>
-              )}
+                    <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
+                    <span>
+                      <UserLink userId={payment.toId} />
+                    </span>
+                  </Row>
+                  <span className={'-mt-1'}>
+                    <RelativeTimestamp
+                      time={payment.createdTime}
+                      shortened={true}
+                      className={'text-sm'}
+                    />
+                  </span>
+                </Col>
+              </Row>
 
               <span
                 className={
@@ -259,7 +240,7 @@ export const PaymentsModal = (props: {
               {toUser && !removedToUser ? (
                 <Col className={'mt-2'}>
                   <Row className={'items-center gap-1'}>
-                    <UserAvatarAndBadge user={toUser} />
+                    <UserAvatarAndBadge userId={toUser.id} />
                     <XIcon
                       onClick={() => {
                         setToUsers([])

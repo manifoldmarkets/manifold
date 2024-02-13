@@ -8,7 +8,6 @@ import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import dayjs from 'dayjs'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BiRepost } from 'react-icons/bi'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { DAY_MS } from 'common/util/time'
 import { FireIcon } from '@heroicons/react/outline'
 
@@ -62,20 +61,18 @@ export function CardReason(props: {
   if (item.isCopied) {
     return <div />
   }
-  if (item.dataType === 'repost' && item.creatorDetails) {
+  if (item.dataType === 'repost' && item.creatorId) {
     return (
-      <Tooltip text={'Reposted by ' + item.creatorDetails.name}>
-        <Row className={'text-ink-400 gap-1 text-sm'}>
-          <BiRepost className={'text-ink-400 h-5 w-5'} />
-          <UserLink short={true} user={item.creatorDetails} />
-          reposted
-          <RelativeTimestamp
-            time={item.createdTime}
-            shortened={true}
-            className="text-ink-400 -ml-1"
-          />
-        </Row>
-      </Tooltip>
+      <Row className={'text-ink-400 gap-1 text-sm'}>
+        <BiRepost className={'text-ink-400 h-5 w-5'} />
+        <UserLink short={true} userId={item.creatorId} />
+        reposted
+        <RelativeTimestamp
+          time={item.createdTime}
+          shortened={true}
+          className="text-ink-400 -ml-1"
+        />
+      </Row>
     )
   }
   if (probChange) {

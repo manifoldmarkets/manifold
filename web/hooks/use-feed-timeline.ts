@@ -20,7 +20,6 @@ import {
 } from 'lodash'
 import {
   BASE_FEED_DATA_TYPE_SCORES,
-  CreatorDetails,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
   getExplanation,
@@ -38,7 +37,7 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { fetchAndCacheUsers, useIsAuthorized } from 'web/hooks/use-user'
 import { convertContractComment } from 'common/supabase/comments'
 import { Json } from 'common/supabase/schema'
 import { Bet } from 'common/bet'
@@ -69,7 +68,6 @@ export type FeedTimelineItem = {
   betId: string | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
-  creatorDetails?: CreatorDetails
   contract?: Contract
   contracts?: Contract[]
   comment?: ContractComment
@@ -220,7 +218,7 @@ export const useFeedTimeline = (
       uninterestingContractIds,
       seenCommentIds,
       answers,
-      users,
+      ,
       recentlySeenContractCards,
       bets,
     ] = await Promise.all([
@@ -269,21 +267,7 @@ export const useFeedTimeline = (
         .select('*')
         .in('id', answerIds)
         .then((res) => res.data?.map((a) => convertAnswer(a))),
-      db
-        .from('users')
-        .select('id, data, name, username')
-        .in('id', userIds)
-        .then((res) =>
-          res.data?.map(
-            (u) =>
-              ({
-                id: u.id,
-                name: u.name,
-                username: u.username,
-                avatarUrl: (u.data as User).avatarUrl,
-              } as CreatorDetails)
-          )
-        ),
+      fetchAndCacheUsers(userIds),
       getSeenContractIds(userId, newContractIds, Date.now() - 5 * DAY_MS, [
         'view market card',
       ]),
@@ -342,8 +326,7 @@ export const useFeedTimeline = (
       freshAndInterestingContracts,
       unseenUnhiddenLikedOrFollowedComments,
       answers,
-      bets,
-      users
+      bets
     )
     return { timelineItems }
   }
@@ -431,8 +414,7 @@ function createFeedTimelineItems(
   contracts: Contract[] | undefined,
   allComments: ContractComment[] | undefined,
   allAnswers: Answer[] | undefined,
-  allBets: Bet[] | undefined,
-  creators: CreatorDetails[] | undefined
+  allBets: Bet[] | undefined
 ): FeedTimelineItem[] {
   const timelineItems = uniqBy(
     data.map((item) => {
@@ -456,7 +438,7 @@ function createFeedTimelineItems(
         )
         ?.find((comment) => comment.id === item.comment_id)
       if (item.comment_id && !comment) return
-      const creatorDetails = creators?.find((u) => u.id === item.creator_id)
+
       const answers = allAnswers?.filter((a) => item.answer_ids?.includes(a.id))
       const bet = allBets?.find((b) => item.bet_id === b.id)
       return {
@@ -468,7 +450,6 @@ function createFeedTimelineItems(
         comment,
         answers,
         bet,
-        creatorDetails,
       } as FeedTimelineItem
     }),
     'contractId'

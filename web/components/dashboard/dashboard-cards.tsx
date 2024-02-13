@@ -1,7 +1,7 @@
 import { Dashboard } from 'common/dashboard'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { FollowDashboardButton } from './follow-dashboard-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
@@ -49,7 +49,7 @@ function DashboardCard(props: { dashboard: Dashboard }) {
           className={'flex items-center gap-2 truncate text-sm'}
           href={href}
         >
-          <Avatar
+          <RawAvatar
             size={'xs'}
             className={'mr-0.5'}
             avatarUrl={creatorAvatarUrl}

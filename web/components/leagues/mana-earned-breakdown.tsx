@@ -5,7 +5,6 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
-import { User } from 'common/user'
 import { Row } from '../layout/row'
 import { usePublicContracts } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
@@ -25,7 +24,7 @@ import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 
 export const ManaEarnedBreakdown = (props: {
-  user: User
+  userId: string
   season: number
   showDialog: boolean
   setShowDialog: (show: boolean) => void
@@ -33,7 +32,7 @@ export const ManaEarnedBreakdown = (props: {
   mana_earned_breakdown: { [key: string]: number }
 }) => {
   const {
-    user,
+    userId,
     season,
     showDialog,
     setShowDialog,
@@ -51,7 +50,7 @@ export const ManaEarnedBreakdown = (props: {
 
   const { start, end } = getSeasonDates(season)
   const loadingBets = useBets({
-    userId: user.id,
+    userId: userId,
     afterTime: start.getTime(),
     beforeTime: end.getTime(),
     order: 'desc',
@@ -97,7 +96,7 @@ export const ManaEarnedBreakdown = (props: {
     >
       <Col>
         <Row className="mb-2 items-center gap-4">
-          <UserAvatarAndBadge user={user} />
+          <UserAvatarAndBadge userId={userId} />
         </Row>
         <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
         <Table className="text-base">

@@ -23,8 +23,8 @@ import { referralQuery } from 'common/util/share'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Button } from 'web/components/buttons/button'
 import { deleteDashboard, updateDashboard } from 'web/lib/firebase/api'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawAvatar } from 'web/components/widgets/avatar'
+import { RawUserLink } from 'web/components/widgets/user-link'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
@@ -198,12 +198,12 @@ export function FoundDashboardPage(props: {
         ) : (
           <UserHovercard userId={dashboard.creatorId} className="mb-8">
             <Row className="items-center gap-2">
-              <Avatar
+              <RawAvatar
                 username={dashboard.creatorUsername}
                 avatarUrl={dashboard.creatorAvatarUrl}
                 size="xs"
               />
-              <UserLink
+              <RawUserLink
                 user={{
                   id: dashboard.creatorId,
                   name: dashboard.creatorName,

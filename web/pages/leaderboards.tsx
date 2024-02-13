@@ -220,7 +220,7 @@ export default function Leaderboards(props: {
                 renderCell: (user) => formatMoney(user.profitCached.allTime),
               },
             ]}
-            highlightUsername={user?.username}
+            highlightUserId={user?.id}
           />
 
           <Leaderboard
@@ -233,7 +233,7 @@ export default function Leaderboards(props: {
                   formatWithCommas(user.creatorTraders.allTime),
               },
             ]}
-            highlightUsername={user?.username}
+            highlightUserId={user?.id}
           />
         </Col>
         {!topic && (
@@ -259,7 +259,7 @@ export default function Leaderboards(props: {
                     formatMoney(user.totalReferredProfit ?? 0),
                 },
               ]}
-              highlightUsername={user?.username}
+              highlightUserId={user?.id}
             />
           </Col>
         )}

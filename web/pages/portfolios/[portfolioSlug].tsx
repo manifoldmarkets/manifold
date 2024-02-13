@@ -3,7 +3,7 @@ import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
 import { SEO } from 'web/components/SEO'
 import { EditInPlaceInput } from 'web/components/widgets/edit-in-place'
@@ -16,7 +16,7 @@ import { Contract } from 'common/contract'
 import { keyBy, mapValues, partition } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { BinaryOutcomeLabel } from 'web/components/outcome-label'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -91,12 +91,12 @@ export default function PortfolioPage(props: {
         </EditInPlaceInput>
 
         <Row className="items-center gap-2">
-          <Avatar
+          <RawAvatar
             size={'xs'}
             avatarUrl={creator.avatarUrl}
             username={creator.username}
           />
-          <UserLink className="text-ink-700" user={creator} />
+          <RawUserLink className="text-ink-700" user={creator} />
           <CopyLinkOrShareButton
             tooltip="Copy link to portfolio"
             url={shareUrl}

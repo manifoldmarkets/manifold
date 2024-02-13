@@ -16,7 +16,7 @@ import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { SolidNotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -146,7 +146,7 @@ function NavBarItem(props: {
       >
         <Col>
           <div className="mx-auto my-1">
-            <Avatar
+            <RawAvatar
               size="xs"
               username={user.username}
               avatarUrl={user.avatarUrl}

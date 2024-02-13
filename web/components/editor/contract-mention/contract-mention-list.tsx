@@ -2,7 +2,7 @@ import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
 import { Contract, contractPath } from 'common/contract'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Avatar } from '../../widgets/avatar'
+import { RawAvatar } from '../../widgets/avatar'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
@@ -54,7 +54,7 @@ const MentionList = forwardRef((props: SuggestionProps<Contract>, ref) => {
             onClick={() => submitUser(i)}
             key={contract.id}
           >
-            <Avatar avatarUrl={contract.creatorAvatarUrl} size="xs" />
+            <RawAvatar avatarUrl={contract.creatorAvatarUrl} size="xs" />
             {contract.question}
           </button>
         ))

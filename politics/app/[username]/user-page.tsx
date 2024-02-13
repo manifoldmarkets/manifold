@@ -20,10 +20,10 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { BackButton } from 'web/components/contract/back-button'
 import clsx from 'clsx'
-import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink, StackedUserNames } from 'web/components/widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import Link from 'next/link'
 import { ChatAlt2Icon, CurrencyDollarIcon } from '@heroicons/react/outline'
 import { DailyLeagueStat } from 'web/components/home/daily-league-stat'
@@ -138,7 +138,7 @@ function UserProfile(props: { user: User }) {
                 headerStuck && 'opacity-100'
               )}
             >
-              <UserLink user={user} noLink />
+              <RawUserLink user={user} noLink />
             </div>
 
             <div>
@@ -152,7 +152,7 @@ function UserProfile(props: { user: User }) {
             <Col className={'relative max-h-14'}>
               <ImageWithBlurredShadow
                 image={
-                  <Avatar
+                  <RawAvatar
                     username={user.username}
                     avatarUrl={user.avatarUrl}
                     size={'lg'}

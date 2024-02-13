@@ -11,7 +11,7 @@ import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
@@ -137,7 +137,7 @@ const ContractChangeRow = forwardRef(
           className
         )}
       >
-        <Avatar
+        <RawAvatar
           className="hidden lg:mr-1 lg:flex"
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
@@ -152,7 +152,7 @@ const ContractChangeRow = forwardRef(
           {question}
         </div>
         <Row className="gap-3">
-          <Avatar
+          <RawAvatar
             className="lg:hidden"
             username={creatorUsername}
             avatarUrl={creatorAvatarUrl}

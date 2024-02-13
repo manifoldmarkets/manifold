@@ -5,16 +5,12 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/solid'
-
 import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
 import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
-import { User } from 'common/user'
-import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
@@ -37,8 +33,6 @@ export const CohortTable = (props: {
     promotionCount,
     doublePromotionCount,
   } = props
-  const users = useUsers(rows.map((row) => row.user_id))
-  if (!users || users.length !== rows.length) return <LoadingIndicator />
 
   const division = rows[0].division
   const nextDivision = division + 1
@@ -88,24 +82,19 @@ export const CohortTable = (props: {
         </thead>
         <tbody>
           {rows.map((row, i) => {
-            const user = users[i]
-            if (!user) return null
             return (
-              <Fragment key={user.id}>
-                {user &&
-                  (!shouldTruncateZeros ||
-                    !!row.mana_earned ||
-                    highlightedUserId === user.id) && (
-                    <UserRow
-                      {...row}
-                      user={user}
-                      isHighlighted={highlightedUserId === user.id}
-                      mana_earned_breakdown={row.mana_earned_breakdown as any}
-                      season={season}
-                    />
-                  )}
-                {user &&
-                  shouldTruncateZeros &&
+              <Fragment key={row.user_id}>
+                {(!shouldTruncateZeros ||
+                  !!row.mana_earned ||
+                  highlightedUserId === row.user_id) && (
+                  <UserRow
+                    {...row}
+                    isHighlighted={highlightedUserId === row.user_id}
+                    mana_earned_breakdown={row.mana_earned_breakdown as any}
+                    season={season}
+                  />
+                )}
+                {shouldTruncateZeros &&
                   row.mana_earned === 0 &&
                   (i === rows.length - 1 || rows[i + 1].mana_earned !== 0) && (
                     <tr>
@@ -169,7 +158,7 @@ export const CohortTable = (props: {
 }
 
 const UserRow = (props: {
-  user: User
+  user_id: string
   season: number
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
@@ -178,7 +167,7 @@ const UserRow = (props: {
   isHighlighted: boolean
 }) => {
   const {
-    user,
+    user_id,
     season,
     mana_earned,
     mana_earned_breakdown,
@@ -227,14 +216,14 @@ const UserRow = (props: {
               <div className="w-4 text-right font-semibold">{rank}</div>
             </Row>
           </Tooltip>
-          <UserAvatarAndBadge user={user} noLink />
+          <UserAvatarAndBadge userId={user_id} noLink />
         </Row>
       </td>
       <td className="pr-2 text-right sm:pr-10">{formatMoney(mana_earned)}</td>
 
       {showDialog && (
         <ManaEarnedBreakdown
-          user={user}
+          userId={user_id}
           season={season}
           showDialog={showDialog}
           setShowDialog={setShowDialog}

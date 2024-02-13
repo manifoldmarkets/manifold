@@ -14,7 +14,6 @@ import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { DpmAnswer, Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
@@ -342,7 +341,6 @@ export function ResolutionAnswerItem(props: {
     showAvatar,
   } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -364,7 +362,7 @@ export function ResolutionAnswerItem(props: {
         <CreatorAndAnswerLabel
           text={text}
           createdTime={answer.createdTime}
-          creator={showAvatar ? user ?? false : undefined}
+          creatorId={showAvatar ? answer.userId ?? false : undefined}
         />
       }
       end={
@@ -468,7 +466,6 @@ function IndependentResolutionAnswerItem(props: {
   isInModal?: boolean
 }) {
   const { contract, answer, color, isAdmin } = props
-  const answerCreator = useUserByIdOrAnswer(answer)
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
@@ -498,9 +495,9 @@ function IndependentResolutionAnswerItem(props: {
                 <CreatorAndAnswerLabel
                   text={answer.text}
                   createdTime={answer.createdTime}
-                  creator={
+                  creatorId={
                     addAnswersMode === 'ANYONE'
-                      ? answerCreator ?? false
+                      ? answer.userId ?? false
                       : undefined
                   }
                   className={clsx(

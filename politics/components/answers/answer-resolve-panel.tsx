@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
-
 import { Answer, DpmAnswer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
@@ -22,7 +21,6 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { APIError, api } from 'web/lib/firebase/api'
 import {
   AnswerBar,
@@ -345,7 +343,6 @@ export function ResolutionAnswerItem(props: {
     showAvatar,
   } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -367,7 +364,7 @@ export function ResolutionAnswerItem(props: {
         <CreatorAndAnswerLabel
           text={text}
           createdTime={answer.createdTime}
-          creator={showAvatar ? user ?? false : undefined}
+          creatorId={showAvatar ? answer.userId ?? false : undefined}
         />
       }
       end={
@@ -471,7 +468,6 @@ function IndependentResolutionAnswerItem(props: {
   isInModal?: boolean
 }) {
   const { contract, answer, color, isAdmin } = props
-  const answerCreator = useUserByIdOrAnswer(answer)
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
@@ -501,9 +497,9 @@ function IndependentResolutionAnswerItem(props: {
                 <CreatorAndAnswerLabel
                   text={answer.text}
                   createdTime={answer.createdTime}
-                  creator={
+                  creatorId={
                     addAnswersMode === 'ANYONE'
-                      ? answerCreator ?? false
+                      ? answer.userId ?? false
                       : undefined
                   }
                   className={clsx(

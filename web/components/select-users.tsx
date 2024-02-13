@@ -2,9 +2,9 @@ import { XIcon } from '@heroicons/react/outline'
 import { Fragment, useRef, useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Menu, Transition } from '@headlessui/react'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink } from 'web/components/widgets/user-link'
 import { Input } from './widgets/input'
 import { searchUsers, UserDisplay } from 'web/lib/supabase/users'
 import { Col } from 'web/components/layout/col'
@@ -113,7 +113,7 @@ export function SelectUsers(props: {
                                 setSelectedUsers([...selectedUsers, user])
                               }}
                             >
-                              <Avatar
+                              <RawAvatar
                                 username={user.username}
                                 avatarUrl={user.avatarUrl}
                                 size={'xs'}
@@ -145,12 +145,12 @@ export function SelectUsers(props: {
           <Row className={clsx('mt-2 flex-wrap gap-2', selectedUsersClassName)}>
             {selectedUsers.map((user) => (
               <Row key={user.id} className={'items-center gap-1'}>
-                <Avatar
+                <RawAvatar
                   username={user.username}
                   avatarUrl={user.avatarUrl}
                   size={'sm'}
                 />
-                <UserLink user={user} className="ml-1" />
+                <RawUserLink user={user} className="ml-1" />
                 <Button
                   onClick={() =>
                     setSelectedUsers([

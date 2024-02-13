@@ -56,7 +56,7 @@ import toast from 'react-hot-toast'
 import { TbPencilPlus } from 'react-icons/tb'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -409,7 +409,7 @@ const ChartAnnotation = (props: {
     >
       <div className={'relative w-[175px] p-1'}>
         <div className={'h-16 overflow-hidden p-1 text-sm'}>
-          <Avatar
+          <RawAvatar
             avatarUrl={user_avatar_url ?? creator_avatar_url}
             username={user_username ?? creator_username}
             noLink={true}

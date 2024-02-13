@@ -38,10 +38,7 @@ export function ContractLeaderboard(props: {
           ...topContractMetrics.slice(0, maxToShowMinusCurrentUser),
           {
             ...currentUserMetrics,
-            userName: currentUser.username,
             userId: currentUser.id,
-            userAvatarUrl: currentUser.avatarUrl,
-            userUsername: currentUser.username,
           } as ContractMetric,
         ]
       : topContractMetrics
@@ -53,9 +50,6 @@ export function ContractLeaderboard(props: {
       const { profit } = cm
       return removeUndefinedProps({
         id: cm.userId,
-        name: cm.userName,
-        username: cm.userUsername,
-        avatarUrl: cm.userAvatarUrl,
         total: profit,
         rank:
           cm.userId === currentUser?.id && !userIsAlreadyRanked
@@ -86,7 +80,7 @@ export function ContractLeaderboard(props: {
         },
       ]}
       className="mt-12"
-      highlightUsername={currentUser?.username}
+      highlightUserId={currentUser?.id}
     />
   ) : null
 }

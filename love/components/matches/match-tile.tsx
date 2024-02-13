@@ -10,10 +10,10 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink, UserLink } from 'web/components/widgets/user-link'
 import { ConfirmStageButton } from '../confirm-stage-button'
 import { RejectButton } from '../reject-button'
 import { MatchBetButton } from './match-bet'
@@ -71,7 +71,7 @@ export const MatchTile = (props: {
   return (
     <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded">
       <Col className="bg-canvas-0 w-full px-4 py-2">
-        <UserLink
+        <RawUserLink
           className={
             'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
           }
@@ -199,15 +199,14 @@ export const MatchTile = (props: {
 function MatchedBy(props: { contract: Contract }) {
   const { contract } = props
   const matchMakerId = contract.matchCreatorId
-  const matchMaker = useUserById(matchMakerId)
 
   return (
     <Row className="text-ink-500 items-center gap-[3px] text-xs">
       <span>Matched by </span>
-      {!matchMaker ? (
+      {!matchMakerId ? (
         <div className="dark:bg-ink-400 bg-ink-200 h-3 w-16 animate-pulse" />
       ) : (
-        <UserLink user={matchMaker} hideBadge />
+        <UserLink userId={matchMakerId} hideBadge />
       )}
     </Row>
   )

@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
 import { User } from 'common/user'
@@ -15,11 +15,12 @@ import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
 import { manifoldLoveUserId } from 'common/love/constants'
+import { useDisplayUser } from 'web/hooks/use-user'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
-  currentUser: User | undefined | null
-  otherUser?: User | null
+  currentUser: string | undefined | null
+  otherUser?: string | null
   onReplyClick?: (chat: ChatMessage) => void
   beforeSameUser: boolean
   firstOfUser: boolean
@@ -33,16 +34,18 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
     firstOfUser,
   } = props
   const chat = first(chats)
-  if (!chat) return null
-  if (otherUser?.isBannedFromPosting) return null
 
-  const isMe = currentUser?.id === chat.userId
-  const { username, avatarUrl, name } =
-    !isMe && otherUser
-      ? otherUser
-      : isMe && currentUser
-      ? currentUser
-      : { username: '', avatarUrl: undefined, name: '' }
+  const isMe = currentUser === chat?.userId
+
+  const userId =
+    !isMe && otherUser ? otherUser : isMe && currentUser ? currentUser : ''
+
+  const user = useDisplayUser(userId ?? '')
+
+  if (!chat) return null
+  if (!user || user == 'loading' || user == 'not-found') return null
+
+  const { avatarUrl, username, name } = user as User
 
   return (
     <Row
@@ -121,7 +124,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
 export const SystemChatMessageItem = memo(
   function SystemChatMessageItem(props: {
     chats: ChatMessage[]
-    otherUsers: User[] | undefined
+    otherUsers: string[] | undefined
   }) {
     const { chats, otherUsers } = props
     const chat = last(chats)
@@ -160,7 +163,7 @@ export const SystemChatMessageItem = memo(
             size={'xs'}
             spacing={0.3}
             startLeft={0.6}
-            avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
+            userIds={otherUsers ?? []}
             onClick={() => setShowUsers(true)}
           />
         )}
@@ -178,18 +181,15 @@ export const SystemChatMessageItem = memo(
 export const MultiUserModal = (props: {
   showUsers: boolean
   setShowUsers: (show: boolean) => void
-  otherUsers: User[]
+  otherUsers: string[]
 }) => {
   const { showUsers, setShowUsers, otherUsers } = props
   return (
     <Modal open={showUsers} setOpen={setShowUsers}>
       <Col className={clsx(MODAL_CLASS)}>
-        {otherUsers?.map((user) => (
-          <Row
-            key={user.id}
-            className={'w-full items-center justify-start gap-2'}
-          >
-            <UserAvatarAndBadge user={user} />
+        {otherUsers?.map((id) => (
+          <Row key={id} className={'w-full items-center justify-start gap-2'}>
+            <UserAvatarAndBadge userId={id} />
           </Row>
         ))}
       </Col>
@@ -210,7 +210,7 @@ function MessageAvatar(props: {
         'grow-y justify-end pb-2 pr-1'
       )}
     >
-      <Avatar avatarUrl={userAvatarUrl} username={username} size="xs" />
+      <RawAvatar avatarUrl={userAvatarUrl} username={username} size="xs" />
     </Col>
   )
 }

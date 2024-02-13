@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 
@@ -303,7 +303,7 @@ const TxnBalanceChangeRow = (props: {
     <Row className={'gap-2'}>
       <Col>
         {type === 'STARTING_BALANCE' ? (
-          <Avatar
+          <RawAvatar
             className={''}
             avatarUrl={avatarlUrl}
             noLink={true}

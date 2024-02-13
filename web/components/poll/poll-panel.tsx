@@ -174,15 +174,11 @@ export function SeeVotesModalContent(props: {
         ) : voters.length == 0 ? (
           'No votes yet...'
         ) : (
-          voters.map((voter) => {
+          voters.map((id) => {
             return (
-              <Row className="w-full items-center gap-2" key={voter.id}>
-                <Avatar
-                  username={voter.username}
-                  avatarUrl={voter.avatarUrl}
-                  size={'sm'}
-                />
-                <UserLink user={voter} />
+              <Row className="w-full items-center gap-2" key={id}>
+                <Avatar userId={id} size={'sm'} />
+                <UserLink userId={id} />
               </Row>
             )
           })

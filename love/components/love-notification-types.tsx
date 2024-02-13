@@ -2,10 +2,10 @@ import { getSourceUrl, Notification } from 'common/notification'
 import {
   AvatarNotificationIcon,
   NotificationFrame,
-  NotificationUserLink,
   PrimaryNotificationLink,
 } from 'web/components/notifications/notification-helpers'
 import { Linkify } from 'web/components/widgets/linkify'
+import { UserLink } from 'web/components/widgets/user-link'
 
 export function CommentOnLoverNotification(props: {
   notification: Notification
@@ -14,7 +14,7 @@ export function CommentOnLoverNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceUserName, sourceUserUsername, sourceText } = notification
+  const { sourceId, sourceText } = notification
   const reasonText = `commented `
   return (
     <NotificationFrame
@@ -33,11 +33,7 @@ export function CommentOnLoverNotification(props: {
       link={notification.sourceSlug}
     >
       <div className="line-clamp-3">
-        <NotificationUserLink
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        {reasonText}
+        <UserLink userId={sourceId} /> {reasonText}
         {!isChildOfGroup && <span>on your profile</span>}
       </div>
     </NotificationFrame>
@@ -52,12 +48,7 @@ export function NewMatchNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceContractTitle,
-    sourceText,
-    sourceUserName,
-    sourceUserUsername,
-  } = notification
+  const { sourceContractTitle, sourceText, sourceId } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -75,10 +66,7 @@ export function NewMatchNotification(props: {
       }
     >
       <div className="line-clamp-3">
-        <NotificationUserLink
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
+        <UserLink userId={sourceId} />{' '}
         <span>
           proposed a new match:{' '}
           <PrimaryNotificationLink text={sourceContractTitle} />

@@ -9,7 +9,7 @@ import { Col } from 'web/components/layout/col'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
-import { Avatar } from 'web/components/widgets/avatar'
+import { RawAvatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -185,12 +185,12 @@ const AddMatchDialog = (props: {
                 >
                   <Row className="gap-2">
                     {lover.pinned_url && (
-                      <Avatar
+                      <RawAvatar
                         avatarUrl={lover.pinned_url}
                         username={lover.user.username}
                       />
                     )}
-                    <UserLink user={lover.user} />
+                    <UserLink userId={lover.user.id} />
                   </Row>
                   <Button
                     size="xs"

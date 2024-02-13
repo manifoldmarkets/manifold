@@ -12,7 +12,7 @@ import { formatMoney, formatPercent } from 'common/util/format'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { Avatar } from '../widgets/avatar'
+import { RawAvatar } from '../widgets/avatar'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -164,7 +164,7 @@ function OrderRow(props: {
         <td>
           <a href={`/${bet.userUsername}`}>
             <Tooltip text={bet.userName}>
-              <Avatar
+              <RawAvatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}

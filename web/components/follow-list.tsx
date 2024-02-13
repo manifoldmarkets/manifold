@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Avatar } from './widgets/avatar'
 import { FollowButton } from './buttons/follow-button'
 import { Col } from './layout/col'
@@ -37,13 +37,12 @@ function UserFollowItem(props: {
   className?: string
 }) {
   const { userId, hideFollowButton, className } = props
-  const user = useUserById(userId)
 
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
       <Row className="items-center gap-2">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
-        {user && <UserLink user={user} />}
+        <Avatar userId={userId} />
+        <UserLink userId={userId} />
       </Row>
       {!hideFollowButton && <FollowButton userId={userId} />}
     </Row>

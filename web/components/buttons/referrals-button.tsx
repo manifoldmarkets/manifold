@@ -1,15 +1,15 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { memo, useEffect, useState } from 'react'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Tabs } from '../layout/tabs'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { Avatar, RawAvatar } from 'web/components/widgets/avatar'
 import { SelectUsers } from 'web/components/select-users'
 import { TextButton } from './text-button'
-import { UserLink } from 'web/components/widgets/user-link'
+import { RawUserLink, UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
 import { getReferrals } from 'web/lib/supabase/referrals'
 import { UserDisplay } from 'web/lib/supabase/users'
@@ -64,8 +64,9 @@ export function ReferralsDialog(props: {
     if (!isOpen || referredUsers !== undefined) return
     getReferrals(user.id).then(setReferredUsers)
   }, [referredUsers, isOpen, user.id])
+
   const currentUser = useUser()
-  const referredByUser = useUserById(user.referredByUserId)
+
   const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (
@@ -142,13 +143,10 @@ export function ReferralsDialog(props: {
                     </Col>
                   ) : (
                     <div className="text-ink-700 justify-center">
-                      {referredByUser ? (
+                      {user.referredByUserId ? (
                         <Row className={'items-center gap-2 p-2'}>
-                          <Avatar
-                            username={referredByUser.username}
-                            avatarUrl={referredByUser.avatarUrl}
-                          />
-                          <UserLink user={referredByUser} />
+                          <Avatar userId={user.referredByUserId} />
+                          <UserLink userId={user.referredByUserId} />
                         </Row>
                       ) : (
                         <span className={'text-ink-500'}>No one...</span>
@@ -179,11 +177,11 @@ export function ReferralsDialog(props: {
                         )}
                       >
                         <Row className="items-center gap-2">
-                          <Avatar
+                          <RawAvatar
                             username={refUser?.username}
                             avatarUrl={refUser?.avatarUrl}
                           />
-                          {refUser && <UserLink user={refUser} />}
+                          {refUser && <RawUserLink user={refUser} />}
                         </Row>
                       </Row>
                     ))

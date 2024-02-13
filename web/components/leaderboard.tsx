@@ -7,9 +7,6 @@ import { ReactNode } from 'react'
 
 interface LeaderboardEntry {
   id: string
-  username: string
-  name: string
-  avatarUrl?: string
   rank?: number | null
 }
 
@@ -22,9 +19,9 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
   }[]
   className?: string
   maxToShow?: number
-  highlightUsername?: string
+  highlightUserId?: string
 }) {
-  const { title, columns, className, highlightUsername } = props
+  const { title, columns, className, highlightUserId } = props
   const maxToShow = props.maxToShow ?? props.entries.length
   const entries = sortBy(
     props.entries.slice(0, maxToShow),
@@ -53,9 +50,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                 <tr
                   key={index}
                   className={
-                    entry.username === highlightUsername
-                      ? '!bg-indigo-400/20'
-                      : ''
+                    entry.id === highlightUserId ? '!bg-indigo-400/20' : ''
                   }
                 >
                   <td className={'w-[4.5rem] min-w-[4.5rem] '}>
@@ -64,7 +59,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   <td>
                     <UserAvatarAndBadge
                       className="overflow-hidden max-[600px]:max-w-[200px] max-[400px]:max-w-[160px]"
-                      user={entry}
+                      userId={entry.id}
                     />
                   </td>
                   {columns.map((column, index) => (

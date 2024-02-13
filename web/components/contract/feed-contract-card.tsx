@@ -81,15 +81,7 @@ export function FeedContractCard(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
+  const { closeTime, creatorId, outcomeType, mechanism } = contract
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
@@ -180,15 +172,10 @@ export function FeedContractCard(props: {
               <Avatar
                 size={size === 'xs' ? '2xs' : 'xs'}
                 className={'mr-0.5'}
-                avatarUrl={creatorAvatarUrl}
-                username={creatorUsername}
+                userId={creatorId}
               />
               <UserLink
-                user={{
-                  id: creatorId,
-                  name: creatorName,
-                  username: creatorUsername,
-                }}
+                userId={creatorId}
                 className={
                   'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
                 }

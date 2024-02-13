@@ -9,7 +9,7 @@ import { ReportModal } from 'web/components/buttons/report-button'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
+import { Avatar, RawAvatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useEvent } from 'web/hooks/use-event'
 import { useUser } from 'web/hooks/use-user'
@@ -177,7 +177,7 @@ const ProfileComment = memo(function FeedComment(props: {
           {!isParent && (
             <div className="border-ink-100 dark:border-ink-300 -mt-4 ml-4 h-6 w-4 rounded-bl-xl border-b-2 border-l-2" />
           )}
-          <Avatar
+          <RawAvatar
             username={userUsername}
             size={isParent ? 'sm' : '2xs'}
             avatarUrl={lover?.pinned_url ?? userAvatarUrl}
@@ -492,7 +492,11 @@ function CommentInput(props: {
     </div>
   ) : (
     <Row className={clsx(className, 'mb-2 w-full gap-1 sm:gap-2')}>
-      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
+      <RawAvatar
+        avatarUrl={user?.avatarUrl}
+        username={user?.username}
+        size="sm"
+      />
       <CommentInputTextArea
         editor={editor}
         replyTo={replyToUserInfo}
