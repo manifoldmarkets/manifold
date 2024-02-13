@@ -44,6 +44,8 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   }
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
+  if (caller.isBannedFromPosting || caller.userDeleted)
+    throw new APIError(403, 'Deleted or banned user cannot resolve markets')
   if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
