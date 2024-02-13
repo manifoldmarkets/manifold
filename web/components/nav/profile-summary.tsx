@@ -11,7 +11,6 @@ import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import clsx from 'clsx'
 import { usePathname } from 'next/navigation'
-import { TiChartLine } from 'react-icons/ti'
 
 export function ProfileSummary(props: {
   user: User
@@ -35,21 +34,12 @@ export function ProfileSummary(props: {
       )}
     >
       <div className="w-2 shrink" />
-      {showProfile ? (
-        <Avatar
-          avatarUrl={user.avatarUrl}
-          username={user.username}
-          noLink
-          size={'sm'}
-        />
-      ) : (
-        <TiChartLine
-          className={clsx(
-            'h-8 w-10 shrink-0 border-0 ring-0',
-            currentPage === url ? '' : 'text-ink-600'
-          )}
-        />
-      )}
+      <Avatar
+        avatarUrl={user.avatarUrl}
+        username={user.username}
+        noLink
+        size={showProfile ? 'sm' : 'md'}
+      />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         <div>{user.name}</div>

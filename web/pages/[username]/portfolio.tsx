@@ -156,17 +156,17 @@ function UserPortfolioInternal(props: {
         >
           <span className={'text-primary-700   text-2xl'}>Your portfolio</span>
           <Link
-            className={clsx('text-ink-500 hover:text-primary-500')}
             href={'/' + user.username}
+            className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
           >
-            <Col className={'items-center px-3 text-sm'}>
-              <Avatar
-                size={'md'}
-                noLink={true}
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-              />{' '}
-            </Col>
+            <Avatar
+              avatarUrl={user.avatarUrl}
+              username={user.username}
+              noLink
+              size="xs"
+              className={'mx-auto'}
+            />
+            Profile
           </Link>
         </Row>
         <Row className={'flex-wrap gap-4 px-3 sm:px-0 '}>
