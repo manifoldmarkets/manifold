@@ -14,7 +14,7 @@ export function Banner(props: {
     <Row
       className={clsx(
         className,
-        'text-ink-900 group items-center justify-between gap-4 bg-pink-100'
+        'text-ink-900 group items-center justify-between gap-4 bg-pink-100 dark:bg-pink-800'
       )}
     >
       <a href={link} className="w-full py-3 pl-4">
