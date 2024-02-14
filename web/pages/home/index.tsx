@@ -53,7 +53,7 @@ export default function Home(props: { headlines: Headline[] }) {
     <>
       <Welcome />
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
-        {isClient && (
+        {isClient && showBanner && (
           <Banner setShowBanner={setShowBanner} link="https://manifold.love">
             Happy Valentine's Day! Find your love at{' '}
             <span className="text-ink-700 font-semibold underline hover:text-pink-800 dark:hover:text-pink-100">
