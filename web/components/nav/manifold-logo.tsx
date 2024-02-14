@@ -30,7 +30,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         <div
           className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
         >
-          {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIFOLD'}
+          {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIF❤️LD'}
         </div>
       </Link>
     </>
