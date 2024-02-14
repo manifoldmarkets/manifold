@@ -19,7 +19,6 @@ import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-import { uniq } from 'lodash'
 import {
   createContext,
   ReactNode,
@@ -287,8 +286,6 @@ function NotificationSettingLine(props: {
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
 
-  const privateUser = usePrivateUser()!
-
   return (
     <Row
       className={clsx(
@@ -309,7 +306,6 @@ function NotificationSettingLine(props: {
                   setting: 'browser',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -329,7 +325,6 @@ function NotificationSettingLine(props: {
                   setting: 'email',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -349,7 +344,6 @@ function NotificationSettingLine(props: {
                   setting: 'mobile',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -531,7 +525,6 @@ const attemptToChangeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
   subscriptionTypeKey: notification_preference
-  privateUser: PrivateUser
   emailEnabled: boolean
   inAppEnabled: boolean
   setError: (error: string) => void
@@ -541,7 +534,6 @@ const attemptToChangeSetting = (props: {
     setting,
     newValue,
     subscriptionTypeKey,
-    privateUser,
     emailEnabled,
     inAppEnabled,
     setError,
@@ -564,7 +556,6 @@ const attemptToChangeSetting = (props: {
   changeSetting({
     setting: setting,
     newValue: newValue,
-    privateUser: privateUser,
     subscriptionTypeKey: subscriptionTypeKey,
     setEnabled: setEnabled,
   })
@@ -573,21 +564,18 @@ const attemptToChangeSetting = (props: {
 export const changeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
-  privateUser: PrivateUser
   subscriptionTypeKey: notification_preference
   setEnabled?: (setting: boolean) => void
 }) => {
-  const { setting, newValue, privateUser, subscriptionTypeKey, setEnabled } =
-    props
-  const destinations = getUsersSavedPreference(subscriptionTypeKey, privateUser)
+  const { setting, newValue, subscriptionTypeKey, setEnabled } = props
   const loading = 'Changing Notifications Settings'
   const success = 'Changed Notification Settings!'
   toast
     .promise(
       api('update-notif-settings', {
-        [subscriptionTypeKey]: destinations.includes(setting)
-          ? destinations.filter((d) => d !== setting)
-          : uniq([...destinations, setting]),
+        type: subscriptionTypeKey,
+        medium: setting,
+        enabled: newValue,
       }),
       {
         success,

@@ -1,14 +1,16 @@
 import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { type APIHandler } from './helpers/endpoint'
-import { removeUndefinedProps } from 'common/util/object'
 
 export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
-  props,
+  { type, medium, enabled },
   auth
 ) => {
-  await firestore
-    .doc(`private-users/${auth.uid}/notificationPreferences`)
-    .update(removeUndefinedProps(props))
+  await firestore.doc(`private-users/${auth.uid}`).update({
+    [`notificationPreferences.${type}`]: enabled
+      ? FieldValue.arrayUnion(medium)
+      : FieldValue.arrayRemove(medium),
+  })
 }
 
 const firestore = admin.firestore()

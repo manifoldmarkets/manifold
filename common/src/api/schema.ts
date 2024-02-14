@@ -34,7 +34,7 @@ import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { PrivateUser } from 'common/user'
-import { notification_preferences } from 'common/user-notification-preferences'
+import { notification_preference } from 'common/user-notification-preferences'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -610,7 +610,11 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.any() as z.ZodType<Partial<notification_preferences>>,
+    props: z.object({
+      type: z.string() as z.ZodType<notification_preference>,
+      medium: z.enum(['email', 'browser', 'mobile']),
+      enabled: z.boolean(),
+    }),
   },
   headlines: {
     method: 'GET',
