@@ -1,4 +1,4 @@
-import { UserIcon, ExternalLinkIcon } from '@heroicons/react/solid'
+import { UserIcon } from '@heroicons/react/solid'
 import { capitalize } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -40,11 +40,6 @@ export default function ProfilesPage() {
     undefined,
     'profile-lovers'
   )
-  const [isSearching, setIsSearching] = usePersistentInMemoryState<boolean>(
-    false,
-    'profile-is-searching'
-  )
-
   const user = useUser()
   useTracking('view love profiles')
   useSaveReferral(user)
@@ -99,7 +94,6 @@ export default function ProfilesPage() {
           <Search
             allLovers={allLovers}
             setLovers={setLovers}
-            setIsSearching={setIsSearching}
             youLover={lover}
             loverCompatibilityScores={
               compatibleLovers?.loverCompatibilityScores
@@ -111,10 +105,6 @@ export default function ProfilesPage() {
             <LoadingIndicator />
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-              {!isSearching && lovers.length > 1400 && (
-                <BetOnLovePromo key="betonlove" />
-              )}
-
               {lovers.map((lover) => (
                 <ProfilePreview
                   key={lover.id}
@@ -201,41 +191,6 @@ function ProfilePreview(props: {
           <Row className="gap-1 text-xs">
             {city} • {capitalize(convertGender(gender as Gender))}
           </Row>
-        </Col>
-      </Col>
-    </Link>
-  )
-}
-
-function BetOnLovePromo() {
-  return (
-    <Link
-      href={
-        'https://lu.ma/betonlove?utm_source=love&utm_medium=web&utm_campaign=betonlove'
-      }
-    >
-      <Col className="relative h-60 w-full overflow-hidden rounded text-white transition-all hover:z-20 hover:scale-110 hover:drop-shadow">
-        <Image
-          src="/betonlove-big.webp"
-          width={180}
-          height={240}
-          alt={`Bet on Love`}
-          className="h-full w-full object-cover"
-        />
-
-        <Col className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/70 to-transparent px-4 pb-2 pt-6">
-          <div>
-            <div className="flex flex-wrap items-center gap-x-1">
-              <OnlineIcon last_online_time={'now'} />
-              <span>
-                <span className="break-words font-semibold">
-                  Bet on Love{' '}
-                  <ExternalLinkIcon className="inline-block h-4 w-4" />
-                </span>
-              </span>
-            </div>
-          </div>
-          <Row className="gap-1 text-xs">San Francisco • Dating show</Row>
         </Col>
       </Col>
     </Link>
