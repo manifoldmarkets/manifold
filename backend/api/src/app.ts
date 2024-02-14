@@ -94,7 +94,6 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
-import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
@@ -138,8 +137,12 @@ import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getBalanceChanges } from 'api/get-balance-changes'
+import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
+import { getLoveMarket } from './love/get-love-market'
+import { getLoveMarkets } from './love/get-love-markets'
 import { getCurrentPrivateUser } from './get-current-private-user'
 import { blockUser, unblockUser } from './block-user'
 import { blockGroup, unblockGroup } from './block-group'
@@ -273,6 +276,10 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
+  'get-balance-changes': getBalanceChanges,
+  'create-your-love-market': createYourLoveMarket,
+  'get-love-market': getLoveMarket,
+  'get-love-markets': getLoveMarkets,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -400,19 +407,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-const publicApiRoute = (endpoint: RequestHandler) => {
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// Ian: not sure how to restrict triggers to supabase origin, yet
-app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

@@ -13,10 +13,9 @@ import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
 
 import Sidebar from './sidebar'
-import { Item } from './sidebar-item'
+import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { Avatar } from '../widgets/avatar'
 import { SolidNotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -26,6 +25,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
+import { TiChartLine } from 'react-icons/ti'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -39,8 +39,8 @@ function getNavigation(user: User) {
     { name: 'Home', href: '/home', icon: HomeIcon },
     { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
-      name: 'Profile',
-      href: `/${user.username}`,
+      name: 'Portfolio',
+      href: `/${user.username}/portfolio`,
     },
     {
       name: 'Notifs',
@@ -64,8 +64,8 @@ const signedOutNavigation = () => [
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
 export function BottomNavBar(props: {
-  navigationOptions?: Item[]
-  sidebarNavigationOptions?: Item[]
+  navigationOptions?: NavItem[]
+  sidebarNavigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { hideCreateQuestionButton } = props
@@ -121,7 +121,7 @@ export function BottomNavBar(props: {
 }
 
 function NavBarItem(props: {
-  item: Item
+  item: NavItem
   currentPage: string
   children?: any
   user?: User | null
@@ -131,14 +131,14 @@ function NavBarItem(props: {
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
   const balance = useAnimatedNumber(user?.balance ?? 0)
-  if (item.name === 'Profile' && user) {
+  if (item.name === 'Portfolio' && user) {
     return (
       <Link
         href={item.href ?? '#'}
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === '/[username]' && selectedItemClass
+          currentPage === `/${user.username}/portfolio` && selectedItemClass
         )}
         onClick={track}
         onTouchStart={() => setTouched(true)}
@@ -146,12 +146,7 @@ function NavBarItem(props: {
       >
         <Col>
           <div className="mx-auto my-1">
-            <Avatar
-              size="xs"
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              noLink
-            />
+            <TiChartLine className="h-6 w-6" />
           </div>
           <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
         </Col>
@@ -203,7 +198,7 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
-  sidebarNavigationOptions?: Item[]
+  sidebarNavigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { sidebarOpen, setSidebarOpen, hideCreateQuestionButton } = props

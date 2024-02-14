@@ -69,6 +69,9 @@ export const boostmarket = authEndpoint(async (req, auth, log) => {
         amount: totalCost,
         token: 'M$',
         description: 'Creating market ad',
+        data: {
+          contractId: marketId,
+        },
       } as MarketAdCreateTxn)
 
       if (result.status == 'error') {

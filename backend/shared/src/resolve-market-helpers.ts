@@ -72,32 +72,40 @@ export const resolveMarketHelper = async (
     answerId
   )
 
-  let updatedAttrs: Partial<Contract> | undefined = removeUndefinedProps({
-    isResolved: true,
-    resolution: outcome,
-    resolutionValue: value,
-    resolutionTime,
-    closeTime: newCloseTime,
-    resolutionProbability,
-    resolutions,
-    collectedFees,
-    resolverId: resolver.id,
-    subsidyPool: 0,
-  })
+  let updatedContractAttrs: Partial<Contract> | undefined =
+    removeUndefinedProps({
+      isResolved: true,
+      resolution: outcome,
+      resolutionValue: value,
+      resolutionTime,
+      closeTime: newCloseTime,
+      resolutionProbability,
+      resolutions,
+      collectedFees,
+      resolverId: resolver.id,
+      subsidyPool: 0,
+    })
   let updateAnswerAttrs: Partial<Answer> | undefined
 
   if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
     // Only resolve the contract if all other answers are resolved.
+    const allAnswersResolved = unresolvedContract.answers
+      .filter((a) => a.id !== answerId)
+      .every((a) => a.resolution)
+
+    const hasAnswerResolvedYes =
+      unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
+      outcome === 'YES'
     if (
-      unresolvedContract.answers
-        .filter((a) => a.id !== answerId)
-        .every((a) => a.resolution)
+      allAnswersResolved &&
+      // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
+      (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
     )
-      updatedAttrs = {
-        ...updatedAttrs,
+      updatedContractAttrs = {
+        ...updatedContractAttrs,
         resolution: 'MKT',
       }
-    else updatedAttrs = undefined
+    else updatedContractAttrs = undefined
 
     const finalProb =
       resolutionProbability ??
@@ -110,8 +118,8 @@ export const resolveMarketHelper = async (
       resolverId: resolver.id,
     }) as Partial<Answer>
     // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-    updatedAttrs = {
-      ...(updatedAttrs ?? {}),
+    updatedContractAttrs = {
+      ...(updatedContractAttrs ?? {}),
       answers: unresolvedContract.answers.map((a) =>
         a.id === answerId
           ? {
@@ -125,7 +133,7 @@ export const resolveMarketHelper = async (
 
   const contract = {
     ...unresolvedContract,
-    ...updatedAttrs,
+    ...updatedContractAttrs,
   } as Contract
 
   // handle exploit where users can get negative payouts
@@ -154,9 +162,9 @@ export const resolveMarketHelper = async (
   // Should we combine all the payouts into one txn?
   const contractDoc = firestore.doc(`contracts/${contractId}`)
 
-  if (updatedAttrs) {
-    log('updating contract', { updatedAttrs })
-    await contractDoc.update(updatedAttrs)
+  if (updatedContractAttrs) {
+    log('updating contract', { updatedContractAttrs })
+    await contractDoc.update(updatedContractAttrs)
     log('contract resolved')
   }
   if (updateAnswerAttrs) {
@@ -189,7 +197,7 @@ export const resolveMarketHelper = async (
   await recordContractEdit(
     unresolvedContract,
     resolver.id,
-    Object.keys(updatedAttrs ?? {})
+    Object.keys(updatedContractAttrs ?? {})
   )
 
   await createContractResolvedNotifications(
@@ -224,9 +232,16 @@ export const getDataAndPayoutInfo = async (
     .collection(`contracts/${contractId}/liquidity`)
     .get()
 
-  const liquidities = liquiditiesSnap.docs.map(
+  const liquidityDocs = liquiditiesSnap.docs.map(
     (doc) => doc.data() as LiquidityProvision
   )
+
+  const liquidities =
+    unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    unresolvedContract.specialLiquidityPerAnswer
+      ? // Filter out initial liquidity if set up with special liquidity per answer.
+        liquidityDocs.filter((l) => !l.isAnte)
+      : liquidityDocs
 
   let bets: Bet[]
   if (
@@ -303,6 +318,7 @@ export const getDataAndPayoutInfo = async (
     creatorPayout,
     collectedFees,
     bets,
+    resolutionProbs,
     resolutionProbability,
     payouts,
   }

@@ -32,6 +32,7 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
 import { PrivateUser } from 'common/user'
 import { notification_preferences } from 'common/user-notification-preferences'
 
@@ -871,6 +872,57 @@ export const API = (_apiTypeCheck = {
     returns: [] as { topic: Topic; contracts: Contract[] }[],
     props: z.object({}),
   },
+  'get-balance-changes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as AnyBalanceChangeType[],
+    props: z
+      .object({
+        after: z.coerce.number(),
+        userId: z.string(),
+      })
+      .strict(),
+  },
+  'create-your-love-market': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract
+    },
+  },
+  'get-love-market': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract | null
+      lovers: Lover[]
+      mutuallyMessagedUserIds: string[]
+    },
+  },
+  'get-love-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      contracts: CPMMMultiContract[]
+      creatorLovers: Lover[]
+      lovers: Lover[]
+      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
@@ -886,3 +938,7 @@ export type APIResponse<N extends APIPath> = APISchema<N> extends {
 }
   ? APISchema<N>['returns']
   : void
+
+export type APIResponseOptionalContinue<N extends APIPath> =
+  | { continue: () => Promise<void>; result: APIResponse<N> }
+  | APIResponse<N>

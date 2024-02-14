@@ -25,13 +25,13 @@ const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
   '#FFDD99', // sand
   '#FFAABB', // pink
-  '#77AADD', // navy
+  '#77F299', // light green
   '#CD46EA', // 🍆
   '#F23542', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
   '#FFD700', // gold
-  '#7EEE03', // chartreuse
+  '#77AADD', // navy
   '#F76B40', // orange-red
   '#C195F0', // Grimace shake purple
   '#0C7AE1', // octarine??

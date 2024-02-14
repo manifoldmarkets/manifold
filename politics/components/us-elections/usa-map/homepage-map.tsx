@@ -12,6 +12,9 @@ import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
 import { EmptyStateContract, StateContract } from './state-contract'
 import { USAMap } from './usa-map'
+import { PresidentialState } from './presidential-state'
+import { SenateCurrentOrContract, SenateState } from './senate-state'
+import { SenateBar } from './senate-bar'
 
 type MapMode = 'presidency' | 'senate'
 
@@ -32,7 +35,7 @@ export function HomepageMap(props: {
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
-      acc[key] = useLiveContract(rawPresidencyStateContracts[key]!)
+      acc[key] = useLiveContract(rawSenateStateContracts[key]!)
       return acc
     },
     {} as MapContractsDictionary
@@ -87,6 +90,7 @@ export function HomepageMap(props: {
             onMouseLeave={onMouseLeave}
             targetState={targetState}
             hoveredState={hoveredState}
+            CustomStateComponent={PresidentialState}
           />
           {!!hoveredState || !!targetState ? (
             <StateContract
@@ -99,7 +103,7 @@ export function HomepageMap(props: {
               setTargetState={setTargetState}
             />
           ) : (
-            <div className=" h-[183px] w-full" />
+            <EmptyStateContract />
           )}
         </>
       ) : (
@@ -107,7 +111,7 @@ export function HomepageMap(props: {
           <div className="mx-auto font-serif font-semibold sm:text-xl">
             Which party will win Senate?
           </div>
-          <USAMap
+          <SenateBar
             mapContractsDictionary={senateContractsDictionary}
             handleClick={handleClick}
             onMouseEnter={onMouseEnter}
@@ -115,14 +119,25 @@ export function HomepageMap(props: {
             targetState={targetState}
             hoveredState={hoveredState}
           />
+          <Spacer h={4} />
+          <USAMap
+            mapContractsDictionary={senateContractsDictionary}
+            handleClick={handleClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            targetState={targetState}
+            hoveredState={hoveredState}
+            CustomStateComponent={SenateState}
+          />
           {!!hoveredState || !!targetState ? (
-            <StateContract
+            <SenateCurrentOrContract
               targetContract={
                 senateContractsDictionary[
                   hoveredState! ?? targetState
                 ] as Contract
               }
               targetState={targetState}
+              hoveredState={hoveredState}
               setTargetState={setTargetState}
             />
           ) : (

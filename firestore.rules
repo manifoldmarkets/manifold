@@ -48,24 +48,10 @@ service cloud.firestore {
         allow read: if userId == request.auth.uid || userId == '_';
       }
 
-      match /weekly-update/{rangeSlug} {
-        allow read;
-      }
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
       allow read;
-    }
-    
-    match /{somePath=**}/challenges/{challengeId}{
-      allow read;
-    }
-
-    match /contracts/{contractId}/challenges/{challengeId}{
-      allow read;
-      allow create: if request.auth.uid == request.resource.data.creatorId;
-      // allow update if there have been no claims yet and if the challenge is still open
-      allow update: if request.auth.uid == resource.data.creatorId;
     }
 
     match /private-users/{userId} {

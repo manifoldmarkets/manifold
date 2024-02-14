@@ -173,6 +173,7 @@ export const validateComment = async (
 
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
 

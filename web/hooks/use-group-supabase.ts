@@ -147,7 +147,7 @@ export function useNewUserMemberTopicsAndContracts(
   const { data, refresh } = useAPIGetter('get-groups-with-top-contracts', {})
 
   useEffect(() => {
-    setGroups(undefined) // Show loading indicator right after selecting topics
+    if (!data?.length) setGroups(undefined) // Show loading indicator right after selecting topics
     refresh()
   }, [user?.shouldShowWelcome])
 

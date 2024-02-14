@@ -51,7 +51,7 @@ export default function Home(props: { headlines: Headline[] }) {
             {user ? (
               <ProfileSummary
                 user={user}
-                avatarSize={isMobile ? 'sm' : undefined}
+                showProfile={isMobile ? true : undefined}
               />
             ) : (
               <Spacer w={4} />

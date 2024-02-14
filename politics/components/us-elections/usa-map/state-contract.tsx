@@ -14,7 +14,7 @@ export function StateContract(props: {
   return (
     <StateContractCard
       contract={targetContract}
-      customTitle={extractStateFromSentence(targetContract.question)}
+      customTitle={extractStateFromPresidentContract(targetContract.question)}
       titleSize="lg"
       targetState={targetState}
       setTargetState={setTargetState}
@@ -26,7 +26,9 @@ export function EmptyStateContract() {
   return <div className=" h-[183px] w-full" />
 }
 
-function extractStateFromSentence(sentence: string): string | undefined {
+export function extractStateFromPresidentContract(
+  sentence: string
+): string | undefined {
   const regex = /US Presidency in ([\w\s,.()]+)\?/
   const match = sentence.match(regex)
 

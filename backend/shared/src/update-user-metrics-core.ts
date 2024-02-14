@@ -163,6 +163,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       allTime: allTimeTraders[user.id] ?? 0,
     }
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
+      if (contractsById[b.contractId].isResolved) return false
       const answers = answersByContractId[b.contractId]
       if (b.answerId === 'undefined' || !b.answerId) {
         return !contractsById[b.contractId].resolution

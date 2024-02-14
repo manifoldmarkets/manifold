@@ -20,7 +20,6 @@ import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
-import { Select } from 'web/components/widgets/select'
 import { Pagination } from 'web/components/widgets/pagination'
 import { getBets } from 'common/supabase/bets'
 import clsx from 'clsx'
@@ -40,6 +39,8 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { Carousel } from 'web/components/widgets/carousel'
 
 type BetSort =
   | 'newest'
@@ -178,29 +179,47 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
-        <Row className="grow gap-2 ">
+        <Col className="w-full gap-2">
           <Input
-            placeholder="Search"
+            placeholder="Search your trades"
             className={'w-full min-w-[30px]'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <Select
-            value={filter}
-            onChange={(e) => onSetFilter(e.target.value as BetFilter)}
-            className="py-1"
-          >
-            <option value="all">All</option>
-            <option value="open">Active</option>
-            <option value="limit_bet">Limit orders</option>
-            <option value="sold">Sold</option>
-            <option value="closed">Closed</option>
-            <option value="resolved">Resolved</option>
-          </Select>
-        </Row>
+          <Carousel labelsParentClassName={'gap-1'}>
+            {(
+              [
+                'all',
+                'open',
+                'limit_bet',
+                'sold',
+                'closed',
+                'resolved',
+              ] as BetFilter[]
+            ).map((f) => (
+              <PillButton
+                key={f}
+                selected={filter === f}
+                onSelect={() => onSetFilter(f)}
+              >
+                {f === 'limit_bet'
+                  ? 'Limit orders'
+                  : f === 'all'
+                  ? 'All'
+                  : f === 'sold'
+                  ? 'Sold'
+                  : f === 'closed'
+                  ? 'Closed'
+                  : f === 'resolved'
+                  ? 'Resolved'
+                  : 'Open'}
+              </PillButton>
+            ))}
+          </Carousel>
+        </Col>
       </div>
 
-      <Col className="divide-ink-300 mt-6 divide-y">
+      <Col className="divide-ink-300 mt-2 divide-y">
         {filteredContracts.length === 0 ? (
           <NoMatchingBets />
         ) : (
@@ -482,7 +501,7 @@ function BetsTable(props: {
         <Row
           className={clsx(
             'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
-            isMobile ? 'top-16' : 'top-0' // Sets it below sticky user profile header on mobile
+            isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >
           {dataColumns.map((c) => (

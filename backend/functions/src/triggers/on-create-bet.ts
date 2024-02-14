@@ -220,6 +220,7 @@ const updateBettingStreak = async (
 
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
+      contractId: contract.id,
     }
 
     const bonusTxn: Omit<

@@ -381,7 +381,7 @@ module.exports = {
         'fade-in': 'fade-in 1s',
         'fade-out': 'fade-out 1s',
         'grow-up': 'grow-up 1s',
-        'slide-up-and-fade': 'slide-up-and-fade 400ms',
+        'slide-up-and-fade': 'slide-up-and-fade 150ms',
       },
       colors: {
         ink: {
