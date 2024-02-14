@@ -210,7 +210,7 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     // bets is reversed in place to track user current position
     for (const bet of bets.reverse() as Bet[]) {
       const betSign = bet.outcome === 'YES' ? 1 : -1
-      let nextPosition = currentPosition + bet.amount * betSign
+      const nextPosition = currentPosition + bet.amount * betSign
 
       // skip explicit and exclusive implicit sales
       if (bet.amount < 0 || ((Math.sign(currentPosition) !== betSign) && (Math.abs(currentPosition) >= Math.abs(bet.amount)))) {
