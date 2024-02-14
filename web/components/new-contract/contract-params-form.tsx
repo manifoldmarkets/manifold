@@ -1,7 +1,6 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { XIcon } from '@heroicons/react/outline'
 import { generateJSON } from '@tiptap/core'
 
 import {
@@ -18,7 +17,7 @@ import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
 import { BTE_USER_ID } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import {
   getEditorLocalStorageKey,
@@ -55,14 +54,12 @@ import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { LiteMarket } from 'common/api/market-types'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { ContractMention } from 'web/components/contract/contract-mention'
 import { compareTwoStrings } from 'string-similarity'
 import { CostSection } from 'web/components/new-contract/cost-section'
 import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
 import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
-
-const DUPES_TO_SHOW = 3
+import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -448,32 +445,13 @@ export function ContractParamsForm(props: {
         />
       </Col>
       {similarContracts.length ? (
-        <Col className={'space-y-1 '}>
-          <Row className={'justify-between px-1'}>
-            <span>
-              {similarContracts.length > DUPES_TO_SHOW
-                ? `${DUPES_TO_SHOW}+`
-                : similarContracts.length}{' '}
-              Existing {outcomeType == 'POLL' ? 'poll(s)' : 'question(s)'}
-            </span>
-            <IconButton
-              size={'2xs'}
-              onClick={() => {
-                setSimilarContracts([])
-                setDismissedSimilarContractTitles((titles) =>
-                  titles.concat(question.toLowerCase().trim())
-                )
-              }}
-            >
-              <XIcon className="text-ink-500 h-4 w-4" />
-            </IconButton>
-          </Row>
-          {similarContracts.slice(0, DUPES_TO_SHOW).map((contract) => (
-            <Row key={contract.id} className="text-ink-700 pl-1 text-sm">
-              <ContractMention contract={contract} />
-            </Row>
-          ))}
-        </Col>
+        <SimilarContractsSection
+          similarContracts={similarContracts}
+          setSimilarContracts={setSimilarContracts}
+          setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
+          outcomeType={outcomeType}
+          question={question}
+        />
       ) : null}
       {(isMulti || outcomeType == 'POLL') && (
         <MultipleChoiceAnswers
