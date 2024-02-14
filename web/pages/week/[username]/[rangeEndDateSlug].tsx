@@ -1,18 +1,19 @@
 import clsx from 'clsx'
 import { HistoryPoint } from 'common/chart'
 import { CPMMBinaryContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { getContracts } from 'common/supabase/contracts'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { tsToMillis } from 'common/supabase/utils'
 import { formatMoney, formatMoneyNumber } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
 import {
   WeeklyPortfolioUpdate,
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
-import { query, where } from 'firebase/firestore'
-import { chunk, orderBy, sortBy, sum } from 'lodash'
+import { chunk, sortBy, sum } from 'lodash'
 import { useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
@@ -28,7 +29,6 @@ import { Title } from 'web/components/widgets/title'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { coll, getValues } from 'web/lib/firebase/utils'
 import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
@@ -40,19 +40,23 @@ export async function getStaticProps(props: {
   const { username, rangeEndDateSlug } = props.params
 
   const user = (await getUserByUsername(username)) ?? null
+
   const weeklyPortfolioUpdates = user
-    ? await getValues<WeeklyPortfolioUpdate>(
-        query(
-          coll<WeeklyPortfolioUpdate>(`users/${user.id}/weekly-update`),
-          where('rangeEndDateSlug', '==', rangeEndDateSlug)
-        )
-      )
+    ? (
+        await db
+          .from('weekly_update')
+          .select()
+          .eq('user_id', user?.id)
+          .eq('range_end', rangeEndDateSlug)
+          .order('created_time', { ascending: false })
+          .limit(1)
+      ).data
     : null
-  const weeklyPortfolioUpdate = weeklyPortfolioUpdates
-    ? orderBy(weeklyPortfolioUpdates, (u) => -(u.createdTime ?? 0))[0]
-    : null
-  const end = weeklyPortfolioUpdate?.createdTime
-    ? weeklyPortfolioUpdate?.createdTime
+
+  const weeklyPortfolioUpdate = weeklyPortfolioUpdates?.[0]
+  const { created_time, contract_metrics } = weeklyPortfolioUpdate ?? {}
+  const end = created_time
+    ? tsToMillis(created_time)
     : new Date(rangeEndDateSlug).valueOf()
   const start = end - 7 * DAY_MS
   const profitPoints =
@@ -69,7 +73,7 @@ export async function getStaticProps(props: {
       : []
   const contracts = weeklyPortfolioUpdate
     ? await getContracts(
-        weeklyPortfolioUpdate.contractMetrics.map((c) => c.contractId),
+        (contract_metrics as ContractMetric[]).map((c) => c.contractId),
         db
       )
     : null

@@ -48,9 +48,6 @@ service cloud.firestore {
         allow read: if userId == request.auth.uid || userId == '_';
       }
 
-      match /weekly-update/{rangeSlug} {
-        allow read;
-      }
     }
 
   	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
