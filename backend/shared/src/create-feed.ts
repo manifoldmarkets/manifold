@@ -3,7 +3,7 @@ import {
   pgp,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { Comment, ContractComment } from 'common/comment'
+import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
 import { Contract, CPMMContract } from 'common/contract'
 import {
@@ -149,37 +149,6 @@ const userIdsToIgnore = async (
     (row: { user_id: string }) => row.user_id
   )
   return userIdsWithFeedRows.concat(userIdsWithSeenMarkets)
-}
-
-export const addCommentOnContractToFeed = async (
-  contract: Contract,
-  comment: ContractComment,
-  userIdsToExclude: string[]
-) => {
-  if (comment.isRepost || comment.replyToCommentId) return
-  const pg = createSupabaseDirectClient()
-  const usersToReasonsInterestedInContract =
-    await getUserToReasonsInterestedInContractAndUser(
-      contract,
-      comment.userId,
-      pg,
-      ['follow_contract'],
-      false,
-      'new_comment'
-    )
-  await bulkInsertDataToUserFeed(
-    usersToReasonsInterestedInContract,
-    comment.createdTime,
-    'new_comment',
-    userIdsToExclude,
-    {
-      contractId: contract.id,
-      commentId: comment.id,
-      creatorId: comment.userId,
-      idempotencyKey: comment.id,
-    },
-    pg
-  )
 }
 
 export const repostContractToFeed = async (

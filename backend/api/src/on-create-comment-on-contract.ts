@@ -11,7 +11,6 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { addCommentOnContractToFeed } from 'shared/create-feed'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
@@ -49,18 +48,7 @@ export const onCreateCommentOnContract = async (props: {
     .doc(contract.id)
     .update({ lastCommentTime, lastUpdatedTime: Date.now() })
 
-  const repliedOrMentionedUserIds = await handleCommentNotifications(
-    pg,
-    comment,
-    contract,
-    creator,
-    bet
-  )
-  await addCommentOnContractToFeed(
-    contract,
-    comment,
-    repliedOrMentionedUserIds.concat([contract.creatorId, comment.userId])
-  )
+  await handleCommentNotifications(pg, comment, contract, creator, bet)
 }
 
 const getReplyInfo = async (
