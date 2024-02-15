@@ -11,6 +11,7 @@ import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
@@ -21,16 +22,16 @@ import {
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
-import { api, referUser } from './api'
+import { referUser } from './api'
 import { app, db } from './init'
 import { coll, getValues, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { APIParams } from 'common/api/schema'
 
 dayjs.extend(utc)
 
 export const users = coll<User>('users')
+export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
 
@@ -38,11 +39,18 @@ export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
 
 export const auth = getAuth(app)
 
+export async function getPrivateUser(userId: string) {
+  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
+  return (await getDoc(doc(privateUsers, userId))).data()!
+}
+
 export async function getUserAndPrivateUser(userId: string) {
-  const [user, privateUser] = (await Promise.all([
-    getDoc(doc(users, userId)).then((doc) => doc.data() as User),
-    api('me/private'),
-  ])) as [User, PrivateUser]
+  const [user, privateUser] = (
+    await Promise.all([
+      getDoc(doc(users, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+      getDoc(doc(privateUsers, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    ])
+  ).map((d) => d.data()) as [User, PrivateUser]
   return { user, privateUser } as UserAndPrivateUser
 }
 
@@ -51,9 +59,14 @@ export async function updateUser(userId: string, update: Partial<User>) {
 }
 
 export async function updatePrivateUser(
-  props: APIParams<'update-private-user'>
+  userId: string,
+  update: Partial<PrivateUser>
 ) {
-  await api('update-private-user', props)
+  await updateDoc(doc(privateUsers, userId), { ...update })
+}
+
+export async function deletePrivateUser(userId: string) {
+  await deleteDoc(doc(privateUsers, userId))
 }
 
 export function listenForUser(
@@ -63,8 +76,6 @@ export function listenForUser(
   const userRef = doc(users, userId)
   return listenForValue<User>(userRef, setUser)
 }
-
-const privateUsers = coll<PrivateUser>('private-users')
 
 export function listenForPrivateUser(
   userId: string,
