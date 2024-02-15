@@ -167,22 +167,6 @@ const MatchTile = (props: {
             {/* <RejectButton lover={lover} /> */}
           </Col>
         )}
-        {!isYourMatch && !isYou && (
-          <Col className="absolute right-3 top-2">
-            <MatchBetButton
-              contract={contract}
-              answer={answer}
-              user={user}
-              modalHeader={
-                <MatchAvatars
-                  profileLover={profileLover}
-                  matchedLover={lover}
-                  className="mb-3"
-                />
-              }
-            />
-          </Col>
-        )}
       </Col>
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
         <Row className="w-full items-center justify-between gap-2">
@@ -202,6 +186,23 @@ const MatchTile = (props: {
             }
           />
         </Row>
+
+        {!isYourMatch && !isYou && (
+          <Row className="justify-stretch gap-2">
+            <MatchBetButton
+              contract={contract}
+              answer={answer}
+              user={user}
+              modalHeader={
+                <MatchAvatars
+                  profileLover={profileLover}
+                  matchedLover={lover}
+                  className="mb-3"
+                />
+              }
+            />
+          </Row>
+        )}
       </Col>
     </Col>
   )
