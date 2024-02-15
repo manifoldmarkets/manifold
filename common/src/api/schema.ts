@@ -838,6 +838,9 @@ export const API = (_apiTypeCheck = {
       creatorLovers: Lover[]
       lovers: Lover[]
       creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+      creatorCompatibilityScores: {
+        [creatorId: string]: { [loverId: string]: CompatibilityScore }
+      }
     },
   },
 } as const)

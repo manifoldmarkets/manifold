@@ -20,17 +20,23 @@ import { MatchAvatars } from '../matches/match-avatars'
 import { MatchBetButton } from '../matches/match-bet'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Subtitle } from './lover-subtitle'
+import { CompatibilityScore } from 'common/love/compatibility-score'
+import { CompatibleBadge } from './compatible-badge'
 
 export const MarketsDisplay = ({
   profileLover,
   contract,
   lovers,
   mutuallyMessagedUserIds,
+  compatibilityScores,
 }: {
   profileLover: Lover
   contract: CPMMMultiContract
   lovers: Lover[]
   mutuallyMessagedUserIds: string[]
+  compatibilityScores?: {
+    [userId: string]: CompatibilityScore
+  }
 }) => {
   return (
     <Col className="w-full gap-2">
@@ -52,6 +58,7 @@ export const MarketsDisplay = ({
         contract={contract}
         lovers={lovers}
         mutuallyMessagedUserIds={mutuallyMessagedUserIds}
+        compatibilityScores={compatibilityScores}
       />
     </Col>
   )
@@ -62,11 +69,15 @@ export const LoveMarketCarousel = ({
   contract,
   lovers,
   mutuallyMessagedUserIds,
+  compatibilityScores,
 }: {
   profileLover: Lover
   contract: CPMMMultiContract
   lovers: Lover[]
   mutuallyMessagedUserIds: string[]
+  compatibilityScores?: {
+    [userId: string]: CompatibilityScore
+  }
 }) => {
   const currentUser = useUser()
   const answers = useAnswersCpmm(contract.id) ?? contract.answers
@@ -95,6 +106,11 @@ export const LoveMarketCarousel = ({
             haveMutuallyMessaged={mutuallyMessagedUserIds.includes(
               matchLover.user_id
             )}
+            compatibilityScore={
+              compatibilityScores
+                ? compatibilityScores[matchLover.user_id]
+                : undefined
+            }
           />
         )
       })}
@@ -109,6 +125,7 @@ const MatchTile = (props: {
   lover: Lover
   isYourMatch: boolean
   haveMutuallyMessaged: boolean
+  compatibilityScore?: CompatibilityScore
 }) => {
   const {
     contract,
@@ -117,6 +134,7 @@ const MatchTile = (props: {
     isYourMatch,
     profileLover,
     haveMutuallyMessaged,
+    compatibilityScore,
   } = props
 
   const { user, pinned_url } = lover
@@ -134,16 +152,16 @@ const MatchTile = (props: {
           hideBadge
         />
       </Col>
-      <Col className="relative h-36 w-full overflow-hidden">
+      <Col className="relative h-40 w-full overflow-hidden">
         {pinned_url ? (
           <Link href={`/${user.username}`}>
             <Image
               src={pinned_url}
               // You must set these so we don't pay an extra $1k/month to vercel
               width={220}
-              height={144}
+              height={160}
               alt={`${user.username}`}
-              className="h-36 w-full object-cover"
+              className="h-40 w-full object-cover"
             />
           </Link>
         ) : (
@@ -157,16 +175,21 @@ const MatchTile = (props: {
             <div>Mutual messages</div>
           </Row>
         )}
-        {isYourMatch && (
-          <Col className="absolute right-3 top-2 gap-2">
-            <SendMessageButton
-              toUser={user}
-              currentUser={currentUser}
-              circleButton
-            />
+        <Row className="absolute inset-x-0 right-0 top-0 items-start justify-between gap-2 bg-gradient-to-b from-black/70 via-black/70 to-transparent px-2 pb-4 pt-2">
+          <Col className="gap-2">
+            {isYourMatch && (
+              <SendMessageButton
+                toUser={user}
+                currentUser={currentUser}
+                circleButton
+              />
+            )}
             {/* <RejectButton lover={lover} /> */}
           </Col>
-        )}
+          {compatibilityScore && (
+            <CompatibleBadge compatibility={compatibilityScore} />
+          )}
+        </Row>
       </Col>
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
         <Row className="w-full items-center justify-between gap-2">

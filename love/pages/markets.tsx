@@ -89,6 +89,9 @@ export default function MarketsPage() {
                       data.creatorMutuallyMessagedUserIds[contract.creatorId]
                     }
                     profileLover={profileLover}
+                    compatibilityScores={
+                      data.creatorCompatibilityScores[contract.creatorId]
+                    }
                   />
                 </Col>
               </Col>
