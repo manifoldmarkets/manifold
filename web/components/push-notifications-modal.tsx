@@ -60,7 +60,7 @@ export function PushNotificationsModal(props: {
     const shouldShowOurNotificationPrompt = totalNotifications >= 10
     const openTimer = setTimeout(() => {
       setOpen(shouldShowOurNotificationPrompt)
-      updatePrivateUser(privateUser.id, {
+      updatePrivateUser({
         lastPromptedToEnablePushNotifications: Date.now(),
       })
     }, 1000)
@@ -124,9 +124,7 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4 !font-medium'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: false,
-                })
+                updatePrivateUser({ interestedInPushNotifications: false })
                 setOpen(false)
               }}
               color={'gray-white'}
@@ -137,9 +135,7 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: true,
-                })
+                updatePrivateUser({ interestedInPushNotifications: true })
                 if (!!privateUser.rejectedPushNotificationsOn) {
                   setShowSettingsDescription(true)
                   return

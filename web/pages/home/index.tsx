@@ -22,7 +22,7 @@ import { Banner } from 'web/components/nav/banner'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export async function getStaticProps() {
-  const headlines = await api('headlines', {})
+  const headlines = await api('headlines')
   return {
     props: {
       headlines,

@@ -76,7 +76,6 @@ function useNotificationPreferenceItem(notification: Notification) {
           changeSetting({
             setting: 'browser',
             newValue: !inAppEnabled,
-            privateUser: privateUser,
             subscriptionTypeKey: subType,
           }),
       } as DropdownItem,

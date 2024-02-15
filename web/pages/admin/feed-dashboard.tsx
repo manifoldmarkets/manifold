@@ -8,6 +8,7 @@ export default function FeedDashboard() {
     <Col className={'grid-cols-16 grid w-full'}>
       {privateUsersAndUsers?.map(({ privateUser, user }) => (
         <Col key={user.id} className={'col-span-2'}>
+          TODO: write a new api and call from static props to fix
           {privateUser && (
             <FeedTimelineContent user={user} privateUser={privateUser} />
           )}
