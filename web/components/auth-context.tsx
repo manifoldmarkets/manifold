@@ -1,13 +1,14 @@
 'use client'
-import { createContext, ReactNode, useContext, useEffect } from 'react'
+import { createContext, ReactNode, useEffect } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User } from 'firebase/auth'
 import {
   auth,
   getUserAndPrivateUser,
+  listenForPrivateUser,
   listenForUser,
 } from 'web/lib/firebase/users'
-import { api, createUser } from 'web/lib/firebase/api'
+import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
@@ -70,26 +71,7 @@ const setUserCookie = (data: object | undefined) => {
   ])
 }
 
-const AuthContext = createContext<{
-  authUser: AuthUser
-  refreshPrivateUser: () => Promise<void>
-}>({ authUser: undefined, refreshPrivateUser: async () => {} })
-
-export const useAuthUser = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuthUser must be used within an AuthProvider')
-  }
-  return context.authUser
-}
-
-export const useRefreshPrivateUser = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useRefreshPrivateUser must be used within an AuthProvider')
-  }
-  return context.refreshPrivateUser
-}
+export const AuthContext = createContext<AuthUser>(undefined)
 
 export function AuthProvider(props: {
   children: ReactNode
@@ -178,7 +160,6 @@ export function AuthProvider(props: {
   }, [setAuthUser])
 
   const uid = authUser ? authUser.user.id : authUser
-
   useEffect(() => {
     if (uid) {
       identifyUser(uid)
@@ -187,9 +168,14 @@ export function AuthProvider(props: {
           currAuthUser && user ? { ...currAuthUser, user } : null
         )
       })
-
+      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
+        setAuthUser((currAuthUser) =>
+          currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
+        )
+      })
       return () => {
         userListener()
+        privateUserListener()
       }
     } else if (uid === null) {
       identifyUser(null)
@@ -203,16 +189,7 @@ export function AuthProvider(props: {
     }
   }, [username])
 
-  const refreshPrivateUser = () =>
-    api('me/private').then((privateUser) => {
-      setAuthUser((currAuthUser) =>
-        currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
-      )
-    })
-
   return (
-    <AuthContext.Provider value={{ authUser, refreshPrivateUser }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
   )
 }
