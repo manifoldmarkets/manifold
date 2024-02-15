@@ -1,5 +1,4 @@
 import { APIError } from 'common/api/utils'
-import { deleteField } from 'firebase/firestore'
 import { APIHandler } from './helpers/endpoint'
 import * as admin from 'firebase-admin'
 import { User } from 'common/user'
@@ -25,10 +24,10 @@ export const deleteAccount: APIHandler<'delete-account'> = async (
       isBannedFromPosting: true,
     })
     trans.update(privateUserDoc, {
-      email: deleteField(),
-      twitchInfo: deleteField(),
-      apiKey: deleteField(),
-      discordId: deleteField(),
+      email: admin.firestore.FieldValue.delete(),
+      twitchInfo: admin.firestore.FieldValue.delete(),
+      apiKey: admin.firestore.FieldValue.delete(),
+      discordId: admin.firestore.FieldValue.delete(),
     })
   })
 }

@@ -1,6 +1,5 @@
 import { removeUndefinedProps } from 'common/util/object'
 import * as admin from 'firebase-admin'
-import { deleteField } from 'firebase/firestore'
 import { APIHandler } from './helpers/endpoint'
 import { mapValues } from 'lodash'
 
@@ -13,7 +12,9 @@ export const updatePrivateUser: APIHandler<'update-private-user'> = async (
     .doc(auth.uid)
     .update(
       removeUndefinedProps(
-        mapValues(props, (v) => (v === null ? deleteField() : v))
+        mapValues(props, (v) =>
+          v === null ? admin.firestore.FieldValue.delete() : v
+        )
       )
     )
 }

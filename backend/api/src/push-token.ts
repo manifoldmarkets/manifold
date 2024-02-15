@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import { deleteField } from 'firebase/firestore'
 import { FieldValue } from 'firebase-admin/firestore'
 import { APIHandler } from './helpers/endpoint'
 
@@ -13,8 +12,8 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   await firebase.doc(`private-users/${auth.uid}`).update({
     'notificationPreferences.opt_out_all': FieldValue.arrayRemove('mobile'),
     pushToken,
-    rejectedPushNotificationsOn: deleteField(),
-    interestedInPushNotifications: deleteField(),
+    rejectedPushNotificationsOn: FieldValue.delete(),
+    interestedInPushNotifications: FieldValue.delete(),
   })
 }
 
