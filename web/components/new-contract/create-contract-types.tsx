@@ -7,9 +7,12 @@ import {
 import { GiReceiveMoney } from 'react-icons/gi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
+import { GoNumber } from 'react-icons/go'
+import { OutcomeTypeModifiers } from 'web/components/new-contract/new-contract-panel'
+import { OutcomeType } from 'common/contract'
 
 export const PREDICTIVE_CONTRACT_TYPES = {
-  binary: {
+  BINARY: {
     label: 'Yes/No',
     value: 'BINARY',
     name: 'yes/no',
@@ -22,7 +25,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  multiple_choice: {
+  MULTIPLE_CHOICE: {
     label: 'Multiple choice',
     value: 'MULTIPLE_CHOICE',
     name: 'multiple choice',
@@ -34,22 +37,23 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  // numeric: {
-  //   label: 'Numeric',
-  //   value: 'PSEUDO_NUMERIC',
-  //   name: 'numeric',
-  //   descriptor: 'A question with a numerical answer.',
-  //   example: 'How many people will come to Taco Tuesday?',
-  //   visual: (
-  //     <Col className="text-primary-400 relative my-auto h-12 w-12">
-  //       <GoNumber className="h-12 w-12" />
-  //     </Col>
-  //   ),
-  // },
+  NUMERIC: {
+    label: 'Numeric',
+    value: 'MULTIPLE_CHOICE',
+    modifier: 'numeric',
+    name: 'numeric',
+    descriptor: 'A question with a numerical answer.',
+    example: 'How many people will come to Taco Tuesday?',
+    visual: (
+      <Col className="text-primary-400 relative my-auto h-12 w-12">
+        <GoNumber className="h-12 w-12" />
+      </Col>
+    ),
+  },
 } as const
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
-  bountied_question: {
+  BOUNTIED_QUESTION: {
     label: 'Bounty',
     value: 'BOUNTIED_QUESTION',
     name: 'bounty',
@@ -67,7 +71,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     selectClassName:
       'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
   },
-  polls: {
+  POLL: {
     label: 'Poll',
     value: 'POLL',
     name: 'poll',
@@ -90,15 +94,15 @@ export const ALL_CONTRACT_TYPES = {
   ...NON_PREDICTIVE_CONTRACT_TYPES,
 }
 
-type ContractTypeParams =
-  (typeof ALL_CONTRACT_TYPES)[keyof typeof ALL_CONTRACT_TYPES]
-
-export function getContractTypeThingFromValue(
-  thing: keyof ContractTypeParams,
-  value: string
+export function getContractTypeFromValue(
+  outcomeType: OutcomeType,
+  key: 'example' | 'name',
+  modifier?: OutcomeTypeModifiers
 ): string | undefined {
-  const contractType = Object.values(ALL_CONTRACT_TYPES).find(
-    (contract) => contract.value === value
-  )
-  return contractType ? (contractType as any)[thing] : undefined
+  if (modifier === 'numeric') {
+    return ALL_CONTRACT_TYPES['NUMERIC'][key]
+  }
+  return Object.keys(ALL_CONTRACT_TYPES).includes(outcomeType)
+    ? ALL_CONTRACT_TYPES[outcomeType as keyof typeof ALL_CONTRACT_TYPES][key]
+    : undefined
 }

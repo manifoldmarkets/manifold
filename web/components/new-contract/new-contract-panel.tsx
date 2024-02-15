@@ -7,7 +7,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
-import { getContractTypeThingFromValue } from './create-contract-types'
+import { getContractTypeFromValue } from './create-contract-types'
 import { capitalize } from 'lodash'
 
 export type NewQuestionParams = {
@@ -28,7 +28,8 @@ export type NewQuestionParams = {
   shouldAnswersSumToOne?: boolean
 }
 
-export type ContractVisibilityType = 'public' | 'unlisted'
+export type OutcomeTypeModifiers = 'numeric'
+
 export type CreateContractStateType =
   | 'choosing contract'
   | 'filling contract params'
@@ -42,6 +43,9 @@ export function NewContractPanel(props: {
   const [outcomeType, setOutcomeType] = useState<
     CreateableOutcomeType | undefined
   >(params?.outcomeType ?? undefined)
+  const [outcomeTypeModifier, setOutcomeTypeModifier] = useState<
+    OutcomeTypeModifiers | undefined
+  >()
 
   const [state, setState] = useState<CreateContractStateType>(
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
@@ -63,9 +67,9 @@ export function NewContractPanel(props: {
       )}
     >
       <CreateStepTracker
+        outcomeTypeModifier={outcomeTypeModifier}
         outcomeType={outcomeType}
         setState={setState}
-        privacy={'non-private'}
       />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
@@ -73,6 +77,7 @@ export function NewContractPanel(props: {
             outcomeType={outcomeType}
             setOutcomeType={setOutcomeType}
             setState={setState}
+            setOutcomeTypeModifier={setOutcomeTypeModifier}
           />
         )}
         {state == 'filling contract params' && outcomeType && (
@@ -80,6 +85,7 @@ export function NewContractPanel(props: {
             outcomeType={outcomeType}
             creator={creator}
             params={params}
+            outcomeTypeModifier={outcomeTypeModifier}
           />
         )}
       </Col>
@@ -90,9 +96,9 @@ export function NewContractPanel(props: {
 function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
   setState: (state: CreateContractStateType) => void
-  privacy: 'non-private' | 'private'
+  outcomeTypeModifier?: OutcomeTypeModifiers
 }) {
-  const { outcomeType, setState, privacy } = props
+  const { outcomeType, outcomeTypeModifier, setState } = props
   return (
     <Row
       className={clsx(
@@ -113,8 +119,8 @@ function CreateStepTracker(props: {
         }}
       >
         {outcomeType
-          ? `${privacy == 'private' ? 'private' : ''} ${capitalize(
-              getContractTypeThingFromValue('name', outcomeType)
+          ? `${capitalize(
+              getContractTypeFromValue(outcomeType, 'name', outcomeTypeModifier)
             )}`
           : ''}
       </CreateStepButton>

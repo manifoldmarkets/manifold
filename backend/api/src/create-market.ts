@@ -39,6 +39,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
   createBountySchema,
+  createMultiNumericSchema,
   createMultiSchema,
   createNumericSchema,
   createPollSchema,
@@ -338,7 +339,8 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     extraLiquidity: number | undefined,
-    specialLiquidityPerAnswer: number | undefined
+    specialLiquidityPerAnswer: number | undefined,
+    numericAnswers: number[] | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -372,13 +374,28 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
-      validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED')
-      throw new APIError(
-        400,
-        'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
-      )
+    if ('numericAnswers' in body) {
+      ;({
+        numericAnswers,
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        extraLiquidity,
+      } = validateMarketType(outcomeType, createMultiNumericSchema, body))
+      if (numericAnswers.length < 2 && addAnswersMode === 'DISABLED')
+        throw new APIError(
+          400,
+          'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
+        )
+      answers = numericAnswers.map((n) => n.toString())
+    } else {
+      ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
+        validateMarketType(outcomeType, createMultiSchema, body))
+      if (answers.length < 2 && addAnswersMode === 'DISABLED')
+        throw new APIError(
+          400,
+          'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
+        )
+    }
   }
 
   if (outcomeType === 'BOUNTIED_QUESTION') {

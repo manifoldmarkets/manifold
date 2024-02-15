@@ -48,8 +48,8 @@ import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { getContractTypeThingFromValue } from './create-contract-types'
-import { NewQuestionParams } from './new-contract-panel'
+import { getContractTypeFromValue } from './create-contract-types'
+import { NewQuestionParams, OutcomeTypeModifiers } from './new-contract-panel'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { LiteMarket } from 'common/api/market-types'
@@ -60,13 +60,15 @@ import { CloseTimeSection } from 'web/components/new-contract/close-time-section
 import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
+import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
+  outcomeTypeModifier?: OutcomeTypeModifiers
   params?: NewQuestionParams
 }) {
-  const { creator, params, outcomeType } = props
+  const { creator, params, outcomeTypeModifier, outcomeType } = props
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
@@ -105,7 +107,7 @@ export function ContractParamsForm(props: {
     params?.addAnswersMode ?? 'DISABLED'
   )
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(
-    params?.shouldAnswersSumToOne ?? true
+    params?.shouldAnswersSumToOne ?? outcomeTypeModifier === 'numeric' ?? true
   )
   // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
@@ -226,6 +228,23 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
+  const [buckets, setBuckets] = usePersistentLocalState(
+    0,
+    'new-buckets-value' + paramsKey
+  )
+  useEffect(() => {
+    if (max === undefined || min === undefined || !buckets) return
+    const answers = Array.from(
+      { length: buckets },
+      (_, i) => min + (max + 1 - min) * (i / buckets)
+    )
+    setNumericAnswers(answers)
+  }, [buckets, max, min])
+
+  const [numericAnswers, setNumericAnswers] = usePersistentLocalState<
+    number[] | undefined
+  >(undefined, 'new-numeric-answers' + paramsKey)
+
   const [neverCloses, setNeverCloses] = useState(false)
 
   const shouldHaveCloseDate =
@@ -259,7 +278,9 @@ export function ContractParamsForm(props: {
 
   const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
-    !hasAnswers || answers.every((answer) => answer.trim().length > 0)
+    !hasAnswers ||
+    answers.every((answer) => answer.trim().length > 0) ||
+    buckets > 2
 
   const isValidDate =
     // closeTime must be in the future
@@ -291,8 +312,9 @@ export function ContractParamsForm(props: {
     if (!isValid) {
       if (!isValidDate) {
         setErrorText('Close date must be in the future')
-      }
-      if (!isValidMultipleChoice) {
+      } else if (buckets < 3) {
+        setErrorText('You must have at least 3 buckets.')
+      } else if (!isValidMultipleChoice) {
         setErrorText(
           `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
         )
@@ -360,6 +382,7 @@ export function ContractParamsForm(props: {
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+        numericAnswers,
       })
       const newContract = await api('market', createProps as any)
 
@@ -427,7 +450,7 @@ export function ContractParamsForm(props: {
   }
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-
+  const isNumericMulti = outcomeTypeModifier === 'numeric'
   return (
     <Col className="gap-6">
       <Col>
@@ -436,7 +459,11 @@ export function ContractParamsForm(props: {
         </label>
 
         <ExpandingInput
-          placeholder={getContractTypeThingFromValue('example', outcomeType)}
+          placeholder={getContractTypeFromValue(
+            outcomeType,
+            'example',
+            outcomeTypeModifier
+          )}
           autoFocus
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
@@ -453,7 +480,7 @@ export function ContractParamsForm(props: {
           question={question}
         />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && (
+      {(isMulti || outcomeType == 'POLL') && !isNumericMulti && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
@@ -512,8 +539,21 @@ export function ContractParamsForm(props: {
           min={min}
           max={max}
         />
+      )}{' '}
+      {isNumericMulti && (
+        <MultiNumericRangeSection
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          numberOfBuckets={buckets}
+          setBuckets={setBuckets}
+          submitState={submitState}
+          min={min}
+          max={max}
+          numericAnswers={numericAnswers}
+        />
       )}
-
       <TopicSelectorSection
         selectedGroups={selectedGroups}
         setSelectedGroups={setSelectedGroups}
@@ -521,14 +561,12 @@ export function ContractParamsForm(props: {
         creator={creator}
         question={question}
       />
-
       <Col className="items-start gap-3">
         <label className="px-1">
           <span>Description</span>
         </label>
         <TextEditor editor={editor} />
       </Col>
-
       <CloseTimeSection
         closeDate={closeDate}
         setCloseDate={setCloseDate}
@@ -540,7 +578,6 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
-
       <Row className="mt-2 items-center gap-2">
         <span>
           Publicly listed{' '}
@@ -559,7 +596,6 @@ export function ContractParamsForm(props: {
           }}
         />
       </Row>
-
       <CostSection
         balance={balance}
         amountSuppliedByUser={amountSuppliedByUser}
@@ -568,9 +604,7 @@ export function ContractParamsForm(props: {
         isMulti={isMulti}
         visibility={visibility}
       />
-
       {errorText && <span className={'text-error'}>{errorText}</span>}
-
       <Button
         className="w-full"
         type="submit"
@@ -593,7 +627,6 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-
       <div />
     </Col>
   )

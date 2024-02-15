@@ -8,7 +8,10 @@ import {
   NON_PREDICTIVE_CONTRACT_TYPES,
   PREDICTIVE_CONTRACT_TYPES,
 } from './create-contract-types'
-import { CreateContractStateType } from './new-contract-panel'
+import {
+  CreateContractStateType,
+  OutcomeTypeModifiers,
+} from './new-contract-panel'
 import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
@@ -16,61 +19,35 @@ export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
   setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
+  setOutcomeTypeModifier: (
+    outcomeTypeModifier: OutcomeTypeModifiers | undefined
+  ) => void
 }) {
-  const { outcomeType, setOutcomeType, setState } = props
+  const { outcomeType, setOutcomeType, setState, setOutcomeTypeModifier } =
+    props
   return (
     <Col>
       <div className="text-lg">Choose your question type.</div>
       <Spacer h={4} />
       <Col className="gap-2">
-        {Object.entries(PREDICTIVE_CONTRACT_TYPES).map(
-          ([_, { label, descriptor, example, value, visual }]) => (
-            <OutcomeButton
-              key={value}
-              label={label}
-              descriptor={descriptor}
-              example={example}
-              value={value}
-              visual={visual}
-              outcomeType={outcomeType}
-              setOutcomeType={setOutcomeType}
-              setState={setState}
-            />
-          )
-        )}
-      </Col>
-      <hr className="border-ink-200 my-2" />
-      <Col className="mb-1 gap-2">
-        {Object.entries(NON_PREDICTIVE_CONTRACT_TYPES).map(
-          ([
-            _,
-            {
-              label,
-              descriptor,
-              example,
-              value,
-              visual,
-              className,
-              backgroundColor,
-              selectClassName,
-            },
-          ]) => (
-            <OutcomeButton
-              key={value}
-              label={label}
-              descriptor={descriptor}
-              example={example}
-              value={value}
-              className={className}
-              backgroundColor={backgroundColor}
-              selectClassName={selectClassName}
-              outcomeType={outcomeType}
-              setOutcomeType={setOutcomeType}
-              visual={visual}
-              setState={setState}
-            />
-          )
-        )}
+        {[
+          ...Object.entries(PREDICTIVE_CONTRACT_TYPES),
+          ...Object.entries(NON_PREDICTIVE_CONTRACT_TYPES),
+        ].map(([_, { label, name, descriptor, example, value, visual }]) => (
+          <OutcomeButton
+            key={value + name}
+            name={name}
+            label={label}
+            descriptor={descriptor}
+            example={example}
+            value={value}
+            visual={visual}
+            outcomeType={outcomeType}
+            setOutcomeType={setOutcomeType}
+            setState={setState}
+            setOutcomeTypeModifier={setOutcomeTypeModifier}
+          />
+        ))}
       </Col>
     </Col>
   )
@@ -78,6 +55,7 @@ export function ChoosingContractForm(props: {
 
 function OutcomeButton(props: {
   label: string
+  name: string
   descriptor: string
   example: string | ReactNode
   value: CreateableOutcomeType
@@ -88,6 +66,9 @@ function OutcomeButton(props: {
   outcomeType: CreateableOutcomeType | undefined
   setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
+  setOutcomeTypeModifier: (
+    outcomeTypeModifier: OutcomeTypeModifiers | undefined
+  ) => void
 }) {
   const {
     label,
@@ -100,6 +81,8 @@ function OutcomeButton(props: {
     outcomeType,
     setOutcomeType,
     setState,
+    setOutcomeTypeModifier,
+    name,
   } = props
   const [touch, setTouch] = useState(false)
   return (
@@ -115,6 +98,11 @@ function OutcomeButton(props: {
       )}
       onClick={() => {
         setOutcomeType(value)
+        if (name === 'numeric') {
+          setOutcomeTypeModifier('numeric')
+        } else {
+          setOutcomeTypeModifier(undefined)
+        }
         setState('filling contract params')
       }}
       onTouchStart={() => setTouch(true)}

@@ -225,6 +225,7 @@ export type CPMMMulti = {
   outcomeType: 'MULTIPLE_CHOICE'
   shouldAnswersSumToOne: boolean
   addAnswersMode?: add_answers_mode
+  isNumeric?: boolean
 
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
