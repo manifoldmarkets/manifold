@@ -12,7 +12,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { DpmAnswer, Answer } from 'common/answer'
+import { DpmAnswer, Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
@@ -491,7 +491,7 @@ function IndependentResolutionAnswerItem(props: {
                   Other{' '}
                   <InfoTooltip
                     className="!text-ink-600"
-                    text="Represents all answers not listed. New answers are split out of this answer."
+                    text={OTHER_TOOLTIP_TEXT}
                   />
                 </span>
               ) : (

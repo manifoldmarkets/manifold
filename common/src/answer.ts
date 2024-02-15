@@ -59,6 +59,9 @@ export const isDpmAnswer = (answer: any): answer is DpmAnswer => {
 export const getMaximumAnswers = (shouldAnswersSumToOne: boolean) =>
   shouldAnswersSumToOne ? MAX_ANSWERS : MAX_INDEPENDENT_ANSWERS
 
+export const OTHER_TOOLTIP_TEXT =
+  "Bet on all answers that aren't listed yet. A bet on Other automatically includes any answer added on the future."
+
 export type MultiSort =
   | 'prob-desc'
   | 'prob-asc'

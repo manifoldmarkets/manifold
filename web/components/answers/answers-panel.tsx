@@ -12,6 +12,7 @@ import {
   type Answer,
   type DpmAnswer,
   type MultiSort,
+  OTHER_TOOLTIP_TEXT,
 } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
@@ -460,7 +461,7 @@ function Answer(props: {
                 Other{' '}
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700"
-                  text="Represents all answers not listed. New answers are split out of this answer."
+                  text={OTHER_TOOLTIP_TEXT}
                 />
               </span>
             ) : (
