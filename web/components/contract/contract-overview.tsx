@@ -590,6 +590,7 @@ const ChoiceOverview = (props: {
           } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
             return !('resolution' in answer)
           }
+          return true
         })
         .slice(0, MAX_DEFAULT_ANSWERS)
   return (
