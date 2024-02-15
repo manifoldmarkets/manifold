@@ -143,7 +143,7 @@ const MatchTile = (props: {
 
   return (
     <Col className="mb-2 w-[220px] shrink-0 overflow-hidden rounded">
-      <Col className="bg-canvas-0 w-full px-4 py-2">
+      <Col className="bg-canvas-0 w-full px-3 py-2">
         <UserLink
           className={
             'hover:text-primary-500 text-ink-1000 truncate font-semibold transition-colors'
@@ -191,15 +191,15 @@ const MatchTile = (props: {
           )}
         </Row>
       </Col>
-      <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-4 py-2 text-sm">
+      <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-2 py-2 text-sm">
         <Row className="w-full items-center justify-between gap-2">
           <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
-            <span className="font-semibold">
+            <span className="font-semibold text-lg">
               {answer.prob <= 0.0205
                 ? '<2%'
                 : formatPercent(answer.resolution === 'YES' ? 1 : answer.prob)}
             </span>{' '}
-            <span className="text-xs">chance of 3rd date</span>
+            <span className="text-sm">chance of 3rd date</span>
           </Link>
           <MatchPositionsButton
             contract={contract}
