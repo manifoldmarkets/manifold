@@ -1,4 +1,4 @@
-import { arrayRemove, arrayUnion } from 'firebase/firestore'
+import { FieldValue } from 'firebase-admin/firestore'
 import * as firebase from 'firebase-admin'
 
 import { APIHandler } from './helpers/endpoint'
@@ -8,7 +8,7 @@ export const blockGroup: APIHandler<'group/:slug/block'> = async (
   auth
 ) => {
   await firestore.doc(`private-users/${auth.uid}`).update({
-    blockedGroupSlugs: arrayUnion(slug),
+    blockedGroupSlugs: FieldValue.arrayUnion(slug),
   })
 }
 
@@ -17,7 +17,7 @@ export const unblockGroup: APIHandler<'group/:slug/unblock'> = async (
   auth
 ) => {
   await firestore.doc(`private-users/${auth.uid}`).update({
-    blockedGroupSlugs: arrayRemove(slug),
+    blockedGroupSlugs: FieldValue.arrayRemove(slug),
   })
 }
 

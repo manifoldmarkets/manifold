@@ -1,14 +1,15 @@
-import { arrayRemove, arrayUnion } from 'firebase/firestore'
-import * as firebase from 'firebase-admin'
-
+import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 import { APIHandler } from './helpers/endpoint'
 
 export const blockMarket: APIHandler<'market/:contractId/block'> = async (
   { contractId },
   auth
 ) => {
+  const firestore = admin.firestore()
+
   await firestore.doc(`private-users/${auth.uid}`).update({
-    blockedGroupSlugs: arrayUnion(contractId),
+    blockedGroupSlugs: FieldValue.arrayUnion(contractId),
   })
 }
 
@@ -16,9 +17,9 @@ export const unblockMarket: APIHandler<'market/:contractId/unblock'> = async (
   { contractId },
   auth
 ) => {
+  const firestore = admin.firestore()
+
   await firestore.doc(`private-users/${auth.uid}`).update({
-    blockedGroupSlugs: arrayRemove(contractId),
+    blockedGroupSlugs: FieldValue.arrayRemove(contractId),
   })
 }
-
-const firestore = firebase.firestore()
