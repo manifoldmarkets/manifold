@@ -59,7 +59,7 @@ export function TopicSelectorDialog(props: {
   const closeDialog = async (skipUpdate: boolean) => {
     setIsLoading(true)
 
-    if (user && !skipUpdate) await api('update-user-embedding', {})
+    if (user && !skipUpdate) await api('update-user-embedding')
 
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
 

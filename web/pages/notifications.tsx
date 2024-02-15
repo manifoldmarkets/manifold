@@ -62,7 +62,7 @@ export default function NotificationsPage() {
       <div className="w-full">
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
+        {shouldShowBanner && <NotificationsAppBanner />}
         {privateUser && user && router.isReady ? (
           <NotificationsContent
             user={user}
@@ -75,8 +75,7 @@ export default function NotificationsPage() {
   )
 }
 
-function NotificationsAppBanner(props: { userId: string }) {
-  const { userId } = props
+function NotificationsAppBanner() {
   return (
     <Row className="bg-primary-100 relative mb-2 justify-between rounded-md px-4 py-2 text-sm">
       <Row className={'text-ink-600 items-center gap-3 text-sm sm:text-base'}>
@@ -86,7 +85,7 @@ function NotificationsAppBanner(props: { userId: string }) {
       <button
         onClick={() => {
           track('close app banner')
-          updatePrivateUser(userId, {
+          updatePrivateUser({
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
         }}

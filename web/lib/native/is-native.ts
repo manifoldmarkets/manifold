@@ -39,7 +39,7 @@ export const setInstalledAppPlatform = (
   platform: string
 ) => {
   if (privateUser.installedAppPlatforms?.includes(platform)) return
-  updatePrivateUser(privateUser.id, {
+  updatePrivateUser({
     installedAppPlatforms: uniq([
       ...(privateUser.installedAppPlatforms ?? []),
       platform,
