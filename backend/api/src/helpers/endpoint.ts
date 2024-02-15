@@ -189,8 +189,7 @@ export type APIHandler<N extends APIPath> = (
   auth: APISchema<N> extends { authed: true }
     ? AuthedUser
     : AuthedUser | undefined,
-  { log, logError }: { log: GCPLog; logError: GCPLog },
-  res: Response
+  { log, logError }: { log: GCPLog; logError: GCPLog }
 ) => Promise<APIResponseOptionalContinue<N>>
 
 export const typedEndpoint = <N extends APIPath>(
@@ -218,8 +217,7 @@ export const typedEndpoint = <N extends APIPath>(
       const resultOptionalContinue = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
-        logs,
-        res
+        logs
       )
 
       const hasContinue =

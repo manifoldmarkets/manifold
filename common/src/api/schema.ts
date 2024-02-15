@@ -760,6 +760,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
+    returns: {} as { success: true },
   },
   'search-groups': {
     method: 'GET',

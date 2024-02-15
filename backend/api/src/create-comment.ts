@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUserFirebase } from 'shared/utils'
+import { GCPLog, getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
@@ -21,7 +21,11 @@ export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment: APIHandler<'comment'> = async (props, auth) => {
+export const createComment: APIHandler<'comment'> = async (
+  props,
+  auth,
+  { logError }
+) => {
   const {
     contractId,
     content,
@@ -38,6 +42,7 @@ export const createComment: APIHandler<'comment'> = async (props, auth) => {
     replyToCommentId,
     replyToAnswerId,
     replyToBetId,
+    logError,
   })
 }
 
@@ -52,6 +57,7 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
+    logError: GCPLog
   }
 ) => {
   const firestore = admin.firestore()
@@ -63,6 +69,7 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
+    logError,
   } = options
 
   const {
@@ -144,21 +151,28 @@ export const createCommentOnContractInternal = async (
     throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
   }
 
-  if (isApi) {
-    const userRef = firestore.doc(`users/${creator.id}`)
-    await userRef.update({
-      balance: FieldValue.increment(-FLAT_COMMENT_FEE),
-      totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
-    })
-  }
+  return {
+    result: comment,
+    continue: async () => {
+      if (isApi) {
+        const userRef = firestore.doc(`users/${creator.id}`)
+        await userRef.update({
+          balance: FieldValue.increment(-FLAT_COMMENT_FEE),
+          totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
+        })
+      }
 
-  try {
-    await onCreateCommentOnContract({ contractId, comment, creator, bet })
-  } catch (e) {
-    console.error('Failed to run onCreateCommentOnContract: ' + e)
+      try {
+        await onCreateCommentOnContract({ contractId, comment, creator, bet })
+      } catch (e) {
+        logError('Failed to run onCreateCommentOnContract: ' + e, {
+          e,
+          comment,
+          creator,
+        })
+      }
+    },
   }
-
-  return comment
 }
 
 export const validateComment = async (
