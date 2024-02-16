@@ -2,7 +2,7 @@ import { GCPLog, getUser, getUsers, revalidateStaticProps } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { keyBy } from 'lodash'
+import { keyBy, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
@@ -142,10 +142,8 @@ const updateContractMetrics = async (
 
   await bulkUpdateContractMetrics(metrics.flat())
   await Promise.all(
-    metrics
-      .flat()
-      .map((metric) =>
-        revalidateStaticProps(`/${metric.userUsername}/portfolio`)
-      )
+    uniqBy(metrics.flat(), 'userUsername').map((metric) =>
+      revalidateStaticProps(`/${metric.userUsername}/portfolio`)
+    )
   )
 }

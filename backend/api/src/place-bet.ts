@@ -274,20 +274,17 @@ export const placeBetMain = async (
     }
 
     const betDoc = contractDoc.collection('bets').doc()
-
-    trans.create(
-      betDoc,
-      removeUndefinedProps({
-        id: betDoc.id,
-        userId: user.id,
-        userAvatarUrl: user.avatarUrl,
-        userUsername: user.username,
-        userName: user.name,
-        isApi,
-        replyToCommentId,
-        ...newBet,
-      })
-    )
+    const fullBet = removeUndefinedProps({
+      id: betDoc.id,
+      userId: user.id,
+      userAvatarUrl: user.avatarUrl,
+      userUsername: user.username,
+      userName: user.name,
+      isApi,
+      replyToCommentId,
+      ...newBet,
+    })
+    trans.create(betDoc, fullBet)
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
@@ -383,12 +380,21 @@ export const placeBetMain = async (
       log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
     }
 
-    return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
+    return {
+      newBet,
+      betId: betDoc.id,
+      contract,
+      makers,
+      ordersToCancel,
+      user,
+      fullBet,
+    }
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, betId, contract, makers, ordersToCancel, user } = result
+  const { newBet, betId, fullBet, contract, makers, ordersToCancel, user } =
+    result
   const { mechanism } = contract
 
   if (
@@ -419,10 +425,8 @@ export const placeBetMain = async (
         })
       )
     }
-    const bet = await firestore
-      .doc(`contracts/${contract.id}/bets/${betId}`)
-      .get()
-    await onCreateBet(bet.data() as Bet, contract, user, log)
+
+    await onCreateBet(fullBet, contract, user, log)
   }
 
   return {
