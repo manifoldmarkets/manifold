@@ -37,7 +37,6 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { FaFlagUsa } from 'react-icons/fa6'
-import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Sidebar(props: {
   className?: string
