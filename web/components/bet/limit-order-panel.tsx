@@ -32,6 +32,7 @@ import { OrderBookButton } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -70,13 +71,17 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Expiring orders
-  const [addExpiration, setAddExpiration] = useState(false)
+  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
+    false,
+    'add-limit-order-expiration'
+  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
-  const [expirationDate, setExpirationDate] = useState<string>(initDate)
+  const [expirationDate, setExpirationDate] =
+    usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
-    useState<string>(initTime)
+    usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
   const expiresAt = addExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
