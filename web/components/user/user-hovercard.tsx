@@ -24,9 +24,7 @@ export function UserHovercard({
 }: UserHovercardProps) {
   return (
     <HoverCard.Root openDelay={150}>
-      <HoverCard.Trigger asChild className={className}>
-        {children}
-      </HoverCard.Trigger>
+      <HoverCard.Trigger className={className}>{children}</HoverCard.Trigger>
 
       <HoverCard.Portal>
         <FetchUserHovercardContent userId={userId} />
