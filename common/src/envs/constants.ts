@@ -143,6 +143,7 @@ export const BOT_USERNAMES = [
   'LUCAtheory',
   'TunglBot',
   'timetraveler',
+  'bayesianbot',
   'CharlesLienBot',
 ]
 
