@@ -28,6 +28,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBet } from 'api/on-create-bet'
+import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
@@ -55,6 +56,12 @@ export const placeBetMain = async (
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+    if (
+      (user.isBannedFromPosting || user.userDeleted) &&
+      !BLESSED_BANNED_USER_IDS.includes(uid)
+    ) {
+      throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+    }
     log(
       `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )

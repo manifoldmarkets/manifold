@@ -252,6 +252,10 @@ export const VERIFIED_USERNAMES = [
   'kyootbot',
 ]
 
+export const BLESSED_BANNED_USER_IDS = [
+  'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
+]
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
 export function firestoreConsolePath(contractId: string) {
