@@ -1,6 +1,5 @@
 import { ReactNode, memo, useMemo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
-import { sortBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
@@ -33,7 +32,13 @@ import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { AnswersPanel } from '../answers/answers-panel'
-import { Answer, DpmAnswer } from 'common/answer'
+import {
+  Answer,
+  DpmAnswer,
+  MultiSort,
+  getDefaultSort,
+  sortAnswers,
+} from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import {
   AnswersResolvePanel,
@@ -464,14 +469,6 @@ const ChartAnnotation = (props: {
   )
 }
 
-export type MultiSort =
-  | 'prob-desc'
-  | 'prob-asc'
-  | 'old'
-  | 'new'
-  | 'liquidity'
-  | 'alphabetical'
-
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 const MAX_DEFAULT_ANSWERS = 20
 
@@ -525,18 +522,7 @@ const ChoiceOverview = (props: {
       prob: getAnswerProbability(contract, a.id),
     }))
 
-  let defaultSort = contract.sort
-  if (!defaultSort) {
-    if (addAnswersMode === 'DISABLED') {
-      defaultSort = 'old'
-    } else if (!shouldAnswersSumToOne) {
-      defaultSort = 'prob-desc'
-    } else if (answers.length > 10) {
-      defaultSort = 'prob-desc'
-    } else {
-      defaultSort = 'old'
-    }
-  }
+  const defaultSort = getDefaultSort(contract)
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
     defaultSort,
     'answer-sort' + contract.id
@@ -560,34 +546,7 @@ const ChoiceOverview = (props: {
   )
 
   const sortedAnswers = useMemo(
-    () =>
-      sortBy(answers, [
-        shouldAnswersSumToOne
-          ? // Winners first
-            (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
-          : // Resolved last
-            (answer) => ('resolution' in answer ? 1 : 0),
-        // then by sort
-        (answer) => {
-          if (sort === 'old') {
-            if ('resolutionTime' in answer && answer.resolutionTime)
-              return answer.resolutionTime
-            return 'index' in answer ? answer.index : answer.number
-          } else if (sort === 'new') {
-            if ('resolutionTime' in answer && answer.resolutionTime)
-              return -answer.resolutionTime
-            return 'index' in answer ? -answer.index : -answer.number
-          } else if (sort === 'prob-asc') {
-            return answer.prob
-          } else if (sort === 'prob-desc') {
-            return -1 * answer.prob
-          } else if (sort === 'liquidity') {
-            return 'subsidyPool' in answer ? -answer.subsidyPool : 0
-          } else if (sort === 'alphabetical') {
-            return answer.text.toLowerCase()
-          }
-        },
-      ]),
+    () => sortAnswers(contract, answers, sort),
     [answers, resolutions, shouldAnswersSumToOne, sort]
   )
 
@@ -631,6 +590,7 @@ const ChoiceOverview = (props: {
           } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
             return !('resolution' in answer)
           }
+          return true
         })
         .slice(0, MAX_DEFAULT_ANSWERS)
   return (

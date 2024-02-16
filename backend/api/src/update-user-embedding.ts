@@ -10,24 +10,27 @@ import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 export const updateUserEmbedding: APIHandler<'update-user-embedding'> = async (
   _,
   auth,
-  { log },
-  res
+  { log }
 ) => {
-  const pg = createSupabaseDirectClient()
-  res.status(200).json({ success: true })
-  await updateUserInterestEmbedding(pg, auth.uid)
-  const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
-  const contractIds = await getImportantContractsForNewUsers(
-    100,
-    pg,
-    groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
-  )
-  await generateNewUserFeedFromContracts(
-    auth.uid,
-    pg,
-    ALL_FEED_USER_ID,
-    contractIds,
-    1,
-    log
-  )
+  return {
+    result: { success: true },
+    continue: async () => {
+      const pg = createSupabaseDirectClient()
+      await updateUserInterestEmbedding(pg, auth.uid)
+      const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
+      const contractIds = await getImportantContractsForNewUsers(
+        100,
+        pg,
+        groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
+      )
+      await generateNewUserFeedFromContracts(
+        auth.uid,
+        pg,
+        ALL_FEED_USER_ID,
+        contractIds,
+        1,
+        log
+      )
+    },
+  }
 }

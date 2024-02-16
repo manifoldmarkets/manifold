@@ -5,9 +5,15 @@ import {
   PresentationChartLineIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
-import { groupBy, sortBy, sumBy } from 'lodash'
+import { groupBy, sumBy } from 'lodash'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
+import {
+  sortAnswers,
+  type Answer,
+  type DpmAnswer,
+  type MultiSort,
+  OTHER_TOOLTIP_TEXT,
+} from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
@@ -32,7 +38,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { MultiSort } from '../contract/contract-overview'
 import { useMemo, useState } from 'react'
 import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
@@ -297,7 +302,7 @@ export function SimpleAnswerBars(props: {
   barColor?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor } = props
-  const { resolutions, outcomeType } = contract
+  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
@@ -318,19 +323,7 @@ export function SimpleAnswerBars(props: {
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
 
-  const sortByProb = answers.length > maxAnswers
-  const displayedAnswers = sortBy(answers, [
-    // Winners for shouldAnswersSumToOne
-    (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
-    // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
-    // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
-  ]).slice(0, maxAnswers)
+  const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
 
@@ -468,7 +461,7 @@ function Answer(props: {
                 Other{' '}
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700"
-                  text="Represents all answers not listed. New answers are split out of this answer."
+                  text={OTHER_TOOLTIP_TEXT}
                 />
               </span>
             ) : (

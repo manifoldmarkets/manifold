@@ -144,6 +144,7 @@ export const BOT_USERNAMES = [
   'TunglBot',
   'timetraveler',
   'bayesianbot',
+  'CharlesLienBot',
 ]
 
 export const MOD_IDS = [

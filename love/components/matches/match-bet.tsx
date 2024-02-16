@@ -19,22 +19,56 @@ export function MatchBetButton(props: {
   answer: Answer
   user: User
   modalHeader?: React.ReactNode
+  singleBetButton?: boolean
 }) {
-  const { contract, answer, user, modalHeader } = props
+  const { contract, answer, user, modalHeader, singleBetButton } = props
   const [open, setOpen] = useState(false)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+
   return (
     <>
-      <Button
-        size={'2xs'}
-        color={'indigo'}
-        onClick={() => {
-          setOpen(true)
-          track('love bet button click')
-        }}
-        disabled={!!answer.resolution}
-      >
-        Bet
-      </Button>
+      {singleBetButton ? (
+        <Button
+          size={'2xs'}
+          color={'indigo'}
+          onClick={() => {
+            setOpen(true)
+            track('love bet button click')
+          }}
+          disabled={!!answer.resolution}
+        >
+          Bet
+        </Button>
+      ) : (
+        <>
+          <Button
+            size="2xs"
+            color="green-outline"
+            className={'indigo flex-1'}
+            onClick={(e) => {
+              e.stopPropagation()
+              track('love bet button click')
+              setOutcome('YES')
+              setOpen(true)
+            }}
+          >
+            Yes
+          </Button>
+          <Button
+            size="2xs"
+            color="red-outline"
+            className={'indigo flex-1'}
+            onClick={(e) => {
+              e.stopPropagation()
+              track('love bet button click')
+              setOutcome('NO')
+              setOpen(true)
+            }}
+          >
+            No
+          </Button>
+        </>
+      )}
       <Modal
         open={open}
         setOpen={setOpen}
@@ -54,7 +88,7 @@ export function MatchBetButton(props: {
             contract={contract}
             multiProps={{ answers: contract.answers, answerToBuy: answer }}
             user={user}
-            initialOutcome="YES"
+            initialOutcome={outcome ?? 'YES'}
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
             location={'love profile'}
             inModal={true}

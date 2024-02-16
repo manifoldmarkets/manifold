@@ -24,7 +24,7 @@ export async function getStaticProps() {
   return {
     props: {
       headlines,
-      revalidate: 30 * 60, // 4 hours
+      revalidate: 30 * 60, // 30 minutes
     },
   }
 }
@@ -41,6 +41,7 @@ export default function Home(props: { headlines: Headline[] }) {
   const isMobile = useIsMobile()
   const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
   const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+
   return (
     <>
       <Welcome />
