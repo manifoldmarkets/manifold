@@ -585,7 +585,7 @@ function Answer(props: {
                     {shortFormatNumber(limitOrderVolume)}
                   </Tooltip>
                 }
-                buttonColor="gray-outline"
+        
               />
             ) : null}
             {'poolYes' in answer && (
