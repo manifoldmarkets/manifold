@@ -121,14 +121,12 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
     return <Custom404 />
   }
 
-  return (
+  return props.state === 'not authed' ? (
     <Page trackPageView={false} className="xl:col-span-10">
-      {props.state === 'not authed' ? (
-        <PrivateContractPage contractSlug={props.slug} />
-      ) : (
-        <NonPrivateContractPage contractParams={props.params} />
-      )}
+      <PrivateContractPage contractSlug={props.slug} />
     </Page>
+  ) : (
+    <NonPrivateContractPage contractParams={props.params} />
   )
 }
 
@@ -143,15 +141,17 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
-  } else if (inIframe) {
+  }
+  if (inIframe) {
     return <ContractEmbedPage contract={contract} points={points} />
-  } else
-    return (
-      <>
-        <ContractSEO contract={contract} points={pointsString} />
-        <ContractPageContent key={contract.id} {...props.contractParams} />
-      </>
-    )
+  }
+
+  return (
+    <Page trackPageView={false} className="xl:col-span-10">
+      <ContractSEO contract={contract} points={pointsString} />
+      <ContractPageContent key={contract.id} {...props.contractParams} />
+    </Page>
+  )
 }
 
 export function ContractPageContent(props: ContractParams) {
