@@ -2,9 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
-import { arrayRemove, arrayUnion, doc, updateDoc } from 'firebase/firestore'
-import { privateUsers } from 'web/lib/firebase/users'
-import { unfollowUser } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import { PrivateUser, User } from 'common/user'
 
@@ -17,32 +15,17 @@ export const BlockUser = (props: {
   const { id: userId } = user
 
   const isBlocked = currentUser.blockedUserIds?.includes(userId)
-  const blockUser = async () => {
-    await updateDoc(doc(privateUsers, currentUser.id), {
-      blockedUserIds: arrayUnion(userId),
-    })
-    await updateDoc(doc(privateUsers, userId), {
-      blockedByUserIds: arrayUnion(currentUser.id),
-    })
-    await unfollowUser(userId)
-  }
 
-  const unblockUser = async () => {
-    await updateDoc(doc(privateUsers, currentUser.id), {
-      blockedUserIds: arrayRemove(userId),
-    })
-    await updateDoc(doc(privateUsers, userId), {
-      blockedByUserIds: arrayRemove(currentUser.id),
-    })
-  }
+  const onUnblock = () => api('unblock-user', { userId: user.id })
 
   const onBlock = async () => {
-    await toast.promise(blockUser(), {
+    await toast.promise(api('block-user', { userId: user.id }), {
       loading: 'Blocking...',
       success: `You'll no longer see content from this user`,
       error: 'Error blocking user',
     })
   }
+
   return (
     <Col>
       <Col className={'mb-6 gap-2'}>
@@ -70,7 +53,7 @@ export const BlockUser = (props: {
               size="sm"
               color="indigo"
               className="my-auto"
-              onClick={withTracking(unblockUser, 'unblock')}
+              onClick={withTracking(onUnblock, 'unblock')}
             >
               Unblock {user.name}
             </Button>

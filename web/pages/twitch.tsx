@@ -15,7 +15,7 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import {
   getDockURLForUser,
@@ -28,6 +28,7 @@ import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
+import { api } from 'web/lib/firebase/api'
 
 export default function TwitchLandingPage() {
   const user = useUser()
@@ -332,9 +333,7 @@ function BotConnectButton(props: {
     toast.promise(
       updateBotEnabledForUser(privateUser, connected)
         .then(() =>
-          updatePrivateUser(privateUser.id, {
-            twitchInfo: { ...twitchInfo, botEnabled: connected },
-          })
+          api('save-twitch', { twitchInfo: { botEnabled: connected } })
         )
         .finally(() => setLoading(false)),
       { loading: 'Updating bot settings...', error, success },

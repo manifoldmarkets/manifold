@@ -18,16 +18,10 @@ import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { changeUserInfo } from 'web/lib/firebase/api'
+import { api, changeUserInfo } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
-import {
-  auth,
-  getUserAndPrivateUser,
-  updatePrivateUser,
-  updateUser,
-} from 'web/lib/firebase/users'
-import { deleteField } from 'firebase/firestore'
+import { auth, getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
 import { toast } from 'react-hot-toast'
 import router from 'next/router'
 import { useUser } from 'web/hooks/use-user'
@@ -103,27 +97,16 @@ export default function ProfilePage(props: {
     errorName,
   } = userInfo
   const updateApiKey = async (e?: React.MouseEvent) => {
-    const newApiKey = await generateNewApiKey(user.id)
+    const newApiKey = await generateNewApiKey()
     setApiKey(newApiKey ?? '')
     e?.preventDefault()
 
     if (!privateUser.twitchInfo) return
-    await updatePrivateUser(privateUser.id, {
-      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
-    })
+    await api('save-twitch', { twitchInfo: { needsRelinking: true } })
   }
 
   const deleteAccount = async () => {
-    // if you change this, be sure to update firestore.rules. it's pretty exact to prevent self-unbanning. or better, turn this to API call
-    await updateUser(user.id, { userDeleted: true, isBannedFromPosting: true })
-    await updatePrivateUser(privateUser.id, {
-      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      email: deleteField(),
-      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      twitchInfo: deleteField(),
-    })
+    await api('delete-account', { username: user.username })
     await auth.signOut()
   }
 

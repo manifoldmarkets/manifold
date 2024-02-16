@@ -20,7 +20,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps() {
-  const headlines = await api('headlines', {})
+  const headlines = await api('headlines')
   return {
     props: {
       headlines,

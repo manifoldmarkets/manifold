@@ -39,15 +39,6 @@ export const getServerSideProps = redirectIfLoggedIn('/chanceme', async (_) => {
     props: { points, score, n },
   }
 })
-// export async function getStaticProps() {
-//   const headlines = await api('headlines', {})
-//   return {
-//     props: {
-//       headlines,
-//       revalidate: 30 * 60, // 4 hours
-//     },
-//   }
-// }
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 

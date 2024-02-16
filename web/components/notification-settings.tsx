@@ -19,8 +19,6 @@ import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-import { deleteField } from 'firebase/firestore'
-import { uniq } from 'lodash'
 import {
   createContext,
   ReactNode,
@@ -34,7 +32,6 @@ import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-
 import { updatePrivateUser } from 'web/lib/firebase/users'
 import { getIsNative } from 'web/lib/native/is-native'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
@@ -42,6 +39,7 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { api } from 'web/lib/firebase/api'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',
@@ -288,8 +286,6 @@ function NotificationSettingLine(props: {
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
 
-  const privateUser = usePrivateUser()!
-
   return (
     <Row
       className={clsx(
@@ -310,7 +306,6 @@ function NotificationSettingLine(props: {
                   setting: 'browser',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -330,7 +325,6 @@ function NotificationSettingLine(props: {
                   setting: 'email',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -350,7 +344,6 @@ function NotificationSettingLine(props: {
                   setting: 'mobile',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -457,11 +450,7 @@ export const PushNotificationsBanner = () => {
             size={'2xs'}
             className={'ml-2 inline-block whitespace-nowrap'}
             onClick={() => {
-              updatePrivateUser(privateUser.id, {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                interestedInPushNotifications: deleteField(),
-              })
+              updatePrivateUser({ interestedInPushNotifications: null })
             }}
           >
             Turn on
@@ -536,7 +525,6 @@ const attemptToChangeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
   subscriptionTypeKey: notification_preference
-  privateUser: PrivateUser
   emailEnabled: boolean
   inAppEnabled: boolean
   setError: (error: string) => void
@@ -546,7 +534,6 @@ const attemptToChangeSetting = (props: {
     setting,
     newValue,
     subscriptionTypeKey,
-    privateUser,
     emailEnabled,
     inAppEnabled,
     setError,
@@ -569,7 +556,6 @@ const attemptToChangeSetting = (props: {
   changeSetting({
     setting: setting,
     newValue: newValue,
-    privateUser: privateUser,
     subscriptionTypeKey: subscriptionTypeKey,
     setEnabled: setEnabled,
   })
@@ -578,24 +564,18 @@ const attemptToChangeSetting = (props: {
 export const changeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
-  privateUser: PrivateUser
   subscriptionTypeKey: notification_preference
   setEnabled?: (setting: boolean) => void
 }) => {
-  const { setting, newValue, privateUser, subscriptionTypeKey, setEnabled } =
-    props
-  const destinations = getUsersSavedPreference(subscriptionTypeKey, privateUser)
+  const { setting, newValue, subscriptionTypeKey, setEnabled } = props
   const loading = 'Changing Notifications Settings'
   const success = 'Changed Notification Settings!'
   toast
     .promise(
-      updatePrivateUser(privateUser.id, {
-        notificationPreferences: {
-          ...privateUser.notificationPreferences,
-          [subscriptionTypeKey]: destinations.includes(setting)
-            ? destinations.filter((d) => d !== setting)
-            : uniq([...destinations, setting]),
-        },
+      api('update-notif-settings', {
+        type: subscriptionTypeKey,
+        medium: setting,
+        enabled: newValue,
       }),
       {
         success,

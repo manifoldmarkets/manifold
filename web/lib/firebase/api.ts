@@ -24,7 +24,10 @@ export async function call(
 }
 
 // This is the preferred way of using the api going forward
-export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
+export async function api<P extends APIPath>(
+  path: P,
+  params: APIParams<P> = {}
+) {
   // If the api is authed and the user is not loaded, wait for the user to load.
   if (API[path].authed && !auth.currentUser) {
     let i = 0
