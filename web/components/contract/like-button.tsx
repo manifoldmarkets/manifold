@@ -100,34 +100,34 @@ export const LikeButton = memo(function LikeButton(props: {
 
   return (
     <>
-      <Button
-        color={'gray-white'}
-        disabled={disabled}
-        size={size}
-        className={clsx(
-          'text-ink-500 disabled:cursor-not-allowed',
-          'disabled:text-ink-500',
-          className
-        )}
-        {...likeLongPress}
+      <Tooltip
+        text={
+          showList ? (
+            <UserLikedPopup
+              contentType={contentType}
+              contentId={contentId}
+              onRequestModal={() => setModalOpen(true)}
+              user={user}
+              userLiked={liked}
+            />
+          ) : (
+            'Like'
+          )
+        }
+        placement={placement}
+        noTap
+        hasSafePolygon={showList}
       >
-        <Tooltip
-          text={
-            showList ? (
-              <UserLikedPopup
-                contentType={contentType}
-                contentId={contentId}
-                onRequestModal={() => setModalOpen(true)}
-                user={user}
-                userLiked={liked}
-              />
-            ) : (
-              'Like'
-            )
-          }
-          placement={placement}
-          noTap
-          hasSafePolygon={showList}
+        <Button
+          color={'gray-white'}
+          disabled={disabled}
+          size={size}
+          className={clsx(
+            'text-ink-500 disabled:cursor-not-allowed',
+            'disabled:text-ink-500',
+            className
+          )}
+          {...likeLongPress}
         >
           <Row className={'items-center gap-1.5'}>
             <div className="relative">
@@ -145,8 +145,8 @@ export const LikeButton = memo(function LikeButton(props: {
               </div>
             )}
           </Row>
-        </Tooltip>
-      </Button>
+        </Button>
+      </Tooltip>
       {modalOpen && (
         <UserLikedFullList
           contentType={contentType}
