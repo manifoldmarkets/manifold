@@ -254,6 +254,7 @@ export const VERIFIED_USERNAMES = [
 
 export const BLESSED_BANNED_USER_IDS = [
   'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
+  'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
