@@ -40,6 +40,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Answer } from 'common/answer'
 import { Select } from '../widgets/select'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
@@ -506,21 +507,27 @@ const PositionRow = memo(function PositionRow(props: {
         followedUsers?.includes(position.userId) && 'bg-blue-500/20'
       )}
     >
-      <Row
-        className={clsx(
-          'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
-        )}
-      >
-        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
-        {userName && userUsername ? (
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-            short={isMobile}
+      <UserHovercard userId={userId}>
+        <Row
+          className={clsx(
+            'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
+          )}
+        >
+          <Avatar
+            size={'sm'}
+            avatarUrl={userAvatarUrl}
+            username={userUsername}
           />
-        ) : (
-          <span>Loading..</span>
-        )}
-      </Row>
+          {userName && userUsername ? (
+            <UserLink
+              user={{ id: userId, name: userName, username: userUsername }}
+              short={isMobile}
+            />
+          ) : (
+            <span>Loading..</span>
+          )}
+        </Row>
+      </UserHovercard>
       <span
         className={clsx(
           outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-600',

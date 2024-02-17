@@ -4,6 +4,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Notification } from 'common/notification'
 import { NotificationUserLink } from './notifications/notification-helpers'
+import { UserHovercard } from './user/user-hovercard'
 
 export function MultiUserReactionModal(props: {
   similarNotifications: Notification[]
@@ -21,10 +22,12 @@ export function MultiUserReactionModal(props: {
             key={notif.sourceUserUsername + 'list'}
             className="w-full items-center gap-2"
           >
-            <Avatar
-              username={notif.sourceUserUsername}
-              avatarUrl={notif.sourceUserAvatarUrl}
-            />
+            <UserHovercard userId={notif.userId}>
+              <Avatar
+                username={notif.sourceUserUsername}
+                avatarUrl={notif.sourceUserAvatarUrl}
+              />
+            </UserHovercard>
             <NotificationUserLink
               name={notif.sourceUserName}
               username={notif.sourceUserUsername}

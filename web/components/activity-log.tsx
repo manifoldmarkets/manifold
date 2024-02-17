@@ -42,6 +42,7 @@ import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
 import { getBetsOnContracts } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
+import { UserHovercard } from './user/user-hovercard'
 
 const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
 
@@ -316,20 +317,22 @@ const MarketCreatedLog = memo((props: { contract: Contract }) => {
   } = props.contract
 
   return (
-    <Row className="text-ink-600 items-center gap-2 text-sm">
-      <Avatar
-        avatarUrl={creatorAvatarUrl}
-        username={creatorUsername}
-        size="xs"
-      />
-      <UserLink
-        user={{ id: creatorId, name: creatorName, username: creatorUsername }}
-      />
-      <Row className="text-ink-400">
-        created
-        <RelativeTimestamp time={createdTime} />
+    <UserHovercard userId={creatorId}>
+      <Row className="text-ink-600 items-center gap-2 text-sm">
+        <Avatar
+          avatarUrl={creatorAvatarUrl}
+          username={creatorUsername}
+          size="xs"
+        />
+        <UserLink
+          user={{ id: creatorId, name: creatorName, username: creatorUsername }}
+        />
+        <Row className="text-ink-400">
+          created
+          <RelativeTimestamp time={createdTime} />
+        </Row>
       </Row>
-    </Row>
+    </UserHovercard>
   )
 })
 
@@ -353,11 +356,15 @@ const CommentLog = memo(function FeedComment(props: {
         id={comment.id}
         className="text-ink-500 mb-1 items-center gap-2 text-sm"
       >
-        <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+        <UserHovercard userId={userId}>
+          <Avatar size="xs" username={userUsername} avatarUrl={userAvatarUrl} />
+        </UserHovercard>
         <span>
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-          />{' '}
+          <UserHovercard userId={userId}>
+            <UserLink
+              user={{ id: userId, name: userName, username: userUsername }}
+            />
+          </UserHovercard>{' '}
           commented
         </span>
         <RelativeTimestamp time={createdTime} />

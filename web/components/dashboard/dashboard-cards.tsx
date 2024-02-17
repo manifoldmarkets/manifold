@@ -8,6 +8,7 @@ import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 import { ClickFrame } from '../widgets/click-frame'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function DashboardCards(props: {
   dashboards?: Dashboard[]
@@ -49,13 +50,15 @@ function DashboardCard(props: { dashboard: Dashboard }) {
           className={'flex items-center gap-2 truncate text-sm'}
           href={href}
         >
-          <Avatar
-            size={'xs'}
-            className={'mr-0.5'}
-            avatarUrl={creatorAvatarUrl}
-            username={creatorUsername}
-            noLink
-          />
+          <UserHovercard userId={creatorId}>
+            <Avatar
+              size={'xs'}
+              className={'mr-0.5'}
+              avatarUrl={creatorAvatarUrl}
+              username={creatorUsername}
+              noLink
+            />
+          </UserHovercard>
           <div className="truncate text-base sm:text-lg">{title}</div>
         </Link>
         <FollowDashboardButton

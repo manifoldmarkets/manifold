@@ -44,65 +44,61 @@ function FetchUserHovercardContent({ userId }: { userId: string }) {
   const followerIds = useFollowers(userId)
   const isMod = useAdminOrTrusted()
 
-  return (
-    user && (
-      <HoverCard.Content
-        className="animate-slide-up-and-fade bg-canvas-0 ring-ink-1000 divide-ink-300 z-30 mt-2 w-56 divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
-        align="start"
-      >
-        <div className="px-4 py-3">
-          <Row className="items-start justify-between">
-            <Avatar
-              username={user.username}
-              avatarUrl={user.avatarUrl}
-              size="lg"
-            />
-            <FollowButton userId={userId} size="xs" />
-          </Row>
-
-          <StackedUserNames
-            usernameClassName={'text-base'}
-            className={'text-lg font-bold'}
-            user={user}
-            followsYou={false}
+  return user ? (
+    <HoverCard.Content
+      className="animate-slide-up-and-fade bg-canvas-0 ring-ink-1000 divide-ink-300 z-30 mt-2 w-56 divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+      align="start"
+    >
+      <div className="px-4 py-3">
+        <Row className="items-start justify-between">
+          <Avatar
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            size="lg"
           />
+          <FollowButton userId={userId} size="xs" />
+        </Row>
 
-          {user.bio && (
-            <div className="sm:text-md mt-1 line-clamp-5 text-sm">
-              <Linkify text={user.bio}></Linkify>
-            </div>
-          )}
+        <StackedUserNames
+          usernameClassName={'text-base'}
+          className={'text-lg font-bold'}
+          user={user}
+          followsYou={false}
+        />
 
-          <Row className="mt-3 gap-4 text-sm">
-            <div>
-              <span className="font-semibold">
-                {followingIds?.length ?? ''}
-              </span>{' '}
-              Following
-            </div>
-            <div>
-              <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
-              Followers
-            </div>
-          </Row>
-        </div>
-
-        {isMod && (
-          <div className="py-1">
-            <div className="block px-4 py-2 text-sm text-gray-700">
-              <span className="font-semibold">Last bet:</span>{' '}
-              {user.lastBetTime ? (
-                <RelativeTimestampNoTooltip
-                  time={user.lastBetTime}
-                  className="text-ink-700"
-                />
-              ) : (
-                'Never'
-              )}
-            </div>
+        {user.bio && (
+          <div className="sm:text-md mt-1 line-clamp-5 text-sm">
+            <Linkify text={user.bio}></Linkify>
           </div>
         )}
-      </HoverCard.Content>
-    )
-  )
+
+        <Row className="mt-3 gap-4 text-sm">
+          <div>
+            <span className="font-semibold">{followingIds?.length ?? ''}</span>{' '}
+            Following
+          </div>
+          <div>
+            <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
+            Followers
+          </div>
+        </Row>
+      </div>
+
+      {isMod && (
+        <div className="py-1">
+          <div className="block px-4 py-2 text-sm text-gray-700">
+            <span className="font-semibold">Last bet:</span>{' '}
+            {user.lastBetTime ? (
+              <RelativeTimestampNoTooltip
+                time={user.lastBetTime}
+                className="text-ink-700"
+              />
+            ) : (
+              'Never'
+            )}
+          </div>
+        </div>
+      )}
+    </HoverCard.Content>
+  ) : null
 }

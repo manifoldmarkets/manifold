@@ -18,6 +18,7 @@ import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -45,15 +46,17 @@ export function UserAvatarAndBadge(props: {
   const { username, avatarUrl } = user
 
   return (
-    <Row className={clsx('items-center gap-2', className)}>
-      <Avatar
-        avatarUrl={avatarUrl}
-        username={username}
-        size={'sm'}
-        noLink={noLink}
-      />
-      <UserLink user={user} noLink={noLink} />
-    </Row>
+    <UserHovercard userId={user.id}>
+      <Row className={clsx('items-center gap-2', className)}>
+        <Avatar
+          avatarUrl={avatarUrl}
+          username={username}
+          size={'sm'}
+          noLink={noLink}
+        />
+        <UserLink user={user} noLink={noLink} />
+      </Row>
+    </UserHovercard>
   )
 }
 

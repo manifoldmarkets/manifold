@@ -41,6 +41,7 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { UserHovercard } from '../user/user-hovercard'
 
 type BetSort =
   | 'newest'
@@ -559,14 +560,16 @@ function BetsTable(props: {
                       >
                         {contract.question}
                       </Link>
-                      <UserLink
-                        className={'text-ink-600 w-fit text-sm'}
-                        user={{
-                          id: contract.creatorId,
-                          name: contract.creatorName,
-                          username: contract.creatorUsername,
-                        }}
-                      />
+                      <UserHovercard userId={contract.creatorId}>
+                        <UserLink
+                          className={'text-ink-600 w-fit text-sm'}
+                          user={{
+                            id: contract.creatorId,
+                            name: contract.creatorName,
+                            username: contract.creatorUsername,
+                          }}
+                        />
+                      </UserHovercard>
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}

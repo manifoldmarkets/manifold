@@ -68,6 +68,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const ContractOverview = memo(
   (props: {
@@ -365,6 +366,8 @@ const ChartAnnotation = (props: {
   const {
     text,
     user_avatar_url,
+    user_id,
+    creator_id,
     creator_avatar_url,
     id,
     prob_change,
@@ -414,13 +417,15 @@ const ChartAnnotation = (props: {
     >
       <div className={'relative w-[175px] p-1'}>
         <div className={'h-16 overflow-hidden p-1 text-sm'}>
-          <Avatar
-            avatarUrl={user_avatar_url ?? creator_avatar_url}
-            username={user_username ?? creator_username}
-            noLink={true}
-            size={'2xs'}
-            className={'float-left mr-1 mt-0.5'}
-          />
+          <UserHovercard userId={user_id ?? creator_id}>
+            <Avatar
+              avatarUrl={user_avatar_url ?? creator_avatar_url}
+              username={user_username ?? creator_username}
+              noLink={true}
+              size={'2xs'}
+              className={'float-left mr-1 mt-0.5'}
+            />
+          </UserHovercard>
           <span className={'break-anywhere text-sm'}>{text}</span>
         </div>
         <div

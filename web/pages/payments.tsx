@@ -29,6 +29,7 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 
 export default function Payments() {
   const { payments, load } = useManaPayments()
@@ -168,18 +169,24 @@ const PaymentCards = (props: {
             <Row className={'justify-between'}>
               {fromUser && toUser ? (
                 <Row className="gap-1">
-                  <Avatar
-                    avatarUrl={fromUser.avatarUrl}
-                    username={fromUser.username}
-                  />
+                  <UserHovercard userId={fromUser.id}>
+                    <Avatar
+                      avatarUrl={fromUser.avatarUrl}
+                      username={fromUser.username}
+                    />
+                  </UserHovercard>
                   <Col className={'w-full'}>
                     <Row className={'flex-wrap gap-x-1'}>
                       <span className={'ml-1'}>
-                        <UserLink user={fromUser} />
+                        <UserHovercard userId={fromUser.id}>
+                          <UserLink user={fromUser} />
+                        </UserHovercard>
                       </span>
                       <span>{payment.amount < 0 ? 'fined' : 'paid'}</span>
                       <span>
-                        <UserLink user={toUser} />
+                        <UserHovercard userId={toUser.id}>
+                          <UserLink user={toUser} />
+                        </UserHovercard>
                       </span>
                     </Row>
                     <span className={'-mt-1'}>
