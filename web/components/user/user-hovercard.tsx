@@ -10,6 +10,8 @@ import { FollowButton } from '../buttons/follow-button'
 import { StackedUserNames } from '../widgets/user-link'
 import { Linkify } from '../widgets/linkify'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
+import dayjs from 'dayjs'
+import { Col } from '../layout/col'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -72,16 +74,26 @@ function FetchUserHovercardContent({ userId }: { userId: string }) {
           </div>
         )}
 
-        <Row className="mt-3 gap-4 text-sm">
-          <div>
-            <span className="font-semibold">{followingIds?.length ?? ''}</span>{' '}
-            Following
-          </div>
-          <div>
-            <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
-            Followers
-          </div>
-        </Row>
+        <Col className="mt-3 gap-1">
+          <Row className="gap-4 text-sm">
+            <div>
+              <span className="font-semibold">
+                {followingIds?.length ?? ''}
+              </span>{' '}
+              Following
+            </div>
+            <div>
+              <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
+              Followers
+            </div>
+          </Row>
+
+          <Row className="gap-4 text-sm">
+            <div className="text-ink-400">
+              Joined {dayjs(user.createdTime).format('MMM DD, YYYY')}
+            </div>
+          </Row>
+        </Col>
       </div>
 
       {isMod && (
