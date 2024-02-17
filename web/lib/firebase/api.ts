@@ -377,7 +377,8 @@ export function updatePrivateMessageChannel(params: {
 }
 export function editAnswerCpmm(params: {
   answerId: string
-  text: string
+  text?: string
+  color?: string
   contractId: string
 }) {
   return call(getApiUrl('edit-answer-cpmm'), 'POST', params)

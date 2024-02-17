@@ -18,7 +18,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
 import Link from 'next/link'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { Button, IconButton, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -57,6 +57,8 @@ import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
+import { CirclePicker } from 'react-color'
 
 const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
@@ -543,6 +545,46 @@ function Answer(props: {
             </Row>
           )}
           <Row className={'w-full justify-end gap-2'}>
+            {user &&
+              'isOther' in answer &&
+              !answer.isOther &&
+              (isAdminId(user.id) ||
+                isModId(user.id) ||
+                user.id === contract.creatorId ||
+                user.id === answer.userId) && (
+                <CustomizeableDropdown
+                  menuWidth="200px"
+                  buttonClass={clsx(
+                    buttonClass('2xs', 'gray-outline'),
+                    'h-full'
+                  )}
+                  buttonContent={() => (
+                    <div
+                      className="h-4 w-4 rounded-full"
+                      style={{ background: color }}
+                    />
+                  )}
+                  dropdownMenuContent={(close) => (
+                    <CirclePicker
+                      className="w-[240px] py-2"
+                      onChange={async (change) => {
+                        try {
+                          await editAnswerCpmm({
+                            answerId: answer.id,
+                            contractId: contract.id,
+                            color: change.hex,
+                          })
+                        } catch (error) {
+                          console.error(error)
+                        } finally {
+                          close()
+                        }
+                      }}
+                    />
+                  )}
+                />
+              )}
+
             {user &&
               'isOther' in answer &&
               !answer.isOther &&
