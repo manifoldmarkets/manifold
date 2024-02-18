@@ -1,5 +1,5 @@
 'use client'
-import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
@@ -77,11 +77,8 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
       undefined,
       `user-open-limit-bets-${user.id}`
     )
-  const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
-  useEffect(() => {
-    debounceGetMetrics()
-  }, [user.id, isAuth])
-  const getMetrics = () =>
+
+  const getMetrics = useEvent(() =>
     getUserContractsMetricsWithContracts({
       userId: user.id,
       offset: 0,
@@ -99,6 +96,12 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
+  )
+  useEffect(() => {
+    if (isAuth !== undefined) {
+      getMetrics()
+    }
+  }, [getMetrics, user.id, isAuth])
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000, isPolitics).then(
