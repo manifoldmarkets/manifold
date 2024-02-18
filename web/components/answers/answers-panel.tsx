@@ -57,6 +57,7 @@ import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { UserHovercard } from '../user/user-hovercard'
 
 const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 
@@ -532,15 +533,17 @@ function Answer(props: {
       {expanded && (
         <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
           {showAvatars && answerCreator && (
-            <Row className={'items-center self-start'}>
-              <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
-              <UserLink
-                user={answerCreator}
-                noLink={false}
-                className="ml-1 text-sm"
-                short={isMobile}
-              />
-            </Row>
+            <UserHovercard userId={answerCreator.id}>
+              <Row className={'items-center self-start'}>
+                <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
+                <UserLink
+                  user={answerCreator}
+                  noLink={false}
+                  className="ml-1 text-sm"
+                  short={isMobile}
+                />
+              </Row>
+            </UserHovercard>
           )}
           <Row className={'w-full justify-end gap-2'}>
             {user &&

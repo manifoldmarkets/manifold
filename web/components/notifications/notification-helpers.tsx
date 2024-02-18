@@ -14,6 +14,7 @@ import NotificationDropdown from './notification-dropdown'
 import { groupBy } from 'lodash'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { UserLink } from '../widgets/user-link'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const NOTIFICATIONS_PER_PAGE = 30
 
@@ -34,13 +35,15 @@ export function NotificationUserLink(props: {
 }) {
   const { userId, name, username, className, hideBadge } = props
   return (
-    <UserLink
-      user={{ id: userId || '', name: name || '', username: username || '' }}
-      className={clsx(
-        className ?? 'hover:text-primary-500 relative flex-shrink-0'
-      )}
-      hideBadge={hideBadge}
-    />
+    <UserHovercard userId={userId ?? ''}>
+      <UserLink
+        user={{ id: userId || '', name: name || '', username: username || '' }}
+        className={clsx(
+          className ?? 'hover:text-primary-500 relative flex-shrink-0'
+        )}
+        hideBadge={hideBadge}
+      />
+    </UserHovercard>
   )
 }
 

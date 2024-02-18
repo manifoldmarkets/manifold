@@ -6,6 +6,7 @@ import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { LoadingIndicator } from './widgets/loading-indicator'
+import { UserHovercard } from './user/user-hovercard'
 
 export function FollowList(props: { userIds?: string[] }) {
   const { userIds } = props
@@ -41,10 +42,12 @@ function UserFollowItem(props: {
 
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
-      <Row className="items-center gap-2">
-        <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
-        {user && <UserLink user={user} />}
-      </Row>
+      <UserHovercard userId={userId}>
+        <Row className="items-center gap-2">
+          <Avatar username={user?.username} avatarUrl={user?.avatarUrl} />
+          {user && <UserLink user={user} />}
+        </Row>
+      </UserHovercard>
       {!hideFollowButton && <FollowButton userId={userId} />}
     </Row>
   )

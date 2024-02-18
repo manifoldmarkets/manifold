@@ -26,11 +26,11 @@ import {
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
-import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 import { api } from 'web/lib/firebase/api'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function YourOrders(props: {
   contract:
@@ -163,14 +163,14 @@ function OrderRow(props: {
       {!isYou && (
         <td>
           <a href={`/${bet.userUsername}`}>
-            <Tooltip text={bet.userName}>
+            <UserHovercard userId={bet.userId}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
                 noLink={true}
               />
-            </Tooltip>
+            </UserHovercard>
           </a>
         </td>
       )}

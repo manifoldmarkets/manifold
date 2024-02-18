@@ -28,6 +28,7 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { Button } from 'web/components/buttons/button'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -37,7 +38,7 @@ export const FeedBet = memo(function FeedBet(props: {
   onReply?: (bet: Bet) => void
 }) {
   const { contract, bet, avatarSize, className, onReply } = props
-  const { userAvatarUrl, userUsername, createdTime } = bet
+  const { userAvatarUrl, userUsername, createdTime, userId } = bet
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
@@ -45,11 +46,13 @@ export const FeedBet = memo(function FeedBet(props: {
       <Row className={'justify-between'}>
         <Row className={clsx(className, 'items-center gap-2')}>
           {showUser ? (
-            <Avatar
-              size={avatarSize}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
-            />
+            <UserHovercard userId={userId}>
+              <Avatar
+                size={avatarSize}
+                avatarUrl={userAvatarUrl}
+                username={userUsername}
+              />
+            </UserHovercard>
           ) : (
             <EmptyAvatar className="mx-1" />
           )}
@@ -74,27 +77,31 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  const avatarUrls = filterDefined(uniq(bets.map((b) => b.userAvatarUrl)))
+  const avatars = filterDefined(
+    uniq(bets.map((b) => ({ avatarUrl: b.userAvatarUrl ?? '', id: b.userId })))
+  )
   const [showBets, setShowBets] = useState(false)
   return (
     <Col className={'w-full'}>
       <Row className={'w-full gap-2'}>
-        {!showUser || avatarUrls.length === 0 ? (
+        {!showUser || avatars.length === 0 ? (
           <EmptyAvatar className="mx-1" />
-        ) : avatarUrls.length === 1 ? (
-          <Avatar
-            size={avatarSize}
-            avatarUrl={bets[0].userAvatarUrl}
-            username={bets[0].userUsername}
-          />
+        ) : avatars.length === 1 ? (
+          <UserHovercard userId={bets[0].userId}>
+            <Avatar
+              size={avatarSize}
+              avatarUrl={bets[0].userAvatarUrl}
+              username={bets[0].userUsername}
+            />
+          </UserHovercard>
         ) : (
-          avatarUrls.length > 1 && (
+          avatars.length > 1 && (
             <MultipleOrSingleAvatars
               size={'2xs'}
               spacing={-0.2}
               startLeft={0.2}
               onClick={() => setShowBets(true)}
-              avatarUrls={avatarUrls}
+              avatars={avatars}
             />
           )
         )}
@@ -159,10 +166,12 @@ export function BetStatusesText(props: {
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-            className={'font-semibold'}
-          />
+          <UserHovercard userId={userId}>
+            <UserLink
+              user={{ id: userId, name: userName, username: userUsername }}
+              className={'font-semibold'}
+            />
+          </UserHovercard>
         ) : (
           <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
         ))}{' '}
@@ -218,14 +227,16 @@ export function BetStatusText(props: {
     <div className={clsx('text-ink-1000 text-sm', className)}>
       {!inTimeline ? (
         !hideUser ? (
-          <UserLink
-            user={{
-              id: bet.userId,
-              name: bet.userName,
-              username: bet.userUsername,
-            }}
-            className={'font-semibold'}
-          />
+          <UserHovercard userId={bet.userId}>
+            <UserLink
+              user={{
+                id: bet.userId,
+                name: bet.userName,
+                username: bet.userUsername,
+              }}
+              className={'font-semibold'}
+            />
+          </UserHovercard>
         ) : (
           <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
         )

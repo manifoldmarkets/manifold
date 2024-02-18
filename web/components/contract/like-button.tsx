@@ -21,6 +21,7 @@ import toast from 'react-hot-toast'
 import { track } from '@amplitude/analytics-browser'
 import { useUsersById } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
+import { UserHovercard } from '../user/user-hovercard'
 
 const LIKES_SHOWN = 3
 
@@ -255,13 +256,15 @@ function UserLikedPopup(props: {
 function UserLikedItem(props: { userInfo: MultiUserLinkInfo }) {
   const { userInfo } = props
   return (
-    <Row className="items-center gap-1.5">
-      <Avatar
-        username={userInfo.username}
-        avatarUrl={userInfo.avatarUrl}
-        size="2xs"
-      />
-      <UserLink user={userInfo} short={true} />
-    </Row>
+    <UserHovercard userId={userInfo.id}>
+      <Row className="items-center gap-1.5">
+        <Avatar
+          username={userInfo.username}
+          avatarUrl={userInfo.avatarUrl}
+          size="2xs"
+        />
+        <UserLink user={userInfo} short={true} />
+      </Row>
+    </UserHovercard>
   )
 }

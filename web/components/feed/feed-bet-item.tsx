@@ -7,6 +7,7 @@ import { Answer } from 'common/answer'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const FeedBetsItem = (props: {
   contract: Contract
@@ -15,7 +16,7 @@ export const FeedBetsItem = (props: {
   answers: Answer[] | undefined
 }) => {
   const { contract, answers, creatorDetails, betData } = props
-  const { avatarUrl, username } = creatorDetails
+  const { avatarUrl, username, id } = creatorDetails
   const { previous, change, current } = betData
   // Current lists their original investment, not their sale value
   const saleAmount =
@@ -36,13 +37,15 @@ export const FeedBetsItem = (props: {
 
   return (
     <div className={'text-ink-800 flex flex-wrap gap-1 py-3'}>
-      <span className={'inline-flex w-fit flex-row'}>
-        <Avatar size={'xs'} avatarUrl={avatarUrl} username={username} />
-        <UserLink
-          user={creatorDetails}
-          className="ml-1 max-w-[10rem] text-ellipsis sm:max-w-[12rem]"
-        />
-      </span>
+      <UserHovercard userId={id}>
+        <span className={'inline-flex w-fit flex-row'}>
+          <Avatar size={'xs'} avatarUrl={avatarUrl} username={username} />
+          <UserLink
+            user={creatorDetails}
+            className="ml-1 max-w-[10rem] text-ellipsis sm:max-w-[12rem]"
+          />
+        </span>
+      </UserHovercard>
       {previous?.outcome && saleAmount > 0 && (
         <>
           {`sold their ${formatMoney(saleAmount)} on `}
