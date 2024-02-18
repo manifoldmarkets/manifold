@@ -46,7 +46,7 @@ export default function Home(props: { headlines: Headline[] }) {
     <>
       <Welcome />
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
-        <HeadlineTabs headlines={headlines} />
+        <HeadlineTabs headlines={headlines} currentSlug={'home'} />
         <Row className="mx-3 mb-2 items-center gap-2">
           <div className="flex md:hidden">
             {user ? (
@@ -58,9 +58,7 @@ export default function Home(props: { headlines: Headline[] }) {
               <Spacer w={4} />
             )}
           </div>
-          <Title className="!mb-0 hidden whitespace-nowrap md:flex">
-            For You
-          </Title>
+          <Title className="!mb-0 hidden whitespace-nowrap md:flex">Home</Title>
 
           <DailyStats user={user} />
         </Row>
