@@ -42,11 +42,11 @@ export const NativeMessageListener = () => {
       if (auth.currentUser?.email !== user.email)
         await setFirebaseUserViaJson(user, app, true)
     } else if (type === 'pushNotificationPermissionStatus') {
-      const { status } = data
-      await handlePushNotificationPermissionStatus(status)
+      const { status, userId } = data
+      await handlePushNotificationPermissionStatus(userId, status)
     } else if (type === 'pushToken') {
-      const { token } = data
-      await setPushToken(token)
+      const { token, userId } = data
+      await setPushToken(userId, token)
     } else if (type === 'notification') {
       const notification = data as Notification
       // TODO: mark the notification as seen
