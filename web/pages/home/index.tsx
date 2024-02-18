@@ -1,8 +1,6 @@
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { Spacer } from 'web/components/layout/spacer'
-import { ProfileSummary } from 'web/components/nav/profile-summary'
 import Welcome from 'web/components/onboarding/welcome'
 import { Title } from 'web/components/widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -11,7 +9,6 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { FeedTimeline } from 'web/components/feed-timeline'
 import { api } from 'web/lib/firebase/api'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
@@ -38,7 +35,6 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
 
   const { headlines } = props
-  const isMobile = useIsMobile()
   const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
   const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
 
@@ -48,17 +44,7 @@ export default function Home(props: { headlines: Headline[] }) {
       <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
         <HeadlineTabs headlines={headlines} currentSlug={'home'} />
         <Row className="mx-3 mb-2 items-center gap-2">
-          <div className="flex md:hidden">
-            {user ? (
-              <ProfileSummary
-                user={user}
-                showProfile={isMobile ? true : undefined}
-              />
-            ) : (
-              <Spacer w={4} />
-            )}
-          </div>
-          <Title className="!mb-0 hidden whitespace-nowrap md:flex">Home</Title>
+          <Title className="!mb-0 whitespace-nowrap">Home</Title>
 
           <DailyStats user={user} />
         </Row>
