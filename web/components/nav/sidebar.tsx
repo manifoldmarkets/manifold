@@ -36,7 +36,10 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
-import { FaFlagUsa } from 'react-icons/fa6'
+import { 
+  FaFlagUsa,
+  FaScroll,
+} from 'react-icons/fa6'
 
 export default function Sidebar(props: {
   className?: string
