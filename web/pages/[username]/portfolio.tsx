@@ -165,8 +165,9 @@ function UserPortfolioInternal(props: {
         </Row>
 
         <QueryUncontrolledTabs
-          minimalist
           className={'mx-2 mb-3 mt-2 gap-6 sm:mt-0'}
+          minimalist
+          renderAllTabs
           tabs={buildArray([
             {
               title: 'Summary',
