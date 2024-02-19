@@ -199,7 +199,6 @@ function UserPortfolioInternal(props: {
               content: (
                 <SupabaseSearch
                   defaultFilter="all"
-                  hideAvatars={true}
                   defaultSearchType={'Questions'}
                   defaultSort="newest"
                   additionalFilter={{
