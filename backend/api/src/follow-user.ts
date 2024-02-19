@@ -15,15 +15,6 @@ export const followUser = authEndpoint(async (req, auth, log) => {
   const { userId: them, follow } = schema.parse(req.body)
   const me = auth.uid
 
-  await followUserInternal(me, them, follow)
-  return { success: true }
-})
-
-export const followUserInternal = async (
-  me: string,
-  them: string,
-  follow: boolean
-) => {
   const db = createSupabaseClient()
 
   const query = follow
@@ -45,6 +36,7 @@ export const followUserInternal = async (
         .eq('id', me)
         .single()
 
+      log('user:', user)
       if (user.error) throw user.error
 
       await createFollowOrMarketSubsidizedNotification(
@@ -57,7 +49,9 @@ export const followUserInternal = async (
         { recipients: [them] }
       )
     } catch (error) {
-      console.error('failed to send notification:', { error })
+      log('failed to send notification:', { error })
     }
   }
-}
+
+  return { success: true }
+})

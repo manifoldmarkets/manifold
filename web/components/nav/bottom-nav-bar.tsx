@@ -25,7 +25,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
-import { TiChartLine } from 'react-icons/ti'
+import { Avatar } from '../widgets/avatar'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -105,8 +105,7 @@ export function BottomNavBar(props: {
             onClick={() => setSidebarOpen(true)}
           >
             <UnseenMessagesBubble />
-            <MenuAlt3Icon className="mx-auto my-1 h-6 w-6" aria-hidden="true" />
-            More
+            <MenuAlt3Icon className="mx-auto my-2 h-8 w-8" aria-hidden="true" />
           </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
@@ -146,7 +145,7 @@ function NavBarItem(props: {
       >
         <Col>
           <div className="mx-auto my-1">
-            <TiChartLine className="h-6 w-6" />
+            <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
           <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
         </Col>
@@ -165,9 +164,8 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
+        {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
         {children}
-        {item.name}
       </button>
     )
   }
@@ -187,9 +185,8 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="mx-auto my-1 h-6 w-6" />}
+      {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
       {children}
-      {item.name}
     </Link>
   )
 }

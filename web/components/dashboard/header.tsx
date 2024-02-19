@@ -9,7 +9,7 @@ import { track } from 'web/lib/service/analytics'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
-  currentSlug?: string
+  currentSlug: string
 }) {
   const { headlines, currentSlug } = props
   const user = useUser()
@@ -17,9 +17,6 @@ export function HeadlineTabs(props: {
   return (
     <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
       <Carousel labelsParentClassName="gap-px">
-        {user && (
-          <Tab label="Home" href="/home" active={currentSlug === 'home'} />
-        )}
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}

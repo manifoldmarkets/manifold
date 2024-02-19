@@ -1,9 +1,10 @@
 import { usePrivateUser } from 'web/hooks/use-user'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
+import { uniq } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
-import { api } from 'web/lib/firebase/api'
 
 export function BlockMarketButton(props: { contract: Contract }) {
   const { contract } = props
@@ -14,7 +15,12 @@ export function BlockMarketButton(props: { contract: Contract }) {
 
   const onBlock = async () => {
     await toast.promise(
-      api('market/:contractId/block', { contractId: contract.id }),
+      updatePrivateUser(privateUser.id, {
+        blockedContractIds: uniq([
+          ...(privateUser.blockedContractIds ?? []),
+          contract.id,
+        ]),
+      }),
       {
         loading: 'Blocking...',
         success: `You'll no longer see this question in your feed nor search.`,
@@ -23,7 +29,11 @@ export function BlockMarketButton(props: { contract: Contract }) {
     )
   }
   const onUnblock = async () => {
-    await api('market/:contractId/unblock', { contractId: contract.id })
+    await updatePrivateUser(privateUser.id, {
+      blockedContractIds:
+        privateUser.blockedContractIds?.filter((id) => id !== contract.id) ??
+        [],
+    })
   }
 
   if (isBlocked) {

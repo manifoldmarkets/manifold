@@ -36,6 +36,9 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
 
     const canCreate = await canSendMana(fromUser, createSupabaseClient())
     if (!canCreate) {
+      if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
+        throw new APIError(403, 'Your account is banned or deleted.')
+      }
       throw new APIError(403, SEND_MANA_REQ)
     }
 

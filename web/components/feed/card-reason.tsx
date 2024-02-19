@@ -11,6 +11,7 @@ import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { DAY_MS } from 'common/util/time'
 import { FireIcon } from '@heroicons/react/outline'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -67,7 +68,9 @@ export function CardReason(props: {
       <Tooltip text={'Reposted by ' + item.creatorDetails.name}>
         <Row className={'text-ink-400 gap-1 text-sm'}>
           <BiRepost className={'text-ink-400 h-5 w-5'} />
-          <UserLink short={true} user={item.creatorDetails} />
+          <UserHovercard userId={item.creatorDetails.id}>
+            <UserLink short={true} user={item.creatorDetails} />
+          </UserHovercard>
           reposted
           <RelativeTimestamp
             time={item.createdTime}

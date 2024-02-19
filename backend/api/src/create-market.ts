@@ -374,7 +374,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
       validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED')
+    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'

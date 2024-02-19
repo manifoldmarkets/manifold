@@ -1,5 +1,5 @@
 'use client'
-import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
@@ -41,6 +41,7 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { UserHovercard } from '../user/user-hovercard'
 
 type BetSort =
   | 'newest'
@@ -76,11 +77,8 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
       undefined,
       `user-open-limit-bets-${user.id}`
     )
-  const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
-  useEffect(() => {
-    debounceGetMetrics()
-  }, [user.id, isAuth])
-  const getMetrics = () =>
+
+  const getMetrics = useEvent(() =>
     getUserContractsMetricsWithContracts({
       userId: user.id,
       offset: 0,
@@ -98,6 +96,12 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
+  )
+  useEffect(() => {
+    if (isAuth !== undefined) {
+      getMetrics()
+    }
+  }, [getMetrics, user.id, isAuth])
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000, isPolitics).then(
@@ -559,14 +563,16 @@ function BetsTable(props: {
                       >
                         {contract.question}
                       </Link>
-                      <UserLink
-                        className={'text-ink-600 w-fit text-sm'}
-                        user={{
-                          id: contract.creatorId,
-                          name: contract.creatorName,
-                          username: contract.creatorUsername,
-                        }}
-                      />
+                      <UserHovercard userId={contract.creatorId}>
+                        <UserLink
+                          className={'text-ink-600 w-fit text-sm'}
+                          user={{
+                            id: contract.creatorId,
+                            name: contract.creatorName,
+                            username: contract.creatorUsername,
+                          }}
+                        />
+                      </UserHovercard>
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}

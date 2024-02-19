@@ -21,6 +21,7 @@ import { richTextToString } from 'common/util/parse'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
+import { UserHovercard } from './user/user-hovercard'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -141,19 +142,23 @@ export const ReadChartAnnotationModal = (props: {
         <Col className={'w-full'}>
           <Row className={' justify-between'}>
             <Row className={'items-center gap-2'}>
-              <Avatar
-                username={user_username ?? creator_username}
-                avatarUrl={user_avatar_url ?? creator_avatar_url}
-                size={'md'}
-              />
-              <Col>
-                <UserLink
-                  user={{
-                    id: user_id ?? creator_id,
-                    username: user_username ?? creator_username,
-                    name: user_name ?? creator_name,
-                  }}
+              <UserHovercard userId={user_id as string}>
+                <Avatar
+                  username={user_username ?? creator_username}
+                  avatarUrl={user_avatar_url ?? creator_avatar_url}
+                  size={'md'}
                 />
+              </UserHovercard>
+              <Col>
+                <UserHovercard userId={user_id as string}>
+                  <UserLink
+                    user={{
+                      id: user_id ?? creator_id,
+                      username: user_username ?? creator_username,
+                      name: user_name ?? creator_name,
+                    }}
+                  />
+                </UserHovercard>
                 <span className={'text-ink-500 text-xs'}>
                   {new Date(event_time).toLocaleDateString('en-US', {
                     month: 'short',

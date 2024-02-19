@@ -48,7 +48,10 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
 
   return (
     <>
-      <Row className={className}>
+      <Carousel
+        className={clsx('border-ink-200 border-b pb-1', className)}
+        aria-label="Tabs"
+      >
         {tabs.map((tab, i) => (
           <a
             href="#"
@@ -79,7 +82,7 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
             </Tooltip>
           </a>
         ))}
-      </Row>
+      </Carousel>
       {tabs
         .map((tab, i) => ({ tab, i }))
         .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))

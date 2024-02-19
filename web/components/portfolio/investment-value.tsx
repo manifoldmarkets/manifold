@@ -78,10 +78,10 @@ export const InvestmentValueCard = memo(function (props: {
       }, DAILY_INVESTMENT_CLICK_EVENT)}
     >
       <Col className={'w-full gap-1.5'}>
-        <span className={'text-ink-800 ml-1'}>Your net worth</span>
-        <span className={'text-ink-800 mb-1 text-5xl'}>
-          {formatMoney(netWorth)}
-        </span>
+        <Col>
+          <div className={'text-ink-800 text-5xl'}>{formatMoney(netWorth)}</div>
+          <div className={'text-ink-800 ml-1'}>Your net worth</div>
+        </Col>
         {netWorth !== 0 && (
           <Row
             className={clsx(
@@ -97,11 +97,11 @@ export const InvestmentValueCard = memo(function (props: {
             {formatMoney(dailyProfit)} profit today
           </Row>
         )}
-        <div className={'absolute right-4 top-3'}>
+        <div className={'absolute right-1 top-1'}>
           <DailyLoan user={user} />
         </div>
         {visibleMetrics.length > 0 && (
-          <Col className={' border-ink-300 gap-4 border-t-2 pt-3'}>
+          <Col className={'border-ink-200 gap-4 border-t pt-3'}>
             {contractMetrics &&
               previewMetrics.map((change) => (
                 <MetricChangeRow
@@ -183,7 +183,7 @@ const MetricChangeRow = (props: {
         <Row className={'justify-between'}>
           <Link
             href={contractPath(contract)}
-            className={clsx('line-clamp-1', linkClass)}
+            className={clsx('line-clamp-2', linkClass)}
           >
             {contract.question}
           </Link>

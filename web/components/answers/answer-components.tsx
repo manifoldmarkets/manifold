@@ -37,6 +37,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -113,7 +114,9 @@ export const CreatorAndAnswerLabel = (props: {
   text: string
   createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
-  creator?: { name: string; username: string; avatarUrl?: string } | false
+  creator?:
+    | { name: string; username: string; avatarUrl?: string; id: string }
+    | false
   className?: string
 }) => {
   const { text, createdTime, truncate = 'none', creator, className } = props
@@ -137,12 +140,14 @@ export const CreatorAndAnswerLabel = (props: {
           {creator === false ? (
             <EmptyAvatar className="mr-2 inline" size={4} />
           ) : creator ? (
-            <Avatar
-              className="mr-2 inline"
-              size="2xs"
-              username={creator.username}
-              avatarUrl={creator.avatarUrl}
-            />
+            <UserHovercard userId={creator.id}>
+              <Avatar
+                className="mr-2 inline"
+                size="2xs"
+                username={creator.username}
+                avatarUrl={creator.avatarUrl}
+              />
+            </UserHovercard>
           ) : null}
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />

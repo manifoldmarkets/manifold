@@ -1,13 +1,9 @@
-import { api } from '../firebase/api'
+import { updatePrivateUser } from '../firebase/users'
 
-export const generateNewApiKey = async () => {
+export const generateNewApiKey = async (userId: string) => {
   const newApiKey = crypto.randomUUID()
 
-  try {
-    await api('update-private-user', { apiKey: newApiKey })
-  } catch (e) {
-    console.error(e)
-    return undefined
-  }
-  return newApiKey
+  return await updatePrivateUser(userId, { apiKey: newApiKey })
+    .then(() => newApiKey)
+    .catch(() => undefined)
 }

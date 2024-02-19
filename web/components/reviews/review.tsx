@@ -9,6 +9,7 @@ import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { UserLink } from '../widgets/user-link'
 import { Rating, StarDisplay } from './stars'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const Review = (props: {
   userId: string
@@ -30,14 +31,16 @@ export const Review = (props: {
         <ContractMention contract={contract} className="text-ink-600" />
       </div>
       <Row className="mb-1 mt-1 flex w-full items-center justify-between">
-        <Row className="gap-2">
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size="xs"
-          />
-          <UserLink user={user} />
-        </Row>
+        <UserHovercard userId={user.id}>
+          <Row className="gap-2">
+            <Avatar
+              username={user.username}
+              avatarUrl={user.avatarUrl}
+              size="xs"
+            />
+            <UserLink user={user} />
+          </Row>
+        </UserHovercard>
         <Row className="items-center gap-2">
           <StarDisplay rating={rating as Rating} />
           <RelativeTimestamp

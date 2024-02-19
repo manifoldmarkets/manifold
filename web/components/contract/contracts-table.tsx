@@ -22,6 +22,7 @@ import {
   traderColumn,
   ColumnFormat,
 } from './contract-table-col-formats'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -270,13 +271,15 @@ function ContractQuestion(props: {
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (
-        <Avatar
-          username={contract.creatorUsername}
-          avatarUrl={contract.creatorAvatarUrl}
-          size="xs"
-          preventDefault={true}
-          className="mt-0.5"
-        />
+        <UserHovercard userId={contract.creatorId}>
+          <Avatar
+            username={contract.creatorUsername}
+            avatarUrl={contract.creatorAvatarUrl}
+            size="xs"
+            preventDefault={true}
+            className="mt-0.5"
+          />
+        </UserHovercard>
       )}
       <div>
         <VisibilityIcon contract={contract} />

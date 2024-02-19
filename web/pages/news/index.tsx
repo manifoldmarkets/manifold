@@ -18,7 +18,7 @@ import { type Contract } from 'common/contract'
 
 export async function getStaticProps() {
   // redirect to first news item
-  const headlines = await api('headlines')
+  const headlines = await api('headlines', {})
 
   const first = headlines[0]
 
