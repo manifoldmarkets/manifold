@@ -61,18 +61,20 @@ export const BalanceCard = (props: {
   return (
     <Row className={className} onClick={onSeeChanges}>
       <Col className={'w-full gap-1.5'}>
-        <span className={'text-ink-800 ml-1'}>Your balance</span>
-        <span className={'text-ink-800 mb-1 text-5xl'}>
-          {formatMoney(user.balance)}
-        </span>
-        <Row className={'text-ink-600 mb-1 w-full flex-wrap justify-between'}>
-          <Row className={'gap-1'}>
-            {formatMoney(earnedToday)} in &{' '}
-            {formatMoney(spentToday).replace('-', '')} out today
-          </Row>
+        <Col>
+          <div className={'text-ink-800 text-5xl sm:text-5xl'}>
+            {formatMoney(user.balance)}
+          </div>
+          <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
+            Your balance
+          </div>
+        </Col>
+        <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
+          {formatMoney(earnedToday)} in &{' '}
+          {formatMoney(spentToday).replace('-', '')} out today
         </Row>
         {previewChanges.length > 0 && (
-          <Col className={'border-ink-300 border-t-2 pt-3'}>
+          <Col className={'border-ink-200 gap-2 border-t pt-3'}>
             <RenderBalanceChanges
               balanceChanges={previewChanges}
               user={user}
@@ -94,7 +96,7 @@ export const BalanceCard = (props: {
           </Col>
         )}
       </Col>
-      <div className={'absolute right-4 top-3'}>
+      <div className={'absolute right-1 top-1'}>
         <Button
           color="gray-outline"
           onClick={(e) => {
@@ -163,9 +165,17 @@ function RenderBalanceChanges(props: {
   avatarSize: 'sm' | 'md'
 }) {
   const { balanceChanges, user, avatarSize } = props
+  let currBalance = user.balance
+  const balanceRunningTotals = [
+    currBalance,
+    ...balanceChanges.map((change) => {
+      currBalance -= change.amount
+      return currBalance
+    }),
+  ]
   return (
     <>
-      {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
+      {orderBy(balanceChanges, 'createdTime', 'desc').map((change, i) => {
         const { type } = change
 
         if (
@@ -181,6 +191,7 @@ function RenderBalanceChanges(props: {
             <BetBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as BetBalanceChange}
+              balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
             />
           )
@@ -189,6 +200,7 @@ function RenderBalanceChanges(props: {
             <TxnBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as TxnBalanceChange}
+              balance={balanceRunningTotals[i]}
               avatarlUrl={user.avatarUrl}
               avatarSize={avatarSize}
             />
@@ -256,9 +268,10 @@ const betChangeToText = (change: BetBalanceChange) => {
 }
 const BetBalanceChangeRow = (props: {
   change: BetBalanceChange
+  balance: number
   avatarSize: 'sm' | 'md'
 }) => {
-  const { change, avatarSize } = props
+  const { change, balance, avatarSize } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
@@ -309,16 +322,16 @@ const BetBalanceChangeRow = (props: {
         />
       </Col>
       <Col className={'w-full overflow-x-hidden'}>
-        <Row className={'justify-between'}>
+        <Row className={'justify-between gap-2'}>
           {slug ? (
             <Link
               href={contractPathWithoutContract(creatorUsername, slug)}
-              className={clsx('line-clamp-1', linkClass)}
+              className={clsx('line-clamp-2', linkClass)}
             >
               {question}
             </Link>
           ) : (
-            <div className={clsx('line-clamp-1')}>{question}</div>
+            <div className={clsx('line-clamp-2')}>{question}</div>
           )}
           <span
             className={clsx(
@@ -331,8 +344,8 @@ const BetBalanceChangeRow = (props: {
           </span>
         </Row>
         <Row>
-          <div className={clsx('text-ink-500 line-clamp-1')}>
-            {betChangeToText(change)}
+          <div className={clsx('text-ink-600 line-clamp-1')}>
+            {formatMoney(balance)} {change && '·'} {betChangeToText(change)}
             {answer ? ` on ${answer.text}` : ''}
           </div>
         </Row>
@@ -343,10 +356,11 @@ const BetBalanceChangeRow = (props: {
 
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
+  balance: number
   avatarlUrl: string
   avatarSize: 'sm' | 'md'
 }) => {
-  const { change, avatarSize, avatarlUrl } = props
+  const { change, balance, avatarSize, avatarlUrl } = props
   const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
@@ -417,19 +431,19 @@ const TxnBalanceChangeRow = (props: {
                 contract.creatorUsername,
                 contract.slug
               )}
-              className={clsx('line-clamp-1', linkClass)}
+              className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}
             </Link>
           ) : changeUser ? (
             <Link
               href={'/' + changeUser.username}
-              className={clsx('line-clamp-1', linkClass)}
+              className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}
             </Link>
           ) : (
-            <div className={clsx('line-clamp-1')}>{txnTitle(change)}</div>
+            <div className={clsx('line-clamp-2')}>{txnTitle(change)}</div>
           )}
           <span
             className={clsx(
@@ -441,7 +455,10 @@ const TxnBalanceChangeRow = (props: {
             {formatMoney(amount).replace('-', '')}
           </span>
         </Row>
-        <Row className={'text-ink-500'}>{txnTypeToDescription(type)}</Row>
+        <Row className={'text-ink-600'}>
+          {formatMoney(balance)} {txnTypeToDescription(type) && '·'}{' '}
+          {txnTypeToDescription(type)}
+        </Row>
       </Col>
     </Row>
   )
