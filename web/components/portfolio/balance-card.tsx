@@ -32,6 +32,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
+import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
 
 export const BalanceCard = (props: {
   user: User
@@ -79,6 +80,7 @@ export const BalanceCard = (props: {
               balanceChanges={previewChanges}
               user={user}
               avatarSize={'sm'}
+              simple
             />
             {moreChanges > 0 && (
               <Row className={'justify-end'}>
@@ -117,8 +119,9 @@ export const BalanceCard = (props: {
 export const BalanceChangeTable = (props: {
   user: User
   balanceChanges: TxnBalanceChange[] | BetBalanceChange[]
+  simple?: boolean
 }) => {
-  const { user } = props
+  const { user, simple } = props
   const [query, setQuery] = useState('')
   const balanceChanges = props.balanceChanges.filter((change) => {
     const { type, contract } = change
@@ -154,6 +157,7 @@ export const BalanceChangeTable = (props: {
           avatarSize={'md'}
           balanceChanges={balanceChanges}
           user={user}
+          simple={simple}
         />
       </Col>
     </Col>
@@ -163,8 +167,9 @@ function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
   user: User
   avatarSize: 'sm' | 'md'
+  simple?: boolean
 }) {
-  const { balanceChanges, user, avatarSize } = props
+  const { balanceChanges, user, avatarSize, simple } = props
   let currBalance = user.balance
   const balanceRunningTotals = [
     currBalance,
@@ -193,6 +198,7 @@ function RenderBalanceChanges(props: {
               change={change as BetBalanceChange}
               balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
+              simple={simple}
             />
           )
         } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
@@ -203,6 +209,7 @@ function RenderBalanceChanges(props: {
               balance={balanceRunningTotals[i]}
               avatarlUrl={user.avatarUrl}
               avatarSize={avatarSize}
+              simple={simple}
             />
           )
         }
@@ -270,8 +277,9 @@ const BetBalanceChangeRow = (props: {
   change: BetBalanceChange
   balance: number
   avatarSize: 'sm' | 'md'
+  simple?: boolean
 }) => {
-  const { change, balance, avatarSize } = props
+  const { change, balance, avatarSize, simple } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
@@ -345,13 +353,24 @@ const BetBalanceChangeRow = (props: {
         </Row>
         <Row>
           <div className={clsx('text-ink-600 line-clamp-1')}>
-            {formatMoney(balance)} {change && '·'} {betChangeToText(change)}
-            {answer ? ` on ${answer.text}` : ''}
+            {betChangeToText(change)} {answer ? ` on ${answer.text}` : ''}
           </div>
         </Row>
+        {!simple && (
+          <Row className={'text-ink-600'}>
+            {formatMoney(balance)} {'·'} {customFormatTime(change.createdTime)}
+          </Row>
+        )}
       </Col>
     </Row>
   )
+}
+
+const customFormatTime = (time: number) => {
+  if (time > Date.now() - DAY_MS) {
+    return formatJustTime(time)
+  }
+  return formatTimeShort(time)
 }
 
 const TxnBalanceChangeRow = (props: {
@@ -359,8 +378,9 @@ const TxnBalanceChangeRow = (props: {
   balance: number
   avatarlUrl: string
   avatarSize: 'sm' | 'md'
+  simple?: boolean
 }) => {
-  const { change, balance, avatarSize, avatarlUrl } = props
+  const { change, balance, avatarSize, avatarlUrl, simple } = props
   const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
@@ -455,10 +475,12 @@ const TxnBalanceChangeRow = (props: {
             {formatMoney(amount).replace('-', '')}
           </span>
         </Row>
-        <Row className={'text-ink-600'}>
-          {formatMoney(balance)} {txnTypeToDescription(type) && '·'}{' '}
-          {txnTypeToDescription(type)}
-        </Row>
+        <div className={'text-ink-600'}>{txnTypeToDescription(type)}</div>
+        {!simple && (
+          <Row className={'text-ink-600'}>
+            {formatMoney(balance)} {'·'} {customFormatTime(change.createdTime)}
+          </Row>
+        )}
       </Col>
     </Row>
   )

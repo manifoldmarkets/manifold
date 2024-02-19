@@ -19,6 +19,10 @@ export function formatTimeShort(time: number) {
   return dayjs(time).format('MMM D, h:mma')
 }
 
+export function formatJustTime(time: number) {
+  return dayjs(time).format('h:mma')
+}
+
 export const periodDurations: {
   [period in Exclude<Period, 'allTime'>]: number
 } = {

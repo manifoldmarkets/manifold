@@ -48,12 +48,14 @@ export const getStaticProps = async (props: {
         .select('*', { head: true, count: 'exact' })
         .eq('user_id', user.id)
     : { count: 0 }
-  const balanceChanges = user
+  const oneWeekBalanceChanges = user
     ? await api('get-balance-changes', {
         userId: user.id,
-        after: Date.now() - DAY_MS,
+        after: Date.now() - DAY_MS * 7,
       })
     : []
+  const balanceChanges = oneWeekBalanceChanges.slice(0, 200)
+
   return {
     props: removeUndefinedProps({
       user,
@@ -179,10 +181,6 @@ function UserPortfolioInternal(props: {
                 />
               ),
             },
-            (!!user.lastBetTime || hasBetBalanceChanges) && {
-              title: 'Trades',
-              content: <UserBetsTable user={user} />,
-            },
             {
               title: 'Balance',
               content: (
@@ -192,6 +190,10 @@ function UserPortfolioInternal(props: {
                 />
               ),
               queryString: balanceChangesKey,
+            },
+            (!!user.lastBetTime || hasBetBalanceChanges) && {
+              title: 'Trades',
+              content: <UserBetsTable user={user} />,
             },
             (user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && {
