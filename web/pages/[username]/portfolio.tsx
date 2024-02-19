@@ -243,7 +243,7 @@ const PortfolioSummary = ({
 
   return (
     <Col className="gap-5">
-      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 sm:px-0 '}>
+      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
         <BalanceCard
           onSeeChanges={() => {
             router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
@@ -271,24 +271,22 @@ const PortfolioSummary = ({
         </Col>
       )}
 
-      <div className="text-ink-800 mx-2 text-xl">Recent questions</div>
-      <Col className={clsx('relative col-span-8 mx-auto w-full xl:col-span-7')}>
-        <SupabaseSearch
-          persistPrefix="search"
-          additionalFilter={{
-            excludeContractIds: privateUser?.blockedContractIds,
-            excludeGroupSlugs: privateUser?.blockedGroupSlugs,
-            excludeUserIds: privateUser?.blockedUserIds,
-          }}
-          useUrlParams={false}
-          isWholePage={false}
-          headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
-          defaultTopic="recent"
-          contractsOnly
-          hideContractFilters
-          hideSearch
-        />
-      </Col>
+      <div className="text-ink-800 mx-2 text-xl lg:mx-0">Recent questions</div>
+      <SupabaseSearch
+        persistPrefix="search"
+        additionalFilter={{
+          excludeContractIds: privateUser?.blockedContractIds,
+          excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+          excludeUserIds: privateUser?.blockedUserIds,
+        }}
+        useUrlParams={false}
+        isWholePage={false}
+        headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+        defaultTopic="recent"
+        contractsOnly
+        hideContractFilters
+        hideSearch
+      />
     </Col>
   )
 }
