@@ -143,7 +143,12 @@ const getDesktopNav = (
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      { 
+        name: 'Community guidelines', 
+        href: 'https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21', 
+        icon: FaScroll 
+      },
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
