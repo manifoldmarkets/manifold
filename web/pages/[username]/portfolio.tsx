@@ -22,7 +22,7 @@ import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { usePrivateUser, useUser, useUserById } from 'web/hooks/use-user'
 import {
   BalanceCard,
   BalanceChangeTable,
@@ -30,7 +30,6 @@ import {
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { buildArray } from 'common/util/array'
-import { useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -89,6 +88,7 @@ export default function UserPortfolio(props: {
     />
   )
 }
+
 function UserPortfolioInternal(props: {
   user: User
   username: string
@@ -98,16 +98,10 @@ function UserPortfolioInternal(props: {
 }) {
   const { shouldIgnoreUser, balanceChanges, portfolioPoints } = props
   const user = useUserById(props.user.id) ?? props.user
-  const currentUser = useUser()
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
   )
-  const router = useRouter()
-  const pathName = usePathname()
   const balanceChangesKey = 'balance-changes'
-  const ref = useRef<HTMLDivElement>(null)
-  const CARD_CLASS =
-    'h-fit bg-canvas-0 hover:bg-canvas-100 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-4 py-3 sm:w-[48%]'
   return (
     <Page
       key={user.id}
@@ -151,10 +145,10 @@ function UserPortfolioInternal(props: {
         </Row>
         <Row
           className={
-            'mx-1 my-4 hidden items-center justify-between md:inline-flex'
+            'mx-1 mb-4 hidden items-center justify-between md:inline-flex'
           }
         >
-          <span className={'text-primary-700   text-2xl'}>Your portfolio</span>
+          <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
           <Link
             href={'/' + user.username}
             className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
@@ -169,87 +163,132 @@ function UserPortfolioInternal(props: {
             Profile
           </Link>
         </Row>
-        <Row className={'flex-wrap gap-4 px-3 sm:px-0 '}>
-          <BalanceCard
-            onSeeChanges={() => {
-              router.replace(
-                pathName + '?tab=' + balanceChangesKey,
-                undefined,
-                { shallow: true }
-              )
-              ref.current?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            user={user}
-            balanceChanges={balanceChanges}
-            className={CARD_CLASS}
-          />
-          <InvestmentValueCard user={user} className={CARD_CLASS} />
-        </Row>
-        <Col className={'mt-5'}>
-          {portfolioPoints > 1 && (
-            <Col className={'px-1 md:pr-8'}>
-              <PortfolioValueSection
-                userId={user.id}
-                onlyShowProfit={true}
-                defaultTimePeriod={
-                  currentUser?.id === user.id ? 'weekly' : 'monthly'
-                }
-                lastUpdatedTime={user.metricsLastUpdated}
-                isCurrentUser={currentUser?.id === user.id}
-                hideAddFundsButton={true}
-              />
-            </Col>
-          )}
-          <div ref={ref} className={'h-0.5'} />
-          <Col className={'px-1'}>
-            <QueryUncontrolledTabs
-              minimalist={true}
-              className={'mx-2 mb-3 mt-2 gap-6 sm:mt-6'}
-              tabs={buildArray([
-                (!!user.lastBetTime || hasBetBalanceChanges) && {
-                  title: 'Trades',
-                  content: <UserBetsTable user={user} />,
-                },
-                {
-                  title: 'Balance changes',
-                  content: (
-                    <BalanceChangeTable
-                      user={user}
-                      balanceChanges={balanceChanges}
-                    />
-                  ),
-                  queryString: balanceChangesKey,
-                },
-                (user.creatorTraders.allTime > 0 ||
-                  (user.freeQuestionsCreated ?? 0) > 0) && {
-                  title: 'Questions',
-                  content: (
-                    <SupabaseSearch
-                      defaultFilter="all"
-                      hideAvatars={true}
-                      defaultSearchType={'Questions'}
-                      defaultSort="newest"
-                      additionalFilter={{
-                        creatorId: user.id,
-                      }}
-                      persistPrefix={`user-contracts-list-${user.id}`}
-                      useUrlParams
-                      emptyState={
-                        <>
-                          <div className="text-ink-700 mx-2 mt-3 text-center">
-                            No questions found
-                          </div>
-                        </>
-                      }
-                      contractsOnly
-                    />
-                  ),
-                },
-              ])}
-            />
-          </Col>
-        </Col>
+
+        <QueryUncontrolledTabs
+          minimalist
+          className={'mx-2 mb-3 mt-2 gap-6 sm:mt-0'}
+          tabs={buildArray([
+            {
+              title: 'Summary',
+              content: (
+                <PortfolioSummary
+                  user={user}
+                  balanceChanges={balanceChanges}
+                  portfolioPoints={portfolioPoints}
+                />
+              ),
+            },
+            (!!user.lastBetTime || hasBetBalanceChanges) && {
+              title: 'Trades',
+              content: <UserBetsTable user={user} />,
+            },
+            {
+              title: 'Balance',
+              content: (
+                <BalanceChangeTable
+                  user={user}
+                  balanceChanges={balanceChanges}
+                />
+              ),
+              queryString: balanceChangesKey,
+            },
+            (user.creatorTraders.allTime > 0 ||
+              (user.freeQuestionsCreated ?? 0) > 0) && {
+              title: 'Questions',
+              content: (
+                <SupabaseSearch
+                  defaultFilter="all"
+                  hideAvatars={true}
+                  defaultSearchType={'Questions'}
+                  defaultSort="newest"
+                  additionalFilter={{
+                    creatorId: user.id,
+                  }}
+                  persistPrefix={`user-contracts-list-${user.id}`}
+                  useUrlParams
+                  emptyState={
+                    <>
+                      <div className="text-ink-700 mx-2 mt-3 text-center">
+                        No questions found
+                      </div>
+                    </>
+                  }
+                  contractsOnly
+                />
+              ),
+            },
+          ])}
+        />
       </Col>
     </Page>
+  )
+}
+
+const PortfolioSummary = ({
+  user,
+  balanceChanges,
+  portfolioPoints,
+}: {
+  user: User
+  balanceChanges: AnyBalanceChangeType[]
+  portfolioPoints: number
+}) => {
+  const router = useRouter()
+  const pathName = usePathname()
+  const currentUser = useUser()
+  const privateUser = usePrivateUser()
+  const CARD_CLASS =
+    'h-fit bg-canvas-50 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-0 py-0 sm:w-[48%]'
+  const balanceChangesKey = 'balance-changes'
+
+  return (
+    <Col className="gap-5">
+      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 sm:px-0 '}>
+        <BalanceCard
+          onSeeChanges={() => {
+            router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
+              shallow: true,
+            })
+          }}
+          user={user}
+          balanceChanges={balanceChanges}
+          className={CARD_CLASS}
+        />
+        <InvestmentValueCard user={user} className={CARD_CLASS} />
+      </Row>
+      {portfolioPoints > 1 && (
+        <Col className={'mb-6 px-1 md:pr-8'}>
+          <PortfolioValueSection
+            userId={user.id}
+            onlyShowProfit={true}
+            defaultTimePeriod={
+              currentUser?.id === user.id ? 'weekly' : 'monthly'
+            }
+            lastUpdatedTime={user.metricsLastUpdated}
+            isCurrentUser={currentUser?.id === user.id}
+            hideAddFundsButton={true}
+          />
+        </Col>
+      )}
+
+      <div className="text-ink-800 mx-2 text-xl">Recent questions</div>
+      <Col className={clsx('relative col-span-8 mx-auto w-full xl:col-span-7')}>
+        <SupabaseSearch
+          persistPrefix="search"
+          additionalFilter={{
+            excludeContractIds: privateUser?.blockedContractIds,
+            excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+            excludeUserIds: privateUser?.blockedUserIds,
+          }}
+          useUrlParams={false}
+          isWholePage={false}
+          headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+          defaultTopic="recent"
+          contractsOnly
+          hideContractFilters
+          hideSearch
+        />
+      </Col>
+    </Col>
   )
 }
