@@ -13,6 +13,7 @@ import {
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -36,10 +37,7 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
-import { 
-  FaFlagUsa,
-  FaScroll,
-} from 'react-icons/fa6'
+import { FaFlagUsa } from 'react-icons/fa6'
 
 export default function Sidebar(props: {
   className?: string
@@ -148,9 +146,9 @@ const getDesktopNav = (
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
       { 
-        name: 'Community guidelines', 
+        name: 'Guidelines', 
         href: 'https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21', 
-        icon: FaScroll 
+        icon: ScaleIcon, 
       },
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
@@ -165,7 +163,12 @@ const getDesktopNav = (
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
+    { 
+      name: 'Guidelines', 
+      href: 'https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21', 
+      icon: ScaleIcon, 
+    },
   )
 }
 
