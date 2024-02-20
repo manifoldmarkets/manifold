@@ -4,9 +4,8 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common//api/utils'
-import { StructuredLogger, getLogger } from 'shared/log'
+import { StructuredLogger, log } from 'shared/log'
 export { APIError } from 'common//api/utils'
-import * as crypto from 'crypto'
 import {
   API,
   APIPath,
@@ -118,35 +117,18 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const logger = requestLogger(req)
-      res.status(200).json(await fn(req, logger.debug, logger.error, res))
+      res.status(200).json(await fn(req, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
   }
 }
 
-const requestLogger = (req: Request) => {
-  const traceContext = req.get('X-Cloud-Trace-Context')
-  const traceId = traceContext
-    ? traceContext.split('/')[0]
-    : crypto.randomUUID()
-  return getLogger({ endpoint: req.path, traceId })
-}
-
-export const getDummyLogs = (endpoint: string) => {
-  const traceId = crypto.randomUUID()
-  return getLogger({ endpoint, traceId })
-}
-
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      const logger = requestLogger(req)
-      res
-        .status(200)
-        .json(await fn(req, authedUser, logger.debug, logger.error, res))
+      res.status(200).json(await fn(req, authedUser, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
@@ -165,10 +147,7 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     }
 
     try {
-      const logger = requestLogger(req)
-      res
-        .status(200)
-        .json(await fn(req, authUser, logger.debug, logger.error, res))
+      res.status(200).json(await fn(req, authUser, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
@@ -202,13 +181,14 @@ export const typedEndpoint = <N extends APIPath>(
       ...req.params,
     }
 
-    const logger = requestLogger(req)
-
     try {
       const resultOptionalContinue = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
-        { log: logger.debug, logError: logger.error }
+        {
+          log: log.info,
+          logError: log.error,
+        }
       )
 
       const hasContinue =
@@ -230,7 +210,7 @@ export const typedEndpoint = <N extends APIPath>(
         await resultOptionalContinue.continue()
       }
     } catch (error) {
-      logger.error(error)
+      log.error(error)
       next(error)
     }
   }

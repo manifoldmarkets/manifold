@@ -2,8 +2,7 @@ import { runScript } from './run-script'
 import { Contract } from 'common/contract'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser } from 'shared/utils'
-import { getDummyLogs } from 'api/helpers'
+import { getUser, log } from 'shared/utils'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -32,7 +31,7 @@ if (require.main === module) {
         {
           outcome: 'CANCEL',
         },
-        getDummyLogs('resolve-market').log
+        log.debug
       )
     }
   })

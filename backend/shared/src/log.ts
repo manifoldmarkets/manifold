@@ -1,6 +1,13 @@
 import { format } from 'node:util'
 import { omit } from 'lodash'
-import { blue, dim, red, yellow } from 'colors/safe'
+import { dim, red, yellow } from 'colors/safe'
+import { AsyncLocalStorage } from 'node:async_hooks'
+
+const LOG_CONTEXT_STORE = new AsyncLocalStorage<LogDetails>()
+
+export function withLogContext<R>(props: LogDetails, fn: () => R) {
+  return LOG_CONTEXT_STORE.run(props, fn)
+}
 
 // mapping JS log levels (e.g. functions on console object) to GCP log levels
 export const JS_TO_GCP_LEVELS = {
@@ -11,6 +18,7 @@ export const JS_TO_GCP_LEVELS = {
 } as const
 
 const JS_LEVELS = Object.keys(JS_TO_GCP_LEVELS) as LogLevel[]
+const DEFAULT_LEVEL = 'info'
 
 export type LogLevel = keyof typeof JS_TO_GCP_LEVELS
 export type LogDetails = Record<string, unknown>
@@ -51,63 +59,50 @@ function ts() {
   return `[${new Date().toISOString()}]`
 }
 
-function formatStructuredLog(
-  msg: unknown,
-  opts?: { level?: LogLevel; props?: LogDetails; rest?: unknown[] }
-) {
-  const { level, props, rest } = opts ?? {}
-  const { endpoint, ...otherData } = props ?? {}
-  const endpointLabel = endpoint ? dim(endpoint.toString()) + ' ' : ''
-  const message = format(toString(msg), ...(rest ?? []))
-  const data = omit(otherData, 'traceId')
-  const dataSection = Object.entries(data).map(
-    ([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`
-  )
-  const result = `${dim(ts())} ${endpointLabel}${message}${dataSection}`
-  if (level === 'error') {
-    return red(result)
-  } else if (level === 'warn') {
-    return yellow(result)
-  } else {
-    return result
-  }
-}
-
 // handles both the cases where someone wants to write unstructured
 // stream-of-consciousness console logging like log('count:', 1, 'user': u)
 // and also structured key/value logging with severity
 function writeLog(
+  level: LogLevel,
   msg: unknown,
-  opts?: { level?: LogLevel; props?: LogDetails; rest?: unknown[] }
+  opts?: { props?: LogDetails; rest?: unknown[] }
 ) {
-  const { level, props, rest } = opts ?? {}
   try {
+    const { props, rest } = opts ?? {}
+    const contextData = LOG_CONTEXT_STORE.getStore()
     const message = format(toString(msg), ...(rest ?? []))
+    const data = { ...(contextData ?? {}), ...(props ?? {}) }
     if (IS_GCP) {
-      const output = { message } as Record<string, unknown>
-      if (level) {
-        output.severity = JS_TO_GCP_LEVELS[level]
-      }
-      if (props) {
-        Object.assign(output, props ?? {})
-      }
-      console.log(JSON.stringify(output, replacer))
+      const severity = JS_TO_GCP_LEVELS[level]
+      console.log(JSON.stringify({ severity, message, ...data }, replacer))
     } else {
-      console[level ?? 'log'](formatStructuredLog(msg, opts))
+      const { endpoint, ...otherData } = data
+      const endpointLabel = endpoint ? dim(endpoint.toString()) + ' ' : ''
+      const dataSection = Object.entries(omit(otherData, 'traceId')).map(
+        ([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`
+      )
+      const result = `${dim(ts())} ${endpointLabel}${message}${dataSection}`
+      if (level === 'error') {
+        return console.error(red(result))
+      } else if (level === 'warn') {
+        return console.warn(yellow(result))
+      } else if (level === 'debug') {
+        return console.debug(dim(result))
+      } else {
+        return console[level](result)
+      }
     }
   } catch (e) {
     console.error('Could not write log output.', e)
   }
 }
 
-// if ctx is provided, records it as structured data along with every log entry
-export function getLogger(ctx?: LogDetails): Logger {
-  const logger = ((msg: unknown, ...args: unknown[]) => {
-    writeLog(msg, { props: ctx, rest: args })
-  }) as Logger
+export function getLogger(): Logger {
+  const logger = ((msg: unknown, ...rest: unknown[]) =>
+    writeLog(DEFAULT_LEVEL, msg, { rest })) as Logger
   for (const level of JS_LEVELS) {
     logger[level] = (msg: unknown, props?: LogDetails) =>
-      writeLog(msg, { level, props: { ...(ctx ?? {}), ...props } })
+      writeLog(level, msg, { props })
   }
   return logger
 }

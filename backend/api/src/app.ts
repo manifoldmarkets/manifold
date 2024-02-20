@@ -1,8 +1,9 @@
 import * as cors from 'cors'
+import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
@@ -153,9 +154,20 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestLogger: RequestHandler = (req, _res, next) => {
-  log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
-  next()
+const requestContext: RequestHandler = (req, _res, next) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
+  const context = { endpoint: req.path, traceId }
+  withLogContext(context, () => {
+    if (req.body) {
+      log(`${req.method} ${req.url} ${JSON.stringify(req.body)}`)
+    } else {
+      log(`${req.method} ${req.url}`)
+    }
+    next()
+  })
 }
 
 const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
@@ -184,7 +196,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestLogger)
+app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 
