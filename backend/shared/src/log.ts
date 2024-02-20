@@ -1,16 +1,10 @@
 import { format } from 'node:util'
-import { omit } from 'lodash'
+import { pick, omit } from 'lodash'
 import { dim, red, yellow } from 'colors/safe'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
-const LOG_CONTEXT_STORE = new AsyncLocalStorage<LogDetails>()
-
-export function withLogContext<R>(props: LogDetails, fn: () => R) {
-  return LOG_CONTEXT_STORE.run(props, fn)
-}
-
 // mapping JS log levels (e.g. functions on console object) to GCP log levels
-export const JS_TO_GCP_LEVELS = {
+const JS_TO_GCP_LEVELS = {
   debug: 'DEBUG',
   info: 'INFO',
   warn: 'WARNING',
@@ -19,6 +13,14 @@ export const JS_TO_GCP_LEVELS = {
 
 const JS_LEVELS = Object.keys(JS_TO_GCP_LEVELS) as LogLevel[]
 const DEFAULT_LEVEL = 'info'
+const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
+const LOG_CONTEXT_STORE = new AsyncLocalStorage<LogDetails>()
+
+// keys to put in front to categorize a log line in the console
+const DISPLAY_CATEGORY_KEYS = ['endpoint', 'job']
+
+// keys to ignore when printing out log details in the console
+const DISPLAY_EXCLUDED_KEYS = ['traceId']
 
 export type LogLevel = keyof typeof JS_TO_GCP_LEVELS
 export type LogDetails = Record<string, unknown>
@@ -27,8 +29,6 @@ export type StructuredLogger = (msg: unknown, props?: LogDetails) => void
 export type Logger = TextLogger & {
   [Property in LogLevel]: StructuredLogger
 }
-
-const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
 
 function toString(obj: unknown) {
   if (obj instanceof Error) {
@@ -77,11 +77,12 @@ function writeLog(
       console.log(JSON.stringify({ severity, message, ...data }, replacer))
     } else {
       const { endpoint, ...otherData } = data
-      const endpointLabel = endpoint ? dim(endpoint.toString()) + ' ' : ''
-      const dataSection = Object.entries(omit(otherData, 'traceId')).map(
-        ([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`
-      )
-      const result = `${dim(ts())} ${endpointLabel}${message}${dataSection}`
+      const category = Object.values(pick(data, DISPLAY_CATEGORY_KEYS)).join()
+      const categoryLabel = category ? dim(category) + ' ' : ''
+      const details = Object.entries(
+        omit(otherData, [...DISPLAY_CATEGORY_KEYS, ...DISPLAY_EXCLUDED_KEYS])
+      ).map(([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`)
+      const result = `${dim(ts())} ${categoryLabel}${message}${details}`
       if (level === 'error') {
         return console.error(red(result))
       } else if (level === 'warn') {
@@ -105,6 +106,10 @@ export function getLogger(): Logger {
       writeLog(level, msg, { props })
   }
   return logger
+}
+
+export function withLogContext<R>(props: LogDetails, fn: () => R) {
+  return LOG_CONTEXT_STORE.run(props, fn)
 }
 
 export const log = getLogger()
