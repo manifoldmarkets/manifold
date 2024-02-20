@@ -1,3 +1,6 @@
+import dayjs from 'dayjs'
+import clsx from 'clsx'
+
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage, User } from 'common/user'
 import { db } from 'web/lib/supabase/db'
@@ -7,10 +10,8 @@ import {
   AnyBalanceChangeType,
   BET_BALANCE_CHANGE_TYPES,
 } from 'common/balance-change'
-
 import { Col } from 'web/components/layout/col'
 import { DAY_MS } from 'common/util/time'
-import clsx from 'clsx'
 import { SEO } from 'web/components/SEO'
 import Head from 'next/head'
 import { Row } from 'web/components/layout/row'
@@ -39,6 +40,7 @@ import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingContractRow } from 'web/components/contract/contracts-table'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export const getStaticProps = async (props: {
   params: {
@@ -232,15 +234,13 @@ function UserPortfolioInternal(props: {
   )
 }
 
-const PortfolioSummary = ({
-  user,
-  balanceChanges,
-  portfolioPoints,
-}: {
+const PortfolioSummary = (props: {
   user: User
   balanceChanges: AnyBalanceChangeType[]
   portfolioPoints: number
 }) => {
+  const { user, portfolioPoints } = props
+
   const router = useRouter()
   const pathName = usePathname()
   const currentUser = useUser()
@@ -250,6 +250,12 @@ const PortfolioSummary = ({
   const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
+
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(7, 'day').valueOf(),
+  })
+  const balanceChanges = newBalanceChanges ?? props.balanceChanges
 
   return (
     <Col className="gap-6">
