@@ -161,28 +161,25 @@ const requestContext: RequestHandler = (req, _res, next) => {
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
   withLogContext(context, () => {
-    if (req.body) {
-      log(`${req.method} ${req.url} ${JSON.stringify(req.body)}`)
-    } else {
-      log(`${req.method} ${req.url}`)
-    }
+    log(`${req.ip} ${req.method} ${req.url}`)
     next()
   })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-  if (err instanceof APIError) {
-    const output: { [k: string]: unknown } = { message: err.message }
-    if (err.details != null) {
-      output.details = err.details
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof APIError) {
+    log.info(error)
+    if (res.headersSent) {
+      return next(error)
     }
-    res.status(err.code).json(output)
+    const output: { [k: string]: unknown } = { message: error.message }
+    if (error.details != null) {
+      output.details = error.details
+    }
+    res.status(error.code).json(output)
   } else {
-    console.error(err.stack)
-    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
+    log.error(error)
+    res.status(500).json({ message: error.stack, error })
   }
 }
 

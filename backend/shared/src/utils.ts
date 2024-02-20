@@ -92,7 +92,7 @@ export const revalidateStaticProps = async (
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated', pathToRevalidate)
+    log('Revalidated', pathToRevalidate)
   }
 }
 
@@ -111,7 +111,7 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated tag', tag)
+    log('Revalidated tag', tag)
   }
 }
 

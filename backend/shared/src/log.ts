@@ -74,7 +74,12 @@ function writeLog(
     const data = { ...(contextData ?? {}), ...(props ?? {}) }
     if (IS_GCP) {
       const severity = JS_TO_GCP_LEVELS[level]
-      console.log(JSON.stringify({ severity, message, ...data }, replacer))
+      const output: LogDetails = { severity, message, ...data }
+      if (msg instanceof Error) {
+        // record error properties in GCP if you just do log(err)
+        output['error'] = msg
+      }
+      console.log(JSON.stringify(output, replacer))
     } else {
       const { endpoint, ...otherData } = data
       const category = Object.values(pick(data, DISPLAY_CATEGORY_KEYS)).join()

@@ -210,7 +210,6 @@ export const typedEndpoint = <N extends APIPath>(
         await resultOptionalContinue.continue()
       }
     } catch (error) {
-      log.error(error)
       next(error)
     }
   }
