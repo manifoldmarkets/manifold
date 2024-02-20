@@ -433,7 +433,8 @@ export function SupabaseSearch(props: {
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') && (
+              (filter !== 'all' || contractType !== 'ALL') &&
+              !defaultTopic && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button

@@ -22,7 +22,12 @@ import { InvestmentValueCard } from 'web/components/portfolio/investment-value'
 
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { usePrivateUser, useUser, useUserById } from 'web/hooks/use-user'
+import {
+  useIsAuthorized,
+  usePrivateUser,
+  useUser,
+  useUserById,
+} from 'web/hooks/use-user'
 import {
   BalanceCard,
   BalanceChangeTable,
@@ -33,6 +38,7 @@ import { buildArray } from 'common/util/array'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
+import { LoadingContractRow } from 'web/components/contract/contracts-table'
 
 export const getStaticProps = async (props: {
   params: {
@@ -242,9 +248,11 @@ const PortfolioSummary = ({
   const CARD_CLASS =
     'h-fit bg-canvas-50 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-0 py-0 sm:w-[48%]'
   const balanceChangesKey = 'balance-changes'
+  const isAuthed = useIsAuthorized()
+  const isCurrentUser = currentUser?.id === user.id
 
   return (
-    <Col className="gap-5">
+    <Col className="gap-6">
       <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
         <BalanceCard
           onSeeChanges={() => {
@@ -258,6 +266,7 @@ const PortfolioSummary = ({
         />
         <InvestmentValueCard user={user} className={CARD_CLASS} />
       </Row>
+
       {portfolioPoints > 1 && (
         <Col className={'mb-6 px-1 md:pr-8'}>
           <PortfolioValueSection
@@ -273,22 +282,37 @@ const PortfolioSummary = ({
         </Col>
       )}
 
-      <div className="text-ink-800 mx-2 text-xl lg:mx-0">Recent questions</div>
-      <SupabaseSearch
-        persistPrefix="search"
-        additionalFilter={{
-          excludeContractIds: privateUser?.blockedContractIds,
-          excludeGroupSlugs: privateUser?.blockedGroupSlugs,
-          excludeUserIds: privateUser?.blockedUserIds,
-        }}
-        useUrlParams={false}
-        isWholePage={false}
-        headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
-        defaultTopic="recent"
-        contractsOnly
-        hideContractFilters
-        hideSearch
-      />
+      {isCurrentUser && (
+        <Col className="mb-6 gap-5">
+          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
+            Recently viewed
+          </div>
+          {!isAuthed && (
+            <Col>
+              <LoadingContractRow />
+              <LoadingContractRow />
+              <LoadingContractRow />
+            </Col>
+          )}
+          {isAuthed && (
+            <SupabaseSearch
+              persistPrefix="search"
+              additionalFilter={{
+                excludeContractIds: privateUser?.blockedContractIds,
+                excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+                excludeUserIds: privateUser?.blockedUserIds,
+              }}
+              useUrlParams={false}
+              isWholePage={false}
+              headerClassName={'pt-0 px-2 bg-canvas-50'}
+              defaultTopic="recent"
+              contractsOnly
+              hideContractFilters
+              hideSearch
+            />
+          )}
+        </Col>
+      )}
     </Col>
   )
 }
