@@ -48,8 +48,8 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       `select slug,importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
-              where id = $1 
-              ) 
+              where id = $1
+              )
               order by importance_score desc
           `,
       [contractId],
@@ -76,8 +76,8 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       )
     topicCount++
   }
-  log('returning topic slugs', Object.keys(marketsByTopicSlug))
-  log('topics to importance scores', topics)
+  log('returning topic slugs', { slugs: Object.keys(marketsByTopicSlug) })
+  log('topics to importance scores', { topics })
   return {
     marketsFromEmbeddings,
     marketsByTopicSlug,
