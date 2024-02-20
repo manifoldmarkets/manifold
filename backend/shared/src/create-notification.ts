@@ -74,6 +74,7 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getCommentSafe } from './supabase/contract_comments'
+import { convertUser } from 'common/supabase/users'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -981,17 +982,16 @@ export const createUniqueBettorBonusNotification = async (
   // Only send on 5th bettor
   if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
     return
-  const mostRecentUniqueBettors = await getValues<User>(
-    firestore
-      .collection('users')
-      .where(
-        'id',
-        'in',
-        uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
-          uniqueBettorsExcludingCreator.length
-        )
-      )
+
+  const lastBettorIds = uniqueBettorsExcludingCreator.slice(
+    uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
+    uniqueBettorsExcludingCreator.length
+  )
+
+  const mostRecentUniqueBettors = await pg.map(
+    `select * from users where id in $1`,
+    [lastBettorIds],
+    convertUser
   )
 
   const bets = await getValues<Bet>(
