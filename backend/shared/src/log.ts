@@ -1,4 +1,6 @@
 import { format } from 'node:util'
+import { omit } from 'lodash'
+import { blue, dim, red, yellow } from 'colors/safe'
 
 // mapping JS log levels (e.g. functions on console object) to GCP log levels
 export const JS_TO_GCP_LEVELS = {
@@ -22,7 +24,7 @@ const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
 
 function toString(obj: unknown) {
   if (obj instanceof Error) {
-    return obj.stack // is formatted like "Error: message\n[stack]"
+    return obj.stack ?? obj.message // stack is formatted like "Error: message\n[stack]"
   }
   return String(obj)
 }
@@ -46,7 +48,29 @@ function replacer(_key: string, value: unknown) {
 }
 
 function ts() {
-  return new Date().toISOString()
+  return `[${new Date().toISOString()}]`
+}
+
+function formatStructuredLog(
+  msg: unknown,
+  opts?: { level?: LogLevel; props?: LogDetails; rest?: unknown[] }
+) {
+  const { level, props, rest } = opts ?? {}
+  const { endpoint, ...otherData } = props ?? {}
+  const endpointLabel = endpoint ? dim(endpoint.toString()) + ' ' : ''
+  const message = format(toString(msg), ...(rest ?? []))
+  const data = omit(otherData, 'traceId')
+  const dataSection = Object.entries(data).map(
+    ([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`
+  )
+  const result = `${dim(ts())} ${endpointLabel}${message}${dataSection}`
+  if (level === 'error') {
+    return red(result)
+  } else if (level === 'warn') {
+    return yellow(result)
+  } else {
+    return result
+  }
 }
 
 // handles both the cases where someone wants to write unstructured
@@ -69,12 +93,7 @@ function writeLog(
       }
       console.log(JSON.stringify(output, replacer))
     } else {
-      const fn = console[level ?? 'log']
-      if (props != null) {
-        fn(`[${ts()}] ${message}`, JSON.stringify(props, replacer))
-      } else {
-        fn(`[${ts()}] ${message}`)
-      }
+      console[level ?? 'log'](formatStructuredLog(msg, opts))
     }
   } catch (e) {
     console.error('Could not write log output.', e)
