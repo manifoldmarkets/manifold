@@ -51,6 +51,7 @@ const TOPICS_PER_PAGE = 100
 
 export const SORTS = [
   { label: 'Trending', value: 'score' },
+  { label: 'Fresh', value: 'freshness-score' },
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'High stakes', value: 'liquidity' },
@@ -74,6 +75,7 @@ const predictionMarketSorts = new Set([
   'most-popular',
   'prob-descending',
   'prob-ascending',
+  'freshness-score',
 ])
 
 const bountySorts = new Set(['bounty-amount'])

@@ -20,6 +20,7 @@ export const searchProps = z
         z.literal('newest'),
         z.literal('score'),
         z.literal('daily-score'),
+        z.literal('freshness-score'),
         z.literal('24-hour-vol'),
         z.literal('most-popular'),
         z.literal('liquidity'),
