@@ -697,10 +697,12 @@ const ChoiceOverview = (props: {
             selected={checkedAnswerIds}
             showSetDefaultSort={showSetDefaultSort}
           />
-          {tradingAllowed(contract) && <UserBetsSummary
-            className="border-ink-200 !mb-2 mt-2 "
-            contract={contract}
-          />}
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+            />
+          )}
         </>
       )}
     </>

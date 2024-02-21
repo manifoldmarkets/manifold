@@ -6,7 +6,11 @@ import {
   unserializeMultiPoints,
   unserializePoints,
 } from 'common/chart'
-import { ContractParams, MaybeAuthedContractParams, tradingAllowed } from 'common/contract'
+import {
+  ContractParams,
+  MaybeAuthedContractParams,
+  tradingAllowed,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
