@@ -5,25 +5,20 @@ import {
   User,
   UserAndPrivateUser,
 } from 'common/user'
-import { filterDefined } from 'common/util/array'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
 import {
-  collection,
   deleteDoc,
   doc,
   getDoc,
-  onSnapshot,
-  query,
   updateDoc,
-  where,
 } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
 import { referUser } from './api'
-import { app, db } from './init'
+import { app } from './init'
 import { coll, getValues, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
