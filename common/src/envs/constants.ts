@@ -265,6 +265,7 @@ export const BLESSED_BANNED_USER_IDS = [
 export const PARTNER_USER_IDS = [
   '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
+  'pfKxvtgSEua5DxoIfiPXxR4fAWd2', // James Dev
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

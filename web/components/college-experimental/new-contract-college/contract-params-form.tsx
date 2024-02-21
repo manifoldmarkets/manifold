@@ -26,7 +26,11 @@ import {
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
-import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
+import {
+  BTE_USER_ID,
+  ENV_CONFIG,
+  PARTNER_USER_IDS,
+} from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/college-experimental/new-contract-college/multiple-choice-answers-college'
@@ -193,7 +197,10 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
-  const ante = getAnte(outcomeType, numAnswers)
+  const isPartner = PARTNER_USER_IDS.includes(creator.id)
+  const ante = getAnte(outcomeType, numAnswers, {
+    isPartner,
+  })
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(
@@ -807,7 +814,7 @@ export function ContractParamsForm(props: {
           ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
             <>
               {formatMoney(amountSuppliedByUser)}
-              {visibility === 'public' && (
+              {visibility === 'public' && !isPartner && (
                 <span>
                   {' '}
                   or <span className=" text-teal-500">FREE </span>

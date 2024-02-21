@@ -14,7 +14,7 @@ import {
   Visibility,
 } from 'common/contract'
 import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
-import { BTE_USER_ID } from 'common/envs/constants'
+import { BTE_USER_ID, PARTNER_USER_IDS } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
@@ -176,7 +176,10 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
-  const ante = getAnte(outcomeType, numAnswers)
+  const isPartner = PARTNER_USER_IDS.includes(creator.id)
+  const ante = getAnte(outcomeType, numAnswers, {
+    isPartner,
+  })
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(
@@ -566,6 +569,7 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         ante={ante}
         isMulti={isMulti}
+        isPartner={isPartner}
         visibility={visibility}
       />
 
