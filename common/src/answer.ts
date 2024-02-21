@@ -9,6 +9,7 @@ export type Answer = {
   userId: string
   text: string
   createdTime: number
+  color?: string // Hex color override in UI
 
   // Mechanism props
   poolYes: number // YES shares
