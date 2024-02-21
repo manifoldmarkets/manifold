@@ -8,12 +8,7 @@ import {
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
-import {
-  deleteDoc,
-  doc,
-  getDoc,
-  updateDoc,
-} from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
