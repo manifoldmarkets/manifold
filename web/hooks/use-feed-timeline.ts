@@ -31,7 +31,7 @@ import { DAY_MS } from 'common/util/time'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
-import { PositionChangeData } from 'common/supabase/bets'
+import { PositionChangeData, convertBet } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -291,9 +291,9 @@ export const useFeedTimeline = (
       ]),
       db
         .from('contract_bets')
-        .select('data')
+        .select()
         .in('bet_id', betIds)
-        .then((res) => res.data?.map((b) => b.data as Bet)),
+        .then((res) => res.data?.map(convertBet)),
     ])
 
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>

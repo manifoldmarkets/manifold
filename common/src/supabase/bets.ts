@@ -1,4 +1,4 @@
-import { SupabaseClient } from 'common/supabase/utils'
+import { SupabaseClient, convertSQLtoTS } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
 import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'
@@ -13,6 +13,12 @@ export const CONTRACT_BET_FILTER: BetFilter = {
   filterChallenges: false,
   filterAntes: false,
 }
+
+export const convertBet = (row: Row<'contract_bets'>) =>
+  convertSQLtoTS<'contract_bets', Bet>(row, {
+    fs_updated_time: false,
+    created_time: tsToMillis as any,
+  })
 
 export async function getBet(db: SupabaseClient, id: string) {
   const q = selectJson(db, 'contract_bets').eq('bet_id', id).single()
@@ -49,13 +55,13 @@ export async function getBetsOnContracts(
   const chunks = chunk(contractIds, 100)
   const rows = await Promise.all(
     chunks.map(async (ids: string[]) => {
-      let q = db.from('contract_bets').select('data').in('contract_id', ids)
+      let q = db.from('contract_bets').select().in('contract_id', ids)
       q = applyBetsFilter(q, options)
       const { data } = await run(q)
       return data
     })
   )
-  return rows.flat().map((r) => r.data as Bet)
+  return rows.flat().map(convertBet)
 }
 
 export const getPublicBets = async (

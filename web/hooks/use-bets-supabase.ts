@@ -2,7 +2,12 @@ import { Bet, BetFilter } from 'common/bet'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { getBetRows, getBets, getTotalBetCount } from 'common/supabase/bets'
+import {
+  convertBet,
+  getBetRows,
+  getBets,
+  getTotalBetCount,
+} from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
@@ -40,7 +45,7 @@ export function useRealtimeBets(options?: BetFilter) {
       })
   )
   const newBets = rows
-    ?.map((r) => r.data as Bet)
+    ?.map(convertBet)
     .filter((b) => !betShouldBeFiltered(b, options))
 
   return { rows: newBets, loadNewer }
