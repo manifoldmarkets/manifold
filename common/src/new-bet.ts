@@ -501,7 +501,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   expiresAt?: number
 ) => {
   const newBetResults = []
-  const otherBetResults: ReturnType<typeof combineBetsOnSameAnswers> = []
+  const otherBetsResults: ReturnType<typeof combineBetsOnSameAnswers> = []
   if (answersToBuy.length === 1) {
     const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
@@ -514,7 +514,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     )
     newBetResults.push(newBetResult)
     if (otherBetResults.length > 0)
-      otherBetResults.push(
+      otherBetsResults.push(
         ...(otherBetResults as ReturnType<typeof combineBetsOnSameAnswers>)
       )
   } else {
@@ -528,7 +528,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       balanceByUserId
     )
     newBetResults.push(...multiRes.newBetResults)
-    otherBetResults.push(...multiRes.otherBetResults)
+    otherBetsResults.push(...multiRes.otherBetResults)
   }
   const now = Date.now()
   return newBetResults.map((newBetResult) => {
@@ -560,7 +560,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       expiresAt,
     })
 
-    const otherResultsWithBet = otherBetResults.map((result) => {
+    const otherResultsWithBet = otherBetsResults.map((result) => {
       const { answer, takers, cpmmState, outcome } = result
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)

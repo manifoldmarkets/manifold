@@ -184,19 +184,17 @@ function calculateCpmmMultiArbitrageBetsYes(
     const newAnswerStates = yesBetResultsAndUpdatedAnswers.map(
       (r) => r.newAnswerState
     )
-    // Update new answer states from the yes bets
-    updatedAnswers = updatedAnswers.map(
-      (answer) =>
-        newAnswerStates.find(
-          (newAnswerState) => newAnswerState.id === answer.id
-        ) ?? answer
-    )
     const noBuyResults = buyNoSharesUntilAnswersSumToOne(
-      updatedAnswers,
+      updatedAnswers.map(
+        (answer) =>
+          newAnswerStates.find(
+            (newAnswerState) => newAnswerState.id === answer.id
+          ) ?? answer
+      ),
       unfilledBets,
       balanceByUserId
     )
-    // Update new answer states from the no bets
+    // Update new answer states from the no bets (placed on all answers)
     updatedAnswers = noBuyResults.noBetResults.map((noBetResult) => {
       const { cpmmState } = noBetResult
       const { pool: newPool, p } = cpmmState
@@ -226,9 +224,7 @@ function calculateCpmmMultiArbitrageBetsYes(
   const otherBetResults = combineBetsOnSameAnswers(
     noBetResults,
     'NO',
-    updatedAnswers.filter(
-      (a) => !initialAnswersToBuy.map((an) => an.id).includes(a.id)
-    )
+    updatedAnswers
   )
 
   return { newBetResults, otherBetResults }
