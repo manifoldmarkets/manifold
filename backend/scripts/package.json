@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@types/json2csv": "5.0.3",
+    "colors": "1.4.0",
     "commander": "10.0.0",
     "firebase-admin": "11.5.0",
     "json2csv": "6.0.0-alpha.2",
