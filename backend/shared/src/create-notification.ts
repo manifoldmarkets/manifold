@@ -989,7 +989,7 @@ export const createUniqueBettorBonusNotification = async (
   )
 
   const mostRecentUniqueBettors = await pg.map(
-    `select * from users where id in $1`,
+    `select * from users where id in ($1:list)`,
     [lastBettorIds],
     convertUser
   )
