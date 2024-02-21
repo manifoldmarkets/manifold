@@ -414,9 +414,8 @@ export const payUsersTransactions = async (
           runContractPayoutTxn(transaction, payoutTxn)
         })
       })
-      .catch((err) => {
-        log('Error running payout chunk transaction', err)
-        log('payoutChunk', payoutChunk)
+      .catch((error) => {
+        log('Error running payout chunk transaction', { error, payoutChunk })
         // don't rethrow error without undoing previous payouts
       })
   }

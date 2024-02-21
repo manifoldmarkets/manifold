@@ -16,7 +16,7 @@ export const onboardLover = async (user: User, ip: string, log: GCPLog) => {
           and id not in (select channel_id from private_user_message_channel_members where user_id = $1)`,
     [user.id]
   )
-  log('Adding lover to public channels:', publicChannels)
+  log('Adding lover to public channels:', { publicChannels })
   await Promise.all(
     publicChannels.map(async (pc) => {
       await addUsersToPrivateMessageChannel([user.id], pc.id, pg)
