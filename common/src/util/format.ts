@@ -38,7 +38,9 @@ export function getMoneyNumber(amount: number) {
 }
 
 export function formatMoneyWithDecimals(amount: number) {
-  return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
+  const plusEpsilon = amount + 0.00000000001 * Math.sign(amount)
+  const newAmount = Math.round(plusEpsilon) === 0 ? 0 : Math.trunc(plusEpsilon * 100) / 100
+  return ENV_CONFIG.moneyMoniker + newAmount
 }
 
 export function formatMoneyToDecimal(amount: number) {
