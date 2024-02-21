@@ -988,7 +988,7 @@ export const createUniqueBettorBonusNotification = async (
   )
 
   const bets = await pg.map<Bet>(
-    `select * from contract_bets where contract_id = $1 group by user_id`,
+    `select * from contract_bets where contract_id = $1`,
     [contract.id, txnId],
     convertBet
   )
