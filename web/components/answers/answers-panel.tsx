@@ -237,7 +237,7 @@ export function AnswersPanel(props: {
   )
 }
 
-const EditAnswerModal = (props: {
+export const EditAnswerModal = (props: {
   open: boolean
   setOpen: (show: boolean) => void
   contract: Contract
@@ -652,7 +652,7 @@ function Answer(props: {
   )
 }
 
-function LimitOrderBarChart({
+export function LimitOrderBarChart({
   limitOrders,
   prob,
   activeColor,

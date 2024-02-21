@@ -12,9 +12,10 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
-import { CPMMContract } from 'common/contract'
+import { CPMMContract, CPMMMultiContract, isBinaryMulti } from 'common/contract'
 import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
+import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -216,6 +217,9 @@ export function BetsSummary(props: {
             />
           </div>
         </Row>
+      )}
+      {isBinaryMulti(contract) && (
+        <BinaryMultiSellRow contract={contract as CPMMMultiContract} />
       )}
     </Col>
   )
