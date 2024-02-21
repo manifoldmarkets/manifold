@@ -143,6 +143,7 @@ import { getLoverAnswers } from './love/get-lover-answers'
 import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
+import { placeMultiBet } from 'api/place-multi-bet'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -191,6 +192,7 @@ app.options('*', allowCorsUnrestricted)
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
+  'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
   'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,

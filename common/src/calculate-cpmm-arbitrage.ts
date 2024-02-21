@@ -56,6 +56,201 @@ export function calculateCpmmMultiArbitrageBet(
   return result
 }
 
+export function calculateCpmmMultiArbitrageBets(
+  answers: Answer[],
+  answersToBuy: Answer[],
+  outcome: 'YES' | 'NO',
+  betAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) {
+  const result =
+    outcome === 'YES'
+      ? calculateCpmmMultiArbitrageBetsYes(
+          answers,
+          answersToBuy,
+          betAmount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+      : calculateCpmmMultiArbitrageBetsYes(
+          answers,
+          answersToBuy,
+          betAmount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId
+        )
+  if (
+    floatingEqual(
+      sumBy(
+        result.newBetResults.map((r) => r.takers),
+        'amount'
+      ),
+      0
+    )
+  ) {
+    // No trades matched.
+    result.newBetResults.map((r) => {
+      return {
+        newBetResult: {
+          outcome: r.outcome,
+          answer: r.answer,
+          takers: [],
+          makers: [],
+          ordersToCancel: [],
+          cpmmState: {
+            pool: { YES: r.answer.poolYes, NO: r.answer.poolNo },
+            p: 0.5,
+          },
+        },
+        otherBetResults: [],
+      }
+    })
+  }
+  return result
+}
+
+type PreliminaryBetResults = ReturnType<typeof computeFills> & {
+  answer: Answer
+}
+function calculateCpmmMultiArbitrageBetsYes(
+  initialAnswers: Answer[],
+  initialAnswersToBuy: Answer[],
+  initialBetAmount: number,
+  limitProb: number | undefined,
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) {
+  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  const noBetResults: PreliminaryBetResults[] = []
+  const yesBetResults: PreliminaryBetResults[] = []
+
+  let updatedAnswers = initialAnswers
+  let amountToBet = initialBetAmount
+  while (amountToBet > 0.01) {
+    const answersToBuy = updatedAnswers.filter((a) =>
+      initialAnswersToBuy.map((an) => an.id).includes(a.id)
+    )
+    // buy equal number of shares in each answer
+    const yesSharePriceSum = sumBy(answersToBuy, 'prob')
+    const maxYesShares = amountToBet / yesSharePriceSum
+    let yesAmounts: number[] = []
+    binarySearch(0, maxYesShares, (yesShares) => {
+      yesAmounts = answersToBuy.map(({ id, poolYes, poolNo }) =>
+        calculateAmountToBuySharesFixedP(
+          { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
+          yesShares,
+          'YES',
+          unfilledBetsByAnswer[id] ?? [],
+          balanceByUserId
+        )
+      )
+
+      const totalYesAmount = sum(yesAmounts)
+      return totalYesAmount - amountToBet
+    })
+    const yesBetResultsAndUpdatedAnswers = answersToBuy.map(
+      (answerToBuy, i) => {
+        const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
+        const yesBetResult = {
+          ...computeFills(
+            { pool, p: 0.5 },
+            'YES',
+            yesAmounts[i],
+            limitProb,
+            unfilledBetsByAnswer[answerToBuy.id] ?? [],
+            balanceByUserId
+          ),
+          answer: answerToBuy,
+        }
+
+        const { cpmmState } = yesBetResult
+        const { pool: newPool, p } = cpmmState
+        const { YES: poolYes, NO: poolNo } = newPool
+        const prob = getCpmmProbability(newPool, p)
+        const newAnswerState = {
+          ...answerToBuy,
+          poolYes,
+          poolNo,
+          prob,
+        }
+        return { yesBetResult, newAnswerState }
+      }
+    )
+    const yesBets = yesBetResultsAndUpdatedAnswers.map((r) => r.yesBetResult)
+    const newAnswerStates = yesBetResultsAndUpdatedAnswers.map(
+      (r) => r.newAnswerState
+    )
+    // Update new answer states from the yes bets
+    updatedAnswers = updatedAnswers.map(
+      (answer) =>
+        newAnswerStates.find(
+          (newAnswerState) => newAnswerState.id === answer.id
+        ) ?? answer
+    )
+    const noBuyResults = buyNoSharesUntilAnswersSumToOne(
+      updatedAnswers,
+      unfilledBets,
+      balanceByUserId
+    )
+    // Update new answer states from the no bets
+    updatedAnswers = noBuyResults.noBetResults.map((noBetResult) => {
+      const { cpmmState } = noBetResult
+      const { pool: newPool, p } = cpmmState
+      const { YES: poolYes, NO: poolNo } = newPool
+      const prob = getCpmmProbability(newPool, p)
+      return {
+        ...noBetResult.answer,
+        poolYes,
+        poolNo,
+        prob,
+      }
+    })
+
+    amountToBet = noBuyResults.extraMana
+    noBetResults.push(...noBuyResults.noBetResults)
+    yesBetResults.push(...yesBets)
+  }
+
+  const newBetResults = combineBetResults(
+    yesBetResults,
+    'YES',
+    updatedAnswers.filter((a) =>
+      initialAnswersToBuy.map((an) => an.id).includes(a.id)
+    )
+  )
+
+  const otherBetResults = combineBetResults(
+    noBetResults,
+    'NO',
+    updatedAnswers.filter(
+      (a) => !initialAnswersToBuy.map((an) => an.id).includes(a.id)
+    )
+  )
+
+  return { newBetResults, otherBetResults }
+}
+
+const combineBetResults = (
+  bets: PreliminaryBetResults[],
+  outcome: 'YES' | 'NO',
+  answers: Answer[]
+) => {
+  return answers.map((answer) => {
+    const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
+    return {
+      ...betsForAnswer[betsForAnswer.length - 1],
+      takers: betsForAnswer.flatMap((r) => r.takers),
+      makers: betsForAnswer.flatMap((r) => r.makers),
+      outcome,
+      answer,
+    }
+  })
+}
+
 function calculateCpmmMultiArbitrageBetYes(
   answers: Answer[],
   answerToBuy: Answer,
