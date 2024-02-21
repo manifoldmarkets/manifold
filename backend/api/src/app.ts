@@ -161,7 +161,7 @@ const requestContext: RequestHandler = (req, _res, next) => {
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
   withLogContext(context, () => {
-    log(`${req.ip} ${req.method} ${req.url}`)
+    log(`${req.method} ${req.url}`)
     next()
   })
 }
