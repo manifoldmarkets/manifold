@@ -26,51 +26,18 @@ import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { log, Logger, StructuredLogger } from 'shared/log'
+
+export { log, Logger }
+
+// for old code
+export { log as gLog, StructuredLogger as GCPLog }
 
 // type for scheduled job functions
 export type JobContext = {
-  log: GCPLog
+  log: StructuredLogger
   lastEndTime?: number
 }
-
-export const log = (...args: unknown[]) => {
-  console.log(`[${new Date().toISOString()}]`, ...args)
-}
-
-// log levels GCP's log explorer recognizes
-export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
-export type GCPLogLevel = (typeof LEVELS)[number]
-
-export type GCPLog = (message: any, details?: object | null) => void
-
-function replacer(key: string, value: any) {
-  if (typeof value === 'bigint') {
-    return value.toString()
-  } else {
-    return value
-  }
-}
-
-export const gLog = (
-  severity: GCPLogLevel,
-  message: any,
-  details?: object | null
-) => {
-  const output = { severity, message: message ?? null, ...(details ?? {}) }
-  try {
-    const stringified = JSON.stringify(output, replacer)
-    console.log(stringified)
-  } catch (e) {
-    console.error('Could not stringify log output')
-    console.error(e)
-  }
-}
-
-gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
-gLog.info = (message: any, details?: object) => gLog('INFO', message, details)
-gLog.warn = (message: any, details?: object) =>
-  gLog('WARNING', message, details)
-gLog.error = (message: any, details?: object) => gLog('ERROR', message, details)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -125,7 +92,7 @@ export const revalidateStaticProps = async (
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated', pathToRevalidate)
+    log('Revalidated', pathToRevalidate)
   }
 }
 
@@ -144,7 +111,7 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated tag', tag)
+    log('Revalidated tag', tag)
   }
 }
 
@@ -444,8 +411,8 @@ export function contractUrl(contract: Contract) {
 export async function getTrendingContractsToEmail() {
   const pg = createSupabaseDirectClient()
   return await pg.map(
-    `select data from contracts 
-            where resolution_time is null 
+    `select data from contracts
+            where resolution_time is null
               and visibility = 'public'
               and not (group_slugs && $1)
               and question not ilike '%stock%'

@@ -1,4 +1,6 @@
-import { resolution } from './contract'
+import { sortBy } from 'lodash'
+import { MultiContract, resolution } from './contract'
+import { getAnswerProbability } from './calculate'
 
 export type Answer = {
   id: string
@@ -28,6 +30,8 @@ export type Answer = {
     week: number
     month: number
   }
+
+  loverUserId?: string
 }
 
 export type DpmAnswer = {
@@ -54,3 +58,71 @@ export const isDpmAnswer = (answer: any): answer is DpmAnswer => {
 }
 export const getMaximumAnswers = (shouldAnswersSumToOne: boolean) =>
   shouldAnswersSumToOne ? MAX_ANSWERS : MAX_INDEPENDENT_ANSWERS
+
+export const OTHER_TOOLTIP_TEXT =
+  "Bet on all answers that aren't listed yet. A bet on Other automatically includes any answer added in the future."
+
+export type MultiSort =
+  | 'prob-desc'
+  | 'prob-asc'
+  | 'old'
+  | 'new'
+  | 'liquidity'
+  | 'alphabetical'
+
+export const getDefaultSort = (contract: MultiContract) => {
+  const { sort, answers, mechanism } = contract
+  if (sort) return sort
+  if (mechanism === 'dpm-2' || mechanism === 'cpmm-2') return 'old'
+  if (contract.addAnswersMode === 'DISABLED') return 'old'
+  else if (!contract.shouldAnswersSumToOne) return 'prob-desc'
+  else if (answers.length > 10) return 'prob-desc'
+  return 'old'
+}
+
+export const sortAnswers = <T extends Answer | DpmAnswer>(
+  contract: MultiContract,
+  answers: T[],
+  sort?: MultiSort
+) => {
+  const { resolutions } = contract
+  sort = sort ?? getDefaultSort(contract)
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  return sortBy(answers, [
+    shouldAnswersSumToOne
+      ? // Winners first
+        (answer) => (resolutions ? -1 * resolutions[answer.id] : answer)
+      : // Resolved last
+        (answer) => ('resolution' in answer ? 1 : 0),
+    // then by sort
+    (answer) => {
+      if (sort === 'old') {
+        if ('resolutionTime' in answer && answer.resolutionTime)
+          return answer.resolutionTime
+        return 'index' in answer ? answer.index : answer.number
+      } else if (sort === 'new') {
+        if ('resolutionTime' in answer && answer.resolutionTime)
+          return -answer.resolutionTime
+        return 'index' in answer ? -answer.index : -answer.number
+      } else if (sort === 'prob-asc') {
+        return 'prob' in answer
+          ? answer.prob
+          : getAnswerProbability(contract, answer.id)
+      } else if (sort === 'prob-desc') {
+        const prob =
+          'prob' in answer
+            ? answer.prob
+            : getAnswerProbability(contract, answer.id)
+        return -1 * prob
+      } else if (sort === 'liquidity') {
+        return 'subsidyPool' in answer ? -answer.subsidyPool : 0
+      } else if (sort === 'alphabetical') {
+        return answer.text.toLowerCase()
+      }
+      return 0
+    },
+  ])
+}

@@ -16,18 +16,18 @@ const schema = z
   .strict()
 
 export const updategroup = authEndpoint(async (req, auth) => {
-  const { id, ...data } = validate(schema, req.body)
+  const data = validate(schema, req.body)
   const db = createSupabaseDirectClient()
 
   const requester = await db.oneOrNone(
     'select role from group_members where group_id = $1 and member_id = $2',
-    [id, auth.uid]
+    [data.id, auth.uid]
   )
 
   if (requester?.role !== 'admin' && !isAdminId(auth.uid)) {
     throw new APIError(403, 'You do not have permission to update this group')
   }
 
-  await updateData(db, 'groups', id, data)
+  await updateData(db, 'groups', 'id', data)
   return { status: 'success' }
 })

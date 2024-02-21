@@ -1,21 +1,16 @@
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { fetchLinkPreviews } from 'common/link-preview'
 import {
   MapContractsDictionary,
   NH_LINK,
   presidency2024,
 } from 'common/politics/elections-data'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import { fetchLinkPreviews } from 'common/link-preview'
-import { unstable_cache } from 'next/cache'
-import { SupabaseClient } from 'common/supabase/utils'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
-export async function getElectionsPageProps(useUnstableCache: boolean) {
+export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
-  const getContract = (slug: string) =>
-    useUnstableCache
-      ? getCachedContractFromSlug(slug, adminDb)
-      : getContractFromSlug(slug, adminDb)
+  const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
 
   const mapContractsPromises = presidency2024.map(async (m) => {
     const contract = await getContract(m.slug)
@@ -55,6 +50,7 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
   ] = await Promise.all(contractsPromises)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
+
   return {
     rawMapContractsDictionary: mapContractsDictionary,
     electionPartyContract: electionPartyContract,
@@ -66,18 +62,4 @@ export async function getElectionsPageProps(useUnstableCache: boolean) {
     democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
   }
-}
-
-function getCachedContractFromSlug(slug: string, db: SupabaseClient) {
-  return unstable_cache(
-    async () => {
-      if (slug === presidency2024[0].slug)
-        console.log('re-fetching dashboard contracts')
-      return getContractFromSlug(slug, db)
-    },
-    [slug],
-    {
-      revalidate: REVALIDATE_CONTRACTS_SECONDS,
-    }
-  )()
 }

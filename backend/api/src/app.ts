@@ -1,8 +1,9 @@
 import * as cors from 'cors'
+import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
@@ -94,7 +95,6 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
-import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
@@ -137,11 +137,13 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
-
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-
-import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getBalanceChanges } from 'api/get-balance-changes'
+import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
+import { getLoveMarket } from './love/get-love-market'
+import { getLoveMarkets } from './love/get-love-markets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -152,24 +154,32 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestLogger: RequestHandler = (req, _res, next) => {
-  log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
-  next()
+const requestContext: RequestHandler = (req, _res, next) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
+  const context = { endpoint: req.path, traceId }
+  withLogContext(context, () => {
+    log(`${req.method} ${req.url}`)
+    next()
+  })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-  if (err instanceof APIError) {
-    const output: { [k: string]: unknown } = { message: err.message }
-    if (err.details != null) {
-      output.details = err.details
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof APIError) {
+    log.info(error)
+    if (res.headersSent) {
+      return next(error)
     }
-    res.status(err.code).json(output)
+    const output: { [k: string]: unknown } = { message: error.message }
+    if (error.details != null) {
+      output.details = error.details
+    }
+    res.status(error.code).json(output)
   } else {
-    console.error(err.stack)
-    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
+    log.error(error)
+    res.status(500).json({ message: error.stack, error })
   }
 }
 
@@ -183,7 +193,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestLogger)
+app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 
@@ -256,6 +266,10 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-groups': supabasesearchgroups,
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
+  'get-balance-changes': getBalanceChanges,
+  'create-your-love-market': createYourLoveMarket,
+  'get-love-market': getLoveMarket,
+  'get-love-markets': getLoveMarkets,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -383,19 +397,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-const publicApiRoute = (endpoint: RequestHandler) => {
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// Ian: not sure how to restrict triggers to supabase origin, yet
-app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

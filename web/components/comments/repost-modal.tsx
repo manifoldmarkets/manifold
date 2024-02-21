@@ -19,6 +19,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from '../layout/row'
 import { api } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const RepostButton = (props: {
   contract: Contract
@@ -93,12 +94,14 @@ export const RepostModal = (props: {
                 <CommentReplyHeader comment={comment} contract={contract} />
               ))}
             <Row className={'gap-1'}>
-              <Avatar
-                username={comment.userUsername}
-                size={'sm'}
-                avatarUrl={comment.userAvatarUrl}
-                className={clsx('z-10 mt-1')}
-              />
+              <UserHovercard userId={comment.userId}>
+                <Avatar
+                  username={comment.userUsername}
+                  size={'sm'}
+                  avatarUrl={comment.userAvatarUrl}
+                  className={clsx('z-10 mt-1')}
+                />
+              </UserHovercard>
               <Col
                 className={clsx(
                   'grow rounded-lg rounded-tl-none px-3 pb-0.5 pt-1 transition-colors',

@@ -20,9 +20,14 @@ alter table txns
     cluster on txns_pkey;
 
 -- for querying top market_ads
-create index if not exists txns_category on txns ((data ->> 'category'), (data ->> 'toId'));
+create index if not exists txns_category on txns
+    ((data ->> 'category'), (data ->> 'toId'));
 
+create index if not exists txns_to_created_time on txns
+    ((data ->> 'toId'), ((data->'createdTime')::bigint) desc);
 
+create index if not exists txns_from_created_time on txns
+    ((data ->> 'fromId'), ((data->'createdTime')::bigint) desc);
 
 create or replace function get_daily_claimed_boosts(user_id text)
     returns table (total numeric) as $$

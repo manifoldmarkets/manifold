@@ -56,6 +56,7 @@ export type Bet = {
   isRedemption: boolean
   isChallenge: boolean
   visibility: Visibility
+  /** @deprecated */
   challengeSlug?: string
 
   // Props for bets in DPM contract below.

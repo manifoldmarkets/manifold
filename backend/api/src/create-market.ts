@@ -1,11 +1,6 @@
 import * as admin from 'firebase-admin'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { runPostBountyTxn } from 'shared/txn/run-bounty-txn'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  getCpmmInitialLiquidity,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   add_answers_mode,
   Contract,
@@ -17,15 +12,16 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import {
-  getAvailableBalancePerQuestion,
-  marketCreationCosts,
-  User,
-} from 'common/user'
+import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { GCPLog, getUser, htmlToRichText, isProd } from 'shared/utils'
+import {
+  GCPLog,
+  getUser,
+  getUserByUsername,
+  htmlToRichText,
+} from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -50,6 +46,7 @@ import {
 } from 'common/api/market-types'
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
+import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 
 type Body = ValidatedAPIParams<'market'>
 
@@ -91,6 +88,8 @@ export async function createMarketHelper(
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -106,7 +105,7 @@ export async function createMarketHelper(
   const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, userId)
+          getGroupCheckPermissions(gId, visibility, userId, { isLove })
         )
       )
     : null
@@ -116,7 +115,9 @@ export async function createMarketHelper(
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante =
-    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+    (specialLiquidityPerAnswer ??
+      totalBounty ??
+      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -135,18 +136,25 @@ export async function createMarketHelper(
 
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
+    const { amountSuppliedByUser } = marketCreationCosts(
       user,
-      ante
+      ante,
+      !!specialLiquidityPerAnswer
     )
 
-    if (ante > getAvailableBalancePerQuestion(user) && user.id !== BTE_USER_ID)
+    if (amountSuppliedByUser > user.balance && user.id !== BTE_USER_ID)
       throw new APIError(
         403,
         `Balance must be at least ${amountSuppliedByUser}.`
       )
 
     const slug = await getSlug(trans, question)
+
+    let answerLoverUserIds: string[] = []
+    if (isLove && answers) {
+      answerLoverUserIds = await getLoveAnswerUserIds(answers)
+      console.log('answerLoverUserIds', answerLoverUserIds)
+    }
 
     const contract = getNewContract({
       id: contractRef.id,
@@ -178,25 +186,21 @@ export async function createMarketHelper(
       loverUserId1,
       loverUserId2,
       matchCreatorId,
+      isLove,
+      answerLoverUserIds,
+      specialLiquidityPerAnswer,
     })
 
-    const houseId = isProd()
-      ? HOUSE_LIQUIDITY_PROVIDER_ID
-      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    const houseDoc =
-      amountSuppliedByHouse > 0
-        ? await trans.get(firestore.collection('users').doc(houseId))
-        : undefined
-    trans.create(contractRef, contract)
-    return runCreateMarketTxn(
+    const res = await runCreateMarketTxn(
       contract,
       ante,
       user,
       userDoc.ref,
       contractRef,
-      houseDoc,
       trans
     )
+    trans.create(contractRef, contract)
+    return res
   })
 
   log('created contract ', {
@@ -231,7 +235,6 @@ const runCreateMarketTxn = async (
   user: User,
   userDocRef: admin.firestore.DocumentReference,
   contractRef: admin.firestore.DocumentReference,
-  houseDoc: admin.firestore.DocumentSnapshot | undefined,
   trans: Transaction
 ) => {
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -239,50 +242,27 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (contract.outcomeType !== 'BOUNTIED_QUESTION') {
-    if (amountSuppliedByHouse > 0 && houseDoc)
-      trans.update(houseDoc.ref, {
-        balance: FieldValue.increment(-amountSuppliedByHouse),
-        totalDeposits: FieldValue.increment(-amountSuppliedByHouse),
-      })
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
+    })
+  }
 
-    if (amountSuppliedByUser > 0)
-      trans.update(userDocRef, {
-        balance: FieldValue.increment(-amountSuppliedByUser),
-        totalDeposits: FieldValue.increment(-amountSuppliedByUser),
-      })
-  } else {
-    // Even if their debit is 0, it seems important that the user posts the bounty
-    await runPostBountyTxn(
-      trans,
-      {
-        fromId: user.id,
-        fromType: 'USER',
-        toId: contract.id,
-        toType: 'CONTRACT',
-        amount: amountSuppliedByUser,
-        token: 'M$',
-        category: 'BOUNTY_POSTED',
-      },
-      contractRef,
-      userDocRef
-    )
-
-    if (amountSuppliedByHouse > 0 && houseDoc)
-      await runPostBountyTxn(
-        trans,
-        {
-          fromId: houseDoc.id,
-          fromType: 'USER',
-          toId: contract.id,
-          toType: 'CONTRACT',
-          amount: amountSuppliedByHouse,
-          token: 'M$',
-          category: 'BOUNTY_ADDED',
-        },
-        contractRef,
-        houseDoc.ref
-      )
+  if (amountSuppliedByUser > 0) {
+    await runTxn(trans, {
+      fromId: user.id,
+      fromType: 'USER',
+      toId: contract.id,
+      toType: 'CONTRACT',
+      amount: amountSuppliedByUser,
+      token: 'M$',
+      category: 'CREATE_CONTRACT_ANTE',
+    })
   }
 
   if (amountSuppliedByHouse > 0)
@@ -346,6 +326,7 @@ function validateMarketBody(body: Body) {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   } = body
 
   let min: number | undefined,
@@ -356,7 +337,8 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
-    extraLiquidity: number | undefined
+    extraLiquidity: number | undefined,
+    specialLiquidityPerAnswer: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -392,7 +374,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
       validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED')
+    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
@@ -410,6 +392,16 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'POLL') {
     ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
   }
+
+  if (body.specialLiquidityPerAnswer) {
+    if (outcomeType !== 'MULTIPLE_CHOICE' || body.shouldAnswersSumToOne)
+      throw new APIError(
+        400,
+        'specialLiquidityPerAnswer can only be used with independent MULTIPLE_CHOICE markets'
+      )
+    specialLiquidityPerAnswer = body.specialLiquidityPerAnswer
+  }
+
   return {
     question,
     description,
@@ -434,6 +426,8 @@ function validateMarketBody(body: Body) {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   }
 }
 
@@ -454,8 +448,10 @@ function validateMarketType<T extends z.ZodType>(
 async function getGroupCheckPermissions(
   groupId: string,
   visibility: string,
-  userId: string
+  userId: string,
+  options: { isLove?: boolean } = {}
 ) {
+  const { isLove } = options
   const db = createSupabaseClient()
 
   const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
@@ -488,6 +484,7 @@ async function getGroupCheckPermissions(
       userId,
       group,
       membership,
+      isLove,
     })
   ) {
     throw new APIError(
@@ -500,13 +497,51 @@ async function getGroupCheckPermissions(
 }
 
 async function createAnswers(contract: CPMMMultiContract) {
-  const { answers } = contract
+  const { isLove } = contract
+  let { answers } = contract
+
+  if (isLove) {
+    // Add loverUserId to the answer.
+    answers = await Promise.all(
+      answers.map(async (a) => {
+        // Parse username from answer text.
+        const matches = a.text.match(/@(\w+)/)
+        const loverUsername = matches ? matches[1] : null
+        if (!loverUsername) return a
+        const loverUserId = (await getUserByUsername(loverUsername))?.id
+        if (!loverUserId) return a
+        return {
+          ...a,
+          loverUserId,
+        }
+      })
+    )
+  }
+
   await Promise.all(
     answers.map((answer) => {
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
         .doc(answer.id)
         .set(answer)
+    })
+  )
+}
+
+async function getLoveAnswerUserIds(answers: string[]) {
+  // Get the loverUserId from the answer text.
+  return await Promise.all(
+    answers.map(async (answerText) => {
+      // Parse username from answer text.
+      const matches = answerText.match(/@(\w+)/)
+      console.log('matches', matches)
+      const loverUsername = matches ? matches[1] : null
+      if (!loverUsername)
+        throw new APIError(500, 'No lover username found ' + answerText)
+      const user = await getUserByUsername(loverUsername)
+      if (!user)
+        throw new APIError(500, 'No user found with username ' + answerText)
+      return user.id
     })
   )
 }

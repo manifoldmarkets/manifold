@@ -64,9 +64,6 @@ export function TopicSelectorDialog(props: {
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
 
     onClose?.()
-
-    window.location.reload()
-    // setOpen(false)
   }
   const selectedTopics: string[] = userSelectedTopics ?? []
 

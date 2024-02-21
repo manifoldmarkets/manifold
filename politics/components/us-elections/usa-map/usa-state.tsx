@@ -1,52 +1,55 @@
 import clsx from 'clsx'
+import { MouseEventHandler } from 'react'
+import { isColorLight } from './state-election-map'
 import {
   ClickHandler,
   HIGHLIGHTED_OUTLINE_COLOR,
   SELECTED_OUTLINE_COLOR,
 } from './usa-map'
 import { StateDataType } from './usa-map-data'
-import { MouseEventHandler } from 'react'
-import { MultiContract } from 'common/contract'
-import { isColorLight, probToColor } from './state-election-map'
 
 type TextCoordinates = { x: number; y: number }
 
 export const OFFSET_TEXT_COLOR = '#9E9FBD'
+export const DEFAULT_STATE_FILL = '#e7dfe6'
 
 export function USAState(props: {
   state: string
   stateData: StateDataType
-  contract: MultiContract
+  fill?: string
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
   hideStateTitle?: boolean
   selected?: boolean
   hovered?: boolean
+  patternTextColor?: string
 }) {
   const {
     state,
     stateData,
-    contract,
     onClickState,
     onMouseEnterState,
     onMouseLeaveState,
     hideStateTitle,
     selected,
     hovered,
+    patternTextColor,
   } = props
 
   const { dimensions, textCoordinates, abbreviation, line } = stateData
-
-  const fill = probToColor(contract) ?? ''
-
+  const fill = props.fill ?? DEFAULT_STATE_FILL
   return (
     <>
       <path
         d={dimensions}
         fill={fill}
         data-name={state}
-        className={clsx(!!onClickState && 'cursor-pointer transition-all')}
+        className={clsx(
+          !!onClickState
+            ? 'cursor-pointer transition-all'
+            : 'cursor-not-allowed'
+        )}
         onClick={onClickState as MouseEventHandler<SVGPathElement> | undefined}
         id={state}
         stroke={
@@ -70,6 +73,7 @@ export function USAState(props: {
         fill,
         onClick: line ? onClickState : undefined,
         selected,
+        patternTextColor,
       })}
     </>
   )
@@ -92,6 +96,7 @@ export const StateText = (props: {
   fill: string
   onClick?: ClickHandler
   selected?: boolean
+  patternTextColor?: string
 }) => {
   const {
     line,
@@ -103,6 +108,7 @@ export const StateText = (props: {
     fill,
     selected,
     onClick,
+    patternTextColor,
   } = props
   if (!textCoordinates) return null // Return null if there are no textCoordinates
 
@@ -111,6 +117,8 @@ export const StateText = (props: {
     ? isHovered || selected
       ? fill
       : OFFSET_TEXT_COLOR
+    : patternTextColor
+    ? patternTextColor
     : isFillLight
     ? '#1e293b'
     : '#FFF'
@@ -165,7 +173,7 @@ export const StateText = (props: {
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke={isHovered || selected ? fill : OFFSET_TEXT_COLOR}
+            stroke={textColor}
             strokeWidth={1} // Assuming the regular line is thinner
           />
         </>

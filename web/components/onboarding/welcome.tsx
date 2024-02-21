@@ -191,6 +191,8 @@ export default function Welcome() {
         userBetInTopics={userBetInTopics}
         onClose={() => {
           track('welcome screen: complete')
+          setOpen(false)
+          setGroupSelectorOpen(false)
         }}
       />
     )

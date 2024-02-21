@@ -22,8 +22,16 @@ export const LikesDisplay = (props: {
   ships: ShipData[]
   refreshShips: () => Promise<void>
   profileLover: Lover
+  mutualLikesBig?: boolean
 }) => {
-  const { likesGiven, likesReceived, ships, refreshShips, profileLover } = props
+  const {
+    likesGiven,
+    likesReceived,
+    ships,
+    refreshShips,
+    profileLover,
+    mutualLikesBig,
+  } = props
 
   const likesGivenByUserId = keyBy(likesGiven, (l) => l.user_id)
   const likesRecievedByUserId = keyBy(likesReceived, (l) => l.user_id)
@@ -31,16 +39,16 @@ export const LikesDisplay = (props: {
     (userId) => likesRecievedByUserId[userId]
   )
 
-  const mutualLikes = mutualLikeUserIds.map((userId) => {
-    const likeGiven = likesGivenByUserId[userId]
-    const likeReceived = likesRecievedByUserId[userId]
-    const createdTime = Math.max(
+  const mutualLikes = mutualLikeUserIds.map((user_id) => {
+    const likeGiven = likesGivenByUserId[user_id]
+    const likeReceived = likesRecievedByUserId[user_id]
+    const created_time = Math.max(
       likeGiven.created_time,
       likeReceived.created_time
     )
-    return { userId, createdTime }
+    return { user_id, created_time }
   })
-  const sortedMutualLikes = orderBy(mutualLikes, 'createdTime', 'desc')
+  const sortedMutualLikes = orderBy(mutualLikes, 'created_time', 'desc')
   const onlyLikesGiven = likesGiven.filter(
     (l) => !likesRecievedByUserId[l.user_id]
   )
@@ -59,22 +67,25 @@ export const LikesDisplay = (props: {
 
   return (
     <Col className="gap-4">
-      {sortedMutualLikes.length > 0 && (
-        <Col className="gap-2">
-          <Subtitle>Mutual likes</Subtitle>
-          <Carousel>
-            {sortedMutualLikes.map((like) => {
-              return (
-                <MatchTile
-                  key={like.userId}
-                  matchUserId={like.userId}
-                  profileLover={profileLover}
-                />
-              )
-            })}
-          </Carousel>
-        </Col>
-      )}
+      {sortedMutualLikes.length > 0 &&
+        (mutualLikesBig ? (
+          <Col className="gap-2">
+            <Subtitle>Mutual likes</Subtitle>
+            <Carousel>
+              {sortedMutualLikes.map((like) => {
+                return (
+                  <MatchTile
+                    key={like.user_id}
+                    matchUserId={like.user_id}
+                    profileLover={profileLover}
+                  />
+                )
+              })}
+            </Carousel>
+          </Col>
+        ) : (
+          <LikesList label="Mutual likes" likes={sortedMutualLikes} />
+        ))}
 
       {onlyLikesReceived.length > 0 && (
         <LikesList label="Likes received" likes={onlyLikesReceived} />
@@ -98,14 +109,14 @@ const LikesList = (props: { label: string; likes: LikeData[] }) => {
   const { label, likes } = props
 
   const maxShown = 50
-  const sortedLikes = orderBy(likes, 'createdTime', 'desc').slice(0, maxShown)
+  const truncatedLikes = likes.slice(0, maxShown)
 
   return (
     <Col className="gap-1">
       <Subtitle>{label}</Subtitle>
-      {sortedLikes.length > 0 ? (
+      {truncatedLikes.length > 0 ? (
         <Carousel className="w-full" labelsParentClassName="gap-0">
-          {sortedLikes.map((like) => (
+          {truncatedLikes.map((like) => (
             <UserAvatar
               className="-ml-1 first:ml-0"
               key={like.user_id}

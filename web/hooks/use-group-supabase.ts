@@ -133,8 +133,8 @@ export function useRealtimeMemberTopics(
   return groups
 }
 
-export function useMemberTopicsAndContractsOnLoad(
-  userId: string | undefined | null
+export function useNewUserMemberTopicsAndContracts(
+  user: User | null | undefined
 ) {
   type TopicWithContracts = {
     topic: Topic
@@ -142,9 +142,15 @@ export function useMemberTopicsAndContractsOnLoad(
   }
   const [groups, setGroups] = usePersistentInMemoryState<
     TopicWithContracts[] | undefined
-  >(undefined, `member-topics-and-contracts-${userId ?? ''}`)
+  >(undefined, `member-topics-and-contracts-${user?.id ?? ''}`)
 
-  const { data } = useAPIGetter('get-groups-with-top-contracts', {})
+  const { data, refresh } = useAPIGetter('get-groups-with-top-contracts', {})
+
+  useEffect(() => {
+    if (!data?.length) setGroups(undefined) // Show loading indicator right after selecting topics
+    refresh()
+  }, [user?.shouldShowWelcome])
+
   useEffect(() => {
     if (data) {
       setGroups(data)

@@ -61,9 +61,6 @@ export function StateContractCard(props: {
       isPromoted: !!promotedData,
     })
 
-  const [openStateSelectModal, setOpenStateSelectModal] =
-    useState<boolean>(false)
-
   return (
     <ClickFrame
       className={clsx(
@@ -92,18 +89,37 @@ export function StateContractCard(props: {
             <VisibilityIcon contract={contract} />{' '}
             {customTitle ? customTitle : contract.question}
           </Link>
-          {
-            <button
-              className="bg-primary-100 text-primary-700 rounded px-2 text-xs sm:hidden"
-              onClick={() => {
-                setOpenStateSelectModal(true)
-              }}
-            >
-              Choose state
-            </button>
-          }
+          <ChooseStateButton setTargetState={setTargetState} />
         </Row>
       </Col>
+
+      <div className="w-full overflow-hidden pt-2">
+        <SimpleAnswerBars
+          contract={contract as MultiContract}
+          maxAnswers={4}
+          barColor={props.barColor}
+        />
+      </div>
+    </ClickFrame>
+  )
+}
+
+export function ChooseStateButton(props: {
+  setTargetState: (state?: string) => void
+}) {
+  const { setTargetState } = props
+  const [openStateSelectModal, setOpenStateSelectModal] =
+    useState<boolean>(false)
+  return (
+    <>
+      <button
+        className="bg-primary-100 text-primary-700 rounded px-2 text-xs sm:hidden"
+        onClick={() => {
+          setOpenStateSelectModal(true)
+        }}
+      >
+        Choose state
+      </button>
       <Modal
         open={openStateSelectModal}
         setOpen={setOpenStateSelectModal}
@@ -129,14 +145,6 @@ export function StateContractCard(props: {
             })}
         </Col>
       </Modal>
-
-      <div className="w-full overflow-hidden pt-2">
-        <SimpleAnswerBars
-          contract={contract as MultiContract}
-          maxAnswers={4}
-          barColor={props.barColor}
-        />
-      </div>
-    </ClickFrame>
+    </>
   )
 }

@@ -167,8 +167,10 @@ export const useFeedTimeline = (
   const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
-  if (DEBUG_FEED_CARDS)
-    console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
+
+  // Note (James): This was noisy so I'm disabling.
+  // if (DEBUG_FEED_CARDS)
+  //   console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined

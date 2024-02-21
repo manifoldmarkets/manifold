@@ -1,17 +1,19 @@
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 
 import { track } from 'web/lib/service/analytics'
 
-export type Item = {
+export type NavItem = {
   name: string
   trackingEventName?: string
   href?: string
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
+  external?: boolean
 }
 
-export function SidebarItem(props: { item: Item; currentPage?: string }) {
+export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const { item, currentPage } = props
 
   const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
@@ -45,6 +47,7 @@ export function SidebarItem(props: { item: Item; currentPage?: string }) {
         />
       )}
       <span className="truncate">{item.name}</span>
+      {item.external && <ExternalLinkIcon className="ml-2 h-4 w-4" />}
     </>
   )
 

@@ -16,7 +16,6 @@ import {
   updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
-import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
@@ -33,6 +32,7 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
 
 export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
 
@@ -471,7 +471,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({}),
-    returns: {} as User,
+    returns: {} as LiteUser,
   },
   'user/:username': {
     method: 'GET',
@@ -760,6 +760,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
+    returns: {} as { success: true },
   },
   'search-groups': {
     method: 'GET',
@@ -789,6 +790,60 @@ export const API = (_apiTypeCheck = {
     returns: [] as { topic: Topic; contracts: Contract[] }[],
     props: z.object({}),
   },
+  'get-balance-changes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as AnyBalanceChangeType[],
+    props: z
+      .object({
+        after: z.coerce.number(),
+        userId: z.string(),
+      })
+      .strict(),
+  },
+  'create-your-love-market': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract
+    },
+  },
+  'get-love-market': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract | null
+      lovers: Lover[]
+      mutuallyMessagedUserIds: string[]
+    },
+  },
+  'get-love-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      contracts: CPMMMultiContract[]
+      creatorLovers: Lover[]
+      lovers: Lover[]
+      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+      creatorCompatibilityScores: {
+        [creatorId: string]: { [loverId: string]: CompatibilityScore }
+      }
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
@@ -804,3 +859,7 @@ export type APIResponse<N extends APIPath> = APISchema<N> extends {
 }
   ? APISchema<N>['returns']
   : void
+
+export type APIResponseOptionalContinue<N extends APIPath> =
+  | { continue: () => Promise<void>; result: APIResponse<N> }
+  | APIResponse<N>

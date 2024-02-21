@@ -54,7 +54,6 @@ const initialFilters: Partial<FilterFields> = {
 export const Search = (props: {
   allLovers: Lover[] | undefined
   setLovers: (lovers: Lover[] | undefined) => void
-  setIsSearching: (isSearching: boolean) => void
   youLover: Lover | undefined | null
   loverCompatibilityScores: Record<string, CompatibilityScore> | undefined
   starredUserIds: string[]
@@ -64,7 +63,6 @@ export const Search = (props: {
     setLovers,
     youLover,
     loverCompatibilityScores,
-    setIsSearching,
     starredUserIds,
   } = props
 
@@ -289,7 +287,6 @@ export const Search = (props: {
           className={'w-full max-w-xs'}
           onChange={(e) => {
             updateFilter({ name: e.target.value })
-            setIsSearching(e.target.value.length > 0)
           }}
         />
 

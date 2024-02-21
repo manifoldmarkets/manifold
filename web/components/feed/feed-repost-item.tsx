@@ -24,6 +24,7 @@ import router from 'next/router'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { CardReason } from 'web/components/feed/card-reason'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const FeedRepost = memo(function (props: {
   contract: Contract
@@ -37,7 +38,7 @@ export const FeedRepost = memo(function (props: {
 }) {
   const { contract, user, item, hide, inTimeline, comment } = props
   const privateUser = usePrivateUser()
-  const { userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl, userId } = comment
   const { bet, dataType } = item
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
@@ -100,12 +101,14 @@ export const FeedRepost = memo(function (props: {
           <Col className={'w-full pl-1 pr-2  transition-colors'}>
             <Row className="justify-between gap-2">
               <Row className="gap-2">
-                <Avatar
-                  username={userUsername}
-                  size={'sm'}
-                  avatarUrl={userAvatarUrl}
-                  className={clsx(marketCreator && 'shadow shadow-amber-300')}
-                />
+                <UserHovercard userId={userId}>
+                  <Avatar
+                    username={userUsername}
+                    size={'sm'}
+                    avatarUrl={userAvatarUrl}
+                    className={clsx(marketCreator && 'shadow shadow-amber-300')}
+                  />
+                </UserHovercard>
                 <Col className={''}>
                   <FeedCommentHeader
                     comment={comment}
@@ -139,6 +142,7 @@ export const FeedRepost = memo(function (props: {
                 className="border-ink-200 max-w-full border-[.1rem] pb-2 "
                 hideBottomRow={true}
                 size={'xs'}
+                hideReason={true}
               />
             </Col>
             <Col>

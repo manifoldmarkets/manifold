@@ -11,7 +11,11 @@ import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 
-export const post: APIHandler<'post'> = async (props, auth, { log }, res) => {
+export const post: APIHandler<'post'> = async (
+  props,
+  auth,
+  { log, logError }
+) => {
   const { contractId, content, betId: passedBetId, commentId } = props
 
   const contract = await getContractSupabase(contractId)
@@ -22,26 +26,29 @@ export const post: APIHandler<'post'> = async (props, auth, { log }, res) => {
 
   let comment: ContractComment
   let betId = passedBetId
+  let commentContinuation = async () => {}
   if (!content && !commentId && !betId) {
     throw new APIError(400, 'Must specify content, commentId, or betId')
   } else if (content && commentId) {
     throw new APIError(400, 'Cannot specify both content and commentId')
   } else if (content) {
-    comment = await createCommentOnContractInternal(
-      contractId,
-      auth,
-      removeUndefinedProps({
-        content,
-        isRepost: true,
-        replyToBetId: passedBetId,
-      })
-    )
+    const { result, continue: commentContinue } =
+      await createCommentOnContractInternal(
+        contractId,
+        auth,
+        removeUndefinedProps({
+          content,
+          isRepost: true,
+          replyToBetId: passedBetId,
+          logError,
+        })
+      )
+    comment = result
+    commentContinuation = commentContinue
   } else {
     // TODO: should we mark the comment as `isRepost`?
     if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
-    const otherComment = await getComment(createSupabaseClient(), commentId)
-    if (!otherComment) throw new APIError(404, `Comment ${commentId} not found`)
-    comment = otherComment
+    comment = await getComment(createSupabaseClient(), commentId)
   }
   if (comment.betId) betId = comment.betId
 
@@ -88,16 +95,19 @@ export const post: APIHandler<'post'> = async (props, auth, { log }, res) => {
     creatorId: creator.id,
   })
 
-  res.status(200).json(comment)
-  await repostContractToFeed(
-    contract,
-    comment,
-    creator.id,
-    result.id,
-    [auth.uid],
-    log,
-    betId
-  )
-  // TODO: not necessary except to satisfy the API typing machinery. Hopefully Sinclair will fix this
-  return comment
+  return {
+    result: comment,
+    continue: async () => {
+      await commentContinuation()
+      await repostContractToFeed(
+        contract,
+        comment,
+        creator.id,
+        result.id,
+        [auth.uid],
+        log,
+        betId
+      )
+    },
+  }
 }

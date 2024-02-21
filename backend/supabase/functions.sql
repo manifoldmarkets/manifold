@@ -472,6 +472,7 @@ from
   inner join contracts on contracts.id = tma.market_id
 where
   contracts.resolution_time is null
+  and contracts.visibility = 'public'
   and (contracts.close_time > now() or contracts.close_time is null)
 $$;
 

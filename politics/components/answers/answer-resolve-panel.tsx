@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { BETTORS } from 'common/user'
@@ -24,13 +24,13 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { APIError, api } from 'web/lib/firebase/api'
-import { AnimatedProb } from '../us-elections/contracts/party-panel/party-bar'
 import {
   AnswerBar,
   AnswerStatus,
   ClosedProb,
   CreatorAndAnswerLabel,
 } from './answer-components'
+import { AnimatedProb } from '../widgets/animated-prob'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -481,7 +481,7 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <GradientContainer className={' shadow-none'}>
+    <GradientContainer className={'shadow-none'}>
       <Col>
         <AnswerBar
           color={color}
@@ -494,7 +494,7 @@ function IndependentResolutionAnswerItem(props: {
                   Other{' '}
                   <InfoTooltip
                     className="!text-ink-600"
-                    text="Represents all answers not listed. New answers are split out of this answer."
+                    text={OTHER_TOOLTIP_TEXT}
                   />
                 </span>
               ) : (
