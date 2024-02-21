@@ -3,7 +3,6 @@ import clsx from 'clsx'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
-import { AnyBalanceChangeType } from 'common/balance-change'
 import { Col } from 'web/components/layout/col'
 
 import { SEO } from 'web/components/SEO'
@@ -37,32 +36,15 @@ export const getStaticPaths = () => {
   return { paths: [], fallback: 'blocking' }
 }
 
-export default function UserPortfolio(props: {
+export default function UserPartner(props: {
   user: User | null
   username: string
-  shouldIgnoreUser: boolean
-  balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
 }) {
   if (!props.user) return <Custom404 />
-  return (
-    <UserPartnerDashboard
-      user={props.user}
-      username={props.username}
-      shouldIgnoreUser={props.shouldIgnoreUser}
-      balanceChanges={props.balanceChanges}
-      portfolioPoints={props.portfolioPoints}
-    />
-  )
+  return <UserPartnerDashboard user={props.user} username={props.username} />
 }
 
-function UserPartnerDashboard(props: {
-  user: User
-  username: string
-  shouldIgnoreUser: boolean
-  balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
-}) {
+function UserPartnerDashboard(props: { user: User; username: string }) {
   const user = useUserById(props.user.id) ?? props.user
 
   return (
