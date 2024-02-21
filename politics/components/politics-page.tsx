@@ -2,7 +2,9 @@
 import { CashIcon, HomeIcon } from '@heroicons/react/outline'
 import {
   HomeIcon as SolidHomeIcon,
+  SearchIcon,
   UserCircleIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -26,7 +28,6 @@ import {
   NOTIFICATION_REASONS_TO_SELECT,
   NOTIFICATION_TYPES_TO_SELECT,
 } from 'politics/app/notifications/constants'
-import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 
 export function PoliticsPage(props: {
   trackPageView: string | false
@@ -67,7 +68,7 @@ export function PoliticsPage(props: {
           'mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
-        <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+        {/*<GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />*/}
         <Toaster
           position={isMobile ? 'bottom-center' : 'top-center'}
           containerClassName="!bottom-[70px]"
@@ -83,7 +84,7 @@ export function PoliticsPage(props: {
         <main
           className={clsx(
             'flex flex-1 flex-col lg:mt-6 xl:px-2',
-            'col-span-8 max-w-4xl',
+            'col-span-8',
             className
           )}
         >
@@ -107,6 +108,7 @@ export function PoliticsPage(props: {
 function getBottomNavigation(user: User) {
   return buildArray(
     { name: 'Home', href: '/', icon: SolidHomeIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
       name: 'Notifs',
       href: `/notifications`,
@@ -127,6 +129,8 @@ function getBottomNavigation(user: User) {
 
 const signedOutNavigation = () => [
   { name: 'Home', href: '/', icon: SolidHomeIcon },
+  { name: 'Browse', href: '/browse', icon: SearchIcon },
+  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
@@ -137,6 +141,7 @@ const getDesktopNav = (user: User | null | undefined) => {
   if (user)
     return buildArray(
       { name: 'Home', href: '/', icon: HomeIcon },
+      { name: 'Browse', href: '/browse', icon: SearchIcon },
       {
         name: 'Notifs',
         href: `/notifications`,
@@ -150,7 +155,10 @@ const getDesktopNav = (user: User | null | undefined) => {
       }
     )
 
-  return buildArray({ name: 'Home', href: '/', icon: HomeIcon })
+  return buildArray(
+    { name: 'Home', href: '/', icon: HomeIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon }
+  )
 }
 
 // No sidebar when signed out

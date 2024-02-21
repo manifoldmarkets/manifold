@@ -167,8 +167,10 @@ export const useFeedTimeline = (
   const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
-  if (DEBUG_FEED_CARDS)
-    console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
+
+  // Note (James): This was noisy so I'm disabling.
+  // if (DEBUG_FEED_CARDS)
+  //   console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -511,7 +513,12 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
     return sharedGroups / (totalGroupSlugs * 5)
   }
 
-  let availableItems = [...items]
+  let availableItems = orderBy(
+    items,
+    (item) => item.contract?.importanceScore ?? 0,
+    'desc'
+  )
+
   while (availableItems.length > 0) {
     // Remove this item from the available items
     const item = availableItems.shift()
@@ -531,7 +538,7 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
                 relatedItem.contract?.groupSlugs ?? []
               ),
         }))
-        .filter((x) => x.score > 0.5)
+        .filter((x) => x.score > 0.6)
 
       const sortedPotentialMembers = orderBy(
         potentialGroupMembers,
@@ -542,7 +549,11 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
         .slice(0, 5)
         .map((x) => x.relatedItem)
       if (mostSimilarItems.length > 0) {
-        item.relatedItems = mostSimilarItems
+        item.relatedItems = orderBy(
+          mostSimilarItems,
+          (item) => item.contract?.importanceScore ?? 0,
+          'desc'
+        )
         availableItems = availableItems.filter(
           (x) => !mostSimilarItems.includes(x)
         )

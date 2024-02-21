@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-import { useCompatibleLovers } from 'love/hooks/use-lovers'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Lover } from 'common/love/lover'
 import { BrowseMatchesButton } from '../browse-matches-button'
@@ -9,20 +8,18 @@ import { MatchTile } from './match-tile'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
+import { APIResponse } from 'common/api/schema'
 
 export const Matches = (props: {
   profileLover: Lover
   profileUserId: string
+  browseData: APIResponse<'compatible-lovers'> | null | undefined
 }) => {
-  const { profileLover, profileUserId } = props
+  const { profileLover, profileUserId, browseData } = props
   const user = useUser()
-  const data = useCompatibleLovers(profileUserId, {
-    sortWithLocationPenalty: true,
-  })
-
   const [showOldMatches, setShowOldMatches] = useState(false)
 
-  if (!data) return <LoadingIndicator />
+  if (!browseData) return <LoadingIndicator />
 
   const {
     lover,
@@ -30,7 +27,7 @@ export const Matches = (props: {
     compatibleLovers,
     loverCompatibilityScores,
     loverContracts,
-  } = data
+  } = browseData
   const areYourMatches = profileUserId === user?.id
 
   return (

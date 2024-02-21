@@ -15,6 +15,7 @@ import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
 import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
+import { removeTextInParentheses } from './candidate-bar'
 
 export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
@@ -39,21 +40,23 @@ export const SmallCandidateBar = (props: {
     contract,
   } = props
 
-  const candidateImage = CANDIDATE_DATA[answer.text]?.photo
+  const candidatefullName = removeTextInParentheses(answer.text)
   const [open, setOpen] = useState(false)
   const user = useUser()
   const isMobile = useIsMobile()
+
+  const { shortName, photo, party } = CANDIDATE_DATA[candidatefullName] ?? {}
 
   return (
     <>
       <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
           <Row className="w-full items-center gap-2 text-sm sm:text-lg">
-            {!candidateImage ? (
-              <IoIosPerson className="text-ink-600 -mb-4 h-20 w-20 sm:h-24 sm:w-24" />
+            {!photo ? (
+              <IoIosPerson className="text-ink-600 h-10 w-10 sm:h-[60px] sm:w-[60px]" />
             ) : (
               <Image
-                src={candidateImage}
+                src={photo}
                 alt={answer.text}
                 width={isMobile ? 40 : 60}
                 height={isMobile ? 40 : 60}
@@ -61,7 +64,7 @@ export const SmallCandidateBar = (props: {
               />
             )}
 
-            {CANDIDATE_DATA[answer.text]?.shortName ?? answer.text}
+            {shortName ?? answer.text}
           </Row>
           <CandidateProb
             contract={contract}

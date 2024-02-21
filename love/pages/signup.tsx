@@ -21,6 +21,7 @@ import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { removeUndefinedProps } from 'common/util/object'
 import { useLoverByUserId } from 'love/hooks/use-lover'
+import { requestAllSignupBonuses } from 'love/lib/util/signup'
 
 export default function SignupPage() {
   const [step, setStep] = useState(0)
@@ -89,6 +90,8 @@ export default function SignupPage() {
                   setStep(1)
                   scrollTo(0, 0)
                   track('submit love required profile')
+
+                  requestAllSignupBonuses()
                 }
               }}
             />

@@ -31,7 +31,10 @@ import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { Linkify } from 'web/components/widgets/linkify'
 import { UserHandles } from 'web/components/user/user-handles'
-import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
+import {
+  QueryUncontrolledTabs,
+  UncontrolledTabs,
+} from 'politics/components/layout/tabs'
 import { Spacer } from 'web/components/layout/spacer'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
@@ -75,16 +78,8 @@ export const DeletedUser = () => {
   return (
     <PoliticsPage trackPageView={'deleted user profile'}>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title>Deleted account page</Title>
-        <p>This user has been deleted.</p>
-        <p>If you didn't expect this, let us know on Discord!</p>
-        <br />
-        <iframe
-          src="https://discord.com/widget?id=915138780216823849&theme=dark"
-          width="350"
-          height="500"
-          sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-        ></iframe>
+        <Title>Deleted account</Title>
+        <p>This user's account has been deleted.</p>
       </div>
     </PoliticsPage>
   )
@@ -238,7 +233,7 @@ function UserProfile(props: { user: User }) {
                       isCurrentUser={isCurrentUser}
                     />
                     <Spacer h={4} />
-                    <UserBetsTable user={user} />
+                    <UserBetsTable user={user} isPolitics={true} />
                   </>
                 ),
               },
@@ -247,7 +242,7 @@ function UserProfile(props: { user: User }) {
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
                   <Col>
-                    <UserCommentsList user={user} />
+                    <UserCommentsList user={user} isPolitics={true} />
                   </Col>
                 ),
               },
@@ -402,7 +397,7 @@ function FollowsDialog(props: {
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
         <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
-        <Tabs
+        <UncontrolledTabs
           className="mx-6"
           tabs={[
             {

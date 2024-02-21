@@ -1,8 +1,9 @@
 import * as cors from 'cors'
+import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
@@ -25,8 +26,6 @@ import { getCurrentUser } from './get-current-user'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
-import { swapcert } from './swap-cert'
-import { dividendcert } from './dividend-cert'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
@@ -44,7 +43,10 @@ import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
-import { supabasesearchgroups } from './supabase-search-groups'
+import {
+  supabasesearchgroups,
+  supabasesearchmygroups,
+} from './supabase-search-groups'
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -60,7 +62,6 @@ import { manachantweet } from './manachan-tweet'
 import { sendMana } from './send-mana'
 import { leavereview } from './leave-review'
 import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
-import { claimdestinysub } from './claim-destiny-sub'
 import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
@@ -78,7 +79,7 @@ import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
-import { updatemarket } from 'api/update-market'
+import { updateMarket } from 'api/update-market'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
@@ -94,7 +95,6 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
-import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
@@ -102,6 +102,7 @@ import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 import { assertUnreachable } from 'common/util/types'
 import { hideComment } from './hide-comment'
+import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
@@ -117,14 +118,13 @@ import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
   searchMarketsFull,
-  searchMarketsLegacy,
 } from './supabase-search-contract'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
-import { getHeadlines } from './get-headlines'
+import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getrelatedmarkets } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
@@ -134,7 +134,16 @@ import { shipLovers } from './love/ship-lovers'
 import { createManalink } from './create-manalink'
 import { requestSignupBonus } from 'api/request-signup-bonus'
 import { getLikesAndShips } from './love/get-likes-and-ships'
-
+import { hasFreeLike } from './love/has-free-like'
+import { starLover } from './love/star-lover'
+import { getLovers } from './love/get-lovers'
+import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
+import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
+import { getBalanceChanges } from 'api/get-balance-changes'
+import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
+import { getLoveMarket } from './love/get-love-market'
+import { getLoveMarkets } from './love/get-love-markets'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -145,24 +154,32 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestLogger: RequestHandler = (req, _res, next) => {
-  log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
-  next()
+const requestContext: RequestHandler = (req, _res, next) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
+  const context = { endpoint: req.path, traceId }
+  withLogContext(context, () => {
+    log(`${req.method} ${req.url}`)
+    next()
+  })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-  if (err instanceof APIError) {
-    const output: { [k: string]: unknown } = { message: err.message }
-    if (err.details != null) {
-      output.details = err.details
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof APIError) {
+    log.info(error)
+    if (res.headersSent) {
+      return next(error)
     }
-    res.status(err.code).json(output)
+    const output: { [k: string]: unknown } = { message: error.message }
+    if (error.details != null) {
+      output.details = error.details
+    }
+    res.status(error.code).json(output)
   } else {
-    console.error(err.stack)
-    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
+    log.error(error)
+    res.status(500).json({ message: error.stack, error })
   }
 }
 
@@ -175,20 +192,8 @@ const apiRoute = (endpoint: RequestHandler) => {
   ] as const
 }
 
-// temporary
-const oldRouteFrom = <N extends APIPath>(path: N) => {
-  const handler = handlers[path]
-
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    typedEndpoint(path, handler),
-    apiErrorHandler,
-  ] as const
-}
-
 export const app = express()
-app.use(requestLogger)
+app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 
@@ -201,9 +206,10 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
+  'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': updatemarket,
+  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveGroupFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -213,6 +219,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'slug/:slug': getMarket,
+  'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
   'market/:contractId/add-liquidity': addLiquidity,
@@ -236,18 +243,33 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
   headlines: getHeadlines,
+  'politics-headlines': getPoliticsHeadlines,
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getrelatedmarkets,
+  'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
   'ship-lovers': shipLovers,
   'request-signup-bonus': requestSignupBonus,
   'get-likes-and-ships': getLikesAndShips,
+  'has-free-like': hasFreeLike,
+  'star-lover': starLover,
+  'get-lovers': getLovers,
+  'get-lover-answers': getLoverAnswers,
+  'set-news': setnews,
+  'update-user-embedding': updateUserEmbedding,
+  'search-groups': supabasesearchgroups,
+  'search-my-groups': supabasesearchmygroups,
+  'get-groups-with-top-contracts': getGroupsWithTopContracts,
+  'get-balance-changes': getBalanceChanges,
+  'create-your-love-market': createYourLoveMarket,
+  'get-love-market': getLoveMarket,
+  'get-love-markets': getLoveMarkets,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -282,34 +304,6 @@ app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
 app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
-app.post('/swapcert', ...apiRoute(swapcert))
-app.post('/dividendcert', ...apiRoute(dividendcert))
-
-// TODO: remove everything in this block after a few days. This is mostly for compatibility with frontend
-app.post('/createcomment', ...oldRouteFrom('comment'))
-app.post('/placebet', ...oldRouteFrom('bet'))
-app.post('/cancelbet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/v0/cancel-bet', ...oldRouteFrom('bet/cancel/:betId'))
-app.post('/sellbet', ...oldRouteFrom('sell-shares-dpm'))
-app.post('/sellshares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/v0/sell-shares', ...oldRouteFrom('market/:contractId/sell'))
-app.post('/addsubsidy', ...oldRouteFrom('market/:contractId/add-liquidity'))
-app.post(
-  '/v0/add-liquidity',
-  ...oldRouteFrom('market/:contractId/add-liquidity')
-)
-app.post('/createmarket', ...oldRouteFrom('market'))
-app.post('/v0/create-market', ...oldRouteFrom('market'))
-app.post('/resolvemarket', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/v0/resolve', ...oldRouteFrom('market/:contractId/resolve'))
-app.post('/closemarket', ...oldRouteFrom('market/:contractId/close'))
-app.post('/v0/close', ...oldRouteFrom('market/:contractId/close'))
-app.post('/createanswercpmm', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/add-answer', ...oldRouteFrom('market/:contractId/answer'))
-app.post('/v0/send-mana', ...oldRouteFrom('managram'))
-app.put('/v0/update-tag', ...oldRouteFrom('market/:contractId/group'))
-app.post('/v0/award-bounty', ...oldRouteFrom('market/:contractId/award-bounty'))
-app.post('/v0/add-bounty', ...oldRouteFrom('market/:contractId/add-bounty'))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
 app.post('/creategroup', ...apiRoute(creategroup))
@@ -322,13 +316,11 @@ app.post('/registerdiscordid', ...apiRoute(registerdiscordid))
 app.post('/addgroupmember', ...apiRoute(addgroupmember))
 app.post('/getuserisgroupmember', ...apiRoute(getuserisgroupmember))
 app.post('/completequest', ...apiRoute(completequest))
-app.post('/update-user-embedding', ...apiRoute(updateUserEmbedding))
 app.post(
   '/update-user-disinterest-embedding',
   ...apiRoute(updateUserDisinterestEmbedding)
 )
 app.get('/getsupabasetoken', ...apiRoute(getsupabasetoken))
-app.post('/supabasesearchcontracts', ...apiRoute(searchMarketsLegacy)) // TODO: remove after a few days
 app.post('/delete-market', ...apiRoute(deleteMarket))
 app.post('/save-topic', ...apiRoute(saveTopic))
 app.post('/boost-market', ...apiRoute(boostmarket))
@@ -344,7 +336,6 @@ app.post(
 app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
-app.post('/supabasesearchgroups', ...apiRoute(supabasesearchgroups))
 app.post('/league-activity', ...apiRoute(leagueActivity))
 app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
@@ -364,7 +355,6 @@ app.post(
   '/get-similar-groups-to-contract',
   ...apiRoute(getsimilargroupstocontract)
 )
-app.post('/claimdestinysub', ...apiRoute(claimdestinysub))
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 app.post('/unresolve', ...apiRoute(unresolve))
@@ -376,7 +366,6 @@ app.post('/supabasesearchdashboards', ...apiRoute(supabasesearchdashboards))
 app.post('/getyourfolloweddashboards', ...apiRoute(getyourfolloweddashboards))
 app.post('/updatedashboard', ...apiRoute(updatedashboard))
 app.post('/delete-dashboard', ...apiRoute(deletedashboard))
-app.post('/set-news-dashboards', ...apiRoute(setnews))
 app.get('/get-news-dashboards', ...apiRoute(getnews))
 app.post('/getdashboardfromslug', ...apiRoute(getdashboardfromslug))
 app.post('/ban-user', ...apiRoute(banuser))
@@ -408,19 +397,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-const publicApiRoute = (endpoint: RequestHandler) => {
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// Ian: not sure how to restrict triggers to supabase origin, yet
-app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

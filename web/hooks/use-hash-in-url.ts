@@ -13,7 +13,8 @@ export const useHashInUrl = () => {
 
   useEffect(() => {
     const handleHashChange = () => {
-      setHash(getHash())
+      const hash = getHash()
+      setHash(hash)
     }
     window.addEventListener('hashchange', handleHashChange)
     return () => {

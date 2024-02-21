@@ -162,15 +162,6 @@ async function updateContractSubcollectionsVisibility(
   const contractRef = firestore.collection('contracts').doc(contractId)
   const batchSize = 500
 
-  // Update comments' visibility
-  const commentsRef = contractRef.collection('comments')
-  await processPaginated(commentsRef, batchSize, (ts) => {
-    const updatePromises = ts.docs.map((doc) => {
-      return doc.ref.update({ visibility: newVisibility })
-    })
-    return Promise.all(updatePromises)
-  })
-
   // Update bets' visibility
   const betsRef = contractRef.collection('bets')
   await processPaginated(betsRef, batchSize, (ts) => {

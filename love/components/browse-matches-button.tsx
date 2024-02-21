@@ -220,7 +220,7 @@ function CompatibilityScoreDisplay(props: {
   return (
     <Row className="text-ink-600 items-center gap-1">
       <CompatibleBadge
-        className="text-primary-600 font-semibold"
+        className="text-primary-600 font-semibold self-end"
         compatibility={compatibility}
       />
       compatible

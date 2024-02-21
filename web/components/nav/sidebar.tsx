@@ -32,7 +32,7 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
-import { Item, SidebarItem } from './sidebar-item'
+import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
@@ -41,7 +41,7 @@ import { FaFlagUsa } from 'react-icons/fa6'
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
-  navigationOptions?: Item[]
+  navigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { className, isMobile, hideCreateQuestionButton } = props
@@ -163,7 +163,7 @@ const getDesktopNav = (
 
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
-  return buildArray(
+  return buildArray<NavItem>(
     {
       name: 'US Elections',
       href: '/elections',

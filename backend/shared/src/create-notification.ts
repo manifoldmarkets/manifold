@@ -73,7 +73,7 @@ import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
-import { getComment } from './supabase/contract_comments'
+import { getCommentSafe } from './supabase/contract_comments'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -879,7 +879,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
   if (content_type === 'contract') {
     text = contract.question
   } else {
-    const comment = await getComment(db, content_id)
+    const comment = await getCommentSafe(db, content_id)
     if (comment == null) return
 
     text = richTextToString(comment?.content)
@@ -945,7 +945,7 @@ export const createUniqueBettorBonusNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: txnId,
-      sourceType: 'push_notification_bonus',
+      sourceType: 'bonus',
       sourceUpdateType: 'created',
       sourceUserName: bettor.name,
       sourceUserUsername: bettor.username,
@@ -1642,7 +1642,7 @@ export const createPollClosedNotification = async (
 
   const constructNotification = (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -1673,7 +1673,7 @@ export const createPollClosedNotification = async (
 
   const sendNotificationsIfSettingsPermit = async (
     userId: string,
-    reason: notification_reason_types
+    reason: NotificationReason
   ) => {
     // A user doesn't have to follow a market to receive a notification with their tag
     if (!stillFollowingContract(userId)) return
@@ -1700,7 +1700,10 @@ export const createPollClosedNotification = async (
     await Promise.all(
       Object.keys(contractFollowersIds).map((userId) => {
         if (userId !== sourceContract.creatorId) {
-          sendNotificationsIfSettingsPermit(userId, 'poll_you_follow_closed')
+          sendNotificationsIfSettingsPermit(
+            userId,
+            'poll_close_on_watched_markets'
+          )
         }
       })
     )

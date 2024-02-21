@@ -51,6 +51,10 @@ export function getNewContract(props: {
   loverUserId1: string | undefined
   loverUserId2: string | undefined
   matchCreatorId: string | undefined
+  isLove: boolean | undefined
+  answerLoverUserIds: string[] | undefined
+
+  specialLiquidityPerAnswer: number | undefined
 }) {
   const {
     id,
@@ -73,7 +77,10 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
     coverImageUrl,
+    specialLiquidityPerAnswer,
+    answerLoverUserIds,
   } = props
   const createdTime = Date.now()
 
@@ -88,10 +95,12 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante
+        ante,
+        specialLiquidityPerAnswer,
+        answerLoverUserIds
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
     POLL: () => getPollProps(answers),
   }[outcomeType]()
 
@@ -138,6 +147,7 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   })
 
   return contract as Contract
@@ -214,7 +224,9 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number
+  ante: number,
+  specialLiquidityPerAnswer: number | undefined,
+  answerLoverUserIds: string[] | undefined
 ) => {
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -225,7 +237,9 @@ const getMultipleChoiceProps = (
     addAnswersMode,
     shouldAnswersSumToOne,
     ante,
-    answersWithOther
+    answersWithOther,
+    specialLiquidityPerAnswer,
+    answerLoverUserIds
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -233,8 +247,9 @@ const getMultipleChoiceProps = (
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: answerObjects,
-    totalLiquidity: ante,
+    totalLiquidity: specialLiquidityPerAnswer ?? ante,
     subsidyPool: 0,
+    specialLiquidityPerAnswer,
   }
 
   return system
@@ -246,7 +261,9 @@ function createAnswers(
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  answers: string[]
+  answers: string[],
+  specialLiquidityPerAnswer: number | undefined,
+  answerLoverUserIds: string[] | undefined
 ) {
   const ids = answers.map(() => randomString())
 
@@ -270,19 +287,28 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
+  } else if (specialLiquidityPerAnswer !== undefined) {
+    // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
+    // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
+    // Then we can solve probability identity:
+    // prob = poolNo / (poolYes + poolNo)
+    prob = 0.02
+    poolYes = specialLiquidityPerAnswer
+    poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
   }
 
   const now = Date.now()
 
   return answers.map((text, i) => {
     const id = ids[i]
-    const answer: Answer = {
+    const answer: Answer = removeUndefinedProps({
       id,
       index: i,
       contractId,
       userId,
       text,
       createdTime: now,
+      loverUserId: answerLoverUserIds?.[i],
 
       poolYes,
       poolNo,
@@ -294,18 +320,18 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
-    }
+    })
     return answer
   })
 }
 
-const getBountiedQuestionProps = () => {
+const getBountiedQuestionProps = (ante: number) => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
     bountyTxns: [],
-    totalBounty: 0,
-    bountyLeft: 0,
+    totalBounty: ante,
+    bountyLeft: ante,
   }
 
   return system

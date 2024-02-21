@@ -32,7 +32,8 @@ create table if not exists
                   views int default 0,
                   last_updated_time timestamptz,
                   last_bet_time timestamptz,
-                  last_comment_time timestamptz
+                  last_comment_time timestamptz,
+                  is_politics boolean default false
 );
 
 alter table contracts enable row level security;
@@ -77,6 +78,8 @@ create index if not exists contracts_on_importance_score_and_resolution_time_idx
 
 create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
 create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
+
+create index concurrently if not exists contracts_politics on contracts (is_politics);
 
 alter table contracts
     cluster on contracts_creator_id;
@@ -125,6 +128,7 @@ begin
                                      when new.data ? 'lastCommentTime' then millis_to_ts(((new.data) ->> 'lastCommentTime')::bigint)
                                      else null
             end;
+        new.is_politics := coalesce(((new.data) ->> 'isPolitics')::boolean, false);
     end if;
     return new;
 end

@@ -18,63 +18,26 @@ import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
+} from 'common/envs/constants'
 import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { log, Logger, StructuredLogger } from 'shared/log'
+
+export { log, Logger }
+
+// for old code
+export { log as gLog, StructuredLogger as GCPLog }
 
 // type for scheduled job functions
 export type JobContext = {
-  log: GCPLog
+  log: StructuredLogger
   lastEndTime?: number
 }
-
-export const log = (...args: unknown[]) => {
-  console.log(`[${new Date().toISOString()}]`, ...args)
-}
-
-// log levels GCP's log explorer recognizes
-export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
-export type GCPLogLevel = (typeof LEVELS)[number]
-
-// ian: Not sure if we need this for reference, from mqp's initial log implementation
-type GCPLogOutput = {
-  severity: GCPLogLevel
-  message?: string
-  details: any[]
-}
-
-export type GCPLog = (message: any, details?: object | null) => void
-
-function replacer(key: string, value: any) {
-  if (typeof value === 'bigint') {
-    return value.toString()
-  } else {
-    return value
-  }
-}
-
-export const gLog = (
-  severity: GCPLogLevel,
-  message: any,
-  details?: object | null
-) => {
-  const output = { severity, message: message ?? null, ...(details ?? {}) }
-  try {
-    const stringified = JSON.stringify(output, replacer)
-    console.log(stringified)
-  } catch (e) {
-    console.error('Could not stringify log output')
-    console.error(e)
-  }
-}
-
-gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
-gLog.info = (message: any, details?: object) => gLog('INFO', message, details)
-gLog.warn = (message: any, details?: object) =>
-  gLog('WARNING', message, details)
-gLog.error = (message: any, details?: object) => gLog('ERROR', message, details)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -106,9 +69,14 @@ export const invokeFunction = async (name: string, body?: unknown) => {
   }
 }
 
+export function getDomainForContract(contract: Contract) {
+  return contract.isPolitics ? ENV_CONFIG.politicsDomain : ENV_CONFIG.domain
+}
+
 export const revalidateStaticProps = async (
   // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
-  pathToRevalidate: string
+  pathToRevalidate: string,
+  domain?: string
 ) => {
   if (isProd()) {
     const apiSecret = process.env.API_SECRET as string
@@ -117,21 +85,46 @@ export const revalidateStaticProps = async (
 
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
     const { ok, status, statusText } = await fetch(
-      'https://manifold.markets/api/v0/revalidate' + queryStr
+      `https://${domain ?? ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
     )
     if (!ok)
       throw new Error(
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated', pathToRevalidate)
+    log('Revalidated', pathToRevalidate)
+  }
+}
+
+export const revalidateCachedTag = async (tag: string, domain: string) => {
+  if (isProd()) {
+    const apiSecret = process.env.API_SECRET as string
+    if (!apiSecret)
+      throw new Error('Revalidation failed because of missing API_SECRET.')
+
+    const queryStr = `?tag=${tag}&apiSecret=${apiSecret}`
+    const { ok, status, statusText } = await fetch(
+      `https://${domain}/api/v0/revalidate${queryStr}`
+    )
+    if (!ok)
+      throw new Error(
+        'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
+      )
+
+    log('Revalidated tag', tag)
   }
 }
 
 export async function revalidateContractStaticProps(contract: Contract) {
   await Promise.all([
-    revalidateStaticProps(contractPath(contract)),
-    revalidateStaticProps(`/embed${contractPath(contract)}`),
+    revalidateStaticProps(
+      contractPath(contract),
+      getDomainForContract(contract)
+    ),
+    revalidateStaticProps(
+      `/embed${contractPath(contract)}`,
+      getDomainForContract(contract)
+    ),
   ])
 }
 
@@ -276,6 +269,16 @@ export const getContractSupabase = async (contractId: string) => {
   )
   return first(res)
 }
+export const getContractFromSlugSupabase = async (contractSlug: string) => {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.map(
+    `select data, importance_score from contracts where slug = $1
+            limit 1`,
+    [contractSlug],
+    (row) => convertContract(row)
+  )
+  return first(res)
+}
 
 export const getUserFirebase = (userId: string) => {
   return getDoc<User>('users', userId)
@@ -408,8 +411,8 @@ export function contractUrl(contract: Contract) {
 export async function getTrendingContractsToEmail() {
   const pg = createSupabaseDirectClient()
   return await pg.map(
-    `select data from contracts 
-            where resolution_time is null 
+    `select data from contracts
+            where resolution_time is null
               and visibility = 'public'
               and not (group_slugs && $1)
               and question not ilike '%stock%'

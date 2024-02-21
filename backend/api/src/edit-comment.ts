@@ -1,14 +1,17 @@
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { validateComment } from 'api/create-comment'
-import { Comment } from 'common/comment'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
-import { revalidateStaticProps } from 'shared/utils'
+import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
 import { contractPath } from 'common/contract'
+import { getComment } from 'shared/supabase/contract_comments'
+import { updateData } from 'shared/supabase/utils'
 
 const editSchema = z
   .object({
@@ -20,7 +23,6 @@ const editSchema = z
   })
   .strict()
 export const editcomment = authEndpoint(async (req, auth) => {
-  const firestore = admin.firestore()
   const { commentId, contractId, content, html, markdown } = validate(
     editSchema,
     req.body
@@ -31,20 +33,19 @@ export const editcomment = authEndpoint(async (req, auth) => {
     contentJson,
   } = await validateComment(contractId, auth.uid, content, html, markdown)
 
-  const ref = firestore
-    .collection(`contracts/${contractId}/comments`)
-    .doc(commentId)
-  const refSnap = await ref.get()
-  if (!refSnap.exists) throw new APIError(404, 'Comment not found')
-  const comment = refSnap.data() as Comment
+  const db = createSupabaseClient()
+  const comment = await getComment(db, commentId)
+
   if (editor.id !== comment.userId && !isAdminId(editor.id))
     throw new APIError(403, 'User is not the creator of the comment.')
 
-  await ref.update({
+  const pg = createSupabaseDirectClient()
+  await updateData(pg, 'contract_comments', 'comment_id', {
+    comment_id: commentId,
     content: contentJson,
     editedTime: Date.now(),
   })
-  const db = createSupabaseClient()
+
   await run(
     db.from('contract_comment_edits').insert({
       contract_id: contract.id,
@@ -53,7 +54,10 @@ export const editcomment = authEndpoint(async (req, auth) => {
       data: comment,
     })
   )
-  await revalidateStaticProps(contractPath(contract))
+  await revalidateStaticProps(
+    contractPath(contract),
+    getDomainForContract(contract)
+  )
 
-  return { commentId: ref.id }
+  return { success: true }
 })

@@ -24,6 +24,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { canSetReferrer } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const ReferralsButton = memo(function ReferralsButton(props: {
   user: User
@@ -143,13 +144,15 @@ export function ReferralsDialog(props: {
                   ) : (
                     <div className="text-ink-700 justify-center">
                       {referredByUser ? (
-                        <Row className={'items-center gap-2 p-2'}>
-                          <Avatar
-                            username={referredByUser.username}
-                            avatarUrl={referredByUser.avatarUrl}
-                          />
-                          <UserLink user={referredByUser} />
-                        </Row>
+                        <UserHovercard userId={referredByUser.id}>
+                          <Row className={'items-center gap-2 p-2'}>
+                            <Avatar
+                              username={referredByUser.username}
+                              avatarUrl={referredByUser.avatarUrl}
+                            />
+                            <UserLink user={referredByUser} />
+                          </Row>
+                        </UserHovercard>
                       ) : (
                         <span className={'text-ink-500'}>No one...</span>
                       )}
@@ -178,13 +181,15 @@ export function ReferralsDialog(props: {
                           'items-center justify-between gap-2 p-2'
                         )}
                       >
-                        <Row className="items-center gap-2">
-                          <Avatar
-                            username={refUser?.username}
-                            avatarUrl={refUser?.avatarUrl}
-                          />
-                          {refUser && <UserLink user={refUser} />}
-                        </Row>
+                        <UserHovercard userId={refUser.id}>
+                          <Row className="items-center gap-2">
+                            <Avatar
+                              username={refUser?.username}
+                              avatarUrl={refUser?.avatarUrl}
+                            />
+                            {refUser && <UserLink user={refUser} />}
+                          </Row>
+                        </UserHovercard>
                       </Row>
                     ))
                   )}

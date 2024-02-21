@@ -24,6 +24,7 @@ import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
+import { ExternalLinkIcon } from '@heroicons/react/outline'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
@@ -90,13 +91,16 @@ export default function LandingPage(props: {
                   Markets
                 </Button>
               </Link>
-              <Link href="/elections" className="hidden lg:flex">
+              <Link
+                href="https://manifoldpolitics.com/"
+                className="hidden lg:flex"
+              >
                 <Button
                   color="gray-white"
                   size="xs"
                   className="whitespace-nowrap"
                 >
-                  US Elections
+                  US Politics <ExternalLinkIcon className="ml-2 h-3 w-3" />
                 </Button>
               </Link>
               <Button

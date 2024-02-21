@@ -13,11 +13,11 @@ import { useEvent } from 'web/hooks/use-event'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { AddFundsButton } from '../profile/add-funds-button'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { track } from 'web/lib/service/analytics'
 import { useZoom } from '../charts/helpers'
 import { periodDurations } from 'web/lib/util/time'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -25,8 +25,16 @@ export const PortfolioValueSection = memo(
     defaultTimePeriod: Period
     isCurrentUser: boolean
     lastUpdatedTime: number | undefined
+    hideAddFundsButton?: boolean
+    onlyShowProfit?: boolean
   }) {
-    const { userId, isCurrentUser, defaultTimePeriod, lastUpdatedTime } = props
+    const {
+      userId,
+      hideAddFundsButton,
+      defaultTimePeriod,
+      lastUpdatedTime,
+      onlyShowProfit,
+    } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
@@ -93,6 +101,7 @@ export const PortfolioValueSection = memo(
       const showDisclaimer = portfolioHistory || !lastUpdatedTime
       return (
         <PortfolioValueSkeleton
+          hideAddFundsButton={hideAddFundsButton}
           userId={userId}
           graphMode={graphMode}
           onClickNumber={onClickNumber}
@@ -100,21 +109,15 @@ export const PortfolioValueSection = memo(
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           profitElement={placeholderSection}
-          balanceElement={placeholderSection}
-          valueElement={placeholderSection}
+          balanceElement={!onlyShowProfit ? placeholderSection : undefined}
+          valueElement={!onlyShowProfit ? placeholderSection : undefined}
           className={showDisclaimer ? 'h-8' : ''}
           graphElement={(_width, height) => {
             if (showDisclaimer) {
               return (
                 <Col className={'text-ink-500 mt-2'}>
                   <Row className={'gap-2'}>
-                    {isCurrentUser ? (
-                      <span>
-                        Portfolio history is available ~20m after your 1st bet.
-                      </span>
-                    ) : (
-                      <span>User has no portfolio history, yet.</span>
-                    )}
+                    <span>No portfolio history, yet.</span>
                   </Row>
                 </Col>
               )
@@ -142,6 +145,7 @@ export const PortfolioValueSection = memo(
     const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
+        hideAddFundsButton={hideAddFundsButton}
         userId={userId}
         graphMode={graphMode}
         onClickNumber={onClickNumber}
@@ -161,7 +165,7 @@ export const PortfolioValueSection = memo(
                 ? graphDisplayNumber.toString().includes('-')
                   ? 'text-scarlet-500'
                   : 'text-teal-500'
-                : profit < 0
+                : profit <= -1
                 ? 'text-scarlet-500'
                 : 'text-teal-500',
               'text-lg sm:text-xl'
@@ -173,18 +177,22 @@ export const PortfolioValueSection = memo(
           </div>
         }
         balanceElement={
-          <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
-            {graphMode === 'balance' && graphDisplayNumber
-              ? graphDisplayNumber
-              : formatMoney(balance)}
-          </div>
+          !onlyShowProfit ? (
+            <div className={clsx('text-lg text-blue-600 sm:text-xl')}>
+              {graphMode === 'balance' && graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(balance)}
+            </div>
+          ) : undefined
         }
         valueElement={
-          <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
-            {graphMode === 'value' && graphDisplayNumber
-              ? graphDisplayNumber
-              : formatMoney(totalValue)}
-          </div>
+          !onlyShowProfit ? (
+            <div className={clsx('text-primary-600 text-lg sm:text-xl')}>
+              {graphMode === 'value' && graphDisplayNumber
+                ? graphDisplayNumber
+                : formatMoney(totalValue)}
+            </div>
+          ) : undefined
         }
         graphElement={(width, height) => (
           <PortfolioGraph
@@ -195,9 +203,11 @@ export const PortfolioValueSection = memo(
             height={height}
             zoomParams={zoomParams}
             onMouseOver={handleGraphDisplayChange}
+            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
           />
         )}
-        placement={isMobile ? 'bottom' : undefined}
+        onlyShowProfit={onlyShowProfit}
+        placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
       />
     )
   }
@@ -208,9 +218,9 @@ function PortfolioValueSkeleton(props: {
   onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
-  valueElement: ReactNode
+  valueElement?: ReactNode
   profitElement: ReactNode
-  balanceElement: ReactNode
+  balanceElement?: ReactNode
   graphElement: (width: number, height: number) => ReactNode
   hideSwitcher?: boolean
   className?: string
@@ -218,6 +228,8 @@ function PortfolioValueSkeleton(props: {
   userId?: string
   disabled?: boolean
   placement?: 'bottom'
+  hideAddFundsButton?: boolean
+  onlyShowProfit?: boolean
 }) {
   const {
     graphMode,
@@ -234,14 +246,23 @@ function PortfolioValueSkeleton(props: {
     disabled,
     placement,
     className,
+    hideAddFundsButton,
+    onlyShowProfit,
   } = props
 
-  const profitLabel = {
-    daily: 'Profit 1D',
-    weekly: 'Profit 1W',
-    monthly: 'Profit 1M',
-    allTime: 'Profit',
-  }[currentTimePeriod]
+  const profitLabel = onlyShowProfit
+    ? {
+        daily: 'Daily profit',
+        weekly: 'Weekly profit',
+        monthly: 'Monthly profit',
+        allTime: 'All-time profit',
+      }[currentTimePeriod]
+    : {
+        daily: 'Profit 1D',
+        weekly: 'Profit 1W',
+        monthly: 'Profit 1M',
+        allTime: 'Profit',
+      }[currentTimePeriod]
 
   return (
     <>
@@ -249,6 +270,7 @@ function PortfolioValueSkeleton(props: {
         <Col
           className={clsx(
             'w-24 cursor-pointer sm:w-28 ',
+            !balanceElement && !valueElement ? 'ml-3 sm:ml-2' : '',
             graphMode != 'profit'
               ? 'cursor-pointer opacity-40 hover:opacity-80'
               : ''
@@ -262,40 +284,46 @@ function PortfolioValueSkeleton(props: {
           {profitElement}
         </Col>
 
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28',
-            graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-          )}
-          onClick={() => {
-            onClickNumber('value')
-            track('Portfolio Value Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
-          {valueElement}
-        </Col>
+        {valueElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28',
+              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+            )}
+            onClick={() => {
+              onClickNumber('value')
+              track('Portfolio Value Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
+            {valueElement}
+          </Col>
+        )}
 
-        <Col
-          className={clsx(
-            'w-24 cursor-pointer sm:w-28 ',
-            graphMode != 'balance'
-              ? 'cursor-pointer opacity-40 hover:opacity-80'
-              : ''
-          )}
-          onClick={() => {
-            onClickNumber('balance')
-            track('Graph Balance Clicked')
-          }}
-        >
-          <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
-          {balanceElement}
-        </Col>
+        {balanceElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28 ',
+              graphMode != 'balance'
+                ? 'cursor-pointer opacity-40 hover:opacity-80'
+                : ''
+            )}
+            onClick={() => {
+              onClickNumber('balance')
+              track('Graph Balance Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
+            {balanceElement}
+          </Col>
+        )}
 
-        <AddFundsButton
-          userId={userId}
-          className=" self-center whitespace-nowrap"
-        />
+        {!hideAddFundsButton && (
+          <AddFundsButton
+            userId={userId}
+            className=" self-center whitespace-nowrap"
+          />
+        )}
 
         {!placement && !hideSwitcher && (
           <TimeRangePicker
@@ -303,7 +331,8 @@ function PortfolioValueSkeleton(props: {
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="ml-auto"
+            className="bg-canvas-50 ml-auto border-0"
+            toggleClassName={'w-12 justify-center'}
           />
         )}
       </Row>
@@ -320,7 +349,7 @@ function PortfolioValueSkeleton(props: {
           setCurrentTimePeriod={setCurrentTimePeriod}
           color={switcherColor}
           disabled={disabled}
-          className="mt-1"
+          className="bg-canvas-50 mt-1 border-0"
           toggleClassName="grow justify-center"
         />
       )}

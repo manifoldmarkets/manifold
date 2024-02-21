@@ -14,6 +14,7 @@ import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { SmallCandidateBar } from './small-candidate-bar'
 import { getCandidateColor } from './candidates-panel'
+import { removeTextInParentheses } from './candidate-bar'
 
 // just the bars
 export function SmallCandidatePanel(props: {
@@ -124,7 +125,7 @@ function SmallCandidateAnswer(props: {
   return (
     <Col className={'w-full'}>
       <SmallCandidateBar
-        color={color}
+        color={getCandidateColor(removeTextInParentheses(answer.text))}
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}

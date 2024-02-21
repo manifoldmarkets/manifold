@@ -1,23 +1,15 @@
 import {
   collection,
-  getDoc,
   getDocs,
   onSnapshot,
   Query,
   CollectionReference,
   DocumentReference,
-  query,
-  getCountFromServer,
 } from 'firebase/firestore'
 import { db } from './init'
 
 export const coll = <T>(path: string, ...rest: string[]) => {
   return collection(db, path, ...rest) as CollectionReference<T>
-}
-
-export const getValue = async <T>(doc: DocumentReference) => {
-  const snap = await getDoc(doc)
-  return snap.exists() ? (snap.data() as T) : null
 }
 
 export const getValues = async <T>(query: Query) => {
@@ -56,10 +48,4 @@ export function listenForValues<T>(
     },
     console.error
   )
-}
-
-export async function getTotalSubs() {
-  const betsRef = query(collection(db, 'destiny-subs2'))
-  const snap = await getCountFromServer(betsRef)
-  return snap.data().count
 }

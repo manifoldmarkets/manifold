@@ -31,6 +31,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
@@ -195,21 +196,23 @@ export function FoundDashboardPage(props: {
             </Button>
           </Row>
         ) : (
-          <Row className="mb-8 items-center gap-2">
-            <Avatar
-              username={dashboard.creatorUsername}
-              avatarUrl={dashboard.creatorAvatarUrl}
-              size="xs"
-            />
-            <UserLink
-              user={{
-                id: dashboard.creatorId,
-                name: dashboard.creatorName,
-                username: dashboard.creatorUsername,
-              }}
-              className="text-ink-700"
-            />
-          </Row>
+          <UserHovercard userId={dashboard.creatorId} className="mb-8">
+            <Row className="items-center gap-2">
+              <Avatar
+                username={dashboard.creatorUsername}
+                avatarUrl={dashboard.creatorAvatarUrl}
+                size="xs"
+              />
+              <UserLink
+                user={{
+                  id: dashboard.creatorId,
+                  name: dashboard.creatorName,
+                  username: dashboard.creatorUsername,
+                }}
+                className="text-ink-700"
+              />
+            </Row>
+          </UserHovercard>
         )}
         {editMode && (
           <div className="mb-4">

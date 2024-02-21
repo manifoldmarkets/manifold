@@ -27,12 +27,15 @@ import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { onCreateBet } from 'api/on-create-bet'
+import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
   return await placeBetMain(props, auth.uid, isApi, log)
 }
 
+// Note: this returns a continuation function that should be run for consistency.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
@@ -53,6 +56,12 @@ export const placeBetMain = async (
     const contract = contractSnap.data() as Contract
     const user = userSnap.data() as User
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+    if (
+      (user.isBannedFromPosting || user.userDeleted) &&
+      !BLESSED_BANNED_USER_IDS.includes(uid)
+    ) {
+      throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+    }
     log(
       `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
     )
@@ -217,6 +226,32 @@ export const placeBetMain = async (
     }
 
     // Special case for relationship markets.
+    if (
+      contract.isLove &&
+      newPool &&
+      contract.outcomeType === 'MULTIPLE_CHOICE'
+    ) {
+      const answer = contract.answers.find((a) => a.id === newBet.answerId) as
+        | Answer
+        | undefined
+      if (
+        user.id === contract.creatorId ||
+        (answer && user.id === answer.loverUserId)
+      ) {
+        throw new APIError(
+          403,
+          'You cannot bet on your own relationship market.'
+        )
+      }
+      const prob = getCpmmProbability(newPool, 0.5)
+      if (prob < 0.02) {
+        throw new APIError(
+          403,
+          'Minimum of 2% probability in relationship markets.'
+        )
+      }
+    }
+    // Special case for relationship markets. (Old markets.)
     if (contract.loverUserId1 && newPool) {
       if (contract.outcomeType === 'BINARY') {
         // Binary relationship markets deprecated.
@@ -239,20 +274,17 @@ export const placeBetMain = async (
     }
 
     const betDoc = contractDoc.collection('bets').doc()
-
-    trans.create(
-      betDoc,
-      removeUndefinedProps({
-        id: betDoc.id,
-        userId: user.id,
-        userAvatarUrl: user.avatarUrl,
-        userUsername: user.username,
-        userName: user.name,
-        isApi,
-        replyToCommentId,
-        ...newBet,
-      })
-    )
+    const fullBet = removeUndefinedProps({
+      id: betDoc.id,
+      userId: user.id,
+      userAvatarUrl: user.avatarUrl,
+      userUsername: user.username,
+      userName: user.name,
+      isApi,
+      replyToCommentId,
+      ...newBet,
+    })
+    trans.create(betDoc, fullBet)
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
@@ -348,12 +380,21 @@ export const placeBetMain = async (
       log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
     }
 
-    return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
+    return {
+      newBet,
+      betId: betDoc.id,
+      contract,
+      makers,
+      ordersToCancel,
+      user,
+      fullBet,
+    }
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, betId, contract, makers, ordersToCancel, user } = result
+  const { newBet, betId, fullBet, contract, makers, ordersToCancel, user } =
+    result
   const { mechanism } = contract
 
   if (
@@ -369,21 +410,29 @@ export const placeBetMain = async (
     )
     log(`Share redemption transaction finished - auth ${uid}.`)
   }
-  if (ordersToCancel) {
-    await Promise.all(
-      ordersToCancel.map((order) => {
-        createLimitBetCanceledNotification(
-          user,
-          order.userId,
-          order,
-          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-          contract
-        )
-      })
-    )
+
+  const continuation = async () => {
+    if (ordersToCancel) {
+      await Promise.all(
+        ordersToCancel.map((order) => {
+          createLimitBetCanceledNotification(
+            user,
+            order.userId,
+            order,
+            makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+            contract
+          )
+        })
+      )
+    }
+
+    await onCreateBet(fullBet, contract, user, log)
   }
 
-  return { ...newBet, betId: betId }
+  return {
+    result: { ...newBet, betId },
+    continue: continuation,
+  }
 }
 
 const firestore = admin.firestore()

@@ -3,6 +3,7 @@ import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -25,11 +26,11 @@ import {
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
-import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 import { api } from 'web/lib/firebase/api'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function YourOrders(props: {
   contract:
@@ -69,6 +70,7 @@ export function OrderTable(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   isYou?: boolean
   side?: 'YES' | 'NO'
 }) {
@@ -139,6 +141,7 @@ function OrderRow(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   bet: LimitBet
   isYou: boolean
   showOutcome?: boolean
@@ -160,14 +163,14 @@ function OrderRow(props: {
       {!isYou && (
         <td>
           <a href={`/${bet.userUsername}`}>
-            <Tooltip text={bet.userName}>
+            <UserHovercard userId={bet.userId}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
                 noLink={true}
               />
-            </Tooltip>
+            </UserHovercard>
           </a>
         </td>
       )}
@@ -227,9 +230,18 @@ export function OrderBookButton(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | MultiContract
   className?: string
+  label?: React.ReactNode
+  buttonColor?: 'indigo' | 'gray-outline'
 }) {
-  const { limitBets, contract, className } = props
+  const {
+    limitBets,
+    contract,
+    label,
+    className,
+    buttonColor = 'indigo',
+  } = props
   const [open, setOpen] = useState(false)
 
   const yesBets = sortBy(
@@ -253,9 +265,10 @@ export function OrderBookButton(props: {
         onClick={() => setOpen(true)}
         disabled={limitBets.length === 0}
         size="xs"
-        color="indigo"
+        color={buttonColor}
       >
-        View {limitBets.length} order{limitBets.length === 1 ? '' : 's'}
+        {label ||
+          `View ${limitBets.length} order${limitBets.length === 1 ? '' : 's'}`}
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">

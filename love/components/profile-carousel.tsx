@@ -20,8 +20,11 @@ import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
 import { api } from 'web/lib/firebase/api'
 
-export default function ProfileCarousel(props: { lover: Lover }) {
-  const { lover } = props
+export default function ProfileCarousel(props: {
+  lover: Lover
+  hideAdminButton?: boolean
+}) {
+  const { lover, hideAdminButton } = props
   const photoNums = lover.photo_urls ? lover.photo_urls.length : 0
 
   const [lightboxUrl, setLightboxUrl] = useState('')
@@ -65,7 +68,7 @@ export default function ProfileCarousel(props: { lover: Lover }) {
   }
   return (
     <>
-      {isAdmin && (
+      {!hideAdminButton && isAdmin && (
         <Button
           className="self-end"
           size="2xs"

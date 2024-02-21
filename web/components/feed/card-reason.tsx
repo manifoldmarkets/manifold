@@ -9,6 +9,9 @@ import dayjs from 'dayjs'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { DAY_MS } from 'common/util/time'
+import { FireIcon } from '@heroicons/react/outline'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -32,18 +35,29 @@ export function CardReason(props: {
       )
     } else if (probChange) {
       return <ProbabilityChange probChange={probChange} since={since} />
-    } else {
+    } else if (contract.createdTime > Date.now() - 2 * DAY_MS) {
       return (
-        <span className="text-ink-400 text-sm">
-          created
-          <RelativeTimestamp
-            time={contract.createdTime}
-            shortened={true}
-            className="text-ink-400"
-          />
-        </span>
+        <Row className={'text-ink-400 items-center gap-1 text-sm'}>
+          <HiSparkles className={'h-4 w-4 text-yellow-400'} />
+          <span>
+            created
+            <RelativeTimestamp
+              time={contract.createdTime}
+              shortened={true}
+              className="text-ink-400"
+            />
+          </span>
+        </Row>
       )
     }
+    return (
+      <span className="text-ink-400 text-sm">
+        <Row className={'items-center gap-1'}>
+          <FireIcon className="text-ink-400 h-4 w-4" />
+          popular
+        </Row>
+      </span>
+    )
   }
 
   if (item.isCopied) {
@@ -53,8 +67,10 @@ export function CardReason(props: {
     return (
       <Tooltip text={'Reposted by ' + item.creatorDetails.name}>
         <Row className={'text-ink-400 gap-1 text-sm'}>
-          <BiRepost className={' text-ink-500 h-5 w-5'} />
-          <UserLink short={true} user={item.creatorDetails} />
+          <BiRepost className={'text-ink-400 h-5 w-5'} />
+          <UserHovercard userId={item.creatorDetails.id}>
+            <UserLink short={true} user={item.creatorDetails} />
+          </UserHovercard>
           reposted
           <RelativeTimestamp
             time={item.createdTime}

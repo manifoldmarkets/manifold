@@ -28,10 +28,9 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     username: lover?.user?.username,
   })
 
-  log(
-    'got lover contracts',
-    loverContracts.map((c) => ({ id: c.id, question: c.question }))
-  )
+  log('got lover contracts', {
+    contracts: loverContracts.map((c) => ({ id: c.id, question: c.question })),
+  })
 
   if (!lover) throw new APIError(404, 'Lover not found')
 
@@ -89,9 +88,7 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
         [
           l.user_id,
           getCompatibilityScore(
-            lover,
             answersByUserId[lover.user_id] ?? [],
-            l,
             answersByUserId[l.user_id] ?? []
           ),
         ] as const

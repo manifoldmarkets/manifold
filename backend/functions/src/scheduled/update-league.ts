@@ -76,8 +76,7 @@ export async function updateLeagueCore() {
     [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
   )
 
-  // Require that the contract that is giving the unique bettor bonus
-  // was created during the current season.
+  // Unique bettor bonuses during the season (contract can be created any time).
   const uniqueBettorBonuses = await pg.manyOrNone<{
     user_id: string
     category: string
@@ -94,8 +93,6 @@ export async function updateLeagueCore() {
       contracts on contracts.id = txns.data->'data'->>'contractId'
     where
       leagues.season = $1
-      and ts_to_millis(contracts.created_time) > $2
-      and ts_to_millis(contracts.created_time) < $3
       and (txns.data->>'createdTime')::bigint > $2
       and (txns.data->>'createdTime')::bigint < $3
       and txns.data->>'category' = 'UNIQUE_BETTOR_BONUS'

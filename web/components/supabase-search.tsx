@@ -1,3 +1,4 @@
+'use client'
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
@@ -20,7 +21,7 @@ import {
   useGroupFromSlug,
   useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
-import { DEFAULT_TOPIC, Group, TOPIC_KEY } from 'common/group'
+import { DEFAULT_TOPIC, LiteGroup, TOPIC_KEY } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
@@ -138,11 +139,10 @@ export const SEARCH_TYPE_KEY = 't'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
-  tag?: string
   excludeContractIds?: string[]
   excludeGroupSlugs?: string[]
   excludeUserIds?: string[]
-  nonQueryFacetFilters?: string[]
+  isPolitics?: boolean
 }
 
 export type SearchState = {
@@ -164,6 +164,7 @@ export function SupabaseSearch(props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultTopic?: string
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -179,17 +180,19 @@ export function SupabaseSearch(props: {
   emptyState?: ReactNode
   hideSearch?: boolean
   hideContractFilters?: boolean
-  topics?: Group[]
-  setTopics?: (topics: Group[]) => void
+  topics?: LiteGroup[]
+  setTopics?: (topics: LiteGroup[]) => void
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
+  hideAvatars?: boolean
 }) {
   const {
     defaultSort,
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultTopic,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -207,7 +210,9 @@ export function SupabaseSearch(props: {
     setTopics: setTopicResults,
     contractsOnly,
     showTopicTag,
+    hideSearch,
     hideSearchTypes,
+    hideAvatars,
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -215,11 +220,12 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultTopic,
     useUrlParams,
   })
   const user = useUser()
   // const followingUsers = useFollowedUsersOnLoad(user?.id)
-  const follwingTopics = useRealtimeMemberGroupIds(user?.id)
+  const followingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
@@ -257,6 +263,7 @@ export function SupabaseSearch(props: {
     searchGroups({
       term: query,
       limit: TOPICS_PER_PAGE,
+      type: 'lite',
     })
   )
 
@@ -278,7 +285,8 @@ export function SupabaseSearch(props: {
         if (searchCount === searchCountRef.current) setUserResults(results)
       })
       queryTopics(query).then((results) => {
-        if (searchCount === searchCountRef.current) setTopicResults?.(results)
+        if (searchCount === searchCountRef.current)
+          setTopicResults?.(results.lite)
       })
     },
     100,
@@ -303,47 +311,49 @@ export function SupabaseSearch(props: {
   return (
     <Col className="w-full">
       <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
-        <Row>
-          <Col className={'w-full'}>
-            <Row className={'relative'}>
-              <Input
-                type="text"
-                inputMode="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onBlur={trackCallback('search', { query: query })}
-                placeholder={
-                  searchType === 'Users'
-                    ? 'Search users'
-                    : searchType === 'Topics'
-                    ? 'Search topics'
-                    : searchType === 'Questions' ||
-                      (topicSlug && topicSlug !== 'for-you')
-                    ? 'Search questions'
-                    : 'Search questions, users, and topics'
-                }
-                className="w-full"
-                autoFocus={autoFocus}
-              />
-              {query !== '' && (
-                <IconButton
-                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
-                  size={'2xs'}
-                  onClick={() => {
-                    onChange({ [QUERY_KEY]: '' })
-                  }}
-                >
-                  {loading ? (
-                    <LoadingIndicator size="sm" />
-                  ) : (
-                    <XIcon className={'h-5 w-5 rounded-full'} />
-                  )}
-                </IconButton>
-              )}
-            </Row>
-          </Col>
-          {menuButton}
-        </Row>
+        {!hideSearch && (
+          <Row>
+            <Col className={'w-full'}>
+              <Row className={'relative'}>
+                <Input
+                  type="text"
+                  inputMode="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onBlur={trackCallback('search', { query: query })}
+                  placeholder={
+                    searchType === 'Users'
+                      ? 'Search users'
+                      : searchType === 'Topics'
+                      ? 'Search topics'
+                      : searchType === 'Questions' ||
+                        (topicSlug && topicSlug !== 'for-you')
+                      ? 'Search questions'
+                      : 'Search questions, users, and topics'
+                  }
+                  className="w-full"
+                  autoFocus={autoFocus}
+                />
+                {query !== '' && (
+                  <IconButton
+                    className={'absolute right-2 top-1/2 -translate-y-1/2'}
+                    size={'2xs'}
+                    onClick={() => {
+                      onChange({ [QUERY_KEY]: '' })
+                    }}
+                  >
+                    {loading ? (
+                      <LoadingIndicator size="sm" />
+                    ) : (
+                      <XIcon className={'h-5 w-5 rounded-full'} />
+                    )}
+                  </IconButton>
+                )}
+              </Row>
+            </Col>
+            {menuButton}
+          </Row>
+        )}
         {!hideContractFilters && (
           <ContractFilters
             includeProbSorts={includeProbSorts}
@@ -409,6 +419,7 @@ export function SupabaseSearch(props: {
         ) : (
           <>
             <ContractsTable
+              hideAvatar={hideAvatars}
               contracts={contracts}
               onContractClick={onContractClick}
               highlightContractIds={highlightContractIds}
@@ -422,7 +433,8 @@ export function SupabaseSearch(props: {
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') && (
+              (filter !== 'all' || contractType !== 'ALL') &&
+              !defaultTopic && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
@@ -459,7 +471,7 @@ export function SupabaseSearch(props: {
         ) : (
           <TopicResults
             topics={topicResults ?? []}
-            yourTopicIds={follwingTopics ?? []}
+            yourTopicIds={followingTopics ?? []}
           />
         )
       ) : null}
@@ -467,7 +479,10 @@ export function SupabaseSearch(props: {
   )
 }
 
-const TopicResults = (props: { topics: Group[]; yourTopicIds: string[] }) => {
+const TopicResults = (props: {
+  topics: LiteGroup[]
+  yourTopicIds: string[]
+}) => {
   const { topics, yourTopicIds } = props
   const me = useUser()
 
@@ -607,6 +622,7 @@ const useContractSearch = (
         limit: CONTRACTS_PER_SEARCH_PAGE,
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
+        isPolitics: additionalFilter?.isPolitics,
       })
 
       if (id === requestId.current) {
@@ -658,6 +674,7 @@ const useSearchQueryState = (props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultTopic?: string
   useUrlParams?: boolean
 }) => {
   const {
@@ -665,6 +682,7 @@ const useSearchQueryState = (props: {
     defaultFilter = 'open',
     defaultContractType = 'ALL',
     defaultSearchType,
+    defaultTopic,
     useUrlParams,
   } = props
 
@@ -673,7 +691,7 @@ const useSearchQueryState = (props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
-    [TOPIC_KEY]: DEFAULT_TOPIC,
+    [TOPIC_KEY]: defaultTopic ?? DEFAULT_TOPIC,
     [SEARCH_TYPE_KEY]: defaultSearchType,
   }
 

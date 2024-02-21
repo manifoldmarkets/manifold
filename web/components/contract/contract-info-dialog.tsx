@@ -14,7 +14,7 @@ import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
 import { BlockMarketButton } from 'web/components/buttons/block-market-button'
 import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
-import { useDev } from 'web/hooks/use-admin'
+import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
 import {
   api,
   updateMarket,
@@ -38,25 +38,34 @@ import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
+import SuperBanControl from '../SuperBanControl'
 
 export const Stats = (props: {
   contract: Contract
   user?: User | null | undefined
 }) => {
   const { contract, user } = props
+  const { creatorId } = contract
+  const shouldAnswersSumToOne =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.shouldAnswersSumToOne
+      : false
+  const addAnswersMode =
+    contract.mechanism === 'cpmm-multi-1' ? contract.addAnswersMode : 'DISABLED'
 
   const hideAdvanced = !user
   const isDev = useDev()
   const isAdmin = !!user && isAdminId(user?.id)
   const isTrusty = !!user && isModId(user?.id)
   const isMod = isAdmin || isTrusty
-  const isCreator = user?.id === contract.creatorId
+  const isCreator = user?.id === creatorId
   const isPublic = contract.visibility === 'public'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const canAddAnswers = isMulti && contract.addAnswersMode !== 'DISABLED'
-  const creatorOnly = isMulti && contract.addAnswersMode === 'ONLY_CREATOR'
+  const addAnswersPossible =
+    isMulti && (shouldAnswersSumToOne ? addAnswersMode !== 'DISABLED' : true)
+  const creatorOnly = isMulti && addAnswersMode === 'ONLY_CREATOR'
   const wasUnlistedByCreator = contract.unlistedById
-    ? contract.unlistedById === contract.creatorId
+    ? contract.unlistedById === creatorId
     : false
 
   const {
@@ -68,6 +77,7 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
+    isPolitics,
   } = contract
 
   const typeDisplay =
@@ -264,7 +274,7 @@ export const Stats = (props: {
           </tr>
         )}
 
-        {canAddAnswers && (isCreator || isAdmin || isMod) && (
+        {addAnswersPossible && (isCreator || isAdmin || isMod) && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               Creator only{' '}
@@ -278,7 +288,7 @@ export const Stats = (props: {
             </td>
             <td>
               <ShortToggle
-                className="align-middle"
+                className="mr-1 align-middle"
                 on={creatorOnly}
                 setOn={(on) =>
                   updateMarket({
@@ -287,6 +297,7 @@ export const Stats = (props: {
                   })
                 }
               />
+              {addAnswersMode === 'DISABLED' && <span>(Disabled for all)</span>}
             </td>
           </tr>
         )}
@@ -325,7 +336,7 @@ export const Stats = (props: {
         {!hideAdvanced && contract.visibility != 'private' && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Publicly listed{' '}
+              🔎 Publicly listed{' '}
               <InfoTooltip
                 text={
                   isPublic
@@ -353,11 +364,43 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+        {!hideAdvanced && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              🇺🇸 Politics
+              <InfoTooltip text={'Listed on Politics site'} />
+            </td>
+            <td>
+              <ShortToggle
+                className="align-middle"
+                disabled={!isMod}
+                on={!!isPolitics}
+                setOn={(on) => {
+                  toast.promise(
+                    api('market/:contractId/update', {
+                      contractId: contract.id,
+                      isPolitics: on,
+                    }),
+                    {
+                      loading: `${
+                        on ? 'Adding' : 'Removing'
+                      } question to Politics site...`,
+                      success: `Successfully ${
+                        on ? 'added' : 'removed'
+                      } question to Politics site!`,
+                      error: `Error ${on ? 'adding' : 'removing'}. Try again?`,
+                    }
+                  )
+                }}
+              />
+            </td>
+          </tr>
+        )}
 
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Ranked{' '}
+              🏆 Ranked{' '}
               <InfoTooltip
                 text={'Profit and creator bonuses count towards leagues'}
               />
@@ -394,7 +437,7 @@ export const Stats = (props: {
         {!hideAdvanced && isBettingContract && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              Subsidized{' '}
+              💰 Subsidized{' '}
               <InfoTooltip
                 text={'Market receives unique trader bonuses and house subsidy'}
               />
@@ -440,6 +483,8 @@ export function ContractInfoDialog(props: {
   setOpen: (open: boolean) => void
 }) {
   const { contract, user, open, setOpen } = props
+  const isAdmin = useAdmin()
+  const isTrusted = useTrusted()
 
   return (
     <Modal
@@ -472,6 +517,9 @@ export function ContractInfoDialog(props: {
 
             <BlockMarketButton contract={contract} />
             <DisinterestedButton contract={contract} user={user} />
+            {isAdmin || isTrusted ? (
+              <SuperBanControl userId={contract.creatorId} />
+            ) : null}
           </Row>
         </>
       )}

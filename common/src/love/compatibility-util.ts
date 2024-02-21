@@ -6,6 +6,13 @@ const isPreferredGender = (
 ) => {
   if (preferredGenders === undefined || gender === undefined) return true
 
+  // If simple gender preference, don't include non-binary.
+  if (
+    preferredGenders.length === 1 &&
+    (preferredGenders[0] === 'male' || preferredGenders[0] === 'female')
+  ) {
+    return preferredGenders.includes(gender)
+  }
   return preferredGenders.includes(gender) || gender === 'non-binary'
 }
 

@@ -6,7 +6,6 @@ admin.initializeApp()
 export * from './triggers/log-writes' // Running the emulator? Comment this line out
 export * from './triggers/on-create-user'
 export * from './triggers/on-create-bet'
-export * from './triggers/on-create-comment-on-contract'
 export * from './triggers/on-create-answer'
 export * from './triggers/on-update-contract'
 export * from './triggers/on-create-contract'

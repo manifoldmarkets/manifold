@@ -5,10 +5,11 @@ import { inIframe } from './use-is-iframe'
 export const useTracking = (
   eventName: string,
   eventProperties?: any,
-  excludeIframe?: boolean
+  excludeIframe?: boolean,
+  extraDeps?: any[]
 ) => {
   useEffect(() => {
     if (excludeIframe && inIframe()) return
     track(eventName, eventProperties)
-  }, [eventName, excludeIframe])
+  }, [eventName, excludeIframe, ...(extraDeps ?? [])])
 }

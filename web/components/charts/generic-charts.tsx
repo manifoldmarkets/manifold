@@ -135,8 +135,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   h: number
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
-  zoomParams: ZoomParams
-  chartAnnotations: ChartAnnotation[]
+  zoomParams?: ZoomParams
+  chartAnnotations?: ChartAnnotation[]
   showZoomer?: boolean
   yKind?: ValueKind
   curve?: CurveFactory
@@ -159,7 +159,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     hoveredAnnotation,
     setHoveredAnnotation,
     contractId,
-    chartAnnotations,
+    chartAnnotations = [],
   } = props
 
   useEffect(() => {
@@ -250,7 +250,6 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
       return undefined
     }
   })
-
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     setTTParams(getMarkerPosition(mouseX, mouseY))
   })
@@ -418,6 +417,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  hideXAxis?: boolean
 }) => {
   const {
     contractId,
@@ -435,6 +435,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations = [],
+    hideXAxis,
   } = props
 
   useEffect(() => {
@@ -546,6 +547,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
+        hideXAxis={hideXAxis}
       >
         {typeof color !== 'string' && (
           <defs>

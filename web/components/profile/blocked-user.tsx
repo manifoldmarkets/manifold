@@ -8,6 +8,7 @@ import { FollowButton } from 'web/components/buttons/follow-button'
 import { BannedBadge, UserBadge } from 'web/components/widgets/user-link'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { PrivateUser } from 'common/user'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
   const { user } = props
@@ -22,12 +23,14 @@ export function BlockedUser(props: { user: User; privateUser: PrivateUser }) {
 
       <Col className="relative">
         <Row className="relative px-4 pt-4">
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size={'xl'}
-            className="bg-canvas-0 shadow-primary-300 shadow-sm"
-          />
+          <UserHovercard userId={user.id}>
+            <Avatar
+              username={user.username}
+              avatarUrl={user.avatarUrl}
+              size={'xl'}
+              className="bg-canvas-0 shadow-primary-300 shadow-sm"
+            />
+          </UserHovercard>
 
           <Col className="w-full gap-4 pl-5">
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:justify-between">

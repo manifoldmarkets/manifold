@@ -1,23 +1,17 @@
 import clsx from 'clsx'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
-import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
-import { filterDefined } from 'common/util/array'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Col } from 'web/components/layout/col'
-import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { db } from 'web/lib/supabase/db'
-import { ContractsTable } from '../contract/contracts-table'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { Contract } from 'common/contract'
-import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { orderBy, sum, uniqBy } from 'lodash'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { BoostsType } from 'web/lib/supabase/ads'
 import { FeedRepost } from 'web/components/feed/feed-repost-item'
+import { FeedItemFrame } from './feed-item-frame'
+import { FeedRelatedContractsGroup } from 'web/components/feed/feed-related-contracts-group'
 
 export const FeedTimelineItems = (props: {
   feedTimelineItems: FeedTimelineItem[]
@@ -63,31 +57,11 @@ export const FeedTimelineItems = (props: {
             />
           )
         } else if (item.relatedItems) {
-          const contracts = orderBy(
-            filterDefined([
-              item.contract,
-              ...item.relatedItems.map((i) => i.contract),
-            ]),
-            'createdTime'
-          )
           return (
-            <FeedItemFrame
+            <FeedRelatedContractsGroup
               item={item}
-              key={item.id + '-feed-timeline-item'}
-              moreItems={item.relatedItems}
-              className="bg-canvas-0 border-canvas-0  w-full overflow-hidden rounded-2xl border shadow-md"
-            >
-              <Col className="px-2 pt-3">
-                <ContractsTable contracts={contracts} hideHeader={true} />
-              </Col>
-              <CategoryTags
-                categories={uniqBy(
-                  contracts.map((c) => c.groupLinks ?? []).flat(),
-                  'slug'
-                )}
-                className="mx-4 mb-3"
-              />
-            </FeedItemFrame>
+              key={item.id + '-feed-related-contracts'}
+            />
           )
         } else if (item.contract) {
           // Organic contract
@@ -161,68 +135,9 @@ const FeedContractAndRelatedItems = (props: {
           hide={() => setHidden(true)}
           item={item}
           className="max-w-full"
-        ></FeedContractCard>
+        />
       )}
     </FeedItemFrame>
-  )
-}
-
-const FeedItemFrame = (props: {
-  item: FeedTimelineItem | undefined
-  children: React.ReactNode
-  className?: string
-  moreItems?: FeedTimelineItem[]
-}) => {
-  const { moreItems, item, children, className } = props
-  const items = filterDefined([item, ...(moreItems ?? [])])
-  const [seenStart, setSeenStart] = useState(0)
-  const [seenDuration, setSeenDuration] = usePersistentInMemoryState(
-    sum(items.map((i) => i.seenDuration ?? 0)),
-    `feed-items-${items
-      .map((i) => i.id)
-      .sort()
-      .join('-')}-seen-duration`
-  )
-
-  const { ref } = useIsVisible(
-    () => {
-      if (DEBUG_FEED_CARDS) return
-      const start = seenStart
-      setSeenStart(Date.now())
-      if (start === 0 && !item?.seenTime) {
-        items.forEach(async (i) => {
-          run(
-            db
-              .from('user_feed')
-              .update({ seen_time: new Date().toISOString() })
-              .eq('id', i.id)
-          )
-          track('view feed item', { id: i.id, type: i.dataType })
-        })
-      }
-    },
-    false,
-    items.length > 0,
-    () => {
-      if (DEBUG_FEED_CARDS) return
-      const newSeenDuration =
-        (Date.now() - seenStart) / items.length + seenDuration
-      items.forEach(async (i) => {
-        run(
-          db
-            .from('user_feed')
-            .update({ seen_duration: newSeenDuration })
-            .eq('id', i.id)
-        )
-      })
-      setSeenDuration(newSeenDuration)
-    }
-  )
-
-  return (
-    <div className={className} ref={ref}>
-      {children}
-    </div>
   )
 }
 

@@ -55,7 +55,7 @@ export function Page(props: {
       <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       <Col
         className={clsx(
-          'pb-[58px] lg:pb-0', // bottom bar padding
+          !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
           'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >

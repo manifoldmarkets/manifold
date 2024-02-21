@@ -1,5 +1,10 @@
 'use client'
-import { HeartIcon, LoginIcon, LogoutIcon } from '@heroicons/react/outline'
+import {
+  HeartIcon,
+  LoginIcon,
+  LogoutIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
@@ -14,6 +19,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { ProfileSummary } from './politics-profile-summary'
 import { Item, SidebarItem } from './politics-sidebar-item'
 import { useTheme } from 'web/hooks/use-theme'
+import { PoliticsLogo } from './politics-logo'
 
 export default function Sidebar(props: {
   className?: string
@@ -41,7 +47,8 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      {user === undefined && <div className="h-[56px]" />}
+      <PoliticsLogo className="pb-3 pt-6" />
+      {/* {user === undefined && <div className="h-[56px]" />} */}
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
@@ -79,7 +86,9 @@ const bottomNav = (
 ) => {
   return buildArray(
     // TODO: theme switcher
+    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
+
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && {
       name: 'Sign out',
@@ -107,24 +116,6 @@ export const SignUpButton = (props: {
       className={clsx('w-full', className)}
     >
       {text ?? 'Sign up now'}
-    </Button>
-  )
-}
-
-export const SignUpAsMatchmaker = (props: {
-  className?: string
-  size?: SizeType
-}) => {
-  const { className, size } = props
-
-  return (
-    <Button
-      color={'indigo-outline'}
-      size={size ?? 'md'}
-      onClick={firebaseLogin}
-      className={clsx('w-full', className)}
-    >
-      Sign up as matchmaker
     </Button>
   )
 }

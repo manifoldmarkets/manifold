@@ -1,14 +1,22 @@
 import * as pgPromise from 'pg-promise'
-import { createClient, getInstanceHostname } from 'common/supabase/utils'
+import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { isProd } from '../utils'
+import { gLog, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
 
-export const pgp = pgPromise()
+export const pgp = pgPromise({
+  error(err: any, e: pgPromise.IEventContext) {
+    // Read more: https://node-postgres.com/apis/pool#error
+    gLog('ERROR', 'pgPromise background error', {
+      error: err,
+      event: e,
+    })
+  },
+})
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
 pgp.pg.types.setTypeParser(20, BigInt) // Type Id 20 = BIGINT | BIGSERIAL
 pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
@@ -61,10 +69,13 @@ export function createSupabaseDirectClient(
   pgpDirect = pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
-    user: 'postgres',
+    user: `postgres`,
     password: password,
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
   return pgpDirect
+}
+function getInstanceHostname(instanceId: string) {
+  return `${instanceId}.supabase.co`
 }

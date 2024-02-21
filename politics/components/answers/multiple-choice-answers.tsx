@@ -1,12 +1,12 @@
 import { XIcon } from '@heroicons/react/solid'
 
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
-import { OutcomeType } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { OutcomeType } from 'common/contract'
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]

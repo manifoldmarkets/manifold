@@ -1,10 +1,9 @@
 import { runScript } from 'run-script'
-import { getDummyLogs } from 'api/helpers'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -56,7 +55,7 @@ if (require.main === module) {
             answerId: answer.id,
             outcome,
           },
-          getDummyLogs('resolve-market').log
+          log.debug
         )
 
         lastResolution = outcome

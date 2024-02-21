@@ -29,6 +29,7 @@ import { formatMoney } from 'common/util/format'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const RelatedContractsList = memo(function (props: {
   contracts: Contract[]
@@ -73,7 +74,7 @@ export const RelatedContractsList = memo(function (props: {
                 >
                   <Row className={'items-center gap-1'}>
                     {removeEmojis(topic.name)} questions
-                    <ArrowRightIcon className="h-4 w-4" />
+                    <ArrowRightIcon className="h-4 w-4 shrink-0" />
                   </Row>
                 </Link>
               </h2>
@@ -234,7 +235,7 @@ export const RelatedContractsGrid = memo(function (props: {
             >
               <Row className={'items-center gap-1'}>
                 See more {removeEmojis(topic.name)} questions
-                <ArrowRightIcon className="h-4 w-4" />
+                <ArrowRightIcon className="h-4 w-4 shrink-0" />
               </Row>
             </Link>
           </Row>
@@ -327,8 +328,13 @@ const SidebarRelatedContractCard = memo(function (props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
-    contract
+  const {
+    creatorUsername,
+    creatorAvatarUrl,
+    question,
+    creatorCreatedTime,
+    creatorId,
+  } = contract
 
   return (
     <Link
@@ -350,24 +356,26 @@ const SidebarRelatedContractCard = memo(function (props: {
         {question}
       </div>
       <Row className="w-full items-end justify-between">
-        <Row className="items-center gap-1.5">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-            noLink
-          />
-          <UserLink
-            user={{
-              id: contract.creatorId,
-              name: contract.creatorName,
-              username: contract.creatorUsername,
-            }}
-            className="text-ink-500 text-sm"
-            createdTime={creatorCreatedTime}
-            noLink
-          />
-        </Row>
+        <UserHovercard userId={creatorId}>
+          <Row className="items-center gap-1.5">
+            <Avatar
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+              noLink
+            />
+            <UserLink
+              user={{
+                id: contract.creatorId,
+                name: contract.creatorName,
+                username: contract.creatorUsername,
+              }}
+              className="text-ink-500 text-sm"
+              createdTime={creatorCreatedTime}
+              noLink
+            />
+          </Row>
+        </UserHovercard>
 
         <ContractStatusLabel
           contract={contract}
@@ -391,8 +399,13 @@ const RelatedContractCard = memo(function (props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
-  const { creatorUsername, creatorAvatarUrl, question, creatorCreatedTime } =
-    contract
+  const {
+    creatorUsername,
+    creatorAvatarUrl,
+    question,
+    creatorCreatedTime,
+    creatorId,
+  } = contract
   const probChange =
     contract.outcomeType === 'BINARY' &&
     showGraph &&
@@ -420,24 +433,26 @@ const RelatedContractCard = memo(function (props: {
         {question}
       </div>
       <Row className="w-full items-end justify-between">
-        <Row className="items-center gap-1.5">
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-            noLink
-          />
-          <UserLink
-            user={{
-              id: contract.creatorId,
-              name: contract.creatorName,
-              username: contract.creatorUsername,
-            }}
-            className="text-ink-500 text-sm"
-            createdTime={creatorCreatedTime}
-            noLink
-          />
-        </Row>
+        <UserHovercard userId={creatorId}>
+          <Row className="items-center gap-1.5">
+            <Avatar
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+              noLink
+            />
+            <UserLink
+              user={{
+                id: contract.creatorId,
+                name: contract.creatorName,
+                username: contract.creatorUsername,
+              }}
+              className="text-ink-500 text-sm"
+              createdTime={creatorCreatedTime}
+              noLink
+            />
+          </Row>
+        </UserHovercard>
 
         <Row className={'items-baseline gap-1'}>
           {contract.outcomeType === 'BINARY' && probChange !== 0 && (

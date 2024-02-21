@@ -35,11 +35,13 @@ export const getUnfilledLimitOrders = async (contractId: string) => {
 
 export const getOpenLimitOrdersWithContracts = async (
   userId: string,
-  count = 1000
+  count = 1000,
+  isPolitics?: boolean
 ) => {
-  const { data } = await db.rpc('get_open_limit_bets_with_contracts', {
+  const { data } = await db.rpc('get_open_limit_bets_with_contracts_1', {
     count,
     uid: userId,
+    politics: !!isPolitics,
   })
   const betsByContract = {} as Dictionary<LimitBet[]>
 

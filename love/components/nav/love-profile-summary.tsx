@@ -19,7 +19,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const balance = useAnimatedNumber(user.balance)
-  const manaEnabled = false
+  const manaEnabled = true
 
   return (
     <Link

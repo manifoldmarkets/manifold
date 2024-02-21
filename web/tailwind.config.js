@@ -338,6 +338,18 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'slide-up-and-fade': {
+          '0%': {
+            opacity: 0,
+            transform: 'translateY(4px)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+          '100%': {
+            opacity: 1,
+            transform: 'translateY(0)',
+            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+          },
+        },
       },
       animation: {
         progress: 'progress linear forwards',
@@ -369,6 +381,7 @@ module.exports = {
         'fade-in': 'fade-in 1s',
         'fade-out': 'fade-out 1s',
         'grow-up': 'grow-up 1s',
+        'slide-up-and-fade': 'slide-up-and-fade 150ms',
       },
       colors: {
         ink: {

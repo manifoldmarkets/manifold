@@ -1,4 +1,4 @@
-import { APIError, type APIHandler } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getContractSupabase, getUser } from 'shared/utils'
 import {
   createSupabaseClient,
@@ -11,7 +11,11 @@ import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 
-export const post: APIHandler<'post'> = async (props, auth, { log }) => {
+export const post: APIHandler<'post'> = async (
+  props,
+  auth,
+  { log, logError }
+) => {
   const { contractId, content, betId: passedBetId, commentId } = props
 
   const contract = await getContractSupabase(contractId)
@@ -22,26 +26,29 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
 
   let comment: ContractComment
   let betId = passedBetId
+  let commentContinuation = async () => {}
   if (!content && !commentId && !betId) {
     throw new APIError(400, 'Must specify content, commentId, or betId')
   } else if (content && commentId) {
     throw new APIError(400, 'Cannot specify both content and commentId')
   } else if (content) {
-    comment = await createCommentOnContractInternal(
-      contractId,
-      auth,
-      removeUndefinedProps({
-        content,
-        isRepost: true,
-        replyToBetId: passedBetId,
-      })
-    )
+    const { result, continue: commentContinue } =
+      await createCommentOnContractInternal(
+        contractId,
+        auth,
+        removeUndefinedProps({
+          content,
+          isRepost: true,
+          replyToBetId: passedBetId,
+          logError,
+        })
+      )
+    comment = result
+    commentContinuation = commentContinue
   } else {
     // TODO: should we mark the comment as `isRepost`?
     if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
-    const otherComment = await getComment(createSupabaseClient(), commentId)
-    if (!otherComment) throw new APIError(404, `Comment ${commentId} not found`)
-    comment = otherComment
+    comment = await getComment(createSupabaseClient(), commentId)
   }
   if (comment.betId) betId = comment.betId
 
@@ -62,7 +69,7 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
 
   const pg = createSupabaseDirectClient()
 
-  const res = await pg.one(
+  const result = await pg.one(
     `
     insert into posts
         (contract_id, contract_comment_id, bet_id, user_id, user_name, user_username, user_avatar_url)
@@ -79,14 +86,28 @@ export const post: APIHandler<'post'> = async (props, auth, { log }) => {
       creator.avatarUrl,
     ]
   )
-  await repostContractToFeed(
-    contract,
-    comment,
-    creator.id,
-    res.id,
-    [auth.uid],
-    betId
-  )
 
-  return comment
+  log('Inserted row into posts table', {
+    resultId: result.id,
+    contractId,
+    commentId,
+    betId,
+    creatorId: creator.id,
+  })
+
+  return {
+    result: comment,
+    continue: async () => {
+      await commentContinuation()
+      await repostContractToFeed(
+        contract,
+        comment,
+        creator.id,
+        result.id,
+        [auth.uid],
+        log,
+        betId
+      )
+    },
+  }
 }

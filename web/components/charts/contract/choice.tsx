@@ -25,13 +25,13 @@ const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
   '#FFDD99', // sand
   '#FFAABB', // pink
-  '#77AADD', // navy
+  '#77F299', // light green
   '#CD46EA', // 🍆
   '#F23542', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
   '#FFD700', // gold
-  '#7EEE03', // chartreuse
+  '#77AADD', // navy
   '#F76B40', // orange-red
   '#C195F0', // Grimace shake purple
   '#0C7AE1', // octarine??
@@ -111,14 +111,14 @@ export function useChartAnswers(contract: MultiContract) {
 
 export const ChoiceContractChart = (props: {
   contract: CPMMMultiContract
-  multiPoints?: MultiPoints
+  multiPoints: MultiPoints
   width: number
   height: number
-  chartAnnotations: ChartAnnotation[]
-  zoomParams: ZoomParams
+  chartAnnotations?: ChartAnnotation[]
+  zoomParams?: ZoomParams
   showZoomer?: boolean
   highlightAnswerId?: string
-  selectedAnswerIds: string[]
+  selectedAnswerIds?: string[]
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
@@ -166,7 +166,6 @@ export const ChoiceContractChart = (props: {
       }
 
       const color = getAnswerColor(a, answerOrder)
-
       ret[a.id] = { points, color }
     })
 
@@ -191,13 +190,17 @@ export const ChoiceContractChart = (props: {
       showZoomer={showZoomer}
       data={pick(data, chosenAnswerIds)}
       hoveringId={highlightAnswerId}
-      Tooltip={(props) => (
-        <ChoiceTooltip
-          answers={answers}
-          xScale={zoomParams.viewXScale}
-          ttProps={props}
-        />
-      )}
+      Tooltip={
+        !zoomParams
+          ? undefined
+          : (props) => (
+              <ChoiceTooltip
+                answers={answers}
+                xScale={zoomParams.viewXScale}
+                ttProps={props}
+              />
+            )
+      }
       contractId={contract.id}
       hoveredAnnotation={hoveredAnnotation}
       setHoveredAnnotation={setHoveredAnnotation}

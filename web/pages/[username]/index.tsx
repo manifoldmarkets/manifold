@@ -69,8 +69,8 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { DailyLoan } from 'web/components/home/daily-loan'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
+import { shouldIgnoreUserPage } from 'common/user'
 
 export const getStaticProps = async (props: {
   params: {
@@ -82,7 +82,7 @@ export const getStaticProps = async (props: {
 
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
-
+  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
   return {
     props: removeUndefinedProps({
       user,
@@ -90,9 +90,9 @@ export const getStaticProps = async (props: {
       rating: rating,
       reviewCount: count,
       averageRating: averageRating,
+      shouldIgnoreUser,
     }),
-    // revalidate: 60 * 5, // Regenerate after 5 minutes
-    revalidate: 4,
+    revalidate: 60,
   }
 }
 
@@ -106,6 +106,7 @@ export default function UserPage(props: {
   rating?: number
   reviewCount?: number
   averageRating?: number
+  shouldIgnoreUser: boolean
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
@@ -129,16 +130,8 @@ export const DeletedUser = () => {
         <meta name="robots" content="noindex, nofollow" />
       </Head>
       <div className="flex h-full flex-col items-center justify-center">
-        <Title>Deleted account page</Title>
-        <p>This user has been deleted.</p>
-        <p>If you didn't expect this, let us know on Discord!</p>
-        <br />
-        <iframe
-          src="https://discord.com/widget?id=915138780216823849&theme=dark"
-          width="350"
-          height="500"
-          sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
-        ></iframe>
+        <Title>Deleted account</Title>
+        <p>This user's account has been deleted.</p>
       </div>
     </Page>
   )
@@ -149,8 +142,9 @@ function UserProfile(props: {
   rating?: number
   reviewCount?: number
   averageRating?: number
+  shouldIgnoreUser: boolean
 }) {
-  const { rating, reviewCount, averageRating } = props
+  const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -206,7 +200,7 @@ function UserProfile(props: {
         description={user.bio ?? ''}
         url={`/${user.username}`}
       />
-      {(user.isBannedFromPosting || user.userDeleted) && (
+      {shouldIgnoreUser && (
         <Head>
           <meta name="robots" content="noindex, nofollow" />
         </Head>
@@ -270,7 +264,6 @@ function UserProfile(props: {
           </Row>
           {isCurrentUser ? (
             <Row className={'items-center gap-1 sm:gap-2'}>
-              <DailyLoan user={user} />
               <DailyLeagueStat user={user} />
               <QuestsOrStreak user={user} />
             </Row>
