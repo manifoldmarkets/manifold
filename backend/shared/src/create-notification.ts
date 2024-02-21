@@ -1,5 +1,4 @@
 import { getContractBetMetrics } from 'common/calculate'
-import * as admin from 'firebase-admin'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -23,13 +22,7 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
-import {
-  getContract,
-  getPrivateUser,
-  getUser,
-  getValues,
-  log,
-} from 'shared/utils'
+import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -75,6 +68,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getCommentSafe } from './supabase/contract_comments'
 import { convertUser } from 'common/supabase/users'
+import { convertBet } from 'common/supabase/bets'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -919,7 +913,6 @@ export const createUniqueBettorBonusNotification = async (
   idempotencyKey: string,
   bet: Bet
 ) => {
-  const firestore = admin.firestore()
   const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
@@ -994,9 +987,12 @@ export const createUniqueBettorBonusNotification = async (
     convertUser
   )
 
-  const bets = await getValues<Bet>(
-    firestore.collection('contracts').doc(contract.id).collection('bets')
+  const bets = await pg.map<Bet>(
+    `select * from contract_bets where contract_id = $1 group by user_id`,
+    [contract.id, txnId],
+    convertBet
   )
+
   const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
 
   // Don't send if creator has seen their market since the 1st bet was placed
