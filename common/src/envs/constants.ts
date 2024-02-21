@@ -146,6 +146,7 @@ export const BOT_USERNAMES = [
   'bayesianbot',
   'CharlesLienBot',
   'JaguarMcBot',
+  'AImogus',
 ]
 
 export const MOD_IDS = [
