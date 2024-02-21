@@ -171,56 +171,6 @@ export function getUsers() {
   return getValues<User>(users)
 }
 
-export function listenForReferrals(
-  userId: string,
-  setReferralIds: (referralIds: string[]) => void
-) {
-  const referralsQuery = query(
-    collection(db, 'users'),
-    where('referredByUserId', '==', userId)
-  )
-  return onSnapshot(
-    referralsQuery,
-    { includeMetadataChanges: true },
-    (snapshot) => {
-      if (snapshot.metadata.fromCache) return
-
-      const values = snapshot.docs.map((doc) => doc.ref.id)
-      setReferralIds(filterDefined(values))
-    }
-  )
-}
-
-export const getUsersBlockFacetFilters = (
-  privateUser: PrivateUser | undefined | null,
-  excludeGroupSlugs?: boolean
-) => {
-  let facetFilters: string[] = []
-  if (!privateUser) return facetFilters
-  facetFilters = facetFilters.concat(
-    privateUser.blockedUserIds.map(
-      (blockedUserId) => `creatorId:-${blockedUserId}`
-    )
-  )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedByUserIds.map(
-      (blockedUserId) => `creatorId:-${blockedUserId}`
-    )
-  )
-  if (!excludeGroupSlugs)
-    facetFilters = facetFilters.concat(
-      privateUser.blockedGroupSlugs.map(
-        (blockedUserId) => `groupSlugs:-${blockedUserId}`
-      )
-    )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedContractIds.map(
-      (blockedUserId) => `id:-${blockedUserId}`
-    )
-  )
-  return facetFilters
-}
-
 export const isContractBlocked = (
   privateUser: PrivateUser | undefined | null,
   contract: Contract
