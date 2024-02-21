@@ -50,7 +50,7 @@ export function calculateCpmmMultiArbitrageBet(
         ordersToCancel: [],
         cpmmState: { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 },
       },
-      otherBetResults: [],
+      otherBetResults: [] as ReturnType<typeof combineBetsOnSameAnswers>,
     }
   }
   return result
@@ -113,7 +113,7 @@ export function calculateCpmmMultiArbitrageBets(
   return result
 }
 
-type PreliminaryBetResults = ReturnType<typeof computeFills> & {
+export type PreliminaryBetResults = ReturnType<typeof computeFills> & {
   answer: Answer
 }
 function calculateCpmmMultiArbitrageBetsYes(
@@ -215,7 +215,7 @@ function calculateCpmmMultiArbitrageBetsYes(
     yesBetResults.push(...yesBets)
   }
 
-  const newBetResults = combineBetResults(
+  const newBetResults = combineBetsOnSameAnswers(
     yesBetResults,
     'YES',
     updatedAnswers.filter((a) =>
@@ -223,7 +223,7 @@ function calculateCpmmMultiArbitrageBetsYes(
     )
   )
 
-  const otherBetResults = combineBetResults(
+  const otherBetResults = combineBetsOnSameAnswers(
     noBetResults,
     'NO',
     updatedAnswers.filter(
@@ -234,7 +234,7 @@ function calculateCpmmMultiArbitrageBetsYes(
   return { newBetResults, otherBetResults }
 }
 
-const combineBetResults = (
+export const combineBetsOnSameAnswers = (
   bets: PreliminaryBetResults[],
   outcome: 'YES' | 'NO',
   answers: Answer[]

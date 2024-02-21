@@ -27,6 +27,7 @@ import {
   buyNoSharesUntilAnswersSumToOne,
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageBets,
+  combineBetsOnSameAnswers,
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
 
@@ -390,17 +391,17 @@ export const getNewMultiCpmmBetInfo = (
   expiresAt?: number
 ) => {
   if (contract.shouldAnswersSumToOne) {
-    return getNewMultiCpmmBetInfoSumsToOne(
+    return getNewMultiCpmmBetsInfoSumsToOne(
       contract,
       answers,
-      answer,
+      [answer],
       outcome,
       betAmount,
       limitProb,
       unfilledBets,
       balanceByUserId,
       expiresAt
-    )
+    )[0]
   }
 
   const { poolYes, poolNo } = answer
@@ -472,21 +473,6 @@ export const getNewMultiCpmmBetsInfo = (
     throw new APIError(400, 'Not yet implemented')
   }
   if (contract.shouldAnswersSumToOne) {
-    if (answers.length === 1) {
-      return [
-        getNewMultiCpmmBetInfoSumsToOne(
-          contract,
-          answers,
-          answersToBuy[0],
-          outcome,
-          betAmount,
-          limitProb,
-          unfilledBets,
-          balanceByUserId,
-          expiresAt
-        ),
-      ]
-    }
     return getNewMultiCpmmBetsInfoSumsToOne(
       contract,
       answers,
@@ -503,96 +489,6 @@ export const getNewMultiCpmmBetsInfo = (
   }
 }
 
-const getNewMultiCpmmBetInfoSumsToOne = (
-  contract: CPMMMultiContract,
-  answers: Answer[],
-  answer: Answer,
-  outcome: 'YES' | 'NO',
-  betAmount: number,
-  limitProb: number | undefined,
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
-  expiresAt?: number
-) => {
-  const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-    answers,
-    answer,
-    outcome,
-    betAmount,
-    limitProb,
-    unfilledBets,
-    balanceByUserId
-  )
-  const now = Date.now()
-
-  const { takers, cpmmState } = newBetResult
-  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const amount = sumBy(takers, 'amount')
-  const shares = sumBy(takers, 'shares')
-
-  const newBet: CandidateBet = removeUndefinedProps({
-    contractId: contract.id,
-    outcome,
-    orderAmount: betAmount,
-    limitProb,
-    isCancelled: false,
-    amount,
-    loanAmount: 0,
-    shares,
-    answerId: answer.id,
-    fills: takers,
-    isFilled: floatingEqual(amount, betAmount),
-    probBefore: answer.prob,
-    probAfter,
-    createdTime: now,
-    fees: noFees,
-    isAnte: false,
-    isRedemption: false,
-    isChallenge: false,
-    visibility: contract.visibility,
-    expiresAt,
-  })
-
-  const otherResultsWithBet = otherBetResults.map((result) => {
-    const { answer, takers, cpmmState, outcome } = result
-    const probBefore = answer.prob
-    const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
-
-    const bet: CandidateBet = removeUndefinedProps({
-      contractId: contract.id,
-      outcome,
-      orderAmount: 0,
-      isCancelled: false,
-      amount: 0,
-      loanAmount: 0,
-      shares: 0,
-      answerId: answer.id,
-      fills: takers,
-      isFilled: true,
-      probBefore,
-      probAfter,
-      createdTime: now,
-      fees: noFees,
-      isAnte: false,
-      isRedemption: true,
-      isChallenge: false,
-      visibility: contract.visibility,
-    })
-    return {
-      ...result,
-      bet,
-    }
-  })
-
-  return {
-    newBet,
-    newPool: cpmmState.pool,
-    makers: newBetResult.makers,
-    ordersToCancel: newBetResult.ordersToCancel,
-    otherBetResults: otherResultsWithBet,
-  }
-}
-
 const getNewMultiCpmmBetsInfoSumsToOne = (
   contract: CPMMMultiContract,
   answers: Answer[],
@@ -604,17 +500,38 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
-  const { newBetResults, otherBetResults } = calculateCpmmMultiArbitrageBets(
-    answers,
-    answersToBuy,
-    outcome,
-    betAmount,
-    limitProb,
-    unfilledBets,
-    balanceByUserId
-  )
+  const newBetResults = []
+  const otherBetResults: ReturnType<typeof combineBetsOnSameAnswers> = []
+  if (answersToBuy.length === 1) {
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answersToBuy[0],
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    )
+    newBetResults.push(newBetResult)
+    if (otherBetResults.length > 0)
+      otherBetResults.push(
+        ...(otherBetResults as ReturnType<typeof combineBetsOnSameAnswers>)
+      )
+  } else {
+    const multiRes = calculateCpmmMultiArbitrageBets(
+      answers,
+      answersToBuy,
+      outcome,
+      betAmount,
+      limitProb,
+      unfilledBets,
+      balanceByUserId
+    )
+    newBetResults.push(...multiRes.newBetResults)
+    otherBetResults.push(...multiRes.otherBetResults)
+  }
   const now = Date.now()
-  const newBetResultsWithBet = newBetResults.map((newBetResult) => {
+  return newBetResults.map((newBetResult) => {
     const { takers, cpmmState, answer } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const amount = sumBy(takers, 'amount')
@@ -682,7 +599,6 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       otherBetResults: otherResultsWithBet,
     }
   })
-  return newBetResultsWithBet
 }
 
 export const getBetDownToOneMultiBetInfo = (
