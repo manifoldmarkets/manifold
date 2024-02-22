@@ -41,6 +41,7 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingContractRow } from 'web/components/contract/contracts-table'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { LuCrown } from 'react-icons/lu'
 
 export const getStaticProps = async (props: {
   params: {
@@ -159,19 +160,32 @@ function UserPortfolioInternal(props: {
           }
         >
           <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
-          <Link
-            href={'/' + user.username}
-            className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
-          >
-            <Avatar
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-              noLink
-              size="xs"
-              className={'mx-auto'}
-            />
-            Profile
-          </Link>
+          <Row className="items-end gap-4">
+            <div className="flex flex-col items-center">
+              <Link
+                href={`/${user.username}/partner`}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <LuCrown className="mx-auto text-2xl" />
+                Partner
+              </Link>
+            </div>
+            <div className="flex flex-col items-center">
+              <Link
+                href={'/' + user.username}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <Avatar
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  noLink
+                  size="xs"
+                  className={'mx-auto'}
+                />
+                Profile
+              </Link>
+            </div>
+          </Row>
         </Row>
 
         <QueryUncontrolledTabs
