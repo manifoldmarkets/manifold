@@ -413,6 +413,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       overallUniqueBettorIds,
       eventId + '-unique-bettor-bonus',
       bet,
+      uniqueBonusResult.txn?.data?.partnerDollarBonus
     )
   }
 

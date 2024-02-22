@@ -365,6 +365,7 @@ export type UniqueBettorData = {
   min?: number
   max?: number
   isLogScale?: boolean
+  partnerDollarBonus?: number
 }
 
 export type ReviewNotificationData = {
