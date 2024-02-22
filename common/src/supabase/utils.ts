@@ -13,6 +13,7 @@ import { Bet } from '../bet'
 import { ContractMetric } from '../contract-metric'
 import { Group } from '../group'
 import { Txn } from '../txn'
+import { LiquidityProvision } from 'common/liquidity-provision'
 
 export type Schema = Database['public']
 export type Tables = Schema['Tables']
@@ -87,6 +88,7 @@ type JsonTypes = {
   contracts: Contract
   cotracts_rbac: Contract
   contract_bets: Bet
+  contract_liquidity: LiquidityProvision
   public_contract_bets: Bet
   groups: Group
   txns: Txn
