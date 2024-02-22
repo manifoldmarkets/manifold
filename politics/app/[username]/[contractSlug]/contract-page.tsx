@@ -471,7 +471,7 @@ export function ContractPageContent(props: ContractParams) {
                 // Pass cached contract so it won't rerender so many times.
                 contract={cachedContract}
                 bets={bets}
-                totalBets={totalBets}
+                totalTrades={totalBets}
                 comments={comments}
                 userPositionsByOutcome={userPositionsByOutcome}
                 totalPositions={totalPositions}

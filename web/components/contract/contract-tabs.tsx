@@ -1,11 +1,14 @@
-import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
-import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { groupBy, keyBy, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+} from 'react'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { CPMMBinaryContract, Contract } from 'common/contract'
@@ -13,17 +16,13 @@ import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
 import { FeedLiquidity } from '../feed/feed-liquidity'
@@ -42,12 +41,19 @@ import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { db } from 'web/lib/supabase/db'
+import { getBets } from 'common/supabase/bets'
+import { getLiquidityProvisions } from 'common/supabase/liquidity'
+import { usePagination } from 'web/hooks/use-pagination'
+import { PaginationNextPrev } from 'web/components/widgets/pagination'
+import { LiquidityProvision } from 'common/src/liquidity-provision'
 
 export const EMPTY_USER = '_'
 
 export function ContractTabs(props: {
   contract: Contract
-  bets: Bet[]
+  bets?: Bet[]
+  lps?: LiquidityProvision[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   replyTo?: Answer | DpmAnswer | Bet
@@ -56,7 +62,7 @@ export function ContractTabs(props: {
   blockedUserIds: string[]
   activeIndex: number
   setActiveIndex: (i: number) => void
-  totalBets: number
+  totalTrades: number
   totalPositions: number
   pinnedComments: ContractComment[]
   appRouter?: boolean
@@ -65,12 +71,13 @@ export function ContractTabs(props: {
     contract,
     comments,
     bets,
+    lps,
     replyTo,
     setReplyTo,
     blockedUserIds,
     activeIndex,
     setActiveIndex,
-    totalBets,
+    totalTrades,
     userPositionsByOutcome,
     pinnedComments,
     appRouter,
@@ -94,8 +101,8 @@ export function ContractTabs(props: {
   const userBets = rows ?? []
 
   const tradesTitle =
-    (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
-    maybePluralize('Trade', totalBets)
+    (totalTrades > 0 ? `${shortFormatNumber(totalTrades)} ` : '') +
+    maybePluralize('Trade', totalTrades)
 
   const visibleUserBets = userBets.filter(
     (bet) => bet.amount !== 0 && !bet.isRedemption
@@ -149,7 +156,7 @@ export function ContractTabs(props: {
             />
           ),
         },
-        totalBets > 0 &&
+        totalPositions > 0 &&
           (contract.mechanism === 'cpmm-1' ||
             contract.mechanism === 'cpmm-multi-1') && {
             title: positionsTitle,
@@ -167,14 +174,14 @@ export function ContractTabs(props: {
               />
             ),
           },
-        totalBets > 0 && {
+        totalTrades > 0 && {
           title: tradesTitle,
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
                 contract={contract}
-                bets={bets}
-                totalBets={totalBets}
+                recentBets={bets}
+                recentLps={lps}
                 setReplyToBet={setReplyTo}
               />
             </Col>
@@ -476,97 +483,48 @@ const PinnedComment = (props: {
 
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
-  bets: Bet[]
-  totalBets: number
+  answer?: Answer
+  recentBets?: Bet[]
+  recentLps?: LiquidityProvision[]
   setReplyToBet?: (bet: Bet) => void
 }) {
-  const { contract, setReplyToBet, totalBets } = props
-  const [olderBets, setOlderBets] = useState<Bet[]>([])
-  const [page, setPage] = useState(0)
-  const ITEMS_PER_PAGE = 50
-  const bets = [...props.bets, ...olderBets]
-  const oldestBet = last(bets)
-  const start = page * ITEMS_PER_PAGE
-  const end = start + ITEMS_PER_PAGE
+  const { contract, answer, setReplyToBet, recentBets, recentLps } = props
 
-  const lps = useLiquidity(contract.id) ?? []
-  const visibleLps = lps.filter(
-    (l) =>
-      !l.isAnte &&
-      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.amount > 0
+  const pageSize = 50
+
+  const existingItems = useMemo(
+    () => getTradesListItems(pageSize, recentBets, recentLps),
+    [recentBets, recentLps]
   )
-  const items = [
-    ...bets.map((bet) => ({
-      type: 'bet' as const,
-      id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
-      bet,
-    })),
-    ...visibleLps.map((lp) => ({
-      type: 'liquidity' as const,
-      id: lp.id,
-      lp,
-    })),
-  ]
 
-  const totalItems = totalBets + visibleLps.length
-  const totalLoadedItems = bets.length + visibleLps.length
+  const paginationCallback = useCallback(
+    getTradesListQuery(contract.id, answer?.id),
+    [contract.id, answer?.id]
+  )
 
-  const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
-  const shouldLoadMore = limit > 0 && totalLoadedItems < totalItems
-  const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
-  useEffect(() => {
-    if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBetTime, limit)
-      .then((olderBets) => {
-        const filteredBets = olderBets.filter((bet) => !bet.isAnte)
-        setOlderBets((bets) => [...bets, ...filteredBets])
-      })
-      .catch((err) => {
-        console.error(err)
-      })
-  }, [contract.id, limit, oldestBetTime, shouldLoadMore])
-
-  const pageItems = sortBy(items, (item) =>
-    item.type === 'bet'
-      ? -item.bet.createdTime
-      : item.type === 'liquidity'
-      ? -item.lp.createdTime
-      : undefined
-  ).slice(start, end)
-
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const pagination = usePagination({
+    pageSize,
+    q: paginationCallback,
+    prefix: existingItems,
+  })
 
   return (
     <>
-      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
-        {shouldLoadMore ? (
-          <LoadingIndicator />
-        ) : (
-          pageItems.map((item) =>
-            item.type === 'bet' ? (
-              <FeedBet
-                onReply={setReplyToBet}
-                key={item.id}
-                contract={contract}
-                bet={item.bet}
-              />
-            ) : (
-              <FeedLiquidity key={item.id} liquidity={item.lp} />
-            )
+      <Col className="mb-4 items-start gap-7">
+        {pagination.items.map((d) =>
+          d.kind === 'bet' ? (
+            <FeedBet
+              onReply={setReplyToBet}
+              key={d.data.id}
+              contract={contract}
+              bet={d.data}
+            />
+          ) : (
+            <FeedLiquidity key={`${d.kind}-${d.data.id}`} liquidity={d.data} />
           )
         )}
+        <PaginationNextPrev {...pagination} />
       </Col>
-      <Pagination
-        page={page}
-        itemsPerPage={ITEMS_PER_PAGE}
-        totalItems={totalItems}
-        setPage={(page) => {
-          setPage(page)
-          scrollRef.current?.scrollIntoView()
-        }}
-      />
     </>
   )
 })
@@ -596,4 +554,44 @@ export function SortRow(props: {
       </Row>
     </Row>
   )
+}
+
+type TradesListItem =
+  | { kind: 'bet'; data: Bet }
+  | { kind: 'lp'; data: LiquidityProvision }
+
+function getTradesListItems(
+  limit: number,
+  bets?: Bet[],
+  lps?: LiquidityProvision[]
+) {
+  const items = [
+    ...(bets ?? []).map((b) => ({ kind: 'bet', data: b })),
+    ...(lps ?? []).map((lp) => ({ kind: 'lp', data: lp })),
+  ] as TradesListItem[]
+  return sortBy(items, (x) => -x.data.createdTime).slice(0, limit)
+}
+
+function getTradesListQuery(contractId: string, answerId?: string) {
+  return async (limit: number, after?: { data: { createdTime: number } }) => {
+    const betsQ = getBets(db, {
+      contractId: contractId,
+      answerId: answerId,
+      filterRedemptions: true,
+      filterAntes: true,
+      beforeTime: after?.data.createdTime,
+      order: 'desc',
+      limit,
+    })
+    const lpsQ = getLiquidityProvisions(db, {
+      contractId: contractId,
+      filterHouse: true,
+      filterAntes: true,
+      beforeTime: after?.data.createdTime,
+      order: 'desc',
+      limit,
+    })
+    const [bets, lps] = await Promise.all([betsQ, lpsQ])
+    return getTradesListItems(limit, bets, lps)
+  }
 }

@@ -1,6 +1,7 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
+import { LiquidityProvision } from 'common/liquidity-provision'
 import {
   MultiSerializedPoints,
   unserializeMultiPoints,
@@ -14,6 +15,7 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
+import { getLiquidityProvisions } from 'common/supabase/liquidity'
 import { User } from 'common/user'
 import { first, mergeWith } from 'lodash'
 import Head from 'next/head'
@@ -237,7 +239,6 @@ export function ContractPageContent(props: ContractParams) {
 
   const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
   const bets = useMemo(
     () => [...historyData.bets, ...newBetsWithoutRedemptions],
     [historyData.bets, newBets]
@@ -265,6 +266,19 @@ export function ContractPageContent(props: ContractParams) {
       return [...points, ...newPoints]
     }
   }, [historyData.points, newBets])
+
+  const [lps, setLps] = useState<LiquidityProvision[]>([])
+  useEffect(() => {
+    getLiquidityProvisions(db, {
+      filterAntes: true,
+      filterHouse: true,
+      contractId: contract.id,
+      order: 'desc',
+    }).then((xs) => setLps(xs))
+  }, [contract.id])
+
+  const totalTrades =
+    props.totalBets + newBetsWithoutRedemptions.length + lps.length
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
@@ -579,7 +593,8 @@ export function ContractPageContent(props: ContractParams) {
                 // Pass cached contract so it won't rerender so many times.
                 contract={cachedContract}
                 bets={bets}
-                totalBets={totalBets}
+                lps={lps}
+                totalTrades={totalTrades}
                 comments={comments}
                 userPositionsByOutcome={userPositionsByOutcome}
                 totalPositions={totalPositions}

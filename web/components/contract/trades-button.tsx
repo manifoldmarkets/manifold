@@ -2,7 +2,6 @@ import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, CPMMBinaryContract } from 'common/contract'
 import { useState } from 'react'
-import { useBets } from 'web/hooks/use-bets-supabase'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -132,14 +131,7 @@ function BetsModalContent(props: {
   }
 }) {
   const { contract, answerDetails } = props
-  const answer = answerDetails?.answer
-  const bets = useBets({
-    contractId: contract.id,
-    answerId: answer?.id,
-    filterAntes: true,
-    filterRedemptions: true,
-  })
-
+  const { answer } = answerDetails ?? {}
   return (
     <UncontrolledTabs
       tabs={[
@@ -154,15 +146,9 @@ function BetsModalContent(props: {
         },
         {
           title: 'Recent Trades',
-          content: !bets ? (
-            <LoadingIndicator />
-          ) : (
+          content: (
             <Col className={'mt-2'}>
-              <BetsTabContent
-                contract={contract}
-                bets={bets}
-                totalBets={bets.length}
-              />
+              <BetsTabContent contract={contract} answer={answer} />
             </Col>
           ),
         },
