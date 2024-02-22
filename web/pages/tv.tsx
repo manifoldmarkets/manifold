@@ -131,6 +131,22 @@ export default function TVPage(props: {
             <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
           </Row>
 
+          {comments && (
+            <div className="m-4">
+              <CommentsTabContent
+                contract={contract}
+                comments={comments}
+                pinnedComments={[]}
+                setCommentsLength={() => {}}
+                blockedUserIds={[]}
+                replyTo={undefined}
+                clearReply={() => {}}
+                className="-ml-2 -mr-1 flex xl:hidden"
+                bets={[]}
+                appRouter={undefined}
+              />
+            </div>
+          )}
         </Col>
 
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
