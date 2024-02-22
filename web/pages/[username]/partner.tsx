@@ -18,6 +18,7 @@ import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { format } from 'date-fns'
 import { FaExternalLinkAlt } from 'react-icons/fa'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export const getStaticProps = async (props: {
   params: {
@@ -58,6 +59,14 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
 
   const formattedStartDate = format(startDate, 'MMM dd, yyyy')
   const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
+
+  const { data } = useAPIGetter('get-partner-stats', {
+    userId: user.id,
+  })
+  const referralCount = 2
+  const dollarsEarned = data
+    ? data.numUniqueBettors * 0.1 + referralCount * 0.4
+    : 0
 
   return (
     <Page
@@ -120,7 +129,27 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           </Link>
         </Row>
         {userIsPartner ? (
-          <div>Partner Dashboard</div>
+          <Col className="gap-4">
+            <div>Partner Dashboard</div>
+            <div className="text-ink-700">Period Feb 21 - May 21</div>
+
+            {data && (
+              <Col className="grid max-w-[300px] grid-cols-2 gap-4 self-start text-xl">
+                <div className="text-ink-700 col-span-1">Trader count</div>
+                <div className="col-span-1 font-semibold">
+                  {data.numUniqueBettors}
+                </div>
+                <div className="text-ink-700 whitespace-nowrap">
+                  Referral count
+                </div>
+                <div className="font-semibold">{referralCount}</div>
+                <div className="text-ink-700 whitespace-nowrap">
+                  Dollars earned
+                </div>
+                <div className="font-semibold">${dollarsEarned.toFixed(2)}</div>
+              </Col>
+            )}
+          </Col>
         ) : (
           <Col className="gap-4 px-4">
             <Col className=" mx-0 my-auto max-w-[600px] border p-2">

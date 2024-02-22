@@ -844,6 +844,20 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
+  'get-partner-stats': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success' | 'error'
+      numUniqueBettors: number
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
