@@ -218,7 +218,8 @@ function calculateCpmmMultiArbitrageBetsYes(
     'YES',
     updatedAnswers.filter((a) =>
       initialAnswersToBuy.map((an) => an.id).includes(a.id)
-    )
+    ),
+    true
   )
 
   const otherBetResults = combineBetsOnSameAnswers(
@@ -233,13 +234,24 @@ function calculateCpmmMultiArbitrageBetsYes(
 export const combineBetsOnSameAnswers = (
   bets: PreliminaryBetResults[],
   outcome: 'YES' | 'NO',
-  answers: Answer[]
+  answers: Answer[],
+  firstFillAmountOnly?: boolean // The following fills amounts are free from the arbitrage mana.
 ) => {
   return answers.map((answer) => {
     const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
     return {
       ...betsForAnswer[betsForAnswer.length - 1],
-      takers: betsForAnswer.flatMap((r) => r.takers),
+      takers: firstFillAmountOnly
+        ? [
+            {
+              ...betsForAnswer[0].takers[0],
+              shares: sumBy(
+                betsForAnswer.flatMap((r) => r.takers),
+                'shares'
+              ),
+            },
+          ]
+        : betsForAnswer.flatMap((r) => r.takers),
       makers: betsForAnswer.flatMap((r) => r.makers),
       outcome,
       answer,
