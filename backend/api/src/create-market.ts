@@ -191,16 +191,9 @@ export async function createMarketHelper(
       specialLiquidityPerAnswer,
     })
 
-    const res = await runCreateMarketTxn(
-      contract,
-      ante,
-      user,
-      userDoc.ref,
-      contractRef,
-      trans
-    )
+    await runCreateMarketTxn(contractRef.id, ante, user, userDoc.ref, trans)
     trans.create(contractRef, contract)
-    return res
+    return contract
   })
 
   log('created contract ', {
@@ -230,11 +223,10 @@ export async function createMarketHelper(
 }
 
 const runCreateMarketTxn = async (
-  contract: Contract,
+  contractId: string,
   ante: number,
   user: User,
   userDocRef: admin.firestore.DocumentReference,
-  contractRef: admin.firestore.DocumentReference,
   trans: Transaction
 ) => {
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -246,7 +238,7 @@ const runCreateMarketTxn = async (
     await runTxnFromBank(trans, {
       amount: amountSuppliedByHouse,
       category: 'CREATE_CONTRACT_ANTE',
-      toId: contract.id,
+      toId: contractId,
       toType: 'CONTRACT',
       fromType: 'BANK',
       token: 'M$',
@@ -257,7 +249,7 @@ const runCreateMarketTxn = async (
     await runTxn(trans, {
       fromId: user.id,
       fromType: 'USER',
-      toId: contract.id,
+      toId: contractId,
       toType: 'CONTRACT',
       amount: amountSuppliedByUser,
       token: 'M$',
@@ -269,8 +261,6 @@ const runCreateMarketTxn = async (
     trans.update(userDocRef, {
       freeQuestionsCreated: FieldValue.increment(1),
     })
-
-  return contract
 }
 
 async function getCloseTimestamp(

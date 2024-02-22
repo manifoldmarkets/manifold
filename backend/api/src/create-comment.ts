@@ -61,7 +61,6 @@ export const createCommentOnContractInternal = async (
     logError: GCPLog
   }
 ) => {
-  const firestore = admin.firestore()
   const {
     content,
     html,
@@ -83,11 +82,9 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   const bet = replyToBetId
-    ? await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc(replyToBetId)
-        .get()
-        .then((doc) => doc.data() as Bet)
+    ? await pg
+        .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
+        .then(convertBet)
     : await getMostRecentCommentableBet(
         pg,
         contract.id,
@@ -156,6 +153,7 @@ export const createCommentOnContractInternal = async (
     result: comment,
     continue: async () => {
       if (isApi) {
+        const firestore = admin.firestore()
         const userRef = firestore.doc(`users/${creator.id}`)
         await userRef.update({
           balance: FieldValue.increment(-FLAT_COMMENT_FEE),
