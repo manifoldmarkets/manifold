@@ -23,6 +23,7 @@ import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { Linkify } from 'web/components/widgets/linkify'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -62,6 +63,7 @@ export default function TVPage(props: {
   }, [tvSchedule])
 
   const user = useUser()
+  const isAdmin = useAdmin()
 
   const contract =
     useFirebasePublicContract('public', contractId) ?? props.contract
@@ -76,7 +78,7 @@ export default function TVPage(props: {
 
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10">
-      <SEO title="Manifold TV" description="livestreams bettign on manifold" />
+      <SEO title="Manifold TV" description="Stream and trade" />
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
@@ -121,16 +123,19 @@ export default function TVPage(props: {
             )}
           </Col>
 
-          <Row className="m-4">
-            <Button
-              color="indigo-outline"
-              onClick={() => setShowSettings(true)}
-            >
-              Set Stream
-            </Button>
-            <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
-          </Row>
+          {isAdmin && (
+            <Row className="m-4">
+              <Button
+                color="indigo-outline"
+                onClick={() => setShowSettings(true)}
+              >
+                Set Stream
+              </Button>
+              <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
+            </Row>
+          )}
 
+          {/* mobile comments */}
           {comments && (
             <div className="m-4">
               <CommentsTabContent
@@ -149,6 +154,7 @@ export default function TVPage(props: {
           )}
         </Col>
 
+        {/* desktop comments */}
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
           {comments && (
             <CommentsTabContent
