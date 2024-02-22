@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { type Answer } from 'common/answer'
-import { CPMMMultiContract } from 'common/contract'
-import { Button, ColorType } from 'web/components/buttons/button'
+import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
@@ -17,32 +17,35 @@ import { BuyPanel } from 'web/components/bet/bet-panel'
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   answers: Answer[]
+  size?: SizeType
 }) {
-  const { contract, answers } = props
-  const reverseOrderedAnswers = [props.answers[1], props.answers[0]]
+  const { contract, answers, size } = props
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
   return (
     <>
       <Row className="mx-[2px] mt-1 hidden justify-between gap-2 sm:inline-flex">
-        {reverseOrderedAnswers.map((answer, i) => (
+        {answers.map((answer) => (
           <BetButton
-            betOnAnswer={answers[0]}
-            outcome={i === 0 ? 'NO' : 'YES'}
+            size={size}
+            betOnAnswer={mainAnswer}
+            outcome={answer.id === mainAnswer.id ? 'YES' : 'NO'}
             key={answer.id}
             contract={contract}
             answer={answer}
-            color={i === 0 ? 'red' : 'green'}
+            color={answer.id === mainAnswer.id ? 'green' : 'red'}
           />
         ))}
       </Row>
       <Col className="mx-[2px] mt-1 gap-2 sm:hidden">
-        {reverseOrderedAnswers.map((answer, i) => (
+        {answers.map((answer) => (
           <BetButton
-            betOnAnswer={answers[0]}
-            outcome={i === 0 ? 'NO' : 'YES'}
+            size={size}
+            betOnAnswer={mainAnswer}
+            outcome={answer.id === mainAnswer.id ? 'YES' : 'NO'}
             key={answer.id}
             contract={contract}
             answer={answer}
-            color={i === 0 ? 'red' : 'green'}
+            color={answer.id === mainAnswer.id ? 'green' : 'red'}
           />
         ))}
       </Col>
@@ -56,8 +59,9 @@ const BetButton = (props: {
   outcome: 'YES' | 'NO' | 'LIMIT' | undefined
   contract: CPMMMultiContract
   color?: ColorType
+  size?: SizeType
 }) => {
-  const { answer, contract, betOnAnswer, color } = props
+  const { answer, size, contract, betOnAnswer, color } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
@@ -82,7 +86,7 @@ const BetButton = (props: {
       </Modal>
 
       <Button
-        size="xl"
+        size={size ?? 'xl'}
         color={color}
         className={clsx('flex-1')}
         onClick={(e) => {
@@ -92,7 +96,14 @@ const BetButton = (props: {
         }}
       >
         <Row className={'w-full items-center justify-between '}>
-          <span className={'line-clamp-2 text-left'}>{answer.text}</span>
+          <span
+            className={clsx(
+              size === 'xs' ? 'line-clamp-1' : 'line-clamp-2',
+              'text-left'
+            )}
+          >
+            {answer.text}
+          </span>
           <span className={'text-xl'}>{formatPercent(answer.prob)}</span>
         </Row>
       </Button>
