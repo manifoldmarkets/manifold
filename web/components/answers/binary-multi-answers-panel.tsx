@@ -42,7 +42,7 @@ export function BinaryMultiAnswersPanel(props: {
             color={
               answer.id === getMainBinaryMCAnswer(contract)!.id
                 ? '#4e46dc'
-                : '#fbbf24'
+                : '#e9a23b'
             }
           />
         ))}
@@ -172,7 +172,7 @@ function AnswerCpmmBetPanel(props: {
         <span
           className={clsx(
             'text-2xl',
-            betOnAnswer.id === answer.id ? 'text-indigo-500' : 'text-amber-500'
+            betOnAnswer.id === answer.id ? 'text-indigo-500' : 'text-amber-600'
           )}
         >
           {answer.text}
