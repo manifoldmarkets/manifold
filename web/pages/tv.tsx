@@ -1,6 +1,8 @@
 import clsx from 'clsx'
-import { BinaryContract, tradingAllowed } from 'common/contract'
 import { useEffect, useState } from 'react'
+
+import { BinaryContract, Contract, tradingAllowed } from 'common/contract'
+import { run } from 'common/supabase/utils'
 import { SEO } from 'web/components/SEO'
 import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -17,23 +19,51 @@ import { useCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { setTV } from 'web/lib/firebase/api'
+import { getContract } from 'web/lib/supabase/contracts'
+import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
-export default function TVPage() {
-  const [streamId, setStreamId] = useState('sdfsdf')
-  const [contractId, setContractId] = useState('sdfsd')
+export async function getStaticProps() {
+  const result = await run(db.from('tv_schedule').select('*').limit(1))
+
+  const {
+    source,
+    stream_id: streamId,
+    contract_id: contractId,
+  } = result.data[0]
+
+  const contract = await getContract(contractId)
+
+  return {
+    props: {
+      source,
+      streamId,
+      contract,
+    },
+  }
+}
+
+export default function TVPage(props: {
+  source: string
+  streamId: string
+  contract: Contract
+}) {
+  const [streamId, setStreamId] = useState(props.streamId)
+  const [contractId, setContractId] = useState(props.contract.id)
 
   const tvSchedule = useSubscription('tv_schedule')
 
   useEffect(() => {
     if (!tvSchedule.rows) return
-    const { stream_id, contract_id } = tvSchedule.rows?.[0]
+    const { stream_id, contract_id } = tvSchedule.rows[0]
     setStreamId(stream_id)
     setContractId(contract_id)
   }, [tvSchedule])
 
   const user = useUser()
-  const contract = useFirebasePublicContract('public', contractId)
+  const contract =
+    useFirebasePublicContract('public', contractId) ?? props.contract
+
   const comments = useCommentsOnContract(contractId)
 
   const [showSettings, setShowSettings] = useState(false)
@@ -95,7 +125,7 @@ export default function TVPage() {
         </Col>
 
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
-          {comments && (
+          {comments && (            
             <CommentsTabContent
               contract={contract}
               comments={comments}
