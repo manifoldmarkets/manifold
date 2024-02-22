@@ -441,7 +441,11 @@ const BinaryUserPositionsTable = memo(
                     <PositionRow
                       key={position.userId + outcome}
                       position={position}
-                      outcome={outcome}
+                      colorClassName={
+                        isBinaryMulti(contract)
+                          ? 'text-indigo-500'
+                          : 'text-teal-500'
+                      }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
@@ -473,7 +477,11 @@ const BinaryUserPositionsTable = memo(
                     <PositionRow
                       key={position.userId + outcome}
                       position={position}
-                      outcome={outcome}
+                      colorClassName={
+                        isBinaryMulti(contract)
+                          ? 'text-amber-500'
+                          : 'text-scarlet-600'
+                      }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
@@ -506,12 +514,13 @@ const BinaryUserPositionsTable = memo(
 )
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
-  outcome: 'YES' | 'NO'
   numberToShow: string
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
+  colorClassName: string
 }) {
-  const { position, outcome, currentUser, followedUsers, numberToShow } = props
+  const { position, colorClassName, currentUser, followedUsers, numberToShow } =
+    props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
 
@@ -544,14 +553,7 @@ const PositionRow = memo(function PositionRow(props: {
           )}
         </Row>
       </UserHovercard>
-      <span
-        className={clsx(
-          outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-600',
-          'shrink-0'
-        )}
-      >
-        {numberToShow}
-      </span>
+      <span className={clsx(colorClassName, 'shrink-0')}>{numberToShow}</span>
     </Row>
   )
 })
