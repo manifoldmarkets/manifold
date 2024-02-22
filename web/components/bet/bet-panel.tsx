@@ -7,6 +7,7 @@ import { CheckIcon } from '@heroicons/react/solid'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -50,7 +51,7 @@ export function BuyPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer }
+  multiProps?: { answers: Answer[]; answerToBuy: Answer; answerText?: string }
   user: User | null | undefined
   inModal: boolean
   onBuySuccess?: () => void
@@ -93,6 +94,11 @@ export function BuyPanel(props: {
         unfilledBetsMatchingAnswer
       : allUnfilledBets
 
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCOutcomeLabel =
+    isBinaryMC && multiProps
+      ? multiProps.answerText ?? multiProps.answerToBuy.text
+      : undefined
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
@@ -197,8 +203,13 @@ export function BuyPanel(props: {
     )
     const { pool, p } = newBetResult.cpmmState
     currentPayout = sumBy(newBetResult.takers, 'shares')
-    probBefore = answerToBuy.prob
-    probAfter = getCpmmProbability(pool, p)
+    if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
+      probBefore = 1 - answerToBuy.prob
+      probAfter = 1 - getCpmmProbability(pool, p)
+    } else {
+      probBefore = answerToBuy.prob
+      probAfter = getCpmmProbability(pool, p)
+    }
   } else {
     const cpmmState = isCpmmMulti
       ? {
@@ -326,6 +337,8 @@ export function BuyPanel(props: {
               <Col className="text-ink-700 flex-nowrap whitespace-nowrap text-sm">
                 {isPseudoNumeric || isStonk ? (
                   'Shares'
+                ) : isBinaryMC ? (
+                  <>Potential payout</>
                 ) : (
                   <>Payout if {outcome ?? 'YES'}</>
                 )}
@@ -405,6 +418,7 @@ export function BuyPanel(props: {
             warning={warning}
             userOptedOutOfWarning={user.optOutBetWarnings}
             onSubmit={submitBet}
+            actionLabelClassName={'line-clamp-1'}
             isSubmitting={isSubmitting}
             disabled={betDisabled}
             size="xl"
@@ -415,7 +429,9 @@ export function BuyPanel(props: {
                     contract,
                     'YES'
                   )} or ${formatOutcomeLabel(contract, 'NO')}`
-                : `Bet ${formatMoney(betAmount)} on ${outcome}`
+                : `Bet ${formatMoney(betAmount)} on ${
+                    binaryMCOutcomeLabel ?? outcome
+                  }`
             }
             inModal={inModal}
           />

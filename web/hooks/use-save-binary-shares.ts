@@ -1,5 +1,7 @@
 import {
   BinaryContract,
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -10,17 +12,24 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 import { useStateCheckEquality } from './use-state-check-equality'
 
 export const useSaveBinaryShares = (
-  contract: BinaryContract | PseudoNumericContract | StonkContract,
+  contract:
+    | BinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract,
   userBets: Bet[] | undefined
 ) => {
   const [savedShares, setSavedShares] = useStateCheckEquality({
     yesShares: 0,
     noShares: 0,
   })
+  const mcAnswer = getMainBinaryMCAnswer(contract)
 
-  const [yesBets, noBets] = partition(
-    userBets ?? [],
-    (bet) => bet.outcome === 'YES'
+  const [yesBets, noBets] = partition(userBets ?? [], (bet) =>
+    !mcAnswer
+      ? bet.outcome === 'YES'
+      : (bet.answerId === mcAnswer.id && bet.outcome === 'YES') ||
+        (bet.answerId !== mcAnswer.id && bet.outcome === 'NO')
   )
   const [yesShares, noShares] = userBets
     ? [sumBy(yesBets, (bet) => bet.shares), sumBy(noBets, (bet) => bet.shares)]
