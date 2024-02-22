@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 
-import { BinaryContract, Contract, tradingAllowed } from 'common/contract'
+import { Contract, tradingAllowed } from 'common/contract'
 import { run } from 'common/supabase/utils'
 import { SEO } from 'web/components/SEO'
 import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
@@ -62,8 +62,11 @@ export default function TVPage(props: {
   }, [tvSchedule])
 
   const user = useUser()
+
   const contract =
     useFirebasePublicContract('public', contractId) ?? props.contract
+
+  const isBinary = contract.outcomeType === 'BINARY'
 
   const comments = useCommentsOnContract(contractId)
 
@@ -103,10 +106,9 @@ export default function TVPage(props: {
                   <Linkify text={contract.question} />
                 </Link>
               </Row>
-              <BinaryResolutionOrChance
-                isCol
-                contract={contract as BinaryContract}
-              />
+              {isBinary && (
+                <BinaryResolutionOrChance isCol contract={contract} />
+              )}
             </Row>
 
             {/* <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
@@ -114,11 +116,8 @@ export default function TVPage(props: {
             <ContractSummaryStats contract={contract} editable={false} />
           </div> */}
 
-            {tradingAllowed(contract) && (
-              <SignedInBinaryMobileBetting
-                contract={contract as BinaryContract}
-                user={user}
-              />
+            {tradingAllowed(contract) && isBinary && (
+              <SignedInBinaryMobileBetting contract={contract} user={user} />
             )}
           </Col>
 
@@ -131,6 +130,7 @@ export default function TVPage(props: {
             </Button>
             <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
           </Row>
+
         </Col>
 
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
