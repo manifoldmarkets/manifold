@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import clsx from 'clsx'
 import {
-  FlagIcon,
   HomeIcon,
   MenuAlt3Icon,
   NewspaperIcon,
