@@ -78,11 +78,11 @@ function ElectionContent(props: ElectionsPageProps) {
     <>
       <Col className="gap-6 px-2 sm:gap-8 sm:px-4">
         <Col>
-          <div className="text-primary-700 mt-4 inline-block text-2xl font-normal sm:mt-0 sm:text-3xl">
-            2024 Election Forecast
+          <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
+            Manifold 2024 Election Forecast
           </div>
-          <div className="text-canvas-500 text-md mt-2 inline-block font-normal">
-            Live market odds for the US presidential election
+          <div className="text-canvas-500 text-md mt-2 flex font-normal">
+            Live prediction market odds on the US election
           </div>
         </Col>
 
