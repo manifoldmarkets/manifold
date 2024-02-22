@@ -1,4 +1,4 @@
-import { ReactNode, memo, useMemo, useState, useEffect, useRef } from 'react'
+import { ReactNode, memo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 
 import { Bet } from 'common/bet'
@@ -35,13 +35,7 @@ import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { AnswersPanel } from '../answers/answers-panel'
-import {
-  Answer,
-  DpmAnswer,
-  MultiSort,
-  getDefaultSort,
-  sortAnswers,
-} from 'common/answer'
+import { Answer, DpmAnswer, MultiSort, getDefaultSort } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import {
   AnswersResolvePanel,
@@ -52,7 +46,6 @@ import { PollPanel } from '../poll/poll-panel'
 import { Col } from '../layout/col'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { getAnswerProbability } from 'common/calculate'
-import { searchInAny } from 'common/util/parse'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import {
   ControlledCarousel,
@@ -491,9 +484,6 @@ const ChartAnnotation = (props: {
   )
 }
 
-const MAX_DEFAULT_GRAPHED_ANSWERS = 6
-const MAX_DEFAULT_ANSWERS = 20
-
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: MultiContract
@@ -519,30 +509,17 @@ const ChoiceOverview = (props: {
     useTimePicker(contract, () => setShowZoomer(true))
 
   const [hoverAnswerId, setHoverAnswerId] = useState<string>()
-  const [checkedAnswerIds, setCheckedAnswerIds] = useState<string[]>([])
-
+  const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([])
+  const [defaultAnswerIdsToGraph, setDefaultAnswerIdsToGraph] = useState<
+    string[]
+  >([])
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const { resolutions, outcomeType } = contract
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
   const [query, setQuery] = usePersistentInMemoryState(
     '',
     'create-answer-text' + contract.id
   )
-
-  const answers = contract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(contract, a.id),
-    }))
 
   const defaultSort = getDefaultSort(contract)
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
@@ -562,16 +539,6 @@ const ChoiceOverview = (props: {
       setShowSetDefaultSort(true)
   }, [sort, contract.sort])
 
-  const [showAll, setShowAll] = useState(
-    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
-      answers.length <= 5
-  )
-
-  const sortedAnswers = useMemo(
-    () => sortAnswers(contract, answers, sort),
-    [answers, resolutions, shouldAnswersSumToOne, sort]
-  )
-
   const {
     pointerMode,
     setPointerMode,
@@ -581,40 +548,6 @@ const ChoiceOverview = (props: {
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
-  const searchedAnswers = useMemo(() => {
-    if (!answers.length || !query) return []
-
-    return sortedAnswers.filter(
-      (answer) =>
-        checkedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
-    )
-  }, [sortedAnswers, query])
-
-  const allResolved =
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => 'resolution' in a)
-
-  const answersToShow = query
-    ? searchedAnswers
-    : showAll
-    ? sortedAnswers
-    : sortedAnswers
-        .filter((answer) => {
-          if (checkedAnswerIds.includes(answer.id)) {
-            return true
-          }
-
-          if (allResolved) return true
-          if (sort === 'prob-asc') {
-            return answer.prob < 0.99
-          } else if (sort === 'prob-desc') {
-            return answer.prob > 0.01
-          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-            return !('resolution' in answer)
-          }
-          return true
-        })
-        .slice(0, MAX_DEFAULT_ANSWERS)
   return (
     <>
       <Row className="justify-between gap-2">
@@ -658,11 +591,9 @@ const ChoiceOverview = (props: {
               contract={contract}
               highlightAnswerId={hoverAnswerId}
               selectedAnswerIds={
-                checkedAnswerIds.length
-                  ? checkedAnswerIds
-                  : answersToShow
-                      .map((a) => a.id)
-                      .slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+                selectedAnswerIds.length
+                  ? selectedAnswerIds
+                  : defaultAnswerIdsToGraph
               }
               pointerMode={pointerMode}
               setHoveredAnnotation={setHoveredAnnotation}
@@ -695,11 +626,13 @@ const ChoiceOverview = (props: {
         <>
           {resolutionRating}
           <AnswersPanel
+            setDefaultAnswerIdsToGraph={setDefaultAnswerIdsToGraph}
+            selectedAnswerIds={selectedAnswerIds}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
             onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
             onAnswerClick={({ id }) =>
-              setCheckedAnswerIds((answers) =>
+              setSelectedAnswerIds((answers) =>
                 answers.includes(id)
                   ? answers.filter((a) => a !== id)
                   : [...answers, id]
@@ -709,9 +642,6 @@ const ChoiceOverview = (props: {
             setSort={setSort}
             query={query}
             setQuery={setQuery}
-            setShowAll={setShowAll}
-            answersToShow={answersToShow}
-            selected={checkedAnswerIds}
             showSetDefaultSort={showSetDefaultSort}
           />
           {tradingAllowed(contract) && (

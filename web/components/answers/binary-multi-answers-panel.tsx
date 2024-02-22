@@ -110,7 +110,7 @@ const BetButton = (props: {
         setOpen={(open) => setOutcome(open ? props.outcome : undefined)}
         className={MODAL_CLASS}
       >
-        <AnswerCpmmBetPanel
+        <BinaryMultiChoiceBetPanel
           answer={answer}
           betOnAnswer={betOnAnswer}
           contract={contract}
@@ -156,7 +156,7 @@ const BetButton = (props: {
   )
 }
 
-function AnswerCpmmBetPanel(props: {
+function BinaryMultiChoiceBetPanel(props: {
   answer: Answer
   betOnAnswer: Answer
   contract: CPMMMultiContract
