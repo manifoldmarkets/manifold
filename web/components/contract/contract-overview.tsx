@@ -73,6 +73,7 @@ import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { orderBy } from 'lodash'
 
 export const ContractOverview = memo(
   (props: {
@@ -752,11 +753,23 @@ const BinaryChoiceOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
-  const mcBinaryAnswer = getMainBinaryMCAnswer(contract)
-  const betPoints = mcBinaryAnswer ? props.points[mcBinaryAnswer.id] : []
-
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
+  const betPoints = mainAnswer ? props.points[mainAnswer.id] : []
+  const leadingAnswer = orderBy(answers, 'prob', 'desc')[0]
   return (
     <>
+      <Row className={clsx('justify-start gap-1 text-xl')}>
+        <span
+          className={clsx(
+            mainAnswer.id === leadingAnswer.id
+              ? 'text-teal-600'
+              : 'text-scarlet-600'
+          )}
+        >
+          {leadingAnswer.text}
+        </span>
+        <span>{formatPercent(leadingAnswer.prob)}</span>
+      </Row>
       <Row className="justify-between gap-2">
         {contract.resolution === 'CANCEL' ? (
           <div className="flex items-end gap-2 text-2xl sm:text-3xl">
