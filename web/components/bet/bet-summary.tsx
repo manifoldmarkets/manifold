@@ -82,7 +82,7 @@ export function BetsSummary(props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isStonk = outcomeType === 'STONK'
-  const mainAnswer = getMainBinaryMCAnswer(contract)
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
@@ -223,9 +223,9 @@ export function BetsSummary(props: {
           </div>
         </Row>
       )}
-      {mainAnswer && (
+      {mainBinaryMCAnswer && (
         <BinaryMultiSellRow
-          answer={mainAnswer}
+          answer={mainBinaryMCAnswer}
           contract={contract as CPMMMultiContract}
         />
       )}
