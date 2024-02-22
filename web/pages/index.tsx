@@ -99,10 +99,7 @@ export default function LandingPage(props: {
                   Markets
                 </Button>
               </Link>
-              <Link
-                href="/politics"
-                className="hidden lg:flex"
-              >
+              <Link href="/politics" className="hidden lg:flex">
                 <Button
                   color="gray-white"
                   size="xs"
