@@ -24,16 +24,21 @@ export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
   className?: string
   subtextClassName?: string
+  isCol?: boolean
 }) {
-  const { contract, className, subtextClassName } = props
+  const { contract, className, subtextClassName, isCol } = props
   const { resolution } = contract
   const textColor = getTextColor(contract)
 
   const spring = useAnimatedNumber(getDisplayProbability(contract))
 
   return (
-    <Row
-      className={clsx('items-baseline gap-2 text-2xl sm:text-3xl', className)}
+    <div
+      className={clsx(
+        'flex items-baseline gap-2 text-2xl sm:text-3xl',
+        isCol ? 'flex-col' : 'flex-row',
+        className
+      )}
     >
       {resolution ? (
         <>
@@ -62,7 +67,7 @@ export function BinaryResolutionOrChance(props: {
           </div>
         </>
       )}
-    </Row>
+    </div>
   )
 }
 
