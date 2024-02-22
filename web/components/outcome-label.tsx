@@ -3,7 +3,6 @@ import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
-  getMainBinaryMCAnswer,
   MultiContract,
   OutcomeType,
   resolution,
@@ -21,20 +20,7 @@ export function OutcomeLabel(props: {
 }) {
   const { outcome, contract, truncate, answerId } = props
   const { outcomeType, mechanism } = contract
-  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
 
-  if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
-    return (
-      <MultiOutcomeLabel
-        contract={contract}
-        resolution={
-          outcome === 'YES' ? mainBinaryMCAnswer.id : contract.answers[1].id
-        }
-        truncate={truncate}
-        answerClassName={'font-bold text-base-400 !break-normal'}
-      />
-    )
-  }
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 

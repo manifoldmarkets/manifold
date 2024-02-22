@@ -3,8 +3,6 @@ import {
   CPMMBinaryContract,
   CPMMContract,
   CPMMMultiContract,
-  getMainBinaryMCAnswer,
-  isBinaryMulti,
 } from 'common/contract'
 import {
   ContractMetric,
@@ -27,7 +25,6 @@ import {
   HigherLabel,
   LowerLabel,
   NoLabel,
-  OutcomeLabel,
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
@@ -87,8 +84,7 @@ export const UserPositionsTable = memo(
 
     const [currentAnswerId, setCurrentAnswerId] = useState<string | undefined>(
       answers.length > 0
-        ? getMainBinaryMCAnswer(contract)?.id ??
-            first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
+        ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
         : undefined
     )
     const [page, setPage] = useState(0)
@@ -170,7 +166,7 @@ export const UserPositionsTable = memo(
       (cm) => (currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId)
     )
 
-    if (contract.mechanism === 'cpmm-1' || isBinaryMulti(contract)) {
+    if (contract.mechanism === 'cpmm-1') {
       return (
         <Col className={'w-full'}>
           <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -356,18 +352,12 @@ const BinaryUserPositionsTable = memo(
       contract.outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1'
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-    const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
         <span>
           {totalYesPositions}{' '}
-          {mainBinaryMCAnswer ? (
-            <OutcomeLabel
-              contract={contract}
-              outcome={outcome}
-              truncate={'short'}
-            />
-          ) : isBinary ? (
+          {isBinary ? (
             <>
               <YesLabel /> payouts
             </>
@@ -386,13 +376,7 @@ const BinaryUserPositionsTable = memo(
       ) : (
         <span>
           {totalNoPositions}{' '}
-          {mainBinaryMCAnswer ? (
-            <OutcomeLabel
-              contract={contract}
-              outcome={outcome}
-              truncate={'short'}
-            />
-          ) : isBinary ? (
+          {isBinary ? (
             <>
               <NoLabel /> payouts
             </>

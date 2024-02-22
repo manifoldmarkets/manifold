@@ -5,7 +5,6 @@ import {
   CPMMMultiContract,
   DpmMultipleChoiceContract,
   FreeResponseContract,
-  getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
@@ -23,7 +22,6 @@ import { SellSharesModal } from '../bet/sell-row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
-  OutcomeLabel,
   ProbPercentLabel,
   YesLabel,
 } from '../outcome-label'
@@ -40,8 +38,6 @@ import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
 import { UserHovercard } from '../user/user-hovercard'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -366,54 +362,6 @@ export const MultiSeller = (props: {
         Sell
       </button>
     </>
-  )
-}
-
-export const BinaryMultiSellRow = (props: {
-  contract: CPMMMultiContract
-  answer: Answer
-}) => {
-  const { contract, answer } = props
-  const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)?.filter(
-    (b) => b.answerId === answer.id
-  )
-  const [open, setOpen] = useState(false)
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
-  if (!sharesOutcome || !user || contract.isResolved) return null
-  return (
-    <Row className={'mt-2'}>
-      {open && (
-        <SellSharesModal
-          contract={contract}
-          user={user}
-          userBets={userBets ?? []}
-          shares={shares}
-          sharesOutcome={sharesOutcome}
-          setOpen={setOpen}
-          answerId={getMainBinaryMCAnswer(contract)?.id}
-        />
-      )}
-      <Button
-        className="!py-1"
-        size="xs"
-        color="gray-outline"
-        onClick={(e) => {
-          setOpen(true)
-          // Necessary in the profile page to prevent the row from being toggled
-          e.stopPropagation()
-        }}
-      >
-        <Row className={'gap-1'}>
-          Sell
-          <OutcomeLabel
-            outcome={sharesOutcome}
-            contract={contract}
-            truncate={'short'}
-          />
-        </Row>
-      </Button>
-    </Row>
   )
 }
 

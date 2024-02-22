@@ -15,7 +15,7 @@ export function WarningConfirmationButton(props: {
   onSubmit?: () => void
   disabled: boolean
   isSubmitting: boolean
-  actionLabelClassName?: string
+  openModalButtonClass?: string
   color: ColorType
   size: SizeType
   actionLabel: string
@@ -28,7 +28,7 @@ export function WarningConfirmationButton(props: {
     warning,
     disabled,
     isSubmitting,
-    actionLabelClassName,
+    openModalButtonClass,
     size,
     color,
     actionLabel,
@@ -65,11 +65,12 @@ export function WarningConfirmationButton(props: {
       <Button
         size={size}
         disabled={isSubmitting || disabled}
+        className={clsx(openModalButtonClass)}
         onClick={onSubmit}
         color={color}
         ref={betButtonRef as Ref<HTMLButtonElement>}
       >
-        <span className={clsx(actionLabelClassName)}>{buttonText}</span>
+        {buttonText}
       </Button>
     )
   }
