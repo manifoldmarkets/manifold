@@ -1,11 +1,12 @@
 import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
+import { useUser } from 'web/hooks/use-user'
 
 export default function PartnerExplainer() {
+  const user = useUser()
   return (
     <Page trackPageView={'partner explainer'}>
       <SEO
@@ -22,6 +23,18 @@ export default function PartnerExplainer() {
             <b>monetise their questions and receive USD income</b> for getting
             traders.
           </div>
+          {user ? (
+            <div>
+              View your{' '}
+              <a
+                href={`/${user.username}/partner`}
+                className="text-primary-500 hover:text-primary-700 hover:underline"
+              >
+                partner progress here
+              </a>
+              .
+            </div>
+          ) : null}
           <div className=" text-sm">
             Legal Clarification: {''}
             <i>
@@ -91,9 +104,20 @@ export default function PartnerExplainer() {
               >
                 david@manifold.markets
               </a>{' '}
-              once you meet the minimum criteria and want to join the program.
-              You can check how close you are to qualifying at your {''}
-              <a href="">partner dashboard</a>!
+              once you meet the minimum criteria and want to join the program.{' '}
+              {''}
+              {user ? (
+                <a>
+                  You can check how close you are to qualifying at your {''}
+                  <a
+                    href={`/${user.username}/partner`}
+                    className="text-primary-500 hover:text-primary-700 hover:underline"
+                  >
+                    partner dashboard
+                  </a>
+                  !
+                </a>
+              ) : null}
             </div>
           </div>
           <div>

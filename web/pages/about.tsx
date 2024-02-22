@@ -159,6 +159,12 @@ export default function AboutPage() {
           />
 
           <LabCard
+            title="👑 Creator Partner Program"
+            description="Earn real money by creating interesting questions."
+            href="/partner-explainer"
+          />
+
+          <LabCard
             title="🦋 Changelog"
             description="List of new features and other changes"
             href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
