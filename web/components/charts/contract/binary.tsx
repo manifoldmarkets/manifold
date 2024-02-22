@@ -48,11 +48,10 @@ export const BinaryContractChart = (props: {
 
   const start = first(betPoints)?.x ?? contract.createdTime
   const end = getEndDate(contract)
-  const mainAnswer = getMainBinaryMCAnswer(contract)
-  const endP =
-    mainAnswer && contract
-      ? getAnswerProbability(contract as CPMMMultiContract, mainAnswer.id)
-      : getProbability(contract as BinaryContract)
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const endP = mainBinaryMCAnswer
+    ? getAnswerProbability(contract as CPMMMultiContract, mainBinaryMCAnswer.id)
+    : getProbability(contract as BinaryContract)
 
   const now = useMemo(() => Date.now(), [betPoints])
 
