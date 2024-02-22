@@ -61,7 +61,7 @@ export default function Sidebar(props: {
     ? props.navigationOptions
     : isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -113,24 +113,18 @@ export default function Sidebar(props: {
   )
 }
 
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showMarkets: boolean
-) => {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? {
-            name: 'Browse',
-            href: '/browse?topic=for-you',
-            icon: SearchIcon,
-          }
-        : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
-        name: 'US Elections',
-        href: '/elections',
+        name: 'Browse',
+        href: '/browse?topic=for-you',
+        icon: SearchIcon,
+      },
+      {
+        name: 'US Politics',
+        href: '/politics',
         icon: FaFlagUsa,
       },
       {
@@ -149,13 +143,13 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
-      name: 'US Elections',
-      href: '/elections',
+      name: 'US Politics',
+      href: '/politics',
       icon: FaFlagUsa,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
