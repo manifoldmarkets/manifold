@@ -72,7 +72,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
 import { UserHovercard } from '../user/user-hovercard'
-import { BinaryAnswersPanel } from 'web/components/answers/binary-answers-panel'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
 export const ContractOverview = memo(
   (props: {
@@ -819,7 +819,7 @@ const BinaryChoiceOverview = (props: {
       ) : (
         <>
           {resolutionRating}
-          <BinaryAnswersPanel contract={contract} answers={answers} />
+          <BinaryMultiAnswersPanel contract={contract} answers={answers} />
           <UserBetsSummary
             className="border-ink-200 !mb-2 mt-2 "
             contract={contract}

@@ -14,7 +14,7 @@ import { track } from 'web/lib/service/analytics'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 
-export function BinaryAnswersPanel(props: {
+export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   answers: Answer[]
 }) {
