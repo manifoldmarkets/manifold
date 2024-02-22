@@ -50,8 +50,8 @@ const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
 
 export const SORTS = [
-  { label: 'Trending', value: 'score' },
-  { label: 'Fresh', value: 'freshness-score' },
+  { label: 'Popular', value: 'score' },
+  { label: 'Trending', value: 'freshness-score' },
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'High stakes', value: 'liquidity' },
