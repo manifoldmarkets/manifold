@@ -9,7 +9,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
-import { getAnte } from 'common/economy'
+import { getAnte, getAnteBurn } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { marketCreationCosts, User } from 'common/user'
@@ -34,7 +34,7 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
-import { BTE_USER_ID } from 'common/envs/constants'
+import { BTE_USER_ID, PARTNER_USER_IDS } from 'common/envs/constants'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
@@ -112,14 +112,18 @@ export async function createMarketHelper(
 
   const contractRef = firestore.collection('contracts').doc()
 
+  const isPartner = PARTNER_USER_IDS.includes(userId)
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante =
     (specialLiquidityPerAnswer ??
       totalBounty ??
-      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+      getAnte(outcomeType, numAnswers, {
+        isPartner,
+      })) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
+  const anteAfterBurn = ante - getAnteBurn(outcomeType, { isPartner })
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
@@ -173,7 +177,7 @@ export async function createMarketHelper(
               // default: use a single empty space as the description
             }) ?? htmlToRichText(`<p> </p>`),
       initialProb: initialProb ?? 50,
-      ante,
+      ante: anteAfterBurn,
       closeTime,
       visibility,
       isTwitchContract,
@@ -222,7 +226,7 @@ export async function createMarketHelper(
     )
   }
 
-  await generateAntes(userId, contract, outcomeType, ante)
+  await generateAntes(userId, contract, outcomeType, anteAfterBurn)
 
   await generateContractEmbeddings(contract, pg)
 
