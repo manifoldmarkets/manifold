@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       answers: {
@@ -316,6 +316,7 @@ export interface Database {
           created_time: string
           data: Json
           fs_updated_time: string | null
+          is_api: boolean
           user_id: string
           visibility: string | null
         }
@@ -325,6 +326,7 @@ export interface Database {
           created_time: string
           data: Json
           fs_updated_time?: string | null
+          is_api?: boolean
           user_id: string
           visibility?: string | null
         }
@@ -334,6 +336,7 @@ export interface Database {
           created_time?: string
           data?: Json
           fs_updated_time?: string | null
+          is_api?: boolean
           user_id?: string
           visibility?: string | null
         }
@@ -437,6 +440,7 @@ export interface Database {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
@@ -465,6 +469,7 @@ export interface Database {
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time: string
           group_slugs?: string[] | null
           id: string
@@ -493,6 +498,7 @@ export interface Database {
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string
           group_slugs?: string[] | null
           id?: string
@@ -2041,6 +2047,36 @@ export interface Database {
         }
         Relationships: []
       }
+      tv_schedule: {
+        Row: {
+          contract_id: string
+          end_time: string | null
+          id: number
+          schedule_created_time: string | null
+          source: string
+          start_time: string | null
+          stream_id: string
+        }
+        Insert: {
+          contract_id: string
+          end_time?: string | null
+          id?: number
+          schedule_created_time?: string | null
+          source: string
+          start_time?: string | null
+          stream_id: string
+        }
+        Update: {
+          contract_id?: string
+          end_time?: string | null
+          id?: number
+          schedule_created_time?: string | null
+          source?: string
+          start_time?: string | null
+          stream_id?: string
+        }
+        Relationships: []
+      }
       txns: {
         Row: {
           data: Json
@@ -3346,6 +3382,7 @@ export interface Database {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
@@ -3653,6 +3690,7 @@ export interface Database {
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
