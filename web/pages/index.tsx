@@ -24,7 +24,6 @@ import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
 import { getContract } from 'web/lib/supabase/contracts'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']

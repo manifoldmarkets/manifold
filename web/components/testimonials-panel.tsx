@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import Link from 'next/link'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
