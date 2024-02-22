@@ -118,6 +118,10 @@ export default function PartnerExplainer() {
                   !
                 </a>
               ) : null}
+              {''} There are certain circumstances where we may accept
+              applications outside of these criteria. Some instances may include
+              having an established audience on other platforms or a history of
+              exceptional forecasting.
             </div>
           </div>
           <div>

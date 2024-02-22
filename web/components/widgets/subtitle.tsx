@@ -1,6 +1,9 @@
 import clsx from 'clsx'
 
-export function Subtitle(props: { children: string; className?: string }) {
+export function Subtitle(props: {
+  children: React.ReactNode
+  className?: string
+}) {
   const { children: text, className } = props
   return (
     <h2
