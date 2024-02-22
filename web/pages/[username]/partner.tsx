@@ -68,7 +68,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           <Row className={'items-center gap-2'}>
             <BackButton />
             <span className={'text-primary-700 text-2xl'}>
-              Partnered Creator Program
+              Creator Partner Program
             </span>
           </Row>
           <Link
@@ -91,7 +91,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           }
         >
           <span className={'text-primary-700 text-2xl'}>
-            Partnered Creator Program
+            Creator Partner Program
           </span>
           <Link
             href={'/' + user.username}
