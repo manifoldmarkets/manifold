@@ -380,7 +380,7 @@ export const BinaryMultiSellRow = (props: {
   )
   const [open, setOpen] = useState(false)
   const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
-  if (!sharesOutcome || !user) return null
+  if (!sharesOutcome || !user || contract.isResolved) return null
   return (
     <Row className={'mt-2'}>
       {open && (

@@ -382,7 +382,7 @@ export function SimpleAnswerBars(props: {
   )
 }
 
-function Answer(props: {
+export function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   unfilledBets?: Array<LimitBet>

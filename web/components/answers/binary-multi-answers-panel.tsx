@@ -1,6 +1,10 @@
 import clsx from 'clsx'
-import { type Answer } from 'common/answer'
-import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
+import { Answer } from 'common/answer'
+import {
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+  MultiContract,
+} from 'common/contract'
 import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
@@ -17,6 +21,7 @@ import { MultiSeller } from 'web/components/answers/answer-components'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
+import { Answer as AnswerComponent } from './answers-panel'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -24,6 +29,26 @@ export function BinaryMultiAnswersPanel(props: {
   size?: SizeType
 }) {
   const { contract, answers, size } = props
+  if (contract.isResolved) {
+    return (
+      <>
+        {answers.map((answer) => (
+          <AnswerComponent
+            shouldShowLimitOrderChart={false}
+            key={answer.id}
+            user={null}
+            answer={answer}
+            contract={contract as MultiContract}
+            color={
+              answer.id === getMainBinaryMCAnswer(contract)!.id
+                ? '#14b8a5'
+                : '#f75936'
+            }
+          />
+        ))}
+      </>
+    )
+  }
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   return (
     <>
