@@ -11,6 +11,7 @@ export type NavItem = {
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
   external?: boolean
+  alwaysShowName?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {

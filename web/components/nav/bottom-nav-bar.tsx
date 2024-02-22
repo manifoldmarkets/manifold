@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import clsx from 'clsx'
 import {
+  FlagIcon,
   HomeIcon,
   MenuAlt3Icon,
   NewspaperIcon,
@@ -26,6 +27,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
+import { FaFlagUsa } from 'react-icons/fa6'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -51,15 +53,26 @@ function getNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
-  { name: 'Browse', href: '/browse', icon: SearchIcon },
-  { name: 'News', href: '/news', icon: NewspaperIcon },
-  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-  // {
-  //   name: 'Get app',
-  //   href: appStoreUrl,
-  //   icon: DeviceMobileIcon,
-  // },
-  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
+  {
+    name: 'Politics',
+    href: '/politics',
+    icon: FaFlagUsa,
+    alwaysShowName: true,
+  },
+  { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
+  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
+  {
+    name: 'About',
+    href: '/about',
+    icon: QuestionMarkCircleIcon,
+    alwaysShowName: true,
+  },
+  {
+    name: 'Sign in',
+    onClick: firebaseLogin,
+    icon: UserCircleIcon,
+    alwaysShowName: true,
+  },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
@@ -166,6 +179,7 @@ function NavBarItem(props: {
       >
         {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
         {children}
+        {item.alwaysShowName && item.name}
       </button>
     )
   }
@@ -187,6 +201,7 @@ function NavBarItem(props: {
     >
       {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
       {children}
+      {item.alwaysShowName && item.name}
     </Link>
   )
 }
