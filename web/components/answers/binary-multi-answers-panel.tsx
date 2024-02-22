@@ -15,7 +15,6 @@ import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { Subtitle } from 'web/components/widgets/subtitle'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
@@ -42,8 +41,8 @@ export function BinaryMultiAnswersPanel(props: {
             contract={contract as MultiContract}
             color={
               answer.id === getMainBinaryMCAnswer(contract)!.id
-                ? '#14b8a5'
-                : '#f75936'
+                ? '#4e46dc'
+                : '#fbbf24'
             }
           />
         ))}
@@ -62,7 +61,7 @@ export function BinaryMultiAnswersPanel(props: {
             key={answer.id}
             contract={contract}
             answer={answer}
-            color={answer.id === mainAnswer.id ? 'green' : 'red'}
+            color={answer.id === mainAnswer.id ? 'indigo' : 'amber'}
           />
         ))}
       </Row>
@@ -75,7 +74,7 @@ export function BinaryMultiAnswersPanel(props: {
             key={answer.id}
             contract={contract}
             answer={answer}
-            color={answer.id === mainAnswer.id ? 'green' : 'red'}
+            color={answer.id === mainAnswer.id ? 'indigo' : 'amber'}
           />
         ))}
       </Col>
@@ -170,7 +169,14 @@ function AnswerCpmmBetPanel(props: {
   return (
     <Col className="gap-2">
       <Row className="justify-between">
-        <Subtitle className="!mt-0">{answer.text}</Subtitle>
+        <span
+          className={clsx(
+            'text-2xl',
+            betOnAnswer.id === answer.id ? 'text-indigo-500' : 'text-amber-500'
+          )}
+        >
+          {answer.text}
+        </span>
         <div className="text-xl">{formatPercent(answer.prob)}</div>
       </Row>
       <Row className={'justify-end'}>

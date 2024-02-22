@@ -31,6 +31,7 @@ export const BinaryContractChart = (props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  graphColor?: string
 }) => {
   const {
     contract,
@@ -44,6 +45,7 @@ export const BinaryContractChart = (props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations,
+    graphColor,
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
@@ -77,7 +79,7 @@ export const BinaryContractChart = (props: {
       showZoomer={showZoomer}
       yKind="percent"
       data={data}
-      color={YES_GRAPH_COLOR}
+      color={graphColor ?? YES_GRAPH_COLOR}
       Tooltip={(props) => (
         <SingleContractChartTooltip
           ttProps={props}

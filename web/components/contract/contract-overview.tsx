@@ -765,8 +765,8 @@ const BinaryChoiceOverview = (props: {
           <span
             className={clsx(
               mainAnswer.id === leadingAnswer.id
-                ? 'text-teal-600'
-                : 'text-scarlet-600'
+                ? 'text-indigo-600'
+                : 'text-amber-500'
             )}
           >
             {leadingAnswer.text}
@@ -817,6 +817,7 @@ const BinaryChoiceOverview = (props: {
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
               chartAnnotations={chartAnnotations}
+              graphColor={'#4e46dc'}
             />
           )}
         </SizedContainer>

@@ -331,7 +331,7 @@ export function BuyPanel(props: {
             setError={setError}
             disabled={isSubmitting}
             inputRef={inputRef}
-            binaryOutcome={outcome}
+            binaryOutcome={isBinaryMC ? undefined : outcome}
             showBalance
             showSlider
           />
@@ -426,7 +426,15 @@ export function BuyPanel(props: {
             isSubmitting={isSubmitting}
             disabled={betDisabled}
             size="xl"
-            color={outcome === 'NO' ? 'red' : 'green'}
+            color={
+              isBinaryMC && outcome === 'YES'
+                ? 'indigo'
+                : isBinaryMC && outcome === 'NO'
+                ? 'amber'
+                : outcome === 'NO'
+                ? 'red'
+                : 'green'
+            }
             actionLabel={
               betDisabled
                 ? `Select ${formatOutcomeLabel(

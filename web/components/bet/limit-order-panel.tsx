@@ -404,7 +404,15 @@ export default function LimitOrderPanel(props: {
         <Button
           size="xl"
           disabled={betDisabled || inputError}
-          color={(binaryMCOutcome ?? outcome) === 'YES' ? 'green' : 'red'}
+          color={
+            binaryMCOutcome === 'YES'
+              ? 'indigo'
+              : binaryMCOutcome === 'NO'
+              ? 'amber'
+              : outcome === 'YES'
+              ? 'green'
+              : 'red'
+          }
           loading={isSubmitting}
           className="flex-1"
           onClick={submitBet}
