@@ -237,7 +237,7 @@ export function AnswersPanel(props: {
   )
 }
 
-const EditAnswerModal = (props: {
+export const EditAnswerModal = (props: {
   open: boolean
   setOpen: (show: boolean) => void
   contract: Contract
@@ -382,7 +382,7 @@ export function SimpleAnswerBars(props: {
   )
 }
 
-function Answer(props: {
+export function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   unfilledBets?: Array<LimitBet>
@@ -652,7 +652,7 @@ function Answer(props: {
   )
 }
 
-function LimitOrderBarChart({
+export function LimitOrderBarChart({
   limitOrders,
   prob,
   activeColor,

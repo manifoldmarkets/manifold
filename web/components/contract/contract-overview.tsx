@@ -10,6 +10,9 @@ import {
   MultiContract,
   NumericContract,
   PseudoNumericContract,
+  isBinaryMulti,
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
 } from 'common/contract'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
@@ -69,6 +72,8 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
 import { AlertBox } from '../widgets/alert-box'
 import { UserHovercard } from '../user/user-hovercard'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { orderBy } from 'lodash'
 
 export const ContractOverview = memo(
   (props: {
@@ -120,6 +125,18 @@ export const ContractOverview = memo(
         return <AlertBox title="Quadratic Funding markets are deprecated" />
       case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
+        if (isBinaryMulti(contract)) {
+          return (
+            <BinaryChoiceOverview
+              contract={contract as CPMMMultiContract}
+              points={betPoints as any}
+              showResolver={showResolver}
+              setShowResolver={setShowResolver}
+              resolutionRating={resolutionRating}
+              chartAnnotations={chartAnnotations}
+            />
+          )
+        }
         return (
           <ChoiceOverview
             contract={contract}
@@ -703,6 +720,128 @@ const ChoiceOverview = (props: {
               contract={contract}
             />
           )}
+        </>
+      )}
+    </>
+  )
+}
+
+const BinaryChoiceOverview = (props: {
+  points: MultiPoints
+  contract: CPMMMultiContract
+  showResolver: boolean
+  resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  chartAnnotations: ChartAnnotation[]
+}) => {
+  const { points, contract, showResolver, resolutionRating, setShowResolver } =
+    props
+  const user = useUser()
+
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
+
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
+
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
+  const betPoints = mainAnswer ? props.points[mainAnswer.id] : []
+  const leadingAnswer = orderBy(answers, 'prob', 'desc')[0]
+  return (
+    <>
+      {!contract.isResolved && (
+        <Row className={clsx('justify-start gap-1 text-xl')}>
+          <span
+            className={clsx(
+              mainAnswer.id === leadingAnswer.id
+                ? 'text-teal-600'
+                : 'text-scarlet-600'
+            )}
+          >
+            {leadingAnswer.text}
+          </span>
+          <span>{formatPercent(leadingAnswer.prob)}</span>
+        </Row>
+      )}
+      <Row className="justify-between gap-2">
+        {contract.resolution === 'CANCEL' ? (
+          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
+            <span className="text-base">Resolved</span>
+            <CancelLabel />
+          </div>
+        ) : (
+          <div />
+        )}
+        <Row className={'gap-1'}>
+          {enableAdd && (
+            <EditChartAnnotationsButton
+              pointerMode={pointerMode}
+              setPointerMode={setPointerMode}
+            />
+          )}
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="indigo"
+          />
+        </Row>
+      </Row>
+      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+        <SizedContainer
+          className={clsx(
+            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            showZoomer && 'mb-12'
+          )}
+        >
+          {(w, h) => (
+            <BinaryContractChart
+              showZoomer={showZoomer}
+              zoomParams={zoomParams}
+              width={w}
+              height={h}
+              betPoints={betPoints}
+              contract={contract}
+              pointerMode={pointerMode}
+              setHoveredAnnotation={setHoveredAnnotation}
+              hoveredAnnotation={hoveredAnnotation}
+              chartAnnotations={chartAnnotations}
+            />
+          )}
+        </SizedContainer>
+      )}
+      {chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {showResolver ? (
+        <AnswersResolvePanel
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+        />
+      ) : (
+        <>
+          {resolutionRating}
+          <BinaryMultiAnswersPanel contract={contract} answers={answers} />
+          <UserBetsSummary
+            className="border-ink-200 !mb-2 mt-2 "
+            contract={contract}
+            includeSellButton={user}
+          />
         </>
       )}
     </>

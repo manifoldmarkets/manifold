@@ -383,6 +383,18 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+export const isBinaryMulti = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.answers.length === 2 &&
+  contract.addAnswersMode === 'DISABLED' &&
+  contract.shouldAnswersSumToOne &&
+  contract.createdTime > 1708524000000 // In case we don't want to convert pre-commit contracts
+
+export const getMainBinaryMCAnswer = (contract: Contract) =>
+  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers[0]
+    : undefined
+
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
