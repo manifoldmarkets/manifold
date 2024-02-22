@@ -2,6 +2,8 @@ import {
   Contract,
   DPMContract,
   FreeResponseContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   MultipleChoiceContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
@@ -75,6 +77,7 @@ export function ContractBetsTable(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && Date.now() > closeTime
+  const isBinaryMC = isBinaryMulti(contract)
 
   return (
     <div className="overflow-x-auto">
@@ -120,7 +123,7 @@ export function ContractBetsTable(props: {
               <th></th>
             )}
             {(isCPMM || isCpmmMulti) && <th>Type</th>}
-            {isCpmmMulti && <th>Answer</th>}
+            {isCpmmMulti && !isBinaryMC && <th>Answer</th>}
             <th>Outcome</th>
             <th>Amount</th>
             {isDPM && !isNumeric && (
@@ -186,6 +189,7 @@ function BetRow(props: {
   const isStonk = outcomeType === 'STONK'
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const isBinaryMC = isBinaryMulti(contract)
 
   const dpmPayout = (() => {
     if (!isDPM) return 0
@@ -237,7 +241,7 @@ function BetRow(props: {
         </td>
       )}
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
-      {isCpmmMulti && (
+      {isCpmmMulti && !isBinaryMC && (
         <td>
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
         </td>
@@ -246,7 +250,7 @@ function BetRow(props: {
         {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
-        ) : isCpmmMulti ? (
+        ) : isCpmmMulti && !isBinaryMC ? (
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
@@ -275,11 +279,18 @@ function BetRow(props: {
               {getFormattedMappedValue(contract, probBefore)} →{' '}
               {getFormattedMappedValue(contract, probAfter)}
             </>
+          ) : isBinaryMC ? (
+            <>
+              {formatPercent(getBinaryMCProb(probBefore, outcome))} →{' '}
+              {formatPercent(getBinaryMCProb(probAfter, outcome))}
+            </>
           ) : (
             <>
               {formatPercent(probBefore)} → {formatPercent(probAfter)}
             </>
           )
+        ) : isBinaryMC ? (
+          formatPercent(getBinaryMCProb(bet.limitProb ?? 0, outcome))
         ) : (
           formatPercent(bet.limitProb ?? 0)
         )}

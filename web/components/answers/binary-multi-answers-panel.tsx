@@ -16,12 +16,13 @@ import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { Subtitle } from 'web/components/widgets/subtitle'
-import { BuyPanel } from 'web/components/bet/bet-panel'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Answer as AnswerComponent } from './answers-panel'
+import { BuyPanel } from 'web/components/bet/bet-panel'
+import { ChevronUpIcon } from '@heroicons/react/solid'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -165,11 +166,26 @@ function AnswerCpmmBetPanel(props: {
   me: User | null | undefined
 }) {
   const { answer, betOnAnswer, contract, closePanel, outcome, me } = props
+  const [limit, setLimit] = useState(false)
   return (
     <Col className="gap-2">
       <Row className="justify-between">
         <Subtitle className="!mt-0">{answer.text}</Subtitle>
         <div className="text-xl">{formatPercent(answer.prob)}</div>
+      </Row>
+      <Row className={'justify-end'}>
+        <Button
+          color={'gray-white'}
+          size={'2xs'}
+          onClick={() => setLimit(!limit)}
+        >
+          {limit ? (
+            <ChevronUpIcon className="h-4 w-4" />
+          ) : (
+            <ChevronUpIcon className="h-4 w-4 rotate-180 transform" />
+          )}
+          {limit ? 'Place market order' : 'Place limit order'}
+        </Button>
       </Row>
       <BuyPanel
         contract={contract}
@@ -179,7 +195,7 @@ function AnswerCpmmBetPanel(props: {
           answerText: answer.text,
         }}
         user={me}
-        initialOutcome={outcome}
+        initialOutcome={limit ? 'LIMIT' : outcome}
         singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}

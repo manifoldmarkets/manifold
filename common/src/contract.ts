@@ -395,6 +395,9 @@ export const getMainBinaryMCAnswer = (contract: Contract) =>
     ? contract.answers[0]
     : undefined
 
+export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
+  outcome === 'YES' ? prob : 1 - prob
+
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }

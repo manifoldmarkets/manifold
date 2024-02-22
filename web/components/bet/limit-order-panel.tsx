@@ -11,6 +11,8 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -33,6 +35,7 @@ import { YesNoSelector } from './yes-no-selector'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { MultiBetProps } from 'web/components/bet/bet-panel'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -40,7 +43,7 @@ export default function LimitOrderPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer }
+  multiProps?: MultiBetProps
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
@@ -58,7 +61,13 @@ export default function LimitOrderPanel(props: {
     onBuySuccess,
     className,
   } = props
-
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCOutcome =
+    isBinaryMC && multiProps
+      ? multiProps.answerText === multiProps.answerToBuy.text
+        ? 'YES'
+        : 'NO'
+      : undefined
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
@@ -90,14 +99,16 @@ export default function LimitOrderPanel(props: {
     undefined
   )
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
+    binaryMCOutcome ?? undefined
+  )
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
     isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
 
-  const limitProb =
+  const preLimitProb =
     limitProbInt === undefined
       ? undefined
       : clamp(
@@ -112,6 +123,10 @@ export default function LimitOrderPanel(props: {
           0.001,
           0.999
         )
+  const limitProb =
+    !preLimitProb || !isBinaryMC
+      ? preLimitProb
+      : getBinaryMCProb(preLimitProb, outcome as 'YES' | 'NO')
 
   const amount = betAmount ?? 0
 
@@ -190,7 +205,7 @@ export default function LimitOrderPanel(props: {
     amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    outcome ?? 'YES',
+    binaryMCOutcome ?? outcome ?? 'YES',
     amount,
     limitProb ?? initialProb,
     unfilledBets,
@@ -215,17 +230,19 @@ export default function LimitOrderPanel(props: {
       </Row>
 
       <Col className="relative mb-8 w-full gap-3">
-        <Row className="items-center gap-3">
-          Outcome
-          <YesNoSelector
-            selected={outcome}
-            btnClassName={'!rounded-full'}
-            onSelect={(selected) => setOutcome(selected)}
-            disabled={isSubmitting}
-            yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
-            noLabel={isPseudoNumeric ? 'LOWER' : undefined}
-          />
-        </Row>
+        {!isBinaryMC && (
+          <Row className="items-center gap-3">
+            Outcome
+            <YesNoSelector
+              selected={outcome}
+              btnClassName={'!rounded-full'}
+              onSelect={(selected) => setOutcome(selected)}
+              disabled={isSubmitting}
+              yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
+              noLabel={isPseudoNumeric ? 'LOWER' : undefined}
+            />
+          </Row>
+        )}
         <Row className="w-full items-center gap-3">
           {isPseudoNumeric ? 'Value' : 'Probability'}
           <ProbabilityOrNumericInput
@@ -346,9 +363,9 @@ export default function LimitOrderPanel(props: {
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                <BinaryOutcomeLabel outcome={outcome} />
+                !isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
-              filled now
+              {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
               {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
@@ -364,7 +381,9 @@ export default function LimitOrderPanel(props: {
                   'Shares'
                 ) : (
                   <>
-                    Max <BinaryOutcomeLabel outcome={outcome} /> payout
+                    Max{' '}
+                    {!isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />}{' '}
+                    payout
                   </>
                 )}
               </div>
@@ -385,7 +404,7 @@ export default function LimitOrderPanel(props: {
         <Button
           size="xl"
           disabled={betDisabled || inputError}
-          color={outcome === 'YES' ? 'green' : 'red'}
+          color={(binaryMCOutcome ?? outcome) === 'YES' ? 'green' : 'red'}
           loading={isSubmitting}
           className="flex-1"
           onClick={submitBet}
@@ -398,6 +417,10 @@ export default function LimitOrderPanel(props: {
             ? 'Enter a probability'
             : !betAmount
             ? 'Enter an amount'
+            : binaryMCOutcome
+            ? `Submit order for ${formatMoney(betAmount)} at ${formatPercent(
+                preLimitProb ?? 0
+              )}`
             : `Submit ${outcome} order for ${formatMoney(
                 betAmount
               )} at ${formatPercent(limitProb)}`}

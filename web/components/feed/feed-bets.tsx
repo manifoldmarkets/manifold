@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import dayjs from 'dayjs'
-import { Contract } from 'common/contract'
+import { Contract, getBinaryMCProb, isBinaryMulti } from 'common/contract'
 import { Bet } from 'common/bet'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
@@ -199,7 +199,15 @@ export function BetStatusText(props: {
   const { bet, contract, hideUser, className, inTimeline } = props
   const self = useUser()
   const { amount, outcome, createdTime, answerId, isApi } = bet
+  const getProb = (prob: number) =>
+    !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
 
+  const probBefore = getProb(bet.probBefore)
+  const probAfter = getProb(bet.probAfter)
+  const limitProb =
+    bet.limitProb === undefined || !isBinaryMulti(contract)
+      ? bet.limitProb
+      : getBinaryMCProb(bet.limitProb, outcome)
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = formatMoney(absAmount)
@@ -216,12 +224,12 @@ export function BetStatusText(props: {
     false
 
   const fromProb = hadPoolMatch
-    ? getFormattedMappedValue(contract, bet.probBefore)
-    : getFormattedMappedValue(contract, bet.limitProb ?? bet.probBefore)
+    ? getFormattedMappedValue(contract, probBefore)
+    : getFormattedMappedValue(contract, limitProb ?? probBefore)
 
   const toProb = hadPoolMatch
-    ? getFormattedMappedValue(contract, bet.probAfter)
-    : getFormattedMappedValue(contract, bet.limitProb ?? bet.probAfter)
+    ? getFormattedMappedValue(contract, probAfter)
+    : getFormattedMappedValue(contract, limitProb ?? probAfter)
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>

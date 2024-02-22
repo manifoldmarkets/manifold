@@ -44,14 +44,18 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
+export type MultiBetProps = {
+  answers: Answer[]
+  answerToBuy: Answer
+  answerText?: string
+}
 export function BuyPanel(props: {
   contract:
     | CPMMBinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer; answerText?: string }
+  multiProps?: MultiBetProps
   user: User | null | undefined
   inModal: boolean
   onBuySuccess?: () => void
