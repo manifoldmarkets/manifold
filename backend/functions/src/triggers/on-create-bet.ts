@@ -334,82 +334,87 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   // Check max bonus exceeded.
   if (uniqueBettorIds.length > MAX_TRADERS_FOR_BONUS) return
 
-  if (!isPartner) {
-    // They may still have bet on this previously, use a transaction to be sure
-    // we haven't sent creator a bonus already
-    const uniqueBonusResult = await firestore.runTransaction(async (trans) => {
-      const query = firestore
-        .collection('txns')
-        .where('fromType', '==', 'BANK')
-        .where('toId', '==', creatorId)
-        .where('category', '==', 'UNIQUE_BETTOR_BONUS')
-        .where('data.uniqueNewBettorId', '==', bettor.id)
-        .where('data.contractId', '==', contract.id)
-      const queryWithMaybeAnswer = answerId
-        ? query.where('data.answerId', '==', answerId)
-        : query
-      const txnsSnap = await queryWithMaybeAnswer.get()
-      const bonusGivenAlready = txnsSnap.docs.length > 0
-      if (bonusGivenAlready) return undefined
+  // They may still have bet on this previously, use a transaction to be sure
+  // we haven't sent creator a bonus already
+  const uniqueBonusResult = await firestore.runTransaction(async (trans) => {
+    const query = firestore
+      .collection('txns')
+      .where('fromType', '==', 'BANK')
+      .where('toId', '==', creatorId)
+      .where('category', '==', 'UNIQUE_BETTOR_BONUS')
+      .where('data.uniqueNewBettorId', '==', bettor.id)
+      .where('data.contractId', '==', contract.id)
+    const queryWithMaybeAnswer = answerId
+      ? query.where('data.answerId', '==', answerId)
+      : query
+    const txnsSnap = await queryWithMaybeAnswer.get()
+    const bonusGivenAlready = txnsSnap.docs.length > 0
+    if (bonusGivenAlready) return undefined
 
-      const bonusTxnData = removeUndefinedProps({
-        contractId: contract.id,
-        uniqueNewBettorId: bettor.id,
-        answerId,
-      })
+    const leagueBonus =
+      uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
+        ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
+        : contract.mechanism === 'cpmm-multi-1'
+        ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+        : UNIQUE_BETTOR_BONUS_AMOUNT
 
-      const bonusAmount =
-        uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
-          ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
-          : contract.mechanism === 'cpmm-multi-1'
-          ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-          : UNIQUE_BETTOR_BONUS_AMOUNT
+    const partnerDollarBonus = isPartner ? 0.1 : undefined
 
-      const bonusTxn: Omit<
-        UniqueBettorBonusTxn,
-        'id' | 'createdTime' | 'fromId'
-      > = {
-        fromType: 'BANK',
-        toId: creatorId,
-        toType: 'USER',
-        amount: bonusAmount,
-        token: 'M$',
-        category: 'UNIQUE_BETTOR_BONUS',
-        description: JSON.stringify(bonusTxnData),
-        data: bonusTxnData,
-      }
+    const bonusAmount = isPartner ? 0 : leagueBonus
 
-      return await runTxnFromBank(trans, bonusTxn)
+    const bonusTxnData = removeUndefinedProps({
+      contractId: contract.id,
+      uniqueNewBettorId: bettor.id,
+      answerId,
+      leagueBonus,
+      partnerDollarBonus,
     })
 
-    if (!uniqueBonusResult) return
-
-    if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
-      log(
-        `No bonus for user: ${contract.creatorId} - status:`,
-        uniqueBonusResult.status
-      )
-      log('message:', uniqueBonusResult.message)
-    } else {
-      log(
-        `Bonus txn for user: ${contract.creatorId} completed:`,
-        uniqueBonusResult.txn?.id
-      )
-      const overallUniqueBettorIds = answerId
-        ? await getUniqueBettorIds(contract.id, pg)
-        : uniqueBettorIds
-
-      await createUniqueBettorBonusNotification(
-        creatorId,
-        bettor,
-        uniqueBonusResult.txn.id,
-        contract,
-        uniqueBonusResult.txn.amount,
-        overallUniqueBettorIds,
-        eventId + '-unique-bettor-bonus',
-        bet
-      )
+    const bonusTxn: Omit<
+      UniqueBettorBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
+      fromType: 'BANK',
+      toId: creatorId,
+      toType: 'USER',
+      amount: bonusAmount,
+      token: 'M$',
+      category: 'UNIQUE_BETTOR_BONUS',
+      description: JSON.stringify(bonusTxnData),
+      data: bonusTxnData,
     }
+
+    return await runTxnFromBank(trans, bonusTxn)
+  })
+
+  if (!uniqueBonusResult) return
+
+  if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
+    log(
+      `No bonus for user: ${contract.creatorId} - status:`,
+      uniqueBonusResult.status
+    )
+    log('message:', uniqueBonusResult.message)
+  } else {
+    log(
+      `Bonus txn for user: ${contract.creatorId} completed:`,
+      uniqueBonusResult.txn?.id
+    )
+    const overallUniqueBettorIds = answerId
+      ? await getUniqueBettorIds(contract.id, pg)
+      : uniqueBettorIds
+
+    await createUniqueBettorBonusNotification(
+      creatorId,
+      bettor,
+      uniqueBonusResult.txn.id,
+      contract,
+      uniqueBonusResult.txn.amount,
+      overallUniqueBettorIds,
+      eventId + '-unique-bettor-bonus',
+      bet,
+      uniqueBonusResult.txn?.data?.partnerDollarBonus
+    )
   }
 
   const subsidy =

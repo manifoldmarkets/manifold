@@ -37,8 +37,10 @@ import { Linkify } from 'web/components/widgets/linkify'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
-  notifications: Notification[]
+  notifications: Notification[],
+  options: { usePartnerDollarBonus?: boolean } = {}
 ) {
+  const { usePartnerDollarBonus } = options
   const newNotifications: Notification[] = []
   const groupedNotificationsBySourceType = groupBy(
     notifications,
@@ -60,9 +62,11 @@ export function combineAndSumIncomeNotifications(
         groupedNotificationsBySourceTitle[sourceTitle]
 
       let sum = 0
-      notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseFloat(notification.sourceText) + sum)
-      )
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += usePartnerDollarBonus
+          ? notification.data?.partnerDollarBonus ?? 0
+          : parseFloat(notification.sourceText ?? '0')
+      })
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
@@ -70,6 +74,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
+          partnerDollarBonus: usePartnerDollarBonus ? sum : undefined,
         },
       }
       newNotifications.push(newNotification)
@@ -486,10 +491,14 @@ function IncomeNotificationLabel(props: {
   className?: string
 }) {
   const { notification, className } = props
-  const { sourceText } = notification
+  const { sourceText, data } = notification
+  const { partnerDollarBonus } = (data ?? {}) as UniqueBettorData
+
   return sourceText ? (
     <span className={clsx('text-teal-600', className)}>
-      {formatMoneyToDecimal(parseFloat(sourceText))}
+      {partnerDollarBonus
+        ? `$${partnerDollarBonus.toFixed(2)}`
+        : formatMoneyToDecimal(parseFloat(sourceText))}
     </span>
   ) : (
     <div />

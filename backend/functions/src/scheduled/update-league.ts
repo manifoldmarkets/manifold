@@ -85,12 +85,15 @@ export async function updateLeagueCore() {
     `select
       user_id,
       txns.data->>'category' as category,
-      sum((txns.data->>'amount')::numeric) as amount
+      sum(
+        coalesce(
+          (txns.data->'data'->>'leagueBonus')::numeric,
+          (txns.data->>'amount')::numeric
+        )
+      ) as amount
     from txns 
     join
       leagues on leagues.user_id = txns.data->>'toId'
-    join
-      contracts on contracts.id = txns.data->'data'->>'contractId'
     where
       leagues.season = $1
       and (txns.data->>'createdTime')::bigint > $2
