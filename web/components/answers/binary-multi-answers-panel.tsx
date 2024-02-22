@@ -13,6 +13,10 @@ import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { BuyPanel } from 'web/components/bet/bet-panel'
+import { MultiSeller } from 'web/components/answers/answer-components'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { groupBy, sumBy } from 'lodash'
+import { floatingEqual } from 'common/util/math'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -67,7 +71,13 @@ const BetButton = (props: {
   )
 
   const user = useUser()
-
+  // This accommodates for bets on the non-main answer, perhaps made through the api
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+  const sharesSum = sumBy(userBetsByAnswer[answer.id], (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+  const showSell = answer.id !== betOnAnswer.id && !floatingEqual(sharesSum, 0)
   return (
     <>
       <Modal
@@ -107,6 +117,16 @@ const BetButton = (props: {
           <span className={'text-xl'}>{formatPercent(answer.prob)}</span>
         </Row>
       </Button>
+      {showSell && user && (
+        <Row className={'justify-end px-2'}>
+          <MultiSeller
+            answer={answer}
+            contract={contract}
+            userBets={userBetsByAnswer[answer.id]}
+            user={user}
+          />
+        </Row>
+      )}
     </>
   )
 }

@@ -369,10 +369,15 @@ export const MultiSeller = (props: {
   )
 }
 
-export const BinaryMultiSellRow = (props: { contract: CPMMMultiContract }) => {
-  const { contract } = props
+export const BinaryMultiSellRow = (props: {
+  contract: CPMMMultiContract
+  answer: Answer
+}) => {
+  const { contract, answer } = props
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(user?.id, contract.id)?.filter(
+    (b) => b.answerId === answer.id
+  )
   const [open, setOpen] = useState(false)
   const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
   if (!sharesOutcome || !user) return null
