@@ -144,6 +144,7 @@ import { getLoverAnswers } from './love/get-lover-answers'
 import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
+import { settv } from './set-tv'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -358,6 +359,8 @@ app.post(
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 app.post('/unresolve', ...apiRoute(unresolve))
+
+app.post('/settv', ...apiRoute(settv))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
