@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 import { BinaryContract, Contract, tradingAllowed } from 'common/contract'
 import { run } from 'common/supabase/utils'
@@ -8,7 +9,6 @@ import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
 import { Button } from 'web/components/buttons/button'
 import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
 import { CommentsTabContent } from 'web/components/contract/contract-tabs'
-import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -22,6 +22,7 @@ import { setTV } from 'web/lib/firebase/api'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { Linkify } from 'web/components/widgets/linkify'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -93,7 +94,15 @@ export default function TVPage(props: {
 
           <Col className={clsx('mb-4 p-4 md:pb-8 lg:px-8')}>
             <Row className="justify-between gap-4">
-              <EditableQuestionTitle contract={contract} canEdit={false} />
+              <Row className="gap-2 text-xl font-medium sm:text-2xl">
+                <Link
+                  href={`/${contract.creatorUsername}/${contract.slug}`}
+                  target="_blank"
+                  className="hover:underline"
+                >
+                  <Linkify text={contract.question} />
+                </Link>
+              </Row>
               <BinaryResolutionOrChance
                 isCol
                 contract={contract as BinaryContract}
@@ -125,7 +134,7 @@ export default function TVPage(props: {
         </Col>
 
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
-          {comments && (            
+          {comments && (
             <CommentsTabContent
               contract={contract}
               comments={comments}
