@@ -8,11 +8,12 @@ import clsx from 'clsx'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { STARTING_BALANCE } from 'common/economy'
+import { MARKET_VISIT_BONUS_TOTAL, STARTING_BALANCE } from 'common/economy'
 import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
 import SquiggleHorizontal from 'web/lib/icons/squiggle-horizontal.svg'
 import QuoteIcon from 'web/lib/icons/quote.svg'
 import testimonials from '../public/testimonials/testimonials.json'
+import { formatMoney } from 'common/util/format'
 
 export function TestimonialsPanel() {
   const isMobile = useIsMobile()
@@ -65,8 +66,7 @@ export function TestimonialsPanel() {
             <div className="hidden text-right text-sm text-black sm:inline">
               And get{'   '}
               <span className="relative z-10 font-semibold">
-                {ENV_CONFIG.moneyMoniker}
-                {STARTING_BALANCE}
+                {formatMoney(STARTING_BALANCE + MARKET_VISIT_BONUS_TOTAL)}
               </span>
               {'   '}
               to start trading!
