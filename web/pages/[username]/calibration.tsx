@@ -213,17 +213,24 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
       const nextPosition = currentPosition + bet.shares * betSign
 
       // skip explicit and exclusive implicit sales
-      if (bet.amount < 0 || ((Math.sign(currentPosition) !== betSign) && (Math.abs(currentPosition) >= Math.abs(bet.shares)))) {
-        currentPosition = nextPosition  // update position before continuing
+      if (
+        bet.amount < 0 ||
+        (Math.sign(currentPosition) !== betSign &&
+          Math.abs(currentPosition) >= Math.abs(bet.shares))
+      ) {
+        currentPosition = nextPosition // update position before continuing
         continue
       }
 
       // set bet weight, adjusted for any partial implicit sale
       let w = bet.shares
-      if (Math.sign(currentPosition) !== betSign && Math.abs(currentPosition) < Math.abs(bet.shares)) {
+      if (
+        Math.sign(currentPosition) !== betSign &&
+        Math.abs(currentPosition) < Math.abs(bet.shares)
+      ) {
         w = Math.abs(nextPosition)
       }
-    
+
       currentPosition = nextPosition // update position
 
       const rawP = bet.probAfter * 100
