@@ -162,14 +162,15 @@ export const useUnseenPrivateMessageChannels = (
     return data.map((d) => d.data).flat()
   })
 
-  const { rows: messageRows } = usePersistentSubscription(
+  const { rows } = usePersistentSubscription(
     'private_user_messages_all_channels',
     'private_user_messages',
     safeLocalStorage,
-    undefined,
-    fetcher,
-    `channel_id=in.(${channelIds.join(', ')}),visibility=neq.system_status`
+    { k: 'channel_id', op: 'in', v: channelIds },
+    fetcher
   )
+  const messageRows = rows?.filter((row) => row.visibility !== 'system_status')
+
   const allMessagesByChannelId = groupBy(
     orderBy(messageRows?.map(convertChatMessage), 'createdTime', 'desc'),
     (m) => m.channelId

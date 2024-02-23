@@ -34,7 +34,6 @@ export function useRealtimeBets(options?: BetFilter) {
     filteredQuery,
     () => getBetRows(db, { ...options, order: options?.order ?? 'asc' }),
     undefined,
-    undefined,
     (rows) =>
       getBetRows(db, {
         ...options,
