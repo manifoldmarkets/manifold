@@ -11,6 +11,7 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     return {
       status: 'error',
       numUniqueBettors: 0,
+      numReferrals: 0,
     }
 
   const pg = createSupabaseDirectClient()
@@ -34,8 +35,24 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   )
   const numUniqueBettors = uniqueBettorBonuses?.num_unique_bettors ?? 0
 
+  const referrals = await pg.oneOrNone<{
+    num_referred: number
+  }>(
+    `select count(*) as num_referred
+  from users
+  where
+    data->>'referredByUserId' = $1
+    and (users.data->>'createdTime')::bigint > $2
+    and (users.data->>'createdTime')::bigint < $3
+  `,
+    [userId, quarterStart, quarterEnd]
+  )
+
+  const numReferrals = referrals?.num_referred ?? 0
+
   return {
     status: 'success',
     numUniqueBettors,
+    numReferrals,
   }
 }

@@ -856,6 +856,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: 'success' | 'error'
       numUniqueBettors: number
+      numReferrals: number
     },
   },
 } as const)

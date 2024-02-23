@@ -73,11 +73,12 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
     getContractsCreatedLastMonth(user.id).then(setMarketsCreated)
   }, [user.id])
 
+
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
   })
-  const referralCount = 1023
-  const referralIncome = referralCount
+
+  const referralIncome = data ? data.numReferrals : 0
   const realisedTraderIncome = data ? data.numUniqueBettors * 0.06 : 0
   const unresolvedTraderIncome = data ? data.numUniqueBettors * 0.04 : 0
   const dollarsEarned = realisedTraderIncome + referralIncome
@@ -100,10 +101,10 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         url={`/${user.username}`}
       />
 
-      <Col className="relative mt-1 mx-3">
+      <Col className="relative mx-3 mt-1">
         <Row
           className={
-            ' items-center justify-between mt-2 md:inline-flex md:mt-0'
+            ' mt-2 items-center justify-between md:mt-0 md:inline-flex'
           }
         >
           <Row className={'items-center gap-2'}>
@@ -113,7 +114,9 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
             <div className="flex flex-col items-end">
               <Link
                 href={`/${user.username}/portfolio`}
-                className={clsx('hover:text-primary-500  text-ink-600 text-xs ')}
+                className={clsx(
+                  'hover:text-primary-500  text-ink-600 text-xs '
+                )}
               >
                 <TbReportMoney className="mx-auto text-2xl " />
                 Portfolio
@@ -122,7 +125,9 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
             <div className="flex flex-col items-end">
               <Link
                 href={'/' + user.username}
-                className={clsx('hover:text-primary-500  text-ink-600 text-xs ')}
+                className={clsx(
+                  'hover:text-primary-500  text-ink-600 text-xs '
+                )}
               >
                 <Avatar
                   avatarUrl={user.avatarUrl}
@@ -149,7 +154,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                 </Row>
                 <Row className="gap-2">
                   <div className="text-ink-700 ">Referrals:</div>
-                  <div className="font-semibold">{referralCount}</div>
+                  <div className="font-semibold">{referralIncome}</div>
                 </Row>
               </Row>
             )}
@@ -167,7 +172,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           </Col>
         ) : (
           <Col className="gap-4 ">
-            <Col className=" mx-0 mt-4 my-auto max-w-[600px] border p-2">
+            <Col className=" mx-0 my-auto mt-4 max-w-[600px] border p-2">
               <Subtitle className="!mt-0 border-b pb-2">
                 {user.name}'s progress to partner
               </Subtitle>
