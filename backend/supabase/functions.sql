@@ -373,10 +373,10 @@ or replace function close_contract_embeddings_1 (
 $$;
 
 create
-    or replace function close_politics_contract_embeddings (
-    input_contract_id text,
-    start int,
-    match_count int
+or replace function close_politics_contract_embeddings (
+  input_contract_id text,
+  start int,
+  match_count int
 ) returns table (contract_id text, similarity float, data jsonb) language sql as $$
     WITH query_embedding AS (
         SELECT embedding
@@ -409,12 +409,12 @@ or replace function get_market_ads (uid text) returns table (
 --with all the redeemed ads (has a txn)
 with redeemed_ad_ids as (
   select
-    data->>'fromId' as fromId
+    from_id
   from
     txns
   where
-    data->>'category' = 'MARKET_BOOST_REDEEM'
-    and data->>'toId' = uid
+    category = 'MARKET_BOOST_REDEEM'
+    and to_id = uid
 ),
 -- with the user embedding
 user_embedding as (
@@ -433,7 +433,7 @@ unredeemed_market_ads as (
     and not exists (
       SELECT 1
       FROM redeemed_ad_ids
-      WHERE fromId = market_ads.id
+      WHERE from_id = market_ads.id
     )
     and market_ads.funds >= cost_per_view
     and coalesce(embedding <=> (select disinterest_embedding from user_embedding), 1) > 0.125

@@ -82,9 +82,9 @@ const undoResolution = async (contractId: string, log: GCPLog) => {
   const pg = createSupabaseDirectClient()
   const uniqueStartTimes = await pg.map(
     `select distinct data->'data'->'payoutStartTime' as payout_start_time
-            FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-             AND data->>'fromType' = 'CONTRACT'
-           AND data->>'fromId' = $1`,
+            FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+             AND from_type = 'CONTRACT'
+           AND from_id = $1`,
     [contractId],
     (r) => r.payout_start_time as number | null
   )
@@ -92,18 +92,18 @@ const undoResolution = async (contractId: string, log: GCPLog) => {
   let txns: ContractResolutionPayoutTxn[]
   if (maxPayoutStartTime) {
     txns = await pg.map(
-      `SELECT * FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-                      AND data->>'fromType' = 'CONTRACT'
-                      AND data->>'fromId' = $1
+      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+                      AND from_type = 'CONTRACT'
+                      AND from_id = $1
                       AND (data->'data'->>'payoutStartTime')::numeric = $2`,
       [contractId, maxPayoutStartTime],
       (r) => r.data as ContractResolutionPayoutTxn
     )
   } else {
     txns = await pg.map(
-      `SELECT * FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-                     AND data->>'fromType' = 'CONTRACT' 
-                     AND data->>'fromId' = $1`,
+      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+                     AND from_type = 'CONTRACT' 
+                     AND from_id = $1`,
       [contractId],
       (r) => r.data as ContractResolutionPayoutTxn
     )

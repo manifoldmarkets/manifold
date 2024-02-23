@@ -61,16 +61,16 @@ export async function updateLeagueCore() {
   }>(
     `select
       user_id,
-      data->>'category' as category,
-      sum((data->>'amount')::numeric) as amount
+      category,
+      sum(amount) as amount
     from txns
     join
-      leagues on leagues.user_id = txns.data->>'toId'
+      leagues on leagues.user_id = txns.to_id
     where
       leagues.season = $1
-      and (data->>'createdTime')::bigint > $2
-      and (data->>'createdTime')::bigint < $3
-      and data->>'category' in ($4:csv)
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category in ($4:csv)
     group by user_id, category
     `,
     [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
@@ -84,18 +84,18 @@ export async function updateLeagueCore() {
   }>(
     `select
       user_id,
-      txns.data->>'category' as category,
-      sum((txns.data->>'amount')::numeric) as amount
+      category,
+      sum(amount) as amount
     from txns 
     join
-      leagues on leagues.user_id = txns.data->>'toId'
+      leagues on leagues.user_id = txns.to_id
     join
       contracts on contracts.id = txns.data->'data'->>'contractId'
     where
       leagues.season = $1
-      and (txns.data->>'createdTime')::bigint > $2
-      and (txns.data->>'createdTime')::bigint < $3
-      and txns.data->>'category' = 'UNIQUE_BETTOR_BONUS'
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category = 'UNIQUE_BETTOR_BONUS'
     group by user_id, category
     `,
     [season, seasonStart, seasonEnd]
@@ -108,20 +108,20 @@ export async function updateLeagueCore() {
   }>(
     `select
       user_id,
-      txns.data->>'category' as category,
-      -1 * sum((txns.data->>'amount')::numeric) as amount
+      category,
+      -1 * sum(amount) as amount
     from txns 
     join
-      leagues on leagues.user_id = txns.data->>'fromId'
+      leagues on leagues.user_id = txns.from_id
     join
       contracts on contracts.id = txns.data->'data'->>'contractId'
     where
       leagues.season = $1
       and ts_to_millis(contracts.created_time) > $2
       and ts_to_millis(contracts.created_time) < $3
-      and (txns.data->>'createdTime')::bigint > $2
-      and (txns.data->>'createdTime')::bigint < $3
-      and txns.data->>'category' = 'CANCEL_UNIQUE_BETTOR_BONUS'
+      and txns.created_time > millis_to_ts($2)
+      and txns.created_time < millis_to_ts($3)
+      and txns.category = 'CANCEL_UNIQUE_BETTOR_BONUS'
     group by user_id, category
     `,
     [season, seasonStart, seasonEnd]
