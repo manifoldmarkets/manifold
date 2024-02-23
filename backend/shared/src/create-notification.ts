@@ -971,6 +971,7 @@ export const createUniqueBettorBonusNotification = async (
         outcomeType,
         ...pseudoNumericData,
         partnerDollarBonus,
+        totalUniqueBettors: uniqueBettorIds.length,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)

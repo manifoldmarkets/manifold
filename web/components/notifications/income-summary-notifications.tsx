@@ -91,7 +91,8 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = notification.data as UniqueBettorData
+  const data = (notification.data ?? {}) as UniqueBettorData
+  const { partnerDollarBonus, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -120,9 +121,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel
-              uniqueBettorData={notification.data as UniqueBettorData}
-            />
+            <BettorStatusLabel uniqueBettorData={data} />
           </div>
         )
       }
@@ -136,6 +135,11 @@ export function UniqueBettorBonusIncomeNotification(props: {
             (answerText ? ` (${answerText})` : '')
           }
         />{' '}
+        {partnerDollarBonus &&
+          totalUniqueBettors &&
+          totalUniqueBettors < 20 && (
+            <>(need {20 - totalUniqueBettors} more traders to collect) </>
+          )}
         <QuestionOrGroupLink notification={notification} />
       </span>
       <MultiUserNotificationModal
