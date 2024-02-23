@@ -34,7 +34,7 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import { manifoldLoveUserId } from 'common/love/constants'
-import { BTE_USER_ID, PARTNER_USER_IDS } from 'common/envs/constants'
+import { BTE_USER_ID } from 'common/envs/constants'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
@@ -112,7 +112,6 @@ export async function createMarketHelper(
 
   const contractRef = firestore.collection('contracts').doc()
 
-  const isPartner = PARTNER_USER_IDS.includes(userId)
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante =
@@ -121,7 +120,7 @@ export async function createMarketHelper(
       getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
-  const anteAfterBurn = ante - getAnteBurn(outcomeType, { isPartner })
+  const anteAfterBurn = ante - getAnteBurn(outcomeType)
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
