@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 import clsx from 'clsx'
 
-import { MARKET_VISIT_BONUS, STARTING_BALANCE } from 'common/economy'
+import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
@@ -311,8 +311,8 @@ function WhatIsManifoldPage() {
         )}
       </div>
       <div className="mb-4 text-lg">
-        Manifold is a play-money prediction market platform where you can bet on
-        anything.
+        Manifold is the world's largest prediction market platform. Bet on
+        politics, tech, sports, and more.
       </div>
     </>
   )
@@ -325,8 +325,8 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        Create a question on anything. Bet on the right answer. Traders putting
-        their money where their mouth is produces accurate predictions.
+        Bet on the answer you think is right. Traders putting their money where
+        their mouth is produces accurate predictions.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
@@ -352,18 +352,14 @@ function ThankYouPage() {
       <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
         Start trading
       </div>
-      <p className="text-lg">
-        As a thank you for signing up, we sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        mana, our play money! You'll earn{' '}
-        <strong className="text-xl">{formatMoney(MARKET_VISIT_BONUS)}</strong>{' '}
-        on every new question you visit, (max 9) to help you explore the site.
-      </p>
-      <p className={'my-3 text-lg '}>
-        Mana can't be converted into cash, but can be purchased and donated to
-        charity at a ratio of{' '}
-        <strong className="text-xl">{formatMoney(100)} : $1</strong>.
-      </p>
+      <div className="mb-4 ">
+        We've sent you{' '}
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> to
+        help you get started.
+      </div>
+      <div className="">
+        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash.
+      </div>
     </>
   )
 }

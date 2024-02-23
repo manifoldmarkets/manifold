@@ -5,11 +5,10 @@ import { BetInfo, CandidateBet, getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { GCPLog } from 'shared/utils'
-import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBet } from 'api/on-create-bet'
+import { onCreateBets } from 'api/on-create-bet'
 import {
   getUnfilledBetsAndUserBalances,
   maker,
@@ -148,24 +147,18 @@ export const placeMultiBetMain = async (
   const continuation = async () => {
     await Promise.all(
       results.map(async (result) => {
-        const { betId, contract, makers, ordersToCancel, user } = result
-        if (ordersToCancel) {
-          await Promise.all(
-            ordersToCancel.map((order) => {
-              createLimitBetCanceledNotification(
-                user,
-                order.userId,
-                order,
-                makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-                contract
-              )
-            })
-          )
-        }
+        const { betId, contract, makers, allOrdersToCancel, user } = result
         const bet = await firestore
           .doc(`contracts/${contract.id}/bets/${betId}`)
           .get()
-        await onCreateBet(bet.data() as Bet, contract, user, log)
+        await onCreateBets(
+          [bet.data() as Bet],
+          contract,
+          user,
+          log,
+          allOrdersToCancel,
+          makers
+        )
       })
     )
   }

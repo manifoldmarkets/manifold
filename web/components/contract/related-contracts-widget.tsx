@@ -56,7 +56,7 @@ export const RelatedContractsList = memo(function (props: {
 
   return (
     <Col className={clsx(className, 'flex-1')}>
-      <VisitNewMarketForBonuses className={'text-ink-600'} />
+      <VisitNewMarketForBonuses />
       {topics &&
         contractsByTopicSlug &&
         topics
@@ -301,19 +301,25 @@ const VisitNewMarketForBonuses = (props: {
   const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
   if (remainingMarketsToVisit <= 0) return <div />
   const upTo = formatMoney(remainingMarketsToVisit * MARKET_VISIT_BONUS)
+
   return (
-    <span className={clsx('my-2 text-lg', className)}>
+    <div
+      className={clsx(
+        'text-ink-950 my-2 items-center text-lg font-medium',
+        className
+      )}
+    >
       {inline && <span> - </span>}
-      Earn up to
+      Earn
       <span className={'mx-1 font-semibold text-teal-500'}>{upTo}</span>
-      for visiting other markets!
+      for visiting other markets!{' '}
       <InfoTooltip
         className={'mb-0.5 !h-4 !w-4'}
-        text={`Visit any market you haven't previously seen to earn a ${formatMoney(
+        text={`Earn a ${formatMoney(
           MARKET_VISIT_BONUS
-        )} bonus each, up to ${upTo}`}
+        )} bonus for each new market you visit, up to ${upTo}.`}
       />
-    </span>
+    </div>
   )
 }
 

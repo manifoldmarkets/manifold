@@ -1,13 +1,13 @@
 import Link from 'next/link'
 import clsx from 'clsx'
+import { HomeIcon as SolidHomeIcon, MenuAlt3Icon } from '@heroicons/react/solid'
 import {
   HomeIcon,
-  MenuAlt3Icon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
-} from '@heroicons/react/solid'
+} from '@heroicons/react/outline'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -16,7 +16,10 @@ import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { SolidNotificationsIcon } from 'web/components/notifications-icon'
+import {
+  NotificationsIcon,
+  SolidNotificationsIcon,
+} from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
@@ -27,6 +30,7 @@ import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
 import { FaFlagUsa } from 'react-icons/fa6'
+import { BiSearchAlt2, BiSolidSearchAlt2 } from 'react-icons/bi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -37,8 +41,18 @@ const touchItemClass = 'bg-primary-100'
 
 function getNavigation(user: User) {
   return [
-    { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
+    {
+      name: 'Home',
+      href: '/home',
+      icon: HomeIcon,
+      selectedIcon: SolidHomeIcon,
+    },
+    {
+      name: 'Browse',
+      href: '/browse?topic=for-you',
+      icon: BiSearchAlt2,
+      selectedIcon: BiSolidSearchAlt2,
+    },
     {
       name: 'Portfolio',
       href: `/${user.username}/portfolio`,
@@ -46,7 +60,8 @@ function getNavigation(user: User) {
     {
       name: 'Notifs',
       href: `/notifications`,
-      icon: SolidNotificationsIcon,
+      selectedIcon: SolidNotificationsIcon,
+      icon: NotificationsIcon,
     },
   ]
 }
@@ -198,7 +213,11 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
+      {isCurrentPage && item.selectedIcon ? (
+        <item.selectedIcon className="mx-auto my-2 h-8 w-8" />
+      ) : (
+        item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />
+      )}
       {children}
       {item.alwaysShowName && item.name}
     </Link>

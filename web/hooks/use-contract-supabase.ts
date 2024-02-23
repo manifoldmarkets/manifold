@@ -132,10 +132,8 @@ export function useRealtimeNewContracts(limit: number) {
   const [startTime] = useState<string>(new Date().toISOString())
   const { rows } = useSubscription(
     'contracts',
-    undefined,
-    () => getRecentPublicContractRows({ limit }),
-    undefined,
-    `created_time=gte.${startTime})}`
+    { k: 'created_time', op: 'gte', v: startTime },
+    () => getRecentPublicContractRows({ limit })
   )
   return (rows ?? []).map((r) => r.data as Contract)
 }

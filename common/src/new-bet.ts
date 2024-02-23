@@ -35,6 +35,11 @@ export type CandidateBet<T extends Bet = Bet> = Omit<
   T,
   'id' | 'userId' | 'userAvatarUrl' | 'userName' | 'userUsername'
 >
+export type NormalizedBet<T extends Bet = Bet> = Omit<
+  T,
+  'userAvatarUrl' | 'userName' | 'userUsername'
+>
+
 export type BetInfo = {
   newBet: CandidateBet
   newPool?: { [outcome: string]: number }

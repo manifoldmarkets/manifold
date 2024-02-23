@@ -20,15 +20,14 @@ import {
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { redeemShares } from './redeem-shares'
 import { GCPLog } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
-import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBet } from 'api/on-create-bet'
+import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
+import { redeemShares } from 'api/redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
@@ -206,27 +205,11 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, fullBet, betId, contract, makers, ordersToCancel, user } =
+  const { newBet, fullBets, allOrdersToCancel, betId, contract, makers, user } =
     result
-  await processRedemptions(result, log)
 
   const continuation = async () => {
-    // TODO: dedupe this continuation with place-multi-bet
-    if (ordersToCancel) {
-      await Promise.all(
-        ordersToCancel.map((order) => {
-          createLimitBetCanceledNotification(
-            user,
-            order.userId,
-            order,
-            makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-            contract
-          )
-        })
-      )
-    }
-
-    await onCreateBet(fullBet, contract, user, log)
+    await onCreateBets(fullBets, contract, user, log, allOrdersToCancel, makers)
   }
 
   return {
@@ -321,6 +304,9 @@ export const processNewBetResult = (
   trans: Transaction,
   replyToCommentId?: string
 ) => {
+  const allOrdersToCancel = []
+  const fullBets = [] as Bet[]
+
   const {
     newBet,
     otherBetResults,
@@ -400,6 +386,7 @@ export const processNewBetResult = (
     ...newBet,
   })
   trans.create(betDoc, fullBet)
+  fullBets.push(fullBet)
   log(`Created new bet document for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
@@ -411,6 +398,7 @@ export const processNewBetResult = (
         isCancelled: true,
       })
     }
+    allOrdersToCancel.push(...ordersToCancel)
   }
 
   trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
@@ -463,7 +451,7 @@ export const processNewBetResult = (
 
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
           const betDoc = contractDoc.collection('bets').doc()
-          trans.create(betDoc, {
+          const fullBet = {
             id: betDoc.id,
             userId: user.id,
             userAvatarUrl: user.avatarUrl,
@@ -471,7 +459,9 @@ export const processNewBetResult = (
             userName: user.name,
             isApi,
             ...bet,
-          })
+          }
+          trans.create(betDoc, fullBet)
+          fullBets.push(fullBet)
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
           trans.update(
@@ -489,6 +479,7 @@ export const processNewBetResult = (
             isCancelled: true,
           })
         }
+        allOrdersToCancel.push(...ordersToCancel)
       }
     }
 
@@ -500,7 +491,8 @@ export const processNewBetResult = (
     betId: betDoc.id,
     contract,
     makers,
-    ordersToCancel,
+    allOrdersToCancel,
+    fullBets,
     user,
     fullBet,
   }
