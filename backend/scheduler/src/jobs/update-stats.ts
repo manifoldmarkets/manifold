@@ -27,6 +27,7 @@ import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
+import { convertTxn } from 'common/supabase/txns'
 
 const numberOfDays = 365
 
@@ -173,15 +174,16 @@ export async function getSales(
   startTime: number,
   numberOfDays: number
 ) {
-  const sales: { data: ManaPurchaseTxn }[] = await pg.manyOrNone(
-    `select data from txns
-      where data->'category' = '"MANA_PURCHASE"'
-      and (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
-    [startTime, startTime + numberOfDays * DAY_MS]
+  const sales: ManaPurchaseTxn[] = await pg.map(
+    `select * from txns
+      where category = "MANA_PURCHASE"
+      and created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
+    [startTime, startTime + numberOfDays * DAY_MS],
+    convertTxn as any
   )
 
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
-  for (const { data: sale } of sales) {
+  for (const sale of sales) {
     const ts = sale.createdTime
     const amount = sale.amount / 100 // convert to dollars
     const userId = sale.toId

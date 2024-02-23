@@ -19,8 +19,8 @@ export const useHasReceivedLoanToday = (user: User) => {
       db
         .from('txns')
         .select('data->>createdTime')
-        .eq('data->>toId', user.id)
-        .eq('data->>category', 'LOAN')
+        .eq('to_id', user.id)
+        .eq('category', 'LOAN')
         .gte('data->createdTime', startOfDay)
         .limit(1)
     )

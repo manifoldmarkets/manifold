@@ -4,31 +4,29 @@ import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { sortBy, uniqBy } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
+import { convertTxn } from 'common/supabase/txns'
 
 export const useManaPayments = (userId?: string) => {
   const [manaPayments, setManaPayments] = useState<ManaPayTxn[] | undefined>(
     undefined
   )
   const load = useEvent(() => {
-    for (const param of userId
-      ? [{ fromId: userId }, { toId: userId }]
-      : [{}]) {
-      const query = db
-        .from('txns')
-        .select('data')
-        .contains('data', {
-          category: 'MANA_PAYMENT',
-          ...param,
-        })
-        .order('data->createdTime', { ascending: false } as any)
-        .limit(100)
-      run(query).then((data) => {
-        const payments = data.data.map((txn) => txn.data as ManaPayTxn) ?? []
+    if (!userId) return
 
-        setManaPayments((p) => uniqBy((p ?? []).concat(payments), 'id'))
-      })
-    }
+    const query = db
+      .from('txns')
+      .select()
+      .eq('category', 'MANA_PAYMENT')
+      .or(`from_id.eq.${userId}, to_id.eq.${userId}`)
+      .order('created_time', { ascending: false } as any)
+      .limit(100)
+
+    run(query).then(({ data }) => {
+      const payments = (data.map(convertTxn) as ManaPayTxn[]) ?? []
+      setManaPayments((p) => uniqBy((p ?? []).concat(payments), 'id'))
+    })
   })
+
   useEffect(() => {
     load()
   }, [userId])
