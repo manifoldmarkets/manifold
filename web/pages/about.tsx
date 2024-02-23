@@ -72,7 +72,7 @@ export default function AboutPage() {
           className="mb-4 h-80 w-full max-w-2xl"
         ></iframe>
 
-        <Col className="w-full mt-8">
+        <Col className="mt-8 w-full">
           <WhatIsAPM />
 
           <WhatIsMana />
@@ -131,7 +131,7 @@ export default function AboutPage() {
           </SocialLink>
         </div>
 
-        <div className="grid gap-x-2 md:grid-cols-3 mt-4">
+        <div className="mt-4 grid gap-x-2 md:grid-cols-3">
           {user && (!isNative || (isNative && platform !== 'ios')) && (
             <LabCard title="💰 Get mana" href="/add-funds" />
           )}

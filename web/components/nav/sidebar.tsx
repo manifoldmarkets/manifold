@@ -61,7 +61,10 @@ export default function Sidebar(props: {
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), user?.username ?? '')
+    ? getMobileNav(
+        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
+        user?.username ?? ''
+      )
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
