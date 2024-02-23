@@ -164,8 +164,8 @@ const getMobileNav = (toggleModal: () => void, username: string) => {
   return buildArray<NavItem>(
     { name: 'Profile', href: '/' + username, icon: IoPersonCircleOutline },
     {
-      name: 'US Elections',
-      href: '/elections',
+      name: 'US Politics',
+      href: '/politics',
       icon: FaFlagUsa,
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
