@@ -42,7 +42,7 @@ export function ContractBetsTable(props: {
   const { isResolved, mechanism, outcomeType, closeTime } = contract
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte && b.amount !== 0),
+    props.bets.filter((b) => !b.isAnte && (b.amount !== 0 || b.loanAmount)),
     (bet) => bet.createdTime
   ).reverse()
 
