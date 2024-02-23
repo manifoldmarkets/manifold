@@ -19,6 +19,8 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import { format } from 'date-fns'
 import { FaExternalLinkAlt } from 'react-icons/fa'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import DonutChart from 'web/components/donut-chart'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export const getStaticProps = async (props: {
   params: {
@@ -64,9 +66,16 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
     userId: user.id,
   })
   const referralCount = 2
-  const dollarsEarned = data
-    ? data.numUniqueBettors * 0.1 + referralCount * 0.4
-    : 0
+  const referralIncome = referralCount * 0.4
+  const realisedTraderIncome = data ? data.numUniqueBettors * 0.06 : 0
+  const unresolvedTraderIncome = data ? data.numUniqueBettors * 0.04 : 0
+  const dollarsEarned = realisedTraderIncome + referralIncome
+
+  const segments = [
+    { label: 'Traders', value: realisedTraderIncome, color: '#995cd6' },
+    { label: 'Referrals', value: referralIncome, color: '#5cd65c' },
+    //{ label: 'Other', value: , color: '#d65c99'},
+  ]
 
   return (
     <Page
@@ -80,7 +89,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         url={`/${user.username}`}
       />
 
-      <Col className="relative mt-1">
+      <Col className="relative mx-2 mt-1">
         <Row
           className={
             ' bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2 md:hidden'
@@ -107,9 +116,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           </Link>
         </Row>
         <Row
-          className={
-            'mx-1 mb-4 hidden items-center justify-between md:inline-flex'
-          }
+          className={' mb-4 hidden items-center justify-between md:inline-flex'}
         >
           <span className={'text-primary-700 text-2xl'}>
             Creator Partner Program
@@ -129,29 +136,34 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           </Link>
         </Row>
         {userIsPartner ? (
-          <Col className="gap-4">
-            <div>Partner Dashboard</div>
+          <Col className=" mt-2 items-start gap-2">
             <div className="text-ink-700">Period Feb 21 - May 21</div>
 
             {data && (
-              <Col className="grid max-w-[300px] grid-cols-2 gap-4 self-start text-xl">
-                <div className="text-ink-700 col-span-1">Trader count</div>
-                <div className="col-span-1 font-semibold">
-                  {data.numUniqueBettors}
-                </div>
-                <div className="text-ink-700 whitespace-nowrap">
-                  Referral count
-                </div>
-                <div className="font-semibold">{referralCount}</div>
-                <div className="text-ink-700 whitespace-nowrap">
-                  Dollars earned
-                </div>
-                <div className="font-semibold">${dollarsEarned.toFixed(2)}</div>
-              </Col>
+              <Row className="  gap-6 self-start text-lg">
+                <Row className=" gap-2">
+                  <div className="text-ink-700">Traders:</div>
+                  <div className=" font-semibold">{data.numUniqueBettors}</div>
+                </Row>
+                <Row className="gap-2">
+                  <div className="text-ink-700 ">Referrals:</div>
+                  <div className="font-semibold">{referralCount}</div>
+                </Row>
+              </Row>
             )}
+            <DonutChart segments={segments} total={dollarsEarned} />
+            <Row className="text-ink-700 items-center gap-2 text-lg">
+              <span>
+             Unresolved trader income: ${unresolvedTraderIncome} {''}
+              <InfoTooltip
+                text={
+                  'This represents the sum of the $0.04 per trader that is received after resolving a market. This is not included in the total shown above.'
+                }
+              /> </span>
+            </Row>
           </Col>
         ) : (
-          <Col className="gap-4 px-4">
+          <Col className="gap-4 ">
             <Col className=" mx-0 my-auto max-w-[600px] border p-2">
               <Subtitle className="!mt-0 border-b pb-2">
                 {user.name}'s progress to partner
@@ -209,14 +221,14 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
               We also take into consideration user behaviour and market quality
               and will initially be accepting new partners at a slow rate.
             </div>
-            <div className="text-primary-500 hover:text-primary-700 !mt-0   text-lg hover:underline">
-              <a href="/partner-explainer" className="flex items-baseline">
-                Learn more about the program here!{' '}
-                <FaExternalLinkAlt className="ml-2 h-4 w-4" />
-              </a>
-            </div>
           </Col>
         )}
+        <div className="text-primary-500 hover:text-primary-700 text-md my-4 hover:underline">
+          <a href="/partner-explainer" className="flex items-baseline">
+            Learn more about the program here!{' '}
+            <FaExternalLinkAlt className="ml-1 h-3 w-3" />
+          </a>
+        </div>
       </Col>
     </Page>
   )

@@ -53,10 +53,6 @@ export default function PartnerExplainer() {
               The cost of being a partner is that you will no longer receive
               mana for unique trader bonuses.
             </li>
-            <li>
-              Market creation is also increased to 600 mana for Yes/No (400 will
-              go to liquidity) and 100 mana per answer on multi-choice.
-            </li>
           </div>
           <div>
             <Subtitle className=" !mt-2">How to become a partner</Subtitle>
@@ -65,9 +61,9 @@ export default function PartnerExplainer() {
               <b>Minimum Requirements:</b>
             </div>
 
-            <li>10 markets in the last 90 days</li>
-            <li>Average of 10 unique traders per market</li>
-            <li>500 unique traders</li>
+            <li>10 markets in the last 90 days.</li>
+            <li>Average of 10 unique traders per market.</li>
+            <li>500 unique traders.</li>
 
             <div className="pt-2">
               <b>
@@ -141,10 +137,10 @@ export default function PartnerExplainer() {
               Question type: Must be a Yes/No question or a Multiple Choice.
             </li>
             <li>
-              Trader threshold: Markets must have at least 25 traders. Markets
-              which have less than 25 once the quarter ends will not contribute,
+              Trader threshold: Markets must have at least 20 traders. Markets
+              which have less than 20 once the quarter ends will not contribute,
               but may contribute to a future quarter if the market at some point
-              passes 25 traders.
+              passes 20 traders.
             </li>
             <li>
               Subsidized: The market must be subsidized. Most are by default.
