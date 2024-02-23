@@ -72,7 +72,7 @@ export default function AboutPage() {
           className="mb-4 h-80 w-full max-w-2xl"
         ></iframe>
 
-        <Col className="w-full">
+        <Col className="w-full mt-8">
           <WhatIsAPM />
 
           <WhatIsMana />
@@ -85,7 +85,7 @@ export default function AboutPage() {
           setIsModalOpen={setIsModalOpen}
         />
 
-        <div className="mb-6 mt-2 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
+        <div className="my-6 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
           {!isNative && (
             <SocialLink
               Icon={!isMobile || isIOS() ? TbBrandApple : TbBrandAndroid}
@@ -131,7 +131,7 @@ export default function AboutPage() {
           </SocialLink>
         </div>
 
-        <div className="grid gap-x-2 md:grid-cols-3">
+        <div className="grid gap-x-2 md:grid-cols-3 mt-4">
           {user && (!isNative || (isNative && platform !== 'ios')) && (
             <LabCard title="💰 Get mana" href="/add-funds" />
           )}
