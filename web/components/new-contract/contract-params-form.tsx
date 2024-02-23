@@ -177,9 +177,7 @@ export function ContractParamsForm(props: {
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
   const isPartner = PARTNER_USER_IDS.includes(creator.id)
-  const ante = getAnte(outcomeType, numAnswers, {
-    isPartner,
-  })
+  const ante = getAnte(outcomeType, numAnswers)
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(

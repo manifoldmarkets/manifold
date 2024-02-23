@@ -13,8 +13,6 @@ import { PREDICTIVE_CONTRACT_TYPES } from './create-contract-types'
 import { CreateContractStateType } from 'web/components/new-contract/new-contract-panel'
 import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { useUser } from 'web/hooks/use-user'
-import { PARTNER_USER_IDS } from 'common/envs/constants'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
@@ -111,12 +109,7 @@ function OutcomeButton(props: {
 
 function AntePrice(props: { outcome: CreateableOutcomeType }) {
   const { outcome } = props
-  const user = useUser()
-  const ante = formatMoney(
-    getAnte(outcome, 1, {
-      isPartner: PARTNER_USER_IDS.includes(user?.id ?? ''),
-    })
-  )
+  const ante = formatMoney(getAnte(outcome, 1))
   if (outcome === 'BOUNTIED_QUESTION') {
     return (
       <div className="text-ink-500 text-xs">

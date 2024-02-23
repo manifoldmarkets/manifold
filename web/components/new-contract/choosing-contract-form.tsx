@@ -11,8 +11,6 @@ import {
 import { CreateContractStateType } from './new-contract-panel'
 import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { PARTNER_USER_IDS } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
@@ -141,12 +139,7 @@ function OutcomeButton(props: {
 function AntePrice(props: { outcome: CreateableOutcomeType }) {
   const { outcome } = props
 
-  const user = useUser()
-  const ante = formatMoney(
-    getAnte(outcome, 1, {
-      isPartner: PARTNER_USER_IDS.includes(user?.id ?? ''),
-    })
-  )
+  const ante = formatMoney(getAnte(outcome, 1))
 
   if (outcome === 'BOUNTIED_QUESTION') {
     return (

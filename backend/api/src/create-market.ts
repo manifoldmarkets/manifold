@@ -118,9 +118,7 @@ export async function createMarketHelper(
   const ante =
     (specialLiquidityPerAnswer ??
       totalBounty ??
-      getAnte(outcomeType, numAnswers, {
-        isPartner,
-      })) + (extraLiquidity ?? 0)
+      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
   const anteAfterBurn = ante - getAnteBurn(outcomeType, { isPartner })
