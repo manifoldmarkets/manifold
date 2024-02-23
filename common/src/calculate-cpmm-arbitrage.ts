@@ -194,7 +194,7 @@ function calculateCpmmMultiArbitrageBetsYes(
       unfilledBets,
       balanceByUserId
     )
-    // Update new answer states from the no bets (placed on all answers)
+    // Update new answer states from bets placed on all answers
     updatedAnswers = noBuyResults.noBetResults.map((noBetResult) => {
       const { cpmmState } = noBetResult
       const { pool: newPool, p } = cpmmState
