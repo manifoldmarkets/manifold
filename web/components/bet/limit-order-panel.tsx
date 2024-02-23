@@ -11,6 +11,7 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
   PseudoNumericContract,
@@ -43,6 +44,7 @@ export default function LimitOrderPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   multiProps?: MultiBetProps
   user: User | null | undefined
   unfilledBets: LimitBet[]

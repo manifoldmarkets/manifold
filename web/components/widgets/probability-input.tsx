@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -73,6 +74,7 @@ export function ProbabilityOrNumericInput(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   disabled?: boolean

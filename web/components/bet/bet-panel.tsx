@@ -7,6 +7,7 @@ import { CheckIcon } from '@heroicons/react/solid'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
@@ -42,6 +43,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
+import { filterDefined } from 'common/util/array'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 export type MultiBetProps = {
@@ -55,6 +57,7 @@ export function BuyPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   multiProps?: MultiBetProps
   user: User | null | undefined
   inModal: boolean
@@ -75,6 +78,7 @@ export function BuyPanel(props: {
     inModal,
     replyToCommentId,
   } = props
+  const { outcomeType } = contract
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
@@ -145,16 +149,31 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount: betAmount,
-        contractId: contract.id,
-        answerId: multiProps?.answerToBuy.id,
-        replyToCommentId,
-      })
-    )
+    const placeBet = async () =>
+      outcomeType === 'NUMBER'
+        ? api(
+            'multi-bet',
+            removeUndefinedProps({
+              outcome,
+              amount: betAmount,
+              contractId: contract.id,
+              answerIds: filterDefined([
+                multiProps?.answerToBuy.id,
+                multiProps?.answers[0].id,
+              ]),
+            })
+          )
+        : api(
+            'bet',
+            removeUndefinedProps({
+              outcome,
+              amount: betAmount,
+              contractId: contract.id,
+              answerId: multiProps?.answerToBuy.id,
+              replyToCommentId,
+            })
+          )
+    placeBet()
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)

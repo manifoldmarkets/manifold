@@ -2,6 +2,7 @@ import { ENV_CONFIG } from '../envs/constants'
 import {
   BinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -142,7 +143,8 @@ export const formatOutcomeLabel = (
     | BinaryContract
     | PseudoNumericContract
     | StonkContract
-    | CPMMMultiContract,
+    | CPMMMultiContract
+    | CPMMNumericContract,
   outcomeLabel: 'YES' | 'NO'
 ) => {
   if (
