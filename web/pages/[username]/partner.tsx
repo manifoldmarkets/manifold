@@ -10,7 +10,6 @@ import { Col } from 'web/components/layout/col'
 
 import { SEO } from 'web/components/SEO'
 import { Row } from 'web/components/layout/row'
-import { BackButton } from 'web/components/contract/back-button'
 import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
 import Link from 'next/link'
@@ -25,6 +24,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import DonutChart from 'web/components/donut-chart'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEffect, useState } from 'react'
+import { TbReportMoney } from 'react-icons/tb'
 
 export const getStaticProps = async (props: {
   params: {
@@ -76,8 +76,8 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
   })
-  const referralCount = 2
-  const referralIncome = referralCount * 0.4
+  const referralCount = 1023
+  const referralIncome = referralCount
   const realisedTraderIncome = data ? data.numUniqueBettors * 0.06 : 0
   const unresolvedTraderIncome = data ? data.numUniqueBettors * 0.04 : 0
   const dollarsEarned = realisedTraderIncome + referralIncome
@@ -100,54 +100,45 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         url={`/${user.username}`}
       />
 
-      <Col className="relative mx-2 mt-1">
+      <Col className="relative mt-1 mx-3">
         <Row
           className={
-            ' bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 sm:gap-2 md:hidden'
+            ' items-center justify-between mt-2 md:inline-flex md:mt-0'
           }
         >
           <Row className={'items-center gap-2'}>
-            <BackButton />
-            <span className={'text-primary-700 text-2xl'}>
-              Creator Partner Program
-            </span>
+            <span className={'text-primary-700 text-2xl'}>Partner Program</span>
           </Row>
-          <Link
-            className={clsx('text-ink-500 hover:text-primary-500')}
-            href={'/' + user.username}
-          >
-            <Col className={'items-center px-3 text-sm'}>
-              <Avatar
-                size={'sm'}
-                noLink={true}
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-              />
-            </Col>
-          </Link>
+          <Row className="items-end gap-3 ">
+            <div className="flex flex-col items-end">
+              <Link
+                href={`/${user.username}/portfolio`}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs ')}
+              >
+                <TbReportMoney className="mx-auto text-2xl " />
+                Portfolio
+              </Link>
+            </div>
+            <div className="flex flex-col items-end">
+              <Link
+                href={'/' + user.username}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs ')}
+              >
+                <Avatar
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  noLink
+                  size="xs"
+                  className={'mx-auto'}
+                />
+                Profile
+              </Link>
+            </div>
+          </Row>
         </Row>
-        <Row
-          className={' mb-4 hidden items-center justify-between md:inline-flex'}
-        >
-          <span className={'text-primary-700 text-2xl'}>
-            Creator Partner Program
-          </span>
-          <Link
-            href={'/' + user.username}
-            className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
-          >
-            <Avatar
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-              noLink
-              size="xs"
-              className={'mx-auto'}
-            />
-            Profile
-          </Link>
-        </Row>
+
         {userIsPartner ? (
-          <Col className=" mt-2 items-start gap-2">
+          <Col className=" mt-4 items-start gap-2">
             <div className="text-ink-700">Period Feb 21 - May 21</div>
 
             {data && (
@@ -176,7 +167,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           </Col>
         ) : (
           <Col className="gap-4 ">
-            <Col className=" mx-0 my-auto max-w-[600px] border p-2">
+            <Col className=" mx-0 mt-4 my-auto max-w-[600px] border p-2">
               <Subtitle className="!mt-0 border-b pb-2">
                 {user.name}'s progress to partner
               </Subtitle>

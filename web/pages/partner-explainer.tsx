@@ -47,6 +47,7 @@ export default function PartnerExplainer() {
           <div>
             <Subtitle className=" !mt-2">Partner perks</Subtitle>
             <li>Earn real USD for getting traders on your markets.</li>
+            <li>Earn real USD for referrals.</li>
             <li>Exclusive badge. </li>
             <li> Direct access and support from the Manifold team.</li>
             <li>
@@ -76,8 +77,8 @@ export default function PartnerExplainer() {
             <li>Concise and representative market titles.</li>
             <li>Detailed market descriptions.</li>
             <li>
-              Good management of markets including actively clarifying any
-              confusion whether from the comments or unexpected events.
+              Good management of markets including clarifying confusion from
+              comments or unexpected events.
             </li>
             <li>Timely, accurate resolutions.</li>
             <li>
@@ -125,10 +126,12 @@ export default function PartnerExplainer() {
             <div>
               <b>Income amount:</b>
             </div>
-            <li>$0.10 per unique trader since becoming partner.</li>
             <li>
-              An additional $0.40 per unique referred trader (ie. a new user who
-              was linked to your market and signed up to bet on it).
+              $0.10 per unique trader since becoming partner.
+            </li>
+            <li>Traders grant $0.06 immediately and $0.04 when you resolve that market. If you N/A a market you keep the $0.06 but don't earn the $0.04.</li>
+            <li>
+              $1.00 per new user refferal (this is in addition to the 250 mana bonus).
             </li>
             <div className="pt-2">
               <b>Only certain questions contribute towards income:</b>
@@ -181,7 +184,7 @@ export default function PartnerExplainer() {
             </li>
             <li>Payments to all creators will be processed quarterly.</li>
             <li>
-              If quarterly income does not exceed $10, it may be rolled over
+              If quarterly income does not exceed $20, it may be rolled over
               into the following quarter and not paid out until that threshold
               is met.
             </li>
