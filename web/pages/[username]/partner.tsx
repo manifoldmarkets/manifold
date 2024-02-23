@@ -144,7 +144,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
 
         {userIsPartner ? (
           <Col className=" mt-4 items-start gap-2">
-            <div className="text-ink-700">Period Feb 21 - May 21</div>
+            <div className="text-ink-700">Period Feb 26 - May 26</div>
 
             {data && (
               <Row className="  gap-6 self-start text-lg">

@@ -1,6 +1,10 @@
-import { APIError, type APIHandler } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
+import {
+  PARTNER_QUARTER_START_DATE,
+  getPartnerQuarterEndDate,
+} from 'common/partner'
 
 export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   props,
@@ -16,8 +20,10 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   const pg = createSupabaseDirectClient()
 
-  const quarterStart = new Date('2024-02-21').getTime()
-  const quarterEnd = new Date('2024-05-21').getTime()
+  const quarterStart = PARTNER_QUARTER_START_DATE.getTime()
+  const quarterEnd = getPartnerQuarterEndDate(
+    PARTNER_QUARTER_START_DATE
+  ).getTime()
 
   const uniqueBettorBonuses = await pg.oneOrNone<{
     num_unique_bettors: number
