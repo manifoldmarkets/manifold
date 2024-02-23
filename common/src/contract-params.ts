@@ -6,6 +6,7 @@ import {
   CPMMMultiContract,
   Contract,
   MaybeAuthedContractParams,
+  CPMMNumericContract,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
@@ -166,7 +167,7 @@ export const getSingleBetPoints = (
 
 export const getMultiBetPoints = (
   betPoints: { x: number; y: number; answerId: string }[],
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
 ) => {
   const { answers } = contract
 

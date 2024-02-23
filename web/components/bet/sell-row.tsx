@@ -1,4 +1,8 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import { getInvested } from 'common/calculate'
 import { useState } from 'react'
@@ -7,7 +11,7 @@ import { Row } from '../layout/row'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from '../outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { Button } from '../buttons/button'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
@@ -98,7 +102,7 @@ export function SellRow(props: {
 
 export function SellSharesModal(props: {
   className?: string
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

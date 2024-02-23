@@ -125,6 +125,18 @@ export const ContractOverview = memo(
             chartAnnotations={chartAnnotations}
           />
         )
+      case 'NUMBER':
+        return (
+          <ChoiceOverview
+            contract={contract}
+            points={betPoints as any}
+            showResolver={showResolver}
+            setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
+            chartAnnotations={chartAnnotations}
+          />
+        )
       case 'STONK':
         return (
           <StonkOverview contract={contract} betPoints={betPoints as any} />
@@ -698,7 +710,9 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+        !shouldAnswersSumToOne &&
+        contract.mechanism === 'cpmm-multi-1' &&
+        contract.outcomeType !== 'NUMBER' ? (
           <IndependentAnswersResolvePanel
             contract={contract}
             onClose={() => setShowResolver(false)}

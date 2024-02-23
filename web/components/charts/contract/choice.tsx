@@ -3,7 +3,11 @@ import { cloneDeep, groupBy, last, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  CPMMNumericContract,
+  MultiContract,
+} from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
@@ -110,7 +114,7 @@ export function useChartAnswers(contract: MultiContract) {
 }
 
 export const ChoiceContractChart = (props: {
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   multiPoints: MultiPoints
   width: number
   height: number

@@ -11,6 +11,7 @@ import {
   PseudoNumeric,
   Stonk,
   Visibility,
+  CPMMMultiNumeric,
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
@@ -102,6 +103,7 @@ export function getNewContract(props: {
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
     POLL: () => getPollProps(answers),
+    NUMBER: () => getNumberProps(id, creator.id, answers, ante),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -119,7 +121,6 @@ export function getNewContract(props: {
     question: question.trim(),
     description,
     visibility,
-    unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
     createdTime,
     closeTime,
@@ -149,6 +150,9 @@ export function getNewContract(props: {
     matchCreatorId,
     isLove,
   })
+  if (visibility === 'unlisted') {
+    contract.unlistedById = creator.id
+  }
 
   return contract as Contract
 }
@@ -225,8 +229,8 @@ const getMultipleChoiceProps = (
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  specialLiquidityPerAnswer: number | undefined,
-  answerLoverUserIds: string[] | undefined
+  specialLiquidityPerAnswer?: number,
+  answerLoverUserIds?: string[]
 ) => {
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -254,6 +258,32 @@ const getMultipleChoiceProps = (
 
   return system
 }
+const getNumberProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  ante: number
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    true,
+    ante,
+    answers
+  )
+  const system: CPMMMultiNumeric = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'NUMBER',
+    addAnswersMode: 'DISABLED',
+    shouldAnswersSumToOne: true,
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+  }
+
+  return system
+}
 
 function createAnswers(
   contractId: string,
@@ -262,8 +292,8 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  specialLiquidityPerAnswer: number | undefined,
-  answerLoverUserIds: string[] | undefined
+  specialLiquidityPerAnswer?: number,
+  answerLoverUserIds?: string[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -287,7 +317,7 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
-  } else if (specialLiquidityPerAnswer !== undefined) {
+  } else if (specialLiquidityPerAnswer) {
     // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
     // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
     // Then we can solve probability identity:

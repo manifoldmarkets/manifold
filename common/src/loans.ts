@@ -5,6 +5,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   DPMContract,
 } from './contract'
 import { filterDefined } from './util/array'
@@ -70,7 +71,7 @@ const calculateLoanBetUpdates = (
 }
 
 const getCpmmContractLoanUpdate = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[]
 ) => {
   const invested = getSimpleCpmmInvested(bets)

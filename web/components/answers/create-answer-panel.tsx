@@ -250,7 +250,8 @@ export function SearchCreateAnswerPanel(props: {
       (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
     tradingAllowed(contract) &&
     !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-    unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
+    unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
+    contract.outcomeType !== 'NUMBER'
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
       <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>

@@ -44,7 +44,8 @@ export const createAnswerCpmmMain = async (
     loverUserId?: string
   } = {}
 ) => {
-  const { overrideAddAnswersMode, specialLiquidityPerAnswer, loverUserId } = options
+  const { overrideAddAnswersMode, specialLiquidityPerAnswer, loverUserId } =
+    options
   log('Received ' + contractId + ' ' + text)
 
   // Run as transaction to prevent race conditions.
@@ -59,6 +60,11 @@ export const createAnswerCpmmMain = async (
 
       if (contract.mechanism !== 'cpmm-multi-1')
         throw new APIError(403, 'Requires a cpmm multiple choice contract')
+      if (contract.outcomeType === 'NUMBER')
+        throw new APIError(
+          403,
+          'Cannot create new answers for numeric contracts'
+        )
 
       const { closeTime, shouldAnswersSumToOne } = contract
       if (closeTime && Date.now() > closeTime)
@@ -136,7 +142,7 @@ export const createAnswerCpmmMain = async (
         totalLiquidity,
         subsidyPool: 0,
         probChanges: { day: 0, week: 0, month: 0 },
-        loverUserId
+        loverUserId,
       })
 
       if (shouldAnswersSumToOne) {

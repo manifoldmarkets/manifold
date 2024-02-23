@@ -6,6 +6,7 @@ import {
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
@@ -48,6 +49,7 @@ import {
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { removeUndefinedProps } from 'common/util/object'
 
 type Body = ValidatedAPIParams<'market'>
 
@@ -157,40 +159,42 @@ export async function createMarketHelper(
       console.log('answerLoverUserIds', answerLoverUserIds)
     }
 
-    const contract = getNewContract({
-      id: contractRef.id,
-      slug,
-      creator: user,
-      question,
-      outcomeType,
-      description:
-        typeof description !== 'string' && description
-          ? description
-          : anythingToRichText({
-              raw: description,
-              html: descriptionHtml,
-              markdown: descriptionMarkdown,
-              jsonString: descriptionJson,
-              // default: use a single empty space as the description
-            }) ?? htmlToRichText(`<p> </p>`),
-      initialProb: initialProb ?? 50,
-      ante,
-      closeTime,
-      visibility,
-      isTwitchContract,
-      min: min ?? 0,
-      max: max ?? 0,
-      isLogScale: isLogScale ?? false,
-      answers: answers ?? [],
-      addAnswersMode,
-      shouldAnswersSumToOne,
-      loverUserId1,
-      loverUserId2,
-      matchCreatorId,
-      isLove,
-      answerLoverUserIds,
-      specialLiquidityPerAnswer,
-    })
+    const contract = getNewContract(
+      removeUndefinedProps({
+        id: contractRef.id,
+        slug,
+        creator: user,
+        question,
+        outcomeType,
+        description:
+          typeof description !== 'string' && description
+            ? description
+            : anythingToRichText({
+                raw: description,
+                html: descriptionHtml,
+                markdown: descriptionMarkdown,
+                jsonString: descriptionJson,
+                // default: use a single empty space as the description
+              }) ?? htmlToRichText(`<p> </p>`),
+        initialProb: initialProb ?? 50,
+        ante,
+        closeTime,
+        visibility,
+        isTwitchContract,
+        min: min ?? 0,
+        max: max ?? 0,
+        isLogScale: isLogScale ?? false,
+        answers: answers ?? [],
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        loverUserId1,
+        loverUserId2,
+        matchCreatorId,
+        isLove,
+        answerLoverUserIds,
+        specialLiquidityPerAnswer,
+      })
+    )
 
     const res = await runCreateMarketTxn(
       contract,
@@ -513,7 +517,9 @@ async function getGroupCheckPermissions(
   return group
 }
 
-async function createAnswers(contract: CPMMMultiContract) {
+async function createAnswers(
+  contract: CPMMMultiContract | CPMMNumericContract
+) {
   const { isLove } = contract
   let { answers } = contract
 

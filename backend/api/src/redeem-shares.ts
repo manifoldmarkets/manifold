@@ -5,13 +5,17 @@ import { groupBy, maxBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { APIError } from 'common/api/utils'
 import { GCPLog } from 'shared/utils'
 
 export const redeemShares = async (
   userId: string,
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   log: GCPLog
 ) => {
   return await firestore.runTransaction(async (trans) => {

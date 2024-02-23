@@ -32,6 +32,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -553,7 +554,7 @@ export const getContractBetMetricsPerAnswer = (
 }
 
 const calculatePeriodProfit = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer

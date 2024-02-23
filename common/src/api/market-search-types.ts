@@ -42,6 +42,7 @@ export const searchProps = z
         z.literal('BOUNTIED_QUESTION'),
         z.literal('STONK'),
         z.literal('POLL'),
+        z.literal('NUMBER'),
       ])
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),

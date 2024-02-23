@@ -37,10 +37,9 @@ export const PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
   },
-  NUMERIC: {
+  NUMBER: {
     label: 'Numeric',
-    value: 'MULTIPLE_CHOICE',
-    modifier: 'numeric',
+    value: 'NUMBER',
     name: 'numeric',
     descriptor: 'A question with a numerical answer.',
     example: 'How many people will come to Taco Tuesday?',
@@ -99,8 +98,10 @@ export function getContractTypeFromValue(
   key: 'example' | 'name',
   modifier?: OutcomeTypeModifiers
 ): string | undefined {
-  if (modifier === 'numeric') {
-    return ALL_CONTRACT_TYPES['NUMERIC'][key]
+  if (modifier) {
+    return Object.entries(PREDICTIVE_CONTRACT_TYPES).find(
+      ([_, { value }]) => value === outcomeType
+    )?.[1][key]
   }
   return Object.keys(ALL_CONTRACT_TYPES).includes(outcomeType)
     ? ALL_CONTRACT_TYPES[outcomeType as keyof typeof ALL_CONTRACT_TYPES][key]

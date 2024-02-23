@@ -1,7 +1,11 @@
 import { sumBy } from 'lodash'
 import { Bet } from './bet'
 import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
-import { CPMMContract, CPMMMultiContract } from './contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from './contract'
 import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
@@ -52,7 +56,7 @@ export const getStandardFixedPayouts = (
 }
 
 export const getMultiFixedPayouts = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   resolutions: { [answerId: string]: number },
   bets: Bet[],
   liquidities: LiquidityProvision[]
@@ -96,7 +100,7 @@ export const getLiquidityPoolPayouts = (
 }
 
 export const getMultiLiquidityPoolPayouts = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   resolutions: { [answerId: string]: number },
   liquidities: LiquidityProvision[]
 ) => {

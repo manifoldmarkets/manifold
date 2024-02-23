@@ -1,4 +1,8 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { useState } from 'react'
 import { api } from 'web/lib/firebase/api'
@@ -12,7 +16,7 @@ import { SUBSIDY_FEE } from 'common/economy'
 import { Row } from '../layout/row'
 
 export function LiquidityModal(props: {
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   isOpen: boolean
   setOpen: (open: boolean) => void
 }) {
@@ -35,7 +39,7 @@ export function LiquidityModal(props: {
 }
 
 export function AddLiquidityPanel(props: {
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   amount: number | undefined
   setAmount: (amount: number | undefined) => void
 }) {
@@ -45,11 +49,6 @@ export function AddLiquidityPanel(props: {
   const [error, setError] = useState<string | undefined>(undefined)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-
-  const onAmountChange = (amount: number | undefined) => {
-    setIsSuccess(false)
-    setAmount(amount)
-  }
 
   const payAmount = Math.ceil((1 / (1 - SUBSIDY_FEE)) * (amount ?? 0))
 
