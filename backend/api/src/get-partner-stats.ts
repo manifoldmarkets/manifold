@@ -25,7 +25,7 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     from txns 
     where
       data->>'toId' = $1
-      and (txns.data->'data'->>'partnerDollarBonus')::numeric > 0
+      and (txns.data->'data'->>'isPartner')::boolean
       and (txns.data->>'createdTime')::bigint > $2
       and (txns.data->>'createdTime')::bigint < $3
       and txns.data->>'category' = 'UNIQUE_BETTOR_BONUS'

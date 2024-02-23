@@ -193,8 +193,8 @@ function groupGeneralNotifications(
         ? 'love_like'
         : n.sourceType === 'love_ship'
         ? 'love_ship'
-        : n.data?.partnerDollarBonus
-        ? 'partnerDollarBonus'
+        : n.data?.isPartner
+        ? 'isPartner'
         : `${n.sourceTitle}${n.sourceContractId}`)
   )
   const mostRecentNotification = first(sortedNotifications)

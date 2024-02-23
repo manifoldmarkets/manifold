@@ -34,6 +34,10 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
 import clsx from 'clsx'
 import { Linkify } from 'web/components/widgets/linkify'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_THRESHOLD,
+} from 'common/partner'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -64,7 +68,9 @@ export function combineAndSumIncomeNotifications(
       let sum = 0
       notificationsForSourceTitle.forEach((notification) => {
         sum += usePartnerDollarBonus
-          ? notification.data?.partnerDollarBonus ?? 0
+          ? notification.data?.isPartner
+            ? PARTNER_UNIQUE_TRADER_BONUS
+            : 0
           : parseFloat(notification.sourceText ?? '0')
       })
 
@@ -74,7 +80,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
-          partnerDollarBonus: usePartnerDollarBonus ? sum : undefined,
+          isPartner: usePartnerDollarBonus
         },
       }
       newNotifications.push(newNotification)
@@ -92,7 +98,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const data = (notification.data ?? {}) as UniqueBettorData
-  const { partnerDollarBonus, totalUniqueBettors } = data
+  const { isPartner, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -135,10 +141,13 @@ export function UniqueBettorBonusIncomeNotification(props: {
             (answerText ? ` (${answerText})` : '')
           }
         />{' '}
-        {partnerDollarBonus &&
+        {isPartner &&
           totalUniqueBettors &&
-          totalUniqueBettors < 20 && (
-            <>(need {20 - totalUniqueBettors} more traders to collect) </>
+          totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD && (
+            <>
+              (need {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors} more
+              traders to collect){' '}
+            </>
           )}
         <QuestionOrGroupLink notification={notification} />
       </span>
@@ -496,12 +505,12 @@ function IncomeNotificationLabel(props: {
 }) {
   const { notification, className } = props
   const { sourceText, data } = notification
-  const { partnerDollarBonus } = (data ?? {}) as UniqueBettorData
+  const { isPartner } = (data ?? {}) as UniqueBettorData
 
   return sourceText ? (
     <span className={clsx('text-teal-600', className)}>
-      {partnerDollarBonus
-        ? `$${partnerDollarBonus.toFixed(2)}`
+      {isPartner
+        ? `$${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}`
         : formatMoneyToDecimal(parseFloat(sourceText))}
     </span>
   ) : (

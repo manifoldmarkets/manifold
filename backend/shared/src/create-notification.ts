@@ -918,7 +918,7 @@ export const createUniqueBettorBonusNotification = async (
   uniqueBettorIds: string[],
   idempotencyKey: string,
   bet: Bet,
-  partnerDollarBonus: number | undefined
+  isPartner: boolean | undefined
 ) => {
   const firestore = admin.firestore()
   const privateUser = await getPrivateUser(creatorId)
@@ -970,7 +970,7 @@ export const createUniqueBettorBonusNotification = async (
             : undefined,
         outcomeType,
         ...pseudoNumericData,
-        partnerDollarBonus,
+        isPartner,
         totalUniqueBettors: uniqueBettorIds.length,
       } as UniqueBettorData),
     }

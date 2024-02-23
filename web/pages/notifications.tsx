@@ -324,14 +324,14 @@ function NotificationGroupItem(props: {
           notifications.filter(
             (n) =>
               incomeTypesToSum.includes(n.sourceType) &&
-              !n.data?.partnerDollarBonus
+              !n.data?.isPartner
           )
         )
       )
       .concat(
         combineAndSumIncomeNotifications(
           notifications.filter(
-            (n) => n.sourceType === 'bonus' && n.data?.partnerDollarBonus
+            (n) => n.sourceType === 'bonus' && n.data?.isPartner
           ),
           { usePartnerDollarBonus: true }
         )

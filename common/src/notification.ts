@@ -365,7 +365,7 @@ export type UniqueBettorData = {
   min?: number
   max?: number
   isLogScale?: boolean
-  partnerDollarBonus?: number
+  isPartner?: boolean
   totalUniqueBettors?: number
 }
 

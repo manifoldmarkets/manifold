@@ -358,8 +358,6 @@ export const giveUniqueBettorAndLiquidityBonus = async (
         ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
-    const partnerDollarBonus = isPartner ? 0.1 : undefined
-
     const bonusAmount = isPartner ? 0 : leagueBonus
 
     const bonusTxnData = removeUndefinedProps({
@@ -367,7 +365,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       uniqueNewBettorId: bettor.id,
       answerId,
       leagueBonus,
-      partnerDollarBonus,
+      isPartner,
     })
 
     const bonusTxn: Omit<
@@ -413,7 +411,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       overallUniqueBettorIds,
       eventId + '-unique-bettor-bonus',
       bet,
-      uniqueBonusResult.txn?.data?.partnerDollarBonus
+      uniqueBonusResult.txn?.data?.isPartner
     )
   }
 
