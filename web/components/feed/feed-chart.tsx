@@ -1,5 +1,5 @@
 import { BinaryContract } from 'common/contract'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
@@ -22,7 +22,10 @@ export function FeedBinaryChart(props: {
     Partial<Row<'contract_bets'>>[] | null | undefined
   >(undefined, `${contract.id}-feed-chart`)
 
-  const startingDate = startDate ? startDate : Date.now() - DAY_MS
+  // cache the current time so we don't re-render the chart every time
+  const [now] = useState(Date.now())
+  const startingDate = startDate ? startDate : now - DAY_MS
+
   useEffect(() => {
     let q = db
       .from('contract_bets')
