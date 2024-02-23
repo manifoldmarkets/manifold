@@ -61,7 +61,6 @@ export function useRealtimeCommentsOnContract(
     { k: 'contract_id', v: contractId },
     () => getCommentRows(contractId),
     undefined,
-    undefined,
     (rows) =>
       getNewCommentRows(
         contractId,

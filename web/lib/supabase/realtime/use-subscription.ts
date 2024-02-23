@@ -16,9 +16,15 @@ async function fetchSnapshot<T extends TableName>(
   table: T,
   filter?: Filter<T>
 ) {
-  let q = db.from(table).select('*')
+  const q = db.from(table).select('*')
   if (filter != null) {
-    q = q.eq(filter.k, filter.v)
+    if (filter.op == undefined || filter.op === 'eq') {
+      q.eq(filter.k, filter.v)
+    } else if (filter.op === 'in') {
+      q.in(filter.k, filter.v)
+    } else {
+      q[filter.op](filter.k, filter.v)
+    }
   }
   return (await run(q)).data as Row<T>[]
 }
@@ -89,7 +95,6 @@ export function useSubscription<T extends TableName>(
   filter?: Filter<T>,
   fetcher?: () => PromiseLike<Row<T>[] | undefined>,
   preload?: Row<T>[],
-  filterString?: string,
   loadNewerQuery?: (
     rows: Row<T>[] | undefined
   ) => PromiseLike<Row<T>[] | undefined>
@@ -160,15 +165,7 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel(
-    '*',
-    table,
-    filter,
-    onChange,
-    onStatus,
-    onEnabled,
-    filterString
-  )
+  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
   return { ...state, loadNewer }
 }
 
@@ -177,13 +174,12 @@ export function usePersistentSubscription<T extends TableName>(
   table: T,
   store?: Store,
   filter?: Filter<T>,
-  fetcher?: () => PromiseLike<Row<T>[] | undefined>,
-  filterString?: string
+  fetcher?: () => PromiseLike<Row<T>[] | undefined>
 ) {
   const isClient = useIsClient()
   const json = isClient ? store?.getItem(key) : undefined
   const rows = json != null ? (JSON.parse(json) as Row<T>[]) : undefined
-  const state = useSubscription(table, filter, fetcher, rows, filterString)
+  const state = useSubscription(table, filter, fetcher, rows)
 
   useEffect(() => {
     if (state.status === 'live') {

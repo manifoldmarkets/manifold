@@ -7,7 +7,7 @@ import { Row } from '../layout/row'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { OutcomeLabel } from '../outcome-label'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveBinaryShares } from '../../hooks/use-save-binary-shares'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { Button } from '../buttons/button'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
@@ -137,6 +137,7 @@ export function SellSharesModal(props: {
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
+            answerId={answerId}
           />
           .
         </div>

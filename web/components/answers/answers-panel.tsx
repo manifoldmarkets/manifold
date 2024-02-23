@@ -38,7 +38,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
@@ -60,51 +60,109 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { CirclePicker } from 'react-color'
 import { UserHovercard } from '../user/user-hovercard'
+import { searchInAny } from 'common/util/parse'
 
 const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
+const MAX_DEFAULT_ANSWERS = 20
+const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
-  answersToShow: (Answer | DpmAnswer)[]
-  selected: string[]
+  selectedAnswerIds: string[]
   sort: MultiSort
   setSort: (sort: MultiSort) => void
   query: string
   setQuery: (query: string) => void
-  setShowAll: (showAll: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
   onAnswerClick: (answer: Answer | DpmAnswer) => void
   showSetDefaultSort?: boolean
+  setDefaultAnswerIdsToGraph?: (ids: string[]) => void
 }) {
   const {
     contract,
     onAnswerCommentClick,
     onAnswerHover,
     onAnswerClick,
-    answersToShow,
-    selected,
+    selectedAnswerIds,
     sort,
     setSort,
     query,
     setQuery,
-    setShowAll,
     showSetDefaultSort,
+    setDefaultAnswerIdsToGraph,
   } = props
-  const { outcomeType, answers } = contract
+  const { outcomeType, resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+
+  const answers = contract.answers
+    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
+    .map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    }))
+  const [showAll, setShowAll] = useState(
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
+  )
+  const sortedAnswers = useMemo(
+    () => sortAnswers(contract, answers, sort),
+    [answers, resolutions, shouldAnswersSumToOne, sort]
+  )
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => 'resolution' in a)
+
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (selectedAnswerIds.includes(answer.id)) {
+            return true
+          }
+
+          if (allResolved) return true
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !('resolution' in answer)
+          }
+          return true
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
+  useEffect(() => {
+    if (!selectedAnswerIds.length)
+      setDefaultAnswerIdsToGraph?.(
+        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+  }, [selectedAnswerIds.length, answersToShow.length])
+
   const showAvatars =
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
-
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
   const user = useUser()
 
@@ -189,7 +247,11 @@ export function AnswersPanel(props: {
               user={user}
               answer={answer}
               contract={contract}
-              onCommentClick={() => onAnswerCommentClick?.(answer)}
+              onCommentClick={
+                onAnswerCommentClick
+                  ? () => onAnswerCommentClick(answer)
+                  : undefined
+              }
               onHover={(hovering) =>
                 onAnswerHover?.(hovering ? answer : undefined)
               }
@@ -205,7 +267,7 @@ export function AnswersPanel(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              selected={selected?.includes(answer.id)}
+              selected={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
               showAvatars={showAvatars}
@@ -237,7 +299,7 @@ export function AnswersPanel(props: {
   )
 }
 
-const EditAnswerModal = (props: {
+export const EditAnswerModal = (props: {
   open: boolean
   setOpen: (show: boolean) => void
   contract: Contract
@@ -382,7 +444,7 @@ export function SimpleAnswerBars(props: {
   )
 }
 
-function Answer(props: {
+export function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   unfilledBets?: Array<LimitBet>
@@ -652,7 +714,7 @@ function Answer(props: {
   )
 }
 
-function LimitOrderBarChart({
+export function LimitOrderBarChart({
   limitOrders,
   prob,
   activeColor,

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
@@ -45,6 +45,7 @@ import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { UserHovercard } from '../user/user-hovercard'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -90,7 +91,7 @@ export function FeedContractCard(props: {
     outcomeType,
     mechanism,
   } = contract
-
+  const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
@@ -263,8 +264,15 @@ export function FeedContractCard(props: {
         {contract.outcomeType === 'POLL' && (
           <PollPanel contract={contract} maxOptions={4} />
         )}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+        {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
           <SimpleAnswerBars contract={contract} maxAnswers={4} />
+        )}
+
+        {isBinaryMc && contract.mechanism === 'cpmm-multi-1' && (
+          <BinaryMultiAnswersPanel
+            contract={contract}
+            answers={contract.answers}
+          />
         )}
 
         {isBinaryCpmm && (showGraph || !ignore) && (

@@ -1,5 +1,18 @@
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { useState } from 'react'
+import Link from 'next/link'
+import {
+  MailIcon,
+  NewspaperIcon,
+  QuestionMarkCircleIcon,
+} from '@heroicons/react/outline'
+import {
+  TbBrandAndroid,
+  TbBrandApple,
+  TbBrandDiscord,
+  TbBrandTwitter,
+} from 'react-icons/tb'
+
+import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -16,16 +29,7 @@ import {
   WhatIsMana,
   WhyManifold,
 } from 'web/components/explainer-panel'
-import { LabCard, LabSection } from './lab'
-import Link from 'next/link'
-import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
-import {
-  TbBrandAndroid,
-  TbBrandApple,
-  TbBrandDiscord,
-  TbBrandGithub,
-  TbBrandTwitter,
-} from 'react-icons/tb'
+import { LabCard } from './lab'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
@@ -47,39 +51,33 @@ export default function AboutPage() {
 
   return (
     <Page trackPageView={'about page'}>
-      <SEO title="About" description="About Manifold" />
+      <SEO
+        title="About"
+        description="Manifold is the world's largest prediction market platform. Bet on politics,
+          tech, sports, and more. Or create your own play-money market."
+      />
 
       <Col className="p-4">
         <Title className="hidden sm:flex">About</Title>
         <ManifoldLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
-          Manifold is a play-money prediction market platform where you can bet
-          on anything.
+          Manifold is the world's largest prediction market platform. Bet on
+          politics, tech, sports, and more. Or create your own play-money
+          betting market on any topic you care about!
         </div>
 
+        <iframe
+          src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
+          className="mb-4 h-80 w-full max-w-2xl"
+        ></iframe>
+
         <Col className="w-full">
-          <iframe
-            src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
-            className="mb-4 h-80 max-w-2xl"
-          ></iframe>
           <WhatIsAPM />
 
           <WhatIsMana />
 
           <WhyManifold />
-
-          <LabCard
-            title="🎯 Manifold Accuracy and Track Record"
-            description="Why you should trust Manifold"
-            href="/calibration"
-          />
-
-          <LabCard
-            title="🙋‍♂️ Learn more in our FAQ"
-            href="https://docs.manifold.markets/faq"
-            target="_blank"
-          />
         </Col>
 
         <MobileAppsQRCodeDialog
@@ -125,39 +123,26 @@ export default function AboutPage() {
             Email
           </SocialLink>
           <SocialLink
-            Icon={TbBrandGithub}
-            href="https://github.com/manifoldmarkets/manifold"
+            Icon={QuestionMarkCircleIcon}
+            href="https://docs.manifold.markets/faq"
             target="_blank"
           >
-            Github
+            FAQ
           </SocialLink>
         </div>
 
         <div className="grid gap-x-2 md:grid-cols-3">
-          {user && (
-            <LabCard
-              title="🤗‍ Refer a friend"
-              // description={`Earn ${formatMoney(REFERRAL_AMOUNT)}`}
-              href="/referrals"
-            />
-          )}
-
           {user && (!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard title="💰 Get Mana" href="/add-funds" />
+            <LabCard title="💰 Get mana" href="/add-funds" />
           )}
+          {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
           {user && <LabCard title="💸 Send mana" href="/payments" />}
-          <LabCard title="⚡️ Live feed" href="/live" />
+          <LabCard title="🎯 Calibration & track record" href="/calibration" />
           <LabCard title="🏆 Leaderboards" href="/leaderboards" />
-          <LabCard title="️🔖 Dashboards" href="/dashboard" />
-        </div>
-
-        <LabSection>
           <LabCard
             title="📜 Community guidelines"
-            description="General expectations and account rules"
             href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
           />
-
           <LabCard
             title="👑 Creator Partner Program"
             description="Earn real money by creating interesting questions."
@@ -166,25 +151,32 @@ export default function AboutPage() {
 
           <LabCard
             title="🦋 Changelog"
-            description="List of new features and other changes"
             href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
           />
 
           {(!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard
-              title="🫀 Charity"
-              description={`Turn mana into real charitable donations`}
-              href="/charity"
-            />
+            <LabCard title="🫀 Charity" href="/charity" />
           )}
 
+          <LabCard title="⚡️ Live feed" href="/live" />
+          <LabCard title="️🔖 Dashboards" href="/dashboard" />
+          <LabCard title="️🧪 Lab" href="/lab" />
           <LabCard
             title="❤️ Manifold.love"
-            description="Dating meets prediction markets"
             href="https://manifold.love"
             target="_blank"
           />
-        </LabSection>
+          <LabCard
+            title="️💘 Bet on Love"
+            href="https://www.youtube.com/watch?v=mEF0S1qOsFI"
+            target="_blank"
+          />
+          <LabCard
+            title="️🎊 Manifest"
+            href="https://www.manifest.is/"
+            target="_blank"
+          />
+        </div>
       </Col>
       <PrivacyTermsLab />
     </Page>
@@ -204,7 +196,7 @@ const SocialLink = (props: {
       href={href}
       onClick={onClick}
       target={target}
-      className="text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 transition-colors"
+      className="bg-canvas-0 text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 font-semibold transition-colors"
     >
       <Icon className="h-6 w-6" />
       {children}

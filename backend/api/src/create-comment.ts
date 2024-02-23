@@ -16,6 +16,7 @@ import {
 import { first } from 'lodash'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
+import { convertBet } from 'common/supabase/bets'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -60,7 +61,6 @@ export const createCommentOnContractInternal = async (
     logError: GCPLog
   }
 ) => {
-  const firestore = admin.firestore()
   const {
     content,
     html,
@@ -82,11 +82,9 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   const bet = replyToBetId
-    ? await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc(replyToBetId)
-        .get()
-        .then((doc) => doc.data() as Bet)
+    ? await pg
+        .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
+        .then(convertBet)
     : await getMostRecentCommentableBet(
         pg,
         contract.id,
@@ -155,6 +153,7 @@ export const createCommentOnContractInternal = async (
     result: comment,
     continue: async () => {
       if (isApi) {
+        const firestore = admin.firestore()
         const userRef = firestore.doc(`users/${creator.id}`)
         await userRef.update({
           balance: FieldValue.increment(-FLAT_COMMENT_FEE),
@@ -231,7 +230,7 @@ async function getMostRecentCommentableBet(
          millis_to_ts($3) - interval $5)
       as cutoff
     )
-    select data from contract_bets
+    select * from contract_bets
       where contract_id = $1
       and user_id = $2
       and ($4 is null or answer_id = $4)
@@ -243,7 +242,7 @@ async function getMostRecentCommentableBet(
       limit 1
     `,
       [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
-      (r) => (r.data ? (r.data as Bet) : undefined)
+      convertBet
     )
     .catch((e) => console.error('Failed to get bet: ' + e))
   return first(bet ?? [])
