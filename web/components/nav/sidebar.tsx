@@ -37,6 +37,7 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { FaFlagUsa } from 'react-icons/fa6'
+import { IoPersonCircleOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
   className?: string
@@ -60,7 +61,7 @@ export default function Sidebar(props: {
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), user?.username ?? '')
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
@@ -156,8 +157,9 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (toggleModal: () => void, username: string) => {
   return buildArray<NavItem>(
+    { name: 'Profile', href: '/' + username, icon: IoPersonCircleOutline },
     {
       name: 'US Elections',
       href: '/elections',

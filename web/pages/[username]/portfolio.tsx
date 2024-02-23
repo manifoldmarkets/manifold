@@ -150,6 +150,7 @@ function UserPortfolioInternal(props: {
                 username={user.username}
                 avatarUrl={user.avatarUrl}
               />
+              Profile
             </Col>
           </Link>
         </Row>
@@ -161,7 +162,7 @@ function UserPortfolioInternal(props: {
           <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
           <Link
             href={'/' + user.username}
-            className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+            className={clsx('hover:text-primary-500  text-ink-600 text-md')}
           >
             <Avatar
               avatarUrl={user.avatarUrl}
