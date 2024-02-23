@@ -20,14 +20,12 @@ import {
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { redeemShares } from './redeem-shares'
 import { GCPLog } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
-import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBet } from 'api/on-create-bet'
+import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
@@ -273,6 +271,8 @@ export const placeBetMain = async (
       }
     }
 
+    const allOrdersToCancel = []
+    const fullBets = [] as Bet[]
     const betDoc = contractDoc.collection('bets').doc()
     const fullBet = removeUndefinedProps({
       id: betDoc.id,
@@ -283,8 +283,9 @@ export const placeBetMain = async (
       isApi,
       replyToCommentId,
       ...newBet,
-    })
+    }) as Bet
     trans.create(betDoc, fullBet)
+    fullBets.push(fullBet)
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
@@ -296,6 +297,7 @@ export const placeBetMain = async (
           isCancelled: true,
         })
       }
+      allOrdersToCancel.push(...ordersToCancel)
     }
 
     trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
@@ -345,10 +347,11 @@ export const placeBetMain = async (
             probBefore < 0.001 &&
             probAfter < 0.001 &&
             Math.abs(probAfter - probBefore) < 0.00001
-
+          // These bets on tiny prob answers are mostly ignored, but every now
+          // and then we should bet the answer down
           if (!smallEnoughToIgnore || Math.random() < 0.01) {
             const betDoc = contractDoc.collection('bets').doc()
-            trans.create(betDoc, {
+            const fullBet = removeUndefinedProps({
               id: betDoc.id,
               userId: user.id,
               userAvatarUrl: user.avatarUrl,
@@ -356,7 +359,9 @@ export const placeBetMain = async (
               userName: user.name,
               isApi,
               ...bet,
-            })
+            }) as Bet
+            trans.create(betDoc, fullBet)
+            fullBets.push(fullBet)
             const { YES: poolYes, NO: poolNo } = cpmmState.pool
             const prob = getCpmmProbability(cpmmState.pool, 0.5)
             trans.update(
@@ -374,6 +379,7 @@ export const placeBetMain = async (
               isCancelled: true,
             })
           }
+          allOrdersToCancel.push(...ordersToCancel)
         }
       }
 
@@ -381,6 +387,8 @@ export const placeBetMain = async (
     }
 
     return {
+      fullBets,
+      allOrdersToCancel,
       newBet,
       betId: betDoc.id,
       contract,
@@ -393,40 +401,11 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, betId, fullBet, contract, makers, ordersToCancel, user } =
+  const { newBet, fullBets, allOrdersToCancel, betId, contract, makers, user } =
     result
-  const { mechanism } = contract
-
-  if (
-    (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') &&
-    newBet.amount !== 0
-  ) {
-    const userIds = uniq([
-      uid,
-      ...(makers ?? []).map((maker) => maker.bet.userId),
-    ])
-    await Promise.all(
-      userIds.map((userId) => redeemShares(userId, contract, log))
-    )
-    log(`Share redemption transaction finished - auth ${uid}.`)
-  }
 
   const continuation = async () => {
-    if (ordersToCancel) {
-      await Promise.all(
-        ordersToCancel.map((order) => {
-          createLimitBetCanceledNotification(
-            user,
-            order.userId,
-            order,
-            makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-            contract
-          )
-        })
-      )
-    }
-
-    await onCreateBet(fullBet, contract, user, log)
+    await onCreateBets(fullBets, contract, user, log, allOrdersToCancel, makers)
   }
 
   return {
@@ -477,7 +456,7 @@ export const getUnfilledBetsAndUserBalances = async (
   return { unfilledBets, balanceByUserId }
 }
 
-type maker = {
+export type maker = {
   bet: LimitBet
   amount: number
   shares: number

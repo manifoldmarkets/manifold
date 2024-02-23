@@ -24,7 +24,16 @@ import {
 import { Contract, MultiContract, renderResolution } from 'common/contract'
 import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
-import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  last,
+  mapValues,
+  minBy,
+  orderBy,
+  sum,
+  uniq,
+} from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -480,7 +489,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 }
 
 export const createBetFillNotification = async (
-  fromUser: User,
   toUser: User,
   bet: Bet,
   limitBet: LimitBet,
@@ -495,7 +503,15 @@ export const createBetFillNotification = async (
   )
   if (!sendToBrowser) return
 
-  const fill = limitBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  // The limit order fills array has a matchedBetId that does not match this bet id
+  // (even though this bet has a fills array that is matched to the limit order)
+  // This is likely bc this bet is an arbitrage bet. This should be fixed.
+  // This matches based on timestamp because of the above bug.
+  const fill =
+    limitBet.fills.find((fill) => fill.timestamp === bet.createdTime) ??
+    last(orderBy(limitBet.fills, 'timestamp', 'asc'))
+  // const fill = limitBet.fills.find((f) => f.matchedBetId === bet.id)
+
   const fillAmount = fill?.amount ?? 0
   const remainingAmount =
     limitBet.orderAmount - sum(limitBet.fills.map((f) => f.amount))
@@ -517,9 +533,9 @@ export const createBetFillNotification = async (
     sourceId: limitBet.id,
     sourceType: 'bet',
     sourceUpdateType: 'updated',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceUserName: bet.userName,
+    sourceUserUsername: bet.userUsername,
+    sourceUserAvatarUrl: bet.userAvatarUrl ?? '',
     sourceText: fillAmount.toString(),
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
