@@ -262,11 +262,7 @@ export const BLESSED_BANNED_USER_IDS = [
   'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
 ]
 
-export const PARTNER_USER_IDS = [
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
-  'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
-  'pfKxvtgSEua5DxoIfiPXxR4fAWd2', // James Dev
-]
+export const PARTNER_USER_IDS: string[] = []
 
 export const HOUSE_BOT_USERNAME = 'acc'
 
