@@ -1,6 +1,9 @@
 import clsx from 'clsx'
 
-import { getFullUserByUsername } from 'web/lib/supabase/users'
+import {
+  getContractsCreatedLastMonth,
+  getFullUserByUsername,
+} from 'web/lib/supabase/users'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { Col } from 'web/components/layout/col'
@@ -21,6 +24,7 @@ import { FaExternalLinkAlt } from 'react-icons/fa'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import DonutChart from 'web/components/donut-chart'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useEffect, useState } from 'react'
 
 export const getStaticProps = async (props: {
   params: {
@@ -57,10 +61,17 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
 
   const currentDate = new Date()
   const startDate = new Date()
-  startDate.setDate(currentDate.getDate() - 90)
+  startDate.setDate(1)
+  startDate.setDate(startDate.getDate() - 1)
+  startDate.setDate(1)
 
   const formattedStartDate = format(startDate, 'MMM dd, yyyy')
   const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
+
+  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
+  useEffect(() => {
+    getContractsCreatedLastMonth(user.id).then(setMarketsCreated)
+  }, [user.id])
 
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
@@ -154,12 +165,13 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
             <DonutChart segments={segments} total={dollarsEarned} />
             <Row className="text-ink-700 items-center gap-2 text-lg">
               <span>
-             Unresolved trader income: ${unresolvedTraderIncome} {''}
-              <InfoTooltip
-                text={
-                  'This represents the sum of the $0.04 per trader that is received after resolving a market. This is not included in the total shown above.'
-                }
-              /> </span>
+                Unresolved trader income: ${unresolvedTraderIncome} {''}
+                <InfoTooltip
+                  text={
+                    'This represents the sum of the $0.04 per trader that is received after resolving a market. This is not included in the total shown above.'
+                  }
+                />{' '}
+              </span>
             </Row>
           </Col>
         ) : (
@@ -174,11 +186,11 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                 </div>
                 <div>
                   {' '}
-                  <b>253{}</b>/500
+                  <b>{user.creatorTraders.allTime}</b>/500
                 </div>
               </Row>
               <div className="text-ink-700 bg-ink-200 my-2 rounded p-2 px-6 text-sm">
-                <b>90-day performance</b> ({formattedStartDate} - {''}
+                <b>Monthly performance</b> ({formattedStartDate} - {''}
                 {formattedEndDate})
               </div>
               <Row className="justify-between border-b pb-2">
@@ -186,7 +198,14 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                   <b>Average of 10 traders per market</b>
                 </div>
                 <div>
-                  <b>7{}</b>/10
+                  <b>
+                    {marketsCreated
+                      ? (user.creatorTraders.monthly / marketsCreated).toFixed(
+                          1
+                        )
+                      : '0'}
+                  </b>
+                  /10
                 </div>
               </Row>
               <Row className="mt-2 justify-between">
@@ -194,7 +213,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                   <b>Create 10 markets</b>
                 </div>
                 <div>
-                  <b>7{}</b>/10
+                  <b>{marketsCreated ?? '0'}</b>/10
                 </div>
               </Row>
             </Col>
