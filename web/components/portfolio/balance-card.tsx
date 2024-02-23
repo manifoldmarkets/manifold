@@ -100,12 +100,12 @@ export const BalanceCard = (props: {
       </Col>
       <div className={'absolute right-1 top-1'}>
         <Button
-          color="gray-outline"
+          color="gradient"
           onClick={(e) => {
             e.stopPropagation()
             setShowAddFunds(true)
           }}
-          size="2xs"
+          size="xs"
           className={'whitespace-nowrap'}
         >
           Add funds
