@@ -84,11 +84,14 @@ export const createYourLoveMarket: APIHandler<
     'created_time',
     'asc'
   ).map((l) => l.user_id)
-  const candidateUsers = await pg.map<User>(
-    `select data from users where id in ($1:list)`,
-    [candidateIds],
-    (r) => r.data
-  )
+  const candidateUsers =
+    candidateIds.length === 0
+      ? []
+      : await pg.map<User>(
+          `select data from users where id in ($1:list)`,
+          [candidateIds],
+          (r) => r.data
+        )
   const answersAsText = candidateUsers.map((u) => `${u.name} (@${u.username})`)
 
   const sixMonthsFromNow = new Date(Date.now() + 6 * MONTH_MS)

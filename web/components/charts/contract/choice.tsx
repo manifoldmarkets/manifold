@@ -84,6 +84,8 @@ export function getAnswerColor(
 
   return 'isOther' in answer && answer.isOther
     ? CHOICE_OTHER_COLOR
+    : 'color' in answer && answer.color
+    ? answer.color
     : nthColor(index)
 }
 

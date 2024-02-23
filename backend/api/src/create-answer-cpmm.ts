@@ -92,6 +92,8 @@ export const createAnswerCpmmMain = async (
         throw new APIError(401, 'Your account was not found')
       const user = userSnap.data() as User
 
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+
       if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
         throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
 

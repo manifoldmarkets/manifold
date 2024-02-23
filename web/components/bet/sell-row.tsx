@@ -141,6 +141,7 @@ export function SellSharesModal(props: {
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
+            answerId={answerId}
           />
           .
         </div>

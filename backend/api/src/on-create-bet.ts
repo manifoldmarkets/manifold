@@ -2,7 +2,7 @@ import { GCPLog, getUser, getUsers, revalidateStaticProps } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { keyBy } from 'lodash'
+import { keyBy, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
@@ -16,6 +16,7 @@ import {
 } from 'shared/supabase/init'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { MINUTE_MS } from 'common/util/time'
+import { convertBet } from 'common/supabase/bets'
 
 // Note: This is only partially transferred from the triggers/on-create-bet.ts
 export const onCreateBet = async (
@@ -129,9 +130,9 @@ const updateContractMetrics = async (
   const metrics = await Promise.all(
     users.map(async (user) => {
       const bets = await pg.map(
-        `select data from contract_bets where contract_id = $1 and user_id = $2`,
+        `select * from contract_bets where contract_id = $1 and user_id = $2`,
         [contract.id, user.id],
-        (r) => r.data as Bet
+        convertBet
       )
       // Handle possible replication delay
       if (user.id === bet.userId && !bets.find((b) => b.id === bet.id))
@@ -142,10 +143,8 @@ const updateContractMetrics = async (
 
   await bulkUpdateContractMetrics(metrics.flat())
   await Promise.all(
-    metrics
-      .flat()
-      .map((metric) =>
-        revalidateStaticProps(`/${metric.userUsername}/portfolio`)
-      )
+    uniqBy(metrics.flat(), 'userUsername').map((metric) =>
+      revalidateStaticProps(`/${metric.userUsername}/portfolio`)
+    )
   )
 }

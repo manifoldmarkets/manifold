@@ -13,6 +13,7 @@ import { groupBy, max } from 'lodash'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { SEO } from 'web/components/SEO'
 import { buildArray } from 'common/util/array'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 
 const CUTOFF_TIME = 1680418800000 // Apr 2nd, 12 am PT
 
@@ -402,15 +403,17 @@ const BidTable = ({ bids }: { bids: Bid[] }) => {
               'justify-between'
             )}
           >
-            <Row className="text-ink-700 max-w-sm truncate">
-              <Avatar
-                username={bid.username}
-                avatarUrl={bid.avatar}
-                size="xs"
-                className="mr-2"
-              />
-              {bid.displayName}
-            </Row>
+            <UserHovercard userId={bid.userId}>
+              <Row className="text-ink-700 max-w-sm truncate">
+                <Avatar
+                  username={bid.username}
+                  avatarUrl={bid.avatar}
+                  size="xs"
+                  className="mr-2"
+                />
+                {bid.displayName}
+              </Row>
+            </UserHovercard>
 
             <div>{formatMoney(bid.amount)}</div>
             <div className="text-ink-700">

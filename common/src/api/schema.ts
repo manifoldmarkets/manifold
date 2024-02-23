@@ -778,6 +778,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
+    returns: {} as { success: true },
   },
   'search-groups': {
     method: 'GET',
@@ -856,6 +857,9 @@ export const API = (_apiTypeCheck = {
       creatorLovers: Lover[]
       lovers: Lover[]
       creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+      creatorCompatibilityScores: {
+        [creatorId: string]: { [loverId: string]: CompatibilityScore }
+      }
     },
   },
 } as const)

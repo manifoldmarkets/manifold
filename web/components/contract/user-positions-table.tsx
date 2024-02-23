@@ -3,6 +3,8 @@ import {
   CPMMBinaryContract,
   CPMMContract,
   CPMMMultiContract,
+  getMainBinaryMCAnswer,
+  isBinaryMulti,
 } from 'common/contract'
 import {
   ContractMetric,
@@ -25,6 +27,7 @@ import {
   HigherLabel,
   LowerLabel,
   NoLabel,
+  OutcomeLabel,
   ShortLabel,
   YesLabel,
 } from 'web/components/outcome-label'
@@ -40,6 +43,7 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Answer } from 'common/answer'
 import { Select } from '../widgets/select'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
@@ -83,7 +87,8 @@ export const UserPositionsTable = memo(
 
     const [currentAnswerId, setCurrentAnswerId] = useState<string | undefined>(
       answers.length > 0
-        ? first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
+        ? getMainBinaryMCAnswer(contract)?.id ??
+            first(orderBy(answers, 'totalLiquidity', 'desc'))?.id
         : undefined
     )
     const [page, setPage] = useState(0)
@@ -165,7 +170,7 @@ export const UserPositionsTable = memo(
       (cm) => (currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId)
     )
 
-    if (contract.mechanism === 'cpmm-1') {
+    if (contract.mechanism === 'cpmm-1' || isBinaryMulti(contract)) {
       return (
         <Col className={'w-full'}>
           <Row className={'mb-2 items-center justify-end gap-2'}>
@@ -351,12 +356,18 @@ const BinaryUserPositionsTable = memo(
       contract.outcomeType === 'BINARY' || contract.mechanism === 'cpmm-multi-1'
     const isStonk = contract.outcomeType === 'STONK'
     const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
+    const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
     const getPositionsTitle = (outcome: 'YES' | 'NO') => {
       return outcome === 'YES' ? (
         <span>
           {totalYesPositions}{' '}
-          {isBinary ? (
+          {mainBinaryMCAnswer ? (
+            <OutcomeLabel
+              contract={contract}
+              outcome={outcome}
+              truncate={'short'}
+            />
+          ) : isBinary ? (
             <>
               <YesLabel /> payouts
             </>
@@ -375,7 +386,13 @@ const BinaryUserPositionsTable = memo(
       ) : (
         <span>
           {totalNoPositions}{' '}
-          {isBinary ? (
+          {mainBinaryMCAnswer ? (
+            <OutcomeLabel
+              contract={contract}
+              outcome={outcome}
+              truncate={'short'}
+            />
+          ) : isBinary ? (
             <>
               <NoLabel /> payouts
             </>
@@ -424,7 +441,11 @@ const BinaryUserPositionsTable = memo(
                     <PositionRow
                       key={position.userId + outcome}
                       position={position}
-                      outcome={outcome}
+                      colorClassName={
+                        isBinaryMulti(contract)
+                          ? 'text-indigo-500'
+                          : 'text-teal-500'
+                      }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
@@ -456,7 +477,11 @@ const BinaryUserPositionsTable = memo(
                     <PositionRow
                       key={position.userId + outcome}
                       position={position}
-                      outcome={outcome}
+                      colorClassName={
+                        isBinaryMulti(contract)
+                          ? 'text-amber-600'
+                          : 'text-scarlet-600'
+                      }
                       currentUser={currentUser}
                       followedUsers={followedUsers}
                       numberToShow={
@@ -489,12 +514,13 @@ const BinaryUserPositionsTable = memo(
 )
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
-  outcome: 'YES' | 'NO'
   numberToShow: string
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
+  colorClassName: string
 }) {
-  const { position, outcome, currentUser, followedUsers, numberToShow } = props
+  const { position, colorClassName, currentUser, followedUsers, numberToShow } =
+    props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
 
@@ -506,29 +532,28 @@ const PositionRow = memo(function PositionRow(props: {
         followedUsers?.includes(position.userId) && 'bg-blue-500/20'
       )}
     >
-      <Row
-        className={clsx(
-          'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
-        )}
-      >
-        <Avatar size={'sm'} avatarUrl={userAvatarUrl} username={userUsername} />
-        {userName && userUsername ? (
-          <UserLink
-            user={{ id: userId, name: userName, username: userUsername }}
-            short={isMobile}
+      <UserHovercard userId={userId}>
+        <Row
+          className={clsx(
+            'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
+          )}
+        >
+          <Avatar
+            size={'sm'}
+            avatarUrl={userAvatarUrl}
+            username={userUsername}
           />
-        ) : (
-          <span>Loading..</span>
-        )}
-      </Row>
-      <span
-        className={clsx(
-          outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-600',
-          'shrink-0'
-        )}
-      >
-        {numberToShow}
-      </span>
+          {userName && userUsername ? (
+            <UserLink
+              user={{ id: userId, name: userName, username: userUsername }}
+              short={isMobile}
+            />
+          ) : (
+            <span>Loading..</span>
+          )}
+        </Row>
+      </UserHovercard>
+      <span className={clsx(colorClassName, 'shrink-0')}>{numberToShow}</span>
     </Row>
   )
 })

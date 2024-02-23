@@ -1,9 +1,11 @@
 import { type APIHandler } from 'api/helpers/endpoint'
 import { CPMMMultiContract } from 'common/contract'
+import { getCompatibilityScore } from 'common/love/compatibility-score'
 import { Lover } from 'common/love/lover'
 import { filterDefined } from 'common/util/array'
-import { uniq } from 'lodash'
+import { groupBy, uniq } from 'lodash'
 import { getCreatorMutuallyMessagedUserIds } from 'shared/love/love-markets'
+import { getCompatibilityAnswers } from 'shared/love/supabase'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getLoveMarkets: APIHandler<'get-love-markets'> = async () => {
@@ -62,10 +64,37 @@ export const getLoveMarketsMain = async () => {
 
   console.log('creatorMutuallyMessagedUserIds', creatorMutuallyMessagedUserIds)
 
+  const loverAnswers = await getCompatibilityAnswers(
+    uniq([
+      ...creatorLovers.map((l) => l.user_id),
+      ...lovers.map((l) => l.user_id),
+    ])
+  )
+
+  const answersByUserId = groupBy(loverAnswers, 'creator_id')
+  const creatorCompatibilityScores = Object.fromEntries(
+    creatorLovers.map((creator) => [
+      creator.user_id,
+      Object.fromEntries(
+        lovers.map(
+          (l) =>
+            [
+              l.user_id,
+              getCompatibilityScore(
+                answersByUserId[creator.user_id] ?? [],
+                answersByUserId[l.user_id] ?? []
+              ),
+            ] as const
+        )
+      ),
+    ])
+  )
+
   return {
     contracts,
     creatorLovers,
     lovers,
     creatorMutuallyMessagedUserIds,
+    creatorCompatibilityScores,
   }
 }

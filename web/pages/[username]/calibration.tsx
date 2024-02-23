@@ -205,8 +205,33 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
     if (resolution !== 'YES' && resolution !== 'NO') continue
     const resolvedYES = resolution === 'YES'
 
-    for (const bet of bets as Bet[]) {
-      if (bet.amount < 0) continue // skip sales
+    let currentPosition = 0
+
+    // bets is reversed in place to track user current position
+    for (const bet of bets.slice().reverse() as Bet[]) {
+      const betSign = bet.outcome === 'YES' ? 1 : -1
+      const nextPosition = currentPosition + bet.shares * betSign
+
+      // skip explicit and exclusive implicit sales
+      if (
+        bet.amount < 0 ||
+        (Math.sign(currentPosition) !== betSign &&
+          Math.abs(currentPosition) >= Math.abs(bet.shares))
+      ) {
+        currentPosition = nextPosition // update position before continuing
+        continue
+      }
+
+      // set bet weight, adjusted for any partial implicit sale
+      let w = bet.shares
+      if (
+        Math.sign(currentPosition) !== betSign &&
+        Math.abs(currentPosition) < Math.abs(bet.shares)
+      ) {
+        w = Math.abs(nextPosition)
+      }
+
+      currentPosition = nextPosition // update position
 
       const rawP = bet.probAfter * 100
 
@@ -214,8 +239,6 @@ const getCalibrationPoints = (betsData: [Contract, LimitBet[]][]) => {
       const p = points.reduce((prev, curr) =>
         Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
       )
-
-      const w = bet.amount // weight by bet amount
 
       if (bet.outcome === 'YES') {
         yesProbBuckets[p] = (yesProbBuckets[p] ?? 0) + (resolvedYES ? w : 0)

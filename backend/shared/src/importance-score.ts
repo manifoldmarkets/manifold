@@ -79,7 +79,7 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, popularityScore, dailyScore } =
+    const { importanceScore, popularityScore, dailyScore, freshnessScore } =
       computeContractScores(
         now,
         contract,
@@ -95,11 +95,13 @@ export async function calculateImportanceScore(
     if (
       contract.importanceScore !== importanceScore ||
       contract.popularityScore !== popularityScore ||
-      contract.dailyScore !== dailyScore
+      contract.dailyScore !== dailyScore ||
+      contract.freshnessScore !== freshnessScore
     ) {
       contract.importanceScore = importanceScore
       contract.popularityScore = popularityScore
       contract.dailyScore = dailyScore
+      contract.freshnessScore = freshnessScore
       contractsWithUpdates.push(contract)
     }
   }
@@ -122,6 +124,17 @@ export async function calculateImportanceScore(
     console.log(contract.importanceScore, contract.question)
   })
 
+  // Sort in descending order by freshness
+  const freshest = sortBy(
+    contractsWithUpdates,
+    (c) => -1 * (c.freshnessScore ?? 0)
+  )
+  console.log('Top 30 contracts by freshness')
+
+  freshest.slice(0, 30).forEach((contract) => {
+    console.log(contract.freshnessScore, contract.question)
+  })
+
   console.log('Bottom 5 contracts by score')
   contractsWithUpdates
     .slice()
@@ -131,18 +144,22 @@ export async function calculateImportanceScore(
       console.log(contract.importanceScore, contract.question)
     })
 
-  if (!readOnly)
+  if (!readOnly) {
+    const limitedContractsWithUpdates = contractsWithUpdates.slice(0, 2500)
+    console.log('Updating', limitedContractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
       'contracts',
       ['id'],
-      contractsWithUpdates.map((contract) => ({
+      limitedContractsWithUpdates.map((contract) => ({
         id: contract.id,
         data: `${JSON.stringify(contract)}::jsonb`,
         importance_score: contract.importanceScore,
         popularity_score: contract.popularityScore,
+        freshness_score: contract.freshnessScore,
       }))
     )
+  }
 }
 
 export const getTodayComments = async (db: SupabaseClient) => {
@@ -212,7 +229,6 @@ export const computeContractScores = (
   const thisWeekScore = likesWeek + tradersWeek
   const thisWeekScoreWeight = thisWeekScore / 10
   const popularityScore = todayScore + thisWeekScoreWeight
-  const freshnessScore = 1 + Math.log(1 + popularityScore)
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
   const { createdTime, closeTime, isResolved, outcomeType } = contract
@@ -317,6 +333,11 @@ export const computeContractScores = (
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
       : normalize(rawImportance, 8)
+
+  const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
+  const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
+  const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
+  const freshnessScore = freshnessFactor * importanceScore
 
   return {
     todayScore,

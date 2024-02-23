@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/outline'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer, DpmAnswer, MultiSort, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import {
@@ -32,7 +32,6 @@ import {
   AnswerBar,
   CreatorAndAnswerLabel,
   AnswerStatus,
-  BetButtons,
   AnswerPosition,
   MultiBettor,
 } from './answer-components'
@@ -41,7 +40,6 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from 'web/components/answers/create-answer-panel'
-import { MultiSort } from 'web/components/contract/contract-overview'
 import { useState } from 'react'
 import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
@@ -414,7 +412,7 @@ function Answer(props: {
                 Other{' '}
                 <InfoTooltip
                   className="!text-ink-600 dark:!text-ink-700 "
-                  text="Represents all answers not listed. New answers are split out of this answer."
+                  text={OTHER_TOOLTIP_TEXT}
                 />
               </span>
             ) : (

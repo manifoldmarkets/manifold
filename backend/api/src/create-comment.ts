@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUserFirebase } from 'shared/utils'
+import { GCPLog, getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
@@ -16,12 +16,17 @@ import {
 import { first } from 'lodash'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
+import { convertBet } from 'common/supabase/bets'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment: APIHandler<'comment'> = async (props, auth) => {
+export const createComment: APIHandler<'comment'> = async (
+  props,
+  auth,
+  { logError }
+) => {
   const {
     contractId,
     content,
@@ -38,6 +43,7 @@ export const createComment: APIHandler<'comment'> = async (props, auth) => {
     replyToCommentId,
     replyToAnswerId,
     replyToBetId,
+    logError,
   })
 }
 
@@ -52,9 +58,9 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
+    logError: GCPLog
   }
 ) => {
-  const firestore = admin.firestore()
   const {
     content,
     html,
@@ -63,6 +69,7 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
+    logError,
   } = options
 
   const {
@@ -75,11 +82,9 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   const bet = replyToBetId
-    ? await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc(replyToBetId)
-        .get()
-        .then((doc) => doc.data() as Bet)
+    ? await pg
+        .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
+        .then(convertBet)
     : await getMostRecentCommentableBet(
         pg,
         contract.id,
@@ -144,21 +149,29 @@ export const createCommentOnContractInternal = async (
     throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
   }
 
-  if (isApi) {
-    const userRef = firestore.doc(`users/${creator.id}`)
-    await userRef.update({
-      balance: FieldValue.increment(-FLAT_COMMENT_FEE),
-      totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
-    })
-  }
+  return {
+    result: comment,
+    continue: async () => {
+      if (isApi) {
+        const firestore = admin.firestore()
+        const userRef = firestore.doc(`users/${creator.id}`)
+        await userRef.update({
+          balance: FieldValue.increment(-FLAT_COMMENT_FEE),
+          totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
+        })
+      }
 
-  try {
-    await onCreateCommentOnContract({ contractId, comment, creator, bet })
-  } catch (e) {
-    console.error('Failed to run onCreateCommentOnContract: ' + e)
+      try {
+        await onCreateCommentOnContract({ contractId, comment, creator, bet })
+      } catch (e) {
+        logError('Failed to run onCreateCommentOnContract: ' + e, {
+          e,
+          comment,
+          creator,
+        })
+      }
+    },
   }
-
-  return comment
 }
 
 export const validateComment = async (
@@ -217,7 +230,7 @@ async function getMostRecentCommentableBet(
          millis_to_ts($3) - interval $5)
       as cutoff
     )
-    select data from contract_bets
+    select * from contract_bets
       where contract_id = $1
       and user_id = $2
       and ($4 is null or answer_id = $4)
@@ -229,7 +242,7 @@ async function getMostRecentCommentableBet(
       limit 1
     `,
       [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
-      (r) => (r.data ? (r.data as Bet) : undefined)
+      convertBet
     )
     .catch((e) => console.error('Failed to get bet: ' + e))
   return first(bet ?? [])

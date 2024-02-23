@@ -37,7 +37,6 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { FaFlagUsa } from 'react-icons/fa6'
-import { getIsNative } from 'web/lib/native/is-native'
 
 export default function Sidebar(props: {
   className?: string
@@ -62,7 +61,7 @@ export default function Sidebar(props: {
     ? props.navigationOptions
     : isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -114,26 +113,19 @@ export default function Sidebar(props: {
   )
 }
 
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showMarkets: boolean
-) => {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? {
-            name: 'Browse',
-            href: '/browse?topic=for-you',
-            icon: SearchIcon,
-          }
-        : { name: 'News', href: '/news', icon: NewspaperIcon },
+      {
+        name: 'Browse',
+        href: '/browse?topic=for-you',
+        icon: SearchIcon,
+      },
       {
         name: 'US Politics',
-        href: 'https://manifoldpolitics.com/',
+        href: '/politics',
         icon: FaFlagUsa,
-        external: true,
       },
       {
         name: 'Notifications',
@@ -151,14 +143,13 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
       name: 'US Politics',
-      href: 'https://manifoldpolitics.com/',
+      href: '/politics',
       icon: FaFlagUsa,
-      external: true,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -167,18 +158,11 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray<NavItem>(
-    getIsNative()
-      ? {
-          name: 'US Elections',
-          href: '/elections',
-          icon: FaFlagUsa,
-        }
-      : {
-          name: 'US Politics',
-          href: 'https://manifoldpolitics.com/',
-          icon: FaFlagUsa,
-          external: true,
-        },
+    {
+      name: 'US Elections',
+      href: '/elections',
+      icon: FaFlagUsa,
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },

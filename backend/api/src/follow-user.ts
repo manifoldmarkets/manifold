@@ -36,7 +36,7 @@ export const followUser = authEndpoint(async (req, auth, log) => {
         .eq('id', me)
         .single()
 
-      log('user:', user)
+      log('user:', { user })
       if (user.error) throw user.error
 
       await createFollowOrMarketSubsidizedNotification(

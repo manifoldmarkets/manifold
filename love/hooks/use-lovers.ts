@@ -2,7 +2,7 @@ import { sortBy } from 'lodash'
 import { useEffect } from 'react'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { api } from 'web/lib/firebase/api'
-import { API } from 'common/api/schema'
+import { APIResponse } from 'common/api/schema'
 import { useLoverByUserId } from './use-lover'
 import { getLoversCompatibilityFactor } from 'common/love/compatibility-score'
 
@@ -11,7 +11,7 @@ export const useCompatibleLovers = (
   options?: { sortWithModifiers?: boolean }
 ) => {
   const [data, setData] = usePersistentInMemoryState<
-    (typeof API)['compatible-lovers']['returns'] | undefined | null
+    APIResponse<'compatible-lovers'> | undefined | null
   >(undefined, `compatible-lovers-${userId}`)
 
   const lover = useLoverByUserId(userId ?? undefined)

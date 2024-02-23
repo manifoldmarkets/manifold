@@ -277,6 +277,11 @@ export const sortFields: SortFields = {
     sortCallback: (c: Contract) => c.dailyScore,
     order: 'DESC',
   },
+  'freshness-score': {
+    sql: 'freshness_score',
+    sortCallback: (c: Contract) => c.freshnessScore,
+    order: 'DESC',
+  },
   '24-hour-vol': {
     sql: "(data->>'volume24Hours')::numeric",
     sortCallback: (c: Contract) => c.volume24Hours,

@@ -204,11 +204,11 @@ export function CompatibilityQuestionsDisplay(props: {
                 <span className="text-ink-600 text-sm">
                   You've already answered all the compatibility questions!
                 </span>
-              ) :
+              ) : (
                 <span className="text-ink-600 text-sm">
                   Answer more questions to increase your compatibility scores!
                 </span>
-              }{' '}
+              )}{' '}
               <AddCompatibilityQuestionButton
                 refreshCompatibilityAll={refreshCompatibilityAll}
               />
@@ -522,8 +522,9 @@ function CompatibilityDisplay(props: {
   const isCurrentUser = currentUser?.id === lover2.user_id
 
   const answerCompatibility = answer2
-    ? getScoredAnswerCompatibility(answer1, answer2)
-    : undefined
+    ? getAnswerCompatibility(answer1, answer2)
+    : //getScoredAnswerCompatibility(answer1, answer2)
+      undefined
   const user1 = lover1.user
   const user2 = lover2.user
 
@@ -536,7 +537,7 @@ function CompatibilityDisplay(props: {
         onClick={() => setOpen(true)}
       />
 
-      {showCreateAnswer || !answerCompatibility || !answer2 ? (
+      {showCreateAnswer || answerCompatibility === undefined || !answer2 ? (
         <AnswerCompatibilityQuestionButton
           user={currentUser}
           otherQuestions={[question]}
@@ -549,18 +550,14 @@ function CompatibilityDisplay(props: {
             onClick={() => setOpen(true)}
             className={clsx(
               'text-ink-1000 h-fit w-28 rounded-full px-2 py-0.5 text-xs transition-colors',
-              answerCompatibility <= 0.25
-                ? 'bg-red-500/20 hover:bg-red-500/30'
-                : answerCompatibility <= 0.5
-                ? 'bg-yellow-500/20 hover:bg-yellow-500/30'
-                : 'bg-green-500/20 hover:bg-green-500/30'
+              answerCompatibility
+                ? 'bg-green-500/20 hover:bg-green-500/30'
+                : 'bg-red-500/20 hover:bg-red-500/30'
             )}
           >
-            {answerCompatibility <= 0.25
-              ? 'Incompatible'
-              : answerCompatibility <= 0.5
-              ? 'Semi-compatible'
-              : 'Compatible'}
+            {answerCompatibility
+              ? 'Compatible'
+              : 'Incompatible'}
           </button>
         </>
       )}

@@ -1,8 +1,12 @@
-import { Contract } from 'common/contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  CPMMMultiContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { BetDialog } from '../bet/bet-dialog'
+import { BetDialog, MultiBetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -29,11 +33,12 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   const { contract } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const [openMC, setOpenMC] = useState(false)
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    contract.outcomeType === 'BINARY' &&
-    contract.mechanism === 'cpmm-1'
+    ((contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1') ||
+      contract.mechanism === 'cpmm-multi-1')
   ) {
     return (
       <>
@@ -48,14 +53,25 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
               firebaseLogin()
               return
             }
-            setOpen(true)
+            if (contract.mechanism === 'cpmm-1') {
+              setOpen(true)
+            } else {
+              setOpenMC(true)
+            }
           }}
         >
           Bet
         </Button>
+        {openMC && (
+          <MultiBetDialog
+            contract={contract as CPMMMultiContract}
+            open={openMC}
+            setOpen={setOpenMC}
+          />
+        )}
         {open && (
           <BetDialog
-            contract={contract}
+            contract={contract as CPMMBinaryContract}
             initialOutcome="YES"
             open={open}
             setOpen={setOpen}

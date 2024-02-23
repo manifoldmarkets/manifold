@@ -1,26 +1,7 @@
-import * as admin from 'firebase-admin'
-
-import { getStorage, Storage } from 'firebase-admin/storage'
-import { User } from 'common/user'
+import { Storage } from 'firebase-admin/storage'
 import { DOMAIN } from 'common/envs/constants'
 
 type Bucket = ReturnType<InstanceType<typeof Storage>['bucket']>
-
-const firestore = admin.firestore()
-export const generateAndUpdateAvatarUrls = async (users: User[]) => {
-  const storage = getStorage()
-  const bucket = storage.bucket()
-  console.log('bucket name', bucket.name)
-
-  await Promise.all(
-    users.map(async (user) => {
-      const userDoc = firestore.collection('users').doc(user.id)
-      console.log('backfilling user avatar:', user.id)
-      const avatarUrl = await generateAvatarUrl(user.id, user.name, bucket)
-      await userDoc.update({ avatarUrl })
-    })
-  )
-}
 
 export const generateAvatarUrl = async (
   userId: string,

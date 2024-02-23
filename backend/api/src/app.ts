@@ -1,8 +1,9 @@
 import * as cors from 'cors'
+import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
@@ -154,24 +155,32 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestLogger: RequestHandler = (req, _res, next) => {
-  log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
-  next()
+const requestContext: RequestHandler = (req, _res, next) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
+  const context = { endpoint: req.path, traceId }
+  withLogContext(context, () => {
+    log(`${req.method} ${req.url}`)
+    next()
+  })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-  if (err instanceof APIError) {
-    const output: { [k: string]: unknown } = { message: err.message }
-    if (err.details != null) {
-      output.details = err.details
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+  if (error instanceof APIError) {
+    log.info(error)
+    if (res.headersSent) {
+      return next(error)
     }
-    res.status(err.code).json(output)
+    const output: { [k: string]: unknown } = { message: error.message }
+    if (error.details != null) {
+      output.details = error.details
+    }
+    res.status(error.code).json(output)
   } else {
-    console.error(err.stack)
-    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
+    log.error(error)
+    res.status(500).json({ message: error.stack, error })
   }
 }
 
@@ -185,7 +194,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestLogger)
+app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 

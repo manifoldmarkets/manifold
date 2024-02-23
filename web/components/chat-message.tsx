@@ -15,6 +15,7 @@ import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
 import { manifoldLoveUserId } from 'common/love/constants'
+import { UserHovercard } from './user/user-hovercard'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
@@ -37,12 +38,12 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   if (otherUser?.isBannedFromPosting) return null
 
   const isMe = currentUser?.id === chat.userId
-  const { username, avatarUrl, name } =
+  const { username, avatarUrl, id, name } =
     !isMe && otherUser
       ? otherUser
       : isMe && currentUser
       ? currentUser
-      : { username: '', avatarUrl: undefined, name: '' }
+      : { username: '', avatarUrl: undefined, name: '', id: '' }
 
   return (
     <Row
@@ -57,6 +58,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
           beforeSameUser={beforeSameUser}
           username={username}
           userAvatarUrl={avatarUrl}
+          userId={id}
         />
       )}
       <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
@@ -160,7 +162,7 @@ export const SystemChatMessageItem = memo(
             size={'xs'}
             spacing={0.3}
             startLeft={0.6}
-            avatarUrls={otherUsers?.map((u) => u.avatarUrl) || []}
+            avatars={otherUsers || []}
             onClick={() => setShowUsers(true)}
           />
         )}
@@ -201,8 +203,9 @@ function MessageAvatar(props: {
   beforeSameUser: boolean
   userAvatarUrl?: string
   username?: string
+  userId: string
 }) {
-  const { beforeSameUser, userAvatarUrl, username } = props
+  const { beforeSameUser, userAvatarUrl, username, userId } = props
   return (
     <Col
       className={clsx(
@@ -210,7 +213,9 @@ function MessageAvatar(props: {
         'grow-y justify-end pb-2 pr-1'
       )}
     >
-      <Avatar avatarUrl={userAvatarUrl} username={username} size="xs" />
+      <UserHovercard userId={userId}>
+        <Avatar avatarUrl={userAvatarUrl} username={username} size="xs" />
+      </UserHovercard>
     </Col>
   )
 }

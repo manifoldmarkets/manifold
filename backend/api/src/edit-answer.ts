@@ -7,22 +7,25 @@ import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'
+import { removeUndefinedProps } from 'common/util/object'
 
 const bodySchema = z
   .object({
     contractId: z.string().max(MAX_ANSWER_LENGTH),
     answerId: z.string().max(MAX_ANSWER_LENGTH),
-    text: z.string().min(1).max(MAX_ANSWER_LENGTH),
+    text: z.string().min(1).max(MAX_ANSWER_LENGTH).optional(),
+    color: z.string().length(7).startsWith('#').optional(),
   })
   .strict()
 const firestore = admin.firestore()
 
 export const editanswercpmm = authEndpoint(async (req, auth, log) => {
-  const { contractId, answerId, text } = validate(bodySchema, req.body)
+  const { contractId, answerId, text, color } = validate(bodySchema, req.body)
   log('Received', {
     contractId,
     answerId,
     text,
+    color,
   })
 
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -73,14 +76,20 @@ export const editanswercpmm = authEndpoint(async (req, auth, log) => {
     answer.id === answerId
       ? {
           ...answer,
-          text,
+          ...removeUndefinedProps({
+            text,
+            color,
+          }),
         }
       : answer
   )
 
-  await answerDoc.update({
-    text: text,
-  })
+  await answerDoc.update(
+    removeUndefinedProps({
+      text,
+      color,
+    })
+  )
   await contractDoc.update({
     answers,
   })

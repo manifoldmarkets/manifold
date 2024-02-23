@@ -4,9 +4,8 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common//api/utils'
-import { gLog, GCPLog, log } from 'shared/utils'
+import { StructuredLogger, log } from 'shared/log'
 export { APIError } from 'common//api/utils'
-import * as crypto from 'crypto'
 import {
   API,
   APIPath,
@@ -18,22 +17,22 @@ import {
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
   req: Request,
-  log: GCPLog,
-  logError: GCPLog,
+  log: StructuredLogger,
+  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
-  log: GCPLog,
-  logError: GCPLog,
+  log: StructuredLogger,
+  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser | undefined,
-  log: GCPLog,
-  logError: GCPLog,
+  log: StructuredLogger,
+  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 
@@ -109,7 +108,6 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
         error: i.message,
       }
     })
-    log(issues)
     throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>
@@ -119,45 +117,18 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { log, logError } = getLogs(req)
-      res.status(200).json(await fn(req, log, logError, res))
+      res.status(200).json(await fn(req, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
   }
 }
 
-const getLogs = (req: Request) => {
-  const traceContext = req.get('X-Cloud-Trace-Context')
-  const traceId = traceContext
-    ? traceContext.split('/')[0]
-    : crypto.randomUUID()
-
-  const log = (message: any, details?: object | null) =>
-    gLog.debug(message, { ...details, endpoint: req.path, traceId })
-
-  const logError = (message: any, details?: object | null) =>
-    gLog.error(message, { ...details, endpoint: req.path, traceId })
-  return { log, logError }
-}
-
-export const getDummyLogs = (endpointPath: string) => {
-  const traceId = crypto.randomUUID()
-
-  const log = (message: any, details?: object | null) =>
-    gLog.debug(message, { ...details, endpoint: endpointPath, traceId })
-
-  const logError = (message: any, details?: object | null) =>
-    gLog.error(message, { ...details, endpoint: endpointPath, traceId })
-  return { log, logError }
-}
-
 export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      const { log, logError } = getLogs(req)
-      res.status(200).json(await fn(req, authedUser, log, logError, res))
+      res.status(200).json(await fn(req, authedUser, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
@@ -176,8 +147,7 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     }
 
     try {
-      const { log, logError } = getLogs(req)
-      res.status(200).json(await fn(req, authUser, log, logError, res))
+      res.status(200).json(await fn(req, authUser, log.info, log.error, res))
     } catch (e) {
       next(e)
     }
@@ -189,8 +159,7 @@ export type APIHandler<N extends APIPath> = (
   auth: APISchema<N> extends { authed: true }
     ? AuthedUser
     : AuthedUser | undefined,
-  { log, logError }: { log: GCPLog; logError: GCPLog },
-  res: Response
+  { log, logError }: { log: StructuredLogger; logError: StructuredLogger }
 ) => Promise<APIResponseOptionalContinue<N>>
 
 export const typedEndpoint = <N extends APIPath>(
@@ -212,14 +181,14 @@ export const typedEndpoint = <N extends APIPath>(
       ...req.params,
     }
 
-    const logs = getLogs(req)
-
     try {
       const resultOptionalContinue = await handler(
         validate(propSchema, props),
         authUser as AuthedUser,
-        logs,
-        res
+        {
+          log: log.info,
+          logError: log.error,
+        }
       )
 
       const hasContinue =
@@ -240,9 +209,8 @@ export const typedEndpoint = <N extends APIPath>(
       if (hasContinue) {
         await resultOptionalContinue.continue()
       }
-    } catch (e) {
-      logs.logError('Error in api endpoint', { error: e })
-      next(e)
+    } catch (error) {
+      next(error)
     }
   }
 }

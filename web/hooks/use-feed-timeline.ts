@@ -31,7 +31,7 @@ import { DAY_MS } from 'common/util/time'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
-import { PositionChangeData } from 'common/supabase/bets'
+import { PositionChangeData, convertBet } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -167,8 +167,10 @@ export const useFeedTimeline = (
   const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
-  if (DEBUG_FEED_CARDS)
-    console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
+
+  // Note (James): This was noisy so I'm disabling.
+  // if (DEBUG_FEED_CARDS)
+  //   console.log('DEBUG_FEED_CARDS is true, not marking feed cards as seen')
 
   const [savedFeedItems, setSavedFeedItems] = usePersistentInMemoryState<
     FeedTimelineItem[] | undefined
@@ -289,9 +291,9 @@ export const useFeedTimeline = (
       ]),
       db
         .from('contract_bets')
-        .select('data')
+        .select()
         .in('bet_id', betIds)
-        .then((res) => res.data?.map((b) => b.data as Bet)),
+        .then((res) => res.data?.map(convertBet)),
     ])
 
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>

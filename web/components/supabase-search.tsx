@@ -50,7 +50,8 @@ const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
 
 export const SORTS = [
-  { label: 'Trending', value: 'score' },
+  { label: 'Popular', value: 'score' },
+  { label: 'Trending', value: 'freshness-score' },
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'New', value: 'newest' },
   { label: 'High stakes', value: 'liquidity' },
@@ -74,6 +75,7 @@ const predictionMarketSorts = new Set([
   'most-popular',
   'prob-descending',
   'prob-ascending',
+  'freshness-score',
 ])
 
 const bountySorts = new Set(['bounty-amount'])
@@ -164,6 +166,7 @@ export function SupabaseSearch(props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultTopic?: string
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -191,6 +194,7 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultTopic,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -208,6 +212,7 @@ export function SupabaseSearch(props: {
     setTopics: setTopicResults,
     contractsOnly,
     showTopicTag,
+    hideSearch,
     hideSearchTypes,
     hideAvatars,
   } = props
@@ -217,6 +222,7 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
+    defaultTopic,
     useUrlParams,
   })
   const user = useUser()
@@ -307,47 +313,49 @@ export function SupabaseSearch(props: {
   return (
     <Col className="w-full">
       <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
-        <Row>
-          <Col className={'w-full'}>
-            <Row className={'relative'}>
-              <Input
-                type="text"
-                inputMode="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onBlur={trackCallback('search', { query: query })}
-                placeholder={
-                  searchType === 'Users'
-                    ? 'Search users'
-                    : searchType === 'Topics'
-                    ? 'Search topics'
-                    : searchType === 'Questions' ||
-                      (topicSlug && topicSlug !== 'for-you')
-                    ? 'Search questions'
-                    : 'Search questions, users, and topics'
-                }
-                className="w-full"
-                autoFocus={autoFocus}
-              />
-              {query !== '' && (
-                <IconButton
-                  className={'absolute right-2 top-1/2 -translate-y-1/2'}
-                  size={'2xs'}
-                  onClick={() => {
-                    onChange({ [QUERY_KEY]: '' })
-                  }}
-                >
-                  {loading ? (
-                    <LoadingIndicator size="sm" />
-                  ) : (
-                    <XIcon className={'h-5 w-5 rounded-full'} />
-                  )}
-                </IconButton>
-              )}
-            </Row>
-          </Col>
-          {menuButton}
-        </Row>
+        {!hideSearch && (
+          <Row>
+            <Col className={'w-full'}>
+              <Row className={'relative'}>
+                <Input
+                  type="text"
+                  inputMode="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onBlur={trackCallback('search', { query: query })}
+                  placeholder={
+                    searchType === 'Users'
+                      ? 'Search users'
+                      : searchType === 'Topics'
+                      ? 'Search topics'
+                      : searchType === 'Questions' ||
+                        (topicSlug && topicSlug !== 'for-you')
+                      ? 'Search questions'
+                      : 'Search questions, users, and topics'
+                  }
+                  className="w-full"
+                  autoFocus={autoFocus}
+                />
+                {query !== '' && (
+                  <IconButton
+                    className={'absolute right-2 top-1/2 -translate-y-1/2'}
+                    size={'2xs'}
+                    onClick={() => {
+                      onChange({ [QUERY_KEY]: '' })
+                    }}
+                  >
+                    {loading ? (
+                      <LoadingIndicator size="sm" />
+                    ) : (
+                      <XIcon className={'h-5 w-5 rounded-full'} />
+                    )}
+                  </IconButton>
+                )}
+              </Row>
+            </Col>
+            {menuButton}
+          </Row>
+        )}
         {!hideContractFilters && (
           <ContractFilters
             includeProbSorts={includeProbSorts}
@@ -427,7 +435,8 @@ export function SupabaseSearch(props: {
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') && (
+              (filter !== 'all' || contractType !== 'ALL') &&
+              !defaultTopic && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
@@ -667,6 +676,7 @@ const useSearchQueryState = (props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultTopic?: string
   useUrlParams?: boolean
 }) => {
   const {
@@ -674,6 +684,7 @@ const useSearchQueryState = (props: {
     defaultFilter = 'open',
     defaultContractType = 'ALL',
     defaultSearchType,
+    defaultTopic,
     useUrlParams,
   } = props
 
@@ -682,7 +693,7 @@ const useSearchQueryState = (props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
-    [TOPIC_KEY]: DEFAULT_TOPIC,
+    [TOPIC_KEY]: defaultTopic ?? DEFAULT_TOPIC,
     [SEARCH_TYPE_KEY]: defaultSearchType,
   }
 

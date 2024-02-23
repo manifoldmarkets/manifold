@@ -28,6 +28,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBet } from 'api/on-create-bet'
+import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
   const isApi = auth.creds.kind === 'key'
@@ -205,7 +206,8 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, betId, contract, makers, ordersToCancel, user } = result
+  const { newBet, fullBet, betId, contract, makers, ordersToCancel, user } =
+    result
   await processRedemptions(result, log)
 
   const continuation = async () => {
@@ -223,10 +225,8 @@ export const placeBetMain = async (
         })
       )
     }
-    const bet = await firestore
-      .doc(`contracts/${contract.id}/bets/${betId}`)
-      .get()
-    await onCreateBet(bet.data() as Bet, contract, user, log)
+
+    await onCreateBet(fullBet, contract, user, log)
   }
 
   return {
@@ -389,19 +389,17 @@ export const processNewBetResult = (
 
   const betDoc = contractDoc.collection('bets').doc()
 
-  trans.create(
-    betDoc,
-    removeUndefinedProps({
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi,
-      replyToCommentId,
-      ...newBet,
-    })
-  )
+  const fullBet = removeUndefinedProps({
+    id: betDoc.id,
+    userId: user.id,
+    userAvatarUrl: user.avatarUrl,
+    userUsername: user.username,
+    userName: user.name,
+    isApi,
+    replyToCommentId,
+    ...newBet,
+  })
+  trans.create(betDoc, fullBet)
   log(`Created new bet document for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
@@ -497,7 +495,15 @@ export const processNewBetResult = (
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
   }
 
-  return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
+  return {
+    newBet,
+    betId: betDoc.id,
+    contract,
+    makers,
+    ordersToCancel,
+    user,
+    fullBet,
+  }
 }
 
 export const validateBet = async (
@@ -518,6 +524,12 @@ export const validateBet = async (
   const contract = contractSnap.data() as Contract
   const user = userSnap.data() as User
   if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+  if (
+    (user.isBannedFromPosting || user.userDeleted) &&
+    !BLESSED_BANNED_USER_IDS.includes(uid)
+  ) {
+    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+  }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )

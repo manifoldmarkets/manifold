@@ -18,6 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import { Answer } from 'common/answer'
 import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
 import { Button, ColorType } from 'web/components/buttons/button'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function TradesButton(props: {
   contract: Contract
@@ -106,14 +107,16 @@ function VotesModalContent(props: { contract: Contract }) {
       ) : (
         voters.map((voter) => {
           return (
-            <Row className="items-center gap-2" key={voter.id}>
-              <Avatar
-                username={voter.username}
-                avatarUrl={voter.avatarUrl}
-                size={'sm'}
-              />
-              <UserLink user={voter} />
-            </Row>
+            <UserHovercard userId={voter.id} key={voter.id}>
+              <Row className="items-center gap-2">
+                <Avatar
+                  username={voter.username}
+                  avatarUrl={voter.avatarUrl}
+                  size={'sm'}
+                />
+                <UserLink user={voter} />
+              </Row>
+            </UserHovercard>
           )
         })
       )}

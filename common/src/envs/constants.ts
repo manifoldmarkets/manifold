@@ -143,10 +143,15 @@ export const BOT_USERNAMES = [
   'LUCAtheory',
   'TunglBot',
   'timetraveler',
+  'bayesianbot',
+  'CharlesLienBot',
+  'JaguarMcBot',
+  'AImogus',
 ]
 
 export const MOD_IDS = [
   '9hWkzPveXIelUk4XOrm5WroriST2', // a
+  'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
@@ -167,6 +172,7 @@ export const MOD_IDS = [
   'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
   'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
   'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'XeQf3ygmrGM1MxdsE3JSlmq8vL42', // Jacy
   'eSqS9cD5mzYcP2o7FrST8aC5IWn2', // JosephNoonan
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
@@ -185,6 +191,7 @@ export const MOD_IDS = [
   'mowZ7T5LBUQuy5CWgctdHMkLo8J3', // NuñoSempere
   'EzsnDabZsZTcpcD1UmChzRUn9Bk1', // PeterWildeford
   'FSqqnRObrqf0GX63gp5Hk4lUvqn1', // ScottLawrence
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
@@ -248,6 +255,11 @@ export const VERIFIED_USERNAMES = [
   'MatthewYglesias',
   'BillyMcRascal',
   'kyootbot',
+]
+
+export const BLESSED_BANNED_USER_IDS = [
+  'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
+  'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
