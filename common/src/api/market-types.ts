@@ -16,6 +16,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
 import { MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
+import { MINIMUM_BOUNTY } from 'common/economy'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -294,7 +295,7 @@ export const createMultiSchema = z.object({
 
 export const createBountySchema = z.object({
   outcomeType: z.enum(['BOUNTIED_QUESTION']),
-  totalBounty: z.number().min(1),
+  totalBounty: z.number().min(MINIMUM_BOUNTY),
 })
 
 export const createPollSchema = z.object({

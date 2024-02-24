@@ -9,10 +9,10 @@ const ANTES = {
   PSEUDO_NUMERIC: FIXED_ANTE * 2.5,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
-  POLL: 25,
+  POLL: 100,
 }
 
-export const MINIMUM_BOUNTY = 5
+export const MINIMUM_BOUNTY = 100
 
 export const getAnte = (
   outcomeType: OutcomeType,
