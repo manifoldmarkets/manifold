@@ -10,6 +10,7 @@ const ANTES = {
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
   POLL: 10,
+  NUMBER: FIXED_ANTE * 5,
 }
 
 export const MINIMUM_BOUNTY = 5

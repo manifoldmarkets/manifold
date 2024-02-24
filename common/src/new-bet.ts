@@ -11,6 +11,7 @@ import {
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   DPMContract,
   PseudoNumericContract,
   StonkContract,
@@ -463,7 +464,7 @@ export const getNewMultiCpmmBetInfo = (
 }
 
 export const getNewMultiCpmmBetsInfo = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES' | 'NO',
@@ -495,7 +496,7 @@ export const getNewMultiCpmmBetsInfo = (
 }
 
 const getNewMultiCpmmBetsInfoSumsToOne = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES' | 'NO',

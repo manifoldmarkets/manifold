@@ -292,11 +292,8 @@ export const createMultiSchema = z.object({
   extraLiquidity: z.number().min(1).optional(),
 })
 export const createMultiNumericSchema = z.object({
-  outcomeType: z.enum(['MULTIPLE_CHOICE']),
-  numericAnswers: z.array(z.number().safe()).max(MAX_ANSWERS),
-  addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
-  shouldAnswersSumToOne: z.boolean().optional(),
-  extraLiquidity: z.number().min(1).optional(),
+  outcomeType: z.enum(['NUMBER']),
+  numericAnswers: z.array(z.number().safe()).min(2).max(MAX_ANSWERS),
 })
 
 export const createBountySchema = z.object({

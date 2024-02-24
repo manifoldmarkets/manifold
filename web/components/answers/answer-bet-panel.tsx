@@ -3,7 +3,11 @@ import { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  CPMMNumericContract,
+  MultiContract,
+} from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
@@ -220,7 +224,7 @@ const getSimulatedBetInfo = (
 
 export function AnswerCpmmBetPanel(props: {
   answer: Answer
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   closePanel: () => void
   outcome: 'YES' | 'NO' | 'LIMIT' | undefined
   me: User | null | undefined

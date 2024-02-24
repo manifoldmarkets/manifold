@@ -366,30 +366,25 @@ function validateMarketBody(body: Body) {
 
     ;({ initialProb, extraLiquidity } = parsed)
   }
+  if (outcomeType === 'NUMBER') {
+    ;({ numericAnswers } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (numericAnswers.length < 2)
+      throw new APIError(400, 'Numeric markets must have at least 2 answers')
+    answers = numericAnswers.map((n) => n.toString())
+  }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    if ('numericAnswers' in body) {
-      ;({
-        numericAnswers,
-        addAnswersMode,
-        shouldAnswersSumToOne,
-        extraLiquidity,
-      } = validateMarketType(outcomeType, createMultiNumericSchema, body))
-      if (numericAnswers.length < 2 && addAnswersMode === 'DISABLED')
-        throw new APIError(
-          400,
-          'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
-        )
-      answers = numericAnswers.map((n) => n.toString())
-    } else {
-      ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
-        validateMarketType(outcomeType, createMultiSchema, body))
-      if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
-        throw new APIError(
-          400,
-          'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
-        )
-    }
+    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
+      validateMarketType(outcomeType, createMultiSchema, body))
+    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
+      throw new APIError(
+        400,
+        'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
+      )
   }
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -569,7 +564,8 @@ async function generateAntes(
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'NUMBER'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)

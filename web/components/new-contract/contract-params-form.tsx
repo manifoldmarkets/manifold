@@ -228,10 +228,7 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
-  const [buckets, setBuckets] = usePersistentLocalState(
-    0,
-    'new-buckets-value' + paramsKey
-  )
+  const buckets = 10
   useEffect(() => {
     if (max === undefined || min === undefined || !buckets) return
     const answers = Array.from(
@@ -546,12 +543,9 @@ export function ContractParamsForm(props: {
           setMinString={setMinString}
           maxString={maxString}
           setMaxString={setMaxString}
-          numberOfBuckets={buckets}
-          setBuckets={setBuckets}
           submitState={submitState}
           min={min}
           max={max}
-          numericAnswers={numericAnswers}
         />
       )}
       <TopicSelectorSection

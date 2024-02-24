@@ -139,7 +139,8 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
 
   const points =
-    contract.outcomeType !== 'MULTIPLE_CHOICE'
+    contract.outcomeType !== 'MULTIPLE_CHOICE' &&
+    contract.outcomeType !== 'NUMBER'
       ? unserializePoints(historyData.points as any)
       : []
 
@@ -246,7 +247,8 @@ export function ContractPageContent(props: ContractParams) {
   const betPoints = useMemo(() => {
     if (
       contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'FREE_RESPONSE'
+      contract.outcomeType === 'FREE_RESPONSE' ||
+      contract.outcomeType === 'NUMBER'
     ) {
       const data = unserializeMultiPoints(
         historyData.points as MultiSerializedPoints

@@ -8,24 +8,18 @@ export const MultiNumericRangeSection = (props: {
   setMinString: (value: string) => void
   maxString: string
   setMaxString: (value: string) => void
-  numberOfBuckets: number | undefined
-  setBuckets: (value: number) => void
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   min: number | undefined
   max: number | undefined
-  numericAnswers: number[] | undefined
 }) => {
   const {
     minString,
     setMinString,
     maxString,
     setMaxString,
-    numberOfBuckets,
-    setBuckets,
     submitState,
     min,
     max,
-    numericAnswers,
   } = props
 
   return (
@@ -67,34 +61,6 @@ export const MultiNumericRangeSection = (props: {
           </div>
         )}
       </Col>
-
-      <div className="mb-2 flex flex-col items-start">
-        <label className="gap-2 px-1 py-2">
-          <span className="mb-1">Number of buckets </span>
-        </label>
-
-        <Row className="items-center gap-1">
-          <Input
-            type="number"
-            placeholder="Number of buckets"
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setBuckets(parseInt(e.target.value))}
-            min={3}
-            max={Number.MAX_SAFE_INTEGER}
-            disabled={submitState === 'LOADING'}
-            value={numberOfBuckets?.toString() ?? ''}
-          />
-          {numericAnswers?.slice(0, 3).map((answer) => (
-            <span key={answer}>{answer.toFixed(1)}</span>
-          ))}
-          {numericAnswers && <span>...</span>}
-          {numericAnswers
-            ?.slice(numericAnswers.length - 3, numericAnswers.length)
-            .map((answer) => (
-              <span key={answer}>{answer.toFixed(1)}</span>
-            ))}
-        </Row>
-      </div>
     </Col>
   )
 }

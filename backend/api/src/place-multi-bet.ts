@@ -44,7 +44,7 @@ export const placeMultiBetMain = async (
       log
     )
 
-    const { closeTime, outcomeType, mechanism } = contract
+    const { closeTime, mechanism } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
@@ -61,7 +61,7 @@ export const placeMultiBetMain = async (
         }[]
       })[]
     > => {
-      if (outcomeType !== 'MULTIPLE_CHOICE' || mechanism != 'cpmm-multi-1') {
+      if (mechanism != 'cpmm-multi-1') {
         throw new APIError(
           400,
           'Contract type/mechanism not supported (or is no longer)'
