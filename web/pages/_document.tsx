@@ -4,7 +4,7 @@ import Script from 'next/script'
 
 export default function Document() {
   return (
-    <Html lang="en" className="no-js">
+    <Html lang="en">
       <Head>
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
         <Script src="/init-theme.js" strategy="beforeInteractive" />
