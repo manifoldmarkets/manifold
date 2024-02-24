@@ -161,6 +161,7 @@ type UniqueBettorBonus = {
     uniqueNewBettorId?: string
     // Old unique bettor bonus txns stored all unique bettor ids
     uniqueBettorIds?: string[]
+    isPartner: boolean
   }
 }
 

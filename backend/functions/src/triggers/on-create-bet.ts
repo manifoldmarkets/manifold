@@ -35,7 +35,7 @@ import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -293,6 +293,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
+  const isPartner = PARTNER_USER_IDS.includes(creatorId)
 
   if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
 
@@ -335,7 +336,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
-  const result = await firestore.runTransaction(async (trans) => {
+  const uniqueBonusResult = await firestore.runTransaction(async (trans) => {
     const query = firestore
       .collection('txns')
       .where('fromType', '==', 'BANK')
@@ -350,18 +351,22 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const bonusGivenAlready = txnsSnap.docs.length > 0
     if (bonusGivenAlready) return undefined
 
-    const bonusTxnData = removeUndefinedProps({
-      contractId: contract.id,
-      uniqueNewBettorId: bettor.id,
-      answerId,
-    })
-
-    const bonusAmount =
+    const leagueBonus =
       uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
         ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
         : contract.mechanism === 'cpmm-multi-1'
         ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
         : UNIQUE_BETTOR_BONUS_AMOUNT
+
+    const bonusAmount = isPartner ? 0 : leagueBonus
+
+    const bonusTxnData = removeUndefinedProps({
+      contractId: contract.id,
+      uniqueNewBettorId: bettor.id,
+      answerId,
+      leagueBonus,
+      isPartner,
+    })
 
     const bonusTxn: Omit<
       UniqueBettorBonusTxn,
@@ -379,7 +384,36 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
     return await runTxnFromBank(trans, bonusTxn)
   })
-  if (!result) return
+
+  if (!uniqueBonusResult) return
+
+  if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
+    log(
+      `No bonus for user: ${contract.creatorId} - status:`,
+      uniqueBonusResult.status
+    )
+    log('message:', uniqueBonusResult.message)
+  } else {
+    log(
+      `Bonus txn for user: ${contract.creatorId} completed:`,
+      uniqueBonusResult.txn?.id
+    )
+    const overallUniqueBettorIds = answerId
+      ? await getUniqueBettorIds(contract.id, pg)
+      : uniqueBettorIds
+
+    await createUniqueBettorBonusNotification(
+      creatorId,
+      bettor,
+      uniqueBonusResult.txn.id,
+      contract,
+      uniqueBonusResult.txn.amount,
+      overallUniqueBettorIds,
+      eventId + '-unique-bettor-bonus',
+      bet,
+      uniqueBonusResult.txn?.data?.isPartner
+    )
+  }
 
   const subsidy =
     uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
@@ -402,26 +436,5 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     } else {
       await addHouseSubsidyToAnswer(contract.id, answerId, subsidy)
     }
-  }
-
-  if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
-    log('message:', result.message)
-  } else {
-    log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
-    const overallUniqueBettorIds = answerId
-      ? await getUniqueBettorIds(contract.id, pg)
-      : uniqueBettorIds
-
-    await createUniqueBettorBonusNotification(
-      creatorId,
-      bettor,
-      result.txn.id,
-      contract,
-      result.txn.amount,
-      overallUniqueBettorIds,
-      eventId + '-unique-bettor-bonus',
-      bet
-    )
   }
 }

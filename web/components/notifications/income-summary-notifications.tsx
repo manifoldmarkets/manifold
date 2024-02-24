@@ -34,11 +34,17 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
 import clsx from 'clsx'
 import { Linkify } from 'web/components/widgets/linkify'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_THRESHOLD,
+} from 'common/partner'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
-  notifications: Notification[]
+  notifications: Notification[],
+  options: { usePartnerDollarBonus?: boolean } = {}
 ) {
+  const { usePartnerDollarBonus } = options
   const newNotifications: Notification[] = []
   const groupedNotificationsBySourceType = groupBy(
     notifications,
@@ -60,9 +66,13 @@ export function combineAndSumIncomeNotifications(
         groupedNotificationsBySourceTitle[sourceTitle]
 
       let sum = 0
-      notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseFloat(notification.sourceText) + sum)
-      )
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += usePartnerDollarBonus
+          ? notification.data?.isPartner
+            ? PARTNER_UNIQUE_TRADER_BONUS
+            : 0
+          : parseFloat(notification.sourceText ?? '0')
+      })
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
@@ -70,6 +80,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
+          isPartner: usePartnerDollarBonus
         },
       }
       newNotifications.push(newNotification)
@@ -86,7 +97,8 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = notification.data as UniqueBettorData
+  const data = (notification.data ?? {}) as UniqueBettorData
+  const { isPartner, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -115,9 +127,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel
-              uniqueBettorData={notification.data as UniqueBettorData}
-            />
+            <BettorStatusLabel uniqueBettorData={data} />
           </div>
         )
       }
@@ -131,6 +141,14 @@ export function UniqueBettorBonusIncomeNotification(props: {
             (answerText ? ` (${answerText})` : '')
           }
         />{' '}
+        {isPartner &&
+          totalUniqueBettors &&
+          totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD && (
+            <>
+              (need {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors} more
+              traders to collect){' '}
+            </>
+          )}
         <QuestionOrGroupLink notification={notification} />
       </span>
       <MultiUserNotificationModal
@@ -486,10 +504,14 @@ function IncomeNotificationLabel(props: {
   className?: string
 }) {
   const { notification, className } = props
-  const { sourceText } = notification
+  const { sourceText, data } = notification
+  const { isPartner } = (data ?? {}) as UniqueBettorData
+
   return sourceText ? (
     <span className={clsx('text-teal-600', className)}>
-      {formatMoneyToDecimal(parseFloat(sourceText))}
+      {isPartner
+        ? `$${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}`
+        : formatMoneyToDecimal(parseFloat(sourceText))}
     </span>
   ) : (
     <div />

@@ -144,6 +144,12 @@ export default function AboutPage() {
             href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
           />
           <LabCard
+            title="👑 Creator Partner Program"
+            description="Earn real money by creating interesting questions."
+            href="/partner-explainer"
+          />
+
+          <LabCard
             title="🦋 Changelog"
             href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
           />

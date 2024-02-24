@@ -19,6 +19,7 @@ export const CostSection = (props: {
   visibility: Visibility
   amountSuppliedByUser: number
   isMulti: boolean
+  isPartner: boolean
 }) => {
   const {
     ante,
@@ -27,6 +28,7 @@ export const CostSection = (props: {
     visibility,
     amountSuppliedByUser,
     isMulti,
+    isPartner,
   } = props
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
@@ -51,7 +53,7 @@ export const CostSection = (props: {
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
           <>
             {formatMoney(amountSuppliedByUser)}
-            {visibility === 'public' && (
+            {visibility === 'public' && !isPartner && (
               <span>
                 {' '}
                 or <span className=" text-teal-500">FREE </span>

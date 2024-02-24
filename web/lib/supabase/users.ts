@@ -122,3 +122,27 @@ export const getTotalContractsCreated = async (userId: string) => {
   )
   return count
 }
+
+export const getContractsCreatedLastMonth = async (userId: string) => {
+  const currentDate = new Date()
+  const startDate = new Date()
+
+  startDate.setDate(1)
+
+  startDate.setDate(startDate.getDate() - 1)
+
+  startDate.setDate(1)
+
+  const startIsoString = startDate.toISOString()
+  const endIsoString = currentDate.toISOString()
+
+  const { count } = await run(
+    db
+      .from('public_contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('creator_id', userId)
+      .gte('created_time', startIsoString)
+      .lt('created_time', endIsoString)
+  )
+  return count
+}

@@ -262,6 +262,8 @@ export const BLESSED_BANNED_USER_IDS = [
   'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
 ]
 
+export const PARTNER_USER_IDS: string[] = []
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
 export function firestoreConsolePath(contractId: string) {
