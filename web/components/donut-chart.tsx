@@ -76,5 +76,4 @@ const DonutChart: React.FC<DonutChartProps> = ({ segments, total }) => {
   )
 }
 
-
 export default DonutChart

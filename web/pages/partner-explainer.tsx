@@ -126,12 +126,15 @@ export default function PartnerExplainer() {
             <div>
               <b>Income amount:</b>
             </div>
+            <li>$0.10 per unique trader since becoming partner.</li>
             <li>
-              $0.10 per unique trader since becoming partner.
+              Traders grant $0.06 immediately and $0.04 when you resolve that
+              market. If you N/A a market you keep the $0.06 but don't earn the
+              $0.04.
             </li>
-            <li>Traders grant $0.06 immediately and $0.04 when you resolve that market. If you N/A a market you keep the $0.06 but don't earn the $0.04.</li>
             <li>
-              $1.00 per new user refferal (this is in addition to the 250 mana bonus).
+              $1.00 per new user refferal (this is in addition to the 250 mana
+              bonus).
             </li>
             <div className="pt-2">
               <b>Only certain questions contribute towards income:</b>

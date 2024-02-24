@@ -80,7 +80,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
-          isPartner: usePartnerDollarBonus
+          isPartner: usePartnerDollarBonus,
         },
       }
       newNotifications.push(newNotification)

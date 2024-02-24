@@ -73,7 +73,6 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
     getContractsCreatedLastMonth(user.id).then(setMarketsCreated)
   }, [user.id])
 
-
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
   })

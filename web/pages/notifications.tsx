@@ -322,9 +322,7 @@ function NotificationGroupItem(props: {
       .concat(
         combineAndSumIncomeNotifications(
           notifications.filter(
-            (n) =>
-              incomeTypesToSum.includes(n.sourceType) &&
-              !n.data?.isPartner
+            (n) => incomeTypesToSum.includes(n.sourceType) && !n.data?.isPartner
           )
         )
       )
