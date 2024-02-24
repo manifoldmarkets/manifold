@@ -140,31 +140,31 @@ function UserPortfolioInternal(props: {
             <BackButton />
             <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
           </Row>
-          <Row className='gap-3 mx-3 items-end'>
-          <div className="flex flex-col items-center">
-            <Link
-              href={`/${user.username}/partner`}
-              className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
-            >
-              <LuCrown className="mx-auto text-2xl" />
-              Partner
-            </Link>
-          </div>
-          <div className="flex flex-col items-center">
-            <Link
-              href={'/' + user.username}
-              className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
-            >
-              <Avatar
-                avatarUrl={user.avatarUrl}
-                username={user.username}
-                noLink
-                size="xs"
-                className={'mx-auto'}
-              />
-              Profile
-            </Link>
-          </div>
+          <Row className="mx-3 items-end gap-3">
+            <div className="flex flex-col items-center">
+              <Link
+                href={`/${user.username}/partner`}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <LuCrown className="mx-auto text-2xl" />
+                Partner
+              </Link>
+            </div>
+            <div className="flex flex-col items-center">
+              <Link
+                href={'/' + user.username}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <Avatar
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  noLink
+                  size="xs"
+                  className={'mx-auto'}
+                />
+                Profile
+              </Link>
+            </div>
           </Row>
         </Row>
         <Row

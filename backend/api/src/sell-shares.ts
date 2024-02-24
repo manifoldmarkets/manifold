@@ -1,4 +1,4 @@
-import { mapValues, groupBy, sumBy, uniq } from 'lodash'
+import { mapValues, groupBy, sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -9,10 +9,10 @@ import { removeUndefinedProps } from 'common/util/object'
 import { Bet } from 'common/bet'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
-import { redeemShares } from './redeem-shares'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
+import { onCreateBets } from 'api/on-create-bet'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -190,6 +190,8 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       throw new APIError(403, 'Sale too large for current liquidity pool.')
     }
 
+    const allOrdersToCancel = []
+    const fullBets = []
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
     updateMakers(makers, newBetDoc.id, contractDoc, transaction, log)
@@ -199,7 +201,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     })
 
     const isApi = auth.creds.kind === 'key'
-    transaction.create(newBetDoc, {
+    const fullBet: Bet = {
       id: newBetDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
@@ -207,13 +209,16 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       userName: user.name,
       isApi,
       ...newBet,
-    })
+    }
+    transaction.create(newBetDoc, fullBet)
+    fullBets.push(fullBet)
 
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
     }
+    allOrdersToCancel.push(...ordersToCancel)
 
     if (mechanism === 'cpmm-1') {
       transaction.update(
@@ -251,7 +256,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       ordersToCancel,
     } of otherResultsWithBet) {
       const betDoc = contractDoc.collection('bets').doc()
-      transaction.create(betDoc, {
+      const fullBet: Bet = {
         id: betDoc.id,
         userId: user.id,
         userAvatarUrl: user.avatarUrl,
@@ -259,7 +264,9 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         userName: user.name,
         isApi,
         ...bet,
-      })
+      }
+      transaction.create(betDoc, fullBet)
+      fullBets.push(fullBet)
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
       transaction.update(
@@ -276,16 +283,20 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           isCancelled: true,
         })
       }
+      allOrdersToCancel.push(...ordersToCancel)
     }
 
     return {
       newBet,
+      user,
+      fullBets,
       betId: newBetDoc.id,
       makers,
       maxShares,
       soldShares,
       contract,
       otherResultsWithBet,
+      allOrdersToCancel,
     }
   })
 
@@ -297,20 +308,22 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     soldShares,
     contract,
     otherResultsWithBet,
+    fullBets,
+    allOrdersToCancel,
+    user,
   } = result
 
   if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {
     await removeUserFromContractFollowers(contractId, auth.uid)
   }
 
-  const allMakers = [...makers, ...otherResultsWithBet.flatMap((r) => r.makers)]
-  const userIds = uniq(allMakers.map((maker) => maker.bet.userId))
-  await Promise.all(
-    userIds.map((userId) => redeemShares(userId, contract, log))
-  )
-  log('Share redemption transaction finished.')
-
-  return { ...newBet, betId }
+  const continuation = async () => {
+    await onCreateBets(fullBets, contract, user, log, allOrdersToCancel, [
+      ...makers,
+      ...otherResultsWithBet.flatMap((r) => r.makers),
+    ])
+  }
+  return { result: { ...newBet, betId }, continue: continuation }
 }
 
 const firestore = admin.firestore()
