@@ -29,12 +29,12 @@ export const useThemeManager = () => {
 }
 
 const reRenderTheme = () => {
-  const theme: theme_option =
+  const theme: theme_option | null =
     JSON.parse(localStorage.getItem('theme') ?? 'null') ?? 'auto'
 
   const autoDark = window.matchMedia('(prefers-color-scheme: dark)').matches
 
-  if (theme === 'dark' || (theme === 'auto' && autoDark)) {
+  if (theme === 'dark' || ((theme === null || theme === 'auto') && autoDark)) {
     document.documentElement.classList.add('dark')
   } else {
     document.documentElement.classList.remove('dark')
