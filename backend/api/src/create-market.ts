@@ -9,7 +9,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
-import { getAnte, getAnteBurn } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { marketCreationCosts, User } from 'common/user'
@@ -120,7 +120,6 @@ export async function createMarketHelper(
       getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
-  const anteAfterBurn = ante - getAnteBurn(outcomeType)
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
@@ -174,7 +173,7 @@ export async function createMarketHelper(
               // default: use a single empty space as the description
             }) ?? htmlToRichText(`<p> </p>`),
       initialProb: initialProb ?? 50,
-      ante: anteAfterBurn,
+      ante,
       closeTime,
       visibility,
       isTwitchContract,
@@ -216,7 +215,7 @@ export async function createMarketHelper(
     )
   }
 
-  await generateAntes(userId, contract, outcomeType, anteAfterBurn)
+  await generateAntes(userId, contract, outcomeType, ante)
 
   await generateContractEmbeddings(contract, pg)
 
