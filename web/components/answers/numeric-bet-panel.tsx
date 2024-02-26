@@ -11,7 +11,7 @@ import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { formatPercent } from 'common/util/format'
+import { formatPercent, shortFormatNumber } from 'common/util/format'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { Slider } from 'web/components/widgets/slider'
@@ -96,7 +96,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
         >
           Less than
         </Button>
-        <span className={'mx-2 text-xl'}>{amount}</span>
+        <span className={'mx-2 text-xl'}>{shortFormatNumber(amount)}</span>
         <Button
           color={mode === 'more than' ? 'blue' : 'gray-outline'}
           onClick={() => setMode('more than')}
@@ -167,7 +167,7 @@ const BetButton = (props: {
       >
         <Col
           style={{
-            height: `${answer.prob * 1000}px`,
+            height: `${answer.prob * 700}px`,
           }}
           className={'min-h-[3rem] w-full items-center justify-between '}
         >
