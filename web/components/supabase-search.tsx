@@ -599,7 +599,8 @@ const useContractSearch = (
       sort === state.lastSearchParams?.sort &&
       filter === state.lastSearchParams?.filter &&
       contractType === state.lastSearchParams?.contractType &&
-      topicSlug === state.lastSearchParams?.topicSlug
+      topicSlug === state.lastSearchParams?.topicSlug &&
+      topicSlug !== 'recent'
     ) {
       return state.shouldLoadMore
     }
