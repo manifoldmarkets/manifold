@@ -7,7 +7,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { applyBetsFilter } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
-import { first, last, maxBy, minBy } from 'lodash'
+import { first, last, maxBy, minBy, sortBy } from 'lodash'
 import dayjs from 'dayjs'
 
 export function FeedBinaryChart(props: {
@@ -30,7 +30,7 @@ export function FeedBinaryChart(props: {
     let q = db
       .from('contract_bets')
       .select('created_time, prob_before, prob_after, data->answerId')
-      .order('created_time')
+      .order('bet_id') // get "random" points so it doesn't bunch up at the end
     q = applyBetsFilter(q, {
       contractId: contract.id,
       limit: 1000,
@@ -39,7 +39,7 @@ export function FeedBinaryChart(props: {
     })
     run(q).then(({ data }) => {
       if (data && data.length > 0) {
-        setBets(data)
+        setBets(sortBy(data, 'created_time'))
       }
     })
   }, [startDate, contract.id])
