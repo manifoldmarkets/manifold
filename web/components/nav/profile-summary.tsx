@@ -2,6 +2,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { PlusIcon } from '@heroicons/react/outline'
 import { animated } from '@react-spring/web'
+import clsx from 'clsx'
+import { usePathname } from 'next/navigation'
 
 import { User } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
@@ -9,9 +11,6 @@ import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import clsx from 'clsx'
-import { usePathname } from 'next/navigation'
-import { UserHovercard } from '../user/user-hovercard'
 
 export function ProfileSummary(props: {
   user: User
@@ -35,14 +34,12 @@ export function ProfileSummary(props: {
       )}
     >
       <div className="w-2 shrink" />
-      <UserHovercard userId={user.id}>
-        <Avatar
-          avatarUrl={user.avatarUrl}
-          username={user.username}
-          noLink
-          size={showProfile ? 'sm' : 'md'}
-        />
-      </UserHovercard>
+      <Avatar
+        avatarUrl={user.avatarUrl}
+        username={user.username}
+        noLink
+        size={showProfile ? 'sm' : 'md'}
+      />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         <div>{user.name}</div>
