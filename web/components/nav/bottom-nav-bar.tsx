@@ -8,6 +8,8 @@ import {
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
+import { BiSearchAlt2 } from 'react-icons/bi'
+import { FaFlagUsa } from 'react-icons/fa6'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -16,10 +18,7 @@ import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import {
-  NotificationsIcon,
-  SolidNotificationsIcon,
-} from 'web/components/notifications-icon'
+import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
@@ -29,8 +28,6 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
-import { FaFlagUsa } from 'react-icons/fa6'
-import { BiSearchAlt2, BiSolidSearchAlt2 } from 'react-icons/bi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -45,23 +42,29 @@ function getNavigation(user: User) {
       name: 'Home',
       href: '/home',
       icon: HomeIcon,
-      selectedIcon: SolidHomeIcon,
+      // selectedIcon: SolidHomeIcon,
     },
+
     {
-      name: 'Browse',
-      href: '/browse?topic=for-you',
-      icon: BiSearchAlt2,
-      selectedIcon: BiSolidSearchAlt2,
+      name: 'Politics',
+      href: '/politics',
+      icon: FaFlagUsa,
     },
     {
       name: 'Portfolio',
       href: `/${user.username}/portfolio`,
     },
     {
+      name: 'Browse',
+      href: '/browse?topic=for-you',
+      icon: BiSearchAlt2,
+      // selectedIcon: BiSolidSearchAlt2,
+    },
+    {
       name: 'Notifs',
       href: `/notifications`,
-      selectedIcon: SolidNotificationsIcon,
       icon: NotificationsIcon,
+      // selectedIcon: SolidNotificationsIcon,
     },
   ]
 }
