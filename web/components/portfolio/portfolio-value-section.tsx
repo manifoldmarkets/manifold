@@ -27,6 +27,7 @@ export const PortfolioValueSection = memo(
     lastUpdatedTime: number | undefined
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
+    graphContainerClassName?: string
   }) {
     const {
       userId,
@@ -34,6 +35,7 @@ export const PortfolioValueSection = memo(
       defaultTimePeriod,
       lastUpdatedTime,
       onlyShowProfit,
+      graphContainerClassName,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
@@ -111,7 +113,7 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={!onlyShowProfit ? placeholderSection : undefined}
           valueElement={!onlyShowProfit ? placeholderSection : undefined}
-          className={showDisclaimer ? 'h-8' : ''}
+          className={clsx(showDisclaimer ? 'h-8' : '', graphContainerClassName)}
           graphElement={(_width, height) => {
             if (showDisclaimer) {
               return (
@@ -208,6 +210,7 @@ export const PortfolioValueSection = memo(
         )}
         onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
+        className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
       />
     )
   }
@@ -337,9 +340,7 @@ function PortfolioValueSkeleton(props: {
         )}
       </Row>
       <SizedContainer
-        className={clsx(
-          className ? className : 'mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0'
-        )}
+        className={clsx(className, 'h-[125px] pr-11 sm:h-[200px] lg:pr-0')}
       >
         {graphElement}
       </SizedContainer>

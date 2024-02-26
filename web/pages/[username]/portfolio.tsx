@@ -216,8 +216,12 @@ function UserPortfolioInternal(props: {
                 />
               ),
             },
+            (!!user.lastBetTime || hasBetBalanceChanges) && {
+              title: 'Trades',
+              content: <UserBetsTable user={user} />,
+            },
             {
-              title: 'Balance',
+              title: 'Balance log',
               content: (
                 <BalanceChangeTable
                   user={user}
@@ -225,10 +229,6 @@ function UserPortfolioInternal(props: {
                 />
               ),
               queryString: balanceChangesKey,
-            },
-            (!!user.lastBetTime || hasBetBalanceChanges) && {
-              title: 'Trades',
-              content: <UserBetsTable user={user} />,
             },
             (user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && {
@@ -273,7 +273,7 @@ const PortfolioSummary = (props: {
   const currentUser = useUser()
   const privateUser = usePrivateUser()
   const CARD_CLASS =
-    'h-fit bg-canvas-50 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-0 py-0 sm:w-[48%]'
+    'h-fit relative w-full min-w-[300px] cursor-pointer justify-between px-0 py-0 sm:w-[48%]'
   const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
@@ -285,7 +285,7 @@ const PortfolioSummary = (props: {
   const balanceChanges = newBalanceChanges ?? props.balanceChanges
 
   return (
-    <Col className="gap-6">
+    <Col className="gap-4">
       <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
         <BalanceCard
           onSeeChanges={() => {
@@ -295,13 +295,16 @@ const PortfolioSummary = (props: {
           }}
           user={user}
           balanceChanges={balanceChanges}
-          className={CARD_CLASS}
+          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
         />
-        <InvestmentValueCard user={user} className={CARD_CLASS} />
+        <InvestmentValueCard
+          user={user}
+          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
+        />
       </Row>
 
       {portfolioPoints > 1 && (
-        <Col className={'mb-6 px-1 md:pr-8'}>
+        <Col className={'px-1 md:pr-8'}>
           <PortfolioValueSection
             userId={user.id}
             onlyShowProfit={true}
@@ -316,10 +319,8 @@ const PortfolioSummary = (props: {
       )}
 
       {isCurrentUser && (
-        <Col className="mb-6 gap-5">
-          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
-            Recently viewed
-          </div>
+        <Col className="mb-6 gap-2">
+          <div className="text-ink-800 mx-2 text-xl lg:mx-0">Recent</div>
           {!isAuthed && (
             <Col>
               <LoadingContractRow />
@@ -337,7 +338,7 @@ const PortfolioSummary = (props: {
               }}
               useUrlParams={false}
               isWholePage={false}
-              headerClassName={'pt-0 px-2 bg-canvas-50'}
+              headerClassName={'!hidden'}
               defaultTopic="recent"
               contractsOnly
               hideContractFilters

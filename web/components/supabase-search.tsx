@@ -430,7 +430,7 @@ export function SupabaseSearch(props: {
                 probColumn,
                 !hideActions && actionColumn,
               ])}
-              headerClassName={clsx(headerClassName, '!top-14')}
+              headerClassName={clsx(headerClassName, 'top-14')}
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}

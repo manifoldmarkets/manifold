@@ -57,46 +57,32 @@ export const BalanceCard = (props: {
     ),
     'amount'
   )
-  const previewChanges = balanceChanges.slice(0, 3)
-  const moreChanges = Math.max(balanceChanges.length - previewChanges.length, 0)
   return (
     <Row className={className} onClick={onSeeChanges}>
       <Col className={'w-full gap-1.5'}>
         <Col>
-          <div className={'text-ink-800 text-5xl sm:text-5xl'}>
+          <div className={'text-ink-800 text-4xl'}>
             {formatMoney(user.balance)}
           </div>
           <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
             Your balance
           </div>
         </Col>
-        <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
-          {formatMoney(earnedToday)} in &{' '}
-          {formatMoney(spentToday).replace('-', '')} out today
+        <Row className="flex-1 items-center justify-between">
+          <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
+            {formatMoney(earnedToday)} in &{' '}
+            {formatMoney(spentToday).replace('-', '')} out today
+          </Row>
+          <Button
+            color={'gray-white'}
+            onClick={(e) => {
+              e.stopPropagation()
+              onSeeChanges()
+            }}
+          >
+            See log
+          </Button>
         </Row>
-        {previewChanges.length > 0 && (
-          <Col className={'border-ink-200 gap-2 border-t pt-3'}>
-            <RenderBalanceChanges
-              balanceChanges={previewChanges}
-              user={user}
-              avatarSize={'sm'}
-              simple
-            />
-            {moreChanges > 0 && (
-              <Row className={'justify-end'}>
-                <Button
-                  color={'gray-white'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSeeChanges()
-                  }}
-                >
-                  See {moreChanges} more changes
-                </Button>
-              </Row>
-            )}
-          </Col>
-        )}
       </Col>
       <div className={'absolute right-1 top-1'}>
         <Button

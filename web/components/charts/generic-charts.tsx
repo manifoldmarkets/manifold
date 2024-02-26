@@ -457,7 +457,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     const [min, max] = yScale.domain()
     const nTicks = h < 200 ? 3 : 5
     const customTickValues = getTickValues(min, max, nTicks)
-    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
