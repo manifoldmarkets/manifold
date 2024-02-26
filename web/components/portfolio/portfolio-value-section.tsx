@@ -198,8 +198,8 @@ export const PortfolioValueSection = memo(
         }
         graphElement={(width, height) => (
           <PortfolioGraph
-            key={graphMode} // we need to reset axis scale state if mode changes
             mode={graphMode}
+            duration={currentTimePeriod}
             points={graphPoints}
             width={width}
             height={height}

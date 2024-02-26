@@ -8,6 +8,7 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint } from 'common/chart'
 import { curveLinear } from 'd3-shape'
 import { ZoomParams } from '../charts/helpers'
+import { Period } from 'web/lib/firebase/users'
 
 export type GraphMode = 'profit' | 'value' | 'balance'
 
@@ -25,6 +26,7 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 
 export const PortfolioGraph = (props: {
   mode: 'profit' | 'value' | 'balance'
+  duration?: Period
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
   height: number
@@ -35,6 +37,7 @@ export const PortfolioGraph = (props: {
 }) => {
   const {
     mode,
+    duration,
     points,
     onMouseOver,
     width,
@@ -48,6 +51,7 @@ export const PortfolioGraph = (props: {
     const minDate = min(points.map((d) => d.x))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const maxDate = max(points.map((d) => d.x))!
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minValue = min(points.map((d) => d.y))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -61,9 +65,10 @@ export const PortfolioGraph = (props: {
     [height, 0]
   )
 
+  // reset axis scale if mode or duration change (since points change)
   useEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [])
+  }, [mode, duration])
 
   return (
     <SingleValueHistoryChart
