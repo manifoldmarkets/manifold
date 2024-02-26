@@ -145,7 +145,6 @@ export default function AboutPage() {
           />
           <LabCard
             title="👑 Creator Partner Program"
-            description="Earn real money by creating interesting questions."
             href="/partner-explainer"
           />
 
