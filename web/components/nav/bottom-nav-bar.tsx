@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import clsx from 'clsx'
-import { HomeIcon as SolidHomeIcon, MenuAlt3Icon } from '@heroicons/react/solid'
+import { MenuAlt3Icon } from '@heroicons/react/solid'
 import {
   HomeIcon,
   NewspaperIcon,
