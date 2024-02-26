@@ -1,5 +1,11 @@
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import {
+  CurrencyDollarIcon,
+  ViewListIcon,
+  ScaleIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/outline'
 
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage, User } from 'common/user'
@@ -202,12 +208,12 @@ function UserPortfolioInternal(props: {
         </Row>
 
         <QueryUncontrolledTabs
-          className={'mx-2 mb-3 mt-2 gap-6 sm:mt-0'}
-          minimalist
+          className={'mx-2 mb-3 gap-6'}
           renderAllTabs
           tabs={buildArray([
             {
               title: 'Summary',
+              stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
               content: (
                 <PortfolioSummary
                   user={user}
@@ -218,10 +224,12 @@ function UserPortfolioInternal(props: {
             },
             (!!user.lastBetTime || hasBetBalanceChanges) && {
               title: 'Trades',
+              stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
               content: <UserBetsTable user={user} />,
             },
             {
               title: 'Balance log',
+              stackedTabIcon: <ViewListIcon className="h-5" />,
               content: (
                 <BalanceChangeTable
                   user={user}
@@ -233,6 +241,7 @@ function UserPortfolioInternal(props: {
             (user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && {
               title: 'Questions',
+              stackedTabIcon: <ScaleIcon className="h-5" />,
               content: (
                 <SupabaseSearch
                   defaultFilter="all"
