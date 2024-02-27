@@ -45,6 +45,7 @@ import {
 import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { LiteUser } from 'common/api/user-types'
+import router from 'next/router'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -762,7 +763,7 @@ function ContractFilters(props: {
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
   const topic = useGroupFromSlug(topicSlug ?? '')
-  const setTopic = (slug: string) => updateParams({ [TOPIC_KEY]: slug })
+  const resetTopic = () => router.push(`/browse`)
 
   return (
     <Col
@@ -841,7 +842,7 @@ function ContractFilters(props: {
             topic={topic}
             location={'questions page'}
           >
-            <button onClick={() => setTopic('')}>
+            <button onClick={resetTopic}>
               <XIcon className="hover:text-ink-700 text-ink-400 ml-1  h-4 w-4" />
             </button>
           </TopicTag>
@@ -856,7 +857,7 @@ function ContractFilters(props: {
               #
             </span>
             ⭐️ For you
-            <button onClick={() => setTopic('')}>
+            <button onClick={resetTopic}>
               <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
             </button>
           </Row>
