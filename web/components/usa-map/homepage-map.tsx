@@ -71,7 +71,7 @@ export function HomepageMap(props: {
       <MapTab mode={mode} setMode={setMode} />
       {mode === 'presidency' ? (
         <>
-          <div className="mx-auto font-semibold sm:text-xl">
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win the US Presidency?
           </div>
           <ElectoralCollegeVisual
@@ -108,7 +108,7 @@ export function HomepageMap(props: {
         </>
       ) : (
         <>
-          <div className="mx-auto font-semibold sm:text-xl">
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win Senate?
           </div>
           <SenateBar
@@ -161,7 +161,9 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
             height={9}
             className={clsx(
               '-mb-3',
-              mode === 'presidency' ? 'fill-ink-1000' : 'fill-ink-300'
+              mode === 'presidency'
+                ? 'fill-primary-700'
+                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
             )}
           />
         }
@@ -175,7 +177,9 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
             height={9}
             className={clsx(
               '-mb-3',
-              mode === 'senate' ? 'fill-ink-1000' : 'fill-ink-300'
+              mode === 'senate'
+                ? 'fill-primary-700'
+                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
             )}
           />
         }
@@ -196,15 +200,16 @@ function MapTabButton(props: {
     <button
       onClick={onClick}
       className={clsx(
-        ' hover:text-ink-1000 group flex flex-col items-center',
-        isActive ? 'text-ink-1000' : 'text-ink-300'
+        'group flex flex-col items-center transition-colors',
+        isActive ? 'text-primary-700' : 'text-ink-500 hover:text-ink-700 '
       )}
     >
       {icon}
       <div
         className={clsx(
-          isActive && 'underline decoration-2 underline-offset-[10px]',
-          'mt-1'
+          isActive &&
+            'underline decoration-2 underline-offset-[7px] transition-all',
+          'mt-0.5'
         )}
       >
         {text}
