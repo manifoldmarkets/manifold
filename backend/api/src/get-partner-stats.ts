@@ -1,8 +1,14 @@
+import { sum } from 'lodash'
+
 import { type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import {
   PARTNER_QUARTER_START_DATE,
+  PARTNER_UNIQUE_TRADER_THRESHOLD,
   getPartnerQuarterEndDate,
 } from 'common/partner'
 
@@ -25,21 +31,16 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     PARTNER_QUARTER_START_DATE
   ).getTime()
 
-  const uniqueBettorBonuses = await pg.oneOrNone<{
-    num_unique_bettors: number
-  }>(
-    `select count(*) as num_unique_bettors
-    from txns 
-    where
-      data->>'toId' = $1
-      and (txns.data->'data'->>'isPartner')::boolean
-      and (txns.data->>'createdTime')::bigint > $2
-      and (txns.data->>'createdTime')::bigint < $3
-      and txns.data->>'category' = 'UNIQUE_BETTOR_BONUS'
-    `,
-    [userId, quarterStart, quarterEnd]
+  const tradersByContract = await getCreatorTradersByContract(
+    pg,
+    userId,
+    quarterStart,
+    quarterEnd
   )
-  const numUniqueBettors = uniqueBettorBonuses?.num_unique_bettors ?? 0
+  const uniqueBettorsMeetingThreshold = Object.values(tradersByContract).filter(
+    (traders) => traders >= PARTNER_UNIQUE_TRADER_THRESHOLD
+  )
+  const numUniqueBettors = sum(uniqueBettorsMeetingThreshold)
 
   const referrals = await pg.oneOrNone<{
     num_referred: number
@@ -61,4 +62,32 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     numUniqueBettors,
     numReferrals,
   }
+}
+
+const getCreatorTradersByContract = async (
+  pg: SupabaseDirectClient,
+  creatorId: string,
+  since: number,
+  before: number
+) => {
+  return Object.fromEntries(
+    await pg.map(
+      `with contract_traders as (
+        select distinct contract_id, user_id from contract_bets
+        where created_time >= $2
+        and created_time < $3
+      )
+      select c.id, count(ct.*)::int as total
+      from contracts as c
+      join contract_traders as ct on c.id = ct.contract_id
+      where c.creator_id = $1
+      group by c.id`,
+      [
+        creatorId,
+        new Date(since ?? 0).toISOString(),
+        new Date(before).toISOString(),
+      ],
+      (r) => [r.id as string, r.total as number]
+    )
+  )
 }
