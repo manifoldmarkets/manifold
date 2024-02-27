@@ -170,17 +170,18 @@ const requestContext: RequestHandler = (req, _res, next) => {
 const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
   if (error instanceof APIError) {
     log.info(error)
-    if (res.headersSent) {
-      return next(error)
+    if (!res.headersSent) {
+      const output: { [k: string]: unknown } = { message: error.message }
+      if (error.details != null) {
+        output.details = error.details
+      }
+      res.status(error.code).json(output)
     }
-    const output: { [k: string]: unknown } = { message: error.message }
-    if (error.details != null) {
-      output.details = error.details
-    }
-    res.status(error.code).json(output)
   } else {
     log.error(error)
-    res.status(500).json({ message: error.stack, error })
+    if (!res.headersSent) {
+      res.status(500).json({ message: error.stack, error })
+    }
   }
 }
 
