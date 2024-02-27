@@ -20,7 +20,6 @@ import {
 } from '@heroicons/react/outline'
 import { Topic, TOPIC_KEY } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
-import { DAY_MS } from 'common/util/time'
 import { linkClass } from 'web/components/widgets/site-link'
 import { removeEmojis } from 'common/topics'
 import { useRemainingNewUserSignupBonuses } from 'web/hooks/use-request-new-user-signup-bonus'
