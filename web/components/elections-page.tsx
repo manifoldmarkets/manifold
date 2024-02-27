@@ -6,7 +6,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useTracking } from 'web/hooks/use-tracking'
 import { useUser } from 'web/hooks/use-user'
 import Custom404 from 'web/pages/404'
 import { Row } from './layout/row'
@@ -14,13 +13,11 @@ import { HomepageMap } from './usa-map/homepage-map'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 
 export function USElectionsPage(props: ElectionsPageProps) {
-  useSaveCampaign()
-  useTracking('view elections')
-
   const user = useUser()
   useSaveReferral(user)
   // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
+  useSaveCampaign()
 
   const {
     electionCandidateContract,
