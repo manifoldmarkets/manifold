@@ -36,6 +36,7 @@ import { DIVISION_NAMES } from 'common/leagues'
 import { Linkify } from 'web/components/widgets/linkify'
 import {
   PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
 
@@ -94,7 +95,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const data = (notification.data ?? {}) as UniqueBettorData
-  const { isPartner, totalUniqueBettors } = data
+  const { outcomeType, isPartner, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -106,6 +107,10 @@ export function UniqueBettorBonusIncomeNotification(props: {
       ? relatedNotifications[0].data?.answerText
       : undefined
 
+  const partnerBonusAmount =
+    outcomeType === 'MULTIPLE_CHOICE'
+      ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
+      : PARTNER_UNIQUE_TRADER_BONUS
   return (
     <NotificationFrame
       notification={notification}
@@ -150,12 +155,12 @@ export function UniqueBettorBonusIncomeNotification(props: {
               </span>{' '}
               more traders to collect{' '}
               <span className="font-semibold text-teal-600">
-                ${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)} each
+                ${partnerBonusAmount.toFixed(2)} each
               </span>
             </>
           ) : (
             <span className="font-semibold text-teal-600">
-              ${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}
+              ${partnerBonusAmount.toFixed(2)}
             </span>
           )}
         </div>

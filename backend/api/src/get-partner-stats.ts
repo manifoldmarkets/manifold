@@ -1,6 +1,6 @@
-import { sum } from 'lodash'
+import { sumBy } from 'lodash'
 
-import { type APIHandler } from './helpers/endpoint'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -11,18 +11,14 @@ import {
   PARTNER_UNIQUE_TRADER_THRESHOLD,
   getPartnerQuarterEndDate,
 } from 'common/partner'
+import { OutcomeType } from 'common/contract'
 
 export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
-  props,
-  auth
+  props
 ) => {
   const { userId } = props
   if (!PARTNER_USER_IDS.includes(userId))
-    return {
-      status: 'error',
-      numUniqueBettors: 0,
-      numReferrals: 0,
-    }
+    throw new APIError(400, 'User is not a partner')
 
   const pg = createSupabaseDirectClient()
 
@@ -31,16 +27,22 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     PARTNER_QUARTER_START_DATE
   ).getTime()
 
-  const tradersByContract = await getCreatorTradersByContract(
+  const contractTraderTotals = await getCreatorTradersByContract(
     pg,
     userId,
     quarterStart,
     quarterEnd
   )
-  const uniqueBettorsMeetingThreshold = Object.values(tradersByContract).filter(
-    (traders) => traders >= PARTNER_UNIQUE_TRADER_THRESHOLD
+  const uniqueBettorsMeetingThreshold = contractTraderTotals.filter(
+    (traders) => traders.total >= PARTNER_UNIQUE_TRADER_THRESHOLD
   )
-  const numUniqueBettors = sum(uniqueBettorsMeetingThreshold)
+  const numUniqueBettors: number = sumBy(uniqueBettorsMeetingThreshold, 'total')
+  const numBinaryBettors = sumBy(uniqueBettorsMeetingThreshold, (t) =>
+    t.outcome_type === 'BINARY' ? t.total : 0
+  )
+  const numMultiChoiceBettors = sumBy(uniqueBettorsMeetingThreshold, (t) =>
+    t.outcome_type === 'MULTIPLE_CHOICE' ? t.total : 0
+  )
 
   const referrals = await pg.oneOrNone<{
     num_referred: number
@@ -60,6 +62,8 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   return {
     status: 'success',
     numUniqueBettors,
+    numBinaryBettors,
+    numMultiChoiceBettors,
     numReferrals,
   }
 }
@@ -70,24 +74,26 @@ const getCreatorTradersByContract = async (
   since: number,
   before: number
 ) => {
-  return Object.fromEntries(
-    await pg.map(
-      `with contract_traders as (
-        select distinct contract_id, user_id from contract_bets
+  return await pg.manyOrNone<{
+    contract_id: string
+    outcome_type: OutcomeType
+    total: number
+  }>(
+    `with contract_traders as (
+        select distinct contract_id, user_id
+        from contract_bets
         where created_time >= $2
         and created_time < $3
       )
-      select c.id, count(ct.*)::int as total
+      select c.id as contract_id, outcome_type, count(*)::int as total
       from contracts as c
       join contract_traders as ct on c.id = ct.contract_id
       where c.creator_id = $1
-      group by c.id`,
-      [
-        creatorId,
-        new Date(since ?? 0).toISOString(),
-        new Date(before).toISOString(),
-      ],
-      (r) => [r.id as string, r.total as number]
-    )
+      group by c.id, outcome_type`,
+    [
+      creatorId,
+      new Date(since ?? 0).toISOString(),
+      new Date(before).toISOString(),
+    ]
   )
 }
