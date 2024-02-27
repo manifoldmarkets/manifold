@@ -32,13 +32,9 @@ esac
 GIT_REVISION=$(git rev-parse --short HEAD)
 TIMESTAMP=$(date +"%s")
 IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
-IMAGE_NAME="gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME}"
-IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
-TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
-GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
 # steps to deploy new version to GCP:
-# 1. build new docker image & upload to GCR
+# 1. build new docker image & upload to Google
 # 2. create a new GCP instance template with the new docker image
 # 3. tell the GCP 'backend service' for the API to update to the new template
 # 4. a. GCP creates a new instance with the new template
@@ -47,7 +43,33 @@ GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/
 #    d. delete the old instance
 
 yarn build
-gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
+
+if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
+    if ! command -v docker &> /dev/null
+    then
+       echo "Docker not found. You should install Docker for local builds. https://docs.docker.com/engine/install/"
+       echo
+       echo "After installing docker, run:"
+       echo "  gcloud auth configure-docker us-central1-docker.pkg.dev"
+       echo "to authenticate Docker to push to Google Artifact Registry."
+       echo
+       echo "If you really don't want to figure out how to install Docker, you can set MANIFOLD_CLOUD_BUILD=1."
+       echo "Then it will do remote builds like before, at the cost of it being slow, like before."
+       exit 1
+    fi
+    IMAGE_NAME="us-central1-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
+    IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
+    docker build . --tag ${IMAGE_URL}
+    docker push ${IMAGE_URL}
+else
+    # not really any reason to do this other than if you have been too lazy to install docker
+    IMAGE_NAME="gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME}"
+    IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
+    gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
+fi
+
+TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
+GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
 echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."

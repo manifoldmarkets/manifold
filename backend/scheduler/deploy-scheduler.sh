@@ -23,7 +23,9 @@ case $ENV in
       exit 1
 esac
 
-IMAGE_URL="gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME}"
+GIT_REVISION=$(git rev-parse --short HEAD)
+TIMESTAMP=$(date +"%s")
+IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
 
 yarn build
 
@@ -32,7 +34,29 @@ gcloud compute ssh ${SERVICE_NAME} \
        --zone ${ZONE} \
        --command 'sudo docker image prune -af'
 
-gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
+if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
+    if ! command -v docker &> /dev/null
+    then
+       echo "Docker not found. You should install Docker for local builds. https://docs.docker.com/engine/install/"
+       echo
+       echo "After installing docker, run:"
+       echo "  gcloud auth configure-docker us-central1-docker.pkg.dev"
+       echo "to authenticate Docker to push to Google Artifact Registry."
+       echo
+       echo "If you really don't want to figure out how to install Docker, you can set MANIFOLD_CLOUD_BUILD=1."
+       echo "Then it will do remote builds like before, at the cost of it being slow, like before."
+       exit 1
+    fi
+    IMAGE_NAME="us-central1-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
+    IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
+    docker build . --tag ${IMAGE_URL}
+    docker push ${IMAGE_URL}
+else
+    # not really any reason to do this other than if you have been too lazy to install docker
+    IMAGE_NAME="gcr.io/${GCLOUD_PROJECT}/${SERVICE_NAME}"
+    IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
+    gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
+fi
 
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then
