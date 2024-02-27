@@ -144,22 +144,15 @@ export function UniqueBettorBonusIncomeNotification(props: {
           Partners bonus:{' '}
           {totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD ? (
             <>
-              only {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors} more
-              traders to collect
+              only{' '}
+              <span className="font-semibold">
+                {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors}
+              </span>{' '}
+              more traders to collect{' '}
               <span className="font-semibold text-teal-600">
-                $
-                {(
-                  PARTNER_UNIQUE_TRADER_THRESHOLD * PARTNER_UNIQUE_TRADER_BONUS
-                ).toFixed(2)}
+                ${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)} each
               </span>
             </>
-          ) : totalUniqueBettors === PARTNER_UNIQUE_TRADER_THRESHOLD ? (
-            <span className="font-semibold text-teal-600">
-              $
-              {(
-                PARTNER_UNIQUE_TRADER_THRESHOLD * PARTNER_UNIQUE_TRADER_BONUS
-              ).toFixed(2)}
-            </span>
           ) : (
             <span className="font-semibold text-teal-600">
               ${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}
