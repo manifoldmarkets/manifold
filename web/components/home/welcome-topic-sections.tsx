@@ -2,7 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
-import { Topic, TOPIC_KEY } from 'common/group'
+import { Topic } from 'common/group'
 import Link from 'next/link'
 import { removeEmojis } from 'common/topics'
 import { ArrowRightIcon } from '@heroicons/react/solid'
@@ -22,10 +22,7 @@ export const WelcomeTopicSections = (props: {
           return (
             <Col key={topic.id} className={'mb-5 gap-2'}>
               <Row className={'text-primary-700 mx-1 text-xl'}>
-                <Link
-                  className={linkClass}
-                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-                >
+                <Link className={linkClass} href={`/browse/${topic.slug}`}>
                   {topic.name} questions
                 </Link>
               </Row>
@@ -42,10 +39,7 @@ export const WelcomeTopicSections = (props: {
                   'text-ink-700 mx-1 -mt-1 items-center justify-end text-lg'
                 }
               >
-                <Link
-                  className={linkClass}
-                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-                >
+                <Link className={linkClass} href={`/browse/${topic.slug}`}>
                   <Row className={'items-center gap-1'}>
                     See more {removeEmojis(topic.name)} questions
                     <ArrowRightIcon className="h-4 w-4 shrink-0" />
@@ -56,7 +50,7 @@ export const WelcomeTopicSections = (props: {
           )
         })}
         <Row className={'justify-center'}>
-          <Link className={linkClass} href={`/browse?topic=for-you`}>
+          <Link className={linkClass} href={`/browse/for-you`}>
             <Button
               color={'indigo-outline'}
               className={'mx-2 mb-8 mt-2 text-xl'}

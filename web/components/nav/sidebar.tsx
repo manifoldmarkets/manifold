@@ -123,7 +123,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       { name: 'Home', href: '/home', icon: HomeIcon },
       {
         name: 'Browse',
-        href: '/browse?topic=for-you',
+        href: '/browse/for-you',
         icon: SearchIcon,
       },
       {

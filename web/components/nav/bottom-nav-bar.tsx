@@ -56,7 +56,7 @@ function getNavigation(user: User) {
     },
     {
       name: 'Browse',
-      href: '/browse?topic=for-you',
+      href: '/browse/for-you',
       icon: BiSearchAlt2,
       // selectedIcon: BiSolidSearchAlt2,
     },

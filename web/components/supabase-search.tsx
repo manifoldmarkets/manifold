@@ -21,7 +21,7 @@ import {
   useGroupFromSlug,
   useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
-import { DEFAULT_TOPIC, LiteGroup, TOPIC_KEY } from 'common/group'
+import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useUser } from 'web/hooks/use-user'
@@ -129,7 +129,6 @@ export type SearchParams = {
   [SORT_KEY]: Sort
   [FILTER_KEY]: Filter
   [CONTRACT_TYPE_KEY]: ContractTypeType
-  [TOPIC_KEY]: string
   [SEARCH_TYPE_KEY]: SearchType
 }
 
@@ -184,6 +183,7 @@ export function SupabaseSearch(props: {
   hideContractFilters?: boolean
   topics?: LiteGroup[]
   setTopics?: (topics: LiteGroup[]) => void
+  topicSlug?: string
   contractsOnly?: boolean
   showTopicTag?: boolean
   hideSearchTypes?: boolean
@@ -210,6 +210,7 @@ export function SupabaseSearch(props: {
     rowBelowFilters,
     topics: topicResults,
     setTopics: setTopicResults,
+    topicSlug = '',
     contractsOnly,
     showTopicTag,
     hideSearch,
@@ -222,7 +223,6 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
-    defaultTopic,
     useUrlParams,
   })
   const user = useUser()
@@ -231,7 +231,7 @@ export function SupabaseSearch(props: {
 
   const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
-  const topicSlug = searchParams[TOPIC_KEY]
+
   const sort = searchParams[SORT_KEY]
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
@@ -241,7 +241,7 @@ export function SupabaseSearch(props: {
   >(undefined, `${persistPrefix}-queried-user-results`)
 
   const { contracts, loading, queryContracts, shouldLoadMore } =
-    useContractSearch(persistPrefix, searchParams, additionalFilter)
+    useContractSearch(persistPrefix, searchParams, topicSlug, additionalFilter)
 
   const onChange = (changes: Partial<SearchParams>) => {
     setSearchParams(changes)
@@ -304,7 +304,7 @@ export function SupabaseSearch(props: {
         No questions yet.
         {topicSlug && (
           <Row className={'mt-2 w-full items-center justify-center'}>
-            <AddContractToGroupButton groupSlug={searchParams[TOPIC_KEY]} />
+            <AddContractToGroupButton groupSlug={topicSlug} />
           </Row>
         )}
       </Col>
@@ -364,6 +364,7 @@ export function SupabaseSearch(props: {
             className={
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
+            topicSlug={topicSlug}
             showTopicTag={showTopicTag}
           />
         )}
@@ -491,7 +492,7 @@ const TopicResults = (props: {
   return (
     <Col className={'mt-1 w-full gap-1'}>
       {topics.map((group) => (
-        <Link key={group.id} href={`/browse?${TOPIC_KEY}=${group.slug}`}>
+        <Link key={group.id} href={`/browse/${group.slug}`}>
           <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
             <Col className={'w-full'}>
               <span className="line-clamp-1 sm:text-lg">{group.name}</span>
@@ -573,6 +574,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 const useContractSearch = (
   persistPrefix: string,
   searchParams: SearchParams,
+  topicSlug: string,
   additionalFilter?: SupabaseAdditionalFilter
 ) => {
   const [state, setState] = usePersistentInMemoryState<SearchState>(
@@ -584,13 +586,7 @@ const useContractSearch = (
   const requestId = useRef(0)
 
   const queryContracts = useEvent(async (freshQuery?: boolean) => {
-    const {
-      q: query,
-      s: sort,
-      f: filter,
-      topic: topicSlug,
-      ct: contractType,
-    } = searchParams
+    const { q: query, s: sort, f: filter, ct: contractType } = searchParams
 
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
@@ -677,7 +673,6 @@ const useSearchQueryState = (props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
-  defaultTopic?: string
   useUrlParams?: boolean
 }) => {
   const {
@@ -685,7 +680,6 @@ const useSearchQueryState = (props: {
     defaultFilter = 'open',
     defaultContractType = 'ALL',
     defaultSearchType,
-    defaultTopic,
     useUrlParams,
   } = props
 
@@ -694,7 +688,6 @@ const useSearchQueryState = (props: {
     [SORT_KEY]: defaultSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
-    [TOPIC_KEY]: defaultTopic ?? DEFAULT_TOPIC,
     [SEARCH_TYPE_KEY]: defaultSearchType,
   }
 
@@ -713,12 +706,19 @@ function ContractFilters(props: {
   includeProbSorts?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
+  topicSlug: string
   showTopicTag?: boolean
 }) {
-  const { className, includeProbSorts, params, updateParams, showTopicTag } =
-    props
+  const {
+    className,
+    topicSlug,
+    includeProbSorts,
+    params,
+    updateParams,
+    showTopicTag,
+  } = props
 
-  const { s: sort, f: filter, ct: contractType, topic: topicSlug } = params
+  const { s: sort, f: filter, ct: contractType } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return

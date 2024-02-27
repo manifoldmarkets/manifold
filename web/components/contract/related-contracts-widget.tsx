@@ -18,7 +18,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
 } from '@heroicons/react/outline'
-import { Topic, TOPIC_KEY } from 'common/group'
+import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { DAY_MS } from 'common/util/time'
 import { linkClass } from 'web/components/widgets/site-link'
@@ -68,10 +68,7 @@ export const RelatedContractsList = memo(function (props: {
           .map((topic) => (
             <Col key={'related-topics-' + topic.id} className={'my-2'}>
               <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
-                <Link
-                  className={linkClass}
-                  href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-                >
+                <Link className={linkClass} href={`/browse/${topic.slug}`}>
                   <Row className={'items-center gap-1'}>
                     {removeEmojis(topic.name)} questions
                     <ArrowRightIcon className="h-4 w-4 shrink-0" />
@@ -195,10 +192,7 @@ export const RelatedContractsGrid = memo(function (props: {
       {unseenRelatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
           <h2 className={clsx('mb-1 text-lg')}>
-            <Link
-              className={linkClass}
-              href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-            >
+            <Link className={linkClass} href={`/browse/${topic.slug}`}>
               Related in {removeEmojis(topic.name)}
             </Link>
           </h2>
@@ -229,10 +223,7 @@ export const RelatedContractsGrid = memo(function (props: {
           </Masonry>
 
           <Row className={'text-ink-700 items-center justify-end'}>
-            <Link
-              className={linkClass}
-              href={`/browse?${TOPIC_KEY}=${topic.slug}`}
-            >
+            <Link className={linkClass} href={`/browse/${topic.slug}`}>
               <Row className={'items-center gap-1'}>
                 See more {removeEmojis(topic.name)} questions
                 <ArrowRightIcon className="h-4 w-4 shrink-0" />

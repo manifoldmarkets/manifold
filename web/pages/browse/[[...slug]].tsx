@@ -1,5 +1,5 @@
-import { TOPIC_KEY, Group, DEFAULT_TOPIC, LiteGroup } from 'common/group'
-import { uniqBy } from 'lodash'
+import { Group, LiteGroup } from 'common/group'
+import { first, uniqBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import { TopicsList } from 'web/components/topics/topics-list'
 import { Col } from 'web/components/layout/col'
@@ -19,20 +19,100 @@ import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
+import {
+  useTopicFromRouter,
+  useFirstSlugFromRouter,
+} from 'web/hooks/use-topic-from-router'
 import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import clsx from 'clsx'
-import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { User } from 'common/user'
+import { getGroupFromSlug } from 'web/lib/supabase/group'
+import { getUser, getUsers } from 'web/lib/supabase/user'
+import Custom404 from 'web/pages/404'
+import { removeUndefinedProps } from 'common/util/object'
+const NON_GROUP_SLUGS = ['for-you', 'recent']
 
-// TODO: use static props for non for-you topic slugs
-export default function BrowsePage() {
+type TopicParams = {
+  group: Group
+  creator: User
+  topTraders: { user: User; score: number }[]
+  topCreators: { user: User; score: number }[]
+}
+const toTopUsers = async (
+  cachedUserIds: { userId: string; score: number }[]
+): Promise<{ user: User | null; score: number }[]> => {
+  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
+  const usersById = Object.fromEntries(userData.map((u) => [u?.id, u as User]))
+  return cachedUserIds
+    .map((e) => ({
+      user: usersById[e.userId],
+      score: e.score,
+    }))
+    .filter((e) => e.user != null)
+}
+
+export async function getStaticProps(props: { params: { slug: string[] } }) {
+  const slug = first(props.params.slug)
+  const group =
+    slug && !NON_GROUP_SLUGS.includes(slug)
+      ? await getGroupFromSlug(slug)
+      : null
+  if (!group || group.privacyStatus === 'private') {
+    return {
+      props: {
+        slug: slug ?? null,
+      },
+    }
+  }
+
+  const creatorPromise = getUser(group.creatorId)
+  const cachedTopTraderIds = group.cachedLeaderboard?.topTraders ?? []
+  const cachedTopCreatorIds = group.cachedLeaderboard?.topCreators ?? []
+  const topTraders = await toTopUsers(cachedTopTraderIds)
+  const topCreators = await toTopUsers(cachedTopCreatorIds)
+  const creator = await creatorPromise
+
+  return {
+    props: removeUndefinedProps({
+      slug: slug ?? null,
+      topicParams: {
+        topic: group ?? null,
+        creator: creator ?? null,
+        topTraders: topTraders ?? [],
+        topCreators: topCreators ?? [],
+      },
+      revalidate: 60, // regenerate after a minute
+    }),
+  }
+}
+
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export default function BrowseGroupPage(props: {
+  slug: string
+  topicParams?: TopicParams
+}) {
+  const { slug, topicParams } = props
+  if (!topicParams && slug !== null && !NON_GROUP_SLUGS.includes(slug)) {
+    return <Custom404 />
+  }
+  return <GroupPageContent slug={slug} topicParams={topicParams} />
+}
+
+export function GroupPageContent(props: {
+  topicParams?: TopicParams
+  slug: string | null
+}) {
+  const slug = props.slug ?? undefined
   const user = useUser()
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -52,10 +132,10 @@ export default function BrowsePage() {
   ) as Group[]
   const userTrendingTopics = useUserTrendingTopics(user, 50)
 
-  const [topicSlug, setTopicSlug] = usePersistentQueryState<string>(
-    TOPIC_KEY,
-    DEFAULT_TOPIC
-  )
+  const topicSlug = useFirstSlugFromRouter() ?? slug
+  const setTopicSlug = (slug: string) => {
+    router.push(`/browse/${slug}`, undefined, { shallow: true })
+  }
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
@@ -91,9 +171,7 @@ export default function BrowsePage() {
         <SEO
           title={`${currentTopic?.name ?? 'Browse'}`}
           description={`Browse ${currentTopic?.name ?? 'all'} questions`}
-          url={`/browse${
-            currentTopic ? `?${TOPIC_KEY}=${currentTopic.slug}` : ''
-          }`}
+          url={`/browse${currentTopic ? `/${currentTopic.slug}` : ''}`}
         />
 
         <div className={'md:grid md:grid-cols-10'}>
@@ -130,6 +208,8 @@ export default function BrowsePage() {
                 headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
                 topics={topicResults}
                 setTopics={setTopicResults}
+                topicSlug={topicSlug}
+                defaultTopic={slug}
                 menuButton={
                   showTopicsSidebar ? null : (
                     <Button
