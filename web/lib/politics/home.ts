@@ -1,3 +1,4 @@
+import { Contract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
   MapContractsDictionary,
@@ -6,6 +7,8 @@ import {
 } from 'common/politics/elections-data'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { StateElectionMarket } from 'web/public/data/elections-data'
+import { senate2024 } from 'web/public/data/senate-state-data'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
 export async function getElectionsPageProps() {
@@ -18,6 +21,12 @@ export async function getElectionsPageProps() {
   })
 
   const mapContractsArray = await Promise.all(mapContractsPromises)
+  const presidencyStateContracts = await getStateContracts(
+    getContract,
+    presidency2024
+  )
+
+  const senateStateContracts = await getStateContracts(getContract, senate2024)
 
   // Convert array to dictionary
   const mapContractsDictionary: MapContractsDictionary =
@@ -52,7 +61,8 @@ export async function getElectionsPageProps() {
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
 
   return {
-    rawMapContractsDictionary: mapContractsDictionary,
+    rawPresidencyStateContracts: presidencyStateContracts,
+    rawSenateStateContracts: senateStateContracts,
     electionPartyContract: electionPartyContract,
     electionCandidateContract: electionCandidateContract,
     republicanCandidateContract: republicanCandidateContract,
@@ -62,4 +72,25 @@ export async function getElectionsPageProps() {
     democraticVPContract: democraticVPContract,
     linkPreviews: linkPreviews,
   }
+}
+
+async function getStateContracts(
+  getContract: (slug: string) => Promise<Contract | null>,
+  stateSlugs: StateElectionMarket[]
+): Promise<MapContractsDictionary> {
+  const mapContractsPromises = stateSlugs.map(async (m) => {
+    const contract = await getContract(m.slug)
+    return { state: m.state, contract: contract }
+  })
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  // Convert array to dictionary
+  const mapContractsDictionary: MapContractsDictionary =
+    mapContractsArray.reduce((acc, mapContract) => {
+      acc[mapContract.state] = mapContract.contract
+      return acc
+    }, {} as MapContractsDictionary)
+
+  return mapContractsDictionary
 }
