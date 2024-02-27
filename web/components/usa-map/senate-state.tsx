@@ -150,20 +150,16 @@ export function SenateCurrentCard(props: {
     party2: '',
   }
 
-  function clsx(): string | undefined {
-    throw new Error('Function not implemented.')
-  }
-
   return (
     <Col className=" h-[183px] w-full">
       <Row className="w-full justify-between">
-        <div className="font-serif font-semibold sm:text-lg">{stateName}</div>
+        <div className=" font-semibold sm:text-lg">{stateName}</div>
         <ChooseStateButton setTargetState={setTargetState} />
       </Row>
-      <div className="text-ink-600 text-sm">No senate election in 2024</div>
+      <div className="text-ink-700 text-sm">No senate election in 2024</div>
       <Spacer h={4} />
-      <Col className="font-mono">
-        <div className="text-ink-400 text-sm">Current Senators</div>
+      <Col>
+        <div className="text-ink-500 text-sm">Current Senators</div>
         <span
           className={
             party1 == 'Republican' ? 'text-sienna-700' : 'text-azure-700'
