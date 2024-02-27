@@ -241,11 +241,9 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  const channelFilter = { k: 'group_id', v: groupId } as const
+  const filter = { k: 'group_id', v: groupId } as const
   useRealtime({
-    event: '*',
-    table: 'group_members',
-    filter: channelFilter,
+    bindings: [{ table: 'group_members', event: '*', filter }],
     onChange: (_change) => {
       fetchGroupMembers()
     },

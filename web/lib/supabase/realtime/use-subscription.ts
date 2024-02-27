@@ -165,7 +165,8 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtime({ event: '*', table, filter, onChange, onStatus, onEnabled })
+  const bindings = [{ event: '*', table, filter } as const]
+  useRealtime({ bindings, onChange, onStatus, onEnabled })
   return { ...state, loadNewer }
 }
 
