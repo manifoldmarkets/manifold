@@ -11,14 +11,19 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { db } from 'web/lib/supabase/db'
 
-export function useRealtimeChannel<T extends TableName, E extends Event>(
-  event: E,
-  table: T,
-  filter: Filter<T> | null | undefined,
-  onChange: (change: Change<T, E>) => void,
-  onStatus?: (status: SubscriptionStatus, err?: Error) => void,
+export type RealtimeOptions<T extends TableName, E extends Event> = {
+  event: E
+  table: T
+  filter?: Filter<T> | null | undefined
+  onChange: (change: Change<T, E>) => void
+  onStatus?: (status: SubscriptionStatus, err?: Error) => void
   onEnabled?: (enabled: boolean) => void
+}
+
+export function useRealtimeChannel<T extends TableName, E extends Event>(
+  opts: RealtimeOptions<T, E>
 ) {
+  const { event, table, filter, onChange, onStatus, onEnabled } = opts
   const filterString = filter ? buildFilterString(filter) : undefined
   const channelId = `${table}-${useId()}`
 

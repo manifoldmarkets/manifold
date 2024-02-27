@@ -242,8 +242,13 @@ export function useRealtimeGroupMembers(
   }, [hitBottom])
 
   const channelFilter = { k: 'group_id', v: groupId } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
-    fetchGroupMembers()
+  useRealtimeChannel({
+    event: '*',
+    table: 'group_members',
+    filter: channelFilter,
+    onChange: (_change) => {
+      fetchGroupMembers()
+    },
   })
 
   return { admins, moderators, members, loadMore }

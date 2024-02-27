@@ -165,7 +165,14 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
+  useRealtimeChannel({
+    event: '*',
+    table,
+    filter,
+    onChange,
+    onStatus,
+    onEnabled,
+  })
   return { ...state, loadNewer }
 }
 
