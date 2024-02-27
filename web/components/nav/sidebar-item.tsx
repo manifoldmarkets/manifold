@@ -43,7 +43,10 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
             isCurrentPage
               ? 'text-ink-600'
               : 'text-ink-500 group-hover:text-ink-600',
-            '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+            '  flex-shrink-0',
+            item.name == 'US Politics'
+              ? '-ml-0.5 mr-3.5 h-5 w-5'
+              : '-ml-1 mr-3 h-6 w-6'
           )}
           aria-hidden="true"
         />
