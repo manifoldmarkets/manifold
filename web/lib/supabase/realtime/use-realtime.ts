@@ -20,7 +20,7 @@ export type RealtimeOptions<T extends TableName, E extends Event> = {
   onEnabled?: (enabled: boolean) => void
 }
 
-export function useRealtimeChannel<T extends TableName, E extends Event>(
+export function useRealtime<T extends TableName, E extends Event>(
   opts: RealtimeOptions<T, E>
 ) {
   const { event, table, filter, onChange, onStatus, onEnabled } = opts

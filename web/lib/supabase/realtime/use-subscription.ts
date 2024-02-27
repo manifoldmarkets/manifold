@@ -8,7 +8,7 @@ import {
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { Store } from 'web/lib/util/local'
 import { db } from 'web/lib/supabase/db'
 
@@ -165,14 +165,7 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel({
-    event: '*',
-    table,
-    filter,
-    onChange,
-    onStatus,
-    onEnabled,
-  })
+  useRealtime({ event: '*', table, filter, onChange, onStatus, onEnabled })
   return { ...state, loadNewer }
 }
 
