@@ -67,7 +67,7 @@ export function HomepageMap(props: {
   }
 
   return (
-    <Col className="bg-canvas-0 p-4">
+    <Col className="bg-canvas-0 rounded-xl p-4">
       <MapTab mode={mode} setMode={setMode} />
       {mode === 'presidency' ? (
         <>
