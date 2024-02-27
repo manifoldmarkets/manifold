@@ -1,7 +1,8 @@
 import { Contract } from 'common/contract'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { ProbChangeData } from 'common/feed'
+import dayjs from 'dayjs'
 
 const PROB_CHANGE_THRESHOLD = 0.05
 export const getMarketMovementInfo = (
@@ -94,5 +95,9 @@ export const getMarketMovementInfo = (
 
   const probChange = Math.round(probChangeSinceAdd * 100)
 
-  return { ignore: false, probChange, startTime }
+  // idk blame ian
+  const leadingBetDays = dayjs(contract.lastBetTime).diff(startTime, 'day')
+  const realStart = startTime - leadingBetDays * HOUR_MS
+
+  return { ignore: false, probChange, startTime: realStart }
 }
