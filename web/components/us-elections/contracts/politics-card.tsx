@@ -36,6 +36,7 @@ export function PoliticsCard(props: {
     className,
     maxAnswers,
     viewType,
+    children,
   } = props
 
   const contract =
@@ -76,22 +77,15 @@ export function PoliticsCard(props: {
 
   if (viewType == 'PARTY') {
     return (
-      <ClickFrame
+      <Col
         className={clsx(
           className,
-          'relative rounded-xl',
-          'cursor-pointer ',
-          'fade-in group'
+          'fade-in bg-canvas-0 group relative cursor-pointer gap-4 rounded-lg p-4 '
         )}
-        onClick={(e) => {
-          trackClick()
-          Router.push(path)
-          e.currentTarget.focus() // focus the div like a button, for style
-        }}
       >
         <Link
           className={clsx(
-            'group-hover:text-primary-700 grow items-start text-sm font-semibold transition-colors sm:text-lg',
+            'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
@@ -99,18 +93,27 @@ export function PoliticsCard(props: {
         >
           {contract.question}
         </Link>
-        <Spacer h={4} />
-        <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
-      </ClickFrame>
+
+        {children}
+        <ClickFrame
+          onClick={(e) => {
+            trackClick()
+            Router.push(path)
+            e.currentTarget.focus() // focus the div like a button, for style
+          }}
+        >
+          <PartyPanel contract={contract} maxAnswers={maxAnswers ?? 2} />
+        </ClickFrame>
+      </Col>
     )
   }
   if (viewType == 'CANDIDATE') {
     return (
-      <Col className={'group w-full flex-col gap-1.5 '}>
+      <Col className={'group w-full flex-col gap-1.5 px-2 sm:px-0'}>
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
           className={clsx(
-            'group-hover:text-primary-700 grow items-start font-semibold transition-colors sm:text-lg',
+            'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
@@ -119,7 +122,7 @@ export function PoliticsCard(props: {
           <VisibilityIcon contract={contract} />{' '}
           {customTitle ? customTitle : extractPhrase(contract.question)}
         </Link>
-        <CandidatePanel contract={contract} maxAnswers={6} />
+        <CandidatePanel contract={contract} maxAnswers={8} />
       </Col>
     )
   }
@@ -128,10 +131,7 @@ export function PoliticsCard(props: {
       <ClickFrame
         className={clsx(
           className,
-          'relative rounded-xl',
-          'cursor-pointer ',
-          'fade-in group',
-          'bg-canvas-0 px-4 py-2'
+          'fade-in bg-canvas-0 group relative cursor-pointer rounded-lg px-4 py-2'
         )}
         onClick={(e) => {
           trackClick()
@@ -141,7 +141,7 @@ export function PoliticsCard(props: {
       >
         <Link
           className={clsx(
-            'group-hover:text-primary-700 grow items-start text-sm font-semibold transition-colors sm:text-lg',
+            'grow items-start font-semibold transition-colors group-hover:text-indigo-700 group-hover:underline sm:text-lg ',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}

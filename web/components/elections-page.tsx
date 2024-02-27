@@ -66,6 +66,8 @@ function ElectionContent(props: ElectionsPageProps) {
         <PoliticsCard
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
+          customTitle="Which party will win the Presidential Election?"
+          className="-mt-4"
         />
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
@@ -95,9 +97,7 @@ function ElectionContent(props: ElectionsPageProps) {
           <Col className="gap-2">
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-              <div className="text-ink-600 text-lg font-semibold">
-                Presidential Nomination
-              </div>
+              <div className="text-ink-600  ">Presidential Nomination</div>
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
@@ -120,9 +120,7 @@ function ElectionContent(props: ElectionsPageProps) {
           <Col className="gap-2">
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
-              <div className="text-ink-600 text-lg font-semibold">
-                Vice Presidential Nomination
-              </div>
+              <div className="text-ink-600">Vice Presidential Nomination</div>
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
             <Row className="gap-4">
