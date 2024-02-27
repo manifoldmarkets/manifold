@@ -84,14 +84,13 @@ export const revalidateStaticProps = async (
       throw new Error('Revalidation failed because of missing API_SECRET.')
 
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
-    const { ok, status, statusText } = await fetch(
+    const resp = await fetch(
       `https://${domain ?? ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
     )
-    if (!ok)
-      throw new Error(
-        'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
-      )
-
+    if (!resp.ok) {
+      const body = await resp.text()
+      throw new Error(`HTTP ${resp.status} revalidating ${queryStr}: ${body}`)
+    }
     log('Revalidated', pathToRevalidate)
   }
 }
