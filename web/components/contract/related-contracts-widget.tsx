@@ -477,12 +477,7 @@ const RelatedContractCard = memo(function (props: {
         </Row>
       </Row>
       {contract.outcomeType === 'BINARY' && probChange !== 0 && (
-        <FeedBinaryChart
-          contract={contract}
-          className="my-4"
-          startDate={Date.now() - DAY_MS}
-          addLeadingBetPoint={true}
-        />
+        <FeedBinaryChart contract={contract} className="my-4" />
       )}
     </Link>
   )

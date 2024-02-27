@@ -153,7 +153,6 @@ export const getSingleBetPoints = (
   betPoints: { x: number; y: number }[],
   contract: Contract
 ) => {
-  betPoints.sort((a, b) => a.x - b.x)
   const points = buildArray<{ x: number; y: number }>(
     contract.mechanism === 'cpmm-1' && {
       x: contract.createdTime,
