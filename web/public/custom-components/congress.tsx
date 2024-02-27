@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 export function Congress(props: { height?: number; className?: string }) {
   const { className } = props
 

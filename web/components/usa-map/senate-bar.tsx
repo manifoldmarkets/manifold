@@ -1,6 +1,5 @@
-import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'
-import { DEM_DARK_HEX, probToColor } from './state-election-map'
+import { probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
@@ -10,7 +9,6 @@ import { MapContractsDictionary } from 'common/politics/elections-data'
 import { currentSenate } from 'web/public/data/senate-state-data'
 import { partition } from 'lodash'
 import { sortByDemocraticDiff } from './electoral-college-visual'
-import { DEFAULT_STATE_FILL } from './usa-state'
 
 export function SenateBar(props: {
   mapContractsDictionary: MapContractsDictionary
