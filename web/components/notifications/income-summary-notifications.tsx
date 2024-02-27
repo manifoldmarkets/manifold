@@ -8,6 +8,7 @@ import {
 import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
+import clsx from 'clsx'
 
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -32,7 +33,6 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
-import clsx from 'clsx'
 import { Linkify } from 'web/components/widgets/linkify'
 import {
   PARTNER_UNIQUE_TRADER_BONUS,
@@ -42,9 +42,9 @@ import {
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
   notifications: Notification[],
-  options: { usePartnerDollarBonus?: boolean } = {}
+  options: { isPartner?: boolean } = {}
 ) {
-  const { usePartnerDollarBonus } = options
+  const { isPartner } = options
   const newNotifications: Notification[] = []
   const groupedNotificationsBySourceType = groupBy(
     notifications,
@@ -67,11 +67,7 @@ export function combineAndSumIncomeNotifications(
 
       let sum = 0
       notificationsForSourceTitle.forEach((notification) => {
-        sum += usePartnerDollarBonus
-          ? notification.data?.isPartner
-            ? PARTNER_UNIQUE_TRADER_BONUS
-            : 0
-          : parseFloat(notification.sourceText ?? '0')
+        sum += parseFloat(notification.sourceText ?? '0')
       })
 
       const newNotification = {
@@ -80,7 +76,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
-          isPartner: usePartnerDollarBonus,
+          isPartner,
         },
       }
       newNotifications.push(newNotification)
@@ -141,16 +137,36 @@ export function UniqueBettorBonusIncomeNotification(props: {
             (answerText ? ` (${answerText})` : '')
           }
         />{' '}
-        {isPartner &&
-          totalUniqueBettors &&
-          totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD && (
-            <>
-              (need {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors} more
-              traders to collect){' '}
-            </>
-          )}
         <QuestionOrGroupLink notification={notification} />
       </span>
+      {isPartner && totalUniqueBettors && (
+        <div>
+          Partners bonus:{' '}
+          {totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD ? (
+            <>
+              only {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors} more
+              traders to collect
+              <span className="font-semibold text-teal-600">
+                $
+                {(
+                  PARTNER_UNIQUE_TRADER_THRESHOLD * PARTNER_UNIQUE_TRADER_BONUS
+                ).toFixed(2)}
+              </span>
+            </>
+          ) : totalUniqueBettors === PARTNER_UNIQUE_TRADER_THRESHOLD ? (
+            <span className="font-semibold text-teal-600">
+              $
+              {(
+                PARTNER_UNIQUE_TRADER_THRESHOLD * PARTNER_UNIQUE_TRADER_BONUS
+              ).toFixed(2)}
+            </span>
+          ) : (
+            <span className="font-semibold text-teal-600">
+              ${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}
+            </span>
+          )}
+        </div>
+      )}
       <MultiUserNotificationModal
         notification={notification}
         modalLabel={'Traders'}
@@ -504,14 +520,10 @@ function IncomeNotificationLabel(props: {
   className?: string
 }) {
   const { notification, className } = props
-  const { sourceText, data } = notification
-  const { isPartner } = (data ?? {}) as UniqueBettorData
-
+  const { sourceText } = notification
   return sourceText ? (
     <span className={clsx('text-teal-600', className)}>
-      {isPartner
-        ? `$${PARTNER_UNIQUE_TRADER_BONUS.toFixed(2)}`
-        : formatMoneyToDecimal(parseFloat(sourceText))}
+      {formatMoneyToDecimal(parseFloat(sourceText))}
     </span>
   ) : (
     <div />

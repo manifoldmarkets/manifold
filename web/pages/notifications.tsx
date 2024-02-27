@@ -331,7 +331,7 @@ function NotificationGroupItem(props: {
           notifications.filter(
             (n) => n.sourceType === 'bonus' && n.data?.isPartner
           ),
-          { usePartnerDollarBonus: true }
+          { isPartner: true }
         )
       ),
 

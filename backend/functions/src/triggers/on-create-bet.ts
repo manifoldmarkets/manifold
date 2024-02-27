@@ -293,7 +293,11 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
-  const isPartner = PARTNER_USER_IDS.includes(creatorId)
+
+  const isPartner =
+    PARTNER_USER_IDS.includes(contract.creatorId) &&
+    // Require the contract creator to also be the answer creator for real-money bonus.
+    creatorId === contract.creatorId
 
   if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
 
