@@ -141,7 +141,7 @@ export function PoliticsCard(props: {
       >
         <Link
           className={clsx(
-            'grow items-start font-semibold transition-colors group-hover:text-indigo-700 group-hover:underline sm:text-lg ',
+            'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg ',
             titleSize === 'lg' && ' sm:text-3xl'
           )}
           href={path}
