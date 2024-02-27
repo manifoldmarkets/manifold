@@ -19,6 +19,7 @@ export const convertBet = (row: Row<'contract_bets'>) =>
   convertSQLtoTS<'contract_bets', Bet>(row, {
     fs_updated_time: false,
     created_time: tsToMillis as any,
+    answer_id: (a) => (a != null ? a : undefined),
   })
 
 export async function getBet(db: SupabaseClient, id: string) {
