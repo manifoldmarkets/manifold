@@ -71,7 +71,7 @@ export function HomepageMap(props: {
       <MapTab mode={mode} setMode={setMode} />
       {mode === 'presidency' ? (
         <>
-          <div className="mx-auto font-semibold sm:text-xl">
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win the US Presidency?
           </div>
           <ElectoralCollegeVisual
@@ -108,7 +108,7 @@ export function HomepageMap(props: {
         </>
       ) : (
         <>
-          <div className="mx-auto font-semibold sm:text-xl">
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win Senate?
           </div>
           <SenateBar
