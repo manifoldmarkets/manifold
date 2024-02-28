@@ -279,6 +279,7 @@ export const PARTNER_USER_IDS: string[] = [
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
