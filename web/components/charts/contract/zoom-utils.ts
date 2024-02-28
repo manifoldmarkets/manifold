@@ -17,7 +17,6 @@ export async function getPointsBetween(
     afterTime: min,
   })
 
-  points.sort((a, b) => a.x - b.x)
   const compressed = maxMinBin(points, 500)
 
   return compressed

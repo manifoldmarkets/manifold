@@ -5,8 +5,9 @@ import { Bet, BetFilter } from 'common/bet'
 import { User } from 'common/user'
 import { getContractBetMetrics } from 'common/calculate'
 import { Contract } from 'common/contract'
-import { chunk, groupBy, maxBy, minBy } from 'lodash'
+import { chunk, groupBy, maxBy, minBy, sortBy } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
+import { buildArray } from 'common/util/array'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
@@ -18,6 +19,7 @@ export const convertBet = (row: Row<'contract_bets'>) =>
   convertSQLtoTS<'contract_bets', Bet>(row, {
     fs_updated_time: false,
     created_time: tsToMillis as any,
+    answer_id: (a) => (a != null ? a : undefined),
   })
 
 export async function getBet(db: SupabaseClient, id: string) {
@@ -83,7 +85,7 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   return data.map((r) => r.data)
 }
 
-// gets 50,000 unsorted random bets
+// gets random bets - 50,000 by default
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
   contractId: string,
@@ -92,7 +94,7 @@ export const getBetPoints = async <S extends SupabaseClient>(
   let q = db
     .from('contract_bets')
     .select('created_time, prob_before, prob_after, data->answerId')
-    .order('bet_id')
+    .order('bet_id') // get "random" points so it doesn't bunch up at the end
   q = applyBetsFilter(q, {
     contractId,
     limit: 50000,
@@ -100,13 +102,25 @@ export const getBetPoints = async <S extends SupabaseClient>(
   })
   const { data } = await run(q)
 
-  return data
-    .filter((r: any) => r.prob_after != r.prob_before)
-    .map((r: any) => ({
+  const sorted = sortBy(data, 'created_time')
+
+  if (sorted.length === 0) return []
+
+  // we need to include previous prob for binary in case the prob shifted from something
+  const includePrevProb = !!options?.afterTime && !sorted[0].answerId
+
+  return buildArray(
+    includePrevProb && {
+      x: tsToMillis(sorted[0].created_time) - 1,
+      y: sorted[0].prob_before as number,
+      answerId: sorted[0].answerId as string,
+    },
+    sorted.map((r: any) => ({
       x: tsToMillis(r.created_time),
       y: r.prob_after as number,
       answerId: r.answerId as string,
     }))
+  )
 }
 
 export const applyBetsFilter = <

@@ -56,7 +56,7 @@ function getNavigation(user: User) {
     },
     {
       name: 'Browse',
-      href: '/browse?topic=for-you',
+      href: '/browse/for-you',
       icon: BiSearchAlt2,
       // selectedIcon: BiSolidSearchAlt2,
     },
@@ -255,16 +255,19 @@ export function MobileSidebar(props: {
             {/* background cover */}
             <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
+          <div className="w-14 flex-shrink-0" aria-hidden="true">
+            {/* Dummy element to force sidebar content to the right */}
+          </div>
           <Transition.Child
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
-            enterFrom="-translate-x-full"
+            enterFrom="translate-x-full"
             enterTo="translate-x-0"
             leave="transition ease-in-out duration-300 transform"
             leaveFrom="translate-x-0"
-            leaveTo="-translate-x-full"
+            leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
+            <div className="bg-canvas-0 relative ml-auto flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
                 <Sidebar
                   navigationOptions={props.sidebarNavigationOptions}
@@ -274,9 +277,6 @@ export function MobileSidebar(props: {
               </div>
             </div>
           </Transition.Child>
-          <div className="w-14 flex-shrink-0" aria-hidden="true">
-            {/* Dummy element to force sidebar to shrink to fit close icon */}
-          </div>
         </Dialog>
       </Transition.Root>
     </div>

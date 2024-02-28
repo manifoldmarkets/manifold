@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { noop, uniq } from 'lodash'
+import { noop, uniq, intersection } from 'lodash'
 
 import { Col } from 'web/components/layout/col'
 import { useUser } from 'web/hooks/use-user'
@@ -7,7 +7,7 @@ import { Modal } from 'web/components/layout/modal'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Button } from 'web/components/buttons/button'
 import { getSubtopics, removeEmojis, TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { api, followTopic } from 'web/lib/firebase/api'
+import { api, followTopic, followUser } from 'web/lib/firebase/api'
 import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
@@ -64,6 +64,17 @@ export function TopicSelectorDialog(props: {
     if (user) await updateUser(user.id, { shouldShowWelcome: false })
 
     onClose?.()
+
+    // if user is following us politics
+    if (
+      intersection(selectedTopics, [
+        'AjxQR8JMpNyDqtiqoA96',
+        'pYwsGvORZFlcq7QrkI6n',
+        'cEzcLXuitr6o4VPI01Q1',
+      ]).length > 0
+    ) {
+      await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
+    }
   }
   const selectedTopics: string[] = userSelectedTopics ?? []
 

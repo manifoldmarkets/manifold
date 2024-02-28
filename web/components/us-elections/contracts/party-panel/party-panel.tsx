@@ -6,8 +6,16 @@ import { MultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import { useUser } from 'web/hooks/use-user'
-import { Col } from '../../../layout/col'
-import { PartyBar } from './party-bar'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import {
+  AnswerBar,
+  AnswerStatus,
+} from 'web/components/answers/answer-components'
+import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
+import { MultiBettor } from 'web/components/answers/answer-components'
+import { CPMMMultiContract } from 'common/contract'
+import { PercentChangeToday } from '../candidates-panel/candidate-bar'
 
 // just the bars
 export function PartyPanel(props: {
@@ -94,18 +102,39 @@ function PartyAnswer(props: {
 
   return (
     <Col className={'w-full'}>
-      <PartyBar
+      <AnswerBar
         color={color}
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
         className={clsx(
-          'cursor-pointer',
-          selected && 'ring-primary-600 rounded ring-2'
+          'cursor-pointer py-1.5',
+          selected && 'ring-primary-600 ring-2'
         )}
-        answer={answer}
-        selected={selected}
-        contract={contract}
+        label={
+          <Row className={'items-center gap-1'}>
+            <CreatorAndAnswerLabel
+              text={answer.text}
+              createdTime={answer.createdTime}
+              className={clsx('items-center !leading-none ')}
+            />
+          </Row>
+        }
+        end={
+          <Row className={'items-center gap-1 sm:gap-2'}>
+            <div className="relative">
+              <AnswerStatus contract={contract} answer={answer} />
+              <PercentChangeToday
+                probChange={answer.probChanges.day}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            </div>
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
+            />
+          </Row>
+        }
       />
     </Col>
   )

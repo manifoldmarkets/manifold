@@ -1,69 +1,52 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+// A data-source unaware pagination mechanism that is appropriate for paging
+// lists of unknown length that we can query from the DB.
 
-type ItemFactory<T> = (limit: number, after?: T) => PromiseLike<T[]>
+import { useCallback, useEffect, useReducer } from 'react'
+
+type DataSource<T> = (limit: number, after?: T) => PromiseLike<T[]>
 
 interface State<T> {
-  allItems: T[]
-  pageStart: number
-  pageEnd: number
-  pageSize: number
-  isLoading: boolean
+  // items we were given from outside that are always at the front of the list
+  prefix: T[]
+  // items we have loaded in the list during the course of events
+  items: T[]
+  // the index of the start of the requested page. may or may not have loaded items
+  at: number
+  // whether we believe we have loaded all items
   isComplete: boolean
 }
 
 type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V
 
 type Action<T> =
-  | ActionBase<'INIT', { opts: PaginationOptions<T> }>
-  | ActionBase<'PREPEND', { items: T[] }>
-  | ActionBase<
-      'LOAD',
-      { at: number; oldItems: T[]; newItems: T[]; isComplete: boolean }
-    >
-  | ActionBase<'PREV'>
-  | ActionBase<'NEXT'>
+  | ActionBase<'PREFIX', { prefix: T[] }>
+  | ActionBase<'LOAD', { items: T[]; isComplete: boolean }>
+  | ActionBase<'PREV', { distance: number }>
+  | ActionBase<'NEXT', { distance: number }>
+
+// whether the pagination should try right now to load some more items,
+// i.e. if it's not complete and it doesn't have enough to match desired
+function shouldLoadMore<T>(state: State<T>, desired: number) {
+  const itemCount = state.prefix.length + state.items.length
+  return !state.isComplete && itemCount < state.at + desired
+}
 
 function getReducer<T>() {
   return (state: State<T>, action: Action<T>): State<T> => {
     switch (action.type) {
-      case 'INIT': {
-        return getInitialState(action.opts)
-      }
-      case 'PREPEND': {
-        return { ...state, allItems: [...action.items, ...state.allItems] }
+      case 'PREFIX': {
+        return { ...state, prefix: action.prefix }
       }
       case 'LOAD': {
-        // always keep the stuff we loaded
-        const allItems = action.oldItems.concat(action.newItems)
-        const isLoading = false
-        const isComplete = action.isComplete
-        if (action.at < state.pageEnd) {
-          // they aren't looking at the end of the list right now, so don't
-          // mess with the page number
-          return { ...state, isComplete, isLoading, allItems }
-        }
-        // bump the page to show the new stuff
-        const pageStart = action.at
-        const pageEnd = action.at + state.pageSize
-        return { ...state, isComplete, isLoading, allItems, pageStart, pageEnd }
+        return { ...state, items: action.items, isComplete: action.isComplete }
       }
       case 'PREV': {
-        const pageStart = state.pageStart - state.pageSize
-        const pageEnd = state.pageStart
-        return { ...state, isLoading: false, pageStart, pageEnd }
+        // it's meaningless to let them page to before the start
+        return { ...state, at: Math.max(0, state.at - action.distance) }
       }
       case 'NEXT': {
-        // if it's not complete and the next page needs more items, load more
-        const shouldLoad =
-          !state.isComplete &&
-          state.allItems.length < state.pageEnd + state.pageSize
-        if (shouldLoad) {
-          return { ...state, isLoading: true }
-        } else {
-          const pageStart = state.pageEnd
-          const pageEnd = state.pageEnd + state.pageSize
-          return { ...state, isLoading: false, pageStart, pageEnd }
-        }
+        // but let them page past the end -- it indicates they want some amount more
+        return { ...state, at: state.at + action.distance }
       }
       default:
         throw new Error('Invalid action.')
@@ -72,65 +55,80 @@ function getReducer<T>() {
 }
 
 export type PaginationOptions<T> = {
-  q: ItemFactory<T>
+  /** The size of a page (for item fetching purposes in particular.) */
   pageSize: number
-  preload?: T[]
+
+  /** Drives item fetching. Must load the next `limit` items after an item.
+   *
+   * If the pagination asks for N items and the data source returns only M < N,
+   * the pagination takes that as an indication that the list is complete.
+   */
+  q: DataSource<T>
+
+  /** Items which will always be present at the start of the list.
+   *
+   * Should be used when e.g. the first page is preloaded in static props,
+   * or when users can add new items to the front of the list using the UI,
+   * or when new items are streamed into the client after initial load.
+   */
+  prefix?: T[]
 }
 
 function getInitialState<T>(opts: PaginationOptions<T>): State<T> {
-  return {
-    allItems: opts.preload ?? [],
-    pageStart: 0,
-    pageEnd: opts.pageSize,
-    pageSize: opts.pageSize,
-    isLoading: (opts.preload?.length ?? 0) < opts.pageSize,
-    isComplete: false,
-  }
+  return { prefix: opts.prefix ?? [], items: [], at: 0, isComplete: false }
 }
 
 export function usePagination<T>(opts: PaginationOptions<T>) {
   const [state, dispatch] = useReducer(getReducer<T>(), opts, getInitialState)
 
-  useEffect(() => {
-    dispatch({
-      type: 'INIT',
-      opts: { q: opts.q, pageSize: opts.pageSize, preload: opts.preload },
-    })
-  }, [opts.q, opts.pageSize, opts.preload])
+  const loading = shouldLoadMore(state, opts.pageSize)
+  const allItems = [...state.prefix, ...state.items]
+  const lastItem = allItems[allItems.length - 1]
+  const itemCount = allItems.length
+  const pageStart = Math.min(state.at, itemCount - opts.pageSize)
+  const pageEnd = pageStart + opts.pageSize
+  const pageItems = allItems.slice(pageStart, pageEnd)
 
   useEffect(() => {
-    if (state.isLoading) {
-      const after = state.allItems[state.allItems.length - 1]
-      opts.q(state.pageSize, after).then((newItems) => {
-        const isComplete = newItems.length < state.pageSize
-        dispatch({
-          type: 'LOAD',
-          at: state.allItems.length,
-          oldItems: state.allItems,
-          newItems,
-          isComplete,
-        })
+    dispatch({ type: 'PREFIX', prefix: opts.prefix ?? [] })
+  }, [opts.prefix])
+
+  // note: i guess if q changed we would probably want to wipe existing items,
+  // and ignore the results of in-progress queries here? unclear with no example
+
+  useEffect(() => {
+    if (loading) {
+      opts.q(opts.pageSize, lastItem).then((newItems) => {
+        const isComplete = newItems.length < opts.pageSize
+        const items = [...state.items, ...newItems]
+        dispatch({ type: 'LOAD', items, isComplete })
       })
     }
-  }, [state.isLoading, opts.q, state.allItems, state.pageSize])
+  }, [loading, lastItem, opts.q, opts.pageSize])
 
-  const items = useMemo(
-    () => state.allItems.slice(state.pageStart, state.pageEnd),
-    [state.allItems, state.pageStart, state.pageEnd]
+  const getPrev = useCallback(
+    () => dispatch({ type: 'PREV', distance: opts.pageSize }),
+    [dispatch, opts.pageSize]
   )
-
-  const getPrev = useCallback(() => dispatch({ type: 'PREV' }), [dispatch])
-  const getNext = useCallback(() => dispatch({ type: 'NEXT' }), [dispatch])
+  const getNext = useCallback(
+    () => dispatch({ type: 'NEXT', distance: opts.pageSize }),
+    [dispatch, opts.pageSize]
+  )
   const prepend = useCallback(
-    (...items: T[]) => dispatch({ type: 'PREPEND', items }),
-    [dispatch]
+    (...items: T[]) =>
+      dispatch({ type: 'PREFIX', prefix: [...items, ...state.prefix] }),
+    [dispatch, state.prefix]
   )
 
   return {
-    ...state,
-    isStart: state.pageStart === 0,
-    isEnd: state.isComplete && state.pageEnd >= state.allItems.length,
-    items,
+    items: pageItems,
+    pageStart,
+    pageEnd,
+    pageSize: opts.pageSize,
+    isLoading: loading,
+    isComplete: state.isComplete,
+    isStart: pageStart === 0,
+    isEnd: state.isComplete && pageEnd >= itemCount,
     getPrev,
     getNext,
     prepend,

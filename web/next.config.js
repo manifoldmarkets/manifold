@@ -136,7 +136,7 @@ module.exports = {
       },
       {
         source: '/group/:slug*',
-        destination: '/browse?topic=:slug*',
+        destination: '/browse/:slug*',
         permanent: true,
       },
       {
@@ -155,7 +155,7 @@ module.exports = {
           },
         ],
         permanent: true,
-        destination: '/browse?topic=:slug', // Using the captured value here
+        destination: '/browse/:slug', // Using the captured value here
       },
       {
         source: '/questions',

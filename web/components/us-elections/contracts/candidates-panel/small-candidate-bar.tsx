@@ -1,21 +1,13 @@
-import { animated } from '@react-spring/web'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
-import { getAnswerProbability } from 'common/calculate'
+import { Answer } from 'common/answer'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { formatPercent } from 'common/util/format'
 import Image from 'next/image'
-import { MouseEventHandler, useState } from 'react'
 import { IoIosPerson } from 'react-icons/io'
-import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useUser } from 'web/hooks/use-user'
+import { MultiBettor, OpenProb } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
-import { MODAL_CLASS, Modal } from '../../../layout/modal'
 import { Row } from '../../../layout/row'
-import { removeTextInParentheses } from './candidate-bar'
+import { PercentChangeToday, removeTextInParentheses } from './candidate-bar'
 
 export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
@@ -41,40 +33,41 @@ export const SmallCandidateBar = (props: {
   } = props
 
   const candidatefullName = removeTextInParentheses(answer.text)
-  const [open, setOpen] = useState(false)
-  const user = useUser()
-  const isMobile = useIsMobile()
 
-  const { shortName, photo, party } = CANDIDATE_DATA[candidatefullName] ?? {}
+  const { shortName, photo } = CANDIDATE_DATA[candidatefullName] ?? {}
 
   return (
     <>
       <Col className={clsx('relative isolate h-full w-full', className)}>
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
-          <Row className="w-full items-center gap-2 text-sm sm:text-lg">
+          <Row className="w-full items-center gap-2">
             {!photo ? (
-              <IoIosPerson className="text-ink-600 h-10 w-10 sm:h-[60px] sm:w-[60px]" />
+              <IoIosPerson className="text-ink-600 h-[60px] w-[60px] " />
             ) : (
               <Image
                 src={photo}
                 alt={answer.text}
-                width={isMobile ? 40 : 60}
-                height={isMobile ? 40 : 60}
-                className="object-fill"
+                width={60}
+                height={60}
+                className="rounded-bl object-fill"
               />
             )}
 
             {shortName ?? answer.text}
           </Row>
-          <CandidateProb
-            contract={contract}
-            answer={answer}
-            onClick={(e) => {
-              e.stopPropagation()
-              e.preventDefault()
-              setOpen(true)
-            }}
-          />
+          <Row className="items-center gap-1 sm:gap-2">
+            <div className="relative">
+              <OpenProb contract={contract} answer={answer} />
+              <PercentChangeToday
+                probChange={answer.probChanges.day}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            </div>
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
+            />
+          </Row>
         </Row>
         <div
           className={clsx(
@@ -86,9 +79,9 @@ export const SmallCandidateBar = (props: {
           {!!resolvedProb && !hideBar && (
             <div
               className={clsx(
-                'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
+                'absolute top-0 h-full rounded ring-1 ring-orange-500 sm:ring-2',
                 resolvedProb > prob
-                  ? 'bg-purple-100 dark:bg-purple-900'
+                  ? 'bg-orange-100 dark:bg-orange-900'
                   : 'z-10'
               )}
               style={{
@@ -108,38 +101,6 @@ export const SmallCandidateBar = (props: {
           )}
         </div>
       </Col>
-      <Modal open={open} setOpen={setOpen} className={MODAL_CLASS}>
-        <AnswerCpmmBetPanel
-          answer={answer}
-          contract={contract as CPMMMultiContract}
-          outcome={'YES'}
-          closePanel={() => {
-            setOpen(false)
-          }}
-          me={user}
-        />
-      </Modal>
     </>
-  )
-}
-
-export const CandidateProb = (props: {
-  contract: MultiContract
-  answer: Answer | DpmAnswer
-  onClick: MouseEventHandler<HTMLButtonElement>
-}) => {
-  const { contract, answer, onClick } = props
-  const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
-
-  return (
-    <button className={'items-center'} onClick={onClick}>
-      <span
-        className={clsx(
-          ' hover:text-primary-700 min-w-[2.5rem] whitespace-nowrap text-lg font-bold sm:text-2xl'
-        )}
-      >
-        <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
-      </span>
-    </button>
   )
 }

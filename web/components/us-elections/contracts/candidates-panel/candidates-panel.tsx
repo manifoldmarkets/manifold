@@ -5,10 +5,8 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
 import { sortBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
@@ -67,7 +65,7 @@ export function CandidatePanel(props: {
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className="mx-[2px]">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -83,18 +81,18 @@ export function CandidatePanel(props: {
               />
             ))}
             {moreCount > 0 && (
-              <Link href={contractPath(contract)}>
+              <Link href={contractPath(contract)} className="my-auto h-full">
                 <Col
                   className={clsx(
-                    'border-ink-200 hover:border-primary-600 border-1 text-ink-800 hover:text-primary-600 bg-canvas-0 sm:text-md h-[68px] w-[11rem] items-center justify-center overflow-hidden rounded-md border-2 text-sm transition-all sm:h-[83px] sm:w-[220px]'
+                    ' text-ink-1000 items-center justify-center overflow-hidden text-sm transition-all hover:underline '
                   )}
                 >
-                  <Row className="gap-1">
-                    See {moreCount} more{' '}
+                  <Col className=" items-center gap-1 whitespace-nowrap">
+                    {moreCount} more{' '}
                     <span>
-                      <ArrowRightIcon className="h-5 w-5" />
+                      <ArrowRightIcon className="h-4 w-4" />
                     </span>
-                  </Row>
+                  </Col>
                 </Col>
               </Link>
             )}
@@ -136,7 +134,6 @@ function CandidateAnswer(props: {
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
       <CandidateBar

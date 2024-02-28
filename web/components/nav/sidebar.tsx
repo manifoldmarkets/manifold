@@ -123,7 +123,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       { name: 'Home', href: '/home', icon: HomeIcon },
       {
         name: 'Browse',
-        href: '/browse?topic=for-you',
+        href: '/browse/for-you',
         icon: SearchIcon,
       },
       {
@@ -163,11 +163,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void, username: string) => {
   return buildArray<NavItem>(
     { name: 'Profile', href: '/' + username, icon: IoPersonCircleOutline },
-    {
-      name: 'US Politics',
-      href: '/politics',
-      icon: FaFlagUsa,
-    },
+    // {
+    //   name: 'US Politics',
+    //   href: '/politics',
+    //   icon: FaFlagUsa,
+    // },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },

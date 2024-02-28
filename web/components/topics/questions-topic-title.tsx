@@ -1,4 +1,4 @@
-import { Group, TOPIC_KEY } from 'common/group'
+import { Group } from 'common/group'
 import {
   ArrowLeftIcon,
   BookmarkIcon,
@@ -73,9 +73,7 @@ export const QuestionsTopicTitle = forwardRef(
           {currentTopic && (
             <>
               <CopyLinkOrShareButton
-                url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
-                  currentTopic?.slug ?? ''
-                }`}
+                url={`https://${DOMAIN}/browse/${currentTopic?.slug ?? ''}`}
                 className={'gap-1 whitespace-nowrap'}
                 eventTrackingName={'copy questions page link'}
                 size={isMobile ? 'sm' : 'md'}

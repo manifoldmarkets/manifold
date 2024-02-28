@@ -22,7 +22,10 @@ const getBeforeValue = async <T extends Column<'public_contracts'>>(
       db.from('public_contracts').select(sortColumn).eq('id', beforeId)
     )
     if (!data?.length) {
-      throw new Error('Contract specified in before parameter not found.')
+      throw new APIError(
+        400,
+        'Contract specified in before parameter not found.'
+      )
     }
     return (data[0] as any)[sortColumn] as Row<'public_contracts'>[T]
   } else {
