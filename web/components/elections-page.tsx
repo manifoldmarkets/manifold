@@ -44,6 +44,7 @@ function ElectionContent(props: ElectionsPageProps) {
   const {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
+    rawGovernorStateContracts,
     electionCandidateContract,
     electionPartyContract,
     republicanCandidateContract,
@@ -146,6 +147,7 @@ function ElectionContent(props: ElectionsPageProps) {
         <HomepageMap
           rawPresidencyStateContracts={rawPresidencyStateContracts}
           rawSenateStateContracts={rawSenateStateContracts}
+          rawGovernorStateContracts={rawGovernorStateContracts}
         />
       </Col>
       <Spacer h={4} />

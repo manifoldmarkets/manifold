@@ -8,6 +8,7 @@ import {
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { StateElectionMarket } from 'web/public/data/elections-data'
+import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
 export const REVALIDATE_CONTRACTS_SECONDS = 60
 
@@ -15,12 +16,6 @@ export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
   const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
 
-  const mapContractsPromises = presidency2024.map(async (m) => {
-    const contract = await getContract(m.slug)
-    return { state: m.state, contract: contract }
-  })
-
-  const mapContractsArray = await Promise.all(mapContractsPromises)
   const presidencyStateContracts = await getStateContracts(
     getContract,
     presidency2024
@@ -28,12 +23,10 @@ export async function getElectionsPageProps() {
 
   const senateStateContracts = await getStateContracts(getContract, senate2024)
 
-  // Convert array to dictionary
-  const mapContractsDictionary: MapContractsDictionary =
-    mapContractsArray.reduce((acc, mapContract) => {
-      acc[mapContract.state] = mapContract.contract
-      return acc
-    }, {} as MapContractsDictionary)
+  const governorStateContracts = await getStateContracts(
+    getContract,
+    governors2024
+  )
 
   const specialContractSlugs = [
     'which-party-will-win-the-2024-us-pr-f4158bf9278a',
@@ -63,6 +56,7 @@ export async function getElectionsPageProps() {
   return {
     rawPresidencyStateContracts: presidencyStateContracts,
     rawSenateStateContracts: senateStateContracts,
+    rawGovernorStateContracts: governorStateContracts,
     electionPartyContract: electionPartyContract,
     electionCandidateContract: electionCandidateContract,
     republicanCandidateContract: republicanCandidateContract,

@@ -10,19 +10,32 @@ import { Spacer } from 'web/components/layout/spacer'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { ElectoralCollegeVisual } from './electoral-college-visual'
-import { EmptyStateContract, StateContract } from './state-contract'
+import {
+  EmptyStateContract,
+  StateContract,
+  extractBeforeGovernorsRace,
+  extractStateFromPresidentContract,
+} from './state-contract'
 import { USAMap } from './usa-map'
 import { PresidentialState } from './presidential-state'
 import { SenateCurrentOrContract, SenateState } from './senate-state'
 import { SenateBar } from './senate-bar'
+import { ImUserTie } from 'react-icons/im'
+import { Governor } from 'web/public/custom-components/governor'
+import { GovernorState } from './governor-state'
 
-type MapMode = 'presidency' | 'senate'
+type MapMode = 'presidency' | 'senate' | 'governor'
 
 export function HomepageMap(props: {
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
+  rawGovernorStateContracts: MapContractsDictionary
 }) {
-  const { rawPresidencyStateContracts, rawSenateStateContracts } = props
+  const {
+    rawPresidencyStateContracts,
+    rawSenateStateContracts,
+    rawGovernorStateContracts,
+  } = props
 
   const presidencyContractsDictionary = Object.keys(
     rawPresidencyStateContracts
@@ -40,6 +53,15 @@ export function HomepageMap(props: {
     },
     {} as MapContractsDictionary
   )
+
+  const governorContractsDictionary = Object.keys(
+    rawGovernorStateContracts
+  ).reduce((acc, key) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    acc[key] = useLiveContract(rawGovernorStateContracts[key]!)
+    return acc
+  }, {} as MapContractsDictionary)
+
   const [mode, setMode] = useState<MapMode>('presidency')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
@@ -101,6 +123,37 @@ export function HomepageMap(props: {
               }
               targetState={targetState}
               setTargetState={setTargetState}
+              customTitleFunction={extractStateFromPresidentContract}
+            />
+          ) : (
+            <EmptyStateContract />
+          )}
+        </>
+      ) : mode === 'governor' ? (
+        <>
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
+            Which party will win the Governor's Race?
+          </div>
+          <Spacer h={4} />
+          <USAMap
+            mapContractsDictionary={governorContractsDictionary}
+            handleClick={handleClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+            targetState={targetState}
+            hoveredState={hoveredState}
+            CustomStateComponent={GovernorState}
+          />
+          {!!hoveredState || !!targetState ? (
+            <StateContract
+              targetContract={
+                governorContractsDictionary[
+                  hoveredState! ?? targetState
+                ] as Contract
+              }
+              targetState={targetState}
+              setTargetState={setTargetState}
+              customTitleFunction={extractBeforeGovernorsRace}
             />
           ) : (
             <EmptyStateContract />
@@ -184,6 +237,22 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
           />
         }
         text="Senate"
+      />
+      <MapTabButton
+        onClick={() => setMode('governor')}
+        isActive={mode === 'governor'}
+        icon={
+          <Governor
+            height={7}
+            className={clsx(
+              '-mb-2 mt-1',
+              mode === 'governor'
+                ? 'fill-primary-700'
+                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
+            )}
+          />
+        }
+        text="Governor"
       />
     </Row>
   )
