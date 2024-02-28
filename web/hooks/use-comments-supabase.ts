@@ -1,5 +1,7 @@
 import { ContractComment } from 'common/comment'
 import { useEffect, useState } from 'react'
+import { useEvent } from 'web/hooks/use-event'
+
 import {
   getAllCommentRows,
   getComment,
@@ -52,23 +54,35 @@ export function useCommentOnContract(commentId: string) {
 //This is okay for now as we're optimistically updating comments via useState.
 export function useRealtimeCommentsOnContract(
   contractId: string,
-  loadNewerProps?: {
-    userId: string
-  }
+  userId?: string
 ) {
-  const { rows, loadNewer } = useSubscription(
+  const { rows, dispatch } = useSubscription(
     'contract_comments',
     { k: 'contract_id', v: contractId },
-    () => getCommentRows(contractId),
-    undefined,
-    (rows) =>
-      getNewCommentRows(
+    () => getCommentRows(contractId)
+  )
+
+  const loadNewer = useEvent(async () => {
+    const retryLoadNewer = async (attemptNumber: number) => {
+      const newRows = await getNewCommentRows(
         contractId,
         maxBy(rows ?? [], (r) => tsToMillis(r.created_time))?.created_time ??
           new Date(Date.now() - 500).toISOString(),
-        loadNewerProps?.userId
+        userId
       )
-  )
+      if (newRows?.length) {
+        for (const r of newRows) {
+          // really is an upsert
+          dispatch({ type: 'CHANGE', change: { eventType: 'INSERT', new: r } })
+        }
+      } else if (attemptNumber < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 100 * attemptNumber))
+      }
+    }
+
+    const maxAttempts = 10
+    await retryLoadNewer(1)
+  })
 
   return { rows: rows?.map(convertContractComment), loadNewer }
 }
