@@ -29,5 +29,7 @@ create index contract_replies on contract_comments (
 
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
 
+create index contract_comments_id on contract_comments (comment_id);
+
 alter table contract_comments
 cluster on contract_comments_pkey;
