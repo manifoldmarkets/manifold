@@ -27,6 +27,12 @@ import { useEffect, useState } from 'react'
 import { TbReportMoney } from 'react-icons/tb'
 import { EditablePaymentInfo } from 'web/components/contract/editable-payment-info'
 import { useAdmin } from 'web/hooks/use-admin'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
+} from 'common/partner'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { APIResponse } from 'common/api/schema'
 
 export const getStaticProps = async (props: {
   params: {
@@ -62,33 +68,10 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
   const user = useUserById(props.user.id) ?? props.user
   const userIsPartner = PARTNER_USER_IDS.includes(user.id)
 
-  const currentDate = new Date()
-  const startDate = new Date()
-  startDate.setMonth(startDate.getMonth() - 2)
-
-  const formattedStartDate = format(startDate, 'MMM dd, yyyy')
-  const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
-
-  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
-  useEffect(() => {
-    getContractsCreatedProgress(user.id).then(setMarketsCreated)
-  }, [user.id])
-
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
   })
 
-  const isAdmin = useAdmin()
-  const isUser = useUser()
-  const referralCount = data ? data.numReferrals : 0
-  const traderIncome = data ? data.numUniqueBettors * 0.1 : 0
-  const dollarsEarned = traderIncome + referralCount
-
-  const segments = [
-    { label: 'Traders', value: traderIncome, color: '#995cd6' },
-    { label: 'Referrals', value: referralCount, color: '#5cd65c' },
-    //{ label: 'Other', value: , color: '#d65c99'},
-  ]
 
   return (
     <Page
@@ -144,7 +127,56 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         </Row>
 
         {userIsPartner ? (
-          <Col className=" mt-4 items-start gap-2">
+          data ? (
+            <PartnerDashboard data={data} user={user} />
+          ) : (
+            <LoadingIndicator />
+          )
+        ) : (
+          <PartnerProgress user={user} />
+        )}
+
+        <div className="text-primary-500 hover:text-primary-700 text-md my-4 hover:underline">
+          <a href="/partner-explainer" className="flex items-baseline">
+            Learn more about the program here!{' '}
+            <FaExternalLinkAlt className="ml-1 h-3 w-3" />
+          </a>
+        </div>
+      </Col>
+    </Page>
+  )
+}
+
+const PartnerDashboard = (props: {
+  data: APIResponse<'get-partner-stats'>
+  user: User
+}) => {
+  const { data, user } = props
+  const {
+    numUniqueBettors,
+    numBinaryBettors,
+    numMultiChoiceBettors,
+    numReferrals,
+  } = data
+const isAdmin = useAdmin()
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
+  
+  const referralIncome = numReferrals
+  const totalTraderIncome =
+    numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
+    numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
+  console.log(data)
+  const dollarsEarned = totalTraderIncome + referralIncome
+
+  const segments = [
+    { label: 'Traders', value: totalTraderIncome, color: '#995cd6' },
+    { label: 'Referrals', value: referralIncome, color: '#5cd65c' },
+    //{ label: 'Other', value: , color: '#d65c99'},
+  ]
+
+  return (
+    <Col className=" mt-4 items-start gap-2">
             <div className="text-ink-700">Period Feb 26 - May 26</div>
 
             {data && (
@@ -155,12 +187,12 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                 </Row>
                 <Row className="gap-2">
                   <div className="text-ink-700 ">Referrals:</div>
-                  <div className="font-semibold">{referralCount}</div>
+                  <div className="font-semibold">{referralIncome}</div>
                 </Row>
               </Row>
             )}
             <DonutChart segments={segments} total={dollarsEarned} />
-            {(isUser || isAdmin) && (
+            {currentUser && (isCurrentUser || isAdmin) && (
               <Row className="text-md flex-wrap items-center gap-2">
                 <InfoTooltip
                   text={
@@ -169,12 +201,30 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
                 >
                   PayPal info:
                 </InfoTooltip>
-                <EditablePaymentInfo userId={user.id} />
+                <EditablePaymentInfo userId={currentUser.id} />
               </Row>
             )}
           </Col>
-        ) : (
-          <Col className="gap-4 ">
+  )
+}
+
+const PartnerProgress = (props: { user: User }) => {
+  const { user } = props
+
+  const currentDate = new Date()
+  const startDate = new Date()
+   startDate.setMonth(startDate.getMonth() - 2)
+
+  const formattedStartDate = format(startDate, 'MMM dd, yyyy')
+  const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
+
+  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
+  useEffect(() => {
+    getContractsCreatedProgress(user.id).then(setMarketsCreated)
+  }, [user.id])
+
+  return (
+     <Col className="gap-4 ">
             <Col className=" mx-0 my-auto mt-4 max-w-[600px] rounded border p-2">
               <Subtitle className="!mt-0  border-b pb-2">
                 {user.name}'s progress to partner
@@ -241,14 +291,5 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
               once you meet the minimum criteria and want to join the program.
             </div>
           </Col>
-        )}
-        <div className="text-primary-500 hover:text-primary-700 text-md my-4 hover:underline">
-          <a href="/partner-explainer" className="flex items-baseline">
-            Learn more about the program here!{' '}
-            <FaExternalLinkAlt className="ml-1 h-3 w-3" />
-          </a>
-        </div>
-      </Col>
-    </Page>
   )
 }
