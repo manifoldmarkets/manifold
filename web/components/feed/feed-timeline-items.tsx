@@ -123,7 +123,6 @@ const FeedContractAndRelatedItems = (props: {
           comment={item.comment}
           hide={() => setHidden(true)}
           trackingLocation={'feed'}
-          inTimeline={true}
           item={item}
           user={user}
         />
