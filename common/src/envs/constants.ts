@@ -263,7 +263,6 @@ export const BLESSED_BANNED_USER_IDS = [
 ]
 
 export const PARTNER_USER_IDS: string[] = [
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
   'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson
   '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
