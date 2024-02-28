@@ -1,12 +1,10 @@
 import { Group } from 'common/group'
-import { User } from 'common/user'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { XIcon } from '@heroicons/react/outline'
 import { TopicSelector } from 'web/components/topics/topic-selector'
-import { WEEK_MS } from 'common/util/time'
 import { toast } from 'react-hot-toast'
 import { uniqBy } from 'lodash'
 
@@ -15,15 +13,9 @@ export const TopicSelectorSection = (props: {
   setSelectedGroups: (updateFn: (prevGroups: Group[]) => Group[]) => void
   question: string
   setHasChosenCategory: (hasChosenCategory: boolean) => void
-  creator: User
 }) => {
-  const {
-    selectedGroups,
-    setSelectedGroups,
-    question,
-    setHasChosenCategory,
-    creator,
-  } = props
+  const { selectedGroups, setSelectedGroups, question, setHasChosenCategory } =
+    props
 
   return (
     <Col className="gap-3">
@@ -58,14 +50,9 @@ export const TopicSelectorSection = (props: {
       )}
       <TopicSelector
         setSelectedGroup={(group) => {
-          const newUser = creator.createdTime > Date.now() - 2 * WEEK_MS
-          const topicsAllowed = newUser ? 5 : 10
+          const topicsAllowed = 4
           if (selectedGroups.length >= topicsAllowed) {
-            toast.error(
-              `${
-                newUser ? 'New users' : 'You'
-              } can only choose up to ${topicsAllowed} topics.`
-            )
+            toast.error(`You can only choose up to ${topicsAllowed} topics.`)
           } else if (group.privacyStatus === 'private') {
             toast.error('You cannot use private groups.')
           } else {

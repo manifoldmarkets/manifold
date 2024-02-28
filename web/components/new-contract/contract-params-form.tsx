@@ -519,7 +519,6 @@ export function ContractParamsForm(props: {
         selectedGroups={selectedGroups}
         setSelectedGroups={setSelectedGroups}
         setHasChosenCategory={setHasChosenCategory}
-        creator={creator}
         question={question}
       />
 
