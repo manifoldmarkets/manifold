@@ -11,18 +11,7 @@ import { USAState } from './usa-state'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
-
-export type StateProps = {
-  stateKey: string
-  data: StateDataType
-  stateContract: Contract | null
-  hideStateTitle?: boolean
-  handleClick: (newTargetState: string | undefined) => void
-  onMouseEnter: (hoverState: string) => void
-  onMouseLeave: () => void
-  targetState: string | undefined | null
-  hoveredState: string | undefined | null
-}
+import { StateProps } from './presidential-state'
 
 export function SenateState(props: StateProps) {
   const {
