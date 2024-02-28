@@ -133,7 +133,7 @@ export default function PartnerExplainer() {
               $0.04.
             </li>
             <li>
-              $1.00 per new user refferal (this is in addition to the 250 mana
+              $1.00 per new user referral (this is in addition to the 250 mana
               bonus).
             </li>
             <div className="pt-2">

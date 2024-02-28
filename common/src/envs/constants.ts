@@ -264,6 +264,22 @@ export const BLESSED_BANNED_USER_IDS = [
 
 export const PARTNER_USER_IDS: string[] = [
   '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+  'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
+  'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson
+  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'cb6PJqGOSVPEUhprDHCKWWMuJqu1', // DanMan314
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'hDq0cvn68jbAUVd6aWIU9aSv9ZA2', // strutheo
+  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+  'xQqqZqlgcoSxTgPe03BiXmVE2JJ2', // Soli
+  'Iiok8KHMCRfUiwtMq1tl5PeDbA73', // Lion
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
+  'SqOJYkeySMQjqP3UAypw6DxPx4Z2', // Shump
+  'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
+  'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
