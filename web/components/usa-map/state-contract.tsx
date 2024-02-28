@@ -42,7 +42,9 @@ export function extractStateFromPresidentContract(
   return match ? match[1].trim() : undefined
 }
 
-export function extractBeforeGovernorsRace(sentence: string): string | undefined {
+export function extractBeforeGovernorsRace(
+  sentence: string
+): string | undefined {
   const regex = /^(.*?)\s*Governor's Race: Which party will win in 2024\?/
   const match = sentence.match(regex)
 
