@@ -72,7 +72,6 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
     userId: user.id,
   })
 
-
   return (
     <Page
       key={user.id}
@@ -158,15 +157,14 @@ const PartnerDashboard = (props: {
     numMultiChoiceBettors,
     numReferrals,
   } = data
-const isAdmin = useAdmin()
+  const isAdmin = useAdmin()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
-  
+
   const referralIncome = numReferrals
   const totalTraderIncome =
     numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
     numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
-  console.log(data)
   const dollarsEarned = totalTraderIncome + referralIncome
 
   const segments = [
@@ -177,34 +175,34 @@ const isAdmin = useAdmin()
 
   return (
     <Col className=" mt-4 items-start gap-2">
-            <div className="text-ink-700">Period Feb 26 - May 26</div>
+      <div className="text-ink-700">Period Feb 26 - May 26</div>
 
-            {data && (
-              <Row className="  gap-6 self-start text-lg">
-                <Row className=" gap-2">
-                  <div className="text-ink-700">Traders:</div>
-                  <div className=" font-semibold">{data.numUniqueBettors}</div>
-                </Row>
-                <Row className="gap-2">
-                  <div className="text-ink-700 ">Referrals:</div>
-                  <div className="font-semibold">{referralIncome}</div>
-                </Row>
-              </Row>
-            )}
-            <DonutChart segments={segments} total={dollarsEarned} />
-            {currentUser && (isCurrentUser || isAdmin) && (
-              <Row className="text-md flex-wrap items-center gap-2">
-                <InfoTooltip
-                  text={
-                    "Please enter your PayPal email/link or simply write 'mana'. Payments to be made quarterly."
-                  }
-                >
-                  PayPal info:
-                </InfoTooltip>
-                <EditablePaymentInfo userId={currentUser.id} />
-              </Row>
-            )}
-          </Col>
+      {data && (
+        <Row className="  gap-6 self-start text-lg">
+          <Row className=" gap-2">
+            <div className="text-ink-700">Traders:</div>
+            <div className=" font-semibold">{numUniqueBettors}</div>
+          </Row>
+          <Row className="gap-2">
+            <div className="text-ink-700 ">Referrals:</div>
+            <div className="font-semibold">{referralIncome}</div>
+          </Row>
+        </Row>
+      )}
+      <DonutChart segments={segments} total={dollarsEarned} />
+      {currentUser && (isCurrentUser || isAdmin) && (
+        <Row className="text-md flex-wrap items-center gap-2">
+          <InfoTooltip
+            text={
+              "Please enter your PayPal email/link or simply write 'mana'. Payments to be made quarterly."
+            }
+          >
+            PayPal info:
+          </InfoTooltip>
+          <EditablePaymentInfo userId={currentUser.id} />
+        </Row>
+      )}
+    </Col>
   )
 }
 
@@ -213,7 +211,7 @@ const PartnerProgress = (props: { user: User }) => {
 
   const currentDate = new Date()
   const startDate = new Date()
-   startDate.setMonth(startDate.getMonth() - 2)
+  startDate.setMonth(startDate.getMonth() - 2)
 
   const formattedStartDate = format(startDate, 'MMM dd, yyyy')
   const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
@@ -224,72 +222,69 @@ const PartnerProgress = (props: { user: User }) => {
   }, [user.id])
 
   return (
-     <Col className="gap-4 ">
-            <Col className=" mx-0 my-auto mt-4 max-w-[600px] rounded border p-2">
-              <Subtitle className="!mt-0  border-b pb-2">
-                {user.name}'s progress to partner
-              </Subtitle>
-              <Row className="justify-between px-1 pb-4 pt-2">
-                <div>
-                  <b>Reach 1250 traders</b>
-                </div>
-                <div>
-                  {' '}
-                  <b>{user.creatorTraders.allTime}</b>/1250
-                </div>
-              </Row>
-              <div className="bg-ink-200 rounded px-4">
-                <div className="text-ink-700  my-3 rounded  text-sm">
-                  <b>60 day performance</b> ({formattedStartDate} - {''}
-                  {formattedEndDate})
-                </div>
-                <Row className="justify-between border-b">
-                  <div>
-                    <b>Create 20 markets</b>
-                  </div>
-                  <div>
-                    <b>{marketsCreated ?? '0'}</b>/20
-                  </div>
-                </Row>
-                <Row className="my-3 justify-between">
-                  <div>
-                    <b>10 markets with ≥ 20 traders</b>
-                  </div>
-                  <div>
-                    <b>
-                      {marketsCreated
-                        ? (
-                            user.creatorTraders.monthly / marketsCreated
-                          ).toFixed(1)
-                        : '0'}
-                    </b>
-                    /10
-                  </div>
-                </Row>
-              </div>
-            </Col>
+    <Col className="gap-4 ">
+      <Col className=" mx-0 my-auto mt-4 max-w-[600px] rounded border p-2">
+        <Subtitle className="!mt-0  border-b pb-2">
+          {user.name}'s progress to partner
+        </Subtitle>
+        <Row className="justify-between px-1 pb-4 pt-2">
+          <div>
+            <b>Reach 1250 traders</b>
+          </div>
+          <div>
+            {' '}
+            <b>{user.creatorTraders.allTime}</b>/1250
+          </div>
+        </Row>
+        <div className="bg-ink-200 rounded px-4">
+          <div className="text-ink-700  my-3 rounded  text-sm">
+            <b>60 day performance</b> ({formattedStartDate} - {''}
+            {formattedEndDate})
+          </div>
+          <Row className="justify-between border-b">
             <div>
-              Meeting the minimum requirements is just the start of becoming a
-              partner and does not guarantee acceptance. We also evaluate user
-              behaviour, market quality, consistency and resolutions.
+              <b>Create 20 markets</b>
             </div>
             <div>
-              There are certain circumstances where we may accept applications
-              outside of these criteria. Some instances may include having an
-              established audience on other platforms or a history of
-              exceptional forecasting.
+              <b>{marketsCreated ?? '0'}</b>/20
+            </div>
+          </Row>
+          <Row className="my-3 justify-between">
+            <div>
+              <b>10 markets with ≥ 20 traders</b>
             </div>
             <div>
-              {' '}
-              Please email {''}
-              <a
-                href="mailto:david@manifold.markets"
-                className="text-primary-500 hover:text-primary-700 hover:underline"
-              >
-                david@manifold.markets
-              </a>{' '}
-              once you meet the minimum criteria and want to join the program.
+              <b>
+                {marketsCreated
+                  ? (user.creatorTraders.monthly / marketsCreated).toFixed(1)
+                  : '0'}
+              </b>
+              /10
             </div>
-          </Col>
+          </Row>
+        </div>
+      </Col>
+      <div>
+        Meeting the minimum requirements is just the start of becoming a partner
+        and does not guarantee acceptance. We also evaluate user behaviour,
+        market quality, consistency and resolutions.
+      </div>
+      <div>
+        There are certain circumstances where we may accept applications outside
+        of these criteria. Some instances may include having an established
+        audience on other platforms or a history of exceptional forecasting.
+      </div>
+      <div>
+        {' '}
+        Please email {''}
+        <a
+          href="mailto:david@manifold.markets"
+          className="text-primary-500 hover:text-primary-700 hover:underline"
+        >
+          david@manifold.markets
+        </a>{' '}
+        once you meet the minimum criteria and want to join the program.
+      </div>
+    </Col>
   )
 }
