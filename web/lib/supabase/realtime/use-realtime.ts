@@ -11,7 +11,10 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { db } from 'web/lib/supabase/db'
 
-export type BindingSpec<T extends TableName, E extends Event> = {
+export type BindingSpec<
+  T extends TableName = TableName,
+  E extends Event = Event
+> = {
   table: T
   event: E
   filter?: Filter<T>
@@ -22,6 +25,7 @@ export type RealtimeOptions<T extends TableName, E extends Event> = {
   onChange: (change: Change<T, E>) => void
   onStatus?: (status: SubscriptionStatus, err?: Error) => void
   onEnabled?: (enabled: boolean) => void
+  enableBackground?: boolean
 }
 
 function getChannelFilter<T extends TableName, E extends Event>(
@@ -35,14 +39,14 @@ function getChannelFilter<T extends TableName, E extends Event>(
 export function useRealtime<T extends TableName, E extends Event>(
   opts: RealtimeOptions<T, E>
 ) {
-  const { bindings, onChange, onStatus, onEnabled } = opts
+  const { bindings, onChange, onStatus, onEnabled, enableBackground } = opts
   const channelId = `${useId()}`
 
   const channel = useRef<RealtimeChannel | undefined>()
   const isVisible = useIsPageVisible()
 
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible || enableBackground) {
       onEnabled?.(true)
       const chan = (channel.current = db.channel(channelId))
       for (const spec of bindings) {
@@ -70,7 +74,7 @@ export function useRealtime<T extends TableName, E extends Event>(
         channel.current = undefined
       }
     }
-  }, [isVisible])
+  }, [isVisible || enableBackground])
 
   return channel
 }
