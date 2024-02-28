@@ -123,7 +123,10 @@ export const getTotalContractsCreated = async (userId: string) => {
   return count
 }
 
-export const getContractsCreatedProgress = async (userId: string) => {
+export const getContractsCreatedProgress = async (
+  userId: string,
+  minTraders = 0
+) => {
   const currentDate = new Date()
   const startDate = new Date()
 
@@ -140,6 +143,7 @@ export const getContractsCreatedProgress = async (userId: string) => {
       .gte('created_time', startIsoString)
       .lt('created_time', endIsoString)
       .not('mechanism', 'eq', 'none')
+      .gte('data->>uniqueBettorCount', minTraders)
   )
   return count
 }

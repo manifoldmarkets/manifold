@@ -217,8 +217,13 @@ const PartnerProgress = (props: { user: User }) => {
   const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
 
   const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
+  const [marketsCreatedWithTraders, setMarketsCreatedWithTraders] = useState<
+    number | undefined
+  >()
+
   useEffect(() => {
     getContractsCreatedProgress(user.id).then(setMarketsCreated)
+    getContractsCreatedProgress(user.id, 20).then(setMarketsCreatedWithTraders)
   }, [user.id])
 
   return (
@@ -254,11 +259,7 @@ const PartnerProgress = (props: { user: User }) => {
               <b>10 markets with ≥ 20 traders</b>
             </div>
             <div>
-              <b>
-                {marketsCreated
-                  ? (user.creatorTraders.monthly / marketsCreated).toFixed(1)
-                  : '0'}
-              </b>
+              <b>{marketsCreatedWithTraders ?? 0}</b>
               /10
             </div>
           </Row>
