@@ -7,7 +7,8 @@ create table if not exists
     primary key (contract_id, comment_id),
     visibility text,
     user_id text not null,
-    created_time timestamptz not null
+    created_time timestamptz not null,
+    likes int not null default 0
   );
 
 alter table contract_comments enable row level security;

@@ -562,6 +562,7 @@ export const API = (_apiTypeCheck = {
       contentType: z.enum(['comment', 'contract']),
       remove: z.boolean().optional(),
     }),
+    returns: { success: true },
   },
   'compatible-lovers': {
     method: 'GET',

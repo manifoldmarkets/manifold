@@ -11,7 +11,6 @@ import {
   difference,
   groupBy,
   intersection,
-  minBy,
   orderBy,
   range,
   sortBy,
@@ -43,6 +42,7 @@ import { convertContractComment } from 'common/supabase/comments'
 import { Json } from 'common/supabase/schema'
 import { Bet } from 'common/bet'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
+import { shuffle } from 'common/util/random'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -106,9 +106,7 @@ const baseQuery = (
     )
     .not('contract_id', 'in', `(${privateUser.blockedContractIds})`)
     // One comment per contract we already have on the feed are okay
-    .or(
-      `and(data_type.eq.new_comment,contract_id.not.in.(${ignoreContractIdsWithComments})), contract_id.not.in.(${ignoreContractIds})`
-    )
+    .or(`contract_id.not.in.(${ignoreContractIds})`)
     .order('relevance_score', { ascending: false })
     .limit(limit)
 
@@ -207,9 +205,8 @@ export const useFeedTimeline = (
     })
     const {
       newContractIds,
-      newCommentIds,
-      newCommentIdsFromFollowed,
-      potentiallySeenCommentIds,
+      newRepostCommentIds,
+      newRepostCommentIdsFromFollowed,
       answerIds,
       userIds,
       betIds,
@@ -220,7 +217,6 @@ export const useFeedTimeline = (
       commentsFromFollowed,
       openListedContracts,
       uninterestingContractIds,
-      seenCommentIds,
       answers,
       users,
       recentlySeenContractCards,
@@ -229,8 +225,8 @@ export const useFeedTimeline = (
       db
         .from('contract_comments')
         .select()
-        .in('comment_id', newCommentIds)
-        .gt('data->likes', 0)
+        .in('comment_id', newRepostCommentIds)
+        .gt('likes', 0)
         .is('data->hidden', null)
         .not('user_id', 'in', `(${privateUser.blockedUserIds})`)
         .then((res) => res.data?.map(convertContractComment)),
@@ -238,7 +234,7 @@ export const useFeedTimeline = (
         .from('contract_comments')
         .select()
         .is('data->hidden', null)
-        .in('comment_id', newCommentIdsFromFollowed)
+        .in('comment_id', newRepostCommentIdsFromFollowed)
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
@@ -254,18 +250,6 @@ export const useFeedTimeline = (
         .eq('user_id', userId)
         .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
-      db
-        .from('user_events')
-        .select('comment_id')
-        .eq('user_id', userId)
-        .eq('name', 'view comment thread')
-        .in('comment_id', potentiallySeenCommentIds)
-        .gt(
-          'ts',
-          minBy(newFeedRows, 'created_time')?.created_time ??
-            new Date(Date.now() - 5 * DAY_MS).toISOString()
-        )
-        .then((res) => res.data?.map((c) => c.comment_id)),
       db
         .from('answers')
         .select('*')
@@ -286,7 +270,7 @@ export const useFeedTimeline = (
               } as CreatorDetails)
           )
         ),
-      getSeenContractIds(userId, newContractIds, Date.now() - 5 * DAY_MS, [
+      getSeenContractIds(userId, newContractIds, Date.now() - 3 * DAY_MS, [
         'view market card',
       ]),
       db
@@ -304,7 +288,6 @@ export const useFeedTimeline = (
         'trending_contract',
         'user_position_changed',
         'new_contract',
-        'new_comment',
       ].includes(d.data_type) &&
       recentlySeenContractCards?.includes(d.contract_id)
 
@@ -320,15 +303,20 @@ export const useFeedTimeline = (
         !uninterestingContractIds?.includes(c.id) &&
         !recentlySeenFeedContractIds.includes(c.id)
     )
-
-    const unseenUnhiddenLikedOrFollowedComments = (likedUnhiddenComments ?? [])
-      .concat(commentsFromFollowed ?? [])
-      .filter((c) => !seenCommentIds?.includes(c.id))
-
-    // We could set comment feed rows with insufficient likes as seen here, settling for seen ones only
-    const commentFeedIdsToIgnore = newFeedRows.filter((r) =>
-      r.comment_id ? seenCommentIds?.includes(r.comment_id ?? '_') : false
-    )
+    const unhiddenLikedOrFollowedComments = chooseRandomSubset(
+      likedUnhiddenComments ?? [],
+      5
+    ).concat(commentsFromFollowed ?? [])
+    const commentFeedIdsToIgnore = newFeedRows
+      .filter((r) => r.comment_id)
+      .filter(
+        (r) =>
+          !unhiddenLikedOrFollowedComments
+            .map((c) => c.id)
+            .includes(r.comment_id ?? '_') &&
+          // Hide some of the comments that are not well-enough-liked
+          Math.random() < 0.1
+      )
     const contractFeedIdsToIgnore = newFeedRows.filter(
       (d) =>
         d.contract_id &&
@@ -342,7 +330,7 @@ export const useFeedTimeline = (
     const timelineItems = createFeedTimelineItems(
       newFeedRows,
       freshAndInterestingContracts,
-      unseenUnhiddenLikedOrFollowedComments,
+      unhiddenLikedOrFollowedComments ?? [],
       answers,
       bets,
       users
@@ -428,6 +416,11 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     ),
   })
 
+function chooseRandomSubset<T>(items: T[], count: number) {
+  shuffle(items, Math.random)
+  return items.slice(0, count)
+}
+
 function createFeedTimelineItems(
   data: Row<'user_feed'>[],
   contracts: Contract[] | undefined,
@@ -494,7 +487,6 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
 
   const soloDataTypes: FEED_DATA_TYPES[] = [
     'contract_probability_changed',
-    'new_comment',
     'user_position_changed',
     'repost',
   ]
@@ -580,21 +572,17 @@ const getOnePerCreatorContentIds = (
       )
       .flat()
   )
-  const newCommentIdsFromFollowed = filterDefined(
+  const newRepostCommentIdsFromFollowed = filterDefined(
     data.map((item) =>
       followedIds?.includes(item.creator_id ?? '_') ? item.comment_id : null
     )
   )
-  const newCommentIds = filterDefined(
+  const newRepostCommentIds = filterDefined(
     data.map((item) =>
-      newCommentIdsFromFollowed.includes(item.comment_id ?? '_')
+      newRepostCommentIdsFromFollowed.includes(item.comment_id ?? '_')
         ? null
         : item.comment_id
     )
-  )
-
-  const potentiallySeenCommentIds = uniq(
-    filterDefined(data.map((item) => item.comment_id))
   )
 
   const answerIds = uniq(
@@ -610,9 +598,8 @@ const getOnePerCreatorContentIds = (
 
   return {
     newContractIds,
-    newCommentIds,
-    newCommentIdsFromFollowed,
-    potentiallySeenCommentIds,
+    newRepostCommentIds,
+    newRepostCommentIdsFromFollowed,
     answerIds,
     userIds,
     betIds,
