@@ -27,7 +27,7 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     PARTNER_QUARTER_START_DATE
   ).getTime()
 
-  const userResult = await pg.oneOrNone<{
+  const userResult = await pg.one<{
     username: string
   }>(`SELECT username FROM users WHERE id = $1`, [userId])
 
@@ -160,11 +160,11 @@ const getNumContractsCreated = async (
   and created_time >= $2
   and created_time < $3
   and mechanism != 'none'`,
-    {
-      creator_id: creatorId,
-      start_time: new Date(quarterStart).toISOString(),
-      end_time: new Date(quarterEnd).toISOString(),
-    }
+    [
+      creatorId,
+      new Date(quarterStart).toISOString(),
+      new Date(quarterEnd).toISOString(),
+    ]
   )
 
   return result.count
