@@ -1,5 +1,3 @@
-import { Contract } from 'common/contract'
-import { StateDataType } from './usa-map-data'
 import { USAState } from './usa-state'
 import { probToColor } from './state-election-map'
 import { StateProps } from './presidential-state'

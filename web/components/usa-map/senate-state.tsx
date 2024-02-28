@@ -6,7 +6,7 @@ import {
 } from 'web/components/us-elections/contracts/state-contract-card'
 import { EmptyStateContract } from './state-contract'
 import { probToColor } from './state-election-map'
-import { DATA, StateDataType } from './usa-map-data'
+import { DATA } from './usa-map-data'
 import { USAState } from './usa-state'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'

@@ -20,7 +20,6 @@ import { USAMap } from './usa-map'
 import { PresidentialState } from './presidential-state'
 import { SenateCurrentOrContract, SenateState } from './senate-state'
 import { SenateBar } from './senate-bar'
-import { ImUserTie } from 'react-icons/im'
 import { Governor } from 'web/public/custom-components/governor'
 import { GovernorState } from './governor-state'
 
