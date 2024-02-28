@@ -38,6 +38,7 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
 import LoadingUserRows from 'manifold-politics/components/loading/loading-user-rows'
 import { Title } from 'web/components/widgets/title'
+
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 
 type UserStat = { user: User; score: number }
@@ -179,6 +180,31 @@ export function GroupPageContent(props: {
   const { ref, headerStuck } = useHeaderIsStuck()
   const staticTopicIsCurrent =
     staticTopicParams?.topic.slug === currentTopic?.slug
+
+  const searchComponent = (
+    <SupabaseSearch
+      persistPrefix="search"
+      autoFocus={autoFocus}
+      additionalFilter={{
+        excludeContractIds: privateUser?.blockedContractIds,
+        excludeGroupSlugs: buildArray(
+          privateUser?.blockedGroupSlugs,
+          shouldFilterDestiny &&
+            !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
+            DESTINY_GROUP_SLUGS,
+          !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
+        ),
+        excludeUserIds: privateUser?.blockedUserIds,
+      }}
+      useUrlParams
+      isWholePage
+      showTopicTag={headerStuck}
+      headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+      topics={topicResults}
+      setTopics={setTopicResults}
+      topicSlug={topicSlug}
+    />
+  )
   // TODO: Overtly prompt users to follow topic, maybe w/ bottom bar
   return (
     <>
@@ -209,73 +235,51 @@ export function GroupPageContent(props: {
                 'relative col-span-8 mx-auto w-full xl:col-span-7'
               )}
             >
-              <QueryUncontrolledTabs
-                className={'mb-2 px-1'}
-                renderAllTabs={false}
-                tabs={buildArray(
-                  {
-                    content: (
-                      <SupabaseSearch
-                        persistPrefix="search"
-                        autoFocus={autoFocus}
-                        additionalFilter={{
-                          excludeContractIds: privateUser?.blockedContractIds,
-                          excludeGroupSlugs: buildArray(
-                            privateUser?.blockedGroupSlugs,
-                            shouldFilterDestiny &&
-                              !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
-                              DESTINY_GROUP_SLUGS,
-                            !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
-                          ),
-                          excludeUserIds: privateUser?.blockedUserIds,
-                        }}
-                        useUrlParams
-                        isWholePage
-                        showTopicTag={headerStuck}
-                        headerClassName={
-                          'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'
-                        }
-                        topics={topicResults}
-                        setTopics={setTopicResults}
-                        topicSlug={topicSlug}
-                      />
-                    ),
-                    title: 'Browse',
-                  },
-                  currentTopic &&
-                    !NON_GROUP_SLUGS.includes(currentTopic.slug) && {
-                      title: 'Leaderboards',
-                      content: (
-                        <Col className={''}>
-                          <div className="text-ink-500 mb-4 text-sm">
-                            Updates every 15 minutes
-                          </div>
-                          <Col className="gap-2 ">
-                            <GroupLeaderboard
-                              topic={currentTopic}
-                              type={'trader'}
-                              cachedTopUsers={
-                                staticTopicIsCurrent
-                                  ? staticTopicParams?.topTraders
-                                  : undefined
-                              }
-                            />
-                            <GroupLeaderboard
-                              topic={currentTopic}
-                              type={'creator'}
-                              cachedTopUsers={
-                                staticTopicIsCurrent
-                                  ? staticTopicParams?.topCreators
-                                  : undefined
-                              }
-                              noFormatting={true}
-                            />
+              {!currentTopic && searchComponent}
+              {currentTopic && (
+                <QueryUncontrolledTabs
+                  className={'mb-2 px-1'}
+                  renderAllTabs={false}
+                  tabs={buildArray(
+                    {
+                      content: searchComponent,
+                      title: 'Browse',
+                    },
+                    currentTopic &&
+                      !NON_GROUP_SLUGS.includes(currentTopic.slug) && {
+                        title: 'Leaderboards',
+                        content: (
+                          <Col className={''}>
+                            <div className="text-ink-500 mb-4 text-sm">
+                              Updates every 15 minutes
+                            </div>
+                            <Col className="gap-2 ">
+                              <GroupLeaderboard
+                                topic={currentTopic}
+                                type={'trader'}
+                                cachedTopUsers={
+                                  staticTopicIsCurrent
+                                    ? staticTopicParams?.topTraders
+                                    : undefined
+                                }
+                              />
+                              <GroupLeaderboard
+                                topic={currentTopic}
+                                type={'creator'}
+                                cachedTopUsers={
+                                  staticTopicIsCurrent
+                                    ? staticTopicParams?.topCreators
+                                    : undefined
+                                }
+                                noFormatting={true}
+                              />
+                            </Col>
                           </Col>
-                        </Col>
-                      ),
-                    }
-                )}
-              />
+                        ),
+                      }
+                  )}
+                />
+              )}
             </Col>
             {!isMobile && (
               <TopicsList
@@ -373,5 +377,6 @@ function useToTopUsers(
 const useFirstSlugFromRouter = () => {
   const router = useRouter()
   const { slug } = router.query
-  return first(slug)
+  if (!router.isReady) return undefined
+  return first(slug) ?? ''
 }
