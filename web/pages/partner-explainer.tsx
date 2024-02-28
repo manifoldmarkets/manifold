@@ -30,7 +30,7 @@ export default function PartnerExplainer() {
                 href={`/${user.username}/partner`}
                 className="text-primary-500 hover:text-primary-700 hover:underline"
               >
-                partner progress here
+                progress to becoming partner here
               </a>
               .
             </div>
@@ -46,14 +46,13 @@ export default function PartnerExplainer() {
           </div>
           <div>
             <Subtitle className=" !mt-2">Partner perks</Subtitle>
-            <li>Earn real USD for getting traders on your markets.</li>
+            <li>
+              Earn real USD for getting traders on your markets.
+            </li>
             <li>Earn real USD for referrals.</li>
             <li>Exclusive badge. </li>
             <li> Direct access and support from the Manifold team.</li>
-            <li>
-              The cost of being a partner is that you will no longer receive
-              mana for unique trader bonuses.
-            </li>
+            <li>All perks are in addition to the existing mana bonuses.</li>
           </div>
           <div>
             <Subtitle className=" !mt-2">How to become a partner</Subtitle>
@@ -61,16 +60,17 @@ export default function PartnerExplainer() {
               {' '}
               <b>Minimum Requirements:</b>
             </div>
-
-            <li>10 markets in the last 90 days.</li>
-            <li>Average of 10 unique traders per market.</li>
-            <li>500 unique traders.</li>
+            <li>1250 all time traders.</li>
+            <li>Create 20 markets in the last 60 days.</li>
+            <li>
+              Create 10 markets with at least 20 traders in the last 60 days.
+            </li>
 
             <div className="pt-2">
               <b>
-                Meeting the minimum requirements does not guarantee partnership.
-                We also take into consideration user behaviour and market
-                quality. This includes:
+                Meeting the minimum requirements is just the start to becoming a
+                partner and does not guarantee partnership. We also take into
+                consideration user behaviour and market quality. This includes:
               </b>
             </div>
 
@@ -126,18 +126,21 @@ export default function PartnerExplainer() {
             <div>
               <b>Income amount:</b>
             </div>
-            <li>$0.10 per unique trader since becoming partner.</li>
             <li>
-              Traders grant $0.06 immediately and $0.04 when you resolve that
-              market. If you N/A a market you keep the $0.06 but don't earn the
-              $0.04.
+              USD per trader since the start of the quarter you were
+              made a partner. This means you may receive some USD for traders earned in the weeks prior to being partnered. The quarter start date can be viewed in your
+              partner dashboard.
             </li>
+            <li>$0.10 per trader on Yes/No markets.</li>
             <li>
-              $1.00 per new user referral (this is in addition to the 250 mana
-              bonus).
+              $0.20 per trader on Multi-choice markets.
+            </li>
+
+            <li>
+              $1.00 per new user referral.
             </li>
             <div className="pt-2">
-              <b>Only certain questions contribute towards income:</b>
+              <b>Only certain questions contribute towards USD income:</b>
             </div>
             <li>
               Question type: Must be a Yes/No question or a Multiple Choice.
@@ -180,10 +183,12 @@ export default function PartnerExplainer() {
           <div>
             <Subtitle className=" !mt-2">Receiving Payment</Subtitle>
             <li>
-              To receive payment, creators must have a valid PayPal account. By
-              default, the email associated with your Manifold account will be
-              used. If your PayPal uses a different email, please clarify this
-              in your bio.
+              To receive payment, creators must have a valid PayPal account.
+              This is the only way we can currently send payments.
+            </li>
+            <li>
+              Alternatively, type 'mana' into the payment field in your partner
+              dashboard to receive your additional bonuses as mana.
             </li>
             <li>Payments to all creators will be processed quarterly.</li>
             <li>
