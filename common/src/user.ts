@@ -95,6 +95,7 @@ export type PrivateUser = {
   hasSeenAppBannerInNotificationsOn?: number
   installedAppPlatforms?: string[]
   discordId?: string
+  paymentInfo?: string
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -126,11 +127,15 @@ export const getAvailableBalancePerQuestion = (user: User): number => {
   )
 }
 
-export const marketCreationCosts = (user: User, ante: number, allSuppliedByUser?: boolean) => {
+export const marketCreationCosts = (
+  user: User,
+  ante: number,
+  allSuppliedByUser?: boolean
+) => {
   if (allSuppliedByUser) {
     return {
       amountSuppliedByUser: ante,
-      amountSuppliedByHouse: 0
+      amountSuppliedByHouse: 0,
     }
   }
 

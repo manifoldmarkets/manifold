@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import {
-  getContractsCreatedLastMonth,
+  getContractsCreatedProgress,
   getFullUserByUsername,
 } from 'web/lib/supabase/users'
 import { User } from 'common/user'
@@ -14,7 +14,7 @@ import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
 import Link from 'next/link'
 
-import { useUserById } from 'web/hooks/use-user'
+import { useUser, useUserById } from 'web/hooks/use-user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -25,6 +25,14 @@ import DonutChart from 'web/components/donut-chart'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEffect, useState } from 'react'
 import { TbReportMoney } from 'react-icons/tb'
+import { EditablePaymentInfo } from 'web/components/contract/editable-payment-info'
+import { useAdmin } from 'web/hooks/use-admin'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
+} from 'common/partner'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { APIResponse } from 'common/api/schema'
 
 export const getStaticProps = async (props: {
   params: {
@@ -32,6 +40,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
+
   const user = await getFullUserByUsername(username)
 
   return {
@@ -59,34 +68,9 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
   const user = useUserById(props.user.id) ?? props.user
   const userIsPartner = PARTNER_USER_IDS.includes(user.id)
 
-  const currentDate = new Date()
-  const startDate = new Date()
-  startDate.setDate(1)
-  startDate.setDate(startDate.getDate() - 1)
-  startDate.setDate(1)
-
-  const formattedStartDate = format(startDate, 'MMM dd, yyyy')
-  const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
-
-  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
-  useEffect(() => {
-    getContractsCreatedLastMonth(user.id).then(setMarketsCreated)
-  }, [user.id])
-
   const { data } = useAPIGetter('get-partner-stats', {
     userId: user.id,
   })
-
-  const referralIncome = data ? data.numReferrals : 0
-  const realisedTraderIncome = data ? data.numUniqueBettors * 0.06 : 0
-  const unresolvedTraderIncome = data ? data.numUniqueBettors * 0.04 : 0
-  const dollarsEarned = realisedTraderIncome + referralIncome
-
-  const segments = [
-    { label: 'Traders', value: realisedTraderIncome, color: '#995cd6' },
-    { label: 'Referrals', value: referralIncome, color: '#5cd65c' },
-    //{ label: 'Other', value: , color: '#d65c99'},
-  ]
 
   return (
     <Page
@@ -142,101 +126,15 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         </Row>
 
         {userIsPartner ? (
-          <Col className=" mt-4 items-start gap-2">
-            <div className="text-ink-700">Period Feb 26 - May 26</div>
-
-            {data && (
-              <Row className="  gap-6 self-start text-lg">
-                <Row className=" gap-2">
-                  <div className="text-ink-700">Traders:</div>
-                  <div className=" font-semibold">{data.numUniqueBettors}</div>
-                </Row>
-                <Row className="gap-2">
-                  <div className="text-ink-700 ">Referrals:</div>
-                  <div className="font-semibold">{referralIncome}</div>
-                </Row>
-              </Row>
-            )}
-            <DonutChart segments={segments} total={dollarsEarned} />
-            <Row className="text-ink-700 items-center gap-2 text-lg">
-              <span>
-                Unresolved trader income: ${unresolvedTraderIncome} {''}
-                <InfoTooltip
-                  text={
-                    'This represents the sum of the $0.04 per trader that is received after resolving a market. This is not included in the total shown above.'
-                  }
-                />{' '}
-              </span>
-            </Row>
-          </Col>
+          data ? (
+            <PartnerDashboard data={data} user={user} />
+          ) : (
+            <LoadingIndicator />
+          )
         ) : (
-          <Col className="gap-4 ">
-            <Col className=" mx-0 my-auto mt-4 max-w-[600px] border p-2">
-              <Subtitle className="!mt-0 border-b pb-2">
-                {user.name}'s progress to partner
-              </Subtitle>
-              <Row className="justify-between border-b pb-2">
-                <div>
-                  <b>Reach 500 unique traders</b>
-                </div>
-                <div>
-                  {' '}
-                  <b>{user.creatorTraders.allTime}</b>/500
-                </div>
-              </Row>
-              <div className="text-ink-700 bg-ink-200 my-2 rounded p-2 px-6 text-sm">
-                <b>Monthly performance</b> ({formattedStartDate} - {''}
-                {formattedEndDate})
-              </div>
-              <Row className="justify-between border-b pb-2">
-                <div>
-                  <b>Average of 10 traders per market</b>
-                </div>
-                <div>
-                  <b>
-                    {marketsCreated
-                      ? (user.creatorTraders.monthly / marketsCreated).toFixed(
-                          1
-                        )
-                      : '0'}
-                  </b>
-                  /10
-                </div>
-              </Row>
-              <Row className="mt-2 justify-between">
-                <div>
-                  <b>Create 10 markets</b>
-                </div>
-                <div>
-                  <b>{marketsCreated ?? '0'}</b>/10
-                </div>
-              </Row>
-            </Col>
-
-            <div>
-              There are certain circumstances where we may accept applications
-              outside of these criteria. Some instances may include having an
-              established audience on other platforms or a history of
-              exceptional forecasting.
-            </div>
-            <div>
-              {' '}
-              Please email {''}
-              <a
-                href="mailto:david@manifold.markets"
-                className="text-primary-500 hover:text-primary-700 hover:underline"
-              >
-                david@manifold.markets
-              </a>{' '}
-              once you meet the minimum criteria and want to join the program.
-            </div>
-            <div>
-              Meeting the minimum requirements does not guarantee partnership.
-              We also take into consideration user behaviour and market quality
-              and will initially be accepting new partners at a slow rate.
-            </div>
-          </Col>
+          <PartnerProgress user={user} />
         )}
+
         <div className="text-primary-500 hover:text-primary-700 text-md my-4 hover:underline">
           <a href="/partner-explainer" className="flex items-baseline">
             Learn more about the program here!{' '}
@@ -245,5 +143,149 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         </div>
       </Col>
     </Page>
+  )
+}
+
+const PartnerDashboard = (props: {
+  data: APIResponse<'get-partner-stats'>
+  user: User
+}) => {
+  const { data, user } = props
+  const {
+    numUniqueBettors,
+    numBinaryBettors,
+    numMultiChoiceBettors,
+    numReferrals,
+  } = data
+  const isAdmin = useAdmin()
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
+
+  const referralIncome = numReferrals
+  const totalTraderIncome =
+    numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
+    numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
+  const dollarsEarned = totalTraderIncome + referralIncome
+
+  const segments = [
+    { label: 'Traders', value: totalTraderIncome, color: '#995cd6' },
+    { label: 'Referrals', value: referralIncome, color: '#5cd65c' },
+    //{ label: 'Other', value: , color: '#d65c99'},
+  ]
+
+  return (
+    <Col className=" mt-4 items-start gap-2">
+      <div className="text-ink-700">Period Feb 26 - May 26</div>
+
+      {data && (
+        <Row className="  gap-6 self-start text-lg">
+          <Row className=" gap-2">
+            <div className="text-ink-700">Traders:</div>
+            <div className=" font-semibold">{numUniqueBettors}</div>
+          </Row>
+          <Row className="gap-2">
+            <div className="text-ink-700 ">Referrals:</div>
+            <div className="font-semibold">{referralIncome}</div>
+          </Row>
+        </Row>
+      )}
+      <DonutChart segments={segments} total={dollarsEarned} />
+      {currentUser && (isCurrentUser || isAdmin) && (
+        <Row className="text-md flex-wrap items-center gap-2">
+          <InfoTooltip
+            text={
+              "Please enter your PayPal email/link or simply write 'mana'. Payments to be made quarterly."
+            }
+          >
+            PayPal info:
+          </InfoTooltip>
+          <EditablePaymentInfo userId={currentUser.id} />
+        </Row>
+      )}
+    </Col>
+  )
+}
+
+const PartnerProgress = (props: { user: User }) => {
+  const { user } = props
+
+  const currentDate = new Date()
+  const startDate = new Date()
+  startDate.setMonth(startDate.getMonth() - 2)
+
+  const formattedStartDate = format(startDate, 'MMM dd, yyyy')
+  const formattedEndDate = format(currentDate, 'MMM dd, yyyy')
+
+  const [marketsCreated, setMarketsCreated] = useState<number | undefined>()
+  const [marketsCreatedWithTraders, setMarketsCreatedWithTraders] = useState<
+    number | undefined
+  >()
+
+  useEffect(() => {
+    getContractsCreatedProgress(user.id).then(setMarketsCreated)
+    getContractsCreatedProgress(user.id, 20).then(setMarketsCreatedWithTraders)
+  }, [user.id])
+
+  return (
+    <Col className="gap-4 ">
+      <Col className=" mx-0 my-auto mt-4 max-w-[600px] rounded border p-2">
+        <Subtitle className="!mt-0  border-b pb-2">
+          {user.name}'s progress to partner
+        </Subtitle>
+        <Row className="justify-between px-1 pb-4 pt-2">
+          <div>
+            <b>Reach 1250 traders</b>
+          </div>
+          <div>
+            {' '}
+            <b>{user.creatorTraders.allTime}</b>/1250
+          </div>
+        </Row>
+        <div className="bg-ink-200 rounded px-4">
+          <div className="text-ink-700  my-3 rounded  text-sm">
+            <b>60 day performance</b> ({formattedStartDate} - {''}
+            {formattedEndDate})
+          </div>
+          <Row className="justify-between border-b">
+            <div>
+              <b>Create 20 markets</b>
+            </div>
+            <div>
+              <b>{marketsCreated ?? '0'}</b>/20
+            </div>
+          </Row>
+          <Row className="my-3 justify-between">
+            <div>
+              <b>10 markets with ≥ 20 traders</b>
+            </div>
+            <div>
+              <b>{marketsCreatedWithTraders ?? 0}</b>
+              /10
+            </div>
+          </Row>
+        </div>
+      </Col>
+      <div>
+        Meeting the minimum requirements is just the start of becoming a partner
+        and does not guarantee acceptance. We also evaluate user behaviour,
+        market quality, consistency and resolutions.
+      </div>
+      <div>
+        There are certain circumstances where we may accept applications outside
+        of these criteria. Some instances may include having an established
+        audience on other platforms or a history of exceptional forecasting.
+      </div>
+      <div>
+        {' '}
+        Please email {''}
+        <a
+          href="mailto:david@manifold.markets"
+          className="text-primary-500 hover:text-primary-700 hover:underline"
+        >
+          david@manifold.markets
+        </a>{' '}
+        once you meet the minimum criteria and want to join the program.
+      </div>
+    </Col>
   )
 }

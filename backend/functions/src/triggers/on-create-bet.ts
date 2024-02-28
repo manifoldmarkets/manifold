@@ -293,7 +293,11 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
-  const isPartner = PARTNER_USER_IDS.includes(creatorId)
+
+  const isPartner =
+    PARTNER_USER_IDS.includes(contract.creatorId) &&
+    // Require the contract creator to also be the answer creator for real-money bonus.
+    creatorId === contract.creatorId
 
   if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
 
@@ -351,20 +355,17 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const bonusGivenAlready = txnsSnap.docs.length > 0
     if (bonusGivenAlready) return undefined
 
-    const leagueBonus =
+    const bonusAmount =
       uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
         ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
         : contract.mechanism === 'cpmm-multi-1'
         ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
         : UNIQUE_BETTOR_BONUS_AMOUNT
 
-    const bonusAmount = isPartner ? 0 : leagueBonus
-
     const bonusTxnData = removeUndefinedProps({
       contractId: contract.id,
       uniqueNewBettorId: bettor.id,
       answerId,
-      leagueBonus,
       isPartner,
     })
 
