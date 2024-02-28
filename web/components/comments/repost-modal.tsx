@@ -67,7 +67,11 @@ export const RepostModal = (props: {
       contractId: contract.id,
       commentId: comment?.id,
       betId: bet?.id,
-    }).then(() => toast.success('Reposted to your followers!'))
+    })
+      .then(() => toast.success('Reposted to your followers!'))
+      .catch((e: Error) => {
+        toast.error(e.message)
+      })
 
   const commenterIsBettor = comment?.userUsername === bet?.userUsername
   return (

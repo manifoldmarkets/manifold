@@ -21,8 +21,10 @@ export const post: APIHandler<'post'> = async (
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
 
-  const creator = await getUser(auth.uid)
-  if (!creator) throw new APIError(404, 'Your account was not found')
+  const poster = await getUser(auth.uid)
+  if (!poster) throw new APIError(404, 'Your account was not found')
+  if (poster.isBannedFromPosting || poster.userDeleted)
+    throw new APIError(403, 'Deleted/banned users not allowed to post')
 
   let comment: ContractComment
   let betId = passedBetId
@@ -48,7 +50,24 @@ export const post: APIHandler<'post'> = async (
   } else {
     // TODO: should we mark the comment as `isRepost`?
     if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
-    comment = await getComment(createSupabaseClient(), commentId)
+    const db = createSupabaseClient()
+    const existingComment = await getComment(db, commentId)
+    if (existingComment.userId !== auth.uid) {
+      const commenter = await getUser(existingComment.userId)
+      if (commenter?.isBannedFromPosting || commenter?.userDeleted)
+        throw new APIError(404, 'Cannot post deleted/banned user comments')
+    }
+    if (existingComment.hidden)
+      throw new APIError(404, 'Cannot post hidden comments')
+    if (existingComment.replyToCommentId) {
+      const parentComment = await getComment(
+        db,
+        existingComment.replyToCommentId
+      )
+      if (parentComment.hidden)
+        throw new APIError(404, 'Cannot post replies to hidden comments')
+    }
+    comment = existingComment
   }
   if (comment.betId) betId = comment.betId
 
@@ -80,10 +99,10 @@ export const post: APIHandler<'post'> = async (
       contractId,
       commentId,
       betId,
-      creator.id,
-      creator.name,
-      creator.username,
-      creator.avatarUrl,
+      poster.id,
+      poster.name,
+      poster.username,
+      poster.avatarUrl,
     ]
   )
 
@@ -92,7 +111,7 @@ export const post: APIHandler<'post'> = async (
     contractId,
     commentId,
     betId,
-    creatorId: creator.id,
+    reposterId: poster.id,
   })
 
   return {
@@ -102,7 +121,7 @@ export const post: APIHandler<'post'> = async (
       await repostContractToFeed(
         contract,
         comment,
-        creator.id,
+        poster.id,
         result.id,
         [auth.uid],
         log,
