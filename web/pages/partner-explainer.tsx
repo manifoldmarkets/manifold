@@ -46,9 +46,7 @@ export default function PartnerExplainer() {
           </div>
           <div>
             <Subtitle className=" !mt-2">Partner perks</Subtitle>
-            <li>
-              Earn real USD for getting traders on your markets.
-            </li>
+            <li>Earn real USD for getting traders on your markets.</li>
             <li>Earn real USD for referrals.</li>
             <li>Exclusive badge. </li>
             <li> Direct access and support from the Manifold team.</li>
@@ -127,18 +125,15 @@ export default function PartnerExplainer() {
               <b>Income amount:</b>
             </div>
             <li>
-              USD per trader since the start of the quarter you were
-              made a partner. This means you may receive some USD for traders earned in the weeks prior to being partnered. The quarter start date can be viewed in your
-              partner dashboard.
+              USD per trader since the start of the quarter you were made a
+              partner. This means you may receive some USD for traders earned in
+              the weeks prior to being partnered. The quarter start date can be
+              viewed in your partner dashboard.
             </li>
             <li>$0.10 per trader on Yes/No markets.</li>
-            <li>
-              $0.20 per trader on Multi-choice markets.
-            </li>
+            <li>$0.20 per trader on Multi-choice markets.</li>
 
-            <li>
-              $1.00 per new user referral.
-            </li>
+            <li>$1.00 per new user referral.</li>
             <div className="pt-2">
               <b>Only certain questions contribute towards USD income:</b>
             </div>
