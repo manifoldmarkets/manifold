@@ -158,6 +158,7 @@ const PartnerDashboard = (props: {
   const totalTraderIncome =
     numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
     numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
+  console.log(data)
   const realisedTraderIncome = totalTraderIncome * 0.6
   const unresolvedTraderIncome = totalTraderIncome * 0.4
   const dollarsEarned = realisedTraderIncome + referralIncome
