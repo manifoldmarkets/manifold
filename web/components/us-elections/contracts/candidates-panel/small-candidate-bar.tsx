@@ -42,14 +42,14 @@ export const SmallCandidateBar = (props: {
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
           <Row className="w-full items-center gap-2">
             {!photo ? (
-              <IoIosPerson className="text-ink-600 h-[50px] w-[50px] " />
+              <IoIosPerson className="text-ink-600 h-[60px] w-[60px] " />
             ) : (
               <Image
                 src={photo}
                 alt={answer.text}
                 width={60}
                 height={60}
-                className="object-fill"
+                className="rounded-bl object-fill"
               />
             )}
 
