@@ -15,6 +15,7 @@ import {
 import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
 import { MultiBettor } from 'web/components/answers/answer-components'
 import { CPMMMultiContract } from 'common/contract'
+import { PercentChangeToday } from '../candidates-panel/candidate-bar'
 
 // just the bars
 export function PartyPanel(props: {
@@ -107,7 +108,7 @@ function PartyAnswer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         className={clsx(
-          'cursor-pointer',
+          'cursor-pointer py-1.5',
           selected && 'ring-primary-600 ring-2'
         )}
         label={
@@ -121,8 +122,13 @@ function PartyAnswer(props: {
         }
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>
-            <AnswerStatus contract={contract} answer={answer} />
-
+            <div className="relative">
+              <AnswerStatus contract={contract} answer={answer} />
+              <PercentChangeToday
+                probChange={answer.probChanges.day}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
               answer={answer as Answer}
