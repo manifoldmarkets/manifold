@@ -7,7 +7,7 @@ import { MultiBettor, OpenProb } from 'web/components/answers/answer-components'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
 import { Row } from '../../../layout/row'
-import { removeTextInParentheses } from './candidate-bar'
+import { PercentChangeToday, removeTextInParentheses } from './candidate-bar'
 
 export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
@@ -42,21 +42,27 @@ export const SmallCandidateBar = (props: {
         <Row className="my-auto h-full items-center justify-between gap-x-4 pr-4 leading-none">
           <Row className="w-full items-center gap-2">
             {!photo ? (
-              <IoIosPerson className="text-ink-600 h-[50px] w-[50px] " />
+              <IoIosPerson className="text-ink-600 h-[60px] w-[60px] " />
             ) : (
               <Image
                 src={photo}
                 alt={answer.text}
-                width={50}
-                height={50}
-                className="object-fill"
+                width={60}
+                height={60}
+                className="rounded-bl object-fill"
               />
             )}
 
             {shortName ?? answer.text}
           </Row>
           <Row className="items-center gap-1 sm:gap-2">
-            <OpenProb contract={contract} answer={answer} />
+            <div className="relative">
+              <OpenProb contract={contract} answer={answer} />
+              <PercentChangeToday
+                probChange={answer.probChanges.day}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
               answer={answer as Answer}

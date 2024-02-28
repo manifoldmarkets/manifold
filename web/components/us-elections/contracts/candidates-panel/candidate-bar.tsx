@@ -9,6 +9,7 @@ import { ClickFrame } from 'web/components/widgets/click-frame'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
 import { Row } from '../../../layout/row'
+import { formatPercentShort, getPercent } from 'common/util/format'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
@@ -41,6 +42,7 @@ export const CandidateBar = (props: {
 
   const { shortName, photo } = CANDIDATE_DATA[candidatefullName] ?? {}
   const router = useRouter()
+
   return (
     <>
       {/* <Link
@@ -59,7 +61,7 @@ export const CandidateBar = (props: {
         // onPointerOver={onHover && (() => onHover(true))}
         // onPointerLeave={onHover && (() => onHover(false))}
         className={clsx(
-          ' bg-canvas-0 relative h-40 w-[112px] justify-between overflow-hidden rounded transition-all',
+          ' bg-canvas-0 relative h-[164px] w-[112px] justify-between overflow-hidden rounded transition-all',
           className
         )}
       >
@@ -92,7 +94,10 @@ export const CandidateBar = (props: {
           )}
         </div>
         <Col className="absolute inset-0">
-          <Col className="mt-2 px-2">
+          <Col className="mt-1 px-2">
+            <div className="sm:text-md w-full text-sm">
+              {shortName ?? answer.text}
+            </div>
             <Row className="w-full items-center justify-between">
               <OpenProb contract={contract} answer={answer} />
               <MultiBettor
@@ -100,9 +105,10 @@ export const CandidateBar = (props: {
                 answer={answer as Answer}
               />
             </Row>
-            <div className="sm:text-md w-full text-sm">
-              {shortName ?? answer.text}
-            </div>
+            <PercentChangeToday
+              probChange={answer.probChanges.day}
+              className="-mt-1 whitespace-nowrap text-xs"
+            />
           </Col>
           {!photo ? (
             <IoIosPerson className="text-ink-600 -mb-4 h-[112px] w-[112px]" />
@@ -119,5 +125,27 @@ export const CandidateBar = (props: {
       </ClickFrame>
       {/* </Link> */}
     </>
+  )
+}
+
+export function PercentChangeToday(props: {
+  className?: string
+  threshold?: number
+  probChange: number
+}) {
+  const { className, threshold = 0.02, probChange } = props
+  const percentChangeToday = getPercent(probChange)
+  if (Math.abs(probChange) < threshold) return null
+  if (percentChangeToday > threshold) {
+    return (
+      <div className={clsx('text-teal-700', className)}>
+        +<b>{formatPercentShort(probChange)}</b> today
+      </div>
+    )
+  }
+  return (
+    <div className={clsx('text-scarlet-700', className)}>
+      <b>{formatPercentShort(probChange)}</b> today
+    </div>
   )
 }
