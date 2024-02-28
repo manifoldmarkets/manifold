@@ -6,9 +6,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-# set to true to spin up all the resources for the first time
-INITIALIZE=false
-
 SERVICE_NAME="api"
 SERVICE_GROUP="${SERVICE_NAME}-group"
 REGION="us-central1"
@@ -59,7 +56,7 @@ if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
     fi
     IMAGE_NAME="us-central1-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
     IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
-    docker build . --tag ${IMAGE_URL}
+    docker build . --tag ${IMAGE_URL} --platform linux/amd64
     docker push ${IMAGE_URL}
 else
     # not really any reason to do this other than if you have been too lazy to install docker
