@@ -166,7 +166,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     new_message: constructPref(true, true, true),
     tagged_user: constructPref(true, true, true),
     on_new_follow: constructPref(true, true, false),
-    contract_from_followed_user: constructPref(true, true, false),
+    contract_from_followed_user: constructPref(true, false, false),
     user_liked_your_content: constructPref(true, false, false),
 
     // General
