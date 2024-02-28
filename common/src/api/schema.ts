@@ -132,12 +132,14 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as CandidateBet & { betId: string },
-    props: z.object({
-      contractId: z.string(),
-      shares: z.number().positive().optional(), // leave it out to sell all shares
-      outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
-      answerId: z.string().optional(), // Required for multi binary markets
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+        shares: z.number().positive().optional(), // leave it out to sell all shares
+        outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+        answerId: z.string().optional(), // Required for multi binary markets
+      })
+      .strict(),
   },
   'sell-shares-dpm': {
     method: 'POST',
@@ -479,7 +481,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: 'no-cache',
     returns: {} as LiteUser,
-    props: z.object({ username: z.string() }),
+    props: z.object({ username: z.string() }).strict(),
   },
   'user/by-id/:id': {
     method: 'GET',
@@ -548,20 +550,24 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     returns: {} as { success: true },
-    props: z.object({
-      dashboardIds: z.array(z.string()),
-      isPolitics: z.boolean().optional(),
-    }),
+    props: z
+      .object({
+        dashboardIds: z.array(z.string()),
+        isPolitics: z.boolean().optional(),
+      })
+      .strict(),
   },
   react: {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      contentId: z.string(),
-      contentType: z.enum(['comment', 'contract']),
-      remove: z.boolean().optional(),
-    }),
+    props: z
+      .object({
+        contentId: z.string(),
+        contentType: z.enum(['comment', 'contract']),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
     returns: { success: true },
   },
   'compatible-lovers': {
@@ -616,12 +622,14 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({
-      contractId: z.string(),
-      limit: z.coerce.number().gte(0).lte(100),
-      limitTopics: z.coerce.number().gte(0).lte(10),
-      userId: z.string().optional(),
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100),
+        limitTopics: z.coerce.number().gte(0).lte(10),
+        userId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
@@ -631,17 +639,21 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      userId: z.string(),
-    }),
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
   },
   'get-ad-analytics': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({
-      contractId: z.string(),
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
     returns: {} as {
       uniqueViewers: number
       totalViews: number
