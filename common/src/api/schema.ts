@@ -653,6 +653,17 @@ export const API = (_apiTypeCheck = {
       adCreatedTime: string
     },
   },
+  'get-seen-market-ids': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contractIds: z.array(z.string()),
+      types: z.array(z.string()),
+      since: z.number(),
+    }),
+    returns: [] as string[],
+  },
   'get-compatibility-questions': {
     method: 'GET',
     visibility: 'public',

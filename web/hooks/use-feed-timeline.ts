@@ -37,7 +37,6 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
-import { useIsAuthorized } from 'web/hooks/use-user'
 import { convertContractComment } from 'common/supabase/comments'
 import { Json } from 'common/supabase/schema'
 import { Bet } from 'common/bet'
@@ -162,7 +161,6 @@ export const useFeedTimeline = (
   privateUser: PrivateUser,
   key: string
 ) => {
-  const isAuthed = useIsAuthorized()
   const boosts = useBoosts(privateUser, key)
   const followedIds = useFollowedIdsSupabase(privateUser.id)
 
@@ -272,7 +270,7 @@ export const useFeedTimeline = (
               } as CreatorDetails)
           )
         ),
-      getSeenContractIds(userId, newContractIds, Date.now() - 3 * DAY_MS, [
+      getSeenContractIds(newContractIds, Date.now() - 3 * DAY_MS, [
         'view market card',
       ]),
       betIds.length
@@ -365,7 +363,6 @@ export const useFeedTimeline = (
   const loadMore = useEvent(
     async (options: { time: times; allowSeen?: boolean }) => {
       if (!userId) return []
-
       const { timelineItems } = await fetchFeedItems(userId, {
         ...options,
         ignoreFeedTimelineItems: savedFeedItems ?? [],
@@ -386,9 +383,9 @@ export const useFeedTimeline = (
   })
 
   useEffect(() => {
-    if (savedFeedItems?.length || !userId || !isAuthed) return
+    if (savedFeedItems?.length || !userId) return
     tryToLoadManyCardsAtStart()
-  }, [userId, isAuthed])
+  }, [userId])
 
   return {
     loadMoreOlder: async (allowSeen: boolean) =>
