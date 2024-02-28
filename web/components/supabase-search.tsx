@@ -166,7 +166,6 @@ export function SupabaseSearch(props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
-  defaultTopic?: string
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -195,7 +194,6 @@ export function SupabaseSearch(props: {
     defaultFilter,
     defaultContractType,
     defaultSearchType,
-    defaultTopic,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -438,7 +436,7 @@ export function SupabaseSearch(props: {
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
               (filter !== 'all' || contractType !== 'ALL') &&
-              !defaultTopic && (
+              !topicSlug && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button

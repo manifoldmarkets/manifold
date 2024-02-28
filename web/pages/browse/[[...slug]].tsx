@@ -238,7 +238,6 @@ export function GroupPageContent(props: {
                         topics={topicResults}
                         setTopics={setTopicResults}
                         topicSlug={topicSlug}
-                        defaultTopic={slug}
                       />
                     ),
                     title: 'Browse',

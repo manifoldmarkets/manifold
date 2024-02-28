@@ -339,7 +339,7 @@ const PortfolioSummary = (props: {
           )}
           {isAuthed && (
             <SupabaseSearch
-              persistPrefix="search"
+              persistPrefix="recent"
               additionalFilter={{
                 excludeContractIds: privateUser?.blockedContractIds,
                 excludeGroupSlugs: privateUser?.blockedGroupSlugs,
@@ -348,7 +348,7 @@ const PortfolioSummary = (props: {
               useUrlParams={false}
               isWholePage={false}
               headerClassName={'!hidden'}
-              defaultTopic="recent"
+              topicSlug="recent"
               contractsOnly
               hideContractFilters
               hideSearch
