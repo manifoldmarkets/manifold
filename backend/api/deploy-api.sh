@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Uncomment this line if you don't want to install Docker locally!
+# MANIFOLD_CLOUD_BUILD=1
+
 set -e
 
 if [ -z "$1" ]; then
