@@ -250,11 +250,13 @@ export const useFeedTimeline = (
         .eq('user_id', userId)
         .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
-      db
-        .from('answers')
-        .select('*')
-        .in('id', answerIds)
-        .then((res) => res.data?.map((a) => convertAnswer(a))),
+      answerIds.length
+        ? db
+            .from('answers')
+            .select('*')
+            .in('id', answerIds)
+            .then((res) => res.data?.map((a) => convertAnswer(a)))
+        : [],
       db
         .from('users')
         .select('id, data, name, username')
@@ -273,11 +275,13 @@ export const useFeedTimeline = (
       getSeenContractIds(userId, newContractIds, Date.now() - 3 * DAY_MS, [
         'view market card',
       ]),
-      db
-        .from('contract_bets')
-        .select()
-        .in('bet_id', betIds)
-        .then((res) => res.data?.map(convertBet)),
+      betIds.length
+        ? db
+            .from('contract_bets')
+            .select()
+            .in('bet_id', betIds)
+            .then((res) => res.data?.map(convertBet))
+        : [],
     ])
 
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>
@@ -563,14 +567,16 @@ const getOnePerCreatorContentIds = (
 ) => {
   const contractIdsByCreatorId = groupBy(data, (item) => item.creator_id)
   // Only one contract per creator
-  const newContractIds = filterDefined(
-    Object.values(contractIdsByCreatorId)
-      .map((items) =>
-        orderBy(items, (r) => r.relevance_score, 'desc')
-          .slice(0, MAX_ITEMS_PER_CREATOR)
-          .map((item) => item.contract_id)
-      )
-      .flat()
+  const newContractIds = uniq(
+    filterDefined(
+      Object.values(contractIdsByCreatorId)
+        .map((items) =>
+          orderBy(items, (r) => r.relevance_score, 'desc')
+            .slice(0, MAX_ITEMS_PER_CREATOR)
+            .map((item) => item.contract_id)
+        )
+        .flat()
+    )
   )
   const newRepostCommentIdsFromFollowed = filterDefined(
     data.map((item) =>
