@@ -43,6 +43,7 @@ const Tab = (props: { href: string; label: string; active?: boolean }) => {
   const { href, label, active } = props
   return (
     <Link
+      prefetch={false}
       href={href}
       onClick={() => track('news tabs', { tab: label, href })}
       className={clsx(
