@@ -2,7 +2,7 @@
 import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Contract } from 'common/contract'
 import { useEvent } from 'web/hooks/use-event'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -46,6 +46,7 @@ import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { LiteUser } from 'common/api/user-types'
 import router from 'next/router'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -223,6 +224,7 @@ export function SupabaseSearch(props: {
     defaultContractType,
     defaultSearchType,
     useUrlParams,
+    persistPrefix,
   })
   const user = useUser()
   // const followingUsers = useFollowedUsersOnLoad(user?.id)
@@ -668,6 +670,7 @@ const useContractSearch = (
 }
 
 const useSearchQueryState = (props: {
+  persistPrefix: string
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
@@ -675,16 +678,22 @@ const useSearchQueryState = (props: {
   useUrlParams?: boolean
 }) => {
   const {
-    defaultSort = 'score',
+    persistPrefix,
+    defaultSort,
     defaultFilter = 'open',
     defaultContractType = 'ALL',
     defaultSearchType,
     useUrlParams,
   } = props
 
+  const [lastSort, setLastSort] = usePersistentLocalState<Sort>(
+    defaultSort ?? 'score',
+    `${persistPrefix}-last-search-sort`
+  )
+
   const defaults = {
     [QUERY_KEY]: '',
-    [SORT_KEY]: defaultSort,
+    [SORT_KEY]: lastSort,
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
     [SEARCH_TYPE_KEY]: defaultSearchType,
@@ -692,6 +701,11 @@ const useSearchQueryState = (props: {
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
   const [state, setState, ready] = useHook(defaults)
+
+  useEffect(() => {
+    setLastSort(state.s)
+  }, [state.s])
+
   return [state, setState, ready] as const
 }
 
