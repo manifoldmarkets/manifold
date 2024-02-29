@@ -8,8 +8,6 @@ create index if not exists contracts_created_time on contracts (created_time des
 
 create index if not exists contracts_close_time on contracts (close_time desc);
 
-create index if not exists contracts_popularity_score on contracts (popularity_score desc);
-
 create index if not exists contracts_daily_score on contracts (
   ((data ->> 'dailyScore')::numeric) desc nulls last
 );
