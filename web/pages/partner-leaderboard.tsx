@@ -1,8 +1,4 @@
 import { APIResponse } from 'common/api/schema'
-import {
-  PARTNER_UNIQUE_TRADER_BONUS,
-  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
-} from 'common/partner'
 import { api } from 'web/lib/firebase/api'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Page } from 'web/components/layout/page'
@@ -36,14 +32,8 @@ const PartnerLeaderboard = (props: {
   let totalDollarsEarned = 0
 
   const sortedPartnerStats = partnerStats.sort((a, b) => {
-    const dollarsEarnedA =
-      a.numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
-      a.numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI +
-      a.numReferrals
-    const dollarsEarnedB =
-      b.numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
-      b.numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI +
-      b.numReferrals
+    const dollarsEarnedA = a.dollarsEarned
+    const dollarsEarnedB = b.dollarsEarned
 
     return dollarsEarnedB - dollarsEarnedA
   })
@@ -52,10 +42,7 @@ const PartnerLeaderboard = (props: {
     totalContractsCreated += partner.numContractsCreated
     totalUniqueBettors += partner.numUniqueBettors
     totalReferrals += partner.numReferrals
-    totalDollarsEarned +=
-      partner.numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
-      partner.numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI +
-      partner.numReferrals
+    totalDollarsEarned += partner.dollarsEarned
   })
 
   return (
@@ -68,10 +55,12 @@ const PartnerLeaderboard = (props: {
       <Col className="m-2 mb-4 md:mx-8 ">
         <Row className={'items-center gap-2 md:hidden'}>
           <BackButton />
-          <span className={'text-primary-700 text-2xl'}>Partner Leaderboard</span>
+          <span className={'text-primary-700 text-2xl'}>
+            Partner Leaderboard
+          </span>
         </Row>
-        <Title className='hidden md:inline-flex'>Partner Leaderboard</Title>
-        
+        <Title className="hidden md:inline-flex">Partner Leaderboard</Title>
+
         <div className="text-primary-500 hover:text-primary-700 text-md mb-2 hover:underline">
           <a href="/partner-explainer" className="flex items-baseline">
             Learn more about the program here!{' '}
@@ -98,15 +87,9 @@ const PartnerLeaderboard = (props: {
                   username,
                   numContractsCreated,
                   numUniqueBettors,
-                  numBinaryBettors,
-                  numMultiChoiceBettors,
                   numReferrals,
+                  dollarsEarned,
                 } = partnerStats
-
-                const totalTraderIncome =
-                  numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
-                  numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
-                const dollarsEarned = totalTraderIncome + numReferrals
 
                 return (
                   <tr key={index} className="bg-canvas-0">

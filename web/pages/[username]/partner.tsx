@@ -141,7 +141,6 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
             <FaExternalLinkAlt className="ml-1 h-3 w-3" />
           </a>
         </div>
-        
       </Col>
     </Page>
   )
@@ -152,20 +151,11 @@ const PartnerDashboard = (props: {
   user: User
 }) => {
   const { data, user } = props
-  const {
-    numUniqueBettors,
-    numBinaryBettors,
-    numMultiChoiceBettors,
-    numReferrals,
-  } = data
+  const { numUniqueBettors, numReferrals, totalTraderIncome, dollarsEarned } =
+    data
   const isAdmin = useAdmin()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
-
-  const totalTraderIncome =
-    numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
-    numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
-  const dollarsEarned = totalTraderIncome + numReferrals
 
   const segments = [
     { label: 'Traders', value: totalTraderIncome, color: '#995cd6' },
@@ -189,11 +179,10 @@ const PartnerDashboard = (props: {
           </Row>
           <Link
             href={`/partner-leaderboard`}
-            className="hover:text-primary-700  hover:underline"
+            className="hover:text-primary-700 hover:underline"
           >
-            <Row className="gap-1.5">
-              <div className="text-ink-700">Rank</div>
-              <div className="font-semibold">17</div>
+            <Row className="items-baseline">
+              Rank <FaExternalLinkAlt className="ml-1 h-3 w-3" />
             </Row>
           </Link>
         </Row>

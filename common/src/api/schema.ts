@@ -882,9 +882,9 @@ export const API = (_apiTypeCheck = {
       username: string
       numContractsCreated: number
       numUniqueBettors: number
-      numBinaryBettors: number
-      numMultiChoiceBettors: number
       numReferrals: number
+      totalTraderIncome: number
+      dollarsEarned: number
     },
   },
 } as const)
