@@ -3,7 +3,10 @@ import * as amplitude from '@amplitude/analytics-browser'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
-import { removeUndefinedProps } from 'common/util/object'
+import {
+  removeUndefinedProps,
+  removeNullOrUndefinedProps,
+} from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
 import { api, completeQuest } from 'web/lib/firebase/api'
@@ -111,7 +114,7 @@ function insertUserEvent(
   name: string,
   data: EventData,
   db: SupabaseClient,
-  userId?: string,
+  userId?: string | null,
   contractId?: string | null,
   commentId?: string | null,
   adId?: string | null
@@ -122,7 +125,11 @@ function insertUserEvent(
       : name === 'view market'
       ? 'page'
       : 'card'
-    return api('record-contract-view', { userId, contractId, kind })
+    if (userId == null) {
+      return api('record-contract-view', { contractId, kind })
+    } else {
+      return api('record-contract-view', { userId, contractId, kind })
+    }
   }
   return run(
     db.from('user_events').insert({
