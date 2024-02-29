@@ -130,12 +130,18 @@ const getCreatorTradersByContract = async (
         where created_time >= $2
         and created_time < $3
         and $4 is null or contract_id = any($4)
+        and is_redemption = false
+        and (is_api is null or is_api = false)
+        and amount != 0
+        and user_id != $1
       )
       select c.id as contract_id, outcome_type, count(*)::int as total
       from contracts as c
       join contract_traders as ct on c.id = ct.contract_id
       where c.creator_id = $1
       and (c.resolution_time is null or c.resolution_time > $2)
+      and c.visibility = 'public'
+      and (c.data->>'isSubsidized' is null or c.data->>'isSubsidized' = 'true')
       group by c.id, outcome_type`,
     [
       creatorId,
