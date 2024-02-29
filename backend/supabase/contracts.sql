@@ -51,33 +51,15 @@ create index if not exists contracts_creator_id on contracts (creator_id, create
 
 create index if not exists contracts_created_time on contracts (created_time desc);
 
-create index if not exists contracts_unique_bettors on contracts (((data->>'uniqueBettorCount')::integer) desc);
-
 create index if not exists contracts_close_time on contracts (close_time desc);
 
-create index if not exists contracts_popularity_score on contracts (popularity_score desc);
-
-create index if not exists contracts_visibility on contracts (visibility);
-
 create index if not exists description_fts on contracts using gin (description_fts);
-
-create index if not exists idx_contracts_close_time_resolution_time_visibility on contracts (close_time, resolution_time, visibility);
 
 create index if not exists contracts_importance_score on contracts (importance_score desc);
 
 create index if not exists contracts_freshness_score on contracts (freshness_score desc);
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
-
--- for calibration page
-create index if not exists contracts_sample_filtering on contracts (
-                                                                    outcome_type,
-                                                                    resolution,
-                                                                    visibility,
-                                                                    ((data ->> 'uniqueBettorCount')::int)
-    );
-
-create index if not exists contracts_on_importance_score_and_resolution_time_idx on contracts(importance_score, resolution_time);
 
 create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
 create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;

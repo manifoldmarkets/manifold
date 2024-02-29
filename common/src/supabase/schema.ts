@@ -3222,17 +3222,6 @@ export interface Database {
         }
         Relationships: []
       }
-      user_trending_contract: {
-        Row: {
-          close_time: string | null
-          contract_id: string | null
-          created_time: string | null
-          distance: number | null
-          popularity_score: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       add_creator_name_to_description: {

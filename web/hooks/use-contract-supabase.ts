@@ -12,7 +12,6 @@ import {
   getPublicContractIdsInTopics,
   getPublicContractsByIds,
   getRecentPublicContractRows,
-  getTrendingContracts,
 } from 'web/lib/supabase/contracts'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -146,12 +145,4 @@ export function useFirebasePublicContract(
     visibility != 'private' ? useContractFirebase(contractId) : undefined // useRealtimeContract(contractId)
 
   return contract
-}
-
-export function useTrendingContracts(limit: number) {
-  const [contracts, setContracts] = useState<Contract[] | undefined>(undefined)
-  useEffect(() => {
-    getTrendingContracts(limit).then(setContracts)
-  }, [limit])
-  return contracts
 }
