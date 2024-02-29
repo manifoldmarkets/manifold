@@ -105,7 +105,7 @@ export function CreateTopicModal(props: {
             </Button>
             <Button
               loading={isSubmitting}
-              disabled={isSubmitting || name === ''}
+              disabled={isSubmitting || name.length < 1}
               color={'indigo'}
               onClick={onSubmit}
             >
