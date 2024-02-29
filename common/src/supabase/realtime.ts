@@ -114,10 +114,16 @@ const getIdenticalSpec = <T extends TableName>(table: T) => {
   return { identical, spec }
 }
 
+// useful to define these types so that people can manually manipulate the structure
+export type InsertedRow<R> = { eventType: 'INSERT'; new: R }
+export type UpdatedRow<R> = { eventType: 'UPDATE'; new: R; old: Partial<R> }
+export type DeletedRow<R> = { eventType: 'DELETE'; old: Partial<R> }
+export type ChangedRow<R> = InsertedRow<R> | UpdatedRow<R> | DeletedRow<R>
+
 export function applyChange<T extends TableName>(
   table: T,
   rows: Row<T>[],
-  change: Change<T>
+  change: ChangedRow<Row<T>>
 ) {
   const { identical, spec } = getIdenticalSpec(table)
   // apply the change to the existing row set, taking into account timestamps.

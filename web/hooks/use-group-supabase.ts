@@ -17,7 +17,7 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
@@ -241,9 +241,12 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  const channelFilter = { k: 'group_id', v: groupId } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
-    fetchGroupMembers()
+  const filter = { k: 'group_id', v: groupId } as const
+  useRealtime({
+    bindings: [{ table: 'group_members', event: '*', filter }],
+    onChange: (_change) => {
+      fetchGroupMembers()
+    },
   })
 
   return { admins, moderators, members, loadMore }

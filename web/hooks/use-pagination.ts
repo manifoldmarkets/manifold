@@ -127,7 +127,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     pageSize: opts.pageSize,
     isLoading: loading,
     isComplete: state.isComplete,
-    isStart: pageStart === 0,
+    isStart: pageStart <= 0,
     isEnd: state.isComplete && pageEnd >= itemCount,
     getPrev,
     getNext,
