@@ -91,7 +91,6 @@ const baseQuery = (
   userId: string,
   privateUser: PrivateUser,
   ignoreContractIds: string[],
-  ignoreContractIdsWithComments: string[],
   limit: number
 ) =>
   db
@@ -124,19 +123,8 @@ const queryForFeedRows = async (
       )
       .flat()
   )
-  const currentlyFetchedCommentItems = filterDefined(
-    options.ignoreFeedTimelineItems.map((item) =>
-      item.commentId ? item.contractId : null
-    )
-  )
 
-  let query = baseQuery(
-    userId,
-    privateUser,
-    currentlyFetchedContractIds,
-    currentlyFetchedCommentItems,
-    100
-  )
+  let query = baseQuery(userId, privateUser, currentlyFetchedContractIds, 50)
   if (options.time === 'new') {
     query = query.gt('created_time', newestCreatedTimestamp)
   } else if (options.time === 'old') {
