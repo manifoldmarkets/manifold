@@ -59,8 +59,6 @@ create index if not exists contracts_visibility on contracts (visibility);
 
 create index if not exists description_fts on contracts using gin (description_fts);
 
-create index if not exists idx_contracts_close_time_resolution_time_visibility on contracts (close_time, resolution_time, visibility);
-
 create index if not exists contracts_importance_score on contracts (importance_score desc);
 
 create index if not exists contracts_freshness_score on contracts (freshness_score desc);
