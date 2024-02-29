@@ -84,7 +84,7 @@ export function useUsersInStore(
   return users?.filter((user) => userIds.includes(user?.id))
 }
 
-export function useUserByIdOrAnswer(answer: Answer | DpmAnswer) {
+export function useDisplayUserByIdOrAnswer(answer: Answer | DpmAnswer) {
   const userId = answer.userId
   const user = useDisplayUserById(userId)
   if ('name' in answer)

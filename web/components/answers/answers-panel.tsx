@@ -22,7 +22,7 @@ import { Button, IconButton, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import {
@@ -477,7 +477,8 @@ export function Answer(props: {
     shouldShowLimitOrderChart,
   } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
+  // TODO: we don't need to load the answer creator if we're not showing avatars
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
   const [editAnswer, setEditAnswer] = useState<Answer>()
 

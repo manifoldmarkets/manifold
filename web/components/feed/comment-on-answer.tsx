@@ -6,7 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import Curve from 'web/lib/icons/comment-curve.svg'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
@@ -45,7 +45,7 @@ function AnswerSectionForCommentOnAnswer(props: {
 }) {
   const { answer, color } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
+  const user = useDisplayUserByIdOrAnswer(answer)
 
   return (
     <Row>

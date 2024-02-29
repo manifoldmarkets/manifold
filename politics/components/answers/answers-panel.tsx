@@ -21,7 +21,7 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import {
   getAnswerColor,
   useChartAnswers,
@@ -370,7 +370,7 @@ function Answer(props: {
     barColor,
   } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
   const [editAnswer, setEditAnswer] = useState<Answer>()
 
