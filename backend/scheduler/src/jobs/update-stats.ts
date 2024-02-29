@@ -176,7 +176,7 @@ export async function getSales(
 ) {
   const sales: ManaPurchaseTxn[] = await pg.map(
     `select * from txns
-      where category = "MANA_PURCHASE"
+      where category = 'MANA_PURCHASE'
       and created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
     [startTime, startTime + numberOfDays * DAY_MS],
     convertTxn as any
