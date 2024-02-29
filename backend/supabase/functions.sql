@@ -97,10 +97,7 @@ order by ((ucm.data)->'lastBetTime')::bigint desc offset start
 limit count $$;
 
 create
-    or replace function get_open_limit_bets_with_contracts_1
-(uid text, count int, politics boolean)
-    returns table (contract_id text, bets jsonb[], contract jsonb)
-    stable parallel safe language sql as $$;
+or replace function get_open_limit_bets_with_contracts_1 (uid text, count int, politics boolean) returns table (contract_id text, bets jsonb[], contract jsonb) stable parallel safe language sql as $$;
 select contract_id,
        bets.data as bets,
        contracts.data as contracts
@@ -219,56 +216,49 @@ limit n offset start $$;
 -- Your most recent contracts by bets, likes, or views.
 create
 or replace function get_your_recent_contracts (uid text, n int, start int) returns table (data jsonb, max_ts bigint) stable parallel safe language sql as $$
-    with your_bet_on_contracts as (
-        select contract_id,
-               (data->>'lastBetTime')::bigint as ts
-        from user_contract_metrics
-        where user_id = uid
-          and ((data -> 'lastBetTime')::bigint) is not null
-        order by ((data -> 'lastBetTime')::bigint) desc
-        limit n),
+  with your_bet_on_contracts as (
+      select contract_id,
+              (data->>'lastBetTime')::bigint as ts
+      from user_contract_metrics
+      where user_id = uid
+        and ((data -> 'lastBetTime')::bigint) is not null
+      order by ((data -> 'lastBetTime')::bigint) desc
+      limit n * 10 + start * 5),
     your_liked_contracts as (
-         select content_id as contract_id,
-               ts_to_millis(created_time) as ts
-         from user_reactions
-         where user_id = uid
-         order by created_time desc
-         limit n
-    ),
-     your_viewed_contracts as (
-         select contract_id,
+          select content_id as contract_id,
                 ts_to_millis(created_time) as ts
-         from user_seen_markets
-         where user_id = uid
-           and type = 'view market'
-         order by created_time desc
-         limit n
-     ),
-  recent_contract_ids as (
-      select contract_id,ts
+          from user_reactions
+          where user_id = uid
+          order by created_time desc
+          limit n * 10 + start * 5
+    ),
+    your_viewed_contracts as (
+        select contract_id,
+              ts_to_millis(created_time) as ts
+        from user_seen_markets
+        where user_id = uid
+          and type = 'view market'
+        order by created_time desc
+        limit n * 10 + start * 5
+    ),
+    recent_contract_ids as (
+      select contract_id, ts
+      from your_bet_on_contracts
+      union all
+      select contract_id, ts
       from your_viewed_contracts
       union all
-    select contract_id,ts
-    from your_viewed_contracts
-    union all
-    select contract_id,
-      ts
-    from your_bet_on_contracts
-    union all
-    select contract_id,
-      ts
-    from your_liked_contracts
-  ),
-  recent_unique_contract_ids as (
-    select contract_id,
-      max(ts) AS max_ts
-    from recent_contract_ids
-    group by contract_id
-  )
-select data,
-  max_ts
+      select contract_id, ts
+      from your_liked_contracts
+    ),
+    recent_unique_contract_ids as (
+      select contract_id, max(ts) AS max_ts
+      from recent_contract_ids
+      group by contract_id
+    )
+select data, max_ts
 from recent_unique_contract_ids
-  left join contracts on contracts.id = contract_id
+left join contracts on contracts.id = contract_id
 where data is not null
 order by max_ts desc
 limit n offset start $$;
