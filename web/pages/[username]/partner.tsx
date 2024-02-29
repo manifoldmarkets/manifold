@@ -141,6 +141,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
             <FaExternalLinkAlt className="ml-1 h-3 w-3" />
           </a>
         </div>
+        
       </Col>
     </Page>
   )
@@ -161,15 +162,14 @@ const PartnerDashboard = (props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
-  const referralIncome = numReferrals
   const totalTraderIncome =
     numBinaryBettors * PARTNER_UNIQUE_TRADER_BONUS +
     numMultiChoiceBettors * PARTNER_UNIQUE_TRADER_BONUS_MULTI
-  const dollarsEarned = totalTraderIncome + referralIncome
+  const dollarsEarned = totalTraderIncome + numReferrals
 
   const segments = [
     { label: 'Traders', value: totalTraderIncome, color: '#995cd6' },
-    { label: 'Referrals', value: referralIncome, color: '#5cd65c' },
+    { label: 'Referrals', value: numReferrals, color: '#5cd65c' },
     //{ label: 'Other', value: , color: '#d65c99'},
   ]
 
@@ -179,14 +179,23 @@ const PartnerDashboard = (props: {
 
       {data && (
         <Row className="  gap-6 self-start text-lg">
-          <Row className=" gap-2">
-            <div className="text-ink-700">Traders:</div>
+          <Row className=" gap-1.5">
+            <div className="text-ink-700">Traders</div>
             <div className=" font-semibold">{numUniqueBettors}</div>
           </Row>
-          <Row className="gap-2">
-            <div className="text-ink-700 ">Referrals:</div>
-            <div className="font-semibold">{referralIncome}</div>
+          <Row className="gap-1.5">
+            <div className="text-ink-700 ">Referrals</div>
+            <div className="font-semibold">{numReferrals}</div>
           </Row>
+          <Link
+            href={`/partner-leaderboard`}
+            className="hover:text-primary-700  hover:underline"
+          >
+            <Row className="gap-1.5">
+              <div className="text-ink-700">Rank</div>
+              <div className="font-semibold">17</div>
+            </Row>
+          </Link>
         </Row>
       )}
       <DonutChart segments={segments} total={dollarsEarned} />
