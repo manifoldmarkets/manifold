@@ -34,7 +34,10 @@ import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 
-export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
+// mqp: very unscientific, just balancing our willingness to accept load
+// with user willingness to put up with stale data
+export const DEFAULT_CACHE_STRATEGY =
+  'public, max-age=5, stale-while-revalidate=10'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -86,7 +89,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as ContractComment[],
     props: z
       .object({
@@ -151,7 +154,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Bet[],
     props: z
       .object({
@@ -173,7 +176,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Bet[],
     props: z
       .object({
@@ -186,7 +189,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Group,
     props: z.object({ slug: z.string() }),
   },
@@ -194,7 +197,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Group,
     props: z.object({ id: z.string() }).strict(),
   },
@@ -203,7 +206,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: z
       .object({
@@ -216,7 +219,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=60',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Group[],
     props: z
       .object({
@@ -230,7 +233,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket | FullMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: z.boolean().optional() }),
   },
   // deprecated. use /market/:id?lite=true instead
@@ -239,7 +242,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string() }),
   },
   'slug/:slug': {
@@ -247,7 +250,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket | FullMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ slug: z.string(), lite: z.boolean().optional() }),
   },
   market: {
@@ -353,7 +356,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=60',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as League[],
     props: z
       .object({
@@ -367,7 +370,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: z
       .object({
@@ -391,7 +394,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -399,7 +402,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Contract[],
     props: searchProps,
   },
@@ -456,7 +459,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 's-maxage=120, stale-while-revalidate=150',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as any,
     props: z
       .object({
@@ -472,6 +475,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
     returns: {} as LiteUser,
   },
@@ -479,7 +483,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as LiteUser,
     props: z.object({ username: z.string() }).strict(),
   },
@@ -487,7 +491,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as LiteUser,
     props: z.object({ id: z.string() }).strict(),
   },
@@ -495,7 +499,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 's-maxage=45, stale-while-revalidate=45',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteUser[],
     props: z
       .object({
@@ -508,7 +512,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 's-maxage=45, stale-while-revalidate=45',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteUser[],
     props: z
       .object({
