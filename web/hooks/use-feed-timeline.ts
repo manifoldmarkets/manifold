@@ -19,7 +19,6 @@ import {
 } from 'lodash'
 import {
   BASE_FEED_DATA_TYPE_SCORES,
-  CreatorDetails,
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
   getExplanation,
@@ -42,6 +41,7 @@ import { Json } from 'common/supabase/schema'
 import { Bet } from 'common/bet'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
 import { shuffle } from 'common/util/random'
+import { DisplayUser } from 'web/lib/supabase/users'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -68,7 +68,7 @@ export type FeedTimelineItem = {
   betId: string | null
   // These are fetched/generated at runtime
   avatarUrl: string | null
-  creatorDetails?: CreatorDetails
+  creatorDetails?: DisplayUser
   contract?: Contract
   contracts?: Contract[]
   comment?: ContractComment
@@ -257,17 +257,14 @@ export const useFeedTimeline = (
         : [],
       db
         .from('users')
-        .select('id, data, name, username')
+        .select('id, data->>avatarUrl, name, username')
         .in('id', userIds)
         .then((res) =>
           res.data?.map(
             (u) =>
               ({
-                id: u.id,
-                name: u.name,
-                username: u.username,
-                avatarUrl: (u.data as User).avatarUrl,
-              } as CreatorDetails)
+                ...u,
+              } as DisplayUser)
           )
         ),
       getSeenContractIds(newContractIds, Date.now() - 3 * DAY_MS, [
@@ -428,7 +425,7 @@ function createFeedTimelineItems(
   allComments: ContractComment[] | undefined,
   allAnswers: Answer[] | undefined,
   allBets: Bet[] | undefined,
-  creators: CreatorDetails[] | undefined
+  creators: DisplayUser[] | undefined
 ): FeedTimelineItem[] {
   const timelineItems = uniqBy(
     data.map((item) => {
@@ -594,7 +591,11 @@ const getOnePerCreatorContentIds = (
 
   // At the moment, we only care about users with bet_ids
   const userIds = uniq(
-    filterDefined(data.map((item) => (item.bet_id ? item.creator_id : null)))
+    filterDefined(
+      data.map((item) =>
+        item.bet_id || item.data_type === 'repost' ? item.creator_id : null
+      )
+    )
   )
 
   const betIds = uniq(filterDefined(data.map((item) => item.bet_id)))

@@ -41,10 +41,10 @@ export const FeedRepost = memo(function (props: {
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const commenterIsBettor = item.bet?.userUsername === comment.userUsername
-  const creatorRepostsOwnComment = item.creatorId === comment.userId
+  const creatorRepostedTheirComment = item.creatorId === comment.userId
   const showTopLevelRow =
     (dataType === 'repost' && !commenterIsBettor && bet) ||
-    !creatorRepostsOwnComment
+    !creatorRepostedTheirComment
 
   return (
     <Col
@@ -58,7 +58,7 @@ export const FeedRepost = memo(function (props: {
           router.push(`${contractPath(contract)}#${comment.id}`)
         }}
       >
-        {showTopLevelRow && creatorRepostsOwnComment ? (
+        {showTopLevelRow && creatorRepostedTheirComment ? (
           <Row className="justify-between pr-2">
             {bet && (
               <CommentReplyHeaderWithBet
@@ -77,9 +77,9 @@ export const FeedRepost = memo(function (props: {
           </Row>
         ) : (
           showTopLevelRow &&
-          !creatorRepostsOwnComment && (
+          !creatorRepostedTheirComment && (
             <Col>
-              <Row className={'mb-1 justify-end gap-2 pr-2'}>
+              <Row className={'mb-1 justify-end gap-1 pr-2'}>
                 <CardReason item={item} contract={contract} />
                 <FeedDropdown
                   contract={contract}

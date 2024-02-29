@@ -2,17 +2,17 @@ import { Contract } from 'common/contract'
 import { PositionChangeData } from 'common/supabase/bets'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
-import { CreatorDetails } from 'common/feed'
 import { Answer } from 'common/answer'
 import { formatMoney } from 'common/util/format'
 import { OutcomeLabel } from 'web/components/outcome-label'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
+import { DisplayUser } from 'web/lib/supabase/users'
 
 export const FeedBetsItem = (props: {
   contract: Contract
   betData: PositionChangeData
-  creatorDetails: CreatorDetails
+  creatorDetails: DisplayUser
   answers: Answer[] | undefined
 }) => {
   const { contract, answers, creatorDetails, betData } = props

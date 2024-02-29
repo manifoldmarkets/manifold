@@ -79,13 +79,6 @@ export const getRelevanceScore = (
   )
 }
 
-export type CreatorDetails = {
-  id: string
-  name: string
-  username: string
-  avatarUrl: string
-}
-
 export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   contract_probability_changed: 0.13,
   trending_contract: 0.15,
