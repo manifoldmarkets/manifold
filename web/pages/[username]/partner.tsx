@@ -27,10 +27,6 @@ import { useEffect, useState } from 'react'
 import { TbReportMoney } from 'react-icons/tb'
 import { EditablePaymentInfo } from 'web/components/contract/editable-payment-info'
 import { useAdmin } from 'web/hooks/use-admin'
-import {
-  PARTNER_UNIQUE_TRADER_BONUS,
-  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
-} from 'common/partner'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { APIResponse } from 'common/api/schema'
 

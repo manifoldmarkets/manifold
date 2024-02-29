@@ -103,9 +103,9 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   const numReferrals = referrals?.num_referred ?? 0
 
-  const numBinaryBettorsNumber = Number(numBinaryBettors)
-  const numMultiChoiceBettorsNumber = Number(numMultiChoiceBettors)
-  const numReferralsNumber = Number(numReferrals)
+  const numBinaryBettorsNumber = Number(numBinaryBettors) || 0
+  const numMultiChoiceBettorsNumber = Number(numMultiChoiceBettors) || 0
+  const numReferralsNumber = Number(numReferrals) || 0
 
   const totalTraderIncome =
     numBinaryBettorsNumber * PARTNER_UNIQUE_TRADER_BONUS +
