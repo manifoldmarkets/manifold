@@ -53,8 +53,6 @@ create index if not exists contracts_created_time on contracts (created_time des
 
 create index if not exists contracts_close_time on contracts (close_time desc);
 
-create index if not exists contracts_visibility on contracts (visibility);
-
 create index if not exists description_fts on contracts using gin (description_fts);
 
 create index if not exists contracts_importance_score on contracts (importance_score desc);
