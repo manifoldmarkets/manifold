@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       answers: {
@@ -891,7 +891,6 @@ export interface Database {
         Row: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string | null
           id: string
           importance_score: number | null
           name: string
@@ -903,7 +902,6 @@ export interface Database {
         Insert: {
           creator_id?: string | null
           data: Json
-          fs_updated_time?: string | null
           id?: string
           importance_score?: number | null
           name: string
@@ -915,7 +913,6 @@ export interface Database {
         Update: {
           creator_id?: string | null
           data?: Json
-          fs_updated_time?: string | null
           id?: string
           importance_score?: number | null
           name?: string
@@ -2912,8 +2909,8 @@ export interface Database {
         Row: {
           creator_id: string | null
           data: Json | null
-          fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           name: string | null
           name_fts: unknown | null
           privacy_status: string | null
@@ -2923,8 +2920,8 @@ export interface Database {
         Insert: {
           creator_id?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           name?: string | null
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -2934,8 +2931,8 @@ export interface Database {
         Update: {
           creator_id?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           name?: string | null
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -4409,7 +4406,6 @@ export interface Database {
         Returns: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string | null
           id: string
           importance_score: number | null
           name: string
