@@ -34,7 +34,12 @@ export const useBets = (options?: BetFilter) => {
   return bets
 }
 
-export const useUnfilledBets = (contractId: string) => {
+export const useUnfilledBets = (
+  contractId: string,
+  options?: {
+    waitUntilAdvancedTrader: boolean
+  }
+) => {
   const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
 
   const getUnfilledUnexpiredBets = (bets: LimitBet[]) => {
@@ -43,6 +48,7 @@ export const useUnfilledBets = (contractId: string) => {
   }
 
   useEffect(() => {
+    if (options?.waitUntilAdvancedTrader) return
     // Load first with supabase b/c it's faster.
     getUnfilledLimitOrders(contractId).then((b) =>
       setUnfilledBets(getUnfilledUnexpiredBets(b))
@@ -51,7 +57,7 @@ export const useUnfilledBets = (contractId: string) => {
     return listenForUnfilledBets(contractId, (b) =>
       setUnfilledBets(getUnfilledUnexpiredBets(b))
     )
-  }, [contractId])
+  }, [contractId, options?.waitUntilAdvancedTrader])
 
   useEffect(() => {
     const intervalId = setInterval(() => {

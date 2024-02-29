@@ -167,11 +167,13 @@ export function AnswersPanel(props: {
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
-  const unfilledBets = useUnfilledBets(contract.id)
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
     usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
+  const unfilledBets = useUnfilledBets(contract.id, {
+    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
+  })
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -380,7 +382,6 @@ export function SimpleAnswerBars(props: {
   const moreCount = answers.length - displayedAnswers.length
 
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-  const unfilledBets = useUnfilledBets(contract.id)
 
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
@@ -390,6 +391,9 @@ export function SimpleAnswerBars(props: {
     true,
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
+  const unfilledBets = useUnfilledBets(contract.id, {
+    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
+  })
 
   return (
     <Col className="mx-[2px] gap-2">
