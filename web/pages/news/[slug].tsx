@@ -2,8 +2,8 @@ import { useRouter } from 'next/router'
 import Custom404 from '../404'
 import {
   DashboardEndpoints,
-  FoundDashboardPage,
-} from 'web/components/dashboard/found-dashboard-page'
+  DashboardPage,
+} from 'web/components/dashboard/dashboard-page'
 import { Page } from 'web/components/layout/page'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { NewsDashboardPageProps } from 'common/politics/elections-data'
@@ -51,7 +51,7 @@ export default function NewsPage(
         }}
         className="items-center"
       >
-        <FoundDashboardPage
+        <DashboardPage
           {...props}
           editByDefault={edit}
           endpoint={endpoint ?? 'news'}

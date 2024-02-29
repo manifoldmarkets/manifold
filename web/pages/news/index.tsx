@@ -2,7 +2,7 @@ import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews } from 'common/link-preview'
-import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
+import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import { Page } from 'web/components/layout/page'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
@@ -61,7 +61,7 @@ export default function News(props: NewsDashboardPageProps) {
 
   return (
     <Page trackPageView={'news main'} className="items-center">
-      <FoundDashboardPage {...props} editByDefault={false} endpoint={'news'} />
+      <DashboardPage {...props} editByDefault={false} endpoint={'news'} />
     </Page>
   )
 }

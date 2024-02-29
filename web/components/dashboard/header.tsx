@@ -6,7 +6,7 @@ import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { DashboardEndpoints } from 'web/components/dashboard/found-dashboard-page'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
