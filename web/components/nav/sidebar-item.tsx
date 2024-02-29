@@ -10,9 +10,9 @@ export type NavItem = {
   href?: string
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
-  selectedIcon?: React.ComponentType<{ className?: string }>
   external?: boolean
   alwaysShowName?: boolean
+  prefetch?: boolean
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {

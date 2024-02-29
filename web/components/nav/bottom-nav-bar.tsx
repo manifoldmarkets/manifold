@@ -42,13 +42,13 @@ function getNavigation(user: User) {
       name: 'Home',
       href: '/home',
       icon: HomeIcon,
-      // selectedIcon: SolidHomeIcon,
     },
 
     {
       name: 'Politics',
       href: '/politics',
       icon: FaFlagUsa,
+      prefetch: false,
     },
     {
       name: 'Portfolio',
@@ -58,13 +58,11 @@ function getNavigation(user: User) {
       name: 'Browse',
       href: '/browse/for-you',
       icon: BiSearchAlt2,
-      // selectedIcon: BiSolidSearchAlt2,
     },
     {
       name: 'Notifs',
       href: `/notifications`,
       icon: NotificationsIcon,
-      // selectedIcon: SolidNotificationsIcon,
     },
   ]
 }
@@ -75,6 +73,7 @@ const signedOutNavigation = () => [
     href: '/politics',
     icon: FaFlagUsa,
     alwaysShowName: true,
+    // prefetch: false, // should we not prefetch this?
   },
   { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
@@ -163,6 +162,7 @@ function NavBarItem(props: {
   if (item.name === 'Portfolio' && user) {
     return (
       <Link
+        prefetch={item?.prefetch ?? true}
         href={item.href ?? '#'}
         className={clsx(
           itemClass,
@@ -216,11 +216,7 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {isCurrentPage && item.selectedIcon ? (
-        <item.selectedIcon className="mx-auto my-2 h-8 w-8" />
-      ) : (
-        item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />
-      )}
+      {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
       {children}
       {item.alwaysShowName && item.name}
     </Link>
