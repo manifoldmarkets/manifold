@@ -5,7 +5,6 @@ import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
 import {
   removeUndefinedProps,
-  removeNullOrUndefinedProps,
 } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
