@@ -218,6 +218,16 @@ async function addContractsToSeenMarketsTable(
       )
     )
   )
+
+  await Promise.all(
+    visitedContractIds.map((contractId) =>
+      pg.none(
+        `insert into user_contract_views (user_id, contract_id, page_views)
+            values ($1, $2, 1)`,
+        [userId, contractId]
+      )
+    )
+  )
 }
 
 async function upsertNewUserEmbeddings(

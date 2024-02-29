@@ -891,6 +891,17 @@ export const API = (_apiTypeCheck = {
       dollarsEarned: number
     },
   },
+  'record-contract-view': {
+    method: 'POST',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string().optional(),
+      contractId: z.string(),
+      kind: z.enum(['page', 'card', 'promoted']),
+    }),
+    returns: {} as { status: 'success' },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
