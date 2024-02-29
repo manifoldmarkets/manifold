@@ -3,9 +3,7 @@ import * as amplitude from '@amplitude/analytics-browser'
 
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
-import {
-  removeUndefinedProps,
-} from 'common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
 import { api, completeQuest } from 'web/lib/firebase/api'
