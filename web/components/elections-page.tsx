@@ -1,4 +1,3 @@
-'use client'
 import { MultiContract } from 'common/contract'
 import { ElectionsPageProps } from 'common/politics/elections-data'
 import { Col } from 'web/components/layout/col'

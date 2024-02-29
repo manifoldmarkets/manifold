@@ -1,6 +1,7 @@
 import { Contract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
+  ElectionsPageProps,
   MapContractsDictionary,
   NH_LINK,
   presidency2024,
@@ -10,22 +11,27 @@ import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { StateElectionMarket } from 'web/public/data/elections-data'
 import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
-export const REVALIDATE_CONTRACTS_SECONDS = 60
+import { api } from 'web/lib/firebase/api'
+import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
   const getContract = (slug: string) => getContractFromSlug(slug, adminDb)
 
-  const presidencyStateContracts = await getStateContracts(
-    getContract,
-    presidency2024
-  )
+  const [
+    presidencyStateContracts,
+    senateStateContracts,
+    governorStateContracts,
+    headlines,
+  ] = await Promise.all([
+    getStateContracts(getContract, presidency2024),
+    getStateContracts(getContract, senate2024),
+    getStateContracts(getContract, governors2024),
+    api('politics-headlines', {}),
+  ])
 
-  const senateStateContracts = await getStateContracts(getContract, senate2024)
-
-  const governorStateContracts = await getStateContracts(
-    getContract,
-    governors2024
+  const newsDashboards = await Promise.all(
+    headlines.map(async (headline) => getDashboardProps(headline.slug))
   )
 
   const specialContractSlugs = [
@@ -57,15 +63,17 @@ export async function getElectionsPageProps() {
     rawPresidencyStateContracts: presidencyStateContracts,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
-    electionPartyContract: electionPartyContract,
-    electionCandidateContract: electionCandidateContract,
-    republicanCandidateContract: republicanCandidateContract,
-    democratCandidateContract: democratCandidateContract,
-    newHampshireContract: newHampshireContract,
-    republicanVPContract: republicanVPContract,
-    democraticVPContract: democraticVPContract,
-    linkPreviews: linkPreviews,
-  }
+    electionPartyContract,
+    electionCandidateContract,
+    republicanCandidateContract,
+    democratCandidateContract,
+    newHampshireContract,
+    republicanVPContract,
+    democraticVPContract,
+    linkPreviews,
+    newsDashboards,
+    headlines,
+  } as ElectionsPageProps
 }
 
 async function getStateContracts(

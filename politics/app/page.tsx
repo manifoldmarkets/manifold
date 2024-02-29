@@ -13,8 +13,7 @@ import { api } from 'web/lib/firebase/api'
 import { REVALIDATE_CONTRACTS_SECONDS } from 'web/lib/politics/home'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 
-export const revalidate = REVALIDATE_CONTRACTS_SECONDS
-
+export const revalidate = 60
 export async function generateMetadata() {
   return {
     title: ELECTION_DASHBOARD_TITLE,

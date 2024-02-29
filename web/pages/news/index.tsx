@@ -1,18 +1,13 @@
-import {
-  Dashboard,
-  DashboardLinkItem,
-  DashboardQuestionItem,
-} from 'common/dashboard'
+import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
 import Custom404 from '../404'
-import { fetchLinkPreviews, LinkPreviews } from 'common/link-preview'
+import { fetchLinkPreviews } from 'common/link-preview'
 import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
 import { Page } from 'web/components/layout/page'
-import { Headline } from 'common/news'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { omit } from 'lodash'
-import { type Contract } from 'common/contract'
+import { NewsDashboardPageProps } from 'common/politics/elections-data'
 
 // copied wholesale from /news/[slug].tsx TODO: refactor?
 
@@ -59,25 +54,14 @@ export async function getStaticProps() {
   }
 }
 
-export default function News(
-  props:
-    | {
-        state: 'success'
-        initialDashboard: Dashboard
-        previews: LinkPreviews
-        initialContracts: Contract[]
-        headlines: Headline[]
-        slug: string
-      }
-    | { state: 'not found' }
-) {
+export default function News(props: NewsDashboardPageProps) {
   if (props.state === 'not found') {
     return <Custom404 />
   }
 
   return (
     <Page trackPageView={'news main'} className="items-center">
-      <FoundDashboardPage {...props} editByDefault={false} />
+      <FoundDashboardPage {...props} editByDefault={false} endpoint={'news'} />
     </Page>
   )
 }

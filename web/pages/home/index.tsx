@@ -48,7 +48,11 @@ export default function Home(props: { headlines: Headline[] }) {
         trackPageProps={{ kind: 'desktop' }}
         className="!mt-0"
       >
-        <HeadlineTabs headlines={headlines} currentSlug={'home'} />
+        <HeadlineTabs
+          endpoint={'news'}
+          headlines={headlines}
+          currentSlug={'home'}
+        />
         <Row className="mx-3 mb-2 items-center gap-2">
           <Title className="!mb-0 whitespace-nowrap">Home</Title>
 

@@ -1,12 +1,12 @@
 import { useRouter } from 'next/router'
-import { Dashboard } from 'common/dashboard'
 import Custom404 from '../404'
-import { LinkPreviews } from 'common/link-preview'
-import { FoundDashboardPage } from 'web/components/dashboard/found-dashboard-page'
+import {
+  DashboardEndpoints,
+  FoundDashboardPage,
+} from 'web/components/dashboard/found-dashboard-page'
 import { Page } from 'web/components/layout/page'
-import { Headline } from 'common/news'
-import { type Contract } from 'common/contract'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+import { NewsDashboardPageProps } from 'common/politics/elections-data'
 
 export async function getStaticProps(ctx: { params: { slug: string } }) {
   const { slug } = ctx.params
@@ -31,16 +31,9 @@ export async function getStaticPaths() {
 }
 
 export default function NewsPage(
-  props:
-    | {
-        state: 'success'
-        initialDashboard: Dashboard
-        previews: LinkPreviews
-        initialContracts: Contract[]
-        headlines: Headline[]
-        slug: string
-      }
-    | { state: 'not found' }
+  props: NewsDashboardPageProps & {
+    endpoint?: DashboardEndpoints
+  }
 ) {
   const router = useRouter()
   const edit = !!router.query.edit
@@ -48,7 +41,7 @@ export default function NewsPage(
   if (props.state === 'not found') {
     return <Custom404 />
   } else {
-    const { initialDashboard } = props
+    const { initialDashboard, endpoint } = props
     return (
       <Page
         trackPageView={'dashboard slug page'}
@@ -58,7 +51,11 @@ export default function NewsPage(
         }}
         className="items-center"
       >
-        <FoundDashboardPage {...props} editByDefault={edit} />
+        <FoundDashboardPage
+          {...props}
+          editByDefault={edit}
+          endpoint={endpoint ?? 'news'}
+        />
       </Page>
     )
   }

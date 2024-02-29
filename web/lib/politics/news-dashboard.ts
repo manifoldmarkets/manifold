@@ -5,7 +5,7 @@ import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { omit } from 'lodash'
 
-export const getDashboardProps = async (slug: string) => {
+export const getDashboardProps = async (slug: string, isPolitics?: boolean) => {
   const dashboard = await getDashboardFromSlug({ dashboardSlug: slug })
 
   const links = dashboard.items
@@ -24,7 +24,10 @@ export const getDashboardProps = async (slug: string) => {
     removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
   )
 
-  const headlines = await api('headlines', {})
+  const headlines = await api(
+    isPolitics ? 'politics-headlines' : 'headlines',
+    {}
+  )
   return {
     state: 'success',
     initialDashboard: dashboard,

@@ -6,12 +6,14 @@ import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { DashboardEndpoints } from 'web/components/dashboard/found-dashboard-page'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
   currentSlug: string
+  endpoint: DashboardEndpoints
 }) {
-  const { headlines, currentSlug } = props
+  const { headlines, endpoint, currentSlug } = props
   const user = useUser()
 
   return (
@@ -21,13 +23,16 @@ export function HeadlineTabs(props: {
           <Tab
             key={id}
             label={title}
-            href={`/news/${slug}`}
+            href={`/${endpoint}/${slug}`}
             active={slug === currentSlug}
           />
         ))}
         {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton defaultDashboards={headlines} />
+          <EditNewsButton
+            isPolitics={endpoint === 'politics'}
+            defaultDashboards={headlines}
+          />
         )}
       </Carousel>
     </div>

@@ -1,4 +1,3 @@
-'use client'
 import {
   convertDashboardSqltoTS,
   Dashboard,
@@ -32,7 +31,7 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
-
+export type DashboardEndpoints = 'news' | 'politics'
 export function FoundDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
@@ -40,6 +39,8 @@ export function FoundDashboardPage(props: {
   headlines: Headline[]
   slug: string
   editByDefault: boolean
+  embeddedInParent?: boolean
+  endpoint: DashboardEndpoints
 }) {
   const user = useUser()
   useSaveReferral(user)
@@ -53,6 +54,8 @@ export function FoundDashboardPage(props: {
     previews,
     initialContracts,
     headlines,
+    embeddedInParent,
+    endpoint,
   } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
@@ -86,20 +89,30 @@ export function FoundDashboardPage(props: {
 
   return (
     <>
-      <SEO
-        title={dashboard.title}
-        description={`dashboard created by ${dashboard.creatorName}`}
-      />
-      {!editMode && <HeadlineTabs headlines={headlines} currentSlug={slug} />}
-
-      {dashboard.visibility === 'deleted' && (
+      {!embeddedInParent && (
         <>
-          <Head>
-            <meta name="robots" content="noindex, nofollow" />
-          </Head>
-          <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
-            Deleted by mods
-          </div>
+          <SEO
+            title={dashboard.title}
+            description={`dashboard created by ${dashboard.creatorName}`}
+          />
+          {!editMode && (
+            <HeadlineTabs
+              headlines={headlines}
+              currentSlug={slug}
+              endpoint={endpoint}
+            />
+          )}
+
+          {dashboard.visibility === 'deleted' && (
+            <>
+              <Head>
+                <meta name="robots" content="noindex, nofollow" />
+              </Head>
+              <div className="bg-error w-full rounded p-6 text-center text-lg text-white">
+                Deleted by mods
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -119,7 +132,7 @@ export function FoundDashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/news/${slug}${
+                  url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}${
                     user?.username ? referralQuery(user.username) : ''
                   }`}
                   eventTrackingName="copy dashboard link"
@@ -233,6 +246,7 @@ export function FoundDashboardPage(props: {
           topics={dashboard.topics}
           setTopics={updateTopics}
           isEditing={editMode}
+          filterOutActivityFeed={embeddedInParent}
         />
       </Col>
     </>
