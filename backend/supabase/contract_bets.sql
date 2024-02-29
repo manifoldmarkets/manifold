@@ -45,6 +45,7 @@ begin
         new.is_challenge := ((new.data) -> 'isChallenge')::boolean;
         new.visibility := ((new.data) ->> 'visibility')::text;
         new.answer_id := ((new.data) ->> 'answerId')::text;
+        new.is_api := ((new.data) ->> 'isApi')::boolean;
     end if;
     return new;
 end
