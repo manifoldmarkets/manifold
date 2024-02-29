@@ -321,20 +321,9 @@ function NotificationGroupItem(props: {
       )
       .concat(
         combineAndSumIncomeNotifications(
-          notifications.filter(
-            (n) => incomeTypesToSum.includes(n.sourceType) && !n.data?.isPartner
-          )
-        )
-      )
-      .concat(
-        combineAndSumIncomeNotifications(
-          notifications.filter(
-            (n) => n.sourceType === 'bonus' && n.data?.isPartner
-          ),
-          { isPartner: true }
+          notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
         )
       ),
-
     'createdTime'
   ).reverse()
   const onboardingNotifs = notifications.some(

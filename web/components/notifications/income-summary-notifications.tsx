@@ -42,10 +42,8 @@ import {
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
-  notifications: Notification[],
-  options: { isPartner?: boolean } = {}
+  notifications: Notification[]
 ) {
-  const { isPartner } = options
   const newNotifications: Notification[] = []
   const groupedNotificationsBySourceType = groupBy(
     notifications,
@@ -58,7 +56,8 @@ export function combineAndSumIncomeNotifications(
       (notification) => {
         return (
           (notification.sourceTitle ?? notification.sourceContractTitle) +
-          (notification.data?.answerText ?? '')
+          (notification.data?.answerText ?? '') +
+          notification.data?.isPartner
         )
       }
     )
@@ -77,7 +76,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
-          isPartner,
+          isPartner: notificationsForSourceTitle[0].data?.isPartner ?? false,
         },
       }
       newNotifications.push(newNotification)
@@ -108,9 +107,10 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : undefined
 
   const partnerBonusAmount =
-    outcomeType === 'MULTIPLE_CHOICE'
+    numNewTraders *
+    (outcomeType === 'MULTIPLE_CHOICE'
       ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
-      : PARTNER_UNIQUE_TRADER_BONUS
+      : PARTNER_UNIQUE_TRADER_BONUS)
   return (
     <NotificationFrame
       notification={notification}
