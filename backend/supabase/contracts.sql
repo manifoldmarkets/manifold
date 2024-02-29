@@ -61,14 +61,6 @@ create index if not exists contracts_freshness_score on contracts (freshness_sco
 
 create index if not exists question_nostop_fts on contracts using gin (question_nostop_fts);
 
--- for calibration page
-create index if not exists contracts_sample_filtering on contracts (
-                                                                    outcome_type,
-                                                                    resolution,
-                                                                    visibility,
-                                                                    ((data ->> 'uniqueBettorCount')::int)
-    );
-
 create index if not exists idx_lover_user_id1 on contracts ((data ->> 'loverUserId1')) where data->>'loverUserId1' is not null;
 create index if not exists idx_lover_user_id2 on contracts ((data ->> 'loverUserId2')) where data->>'loverUserId2' is not null;
 
