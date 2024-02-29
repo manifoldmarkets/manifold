@@ -8,23 +8,18 @@ import { Col } from 'web/components/layout/col'
 import { FaExternalLinkAlt } from 'react-icons/fa'
 import { Row } from 'web/components/layout/row'
 import { BackButton } from 'web/components/contract/back-button'
+import { useEffect, useState } from 'react'
 
-export async function getStaticProps() {
-  const partnerStats = await Promise.all(
-    PARTNER_USER_IDS.map((userId) => api('get-partner-stats', { userId }))
-  )
-  return {
-    props: {
-      partnerStats,
-    },
-    revalidate: 60, // Regenerate after a minute
-  }
-}
+const PartnerLeaderboard = () => {
+  const [partnerStats, setPartnerStats] = useState<
+    APIResponse<'get-partner-stats'>[]
+  >([])
 
-const PartnerLeaderboard = (props: {
-  partnerStats: APIResponse<'get-partner-stats'>[]
-}) => {
-  const { partnerStats } = props
+  useEffect(() => {
+    Promise.all(
+      PARTNER_USER_IDS.map((userId) => api('get-partner-stats', { userId }))
+    ).then(setPartnerStats)
+  }, [])
 
   let totalContractsCreated = 0
   let totalUniqueBettors = 0
