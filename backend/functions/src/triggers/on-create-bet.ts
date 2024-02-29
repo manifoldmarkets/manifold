@@ -278,7 +278,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   bettor: User,
   bet: Bet
 ) => {
-  const { answerId, isRedemption } = bet
+  const { answerId, isRedemption, isApi } = bet
   const pg = createSupabaseDirectClient()
 
   const isBot = BOT_USERNAMES.includes(bettor.username)
@@ -293,13 +293,24 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
+  const isUnfilledLimitOrder =
+    bet.limitProb !== undefined && (!bet.fills || bet.fills.length === 0)
 
   const isPartner =
     PARTNER_USER_IDS.includes(contract.creatorId) &&
     // Require the contract creator to also be the answer creator for real-money bonus.
     creatorId === contract.creatorId
 
-  if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
+  if (
+    isCreator ||
+    isBot ||
+    isUnlisted ||
+    isRedemption ||
+    unSubsidized ||
+    isUnfilledLimitOrder ||
+    isApi
+  )
+    return
 
   const previousBet = answerId
     ? await pg.oneOrNone(
