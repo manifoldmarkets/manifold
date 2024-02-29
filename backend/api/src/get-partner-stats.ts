@@ -8,6 +8,8 @@ import {
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import {
   PARTNER_QUARTER_START_DATE,
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
   getPartnerQuarterEndDate,
 } from 'common/partner'
@@ -101,14 +103,23 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   const numReferrals = referrals?.num_referred ?? 0
 
+  const numBinaryBettorsNumber = Number(numBinaryBettors) || 0
+  const numMultiChoiceBettorsNumber = Number(numMultiChoiceBettors) || 0
+  const numReferralsNumber = Number(numReferrals) || 0
+
+  const totalTraderIncome =
+    numBinaryBettorsNumber * PARTNER_UNIQUE_TRADER_BONUS +
+    numMultiChoiceBettorsNumber * PARTNER_UNIQUE_TRADER_BONUS_MULTI
+  const dollarsEarned = totalTraderIncome + numReferralsNumber
+
   return {
     status: 'success',
     username,
     numContractsCreated,
     numUniqueBettors,
-    numBinaryBettors,
-    numMultiChoiceBettors,
     numReferrals,
+    totalTraderIncome,
+    dollarsEarned,
   }
 }
 
