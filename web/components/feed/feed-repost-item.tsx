@@ -117,7 +117,7 @@ export const FeedRepost = memo(function (props: {
                     contract={contract}
                     inTimeline={true}
                   />
-                  <Content content={comment.content} />
+                  <Content size={'md'} content={comment.content} />
                 </Col>
               </Row>
               {(commenterIsBettor || !bet) && !showTopLevelRow && (
