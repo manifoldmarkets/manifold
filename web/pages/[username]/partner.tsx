@@ -194,7 +194,7 @@ const PartnerDashboard = (props: {
         <Row className="text-md flex-wrap items-center gap-2">
           <InfoTooltip
             text={
-              "Please enter your PayPal email/link or simply write 'mana'. Payments to be made quarterly."
+              "Please enter your PayPal email/link or simply write 'mana'. Only you and admins can see this. Payments to be made quarterly."
             }
           >
             PayPal info:

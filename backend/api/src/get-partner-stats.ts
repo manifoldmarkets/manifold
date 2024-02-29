@@ -27,6 +27,19 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     PARTNER_QUARTER_START_DATE
   ).getTime()
 
+  const userResult = await pg.one<{
+    username: string
+  }>(`SELECT username FROM users WHERE id = $1`, [userId])
+
+  const username = userResult?.username ?? 'Unknown'
+
+  const numContractsCreated = await getNumContractsCreated(
+    pg,
+    userId,
+    quarterStart,
+    quarterEnd
+  )
+
   const thisQuarterContractTraders = await getCreatorTradersByContract(
     pg,
     userId,
@@ -90,6 +103,8 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   return {
     status: 'success',
+    username,
+    numContractsCreated,
     numUniqueBettors,
     numBinaryBettors,
     numMultiChoiceBettors,
@@ -129,4 +144,28 @@ const getCreatorTradersByContract = async (
       contractIds ?? null,
     ]
   )
+}
+
+const getNumContractsCreated = async (
+  pg: SupabaseDirectClient,
+  creatorId: string,
+  quarterStart: number,
+  quarterEnd: number
+) => {
+  const result = await pg.one(
+    `
+  select count(*) as count
+  from contracts
+  where creator_id = $1
+  and created_time >= $2
+  and created_time < $3
+  and mechanism != 'none'`,
+    [
+      creatorId,
+      new Date(quarterStart).toISOString(),
+      new Date(quarterEnd).toISOString(),
+    ]
+  )
+
+  return result.count
 }

@@ -879,6 +879,8 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       status: 'success' | 'error'
+      username: string
+      numContractsCreated: number
       numUniqueBettors: number
       numBinaryBettors: number
       numMultiChoiceBettors: number
