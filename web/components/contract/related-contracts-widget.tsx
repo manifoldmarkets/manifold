@@ -35,67 +35,52 @@ export const RelatedContractsList = memo(function (props: {
   loadMore?: () => Promise<boolean>
   topics?: Topic[]
   contractsByTopicSlug?: Record<string, Contract[]>
-  seenContractIds?: string[]
   className?: string
 }) {
-  const {
-    contracts,
-    loadMore,
-    seenContractIds,
-    contractsByTopicSlug,
-    topics,
-    className,
-  } = props
+  const { contracts, loadMore, contractsByTopicSlug, topics, className } = props
   const MAX_CONTRACTS_PER_GROUP = 2
   const displayedGroupContractIds = Object.values(contractsByTopicSlug ?? {})
     .map((contracts) =>
       contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
     )
     .flat()
+  const relatedContractsByTopic =
+    topics &&
+    contractsByTopicSlug &&
+    topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0)
 
   return (
     <Col className={clsx(className, 'flex-1')}>
       <VisitNewMarketForBonuses />
-      {topics &&
-        contractsByTopicSlug &&
-        topics
-          .filter(
-            (t) =>
-              getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
-                .length > 0
-          )
-          .map((topic) => (
-            <Col key={'related-topics-' + topic.id} className={'my-2'}>
-              <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
-                <Link className={linkClass} href={`/browse/${topic.slug}`}>
-                  <Row className={'items-center gap-1'}>
-                    {removeEmojis(topic.name)} questions
-                    <ArrowRightIcon className="h-4 w-4 shrink-0" />
-                  </Row>
-                </Link>
-              </h2>
-              <Col className="divide-ink-300 divide-y-[0.5px]">
-                {getUnseenContracts(
-                  contractsByTopicSlug[topic.slug],
-                  seenContractIds
-                )
-                  .slice(0, MAX_CONTRACTS_PER_GROUP)
-                  .map((contract) => (
-                    <SidebarRelatedContractCard
-                      key={contract.id}
-                      contract={contract}
-                      onContractClick={(c) =>
-                        track('click related market', { contractId: c.id })
-                      }
-                      twoLines
-                    />
-                  ))}
-              </Col>
-            </Col>
-          ))}
+      {relatedContractsByTopic?.map((topic) => (
+        <Col key={'related-topics-' + topic.id} className={'my-2'}>
+          <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
+            <Link className={linkClass} href={`/browse/${topic.slug}`}>
+              <Row className={'items-center gap-1'}>
+                {removeEmojis(topic.name)} questions
+                <ArrowRightIcon className="h-4 w-4 shrink-0" />
+              </Row>
+            </Link>
+          </h2>
+          <Col className="divide-ink-300 divide-y-[0.5px]">
+            {contractsByTopicSlug?.[topic.slug]
+              .slice(0, MAX_CONTRACTS_PER_GROUP)
+              .map((contract) => (
+                <SidebarRelatedContractCard
+                  key={contract.id}
+                  contract={contract}
+                  onContractClick={(c) =>
+                    track('click related market', { contractId: c.id })
+                  }
+                  twoLines
+                />
+              ))}
+          </Col>
+        </Col>
+      ))}
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
-        {getUnseenContracts(contracts, seenContractIds)
+        {contracts
           .filter((c) => !displayedGroupContractIds.includes(c.id))
           .map((contract) => (
             <SidebarRelatedContractCard
@@ -119,7 +104,6 @@ export const RelatedContractsGrid = memo(function (props: {
   contracts: Contract[]
   contractsByTopicSlug?: Record<string, Contract[]>
   topics?: Topic[]
-  seenContractIds?: string[]
   loadMore?: () => Promise<boolean>
   className?: string
   showAll?: boolean
@@ -133,7 +117,6 @@ export const RelatedContractsGrid = memo(function (props: {
     loadMore,
     className,
     showAll,
-    seenContractIds,
     showOnlyAfterBet,
     justBet,
   } = props
@@ -158,16 +141,13 @@ export const RelatedContractsGrid = memo(function (props: {
   }, [justBet])
 
   const [showMore, setShowMore] = useState(showAll ?? false)
-  const unseenRelatedContractsByTopic =
+  const relatedContractsByTopic =
     topics &&
     contractsByTopicSlug &&
-    topics.filter(
-      (t) =>
-        getUnseenContracts(contractsByTopicSlug[t.slug], seenContractIds)
-          .length > 0
-    )
+    topics.filter((t) => (contractsByTopicSlug[t.slug]?.length ?? 0) > 0)
+
   const hasRelatedContractByTopic =
-    unseenRelatedContractsByTopic && unseenRelatedContractsByTopic.length > 0
+    relatedContractsByTopic && relatedContractsByTopic.length > 0
   if (contracts.length === 0 && !hasRelatedContractByTopic) {
     return null
   }
@@ -188,7 +168,7 @@ export const RelatedContractsGrid = memo(function (props: {
       )}
     >
       {hasRelatedContractByTopic && <VisitNewMarketForBonuses />}
-      {unseenRelatedContractsByTopic?.map((topic) => (
+      {relatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
           <h2 className={clsx('mb-1 text-lg')}>
             <Link className={linkClass} href={`/browse/${topic.slug}`}>
@@ -203,10 +183,7 @@ export const RelatedContractsGrid = memo(function (props: {
               'h-full'
             )}
           >
-            {getUnseenContracts(
-              contractsByTopicSlug?.[topic.slug],
-              seenContractIds
-            )
+            {contractsByTopicSlug?.[topic.slug]
               .slice(0, MAX_CONTRACTS_PER_GROUP)
               .map((contract) => (
                 <RelatedContractCard
@@ -247,7 +224,7 @@ export const RelatedContractsGrid = memo(function (props: {
           breakpointCols={{ default: 2, 768: 1 }}
           className={clsx('flex w-auto snap-x gap-2')}
         >
-          {getUnseenContracts(contracts, seenContractIds)
+          {contracts
             .filter((c) => !displayedGroupContractIds.includes(c.id))
             .map((contract) => (
               <RelatedContractCard
@@ -472,9 +449,3 @@ const RelatedContractCard = memo(function (props: {
     </Link>
   )
 })
-
-const getUnseenContracts = (
-  contracts: Contract[] | undefined,
-  seenContractIds?: string[]
-) =>
-  contracts ? contracts.filter((c) => !seenContractIds?.includes(c.id)) : []
