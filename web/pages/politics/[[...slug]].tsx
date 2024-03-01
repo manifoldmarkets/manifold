@@ -67,8 +67,8 @@ export default function ElectionsOrDashboardPage(
   return <Elections {...props} />
 }
 
-const TOP_SLUG = 'home'
-const MAX_DASHBOARDS = 7
+export const TOP_SLUG = 'home'
+const MAX_DASHBOARDS = 8
 function Elections(props: ElectionsPageProps) {
   const [currentSlug, setCurrentSlug] = useState<string>('')
   const [ignoreScroll, setIgnoreScroll] = useState(false)
@@ -192,7 +192,12 @@ function HeadlineTabs(props: {
           />
         ))}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton defaultDashboards={headlines} isPolitics={true} />
+          <EditNewsButton
+            defaultDashboards={headlines.filter(
+              (headline) => headline.slug !== TOP_SLUG
+            )}
+            isPolitics={true}
+          />
         )}
       </Carousel>
     </div>
@@ -212,7 +217,7 @@ const Tab = (props: {
         onClick()
       }}
       className={clsx(
-        'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
+        'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] cursor-pointer text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
         active && 'bg-primary-200 text-primary-900'
       )}
     >
