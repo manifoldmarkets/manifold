@@ -1,6 +1,35 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { log } from 'shared/utils'
+
+type ViewKind = 'card' | 'promoted' | 'page'
+
+const VIEW_COLUMNS = {
+  card: ['last_card_view_ts', 'card_views'],
+  promoted: ['last_promoted_view_ts', 'promoted_views'],
+  page: ['last_page_view_ts', 'page_views'],
+} as const
+
+async function insertUserContractView(
+  pg: SupabaseDirectClient,
+  kind: ViewKind,
+  contractId: string,
+  userId?: string
+) {
+  // when we see an existing row, we need to bump the count by 1 and flip the timestamp to now
+  const [ts_column, count_column] = VIEW_COLUMNS[kind]
+  return await pg.none(
+    `insert into user_contract_views as ucv (user_id, contract_id, $3:name, $4:name)
+       values ($1, $2, now(), 1)
+       on conflict (user_id, contract_id) do update set
+         $3:name = excluded.$3:name, $4:name = ucv.$4:name + excluded.$4:name
+       where ucv.$3:name < now() - interval '1 minute'`,
+    [userId ?? null, contractId, ts_column, count_column]
+  )
+}
 
 export const recordContractView: APIHandler<'record-contract-view'> = async (
   body,
@@ -25,24 +54,7 @@ export const recordContractView: APIHandler<'record-contract-view'> = async (
     )
   }
   log('Inserting UCV entry for view.', { userId, contractId, kind })
-  await pg.none(
-    `insert into user_contract_views as ucv (user_id, contract_id, promoted_views, card_views, page_views)
-     values ($1, $2, $3, $4, $5)
-     on conflict (user_id, contract_id) do update set
-       last_view_ts = now(),
-       promoted_views = ucv.promoted_views + excluded.promoted_views,
-       card_views = ucv.card_views + excluded.card_views,
-       page_views = ucv.page_views + excluded.page_views
-     where ucv.last_view_ts < now() - interval '1 minute'`,
-    [
-      userId ?? null,
-      contractId,
-      kind === 'promoted' ? 1 : 0,
-      kind === 'page' ? 1 : 0,
-      kind === 'card' ? 1 : 0,
-    ]
-  )
-  log('Done inserting view entries.')
+  await insertUserContractView(pg, kind, contractId, userId)
 
   return { status: 'success' }
 }
