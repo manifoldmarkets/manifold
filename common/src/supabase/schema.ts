@@ -2254,7 +2254,9 @@ export type Database = {
           card_views: number
           contract_id: string
           id: number
-          last_view_ts: string
+          last_card_view_ts: string | null
+          last_page_view_ts: string | null
+          last_promoted_view_ts: string | null
           page_views: number
           promoted_views: number
           user_id: string | null
@@ -2263,7 +2265,9 @@ export type Database = {
           card_views?: number
           contract_id: string
           id?: never
-          last_view_ts?: string
+          last_card_view_ts?: string | null
+          last_page_view_ts?: string | null
+          last_promoted_view_ts?: string | null
           page_views?: number
           promoted_views?: number
           user_id?: string | null
@@ -2272,7 +2276,9 @@ export type Database = {
           card_views?: number
           contract_id?: string
           id?: never
-          last_view_ts?: string
+          last_card_view_ts?: string | null
+          last_page_view_ts?: string | null
+          last_promoted_view_ts?: string | null
           page_views?: number
           promoted_views?: number
           user_id?: string | null
