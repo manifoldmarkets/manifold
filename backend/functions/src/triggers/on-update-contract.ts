@@ -7,7 +7,7 @@ import {
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { Contract } from 'common/contract'
+import { Contract, CPMMMultiContract, MultiContract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { difference, isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
@@ -19,16 +19,22 @@ import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { addContractToFeed } from 'shared/create-feed'
 import { DAY_MS } from 'common/util/time'
 
-const propsThatTriggerRevalidation = [
+type AnyContract = Contract & CPMMMultiContract & MultiContract
+const propsThatTriggerRevalidation: (keyof AnyContract)[] = [
   'volume',
   'question',
   'closeTime',
   'description',
   'groupLinks',
   'lastCommentTime',
+  'visibility',
+  'addAnswersMode',
+  'sort',
+  'coverImageUrl',
+  'isPolitics',
 ] as const
 
-const propsThatTriggerUpdatedTime = [
+const propsThatTriggerUpdatedTime: (keyof AnyContract)[] = [
   'question',
   'description',
   'closeTime',
