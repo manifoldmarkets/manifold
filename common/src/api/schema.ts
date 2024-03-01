@@ -623,24 +623,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  /**@deprecated - use 'get-related-markets-cache' */
-  'get-related-markets': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: false,
-    props: z
-      .object({
-        contractId: z.string(),
-        limit: z.coerce.number().gte(0).lte(100),
-        limitTopics: z.coerce.number().gte(0).lte(10),
-        userId: z.string().optional(),
-      })
-      .strict(),
-    returns: {} as {
-      marketsFromEmbeddings: Contract[]
-      marketsByTopicSlug: { [topicSlug: string]: Contract[] }
-    },
-  },
   'get-related-markets-cache': {
     method: 'GET',
     visibility: 'undocumented',

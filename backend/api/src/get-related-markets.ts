@@ -12,16 +12,6 @@ export const getrelatedmarketscache: APIHandler<
   return getRelatedMarkets(contractId, limit, limitTopics, log)
 }
 
-/**@deprecated - use 'get-related-markets-cache' */
-export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
-  body,
-  _,
-  { log }
-) => {
-  const { contractId, limit, limitTopics } = body
-  return getRelatedMarkets(contractId, limit, limitTopics, log)
-}
-
 const getRelatedMarkets = async (
   contractId: string,
   limit: number,

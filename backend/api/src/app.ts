@@ -128,10 +128,7 @@ import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
-import {
-  getrelatedmarkets,
-  getrelatedmarketscache,
-} from 'api/get-related-markets'
+import { getrelatedmarketscache } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
@@ -259,7 +256,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
-  'get-related-markets': getrelatedmarkets,
   'get-related-markets-cache': getrelatedmarketscache,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
