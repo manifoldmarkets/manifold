@@ -81,7 +81,7 @@ export default function Elections(
     acc[headline.slug] = createRef()
     return acc
   }, {} as Record<string, RefObject<HTMLDivElement>>)
-  
+
   const onClick = (slug: string) => {
     if (slug === TOP_SLUG) {
       router.push(`/politics`, undefined, {
