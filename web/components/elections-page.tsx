@@ -10,6 +10,7 @@ import Custom404 from 'web/pages/404'
 import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()
@@ -50,6 +51,7 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     republicanVPContract,
     democraticVPContract,
+    trendingDashboard,
   } = props
 
   return (
@@ -63,7 +65,24 @@ function ElectionContent(props: ElectionsPageProps) {
             Live prediction market odds on the US election
           </div>
         </Col>
-
+        {trendingDashboard.state == 'not found' ? null : (
+          <Col>
+            <Row className="mb-2 items-center gap-1 font-semibold sm:text-lg">
+              <div className="relative">
+                <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
+                <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
+              </div>
+              Trending
+            </Row>
+            <HorizontalDashboard
+              initialDashboard={trendingDashboard.initialDashboard}
+              previews={trendingDashboard.previews}
+              initialContracts={trendingDashboard.initialContracts}
+              slug={trendingDashboard.slug}
+            />
+            <Spacer h={4} />
+          </Col>
+        )}
         <PoliticsCard
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"

@@ -34,6 +34,8 @@ export async function getElectionsPageProps() {
     headlines.map(async (headline) => getDashboardProps(headline.slug))
   )
 
+  const trendingDashboard = await getDashboardProps('politicsheadline')
+
   const specialContractSlugs = [
     'which-party-will-win-the-2024-us-pr-f4158bf9278a',
     'who-will-win-the-2024-us-presidenti-8c1c8b2f8964',
@@ -73,6 +75,7 @@ export async function getElectionsPageProps() {
     linkPreviews,
     newsDashboards,
     headlines,
+    trendingDashboard,
   } as ElectionsPageProps
 }
 

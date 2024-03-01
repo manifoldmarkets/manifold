@@ -165,7 +165,7 @@ export const DashboardContent = (props: {
   )
 }
 
-const key = (item: DashboardItem) => {
+export const key = (item: DashboardItem) => {
   if (item.type === 'link') return item.url
   if (item.type === 'question') return item.slug
   return item.id
