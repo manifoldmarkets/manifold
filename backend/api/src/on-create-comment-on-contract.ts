@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
-import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
+import { revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -30,10 +30,7 @@ export const onCreateCommentOnContract = async (props: {
   const { logError, contract, comment, creator, bet } = props
   const pg = createSupabaseDirectClient()
 
-  await revalidateStaticProps(
-    contractPath(contract),
-    getDomainForContract()
-  ).catch((e) =>
+  await revalidateStaticProps(contractPath(contract)).catch((e) =>
     logError('Failed to revalidate contract after comment', {
       e,
       comment,

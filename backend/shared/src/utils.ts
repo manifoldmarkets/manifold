@@ -69,10 +69,6 @@ export const invokeFunction = async (name: string, body?: unknown) => {
   }
 }
 
-export function getDomainForContract(contract: Contract) {
-  return contract.isPolitics ? ENV_CONFIG.politicsDomain : ENV_CONFIG.domain
-}
-
 export const revalidateStaticProps = async (
   // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
   pathToRevalidate: string,
@@ -116,14 +112,8 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
 
 export async function revalidateContractStaticProps(contract: Contract) {
   await Promise.all([
-    revalidateStaticProps(
-      contractPath(contract),
-      getDomainForContract(contract)
-    ),
-    revalidateStaticProps(
-      `/embed${contractPath(contract)}`,
-      getDomainForContract(contract)
-    ),
+    revalidateStaticProps(contractPath(contract)),
+    revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
 
