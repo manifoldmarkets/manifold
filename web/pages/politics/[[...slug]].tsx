@@ -17,13 +17,14 @@ import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import router from 'next/router'
-import { capitalize, first } from 'lodash'
-import { createRef, RefObject, useState } from 'react'
+import { capitalize, first, keyBy, mapValues } from 'lodash'
+import { createRef, useEffect, useRef, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+import { USElectionsPage } from 'web/components/elections-page'
 import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
-import { USElectionsPage } from 'web/components/elections-page'
+import { useEvent } from 'web/hooks/use-event'
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -51,13 +52,9 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
   }
 }
 
-const TOP_SLUG = 'home'
-const MAX_DASHBOARDS = 7
-
-export default function Elections(
+export default function ElectionsOrDashboardPage(
   props: ElectionsPageProps | NewsDashboardPageProps
 ) {
-  const [currentSlug, setCurrentSlug] = useState<string>('')
   // Unknown politics dashboard
   if ('state' in props && props.state === 'not found') {
     return <Custom404 />
@@ -67,6 +64,14 @@ export default function Elections(
     return <NewsPage {...props} endpoint={'politics'} />
   }
   // Elections home page
+  return <Elections {...props} />
+}
+
+const TOP_SLUG = 'home'
+const MAX_DASHBOARDS = 7
+function Elections(props: ElectionsPageProps) {
+  const [currentSlug, setCurrentSlug] = useState<string>('')
+  const [ignoreScroll, setIgnoreScroll] = useState(false)
   // TODO: Lots of INSUFFICIENT_RESOURCES errors when trying to render all newsDashboards
   const newsDashboards = props.newsDashboards.slice(0, MAX_DASHBOARDS)
   const headlines = [
@@ -76,13 +81,42 @@ export default function Elections(
       title: capitalize(TOP_SLUG),
     },
   ].concat(props.headlines.slice(0, MAX_DASHBOARDS))
-  // create a dictionary of headline slugs to react refs
-  const headlineRefs = headlines.reduce((acc, headline) => {
-    acc[headline.slug] = createRef()
-    return acc
-  }, {} as Record<string, RefObject<HTMLDivElement>>)
+
+  const headlineSlugsToRefs = useRef(
+    mapValues(keyBy(headlines, 'slug'), () => createRef<HTMLDivElement>())
+  )
+
+  useEffect(() => {
+    window.addEventListener('scroll', checkScrollPositionToHighlightSlug)
+    checkScrollPositionToHighlightSlug()
+    return () => {
+      window.removeEventListener('scroll', checkScrollPositionToHighlightSlug)
+    }
+  }, [])
+
+  const checkScrollPositionToHighlightSlug = useEvent(() => {
+    if (ignoreScroll) return
+    let lastSlugPosition = {
+      slug: '',
+      height: 0,
+    }
+    Object.entries(headlineSlugsToRefs.current).forEach(([slug, divRef]) => {
+      if (!divRef.current) return
+      const divTop = divRef.current.getBoundingClientRect().top
+      if (divTop < window.innerHeight && divTop > lastSlugPosition.height) {
+        lastSlugPosition = {
+          slug,
+          height: divTop,
+        }
+      }
+    })
+    if (lastSlugPosition.slug !== '' && lastSlugPosition.slug !== currentSlug) {
+      setCurrentSlug(lastSlugPosition.slug)
+    }
+  })
 
   const onClick = (slug: string) => {
+    setIgnoreScroll(true)
     if (slug === TOP_SLUG) {
       router.push(`/politics`, undefined, {
         shallow: true,
@@ -93,10 +127,11 @@ export default function Elections(
       })
     }
     setCurrentSlug(slug)
-    headlineRefs[slug].current?.scrollIntoView({
+    headlineSlugsToRefs.current[slug].current?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     })
+    setTimeout(() => setIgnoreScroll(false), 1000)
   }
 
   return (
@@ -112,14 +147,17 @@ export default function Elections(
         description={ELECTION_DASHBOARD_DESCRIPTION}
         // TODO: add a nice preview image
       />
-      <div className="absolute top-0" ref={headlineRefs[TOP_SLUG]} />
+      <div
+        className="absolute top-1"
+        ref={headlineSlugsToRefs.current[TOP_SLUG]}
+      />
       <USElectionsPage {...props} />
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
           <Col className={'relative'} key={dashboard.slug + 'section'}>
             <div
               className={'absolute -top-8'}
-              ref={headlineRefs[dashboard.slug]}
+              ref={headlineSlugsToRefs.current[dashboard.slug]}
             />
             <DashboardPage
               {...(dashboard as SuccesNewsDashboardPageProps)}
