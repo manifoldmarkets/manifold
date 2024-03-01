@@ -74,7 +74,8 @@ export const onUpdateContract = functions
     // Adding a contract to a group is ~similar~ to creating a new contract in that group
     if (
       onlyNewGroupIds.length > 0 &&
-      contract.createdTime > Date.now() - 2 * DAY_MS
+      contract.createdTime > Date.now() - 2 * DAY_MS &&
+      contract.visibility === 'public'
     ) {
       const contractWithScore = await getContractSupabase(contract.id)
       if (!contractWithScore) return
@@ -106,7 +107,7 @@ export const onUpdateContract = functions
       // Check if replicated to supabase before revalidating contract.
       const result = await db
         .from('contracts')
-        .select('*')
+        .select('id')
         .eq('id', contract.id)
         .limit(1)
       if (result.data && result.data.length > 0) {
