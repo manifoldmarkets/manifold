@@ -143,7 +143,7 @@ export const getContractsCreatedProgress = async (
       .gte('created_time', startIsoString)
       .lt('created_time', endIsoString)
       .not('mechanism', 'eq', 'none')
-      .gte('data->>uniqueBettorCount', minTraders)
+      .gte('data->uniqueBettorCount', minTraders)
   )
   return count
 }
