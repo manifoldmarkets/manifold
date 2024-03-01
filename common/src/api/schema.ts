@@ -639,6 +639,7 @@ export const API = (_apiTypeCheck = {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
+    cache: 'public, max-age=300, stale-while-revalidate=10',
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
