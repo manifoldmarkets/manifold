@@ -7,7 +7,7 @@ import { JobContext } from 'shared/utils'
 import { uniq } from 'lodash'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
-export async function updateContractViews({ log, lastEndTime }: JobContext) {
+export async function updateContractViews({ log }: JobContext) {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -17,26 +17,14 @@ export async function updateContractViews({ log, lastEndTime }: JobContext) {
   const contractIds = Object.keys(contractsToViews)
   log(`Loaded ${contractIds.length} contracts.`)
 
-  log(
-    'Computing contract views from time: ' +
-      new Date(lastEndTime ?? 0).toISOString()
-  )
-  const views = await getViews(pg, lastEndTime ?? 0)
+  log('Computing contract views.')
+  const views = await getViews(pg)
 
-  log('Computing view updates...')
   let writes = 0
-  const addViews = (lastEndTime ?? 0) > 0
-  log(`Adding views: ${addViews}. If false, then setting views.`)
+  log(`Setting views.`)
   const writer = new SafeBulkWriter()
   for (const contractId of contractIds) {
-    let totalViews = contractsToViews[contractId] ?? 0
-    if (addViews) totalViews += views[contractId] ?? 0
-    else totalViews = views[contractId] ?? 0
-
-    const update = {
-      views: totalViews,
-    }
-
+    const update = { views: views[contractId] ?? 0 }
     if (contractsToViews[contractId] !== update.views) {
       const contractDoc = firestore.collection('contracts').doc(contractId)
       writer.update(contractDoc, update)
@@ -49,10 +37,10 @@ export async function updateContractViews({ log, lastEndTime }: JobContext) {
   log('Done.')
 }
 
-const getViews = async (pg: SupabaseDirectClient, from: number) => {
+const getViews = async (pg: SupabaseDirectClient) => {
   const [signedInViews, signedOutViews] = await Promise.all([
-    getSignedInViews(pg, from),
-    getSignedOutViews(pg, from),
+    getSignedInViews(pg),
+    getSignedOutViews(pg),
   ])
   return Object.fromEntries(
     uniq(Object.keys(signedInViews).concat(Object.keys(signedOutViews))).map(
@@ -64,40 +52,32 @@ const getViews = async (pg: SupabaseDirectClient, from: number) => {
     )
   )
 }
-const getSignedInViews = async (pg: SupabaseDirectClient, from: number) => {
+const getSignedInViews = async (pg: SupabaseDirectClient) => {
   return Object.fromEntries(
     await pg.map(
       `select
          contract_id,
-         count(*) as logged_in_user_seen_markets_count
-     from
-         user_seen_markets
-     where type = 'view market'
-     and created_time > millis_to_ts($1)
-     group by
-         contract_id;
+         sum(page_views) as logged_in_user_seen_markets_count
+     from user_contract_views
+     where page_views > 0
+     group by contract_id;
     `,
-      [from],
+      [],
       (r) => [r.contract_id, r.logged_in_user_seen_markets_count]
     )
   )
 }
-const getSignedOutViews = async (pg: SupabaseDirectClient, from: number) => {
+const getSignedOutViews = async (pg: SupabaseDirectClient) => {
   return Object.fromEntries(
     await pg.map(
       `select
          contract_id,
-         count(*) as logged_out_user_seen_markets_count
-     from
-         user_events
-     where
-       name = 'view market'
-       and user_id is null
-     and ts > millis_to_ts($1)
-     group by
-         contract_id;
+         sum(page_views) as logged_out_user_seen_markets_count
+     from user_contract_views
+     where page_views > 0 and user_id is null
+     group by contract_id;
     `,
-      [from],
+      [],
       (r) => [r.contract_id, r.logged_out_user_seen_markets_count]
     )
   )

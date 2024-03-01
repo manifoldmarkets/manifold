@@ -677,7 +677,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({
       contractIds: z.array(z.string()),
-      types: z.array(z.string()),
+      types: z.array(z.enum(['page', 'card', 'promoted'])).optional(),
       since: z.number(),
     }),
     returns: [] as string[],
