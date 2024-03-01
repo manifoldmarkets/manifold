@@ -1,7 +1,7 @@
 import { OutcomeType } from 'common/contract'
 
 export const FIXED_ANTE = 100
-export const ANSWER_COST = FIXED_ANTE / 2
+export const ANSWER_COST = FIXED_ANTE / 4
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
@@ -13,6 +13,7 @@ const ANTES = {
 }
 
 export const MINIMUM_BOUNTY = 100
+export const MULTIPLE_CHOICE_MINIMUM_COST = 100
 
 export const getAnte = (
   outcomeType: OutcomeType,
@@ -21,17 +22,10 @@ export const getAnte = (
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
   if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
-    return Math.max(ante * (numAnswers ?? 0), 10)
+    return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
   }
 
   return ante
-}
-
-export const getAnteBurn = (outcomeType: OutcomeType) => {
-  if (outcomeType === 'BINARY') {
-    return 25
-  }
-  return 0
 }
 
 export const STARTING_BALANCE = 100
