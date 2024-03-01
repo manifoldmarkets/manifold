@@ -75,7 +75,10 @@ import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
 import { setnews } from './set-news'
 import { getnews } from './get-news'
-import { getdashboardfromslug } from './get-dashboard-from-slug'
+import {
+  getdashboardfromslug,
+  getDashboardFromSlug,
+} from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
@@ -277,6 +280,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-partner-stats': getPartnerStats,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
+  'get-dashboard-from-slug': getDashboardFromSlug,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

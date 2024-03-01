@@ -33,6 +33,7 @@ import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
+import { Dashboard } from 'common/dashboard'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -901,6 +902,15 @@ export const API = (_apiTypeCheck = {
       kind: z.enum(['page', 'card', 'promoted']),
     }),
     returns: {} as { status: 'success' },
+  },
+  'get-dashboard-from-slug': {
+    method: 'POST',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      dashboardSlug: z.string(),
+    }),
+    returns: {} as Dashboard,
   },
 } as const)
 

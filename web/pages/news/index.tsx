@@ -1,5 +1,5 @@
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
-import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { DashboardPage } from 'web/components/dashboard/dashboard-page'
@@ -24,7 +24,9 @@ export async function getStaticProps() {
     }
   }
 
-  const dashboard = await getDashboardFromSlug({ dashboardSlug: first.slug })
+  const dashboard = await api('get-dashboard-from-slug', {
+    dashboardSlug: first.slug,
+  })
 
   const links = dashboard.items
     .filter((item): item is DashboardLinkItem => item.type === 'link')
