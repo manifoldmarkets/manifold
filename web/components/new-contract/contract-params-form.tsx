@@ -564,7 +564,6 @@ export function ContractParamsForm(props: {
         balance={balance}
         amountSuppliedByUser={amountSuppliedByUser}
         outcomeType={outcomeType}
-        ante={ante}
         isMulti={isMulti}
         isPartner={isPartner}
         visibility={visibility}

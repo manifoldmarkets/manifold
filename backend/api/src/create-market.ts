@@ -234,17 +234,6 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(trans, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contractId,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
-
   if (amountSuppliedByUser > 0) {
     await runTxn(trans, {
       fromId: user.id,
@@ -254,6 +243,17 @@ const runCreateMarketTxn = async (
       amount: amountSuppliedByUser,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
+    })
+  }
+
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contractId,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
     })
   }
 
