@@ -215,6 +215,7 @@ export const FeedComment = memo(function FeedComment(props: {
   bets?: Bet[]
   lastInReplyChain?: boolean
   isPinned?: boolean
+  showParentLine?: boolean
 }) {
   const {
     contract,
@@ -227,6 +228,7 @@ export const FeedComment = memo(function FeedComment(props: {
     bets,
     lastInReplyChain,
     isPinned,
+    showParentLine,
   } = props
 
   const groupedBets = useMemo(() => {
@@ -313,14 +315,17 @@ export const FeedComment = memo(function FeedComment(props: {
           </UserHovercard>
 
           {/* Outer vertical reply line*/}
-          <div
-            className={clsx(
-              straightThreadColor,
-              'absolute bottom-0 left-4 w-0.5',
-              isParent ? 'top-0' : '-top-1',
-              (!isBetParent || lastInReplyChain) && 'group-last:hidden'
-            )}
-          />
+          {(showParentLine || !isParent) && (
+            <div
+              className={clsx(
+                straightThreadColor,
+                'absolute bottom-0 left-4 w-0.5',
+                isParent ? 'top-0' : '-top-1',
+                !isBetParent && 'group-last:hidden',
+                lastInReplyChain && 'hidden'
+              )}
+            />
+          )}
 
           {/* Inner vertical reply line*/}
           {isBetParent && !isParent && (
@@ -396,29 +401,19 @@ export const FeedComment = memo(function FeedComment(props: {
                       isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
                     )}
                   />
-                  {/* Outer vertical bet reply line*/}
+                  {/* Outer vertical bet reply line
                   <div
                     className={clsx(
                       straightThreadColor,
                       'absolute bottom-0 left-4 w-0.5 group-last:hidden ',
                       isParent ? 'top-0' : '-top-1'
                     )}
-                  />
+                  /> */}
                   <FeedReplyBet
                     className={'bg-canvas-50'}
                     avatarSize={'2xs'}
                     contract={contract}
                     bets={bets}
-                  />
-
-                  {/* Inner vertical bet reply line*/}
-                  <div
-                    className={clsx(
-                      straightThreadColor,
-                      'absolute w-0.5 ',
-                      isParent ? '  left-4 top-0' : '-top-1 left-10',
-                      i === groupedBets.length - 1 ? 'hidden' : 'bottom-0'
-                    )}
                   />
                 </Row>
               )
@@ -478,6 +473,7 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       isParent={true}
       bets={bets}
       isPinned={isPinned}
+      showParentLine={seeReplies && numReplies > 0}
     >
       <div ref={ref} />
 
