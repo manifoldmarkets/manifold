@@ -3,6 +3,16 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
+import { MINUTE_MS } from 'common/util/time'
+
+const relatedMarketsCache: {
+  [contractId: string]: {
+    marketsFromEmbeddings: Contract[]
+    marketsByTopicSlug: Record<string, Contract[]>
+    lastUpdated: number
+  }
+} = {}
+const CACHE_LENGTH = 5 * MINUTE_MS
 
 export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
   body,
@@ -10,6 +20,13 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
   { log }
 ) => {
   const { contractId, limit, limitTopics } = body
+  const now = Date.now()
+  const cached = relatedMarketsCache[contractId]
+  log('getting related markets', { contractId, limit, limitTopics })
+  if (cached && now - cached.lastUpdated < CACHE_LENGTH) {
+    log('returning cached related markets', { contractId })
+    return cached
+  }
   const pg = createSupabaseDirectClient()
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
@@ -45,7 +62,7 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
-      `select slug,importance_score from groups where slug = ANY(
+      `select slug, importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
               where id = $1
@@ -78,6 +95,11 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
   }
   log('returning topic slugs', { slugs: Object.keys(marketsByTopicSlug) })
   log('topics to importance scores', { topics })
+  relatedMarketsCache[contractId] = {
+    marketsFromEmbeddings,
+    marketsByTopicSlug,
+    lastUpdated: now,
+  }
   return {
     marketsFromEmbeddings,
     marketsByTopicSlug,
