@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { compact, first } from 'lodash'
+import { compact } from 'lodash'
 import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
@@ -11,32 +11,34 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { getContractsDirect } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
+import { StructuredLogger } from 'shared/log'
 
 const firestore = admin.firestore()
 
 export const onCreateCommentOnContract = async (props: {
-  contractId: string
+  contract: Contract
   comment: ContractComment
   creator: User
   bet?: Bet
+  logError: StructuredLogger
 }) => {
-  const { contractId, comment, creator, bet } = props
+  const { logError, contract, comment, creator, bet } = props
   const pg = createSupabaseDirectClient()
-
-  const contracts = await getContractsDirect([contractId], pg)
-  const contract = first(contracts)
-  if (!contract)
-    throw new Error('Could not find contract corresponding with comment')
 
   await revalidateStaticProps(
     contractPath(contract),
-    getDomainForContract(contract)
+    getDomainForContract()
+  ).catch((e) =>
+    logError('Failed to revalidate contract after comment', {
+      e,
+      comment,
+      creator,
+    })
   )
 
   const lastCommentTime = comment.createdTime
