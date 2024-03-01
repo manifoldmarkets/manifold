@@ -246,6 +246,7 @@ export type ElectionsPageProps = {
   partyChartParams?: ChartParams
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
+  trendingDashboard: NewsDashboardPageProps
 }
 
 export type ChartParams = {
