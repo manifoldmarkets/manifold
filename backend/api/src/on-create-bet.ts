@@ -68,7 +68,7 @@ export const onCreateBets = async (
     } as Bet
   })
   const userIdsToRefreshMetrics = uniq(
-    bets.filter((b) => b.shares !== 0).map((bet) => bet.userId)
+    bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
   )
   const usersToRefreshMetrics = betUsers.filter((user) =>
     userIdsToRefreshMetrics.includes(user.id)
