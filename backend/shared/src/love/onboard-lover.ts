@@ -6,9 +6,9 @@ import {
 } from 'shared/supabase/private-messages'
 import { User } from 'common/user'
 import { track } from 'shared/analytics'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 
-export const onboardLover = async (user: User, ip: string, log: GCPLog) => {
+export const onboardLover = async (user: User, ip: string) => {
   const pg = createSupabaseDirectClient()
 
   const publicChannels = await pg.manyOrNone(

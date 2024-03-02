@@ -6,7 +6,7 @@ import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
 import { isProd } from 'shared/utils'
 import { initGoogleCredentialsAndSecrets } from './utils'
-import { gLog as log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
 

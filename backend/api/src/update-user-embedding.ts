@@ -9,8 +9,7 @@ import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 
 export const updateUserEmbedding: APIHandler<'update-user-embedding'> = async (
   _,
-  auth,
-  { log }
+  auth
 ) => {
   return {
     result: { success: true },
@@ -28,8 +27,7 @@ export const updateUserEmbedding: APIHandler<'update-user-embedding'> = async (
         pg,
         ALL_FEED_USER_ID,
         contractIds,
-        1,
-        log
+        1
       )
     },
   }

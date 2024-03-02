@@ -8,6 +8,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
+import { log } from 'shared/utils'
 
 const bodySchema = z
   .object({
@@ -19,7 +20,7 @@ const bodySchema = z
   .strict()
 const firestore = admin.firestore()
 
-export const editanswercpmm = authEndpoint(async (req, auth, log) => {
+export const editanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, answerId, text, color } = validate(bodySchema, req.body)
   log('Received', {
     contractId,

@@ -19,25 +19,23 @@ import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
-  auth,
-  gcpLogs
+  auth
 ) => {
   const { contractId, text } = props
-  return await createAnswerCpmmMain(contractId, text, auth!.uid, gcpLogs)
+  return await createAnswerCpmmMain(contractId, text, auth!.uid)
 }
 
 export const createAnswerCpmmMain = async (
   contractId: string,
   text: string,
   creatorId: string,
-  { log }: { log: GCPLog; logError: GCPLog },
   options: {
     overrideAddAnswersMode?: add_answers_mode
     specialLiquidityPerAnswer?: number
@@ -148,8 +146,7 @@ export const createAnswerCpmmMain = async (
           user,
           contract,
           answers,
-          newAnswer,
-          log
+          newAnswer
         )
       } else {
         const newAnswerDoc = contractDoc
@@ -206,8 +203,7 @@ async function createAnswerAndSumAnswersToOne(
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
-  newAnswer: Answer,
-  log: GCPLog
+  newAnswer: Answer
 ) {
   const [otherAnswers, answersWithoutOther] = partition(
     answers,
@@ -373,7 +369,7 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    updateMakers(makers, betDoc.id, contractDoc, transaction, log)
+    updateMakers(makers, betDoc.id, contractDoc, transaction)
     for (const bet of ordersToCancel) {
       transaction.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,

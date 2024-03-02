@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { compact } from 'lodash'
-import { revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
@@ -16,7 +16,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as crypto from 'crypto'
-import { StructuredLogger } from 'shared/log'
 
 const firestore = admin.firestore()
 
@@ -25,13 +24,12 @@ export const onCreateCommentOnContract = async (props: {
   comment: ContractComment
   creator: User
   bet?: Bet
-  logError: StructuredLogger
 }) => {
-  const { logError, contract, comment, creator, bet } = props
+  const { contract, comment, creator, bet } = props
   const pg = createSupabaseDirectClient()
 
   await revalidateStaticProps(contractPath(contract)).catch((e) =>
-    logError('Failed to revalidate contract after comment', {
+    log.error('Failed to revalidate contract after comment', {
       e,
       comment,
       creator,

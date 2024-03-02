@@ -20,7 +20,7 @@ import {
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
 } from 'common/envs/constants'
-import { GCPLog, isProd } from 'shared/utils'
+import { log, isProd } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
@@ -47,7 +47,7 @@ const bodySchema = z
   })
   .strict()
 
-export const createuser = authEndpoint(async (req, auth, log) => {
+export const createuser = authEndpoint(async (req, auth) => {
   const {
     deviceToken: preDeviceToken,
     adminToken,
@@ -175,17 +175,16 @@ export const createuser = authEndpoint(async (req, auth, log) => {
 
   log('created user ', { username: user.username, firebaseId: auth.uid })
   const pg = createSupabaseDirectClient()
-  if (fromLove) await onboardLover(user, ip, log)
+  if (fromLove) await onboardLover(user, ip)
   await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
-  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg, log)
+  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
   const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
   await generateNewUserFeedFromContracts(
     auth.uid,
     pg,
     DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
     interestingContractIds,
-    0.5,
-    log
+    0.5
   )
 
   await track(auth.uid, 'create user', { username: user.username }, { ip })
@@ -223,8 +222,7 @@ async function addContractsToSeenMarketsTable(
 async function upsertNewUserEmbeddings(
   userId: string,
   visitedContractIds: string[] | undefined,
-  pg: SupabaseDirectClient,
-  log: GCPLog
+  pg: SupabaseDirectClient
 ): Promise<void> {
   log('Averaging contract embeddings for user ' + userId, {
     visitedContractIds,

@@ -4,7 +4,7 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common//api/utils'
-import { StructuredLogger, log } from 'shared/log'
+import { log } from 'shared/log'
 export { APIError } from 'common//api/utils'
 import {
   API,
@@ -17,22 +17,16 @@ import {
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
   req: Request,
-  log: StructuredLogger,
-  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 export type AuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser,
-  log: StructuredLogger,
-  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 export type MaybeAuthedHandler<T extends Json> = (
   req: Request,
   user: AuthedUser | undefined,
-  log: StructuredLogger,
-  logError: StructuredLogger,
   res: Response
 ) => Promise<T>
 
@@ -117,7 +111,7 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
 export const jsonEndpoint = <T extends Json>(fn: JsonHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      res.status(200).json(await fn(req, log.info, log.error, res))
+      res.status(200).json(await fn(req, res))
     } catch (e) {
       next(e)
     }
@@ -128,7 +122,7 @@ export const authEndpoint = <T extends Json>(fn: AuthedHandler<T>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const authedUser = await lookupUser(await parseCredentials(req))
-      res.status(200).json(await fn(req, authedUser, log.info, log.error, res))
+      res.status(200).json(await fn(req, authedUser, res))
     } catch (e) {
       next(e)
     }
@@ -147,7 +141,7 @@ export const MaybeAuthedEndpoint = <T extends Json>(
     }
 
     try {
-      res.status(200).json(await fn(req, authUser, log.info, log.error, res))
+      res.status(200).json(await fn(req, authUser, res))
     } catch (e) {
       next(e)
     }
@@ -158,8 +152,7 @@ export type APIHandler<N extends APIPath> = (
   props: ValidatedAPIParams<N>,
   auth: APISchema<N> extends { authed: true }
     ? AuthedUser
-    : AuthedUser | undefined,
-  { log, logError }: { log: StructuredLogger; logError: StructuredLogger }
+    : AuthedUser | undefined
 ) => Promise<APIResponseOptionalContinue<N>>
 
 export const typedEndpoint = <N extends APIPath>(
@@ -184,11 +177,7 @@ export const typedEndpoint = <N extends APIPath>(
     try {
       const resultOptionalContinue = await handler(
         validate(propSchema, props),
-        authUser as AuthedUser,
-        {
-          log: log.info,
-          logError: log.error,
-        }
+        authUser as AuthedUser
       )
 
       const hasContinue =

@@ -10,7 +10,7 @@ import { uniq } from 'lodash'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 
 const bodySchema = z
   .object({
@@ -19,18 +19,17 @@ const bodySchema = z
   })
   .strict()
 
-export const leagueActivity = authEndpoint(async (req, _, log) => {
+export const leagueActivity = authEndpoint(async (req) => {
   const { season, cohort } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
-  return await getLeagueActivity(pg, season, cohort, log)
+  return await getLeagueActivity(pg, season, cohort)
 })
 
 export const getLeagueActivity = async (
   pg: SupabaseDirectClient,
   season: number,
-  cohort: string,
-  log: GCPLog
+  cohort: string
 ) => {
   const userIds = await pg.map(
     `select user_id from leagues

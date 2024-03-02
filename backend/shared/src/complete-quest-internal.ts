@@ -16,13 +16,13 @@ import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
-import { GCPLog, log as oldLog } from 'shared/utils'
-import { StructuredLogger } from 'shared/log'
+import { log } from 'shared/utils'
 import { WEEK_MS } from 'common/util/time'
+
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-export const completeSharingQuest = async (user: User, log: GCPLog) => {
+export const completeSharingQuest = async (user: User) => {
   const db = createSupabaseClient()
   const count = await getCurrentCountForQuest(user.id, 'SHARES', db)
   const oldEntry = await getQuestScore(user.id, 'SHARES', db)
@@ -31,8 +31,7 @@ export const completeSharingQuest = async (user: User, log: GCPLog) => {
     'SHARES',
     oldEntry.score,
     count,
-    undefined,
-    log
+    undefined
   )
 }
 
@@ -53,7 +52,7 @@ export const completeCalculatedQuestFromTrigger = async (
   // In case replication hasn't happened yet, add the id manually
   if (!contractIds.includes(contractId)) contractIds.push(contractId)
   const count = contractIds.length
-  oldLog(
+  log(
     'markets created this week count:',
     count,
     'for user:',
@@ -62,7 +61,7 @@ export const completeCalculatedQuestFromTrigger = async (
     idempotencyKey
   )
   const oldEntry = await getQuestScore(user.id, questType, db)
-  oldLog('current quest entry:', oldEntry, 'for user:', user.id)
+  log('current quest entry:', oldEntry, 'for user:', user.id)
   if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
     return { count: oldEntry.score }
   return await completeQuestInternal(
@@ -94,8 +93,7 @@ const completeQuestInternal = async (
   questType: QuestType,
   oldScore: number,
   count: number,
-  idempotencyKey: string | undefined,
-  log: GCPLog = oldLog
+  idempotencyKey: string | undefined
 ) => {
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS[questType]
@@ -143,7 +141,7 @@ const getCurrentCountForQuest = async (
       .startOf('day')
       .valueOf()
     const startTs = millisToTs(startOfDay)
-    oldLog('getting shares count for user', userId, 'from startTs', startTs)
+    log('getting shares count for user', userId, 'from startTs', startTs)
     return await getUserShareEventsCount(userId, startTs, db)
   } else if (questType === 'REFERRALS') {
     let startOfWeek = dayjs()

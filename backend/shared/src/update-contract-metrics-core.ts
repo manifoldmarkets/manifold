@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 import { getAll } from 'shared/supabase/utils'
 import { Answer } from 'common/answer'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -14,7 +14,7 @@ import { groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
-export async function updateContractMetricsCore({ log }: JobContext) {
+export async function updateContractMetricsCore() {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')

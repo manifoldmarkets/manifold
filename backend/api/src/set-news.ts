@@ -1,10 +1,10 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { track } from 'shared/analytics'
 
-export const setnews: APIHandler<'set-news'> = async (props, auth, { log }) => {
+export const setnews: APIHandler<'set-news'> = async (props, auth) => {
   const { dashboardIds, isPolitics } = props
   log('set-news', { dashboardIds, isPolitics })
 

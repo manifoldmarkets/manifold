@@ -20,8 +20,8 @@ export async function testBackendFunction() {
     // await addInterestingContractsToFeed(db, pg)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    // await updateContractMetricsCore({ log: log })
-    await updateUserMetricsCore({ log: log })
+    // await updateContractMetricsCore()
+    await updateUserMetricsCore()
     // await updateContractViews()
     // const comment = (
     //   await firestore

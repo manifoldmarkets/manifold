@@ -3,11 +3,11 @@ import { Contract } from 'common/contract'
 
 import { isAdminId } from 'common/envs/constants'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { log } from 'shared/utils'
 
 export const closeMarket: APIHandler<'market/:contractId/close'> = async (
   props,
-  auth,
-  { log }
+  auth
 ) => {
   const { contractId, closeTime } = props
   const contractDoc = firestore.doc(`contracts/${contractId}`)

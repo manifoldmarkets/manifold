@@ -6,7 +6,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { GCPLog, getPrivateUser, getUser } from 'shared/utils'
+import { log, getPrivateUser, getUser } from 'shared/utils'
 import { createMarketHelper } from '../create-market'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { placeBetMain } from '../place-bet'
@@ -38,7 +38,7 @@ const createMatchSchema = z.object({
 
 const MATCH_CREATION_FEE = 10
 
-export const createMatch = authEndpoint(async (req, auth, log) => {
+export const createMatch = authEndpoint(async (req, auth) => {
   const { userId1, userId2, betAmount, introduction } = validate(
     createMatchSchema,
     req.body
@@ -48,8 +48,7 @@ export const createMatch = authEndpoint(async (req, auth, log) => {
     userId1,
     userId2,
     betAmount,
-    introduction,
-    log
+    introduction
   )
 })
 
@@ -58,8 +57,7 @@ export const createMatchMain = async (
   userId1: string,
   userId2: string,
   betAmount: number,
-  introduction: JSONContent | undefined,
-  log: GCPLog
+  introduction: JSONContent | undefined
 ) => {
   if (userId1 === userId2) {
     throw new APIError(400, `User ${userId1} cannot match with themselves.`)
@@ -156,12 +154,12 @@ export const createMatchMain = async (
         `If second date, third date by ${ninetyDaysLaterStr}?`,
         `If third date, continue relationship for six months?`,
       ],
-      descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones! 
-  
-  
+      descriptionMarkdown: `Are [${user1.name}](https://manifold.love/${user1.username}) and [${user2.name}](https://manifold.love/${user2.username}) a good match? Bet on whether they will hit any of these relationship milestones!
+
+
 Each of the milestones beyond the first date is conditional on the previous milestone. For example, if the first date answer resolves NO, the others will resolve N/A.
-  
-  
+
+
 See [FAQ](https://manifold.love/faq) for more details.`,
       extraLiquidity: 500,
       outcomeType: 'MULTIPLE_CHOICE',
@@ -174,8 +172,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       loverUserId2: userId2,
       matchCreatorId: matchCreator.id,
     },
-    { uid: manifoldLoveUserId, creds: undefined as any },
-    log
+    { uid: manifoldLoveUserId, creds: undefined as any }
   )) as CPMMMultiContract
 
   const { answers } = contract
@@ -191,8 +188,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
           outcome: 'NO',
         },
         manifoldLoveUserId,
-        true,
-        log
+        true
       )
     })
   )
@@ -209,8 +205,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
           outcome: 'YES',
         },
         matchCreator.id,
-        true,
-        log
+        true
       )
     })
   )
@@ -247,7 +242,6 @@ See [FAQ](https://manifold.love/faq) for more details.`,
         channelId,
         message,
         pg,
-        log,
         visibility,
         visibility === 'system_status' ? manifoldLoveUserId : undefined
       )

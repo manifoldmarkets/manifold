@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getContractSupabase, getUser } from 'shared/utils'
+import { log, getContractSupabase, getUser } from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'
 import {
@@ -25,7 +25,7 @@ const bodySchema = z
   })
   .strict()
 
-export const createchartannotation = authEndpoint(async (req, auth, log) => {
+export const createchartannotation = authEndpoint(async (req, auth) => {
   const {
     contractId,
     text: passedText,
@@ -68,7 +68,7 @@ export const createchartannotation = authEndpoint(async (req, auth, log) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.one(
     `
-    insert into chart_annotations 
+    insert into chart_annotations
         (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
          creator_id, creator_name, creator_username, creator_avatar_url, answer_id,
          user_username, user_avatar_url, user_name, user_id, prob_change

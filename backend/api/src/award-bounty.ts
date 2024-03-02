@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { runAwardBountyTxn } from 'shared/txn/run-bounty-txn'
 import { type APIHandler } from './helpers/endpoint'
 import { createBountyAwardedNotification } from 'shared/create-notification'
-import { getContract } from 'shared/utils'
+import { log, getContract } from 'shared/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -12,7 +12,7 @@ import { updateData } from 'shared/supabase/utils'
 
 export const awardBounty: APIHandler<
   'market/:contractId/award-bounty'
-> = async (props, auth, { logError }) => {
+> = async (props, auth) => {
   const { contractId, commentId, amount } = props
 
   const db = createSupabaseClient()
@@ -42,11 +42,11 @@ export const awardBounty: APIHandler<
       comment_id: commentId,
       bountyAwarded: (comment.bountyAwarded ?? 0) + amount,
     })
-  } catch (e) {
-    logError(
-      'Bounty awarded but error updating denormed bounty amount on comment. Need to manually reconocile'
+  } catch (err) {
+    log.error(
+      'Bounty awarded but error updating denormed bounty amount on comment. Need to manually reconocile',
+      { err }
     )
-    logError(e)
   }
 
   const contract = await getContract(contractId)
