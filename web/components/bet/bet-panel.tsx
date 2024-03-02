@@ -57,7 +57,7 @@ export function BuyPanel(props: {
   inModal: boolean
   onBuySuccess?: () => void
   singularView?: 'YES' | 'NO' | 'LIMIT'
-  initialOutcome?: BinaryOutcomes
+  initialOutcome?: BinaryOutcomes | 'LIMIT'
   location?: string
   replyToCommentId?: string
 }) {
@@ -82,7 +82,7 @@ export function BuyPanel(props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-  const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
+  const [option, setOption] = useState<BinaryOutcomes | 'LIMIT'>(initialOutcome)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(contract.id)
 
@@ -94,6 +94,9 @@ export function BuyPanel(props: {
       ? // Always filter to answer for non-sum-to-one cpmm multi
         unfilledBetsMatchingAnswer
       : allUnfilledBets
+
+  const outcome = option === 'LIMIT' ? undefined : option
+  const seeLimit = option === 'LIMIT'
 
   const initialBetAmount = 10
   const [betAmount, setBetAmount] = useState<number | undefined>(
@@ -117,18 +120,17 @@ export function BuyPanel(props: {
 
   useEffect(() => {
     if (initialOutcome) {
-      setOutcome(initialOutcome)
-      setIsYesNoSelectorVisible(false)
+      setOption(initialOutcome)
     }
   }, [initialOutcome])
 
-  function onOutcomeChoice(choice: 'YES' | 'NO') {
-    if (outcome === choice && !initialOutcome) {
-      setOutcome(undefined)
+  function onOptionChoice(choice: 'YES' | 'NO') {
+    if (option === choice && !initialOutcome) {
+      setOption(undefined)
       setIsYesNoSelectorVisible(true)
     } else {
-      track('bet intent', { location, option: outcome })
-      setOutcome(choice)
+      track('bet intent', { location, option })
+      setOption(choice)
       setIsYesNoSelectorVisible(false)
     }
     if (!isIOS() && !isAndroid()) {
@@ -149,7 +151,7 @@ export function BuyPanel(props: {
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
     if (!outcome) {
-      setOutcome('YES')
+      setOption('YES')
     }
   }
 
@@ -276,6 +278,8 @@ export function BuyPanel(props: {
     ? `Are you sure you want to move the probability by ${displayedDifference}?`
     : undefined
 
+  const selected = seeLimit ? 'LIMIT' : outcome
+
   return (
     <Col>
       {isYesNoSelectorVisible ? (
@@ -288,10 +292,10 @@ export function BuyPanel(props: {
           <YesNoSelector
             className="flex-1"
             btnClassName="flex-1 px-2 sm:px-6"
-            selected={outcome}
+            selected={selected}
             highlight
             onSelect={(choice) => {
-              onOutcomeChoice(choice)
+              onOptionChoice(choice)
             }}
             yesLabel={
               isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
@@ -312,7 +316,8 @@ export function BuyPanel(props: {
                 : 'hidden'
               : '',
             'rounded-xl',
-            singularView ? '' : ' px-4 py-2'
+            singularView ? '' : ' px-4 py-2',
+            singularView && option === 'LIMIT' ? 'hidden' : ''
           )}
         >
           {isAdvancedTrader && (
@@ -380,7 +385,7 @@ export function BuyPanel(props: {
                 unfilledBets={unfilledBets}
                 balanceByUserId={balanceByUserId}
                 outcome={outcome}
-                setOutcome={onOutcomeChoice}
+                setOutcome={onOptionChoice}
               />
               <YourOrders
                 className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
@@ -404,7 +409,7 @@ export function BuyPanel(props: {
               className="text-white"
               onClick={() => {
                 setIsYesNoSelectorVisible(true)
-                setOutcome(undefined)
+                setOption(undefined)
                 setBetAmount(initialBetAmount)
               }}
             >

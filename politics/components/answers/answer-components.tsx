@@ -230,7 +230,9 @@ export const MultiBettor = (props: {
   contract: CPMMMultiContract
 }) => {
   const { answer, contract } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+    undefined
+  )
 
   const user = useUser()
 
@@ -270,7 +272,9 @@ export const YesNoBetButtons = (props: {
   fillColor?: string
 }) => {
   const { answer, contract, fillColor } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+    undefined
+  )
 
   const user = useUser()
 

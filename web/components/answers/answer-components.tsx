@@ -275,7 +275,7 @@ export const YesNoBetButtons = (props: {
   fillColor?: string
 }) => {
   const { answer, contract, fillColor } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
     undefined
   )
 
