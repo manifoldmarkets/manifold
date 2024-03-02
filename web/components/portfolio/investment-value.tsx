@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useState } from 'react'
-import { last, maxBy, sum } from 'lodash'
+import { last, minBy, sum } from 'lodash'
 import clsx from 'clsx'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import Link from 'next/link'
@@ -22,6 +22,7 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { ChangeIcon } from 'web/components/portfolio/balance-card'
 import { Button } from 'web/components/buttons/button'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { getCutoff } from 'web/lib/util/time'
 
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 
@@ -32,8 +33,8 @@ export const InvestmentValueCard = memo(function (props: {
 }) {
   const { user, className, weeklyPortfolioData } = props
   const latestPortfolio = last(weeklyPortfolioData)
-  const dayAgoPortfolio = maxBy(
-    weeklyPortfolioData.filter((p) => p.timestamp < Date.now() - DAY_MS),
+  const dayAgoPortfolio = minBy(
+    weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
     'timestamp'
   )
   const [open, setOpen] = useState(false)
