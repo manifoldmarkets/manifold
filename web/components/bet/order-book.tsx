@@ -233,14 +233,14 @@ export function OrderBookButton(props: {
     | MultiContract
   className?: string
   label?: React.ReactNode
-  buttonColor?: 'gray-white'
+  buttonColor?: 'indigo' | 'gray-outline'
 }) {
   const {
     limitBets,
     contract,
     label,
     className,
-    buttonColor = 'gray-white',
+    buttonColor = 'indigo',
   } = props
   const [open, setOpen] = useState(false)
 
@@ -261,16 +261,14 @@ export function OrderBookButton(props: {
   return (
     <>
       <Button
-        className={clsx({ className }, ' underline')}
+        className={className}
         onClick={() => setOpen(true)}
         disabled={limitBets.length === 0}
         size="xs"
         color={buttonColor}
       >
         {label ||
-          `${limitBets.length === 0 ? 'Currently' : 'View'} ${
-            limitBets.length
-          } order${limitBets.length === 1 ? '' : 's'}`}
+          `View ${limitBets.length} order${limitBets.length === 1 ? '' : 's'}`}
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
