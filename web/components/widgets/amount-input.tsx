@@ -13,7 +13,7 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementDecrementAmountButton } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { ChoicesToggleGroup } from './choices-toggle-group'
+import { Button } from '../buttons/button'
 
 export function AmountInput(
   props: {
@@ -155,7 +155,7 @@ export function BuyAmountInput(props: {
   quickButtonValues?: number[] | 'large'
 }) {
   const {
-    amount,
+    amount = 10,
     onChange,
     error,
     setError,
@@ -192,7 +192,12 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
+  const [selectedQuickAmount, setSelectedQuickAmount] = useState<number>(10)
   const quickAmounts = [10, 25, 100]
+  const handleQuickAmountSelect = (amount: number) => {
+    onChange(amount)
+    setSelectedQuickAmount(amount)
+  }
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
@@ -212,6 +217,12 @@ export function BuyAmountInput(props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
 
+  useEffect(() => {
+    if (props.amount === undefined) {
+      onChange(10)
+    }
+  }, [])
+
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
@@ -219,21 +230,18 @@ export function BuyAmountInput(props: {
           {!isAdvancedTrader && (
             <>
               <div className="text-ink-700 mb-1 mr-2 mt-2 ">Amount</div>
-              <ChoicesToggleGroup
-                currentChoice={quickAmounts.includes(amount ?? 0) ? amount : undefined}
-                choicesMap={quickAmounts.reduce<{ [key: number]: number }>(
-                  (map, amount) => {
-                    map[amount] = amount
-                    return map
-                  },
-                  {}
-                )}
-                setChoice={(amount) => {
-                  if (typeof amount === 'number') {
-                    onChange(amount)
+
+              {quickAmounts.map((value) => (
+                <Button
+                  key={value}
+                  color={
+                    selectedQuickAmount === value ? 'indigo' : 'indigo-outline'
                   }
-                }}
-              />
+                  onClick={() => handleQuickAmountSelect(value)}
+                >
+                  {value}
+                </Button>
+              ))}
             </>
           )}
         </Row>

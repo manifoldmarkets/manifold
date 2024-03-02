@@ -34,6 +34,7 @@ import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { Button } from '../buttons/button'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { SINGULAR_BET } from 'common/user'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
@@ -41,8 +42,8 @@ import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import ShortToggle from '../widgets/short-toggle'
 import { ChevronDownIcon } from '@heroicons/react/outline'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -98,10 +99,7 @@ export function BuyPanel(props: {
   const outcome = option === 'LIMIT' ? undefined : option
   const seeLimit = option === 'LIMIT'
 
-  const initialBetAmount = 10
-  const [betAmount, setBetAmount] = useState<number | undefined>(
-    initialBetAmount
-  )
+  const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -323,18 +321,18 @@ export function BuyPanel(props: {
           {isAdvancedTrader && (
             <Row className=" mb-2 space-x-1">
               <div className="text-ink-700 mb-1 mr-2 mt-2 ">Bet Type</div>
-              <ChoicesToggleGroup
-                currentChoice={betType}
-                choicesMap={{
-                  Market: 'Market',
-                  Limit: 'Limit',
-                }}
-                setChoice={(val) => {
-                  if (val === 'Market' || val === 'Limit') {
-                    handleBetTypeChange(val)
-                  }
-                }}
-              />
+              <Button
+                color={betType === 'Market' ? 'indigo' : 'indigo-outline'}
+                onClick={() => handleBetTypeChange('Market')}
+              >
+                Market
+              </Button>
+              <Button
+                color={betType === 'Limit' ? 'indigo' : 'indigo-outline'}
+                onClick={() => handleBetTypeChange('Limit')}
+              >
+                Limit
+              </Button>
             </Row>
           )}
           {betType === 'Market' ? (
@@ -410,7 +408,7 @@ export function BuyPanel(props: {
               onClick={() => {
                 setIsYesNoSelectorVisible(true)
                 setOption(undefined)
-                setBetAmount(initialBetAmount)
+                setBetAmount(undefined)
               }}
             >
               Cancel
@@ -507,7 +505,7 @@ export function BuyPanel(props: {
                   }}
                 >
                   <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
+                    {advancedTraderMode ? 'Advanced' : 'Default'}
                   </span>
                   <ChevronDownIcon className="ml-1 h-3 w-3" />
                 </button>
