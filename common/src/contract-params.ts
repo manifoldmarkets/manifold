@@ -18,7 +18,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getTopics, getUserIsMember } from 'common/supabase/groups'
+import { getTopicsOnContract, userCanAccess } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
@@ -94,7 +94,7 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
-    getTopics(contract.groupLinks?.map((gl) => gl.groupId) ?? [], db),
+    getTopicsOnContract(contract.id, db),
   ])
   if (!canAccessContract) {
     return contract && !contract.deleted
@@ -198,16 +198,12 @@ const getCanAccessContract = async (
   uid: string | undefined,
   db: SupabaseClient
 ): Promise<boolean> => {
-  const groupId = contract.groupLinks?.length
-    ? contract.groupLinks[0].groupId
-    : undefined
   const isAdmin = uid ? await getIsAdmin(db, uid) : false
 
   return (
     (!contract.deleted || isAdmin) &&
     (contract.visibility !== 'private' ||
-      (groupId !== undefined &&
-        uid !== undefined &&
-        (isAdmin || (await getUserIsMember(db, groupId, uid)))))
+      (uid !== undefined &&
+        (isAdmin || (await userCanAccess(db, contract.id, uid)))))
   )
 }

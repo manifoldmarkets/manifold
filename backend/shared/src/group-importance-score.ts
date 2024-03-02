@@ -1,5 +1,4 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { Contract } from 'common/contract'
 import { map, orderBy, range, sum, uniq } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 
@@ -10,31 +9,25 @@ export async function calculateGroupImportanceScore(
   pg: SupabaseDirectClient,
   readOnly = false
 ) {
-  const importantContracts = await pg.map(
-    `select importance_score, (data->'groupLinks') as group_links
-            from contracts where importance_score > $1`,
-    [MIN_IMPORTANCE_SCORE],
-    (row) =>
-      ({
-        importanceScore: row.importance_score,
-        groupLinks: row.group_links,
-      } as Pick<Contract, 'groupLinks' | 'importanceScore'>)
+  const importantContracts = await pg.manyOrNone<{
+    importance_score: number
+    contract_id: string
+    group_id: string
+  }>(
+    `select c.importance_score, c.id as contract_id, gc.group_id
+      from contracts c join group_contracts gc on c.id = gc.contract_id      
+      where importance_score > $1`,
+    [MIN_IMPORTANCE_SCORE]
   )
 
-  const uniqueGroupIds = uniq(
-    importantContracts
-      .map((c) => (c.groupLinks ?? []).map((gl) => gl.groupId))
-      .flat()
-  )
+  const uniqueGroupIds = uniq(importantContracts.map((c) => c.group_id))
 
   const mostImportantContractsByGroupId = Object.fromEntries(
     uniqueGroupIds.map((id) => [
       id,
       orderBy(
-        importantContracts.filter((c) =>
-          (c.groupLinks ?? []).map((gl) => gl.groupId).includes(id)
-        ),
-        (c) => -c.importanceScore
+        importantContracts.filter((c) => c.group_id === id),
+        (c) => -c.importance_score
       ).slice(0, MARKETS_PER_GROUP),
     ])
   )
@@ -48,7 +41,7 @@ export async function calculateGroupImportanceScore(
         id: id,
         importance_score: calculateGroupImportanceScoreForGroup(
           MARKETS_PER_GROUP,
-          mostImportantContractsByGroupId[id].map((c) => c.importanceScore)
+          mostImportantContractsByGroupId[id].map((c) => c.importance_score)
         ),
       }))
     )
