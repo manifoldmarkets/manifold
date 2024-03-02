@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { pickBy, debounce } from 'lodash'
-import { useDefinedSearchParams } from './use-defined-search-params'
 
 type UrlParams = Record<string, string | undefined>
 
