@@ -13,6 +13,7 @@ import {
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
+  FlagIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -36,7 +37,6 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
-import { FaFlagUsa } from 'react-icons/fa6'
 import { IoPersonCircleOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
@@ -101,7 +101,9 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mb-6 mt-auto flex flex-col gap-1">
+      <div
+        className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
+      >
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}
@@ -129,7 +131,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       {
         name: 'US Politics',
         href: '/politics',
-        icon: FaFlagUsa,
+        icon: FlagIcon,
       },
       {
         name: 'Notifications',
@@ -150,7 +152,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     {
       name: 'US Politics',
       href: '/politics',
-      icon: FaFlagUsa,
+      icon: FlagIcon,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'Browse', href: '/browse', icon: SearchIcon },

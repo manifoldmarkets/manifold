@@ -9,10 +9,10 @@ export const hasUserSeenMarket = async (
   return await pg.oneOrNone(
     `
     select exists (
-      select 1 from user_seen_markets
+      select 1 from user_contract_views
       where contract_id = $1
       and user_id = $2
-      and created_time > millis_to_ts($3))
+      and greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > millis_to_ts($3))
     `,
     [marketId, userId, since],
     (row) => row.exists as boolean

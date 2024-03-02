@@ -153,17 +153,16 @@ const getUserEmbeddingDetails = async (
 ) => {
   const newUserInterestEmbeddings: Dictionary<UserEmbeddingDetails> = {}
 
-  // mqp -- careful with this query, a correlated subquery seemed like it
-  // worked best to me to avoid an expensive scan over the huge USM table
   await pg.map(
     `
     select u.id as user_id,
       u.created_time as created_time,
       ((u.data->'lastBetTime')::bigint) as last_bet_time,
       coalesce((
-        select ts_to_millis(max(usm.created_time)) as max_created_time
-        from user_seen_markets usm
-        where usm.user_id = u.id), 0) as last_seen_time,
+        select ts_to_millis(max(
+          greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)))
+        from user_contract_views ucv
+        where ucv.user_id = u.id), 0) as last_seen_time,
       interest_embedding,
       disinterest_embedding
     from users as u

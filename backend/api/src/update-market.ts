@@ -1,8 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  getContractSupabase,
-  revalidateContractStaticProps,
-} from 'shared/utils'
+import { getContractSupabase } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
@@ -87,8 +84,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       ])
     )
   }
-
-  await revalidateContractStaticProps(contract)
 }
 
 const firestore = admin.firestore()

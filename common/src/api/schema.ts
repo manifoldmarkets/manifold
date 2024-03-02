@@ -451,8 +451,8 @@ export const API = (_apiTypeCheck = {
         toId: z.string().optional(),
         fromId: z.string().optional(),
         limit: z.coerce.number().gte(0).lte(100).default(100),
-        before: z.string().optional(),
-        after: z.string().optional(),
+        before: z.coerce.number().optional(),
+        after: z.coerce.number().optional(),
       })
       .strict(),
   },
@@ -623,8 +623,8 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-related-markets': {
-    method: 'POST',
+  'get-related-markets-cache': {
+    method: 'GET',
     visibility: 'undocumented',
     authed: false,
     props: z
@@ -639,6 +639,7 @@ export const API = (_apiTypeCheck = {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
+    cache: 'public, max-age=300, stale-while-revalidate=10',
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
@@ -676,7 +677,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({
       contractIds: z.array(z.string()),
-      types: z.array(z.string()),
+      types: z.array(z.enum(['page', 'card', 'promoted'])).optional(),
       since: z.number(),
     }),
     returns: [] as string[],

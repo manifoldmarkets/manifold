@@ -146,7 +146,7 @@ export function PublicMarketTopics(props: {
             }}
             className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm sm:invisible sm:group-hover:visible"
           >
-            {contract.groupLinks?.length ? (
+            {topics.length ? (
               <PencilIcon className="mx-1 h-4 w-4" />
             ) : (
               <span className={clsx('flex items-center px-1 text-sm')}>

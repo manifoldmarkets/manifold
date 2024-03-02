@@ -51,7 +51,12 @@ export const QuestionsTopicTitle = forwardRef(
       >
         <Col className={'mb-1 truncate'}>
           <Row className={'items-center gap-1'}>
-            <Button size={'2xs'} color={'gray-white'} onClick={router.back}>
+            <Button
+              size={'2xs'}
+              color={'gray-white'}
+              onClick={router.back}
+              className="flex lg:hidden"
+            >
               <ArrowLeftIcon className={'h-5 w-5'} />
             </Button>
             <span

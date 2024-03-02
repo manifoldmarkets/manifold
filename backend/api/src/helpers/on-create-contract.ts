@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
 import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
@@ -8,7 +7,6 @@ import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
-import { secrets } from 'common/secrets'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
@@ -24,85 +22,69 @@ import {
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { generateImage } from 'shared/helpers/openai-utils'
 import { randomString } from 'common/util/random'
+import { generateImage } from 'shared/helpers/openai-utils'
 
-export const onCreateContract = functions
-  .runWith({
-    secrets,
-    timeoutSeconds: 540,
-    memory: '1GB',
-  })
-  .firestore.document('contracts/{contractId}')
-  .onCreate(async (snapshot, context) => {
-    const { eventId } = context
+export const onCreateMarket = async (
+  contract: Contract,
+  firestore: admin.firestore.Firestore,
+  triggerEventId?: string
+) => {
+  const { creatorId, question, loverUserId1, creatorUsername } = contract
+  const eventId = triggerEventId ?? contract.id + '-on-create'
+  const contractCreator = await getUser(creatorId)
+  if (!contractCreator) throw new Error('Could not find contract creator')
 
-    const contract = snapshot.data() as Contract
-    const { creatorId, question, loverUserId1, creatorUsername } = contract
+  await completeCalculatedQuestFromTrigger(
+    contractCreator,
+    'MARKETS_CREATED',
+    eventId,
+    contract.id
+  )
+  const desc = contract.description as JSONContent
+  const mentioned = parseMentions(desc)
+  await addUserToContractFollowers(contract.id, contractCreator.id)
 
-    const contractCreator = await getUser(creatorId)
-    if (!contractCreator) throw new Error('Could not find contract creator')
+  await createNewContractNotification(
+    contractCreator,
+    contract,
+    eventId,
+    richTextToString(desc),
+    mentioned
+  )
+  const pg = createSupabaseDirectClient()
 
-    if (!loverUserId1) {
-      const dalleImage = await generateImage(question)
-      if (dalleImage) {
-        await uploadToStorage(dalleImage, creatorUsername)
-          .then((coverImageUrl) => snapshot.ref.update({ coverImageUrl }))
-          .catch((err) => console.error('Failed to load image', err))
-      }
-    }
-
-    await completeCalculatedQuestFromTrigger(
-      contractCreator,
-      'MARKETS_CREATED',
-      eventId,
-      contract.id
-    )
-
-    const desc = contract.description as JSONContent
-    const mentioned = parseMentions(desc)
-    await addUserToContractFollowers(contract.id, contractCreator.id)
-
-    await createNewContractNotification(
-      contractCreator,
-      contract,
-      eventId,
-      richTextToString(desc),
-      mentioned
-    )
-    const pg = createSupabaseDirectClient()
-
-    const embedding = await pg.oneOrNone(
-      `select embedding
+  const embedding = await pg.oneOrNone(
+    `select embedding
               from contract_embeddings
               where contract_id = $1`,
-      [contract.id]
+    [contract.id]
+  )
+  if (!embedding) await generateContractEmbeddings(contract, pg)
+  const isNonPredictive = isContractNonPredictive(contract)
+  if (isNonPredictive) {
+    const unranked = await addGroupToContract(
+      contract,
+      {
+        id: UNRANKED_GROUP_ID,
+        slug: 'nonpredictive',
+        name: 'Unranked',
+      },
+      HOUSE_LIQUIDITY_PROVIDER_ID
     )
-    if (!embedding) await generateContractEmbeddings(contract, pg)
-    const isNonPredictive = isContractNonPredictive(contract)
-    if (isNonPredictive) {
-      const unranked = await addGroupToContract(
-        contract,
-        {
-          id: UNRANKED_GROUP_ID,
-          slug: 'nonpredictive',
-          name: 'Unranked',
-        },
-        HOUSE_LIQUIDITY_PROVIDER_ID
-      )
-      log('Added contract to unranked group', unranked)
-      const unsubsidized = await addGroupToContract(
-        contract,
-        {
-          id: UNSUBSIDIZED_GROUP_ID,
-          slug: 'unsubsidized',
-          name: 'Unsubsidized',
-        },
-        HOUSE_LIQUIDITY_PROVIDER_ID
-      )
-      log('Added contract to unsubsidized group', unsubsidized)
-    }
-    if (contract.visibility === 'unlisted') return
+    log('Added contract to unranked group', unranked)
+    const unsubsidized = await addGroupToContract(
+      contract,
+      {
+        id: UNSUBSIDIZED_GROUP_ID,
+        slug: 'unsubsidized',
+        name: 'Unsubsidized',
+      },
+      HOUSE_LIQUIDITY_PROVIDER_ID
+    )
+    log('Added contract to unsubsidized group', unsubsidized)
+  }
+  if (contract.visibility === 'public') {
     await addContractToFeed(
       {
         ...contract,
@@ -120,7 +102,37 @@ export const onCreateContract = functions
     await Promise.all(
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
+  }
+
+  if (!loverUserId1) {
+    await uploadAndSetCoverImage(
+      question,
+      contract.id,
+      creatorUsername,
+      firestore
+    )
+  }
+}
+
+const uploadAndSetCoverImage = async (
+  question: string,
+  contractId: string,
+  creatorUsername: string,
+  firestore: admin.firestore.Firestore
+) => {
+  const dalleImage = await generateImage(question)
+  if (!dalleImage) return
+  const coverImageUrl = await uploadToStorage(
+    dalleImage,
+    creatorUsername
+  ).catch((err) => {
+    console.error('Failed to load image', err)
+    return null
   })
+  if (!coverImageUrl) return
+  const snapshot = await firestore.collection('contracts').doc(contractId).get()
+  await snapshot.ref.update({ coverImageUrl })
+}
 
 export const uploadToStorage = async (imgUrl: string, username: string) => {
   const response = await fetch(imgUrl)
@@ -155,6 +167,6 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
 
   stream.end(buffer)
 
-  const url = await file.publicUrl()
+  const url = file.publicUrl()
   return url.replace('%2F', '/') // prevent weird escaping
 }

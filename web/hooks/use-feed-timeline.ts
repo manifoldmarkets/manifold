@@ -256,7 +256,8 @@ export const useFeedTimeline = (
           )
         ),
       getSeenContractIds(newContractIds, Date.now() - 3 * DAY_MS, [
-        'view market card',
+        'card',
+        'promoted',
       ]),
       betIds.length
         ? db

@@ -35,7 +35,6 @@ create index if not exists user_contract_views_contract_id on user_contract_view
 --          max(case when usm.type = 'view market' and (usm.is_promoted is null or not usm.is_promoted) then usm.created_time else null end) as last_page_view_ts,
 --          sum(case when usm.type = 'view market' and (usm.is_promoted is null or not usm.is_promoted) then 1 else 0 end) as page_views
 --      from user_seen_markets as usm
---      where usm.created_time < '2024-02-29 09:19:47.063522 +00:00'
 --      group by usm.contract_id, usm.user_id
 --      union all
 --      select
@@ -48,14 +47,6 @@ create index if not exists user_contract_views_contract_id on user_contract_view
 --          max(case when ue.name = 'view market' and ((ue.data->'isPromoted') is null or not (ue.data->'isPromoted')::boolean) then ue.ts else null end) as last_page_view_ts,
 --          sum(case when ue.name = 'view market' and ((ue.data->'isPromoted') is null or not (ue.data->'isPromoted')::boolean) then 1 else 0 end) as page_views
 --      from user_events as ue
---      where ue.ts < '2024-02-29 09:19:47.063522 +00:00'
---      and ue.contract_id is not null
+--      where ue.contract_id is not null
 --      and (ue.name = 'view market' or ue.name = 'view market card' )
 --      group by ue.contract_id
---  on conflict (user_id, contract_id) do update set
---      last_promoted_view_ts = greatest(user_contract_views.last_promoted_view_ts, excluded.last_promoted_view_ts),
---      last_card_view_ts = greatest(user_contract_views.last_card_view_ts, excluded.last_card_view_ts),
---      last_page_view_ts = greatest(user_contract_views.last_page_view_ts, excluded.last_page_view_ts),
---      promoted_views = user_contract_views.promoted_views + excluded.promoted_views,
---      card_views = user_contract_views.card_views + excluded.card_views,
---      page_views = user_contract_views.page_views + excluded.page_views;

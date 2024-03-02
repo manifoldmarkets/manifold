@@ -1,7 +1,6 @@
-import { usePathname, useRouter } from 'next/navigation'
+import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { pickBy } from 'lodash'
-import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
+import { pickBy, debounce } from 'lodash'
 
 type UrlParams = Record<string, string | undefined>
 
@@ -11,28 +10,30 @@ export const usePersistentQueriesState = <T extends UrlParams>(
 ): [T, (newState: Partial<T>) => void, boolean] => {
   const [state, setState] = useState(defaultValue)
 
-  // On route change on the same page, set the state.
-  // On page load, router isn't ready immediately, so set state once it is.
-
   const router = useRouter()
-  const { searchParams } = useDefinedSearchParams()
-  const pathName = usePathname()
   const [ready, setReady] = useState(false)
 
+  // On page load, initialize the state to the current query params once.
   useEffect(() => {
-    setReady(true)
-    const entries = Object.fromEntries(searchParams.entries())
-    setState({ ...defaultValue, ...entries })
-  }, [searchParams])
+    if (router.isReady) {
+      setState({ ...defaultValue, ...router.query })
+      setReady(true)
+    }
+  }, [router.isReady])
+
+  const setRouteQuery = debounce((newQuery: string) => {
+    const { pathname } = router
+    router.replace(pathname + '?' + encodeURI(newQuery))
+  }, 200)
 
   const updateState = (update: Partial<T>) => {
     const newState = { ...state, ...update }
     setState(newState)
     const query = pickBy(newState, (v) => v)
-    const newQ = Object.keys(query)
+    const newQuery = Object.keys(query)
       .map((key) => `${key}=${query[key]}`)
       .join('&')
-    router.replace(pathName + '?' + encodeURI(newQ), { scroll: false })
+    setRouteQuery(newQuery)
   }
 
   return [state, updateState, ready]

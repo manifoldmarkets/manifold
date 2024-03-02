@@ -31,7 +31,10 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
+import clsx from 'clsx'
+
 export type DashboardEndpoints = 'news' | 'politics'
+
 export function DashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
@@ -41,6 +44,7 @@ export function DashboardPage(props: {
   editByDefault: boolean
   embeddedInParent?: boolean
   endpoint: DashboardEndpoints
+  className?: string
 }) {
   const user = useUser()
   useSaveReferral(user)
@@ -56,6 +60,7 @@ export function DashboardPage(props: {
     headlines,
     embeddedInParent,
     endpoint,
+    className,
   } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
@@ -116,7 +121,7 @@ export function DashboardPage(props: {
         </>
       )}
 
-      <Col className="w-full max-w-3xl px-1 sm:px-2">
+      <Col className={clsx('w-full max-w-3xl px-1 sm:px-2', className)}>
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
             <InputWithLimit

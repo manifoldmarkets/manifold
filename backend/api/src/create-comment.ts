@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
-import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
@@ -161,15 +160,13 @@ export const createCommentOnContractInternal = async (
         })
       }
 
-      try {
-        await onCreateCommentOnContract({ contractId, comment, creator, bet })
-      } catch (e) {
-        logError('Failed to run onCreateCommentOnContract: ' + e, {
-          e,
-          comment,
-          creator,
-        })
-      }
+      await onCreateCommentOnContract({
+        contract,
+        comment,
+        creator,
+        bet,
+        logError,
+      })
     },
   }
 }

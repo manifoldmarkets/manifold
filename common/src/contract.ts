@@ -109,10 +109,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   elasticity: number
 
   collectedFees: Fees
-
-  groupSlugs?: string[]
-  groupLinks?: GroupLink[]
   uniqueBettorCount: number
+
+  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  groupSlugs?: string[]
+  /** @deprecated */
+  groupLinks?: GroupLink[]
+
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
@@ -123,6 +126,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   freshnessScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
+
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean

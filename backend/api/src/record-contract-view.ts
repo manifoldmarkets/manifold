@@ -26,7 +26,7 @@ async function insertUserContractView(
        values ($1, $2, now(), 1)
        on conflict (user_id, contract_id) do update set
          $3:name = excluded.$3:name, $4:name = ucv.$4:name + excluded.$4:name
-       where ucv.$3:name < now() - interval '1 minute'`,
+       where ucv.$3:name is null or ucv.$3:name < now() - interval '1 minute'`,
     [userId ?? null, contractId, ts_column, count_column]
   )
 }
