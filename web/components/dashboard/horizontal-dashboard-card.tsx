@@ -27,6 +27,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
+import { SmallAnswerBars } from '../answers/small-answer'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -187,7 +188,7 @@ export function HorizontalDashboardCard(props: {
           <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-          <SimpleAnswerBars contract={contract} maxAnswers={4} />
+          <SmallAnswerBars contract={contract} maxAnswers={4} />
         )}
 
         {isBinaryMc && contract.mechanism === 'cpmm-multi-1' && (

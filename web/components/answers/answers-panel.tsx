@@ -63,7 +63,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { searchInAny } from 'common/util/parse'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
-const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
+export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 

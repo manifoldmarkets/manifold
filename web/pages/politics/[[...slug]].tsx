@@ -25,6 +25,7 @@ import { USElectionsPage } from 'web/components/elections-page'
 import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
 import { useEvent } from 'web/hooks/use-event'
+import { PoliticsDashboardPage } from 'web/components/dashboard/politics-dashboard-page'
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -159,7 +160,7 @@ function Elections(props: ElectionsPageProps) {
               className={'absolute -top-8'}
               ref={headlineSlugsToRefs.current[dashboard.slug]}
             />
-            <DashboardPage
+            <PoliticsDashboardPage
               {...(dashboard as SuccesNewsDashboardPageProps)}
               editByDefault={false}
               embeddedInParent={true}
