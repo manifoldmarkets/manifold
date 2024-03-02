@@ -124,10 +124,10 @@ const userIdsToIgnore = async (
 ) => {
   const userIdsWithSeenMarkets = await pg.map(
     `select distinct user_id
-            from user_seen_markets
+            from user_contract_views
             where contract_id = $1 and
                 user_id = ANY($2) and
-                created_time > $3
+                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
                 `,
     [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
     (row: { user_id: string }) => row.user_id

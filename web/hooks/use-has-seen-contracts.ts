@@ -15,10 +15,7 @@ export const useHasSeenContracts = (
   >([], 'seenContractIds-' + userId + '-' + orderedUniqueContractIds.join(','))
   useEffect(() => {
     if (!userId) return
-    getSeenContractIds(orderedUniqueContractIds, since, [
-      'view market card',
-      'view market',
-    ]).then(setSeenContractIds)
+    getSeenContractIds(orderedUniqueContractIds, since).then(setSeenContractIds)
   }, [userId])
   return seenContractIds
 }

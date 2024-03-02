@@ -124,8 +124,8 @@ export async function updateUserInterestEmbedding(
     )
 
     await pg.none(
-      `insert into user_embeddings (user_id, interest_embedding) 
-                values ($1, $2) 
+      `insert into user_embeddings (user_id, interest_embedding)
+                values ($1, $2)
                 on conflict (user_id) do update set interest_embedding = $2`,
       [userId, interestEmbedding]
     )
@@ -203,7 +203,7 @@ async function getDisinterestedContractIds(
 ) {
   // Get contract ids that you bet on or liked.
   return await pg.map(
-    `select contract_id from 
+    `select contract_id from
       user_disinterests
       where user_id = $1
     `,
@@ -236,12 +236,12 @@ async function computeUserInterestEmbedding(
       select contract_view_embedding as combined_embedding
       from user_embeddings
       where user_id = $2
-      union all 
-      -- TODO: perhaps select unique group embeddings of group contracts, 
+      union all
+      -- TODO: perhaps select unique group embeddings of group contracts,
       -- otherwise group contracts like Technology/Science will be overrepresented.
       -- Append group embeddings of bet-on contracts to be averaged in.
       select embedding as combined_embedding
-      from group_embeddings 
+      from group_embeddings
       where group_id = any(
       (select group_id from group_contracts where contract_id = any($1)))
       union all
@@ -285,14 +285,15 @@ export async function updateViewsAndViewersEmbeddings(
     `select id
             from users
             join (
-             select usm.user_id, max(usm.created_time) as max_created_time
-             from user_seen_markets usm
-             group by usm.user_id
-         ) as usm on id = usm.user_id
+             select ucv.user_id, max(
+               greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)
+             ) as max_created_time
+             from user_contract_views ucv
+             group by ucv.user_id
+         ) as ucv on id = ucv.user_id
      where ((data->'lastBetTime')::bigint is not null and (data->'lastBetTime')::bigint >= $1)
         or ((data->'lastBetTime')::bigint is null and (data->'createdTime')::bigint >= $1)
-        or (usm.max_created_time >= millis_to_ts($1))
-`,
+        or (ucv.max_created_time >= millis_to_ts($1))`,
     [longAgo],
     (r: { id: string }) => r.id
   )
@@ -308,32 +309,32 @@ export async function updateViewsAndViewersEmbeddings(
         (
             -- Contract view embeddings
             select
-                user_seen_markets.user_id,
+                user_contract_views.user_id,
                 avg(contract_embeddings.embedding) as average_embedding
             from
                 contract_embeddings
-                    join user_seen_markets on user_seen_markets.contract_id = contract_embeddings.contract_id
+                    join user_contract_views on user_contract_views.contract_id = contract_embeddings.contract_id
             where
-                user_seen_markets.user_id in ($1:list)
-              and user_seen_markets.type = 'view market'
+                user_contract_views.user_id in ($1:list)
+              and user_contract_views.page_views > 0
             group by
-                user_seen_markets.user_id
+                user_contract_views.user_id
         ) as a
             left join
         (
             -- Group view embeddings (Groups of contracts viewed by user)
             select
-                user_seen_markets.user_id,
+                user_contract_views.user_id,
                 avg(group_embeddings.embedding) as average_embedding
             from
                 group_embeddings
                     join group_contracts on group_contracts.group_id = group_embeddings.group_id
-                    join user_seen_markets on user_seen_markets.contract_id = group_contracts.contract_id
+                    join user_contract_views on user_contract_views.contract_id = group_contracts.contract_id
             where
-                user_seen_markets.user_id in ($1:list)
-              and user_seen_markets.type = 'view market'
+                user_contract_views.user_id in ($1:list)
+              and user_contract_views.page_views > 0
             group by
-                user_seen_markets.user_id
+                user_contract_views.user_id
         ) as b on a.user_id = b.user_id;
     `,
     [viewerIds],
