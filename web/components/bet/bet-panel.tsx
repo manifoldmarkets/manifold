@@ -7,6 +7,7 @@ import { CheckIcon } from '@heroicons/react/solid'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -45,14 +46,18 @@ import { ChevronDownIcon } from '@heroicons/react/outline'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
+export type MultiBetProps = {
+  answers: Answer[]
+  answerToBuy: Answer
+  answerText?: string
+}
 export function BuyPanel(props: {
   contract:
     | CPMMBinaryContract
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer }
+  multiProps?: MultiBetProps
   user: User | null | undefined
   inModal: boolean
   onBuySuccess?: () => void
@@ -95,7 +100,12 @@ export function BuyPanel(props: {
         unfilledBetsMatchingAnswer
       : allUnfilledBets
 
-  const initialBetAmount = 10
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCOutcomeLabel =
+    isBinaryMC && multiProps
+      ? multiProps.answerText ?? multiProps.answerToBuy.text
+      : undefined
+      const initialBetAmount = 10
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
   )
@@ -220,8 +230,13 @@ export function BuyPanel(props: {
     )
     const { pool, p } = newBetResult.cpmmState
     currentPayout = sumBy(newBetResult.takers, 'shares')
-    probBefore = answerToBuy.prob
-    probAfter = getCpmmProbability(pool, p)
+    if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
+      probBefore = 1 - answerToBuy.prob
+      probAfter = 1 - getCpmmProbability(pool, p)
+    } else {
+      probBefore = answerToBuy.prob
+      probAfter = getCpmmProbability(pool, p)
+    }
   } else {
     const cpmmState = isCpmmMulti
       ? {
@@ -347,13 +362,19 @@ export function BuyPanel(props: {
                   setError={setError}
                   disabled={isSubmitting}
                   inputRef={inputRef}
-                  binaryOutcome={outcome}
+                  binaryOutcome={isBinaryMC ? undefined : outcome}
                   showSlider={isAdvancedTrader}
                 />
 
                 <Row className="min-w-[128px] items-baseline">
                   <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                    {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
+                    {isPseudoNumeric || isStonk ? (
+                      'Shares'
+                    ) : isBinaryMC ? (
+                      <>Potential payout</>
+                    ) : (
+                      <>Payout if {outcome ?? 'YES'}</>
+                    )}
                   </div>
 
                   <span className="mr-1 whitespace-nowrap text-lg">
@@ -417,20 +438,30 @@ export function BuyPanel(props: {
                 warning={warning}
                 userOptedOutOfWarning={user.optOutBetWarnings}
                 onSubmit={submitBet}
+                actionLabelClassName={'line-clamp-1'}
                 isSubmitting={isSubmitting}
                 disabled={betDisabled}
                 size="xl"
-                color={outcome === 'NO' ? 'red' : 'green'}
+                color={
+                  isBinaryMC && outcome === 'YES'
+                    ? 'indigo'
+                    : isBinaryMC && outcome === 'NO'
+                    ? 'amber'
+                    : outcome === 'NO'
+                    ? 'red'
+                    : 'green'
+                }
                 actionLabel={
                   betDisabled
                     ? `Select ${formatOutcomeLabel(
                         contract,
                         'YES'
                       )} or ${formatOutcomeLabel(contract, 'NO')}`
-                    : `Bet ${outcome}`
+                    : `Bet ${formatMoney(betAmount)} on ${
+                        binaryMCOutcomeLabel ?? outcome
+                      }`
                 }
                 inModal={inModal}
-                openModalButtonClass="flex-grow"
               />
             ) : (
               <Button

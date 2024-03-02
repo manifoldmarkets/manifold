@@ -1,4 +1,4 @@
-import { Group, TOPIC_KEY } from 'common/group'
+import { Group } from 'common/group'
 import {
   ArrowLeftIcon,
   BookmarkIcon,
@@ -13,7 +13,7 @@ import {
   TopicOptionsButton,
 } from 'web/components/topics/topics-button'
 import { Row } from 'web/components/layout/row'
-import { useRealtimeMemberGroups } from 'web/hooks/use-group-supabase'
+import { useRealtimeMemberGroupIds } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
 import { TopicDropdown } from 'web/components/topics/topic-dropdown'
@@ -34,8 +34,7 @@ export const QuestionsTopicTitle = forwardRef(
     ref: Ref<HTMLDivElement>
   ) => {
     const { currentTopic, setTopicSlug, user, topicSlug } = props
-    const yourGroups = useRealtimeMemberGroups(user?.id)
-    const yourGroupIds = yourGroups?.map((g) => g.id)
+    const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
     const isMobile = useIsMobile()
@@ -74,9 +73,7 @@ export const QuestionsTopicTitle = forwardRef(
           {currentTopic && (
             <>
               <CopyLinkOrShareButton
-                url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
-                  currentTopic?.slug ?? ''
-                }`}
+                url={`https://${DOMAIN}/browse/${currentTopic?.slug ?? ''}`}
                 className={'gap-1 whitespace-nowrap'}
                 eventTrackingName={'copy questions page link'}
                 size={isMobile ? 'sm' : 'md'}

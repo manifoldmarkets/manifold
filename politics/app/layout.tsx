@@ -37,17 +37,17 @@ const serifFont = Crimson_Text({
 })
 
 const description =
-  'Politifold is a prediction market where you can bet on the future of politics.'
-const title = 'Politifold — Bet on Politics'
+  'Manifold Politics is a prediction market where you can bet on the future of politics.'
+const title = 'Manifold Politics — Bet on Politics'
 const ogImageUrl = '/bet-on-politics.png'
-const url = 'https://politifold.com/'
+const url = 'https://manifoldpolitics.com/'
 export const metadata: Metadata = {
   metadataBase: new URL(url),
   title,
   description,
   openGraph: {
     locale: 'en_US',
-    siteName: 'Politifold',
+    siteName: 'Manifold Politics',
     url,
     images: [
       {

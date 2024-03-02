@@ -5,25 +5,15 @@ import {
   User,
   UserAndPrivateUser,
 } from 'common/user'
-import { filterDefined } from 'common/util/array'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
-import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  onSnapshot,
-  query,
-  updateDoc,
-  where,
-} from 'firebase/firestore'
+import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
 import { referUser } from './api'
-import { app, db } from './init'
+import { app } from './init'
 import { coll, getValues, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -169,56 +159,6 @@ export async function firebaseLogout() {
 
 export function getUsers() {
   return getValues<User>(users)
-}
-
-export function listenForReferrals(
-  userId: string,
-  setReferralIds: (referralIds: string[]) => void
-) {
-  const referralsQuery = query(
-    collection(db, 'users'),
-    where('referredByUserId', '==', userId)
-  )
-  return onSnapshot(
-    referralsQuery,
-    { includeMetadataChanges: true },
-    (snapshot) => {
-      if (snapshot.metadata.fromCache) return
-
-      const values = snapshot.docs.map((doc) => doc.ref.id)
-      setReferralIds(filterDefined(values))
-    }
-  )
-}
-
-export const getUsersBlockFacetFilters = (
-  privateUser: PrivateUser | undefined | null,
-  excludeGroupSlugs?: boolean
-) => {
-  let facetFilters: string[] = []
-  if (!privateUser) return facetFilters
-  facetFilters = facetFilters.concat(
-    privateUser.blockedUserIds.map(
-      (blockedUserId) => `creatorId:-${blockedUserId}`
-    )
-  )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedByUserIds.map(
-      (blockedUserId) => `creatorId:-${blockedUserId}`
-    )
-  )
-  if (!excludeGroupSlugs)
-    facetFilters = facetFilters.concat(
-      privateUser.blockedGroupSlugs.map(
-        (blockedUserId) => `groupSlugs:-${blockedUserId}`
-      )
-    )
-  facetFilters = facetFilters.concat(
-    privateUser.blockedContractIds.map(
-      (blockedUserId) => `id:-${blockedUserId}`
-    )
-  )
-  return facetFilters
 }
 
 export const isContractBlocked = (

@@ -19,6 +19,7 @@ export type ColorType =
   | 'gray-white'
   | 'yellow-outline'
   | 'gold'
+  | 'amber'
   | 'none'
 
 const sizeClasses = {
@@ -51,6 +52,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-scarlet-500 hover:bg-scarlet-500',
     ],
     color === 'yellow' && [solid, 'bg-yellow-400 hover:bg-yellow-500'],
+    color === 'amber' && [solid, 'bg-amber-500 hover:bg-amber-600'],
     color === 'yellow-outline' && [
       outline,
       'text-yellow-500 hover:bg-yellow-500',

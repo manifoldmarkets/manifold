@@ -1,5 +1,13 @@
 import { z } from 'zod'
-import { Group, MAX_ID_LENGTH } from 'common/group'
+import {
+  Group,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  LiteGroup,
+  SearchGroupParams,
+  SearchGroupShape,
+  Topic,
+} from 'common/group'
 import {
   createMarketProps,
   resolveMarketProps,
@@ -8,7 +16,6 @@ import {
   updateMarketProps,
 } from './market-types'
 import type { ContractComment } from 'common/comment'
-import type { User } from 'common/user'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
@@ -25,8 +32,13 @@ import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
+import { Dashboard } from 'common/dashboard'
 
-export const marketCacheStrategy = 's-maxage=15, stale-while-revalidate=45'
+// mqp: very unscientific, just balancing our willingness to accept load
+// with user willingness to put up with stale data
+export const DEFAULT_CACHE_STRATEGY =
+  'public, max-age=5, stale-while-revalidate=10'
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -78,7 +90,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as ContractComment[],
     props: z
       .object({
@@ -124,12 +136,14 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as CandidateBet & { betId: string },
-    props: z.object({
-      contractId: z.string(),
-      shares: z.number().positive().optional(), // leave it out to sell all shares
-      outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
-      answerId: z.string().optional(), // Required for multi binary markets
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+        shares: z.number().positive().optional(), // leave it out to sell all shares
+        outcome: z.enum(['YES', 'NO']).optional(), // leave it out to sell whichever you have
+        answerId: z.string().optional(), // Required for multi binary markets
+      })
+      .strict(),
   },
   'sell-shares-dpm': {
     method: 'POST',
@@ -141,7 +155,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Bet[],
     props: z
       .object({
@@ -163,7 +177,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=15, public',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Bet[],
     props: z
       .object({
@@ -176,7 +190,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Group,
     props: z.object({ slug: z.string() }),
   },
@@ -184,7 +198,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Group,
     props: z.object({ id: z.string() }).strict(),
   },
@@ -193,7 +207,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: z
       .object({
@@ -206,7 +220,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=60',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Group[],
     props: z
       .object({
@@ -220,7 +234,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket | FullMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: z.boolean().optional() }),
   },
   // deprecated. use /market/:id?lite=true instead
@@ -229,7 +243,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string() }),
   },
   'slug/:slug': {
@@ -237,7 +251,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as LiteMarket | FullMarket,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ slug: z.string(), lite: z.boolean().optional() }),
   },
   market: {
@@ -343,7 +357,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'max-age=60',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as League[],
     props: z
       .object({
@@ -357,7 +371,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: z
       .object({
@@ -381,7 +395,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -389,7 +403,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: marketCacheStrategy,
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Contract[],
     props: searchProps,
   },
@@ -446,7 +460,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 's-maxage=120, stale-while-revalidate=150',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as any,
     props: z
       .object({
@@ -462,22 +476,23 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
+    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
-    returns: {} as User,
+    returns: {} as LiteUser,
   },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as LiteUser,
-    props: z.object({ username: z.string() }),
+    props: z.object({ username: z.string() }).strict(),
   },
   'user/by-id/:id': {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'no-cache',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as LiteUser,
     props: z.object({ id: z.string() }).strict(),
   },
@@ -485,7 +500,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 's-maxage=45, stale-while-revalidate=45',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteUser[],
     props: z
       .object({
@@ -498,7 +513,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 's-maxage=45, stale-while-revalidate=45',
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as LiteUser[],
     props: z
       .object({
@@ -540,20 +555,25 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     returns: {} as { success: true },
-    props: z.object({
-      dashboardIds: z.array(z.string()),
-      isPolitics: z.boolean().optional(),
-    }),
+    props: z
+      .object({
+        dashboardIds: z.array(z.string()),
+        isPolitics: z.boolean().optional(),
+      })
+      .strict(),
   },
   react: {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      contentId: z.string(),
-      contentType: z.enum(['comment', 'contract']),
-      remove: z.boolean().optional(),
-    }),
+    props: z
+      .object({
+        contentId: z.string(),
+        contentType: z.enum(['comment', 'contract']),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
+    returns: { success: true },
   },
   'compatible-lovers': {
     method: 'GET',
@@ -603,36 +623,43 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-related-markets': {
-    method: 'POST',
+  'get-related-markets-cache': {
+    method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({
-      contractId: z.string(),
-      limit: z.coerce.number().gte(0).lte(100),
-      limitTopics: z.coerce.number().gte(0).lte(10),
-      userId: z.string().optional(),
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100),
+        limitTopics: z.coerce.number().gte(0).lte(10),
+        userId: z.string().optional(),
+      })
+      .strict(),
     returns: {} as {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
+    cache: 'public, max-age=300, stale-while-revalidate=10',
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
-    props: z.object({
-      userId: z.string(),
-    }),
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
   },
   'get-ad-analytics': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({
-      contractId: z.string(),
-    }),
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
     returns: {} as {
       uniqueViewers: number
       totalViews: number
@@ -643,6 +670,17 @@ export const API = (_apiTypeCheck = {
       totalFunds: number
       adCreatedTime: string
     },
+  },
+  'get-seen-market-ids': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      contractIds: z.array(z.string()),
+      types: z.array(z.string()),
+      since: z.number(),
+    }),
+    returns: [] as string[],
   },
   'get-compatibility-questions': {
     method: 'GET',
@@ -747,6 +785,134 @@ export const API = (_apiTypeCheck = {
       answers: Row<'love_compatibility_answers'>[]
     },
   },
+  'update-user-embedding': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}),
+    returns: {} as { success: true },
+  },
+  'search-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Is there a way to infer return { lite:[] as LiteGroup[] } if type is 'lite'?
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(SearchGroupShape),
+  },
+  'search-my-groups': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {
+      full: [] as Group[],
+      lite: [] as LiteGroup[],
+    },
+    props: SearchGroupParams(MySearchGroupShape),
+  },
+  'get-groups-with-top-contracts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as { topic: Topic; contracts: Contract[] }[],
+    props: z.object({}),
+  },
+  'get-balance-changes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: [] as AnyBalanceChangeType[],
+    props: z
+      .object({
+        after: z.coerce.number(),
+        userId: z.string(),
+      })
+      .strict(),
+  },
+  'create-your-love-market': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    props: z.object({}),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract
+    },
+  },
+  'get-love-market': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success'
+      contract: CPMMMultiContract | null
+      lovers: Lover[]
+      mutuallyMessagedUserIds: string[]
+    },
+  },
+  'get-love-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'success'
+      contracts: CPMMMultiContract[]
+      creatorLovers: Lover[]
+      lovers: Lover[]
+      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
+      creatorCompatibilityScores: {
+        [creatorId: string]: { [loverId: string]: CompatibilityScore }
+      }
+    },
+  },
+  'get-partner-stats': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      status: 'success' | 'error'
+      username: string
+      numContractsCreated: number
+      numUniqueBettors: number
+      numReferrals: number
+      totalTraderIncome: number
+      dollarsEarned: number
+    },
+  },
+  'record-contract-view': {
+    method: 'POST',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string().optional(),
+      contractId: z.string(),
+      kind: z.enum(['page', 'card', 'promoted']),
+    }),
+    returns: {} as { status: 'success' },
+  },
+  'get-dashboard-from-slug': {
+    method: 'POST',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      dashboardSlug: z.string(),
+    }),
+    returns: {} as Dashboard,
+  },
 } as const)
 
 export type APIPath = keyof typeof API
@@ -762,3 +928,7 @@ export type APIResponse<N extends APIPath> = APISchema<N> extends {
 }
   ? APISchema<N>['returns']
   : void
+
+export type APIResponseOptionalContinue<N extends APIPath> =
+  | { continue: () => Promise<void>; result: APIResponse<N> }
+  | APIResponse<N>

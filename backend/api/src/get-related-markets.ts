@@ -2,14 +2,23 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
-import { orderBy } from 'lodash'
+import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
+import { StructuredLogger } from 'shared/log'
 
-export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
-  body,
-  _,
-  { log }
-) => {
+export const getrelatedmarketscache: APIHandler<
+  'get-related-markets-cache'
+> = async (body, _, { log }) => {
   const { contractId, limit, limitTopics } = body
+  return getRelatedMarkets(contractId, limit, limitTopics, log)
+}
+
+const getRelatedMarkets = async (
+  contractId: string,
+  limit: number,
+  limitTopics: number,
+  log: StructuredLogger
+) => {
+  log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
@@ -45,37 +54,25 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
-      `select slug,importance_score from groups where slug = ANY(
+      `select slug, importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
-              where id = $1 
-              ) 
+              where id = $1
+              )
               order by importance_score desc
           `,
       [contractId],
       (row) => ({
         slug: row.slug as string,
-        importance_score: row.importance_score as number,
+        importanceScore: row.importance_score as number,
       })
     ),
   ])
 
-  // Order so we can remove duplicates from less important groups
-  const orderedGroupContracts = orderBy(
-    groupContracts,
-    (gc) => topics.find((g) => g.slug === gc[0])?.importance_score,
-    'desc'
+  const marketsByTopicSlug = orderAndDedupeGroupContracts(
+    topics,
+    groupContracts
   )
-  const marketsByTopicSlug = {} as Record<string, Contract[]>
-  // Group and remove duplicates
-  for (const [slug, contract] of orderedGroupContracts) {
-    if (!marketsByTopicSlug[slug]) marketsByTopicSlug[slug] = []
-    const addedMarketIds = Object.values(marketsByTopicSlug)
-      .flat()
-      .map((c) => c.id)
-    if (!addedMarketIds.includes(contract.id))
-      marketsByTopicSlug[slug].push(contract)
-  }
 
   // Return only the limit for each topic
   let topicCount = 0
@@ -88,8 +85,8 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       )
     topicCount++
   }
-  log('returning topic slugs', Object.keys(marketsByTopicSlug))
-  log('topics to importance scores', topics)
+  log('returning topic slugs', { slugs: Object.keys(marketsByTopicSlug) })
+  log('topics to importance scores', { topics })
   return {
     marketsFromEmbeddings,
     marketsByTopicSlug,

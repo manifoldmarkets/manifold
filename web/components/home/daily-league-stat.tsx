@@ -17,13 +17,23 @@ export const DailyLeagueStat = (props: { user: User }) => {
   }
   const name = DIVISION_NAMES[info.division]
   return (
-    <Link href="/leagues" onClick={() => track('click daily leagues button')}>
+    <Link
+      prefetch={false}
+      href="/leagues"
+      onClick={() => track('click daily leagues button')}
+    >
       <Col className={clsx(dailyStatsClass, 'relative')}>
         <div className="whitespace-nowrap">
           {name === 'Bronze'
             ? '🥉'
             : name === 'Silver'
             ? '🥈'
+            : name === 'Gold'
+            ? '🥇'
+            : name === 'Platinum'
+            ? '💿'
+            : name === 'Diamond'
+            ? '💎'
             : name === 'Masters'
             ? '🎖️'
             : '🏅'}{' '}

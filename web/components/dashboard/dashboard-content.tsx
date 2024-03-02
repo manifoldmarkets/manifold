@@ -24,6 +24,7 @@ export const DashboardContent = (props: {
   topics: string[]
   setTopics?: (topics: string[]) => void
   isEditing?: boolean
+  filterOutActivityFeed?: boolean
 }) => {
   const {
     items,
@@ -33,6 +34,7 @@ export const DashboardContent = (props: {
     setItems,
     topics = [],
     setTopics,
+    filterOutActivityFeed,
   } = props
 
   const questions = items.filter(
@@ -156,12 +158,14 @@ export const DashboardContent = (props: {
           </Droppable>
         </DragDropContext>
       )}
-      {loadLiveFeed && <DashboardLive topics={topics} editing={isEditing} />}
+      {loadLiveFeed && !filterOutActivityFeed && (
+        <DashboardLive topics={topics} editing={isEditing} />
+      )}
     </>
   )
 }
 
-const key = (item: DashboardItem) => {
+export const key = (item: DashboardItem) => {
   if (item.type === 'link') return item.url
   if (item.type === 'question') return item.slug
   return item.id

@@ -27,6 +27,7 @@ import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
+import { convertTxn } from 'common/supabase/txns'
 
 const numberOfDays = 365
 
@@ -41,6 +42,7 @@ type StatUser = StatEvent & {
   freeQuestionsCreated: number | undefined
   bio: string | undefined
   dashboardCount: number
+  referrerId: string | undefined
 }
 
 async function getDailyBets(
@@ -136,7 +138,8 @@ async function getDailyNewUsers(
       (u.data->>'bio') as bio,
       (u.data->'freeQuestionsCreated')::int as free_questions_created,
       count(cb.bet_id) filter (where cb.bet_id is not null) as bet_count_within_24h,
-      count(d.id) filter (where d.id is not null) as dashboard_count
+      count(d.id) filter (where d.id is not null) as dashboard_count,
+      u.data->>'referredByUserId' as referrer_id
   from users u
       left join contract_bets cb on u.id = cb.user_id and cb.is_redemption = false
       and (cb.created_time >= u.created_time and cb.created_time <= u.created_time + interval '24 hours')
@@ -160,6 +163,7 @@ async function getDailyNewUsers(
       freeQuestionsCreated: r.free_questions_created ?? undefined,
       bio: r.bio ?? undefined,
       dashboardCount: Number(r.dashboard_count as number), // count returns bigint
+      referrerId: r.referrer_id ?? undefined,
     } as const)
   }
   return usersByDay
@@ -170,15 +174,16 @@ export async function getSales(
   startTime: number,
   numberOfDays: number
 ) {
-  const sales: { data: ManaPurchaseTxn }[] = await pg.manyOrNone(
-    `select data from txns
-      where data->'category' = '"MANA_PURCHASE"'
-      and (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
-    [startTime, startTime + numberOfDays * DAY_MS]
+  const sales: ManaPurchaseTxn[] = await pg.map(
+    `select * from txns
+      where category = 'MANA_PURCHASE'
+      and created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
+    [startTime, startTime + numberOfDays * DAY_MS],
+    convertTxn as any
   )
 
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
-  for (const { data: sale } of sales) {
+  for (const sale of sales) {
     const ts = sale.createdTime
     const amount = sale.amount / 100 // convert to dollars
     const userId = sale.toId
@@ -218,7 +223,11 @@ export const updateStatsCore = async () => {
   const dailyNewRealUsers = dailyNewUsers.map((users) =>
     users.filter(
       (user) =>
-        !isUserLikelySpammer(user, user.d1BetCount > 0, user.dashboardCount > 0)
+        !isUserLikelySpammer(
+          user,
+          user.d1BetCount > 0,
+          user.dashboardCount > 0
+        ) && user.referrerId !== 'cA1JupYR5AR8btHUs2xvkui7jA93' // Ignore ad-sourced users
     )
   )
 

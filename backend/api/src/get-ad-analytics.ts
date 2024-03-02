@@ -33,8 +33,8 @@ export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
     db
       .from('txns')
       .select('*', { count: 'exact' })
-      .eq('data->>category' as any, 'MARKET_BOOST_REDEEM')
-      .eq('data->>fromId' as any, lastAdData?.id)
+      .eq('category', 'MARKET_BOOST_REDEEM')
+      .eq('from_id', lastAdData?.id)
   )
   const promotedViewData = viewData?.filter((v) => v.is_promoted)
   const totalFunds = adData?.reduce((acc, v) => acc + v.funds, 0) ?? 0

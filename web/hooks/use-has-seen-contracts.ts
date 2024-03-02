@@ -1,4 +1,3 @@
-import { useIsAuthorized } from 'web/hooks/use-user'
 import { useEffect } from 'react'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
 import { DAY_MS } from 'common/util/time'
@@ -11,16 +10,15 @@ export const useHasSeenContracts = (
   since: number = Date.now() - DAY_MS * 5
 ) => {
   const orderedUniqueContractIds = uniq(orderBy(contractIds))
-  const isAuthed = useIsAuthorized()
   const [seenContractIds, setSeenContractIds] = usePersistentInMemoryState<
     string[]
   >([], 'seenContractIds-' + userId + '-' + orderedUniqueContractIds.join(','))
   useEffect(() => {
-    if (!isAuthed || !userId) return
-    getSeenContractIds(userId, orderedUniqueContractIds, since, [
+    if (!userId) return
+    getSeenContractIds(orderedUniqueContractIds, since, [
       'view market card',
       'view market',
     ]).then(setSeenContractIds)
-  }, [isAuthed, userId])
+  }, [userId])
   return seenContractIds
 }

@@ -11,6 +11,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ContractStatusLabel } from './contracts-table'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function ProbChangeTable(props: {
   changes: CPMMContract[] | undefined
@@ -53,6 +54,7 @@ const ContractWithProbChange = forwardRef(
       creatorUsername,
       creatorAvatarUrl,
       closeTime,
+      creatorId,
       isResolved,
       question,
       probChanges,
@@ -78,12 +80,14 @@ const ContractWithProbChange = forwardRef(
           className
         )}
       >
-        <Avatar
-          className="hidden lg:mr-1 lg:flex"
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size="xs"
-        />
+        <UserHovercard userId={creatorId}>
+          <Avatar
+            className="hidden lg:mr-1 lg:flex"
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+          />
+        </UserHovercard>
         <div
           className={clsx(
             'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto',
@@ -93,12 +97,14 @@ const ContractWithProbChange = forwardRef(
           {question}
         </div>
         <Row className="gap-3">
-          <Avatar
-            className="lg:hidden"
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-          />
+          <UserHovercard userId={creatorId}>
+            <Avatar
+              className="lg:hidden"
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+            />
+          </UserHovercard>
           <div className="min-w-[2rem] text-right font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>

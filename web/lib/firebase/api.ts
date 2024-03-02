@@ -8,7 +8,7 @@ import { ContractComment } from 'common/comment'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
+import { BaseDashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
@@ -153,9 +153,6 @@ export function getSupabaseToken() {
   return call(getApiUrl('getsupabasetoken'), 'GET')
 }
 
-export function updateUserEmbedding() {
-  return call(getApiUrl('update-user-embedding'), 'POST')
-}
 export function updateUserDisinterestEmbedding(params: {
   contractId: string
   creatorId: string
@@ -203,16 +200,7 @@ export function followTopic(params: { groupId: string }) {
   return call(getApiUrl('follow-topic'), 'POST', params)
 }
 
-export function searchGroups(params: {
-  term: string
-  limit: number
-  offset?: number
-  addingToContract?: boolean
-}) {
-  return call(getApiUrl('supabasesearchgroups'), 'POST', params) as Promise<
-    Group[]
-  >
-}
+export const searchGroups = curriedAPI('search-groups')
 
 export function leagueActivity(params: { season: number; cohort: string }) {
   return call(getApiUrl('league-activity'), 'POST', params) as Promise<{
@@ -343,14 +331,6 @@ export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
-export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return call(
-    getApiUrl('getdashboardfromslug'),
-    'POST',
-    params
-  ) as Promise<Dashboard>
-}
-
 export function referUser(params: {
   referredByUsername: string
   contractId?: string
@@ -386,7 +366,8 @@ export function updatePrivateMessageChannel(params: {
 }
 export function editAnswerCpmm(params: {
   answerId: string
-  text: string
+  text?: string
+  color?: string
   contractId: string
 }) {
   return call(getApiUrl('edit-answer-cpmm'), 'POST', params)

@@ -3,14 +3,18 @@ import { APIError, APIHandler } from '../helpers/endpoint'
 import { createLoveLikeNotification } from 'shared/create-love-notification'
 import { runLikePurchaseTxn } from 'shared/txn/run-like-purchase-txn'
 import { getHasFreeLike } from './has-free-like'
+import { createAnswerCpmmMain } from 'api/create-answer-cpmm'
+import { addTargetToUserMarket } from 'shared/love/love-markets'
+import { LOVE_MARKET_COST } from 'common/love/constants'
 
 export const likeLover: APIHandler<'like-lover'> = async (
   props,
   auth,
-  { log, logError }
+  gcpLogs
 ) => {
   const { targetUserId, remove } = props
   const creatorId = auth.uid
+  const { log } = gcpLogs
 
   const db = createSupabaseClient()
 
@@ -67,7 +71,26 @@ export const likeLover: APIHandler<'like-lover'> = async (
     throw new APIError(500, 'Failed to add like: ' + error.message)
   }
 
-  await createLoveLikeNotification(data)
+  const continuation = async () => {
+    const createAnswer = (
+      contractId: string,
+      creatorId: string,
+      targetUserId: string,
+      text: string
+    ) =>
+      createAnswerCpmmMain(contractId, text, creatorId, gcpLogs, {
+        overrideAddAnswersMode: 'ONLY_CREATOR',
+        specialLiquidityPerAnswer: LOVE_MARKET_COST,
+        loverUserId: targetUserId,
+      })
 
-  return { status: 'success' }
+    await createLoveLikeNotification(data)
+    await addTargetToUserMarket(creatorId, targetUserId, createAnswer)
+    await addTargetToUserMarket(targetUserId, creatorId, createAnswer)
+  }
+
+  return {
+    result: { status: 'success' },
+    continue: continuation,
+  }
 }

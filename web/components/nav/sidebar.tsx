@@ -32,16 +32,17 @@ import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
-import { Item, SidebarItem } from './sidebar-item'
+import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { FaFlagUsa } from 'react-icons/fa6'
+import { IoPersonCircleOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
-  navigationOptions?: Item[]
+  navigationOptions?: NavItem[]
   hideCreateQuestionButton?: boolean
 }) {
   const { className, isMobile, hideCreateQuestionButton } = props
@@ -60,8 +61,11 @@ export default function Sidebar(props: {
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
+    ? getMobileNav(
+        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
+        user?.username ?? ''
+      )
+    : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -113,24 +117,18 @@ export default function Sidebar(props: {
   )
 }
 
-const getDesktopNav = (
-  loggedIn: boolean,
-  openDownloadApp: () => void,
-  showMarkets: boolean
-) => {
+const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? {
-            name: 'Browse',
-            href: '/browse?topic=for-you',
-            icon: SearchIcon,
-          }
-        : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
-        name: 'US Elections',
-        href: '/elections',
+        name: 'Browse',
+        href: '/browse/for-you',
+        icon: SearchIcon,
+      },
+      {
+        name: 'US Politics',
+        href: '/politics',
         icon: FaFlagUsa,
       },
       {
@@ -149,26 +147,27 @@ const getDesktopNav = (
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
-      name: 'US Elections',
-      href: '/elections',
+      name: 'US Politics',
+      href: '/politics',
       icon: FaFlagUsa,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
-  return buildArray(
-    {
-      name: 'US Elections',
-      href: '/elections',
-      icon: FaFlagUsa,
-    },
+const getMobileNav = (toggleModal: () => void, username: string) => {
+  return buildArray<NavItem>(
+    { name: 'Profile', href: '/' + username, icon: IoPersonCircleOutline },
+    // {
+    //   name: 'US Politics',
+    //   href: '/politics',
+    //   icon: FaFlagUsa,
+    // },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },

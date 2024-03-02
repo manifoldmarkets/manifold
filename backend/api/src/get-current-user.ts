@@ -1,13 +1,18 @@
 import { User } from 'common/user'
-import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { createSupabaseClient } from 'shared/supabase/init'
+import { toLiteUser } from 'common/api/user-types'
 
 export const getCurrentUser: APIHandler<'me'> = async (_, auth) => {
-  const userDoc = firestore.doc(`users/${auth.uid}`)
-  const [userSnap] = await firestore.getAll(userDoc)
-  if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
+  const db = createSupabaseClient()
 
-  return userSnap.data() as User
+  const q = db.from('users').select('data').eq('id', auth.uid)
+
+  const { data, error } = await q
+  if (error)
+    throw new APIError(500, 'Error fetching user data: ' + error.message)
+
+  if (!data.length) throw new APIError(401, 'Your account was not found')
+
+  return toLiteUser(data[0].data as unknown as User)
 }
-
-const firestore = admin.firestore()

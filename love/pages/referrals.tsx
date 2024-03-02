@@ -11,7 +11,9 @@ import { useUser } from 'web/hooks/use-user'
 export default function ReferralsPage() {
   const user = useUser()
 
-  const url = `https://manifold.love/?referrer=${user?.username}`
+  const url = user
+    ? `https://manifold.love/?referrer=${user.username}`
+    : 'https://manifold.love'
 
   return (
     <LovePage trackPageView={'love referrals'} className="items-center">

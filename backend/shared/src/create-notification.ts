@@ -1,5 +1,4 @@
 import { getContractBetMetrics } from 'common/calculate'
-import * as admin from 'firebase-admin'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -23,15 +22,18 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
-import {
-  getContract,
-  getPrivateUser,
-  getUser,
-  getValues,
-  log,
-} from 'shared/utils'
+import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
-import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  last,
+  mapValues,
+  minBy,
+  orderBy,
+  sum,
+  uniq,
+} from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -73,7 +75,9 @@ import { isManifoldLoveContract } from 'common/love/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
-import { getComment } from './supabase/contract_comments'
+import { getCommentSafe } from './supabase/contract_comments'
+import { convertUser } from 'common/supabase/users'
+import { convertBet } from 'common/supabase/bets'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -485,7 +489,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 }
 
 export const createBetFillNotification = async (
-  fromUser: User,
   toUser: User,
   bet: Bet,
   limitBet: LimitBet,
@@ -500,7 +503,15 @@ export const createBetFillNotification = async (
   )
   if (!sendToBrowser) return
 
-  const fill = limitBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  // The limit order fills array has a matchedBetId that does not match this bet id
+  // (even though this bet has a fills array that is matched to the limit order)
+  // This is likely bc this bet is an arbitrage bet. This should be fixed.
+  // This matches based on timestamp because of the above bug.
+  const fill =
+    limitBet.fills.find((fill) => fill.timestamp === bet.createdTime) ??
+    last(orderBy(limitBet.fills, 'timestamp', 'asc'))
+  // const fill = limitBet.fills.find((f) => f.matchedBetId === bet.id)
+
   const fillAmount = fill?.amount ?? 0
   const remainingAmount =
     limitBet.orderAmount - sum(limitBet.fills.map((f) => f.amount))
@@ -522,9 +533,9 @@ export const createBetFillNotification = async (
     sourceId: limitBet.id,
     sourceType: 'bet',
     sourceUpdateType: 'updated',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceUserName: bet.userName,
+    sourceUserUsername: bet.userUsername,
+    sourceUserAvatarUrl: bet.userAvatarUrl ?? '',
     sourceText: fillAmount.toString(),
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
@@ -879,7 +890,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
   if (content_type === 'contract') {
     text = contract.question
   } else {
-    const comment = await getComment(db, content_id)
+    const comment = await getCommentSafe(db, content_id)
     if (comment == null) return
 
     text = richTextToString(comment?.content)
@@ -916,9 +927,9 @@ export const createUniqueBettorBonusNotification = async (
   amount: number,
   uniqueBettorIds: string[],
   idempotencyKey: string,
-  bet: Bet
+  bet: Bet,
+  isPartner: boolean | undefined
 ) => {
-  const firestore = admin.firestore()
   const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
@@ -968,6 +979,8 @@ export const createUniqueBettorBonusNotification = async (
             : undefined,
         outcomeType,
         ...pseudoNumericData,
+        isPartner,
+        totalUniqueBettors: uniqueBettorIds.length,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -981,22 +994,24 @@ export const createUniqueBettorBonusNotification = async (
   // Only send on 5th bettor
   if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
     return
-  const mostRecentUniqueBettors = await getValues<User>(
-    firestore
-      .collection('users')
-      .where(
-        'id',
-        'in',
-        uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
-          uniqueBettorsExcludingCreator.length
-        )
-      )
+
+  const lastBettorIds = uniqueBettorsExcludingCreator.slice(
+    uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
+    uniqueBettorsExcludingCreator.length
   )
 
-  const bets = await getValues<Bet>(
-    firestore.collection('contracts').doc(contract.id).collection('bets')
+  const mostRecentUniqueBettors = await pg.map(
+    `select * from users where id in ($1:list)`,
+    [lastBettorIds],
+    convertUser
   )
+
+  const bets = await pg.map<Bet>(
+    `select * from contract_bets where contract_id = $1`,
+    [contract.id, txnId],
+    convertBet
+  )
+
   const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
 
   // Don't send if creator has seen their market since the 1st bet was placed
@@ -1007,7 +1022,7 @@ export const createUniqueBettorBonusNotification = async (
       ?.createdTime ?? contract.createdTime,
     pg
   )
-  if (creatorHasSeenMarketSinceBet) return
+  if (creatorHasSeenMarketSinceBet || amount === 0) return
 
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',

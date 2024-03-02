@@ -8,6 +8,7 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint } from 'common/chart'
 import { curveLinear } from 'd3-shape'
 import { ZoomParams } from '../charts/helpers'
+import { Period } from 'web/lib/firebase/users'
 
 export type GraphMode = 'profit' | 'value' | 'balance'
 
@@ -25,40 +26,49 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 
 export const PortfolioGraph = (props: {
   mode: 'profit' | 'value' | 'balance'
+  duration?: Period
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
   height: number
   zoomParams?: ZoomParams
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
+  hideXAxis?: boolean
 }) => {
   const {
     mode,
+    duration,
     points,
     onMouseOver,
     width,
     height,
     zoomParams,
     negativeThreshold,
+    hideXAxis,
   } = props
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minDate = min(points.map((d) => d.x))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const maxDate = max(points.map((d) => d.x))!
+
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minValue = min(points.map((d) => d.y))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const maxValue = max(points.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
   }, [points])
-
+  const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
-  const yScale = scaleLinear([minValue, maxValue], [height, 0])
+  const yScale = scaleLinear(
+    [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
+    [height, 0]
+  )
 
+  // reset axis scale if mode or duration change (since points change)
   useEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [])
+  }, [mode, duration])
 
   return (
     <SingleValueHistoryChart
@@ -81,6 +91,7 @@ export const PortfolioGraph = (props: {
           : '#4f46e5'
       }
       negativeThreshold={negativeThreshold}
+      hideXAxis={hideXAxis}
     />
   )
 }

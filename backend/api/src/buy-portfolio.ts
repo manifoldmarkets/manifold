@@ -44,6 +44,7 @@ export const buyportfolio = authEndpoint(async (req, auth, log) => {
   for (const item of portfolio.items) {
     const { contractId, position } = item
     const itemAmount = amount / portfolio.items.length
+    const isAPI = true
     await placeBetMain(
       {
         contractId,
@@ -51,7 +52,7 @@ export const buyportfolio = authEndpoint(async (req, auth, log) => {
         amount: itemAmount,
       },
       user.id,
-      auth.creds.kind === 'key',
+      isAPI,
       log
     )
   }

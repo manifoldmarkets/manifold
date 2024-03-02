@@ -1,4 +1,5 @@
 'use client'
+import clsx from 'clsx'
 import {
   convertDashboardSqltoTS,
   Dashboard,
@@ -30,13 +31,20 @@ export function NewsDashboard(props: {
   initialContracts: Contract[]
   slug: string
   editByDefault: boolean
+  className?: string
 }) {
   const user = useUser()
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
-  const { initialDashboard, slug, editByDefault, previews, initialContracts } =
-    props
+  const {
+    initialDashboard,
+    slug,
+    editByDefault,
+    previews,
+    initialContracts,
+    className,
+  } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 
@@ -80,7 +88,7 @@ export function NewsDashboard(props: {
         </>
       )}
       <ReferralSaver />
-      <Col className="w-full px-1 sm:px-2" id={slug}>
+      <Col className={clsx('w-full px-1 sm:px-2', className)} id={slug}>
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
             <InputWithLimit

@@ -27,8 +27,16 @@ export default function LoverProfileHeader(props: {
   simpleView?: boolean
   starredUserIds: string[]
   refreshStars: () => Promise<void>
+  showMessageButton: boolean
 }) {
-  const { user, lover, simpleView, starredUserIds, refreshStars } = props
+  const {
+    user,
+    lover,
+    simpleView,
+    starredUserIds,
+    refreshStars,
+    showMessageButton,
+  } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
@@ -99,12 +107,16 @@ export default function LoverProfileHeader(props: {
               className="hidden sm:flex"
               username={user.username}
             />
-            <StarButton
-              targetLover={lover}
-              isStarred={starredUserIds.includes(user.id)}
-              refresh={refreshStars}
-            />
-            <SendMessageButton toUser={user} currentUser={currentUser} />
+            {currentUser && (
+              <StarButton
+                targetLover={lover}
+                isStarred={starredUserIds.includes(user.id)}
+                refresh={refreshStars}
+              />
+            )}
+            {currentUser && showMessageButton && (
+              <SendMessageButton toUser={user} currentUser={currentUser} />
+            )}
             <MoreOptionsUserButton user={user} />
           </Row>
         )}

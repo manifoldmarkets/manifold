@@ -3,6 +3,8 @@ import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -20,17 +22,18 @@ import { Row } from '../layout/row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
+  OutcomeLabel,
   PseudoNumericOutcomeLabel,
   YesLabel,
 } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Title } from '../widgets/title'
-import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 import { api } from 'web/lib/firebase/api'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function YourOrders(props: {
   contract:
@@ -77,6 +80,7 @@ export function OrderTable(props: {
   const { limitBets, contract, isYou, side } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
+  const isBinaryMC = isBinaryMulti(contract)
   const onCancel = async () => {
     setIsCancelling(true)
     await Promise.all(
@@ -89,7 +93,17 @@ export function OrderTable(props: {
       {side && (
         <Row className="ml-2">
           <span className="mr-2">Buy</span>{' '}
-          {side === 'YES' ? <YesLabel /> : <NoLabel />}
+          {isBinaryMC ? (
+            <OutcomeLabel
+              contract={contract}
+              outcome={side}
+              truncate={'short'}
+            />
+          ) : side === 'YES' ? (
+            <YesLabel />
+          ) : (
+            <NoLabel />
+          )}
         </Row>
       )}
       <Table className="rounded">
@@ -149,6 +163,7 @@ function OrderRow(props: {
   const { contract, bet, isYou, showOutcome } = props
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isBinaryMC = isBinaryMulti(contract)
 
   const [isCancelling, setIsCancelling] = useState(false)
 
@@ -163,14 +178,14 @@ function OrderRow(props: {
       {!isYou && (
         <td>
           <a href={`/${bet.userUsername}`}>
-            <Tooltip text={bet.userName}>
+            <UserHovercard userId={bet.userId}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
                 noLink={true}
               />
-            </Tooltip>
+            </UserHovercard>
           </a>
         </td>
       )}
@@ -179,6 +194,12 @@ function OrderRow(props: {
           <div className="pl-2">
             {isPseudoNumeric ? (
               <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+            ) : isBinaryMC ? (
+              <OutcomeLabel
+                contract={contract}
+                outcome={outcome}
+                truncate={'short'}
+              />
             ) : (
               <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
             )}
@@ -188,6 +209,8 @@ function OrderRow(props: {
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
+          : isBinaryMC
+          ? formatPercent(getBinaryMCProb(limitProb, outcome))
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>

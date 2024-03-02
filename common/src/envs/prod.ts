@@ -3,7 +3,6 @@ export type EnvConfig = {
   loveDomain: string
   loveDomainAlternate: string
   politicsDomain: string
-  politicsDomainAlternate: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
@@ -51,7 +50,6 @@ export const PROD_CONFIG: EnvConfig = {
   loveDomain: 'manifold.love',
   loveDomainAlternate: 'manifoldlove.com',
   politicsDomain: 'manifoldpolitics.com',
-  politicsDomainAlternate: 'politifold.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
@@ -87,7 +85,6 @@ export const PROD_CONFIG: EnvConfig = {
     'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
-    'vUks7InCtYhBFrdLQhqXFUBHD4D2', // Barak work account
   ],
   visibility: 'PUBLIC',
 

@@ -1,5 +1,7 @@
 import { User } from 'common/user'
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+dayjs.extend(timezone)
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useCallback, useEffect } from 'react'
 import { run } from 'common/supabase/utils'
@@ -16,15 +18,15 @@ export const useHasReceivedLoanToday = (user: User) => {
     run(
       db
         .from('txns')
-        .select('data->>createdTime')
-        .eq('data->>toId', user.id)
-        .eq('data->>category', 'LOAN')
-        .gte('data->createdTime', startOfDay)
+        .select('created_time')
+        .eq('to_id', user.id)
+        .eq('category', 'LOAN')
+        .gte('created_time', new Date(startOfDay).toISOString())
         .limit(1)
     )
       .then((res) => {
         if (res.data.length > 0) {
-          setLastLoanReceived(parseInt(res.data[0].createdTime))
+          setLastLoanReceived(new Date(res.data[0].created_time ?? 0).valueOf())
         } else {
           setLastLoanReceived(0)
         }

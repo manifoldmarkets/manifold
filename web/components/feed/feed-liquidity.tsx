@@ -7,6 +7,7 @@ import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function FeedLiquidity(props: {
   className?: string
@@ -28,7 +29,9 @@ export function FeedLiquidity(props: {
         {isSelf ? (
           <Avatar avatarUrl={user.avatarUrl} username={user.username} />
         ) : bettor ? (
-          <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+          <UserHovercard userId={userId}>
+            <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
+          </UserHovercard>
         ) : (
           <div className="relative px-1">
             <EmptyAvatar />
@@ -58,7 +61,9 @@ function LiquidityStatusText(props: {
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
       {bettor ? (
-        <UserLink user={bettor} />
+        <UserHovercard userId={bettor.id}>
+          <UserLink user={bettor} />
+        </UserHovercard>
       ) : (
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}

@@ -80,7 +80,7 @@ export async function getContractParams(
       : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    unauthedApi('get-related-markets', {
+    unauthedApi('get-related-markets-cache', {
       contractId: contract.id,
       limit: 4,
       limitTopics: 4,
@@ -153,7 +153,6 @@ export const getSingleBetPoints = (
   betPoints: { x: number; y: number }[],
   contract: Contract
 ) => {
-  betPoints.sort((a, b) => a.x - b.x)
   const points = buildArray<{ x: number; y: number }>(
     contract.mechanism === 'cpmm-1' && {
       x: contract.createdTime,

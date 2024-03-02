@@ -12,7 +12,7 @@ export default function ReferralsPage() {
         <Title>Earn mana by referring friends!</Title>
 
         <div className="mb-2">
-          Invite someone to join manifold politics and get{' '}
+          Invite someone to join Manifold Politics and get{' '}
           {formatMoney(REFERRAL_AMOUNT)} if they sign up!
         </div>
         <ReferralCopy className={'gap-4'} />

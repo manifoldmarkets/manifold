@@ -42,6 +42,13 @@ export async function getFullUserByUsername(username: string) {
   return data[0].data as User
 }
 
+export async function getFullUserById(id: string) {
+  const { data } = await run(db.from('users').select('data').eq('id', id))
+  if (data.length === 0) return null
+
+  return data[0].data as User
+}
+
 export async function searchUsers(prompt: string, limit: number) {
   const users = await api('search-users', { term: prompt, limit: limit })
   return users
@@ -112,6 +119,31 @@ export const getTotalContractsCreated = async (userId: string) => {
       .from('public_contracts')
       .select('*', { head: true, count: 'exact' })
       .eq('creator_id', userId)
+  )
+  return count
+}
+
+export const getContractsCreatedProgress = async (
+  userId: string,
+  minTraders = 0
+) => {
+  const currentDate = new Date()
+  const startDate = new Date()
+
+  startDate.setMonth(startDate.getMonth() - 2)
+
+  const startIsoString = startDate.toISOString()
+  const endIsoString = currentDate.toISOString()
+
+  const { count } = await run(
+    db
+      .from('public_contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('creator_id', userId)
+      .gte('created_time', startIsoString)
+      .lt('created_time', endIsoString)
+      .not('mechanism', 'eq', 'none')
+      .gte('data->uniqueBettorCount', minTraders)
   )
   return count
 }

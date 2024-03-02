@@ -322,7 +322,7 @@ export const PrivateChat = (props: {
             size="sm"
             spacing={0.5}
             startLeft={1}
-            avatarUrls={members?.map((user) => user.avatarUrl) ?? []}
+            avatars={members ?? []}
             onClick={() => setShowUsers(true)}
           />
         )}

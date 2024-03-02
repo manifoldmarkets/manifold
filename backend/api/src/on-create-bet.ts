@@ -1,14 +1,12 @@
-import { z } from 'zod'
-import { APIError, jsonEndpoint, validate } from 'api/helpers/endpoint'
-import { getContractSupabase, getUser, getUsers } from 'shared/utils'
+import { GCPLog, getDoc, getUsers, revalidateStaticProps } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { keyBy } from 'lodash'
+import { keyBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
-  createFollowAfterReferralNotification,
+  createLimitBetCanceledNotification,
 } from 'shared/create-notification'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
@@ -16,150 +14,126 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { MAX_ID_LENGTH } from 'common/group'
-import { manifoldLoveUserId } from 'common/love/constants'
-import { MINUTE_MS } from 'common/util/time'
+import { convertBet } from 'common/supabase/bets'
+import { NormalizedBet } from 'common/new-bet'
+import { maker } from 'api/place-bet'
+import { redeemShares } from 'api/redeem-shares'
 
-const BetRowSchema = z.object({
-  amount: z.number().nullable(),
-  answer_id: z.string().nullable(),
-  bet_id: z.string().max(MAX_ID_LENGTH),
-  contract_id: z.string().max(MAX_ID_LENGTH),
-  created_time: z.string(),
-  data: z.any(),
-  fs_updated_time: z.string(),
-  is_ante: z.boolean().nullable(),
-  is_api: z.boolean().nullable(),
-  is_challenge: z.boolean().nullable(),
-  is_redemption: z.boolean().nullable(),
-  outcome: z.string().nullable(),
-  prob_after: z.number().nullable(),
-  prob_before: z.number().nullable(),
-  shares: z.number().nullable(),
-  user_id: z.string(),
-  visibility: z.string().nullable(),
-})
-
-const bodySchema = z
-  .object({
-    type: z.string(),
-    table: z.string(),
-    schema: z.string(),
-    record: BetRowSchema,
-    old_record: z.any().optional(),
-  })
-  .strict()
-
-export const oncreatebet = jsonEndpoint(async (req, log, logError) => {
-  const { record: bet, type } = validate(bodySchema, req.body)
-  if (type !== 'INSERT') {
-    throw new APIError(400, 'This endpoint only handles inserts')
-  }
-  log('bet from insert trigger', bet)
-
-  const pg = createSupabaseDirectClient()
-  const betExists = await pg.oneOrNone(
-    `select 1 from contract_bets where bet_id = $1 and contract_id = $2`,
-    [bet.bet_id, bet.contract_id]
-  )
-  log('bet exists: ' + !!betExists)
-  if (!betExists) throw new APIError(400, 'Bet not found')
-
-  const idempotentId = bet.bet_id + bet.contract_id + '-limit-fill'
-  const previousEventExists = await pg.oneOrNone(
-    `select 1 from user_notifications where notification_id = $1`,
-    [idempotentId]
-  )
-  log('previousEventId exists: ' + !!previousEventExists)
-  if (previousEventExists)
-    throw new APIError(400, 'Notification already exists')
-
-  const contract = await getContractSupabase(bet.contract_id)
-  if (!contract) throw new APIError(404, 'Contract not found')
-  const bettor = await getUser(bet.user_id)
-  if (!bettor) throw new APIError(404, 'Bettor not found')
-
-  // If they're a new user and bet on their referrer's question, auto-create a follow and notify them
-  if (
-    bettor.createdTime > Date.now() - 10 * MINUTE_MS &&
-    bettor.referredByUserId !== manifoldLoveUserId &&
-    bettor.referredByUserId === contract.creatorId
-  ) {
-    const referredByUser = await getUser(bettor.referredByUserId)
-    if (!referredByUser) {
-      logError(
-        `User ${bettor.referredByUserId} not found, not creating follow after referral notification`
-      )
-    } else {
-      const previousFollowExists = await pg.oneOrNone(
-        `select 1 from user_follows where user_id = $1 and follow_id = $2`,
-        [bettor.id, bettor.referredByUserId]
-      )
-      if (!previousFollowExists) {
-        await pg.none(
-          `insert into user_follows (user_id, follow_id) values ($1, $2)`,
-          [bettor.id, bettor.referredByUserId]
-        )
-        await createFollowAfterReferralNotification(
-          bettor.id,
-          referredByUser,
-          pg
-        )
-      }
-    }
+// Note: This is only partially transferred from the triggers/on-create-bet.ts
+export const onCreateBets = async (
+  normalBets: NormalizedBet[],
+  contract: Contract,
+  bettor: User,
+  log: GCPLog,
+  ordersToCancel: LimitBet[] | undefined,
+  makers: maker[] | undefined
+) => {
+  const { mechanism } = contract
+  if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
+    const userIds = uniq([
+      bettor.id,
+      ...(makers?.map((maker) => maker.bet.userId) ?? []),
+    ])
+    await Promise.all(
+      userIds.map(async (userId) => redeemShares(userId, contract, log))
+    )
+    log('Share redemption transaction finished.')
   }
 
-  const notifiedUsers = await notifyUsersOfLimitFills(
-    bet.data as Bet,
-    contract,
-    idempotentId,
-    bettor,
-    pg
-  )
-  if (bet.shares !== 0) {
-    await updateContractMetrics(
-      contract,
-      [bettor, ...(notifiedUsers ?? [])],
-      pg
+  if (ordersToCancel) {
+    await Promise.all(
+      ordersToCancel.map((order) => {
+        createLimitBetCanceledNotification(
+          bettor,
+          order.userId,
+          order,
+          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+          contract
+        )
+      })
     )
   }
-  return { status: 'success', data: bet }
-})
+
+  const betUsers = await getUsers(uniq(normalBets.map((bet) => bet.userId)))
+  if (!betUsers.find((u) => u.id == bettor.id)) betUsers.push(bettor)
+
+  const pg = createSupabaseDirectClient()
+  const bets = normalBets.map((bet) => {
+    const user = betUsers.find((user) => user.id === bet.userId)
+    return {
+      ...bet,
+      userName: user?.name,
+      userAvatarUrl: user?.avatarUrl,
+      userUsername: user?.username,
+    } as Bet
+  })
+  const userIdsToRefreshMetrics = uniq(
+    bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
+  )
+  const usersToRefreshMetrics = betUsers.filter((user) =>
+    userIdsToRefreshMetrics.includes(user.id)
+  )
+  await Promise.all(
+    bets.map(async (bet) => {
+      const idempotentId = bet.id + bet.contractId + '-limit-fill'
+      const notifiedUsers = await notifyUsersOfLimitFills(
+        bet,
+        contract,
+        idempotentId
+      )
+      usersToRefreshMetrics.push(...(notifiedUsers ?? []))
+    })
+  )
+  if (usersToRefreshMetrics.length > 0) {
+    await updateContractMetrics(
+      contract,
+      uniqBy(usersToRefreshMetrics, 'id'),
+      bets,
+      pg
+    )
+    log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
+  }
+}
 
 const notifyUsersOfLimitFills = async (
   bet: Bet,
   contract: Contract,
-  eventId: string,
-  user: User,
-  pg: SupabaseDirectClient
+  eventId: string
 ) => {
-  if (!bet.fills) return
+  if (!bet.fills || !bet.fills.length) return
 
-  const matchedFills = bet.fills.filter((fill) => fill.matchedBetId !== null)
-  const matchedBets = (
+  const matchingLimitBetIds = filterDefined(
+    bet.fills.map((fill) => fill.matchedBetId)
+  )
+  if (!matchingLimitBetIds.length) return
+
+  const matchingLimitBets = filterDefined(
     await Promise.all(
-      matchedFills.map((fill) =>
-        pg.map(
-          `select data from contract_bets where bet_id = $1`,
-          [fill.matchedBetId],
-          (r) => r.data as LimitBet
-        )
+      matchingLimitBetIds.map(
+        async (matchedBetId) =>
+          getDoc<LimitBet>(`contracts/${contract.id}/bets`, matchedBetId)
+        // pg.map(
+        //   `select data from contract_bets where bet_id = $1`,
+        //   [fill.matchedBetId],
+        //   (r) => r.data as LimitBet
+        // )
       )
     )
   ).flat()
 
-  const betUsers = await getUsers(matchedBets.map((bet) => bet.userId))
+  const matchingLimitBetUsers = await getUsers(
+    matchingLimitBets.map((bet) => bet.userId)
+  )
 
-  const betUsersById = keyBy(filterDefined(betUsers), 'id')
+  const limitBetUsersById = keyBy(filterDefined(matchingLimitBetUsers), 'id')
 
   return filterDefined(
     await Promise.all(
-      matchedBets.map(async (matchedBet) => {
-        const matchedUser = betUsersById[matchedBet.userId]
+      matchingLimitBets.map(async (matchedBet) => {
+        const matchedUser = limitBetUsersById[matchedBet.userId]
         if (!matchedUser) return undefined
 
         await createBetFillNotification(
-          user,
           matchedUser,
           bet,
           matchedBet,
@@ -175,19 +149,31 @@ const notifyUsersOfLimitFills = async (
 const updateContractMetrics = async (
   contract: Contract,
   users: User[],
+  recentBets: Bet[],
   pg: SupabaseDirectClient
 ) => {
   const metrics = await Promise.all(
     users.map(async (user) => {
       const bets = await pg.map(
-        `select data from contract_bets where contract_id = $1 and user_id = $2`,
+        `select * from contract_bets where contract_id = $1 and user_id = $2`,
         [contract.id, user.id],
-        (r) => r.data as Bet
+        convertBet
       )
-
+      const recentBetsByUser = recentBets.filter(
+        (bet) => bet.userId === user.id
+      )
+      // Handle possible replication delay
+      bets.push(
+        ...recentBetsByUser.filter((bet) => !bets.find((b) => b.id === bet.id))
+      )
       return calculateUserMetrics(contract, bets, user)
     })
   )
 
   await bulkUpdateContractMetrics(metrics.flat())
+  await Promise.all(
+    uniqBy(metrics.flat(), 'userUsername').map((metric) =>
+      revalidateStaticProps(`/${metric.userUsername}/portfolio`)
+    )
+  )
 }

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { StarIcon } from '@heroicons/react/outline'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import { api } from 'web/lib/firebase/api'
 import { buttonClass } from 'web/components/buttons/button'
@@ -15,27 +15,34 @@ export const StarButton = (props: {
   hideTooltip?: boolean
   className?: string
 }) => {
-  const { targetLover, isStarred, refresh, hideTooltip, className } = props
+  const { targetLover, refresh, hideTooltip, className } = props
   const targetId = targetLover.user_id
-  const [isLoading, setIsLoading] = useState(false)
+  const [isStarred, setIsStarred] = useState(props.isStarred)
+
+  useEffect(() => {
+    setIsStarred(props.isStarred)
+  }, [props.isStarred])
 
   const star = async () => {
-    setIsLoading(true)
-    await api('star-lover', { targetUserId: targetId, remove: isStarred })
+    setIsStarred(!isStarred)
+    await api('star-lover', {
+      targetUserId: targetId,
+      remove: isStarred,
+    }).catch(() => {
+      setIsStarred(isStarred)
+    })
     track('star lover', {
       targetId,
       remove: isStarred,
     })
     await refresh()
-    setIsLoading(false)
   }
 
   const button = (
     <button
-      disabled={isLoading}
       className={clsx(
         buttonClass('xs', 'none'),
-        'text-ink-500 disabled:text-ink-500 active:bg-canvas-100 disabled:bg-canvas-100 !rounded-full disabled:cursor-not-allowed',
+        'text-ink-500 !rounded-full',
         className
       )}
       onClick={(e) => {

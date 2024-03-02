@@ -135,11 +135,8 @@ begin
            when 'contract_answers' then cast(('contract_id', 'answer_id') as table_spec)
            when 'answers' then cast((null, 'id') as table_spec)
            when 'contract_bets' then cast(('contract_id', 'bet_id') as table_spec)
-           when 'contract_comments' then cast(('contract_id', 'comment_id') as table_spec)
-           when 'contract_follows' then cast(('contract_id', 'follow_id') as table_spec)
            when 'contract_liquidity' then cast(('contract_id', 'liquidity_id') as table_spec)
            when 'txns' then cast((null, 'id') as table_spec)
-           when 'manalinks' then cast((null, 'id') as table_spec)
            else null
     end;
 end

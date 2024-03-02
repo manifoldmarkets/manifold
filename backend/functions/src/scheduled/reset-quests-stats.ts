@@ -1,13 +1,11 @@
 // check every day if the user has created a bet since 4pm UTC, and if not, reset their streak
 
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { setQuestScoreValueOnUsers } from 'common/supabase/set-scores'
 import { QUEST_SCORE_IDS } from 'common/quest'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { chunk } from 'lodash'
 import { secrets } from 'common/secrets'
-const firestore = admin.firestore()
 const DAILY_QUEST_SCORE_IDS = ['currentBettingStreak', 'sharesToday']
 export const resetWeeklyQuestStats = functions
   .runWith({ timeoutSeconds: 540, memory: '1GB', secrets })
@@ -35,10 +33,14 @@ export const resetDailyQuestStats = functions
   })
 
 export const resetWeeklyQuestStatsInternal = async () => {
-  const usersSnap = await firestore.collection('users').get()
-  console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
-  const userIds = usersSnap.docs.map((d) => d.id)
   const db = createSupabaseClient()
+  const usersQuery = await db.from('users').select('id')
+  if (usersQuery.error) {
+    throw new Error(usersQuery.error.message)
+  }
+  const userIds = usersQuery.data.map((u) => u.id)
+  console.log(`Resetting quest stats for ${userIds.length} users`)
+
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
@@ -52,10 +54,14 @@ export const resetWeeklyQuestStatsInternal = async () => {
   )
 }
 export const resetDailyQuestStatsInternal = async () => {
-  const usersSnap = await firestore.collection('users').get()
-  console.log(`Resetting quest stats for ${usersSnap.docs.length} users`)
-  const userIds = usersSnap.docs.map((d) => d.id)
   const db = createSupabaseClient()
+  const usersQuery = await db.from('users').select('id')
+  if (usersQuery.error) {
+    throw new Error(usersQuery.error.message)
+  }
+  const userIds = usersQuery.data.map((u) => u.id)
+  console.log(`Resetting quest stats for ${userIds.length} users`)
+
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {

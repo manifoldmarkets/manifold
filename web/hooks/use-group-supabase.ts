@@ -1,8 +1,8 @@
 import { Contract } from 'common/contract'
-import { Group, GroupRole } from 'common/group'
+import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import { api, getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
@@ -17,15 +17,16 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { difference, orderBy } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { DAY_MS } from 'common/util/time'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -105,37 +106,52 @@ export const useGroupsWithContract = (
   return groups
 }
 
-export function useRealtimeMemberGroups(userId: string | undefined | null) {
-  const [groups, setGroups] = useState<Group[] | undefined>(undefined)
+export function useRealtimeMemberTopics(
+  userId: string | undefined | null,
+  limit: number = 20
+) {
+  const [groups, setGroups] = usePersistentInMemoryState<
+    LiteGroup[] | undefined
+  >(undefined, `member-topics-${userId ?? ''}`)
 
-  const { rows } = useSubscription('group_members', {
-    k: 'member_id',
-    v: userId ?? '_',
+  // Listen for changes in membership to re-fetch their topics
+  const ids = useRealtimeMemberGroupIds(userId)
+  const { data, refresh } = useAPIGetter('search-my-groups', {
+    limit,
+    term: '',
+    type: 'lite',
   })
-  const ids = rows?.map((row) => row.group_id) ?? []
+  useEffect(() => {
+    if (!ids) return
+    refresh()
+  }, [ids])
+  useEffect(() => {
+    if (data) {
+      setGroups(data.lite)
+    }
+  }, [JSON.stringify(data)])
+
+  return groups
+}
+export function useNewUserMemberTopicsAndContracts(
+  user: User | null | undefined
+) {
+  type TopicWithContracts = {
+    topic: Topic
+    contracts: Contract[]
+  }
+  const [groups, setGroups] = usePersistentInMemoryState<
+    TopicWithContracts[] | undefined
+  >(undefined, `member-topics-and-contracts-${user?.id ?? ''}`)
 
   useEffect(() => {
-    if (!userId) return
-    const newIds = difference(ids, groups?.map((g) => g.id) ?? [])
-    const oldIds = difference(groups?.map((g) => g.id) ?? [], ids)
-    if (groups?.length && oldIds.length > 0) {
-      setGroups((groups) => groups?.filter((g) => !oldIds.includes(g.id)))
-    } else if (newIds.length > 0) {
-      db.from('groups')
-        .select('*')
-        .in('id', newIds)
-        .then((result) => {
-          const newGroups = result.data?.map(convertGroup) ?? []
-          setGroups((groups) =>
-            orderBy(
-              [...(groups ?? []), ...newGroups],
-              'importanceScore',
-              'desc'
-            )
-          )
-        })
-    }
-  }, [JSON.stringify(ids)])
+    if (!groups?.length) setGroups(undefined) // Show loading indicator right after selecting topics
+    const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+    if (createdRecently)
+      api('get-groups-with-top-contracts', {}).then((result) => {
+        setGroups(result)
+      })
+  }, [user?.shouldShowWelcome])
 
   return groups
 }
@@ -225,9 +241,12 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  const channelFilter = { k: 'group_id', v: groupId } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
-    fetchGroupMembers()
+  const filter = { k: 'group_id', v: groupId } as const
+  useRealtime({
+    bindings: [{ table: 'group_members', event: '*', filter }],
+    onChange: (_change) => {
+      fetchGroupMembers()
+    },
   })
 
   return { admins, moderators, members, loadMore }

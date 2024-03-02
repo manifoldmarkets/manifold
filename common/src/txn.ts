@@ -41,6 +41,9 @@ type AnyTxnType =
   | Loan
   | PushNotificationBonus
   | LikePurchase
+  | ContractUndoResolutionPayout
+  | ContractAnte
+  | AddSubsidy
 
 export type SourceType =
   | 'USER'
@@ -158,6 +161,7 @@ type UniqueBettorBonus = {
     uniqueNewBettorId?: string
     // Old unique bettor bonus txns stored all unique bettor ids
     uniqueBettorIds?: string[]
+    isPartner: boolean
   }
 }
 
@@ -167,6 +171,7 @@ type BettingStreakBonus = {
   category: 'BETTING_STREAK_BONUS'
   data: {
     currentBettingStreak?: number
+    contractId?: string
   }
 }
 
@@ -213,6 +218,12 @@ type ContractResolutionPayout = {
     payoutStartTime?: number
     answerId?: string
   }
+}
+type ContractAnte = {
+  fromType: 'USER' | 'BANK'
+  toType: 'CONTRACT'
+  category: 'CREATE_CONTRACT_ANTE'
+  token: 'M$'
 }
 
 type ContractUndoResolutionPayout = {
@@ -266,6 +277,9 @@ type MarketAdCreate = {
   category: 'MARKET_BOOST_CREATE'
   fromType: 'USER'
   toType: 'AD'
+  data: {
+    contractId?: string
+  }
 }
 
 type MarketAdRedeem = {
@@ -376,6 +390,14 @@ type LikePurchase = {
   token: 'M$'
 }
 
+type AddSubsidy = {
+  category: 'ADD_SUBSIDY'
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  token: 'M$'
+}
+
+export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink

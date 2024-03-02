@@ -7,7 +7,9 @@ import { usePopper } from 'react-popper'
 export function CustomizeableDropdown(props: {
   menuWidth?: string
   buttonContent: (open: boolean) => React.ReactNode
-  dropdownMenuContent: React.ReactNode
+  dropdownMenuContent:
+    | React.ReactNode
+    | ((close: () => void) => React.ReactNode)
   buttonClass?: string
   className?: string
   buttonDisabled?: boolean
@@ -57,7 +59,9 @@ export function CustomizeableDropdown(props: {
                 popoverClassName
               )}
             >
-              {dropdownMenuContent}
+              {typeof dropdownMenuContent === 'function'
+                ? dropdownMenuContent(close)
+                : dropdownMenuContent}
             </Popover.Panel>
           </AnimationOrNothing>
         </>

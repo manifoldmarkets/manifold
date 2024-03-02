@@ -3,15 +3,12 @@ import { MAX_GROUP_NAME_LENGTH, PrivacyStatusType, Group } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { createGroup } from 'web/lib/firebase/api'
-import { getGroupWithFields } from 'web/lib/supabase/group'
 import { Col } from '../layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Input } from '../widgets/input'
 import { PrivacyStatusView } from './topic-privacy-modal'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-
-const LOADING_PING_INTERVAL = 200
 
 export function CreateTopicModal(props: {
   user: User | null | undefined
@@ -36,53 +33,27 @@ export function CreateTopicModal(props: {
       privacyStatus: privacy,
     }
     const result = await createGroup(newGroup).catch((e) => {
-      const errorDetails = e.details[0]
-      if (errorDetails)
+      console.error(e)
+      const errorDetails = e.details?.[0]
+      if (errorDetails) {
         setErrorText(
           `Error with ${errorDetails.field} field - ${errorDetails.error} `
         )
-      else setErrorText(e.message)
+      } else if ('message' in e) {
+        setErrorText(e.message)
+      } else {
+        setErrorText('An error occured. Please try again.')
+      }
       setIsSubmitting(false)
-      console.error(e)
       return e
     })
 
-    if (!result.group) {
-      setIsSubmitting(false)
-      return false
+    if (result.group) {
+      onCreate?.(result.group)
     }
 
-    try {
-      // Wrap the interval and timeout logic inside a Promise
-      const waitForGroupUpdate = new Promise<boolean>((resolve, reject) => {
-        const intervalId = setInterval(async () => {
-          const groupWithFields = await getGroupWithFields(result.group.id)
-          if (
-            groupWithFields &&
-            groupWithFields.slug &&
-            groupWithFields.privacyStatus
-          ) {
-            clearInterval(intervalId) // Clear the interval
-            onCreate?.(result.group)
-            setIsSubmitting(false)
-            resolve(true)
-          }
-        }, LOADING_PING_INTERVAL)
-
-        // Set the timeout for 1 minute (60,000 ms)
-        const _timeoutId = setTimeout(() => {
-          clearInterval(intervalId) // Clear the interval
-          setIsSubmitting(false)
-          reject(false)
-        }, 60000)
-      })
-
-      // Wait for the Promise to resolve or reject
-      return await waitForGroupUpdate
-    } catch (e) {
-      setIsSubmitting(false)
-      return false
-    }
+    setIsSubmitting(false)
+    return false
   }
 
   if (user?.isBannedFromPosting) return <></>
@@ -134,7 +105,7 @@ export function CreateTopicModal(props: {
             </Button>
             <Button
               loading={isSubmitting}
-              disabled={isSubmitting || name === ''}
+              disabled={isSubmitting || name.length < 1}
               color={'indigo'}
               onClick={onSubmit}
             >

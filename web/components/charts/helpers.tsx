@@ -241,6 +241,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   onHoverAnnotation?: (id: number | null) => void
   hoveredAnnotation?: number | null
   chartAnnotations?: ChartAnnotation[]
+  hideXAxis?: boolean
 }) => {
   const {
     children,
@@ -263,6 +264,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     y0,
     onHoverAnnotation,
     hoveredAnnotation,
+    hideXAxis,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
@@ -366,7 +368,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
         </defs>
 
         <g>
-          <XAxis axis={xAxis} w={w} h={h} />
+          {!hideXAxis && <XAxis axis={xAxis} w={w} h={h} />}
 
           <YAxis axis={yAxis} w={w} noGridlines={noGridlines} />
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}

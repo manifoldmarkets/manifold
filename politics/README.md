@@ -4,6 +4,6 @@ Accurate forecasts of who would be your best long term match through the power o
 
 ### Contributing
 
-A lot of this code is copied directly from the [main manifold markets codebase][manifold]. The politifold.com website is hosted as a seperate project in Vercel but the backend is the same.
+A lot of this code is copied directly from the [main manifold markets codebase][manifold]. The manifoldpolitics.com website is hosted as a seperate project in Vercel but the backend is the same.
 
 [manifold]: ../README.md

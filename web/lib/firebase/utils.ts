@@ -1,6 +1,5 @@
 import {
   collection,
-  getDoc,
   getDocs,
   onSnapshot,
   Query,
@@ -11,11 +10,6 @@ import { db } from './init'
 
 export const coll = <T>(path: string, ...rest: string[]) => {
   return collection(db, path, ...rest) as CollectionReference<T>
-}
-
-export const getValue = async <T>(doc: DocumentReference) => {
-  const snap = await getDoc(doc)
-  return snap.exists() ? (snap.data() as T) : null
 }
 
 export const getValues = async <T>(query: Query) => {

@@ -1,6 +1,7 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { run, SupabaseClient } from 'common/supabase/utils'
 
 export type User = {
   id: string
@@ -94,6 +95,7 @@ export type PrivateUser = {
   hasSeenAppBannerInNotificationsOn?: number
   installedAppPlatforms?: string[]
   discordId?: string
+  paymentInfo?: string
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -125,7 +127,18 @@ export const getAvailableBalancePerQuestion = (user: User): number => {
   )
 }
 
-export const marketCreationCosts = (user: User, ante: number) => {
+export const marketCreationCosts = (
+  user: User,
+  ante: number,
+  allSuppliedByUser?: boolean
+) => {
+  if (allSuppliedByUser) {
+    return {
+      amountSuppliedByUser: ante,
+      amountSuppliedByHouse: 0,
+    }
+  }
+
   let amountSuppliedByUser = ante
   let amountSuppliedByHouse = 0
   if (freeQuestionRemaining(user.freeQuestionsCreated, user.createdTime) > 0) {
@@ -141,7 +154,7 @@ export const freeQuestionRemaining = (
 ) => {
   if (!createdTime) return 0
   // hide if account less than one hour old
-  if (createdTime > Date.now() - 60 * 60 * 1000) return 0
+  if (createdTime > Date.now() - HOUR_MS) return 0
 
   const now = getCurrentUtcTime()
   if (freeQuestionsCreated >= MAX_FREE_QUESTIONS) {
@@ -171,5 +184,17 @@ export const isUserLikelySpammer = (
     ((user.bio ?? '').length > 10 ||
       (user.freeQuestionsCreated ?? 0) > 0 ||
       (hasCreatedDashboard ?? false))
+  )
+}
+
+export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
+  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
+  const { data: bet } = await run(
+    db.from('contract_bets').select('bet_id').eq('user_id', user.id).limit(1)
+  )
+  return (
+    user.userDeleted ||
+    user.isBannedFromPosting ||
+    isUserLikelySpammer(user, bet.length > 0)
   )
 }

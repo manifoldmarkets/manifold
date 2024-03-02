@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
@@ -44,6 +44,8 @@ import { Button } from 'web/components/buttons/button'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
+import { UserHovercard } from '../user/user-hovercard'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -58,6 +60,8 @@ export function FeedContractCard(props: {
   hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
+  hideTags?: boolean
+  hideReason?: boolean
 }) {
   const {
     promotedData,
@@ -69,6 +73,8 @@ export function FeedContractCard(props: {
     showGraph,
     hideBottomRow,
     size = 'md',
+    hideTags,
+    hideReason,
   } = props
   const user = useUser()
 
@@ -85,7 +91,7 @@ export function FeedContractCard(props: {
     outcomeType,
     mechanism,
   } = contract
-
+  const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
@@ -170,35 +176,41 @@ export function FeedContractCard(props: {
         )}
       >
         <Row className="w-full justify-between">
-          <Row className={'text-ink-500 items-center gap-1 text-sm'}>
-            <Avatar
-              size={size === 'xs' ? '2xs' : 'xs'}
-              className={'mr-0.5'}
-              avatarUrl={creatorAvatarUrl}
-              username={creatorUsername}
-            />
-            <UserLink
-              user={{
-                id: creatorId,
-                name: creatorName,
-                username: creatorUsername,
-              }}
-              className={'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'}
-            />
-          </Row>
-          {hide && (
-            <Row className="gap-2">
-              {promotedData && canAdPay && (
-                <div className="text-ink-400 w-12 text-sm">
-                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-                </div>
-              )}
+          <UserHovercard userId={creatorId}>
+            <Row className={'text-ink-500 items-center gap-1 text-sm'}>
+              <Avatar
+                size={size === 'xs' ? '2xs' : 'xs'}
+                className={'mr-0.5'}
+                avatarUrl={creatorAvatarUrl}
+                username={creatorUsername}
+              />
+              <UserLink
+                user={{
+                  id: creatorId,
+                  name: creatorName,
+                  username: creatorUsername,
+                }}
+                className={
+                  'w-full max-w-[10rem] text-ellipsis sm:max-w-[12rem]'
+                }
+              />
+            </Row>
+          </UserHovercard>
+          <Row className="gap-2">
+            {promotedData && canAdPay && (
+              <div className="text-ink-400 w-12 text-sm">
+                Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
+              </div>
+            )}
+            {!hideReason && (
               <CardReason
                 item={item}
                 contract={contract}
                 probChange={probChange}
                 since={startTime}
               />
+            )}
+            {hide && (
               <FeedDropdown
                 contract={contract}
                 item={item}
@@ -206,8 +218,8 @@ export function FeedContractCard(props: {
                 toggleInteresting={hide}
                 importanceScore={props.contract.importanceScore}
               />
-            </Row>
-          )}
+            )}
+          </Row>
         </Row>
 
         <div
@@ -252,8 +264,15 @@ export function FeedContractCard(props: {
         {contract.outcomeType === 'POLL' && (
           <PollPanel contract={contract} maxOptions={4} />
         )}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && (
+        {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
           <SimpleAnswerBars contract={contract} maxAnswers={4} />
+        )}
+
+        {isBinaryMc && contract.mechanism === 'cpmm-multi-1' && (
+          <BinaryMultiAnswersPanel
+            contract={contract}
+            answers={contract.answers}
+          />
         )}
 
         {isBinaryCpmm && (showGraph || !ignore) && (
@@ -261,7 +280,6 @@ export function FeedContractCard(props: {
             contract={contract}
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
-            addLeadingBetPoint={true}
           />
         )}
         {promotedData && canAdPay && (
@@ -289,11 +307,13 @@ export function FeedContractCard(props: {
           )}
         {!hideBottomRow && (
           <Col>
-            <CategoryTags
-              categories={contract.groupLinks}
-              // hide tags after first line. (tags are 24 px tall)
-              className="h-6 flex-wrap overflow-hidden"
-            />
+            {!hideTags && (
+              <CategoryTags
+                categories={contract.groupLinks}
+                // hide tags after first line. (tags are 24 px tall)
+                className="h-6 flex-wrap overflow-hidden"
+              />
+            )}
             <BottomActionRow
               contract={contract}
               user={user}

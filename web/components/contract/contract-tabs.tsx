@@ -226,7 +226,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // Supabase use realtime comments
   const { rows, loadNewer } = useRealtimeCommentsOnContract(
     contract.id,
-    user ? { userId: user.id } : undefined
+    user ? user.id : undefined
   )
   const comments = (rows ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)

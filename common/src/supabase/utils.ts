@@ -46,7 +46,6 @@ export const subcollectionTables: SubcollectionTableMapping = {
     answers: 'contract_answers',
     answersCpmm: 'answers',
     bets: 'contract_bets',
-    comments: 'contract_comments',
     follows: 'contract_follows',
     liquidity: 'contract_liquidity',
   },
@@ -160,7 +159,9 @@ export const convertSQLtoTS = <
 
       const convert = converters[key]
       if (convert === false) return null
-      return [shouldCamelize ? camelize(key) : key, convert?.(val) ?? val]
+      const jsProp = shouldCamelize ? camelize(key) : key
+      const jsVal = convert != null ? convert(val) : val
+      return [jsProp, jsVal]
     })
     .filter((x) => x != null)
 

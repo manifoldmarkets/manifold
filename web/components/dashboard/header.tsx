@@ -6,31 +6,33 @@ import { EditNewsButton } from 'web/components/news/edit-news-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
-  currentSlug?: string
+  currentSlug: string
+  endpoint: DashboardEndpoints
 }) {
-  const { headlines, currentSlug } = props
+  const { headlines, endpoint, currentSlug } = props
   const user = useUser()
 
   return (
     <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
       <Carousel labelsParentClassName="gap-px">
-        {user && (
-          <Tab label="Home" href="/home" active={currentSlug === 'home'} />
-        )}
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}
             label={title}
-            href={`/news/${slug}`}
+            href={`/${endpoint}/${slug}`}
             active={slug === currentSlug}
           />
         ))}
         {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton defaultDashboards={headlines} />
+          <EditNewsButton
+            isPolitics={endpoint === 'politics'}
+            defaultDashboards={headlines}
+          />
         )}
       </Carousel>
     </div>
@@ -41,6 +43,7 @@ const Tab = (props: { href: string; label: string; active?: boolean }) => {
   const { href, label, active } = props
   return (
     <Link
+      prefetch={false}
       href={href}
       onClick={() => track('news tabs', { tab: label, href })}
       className={clsx(

@@ -96,26 +96,6 @@ export const changeUser = async (
   }
   log(`Updated ${contractRows.length} contracts.`)
 
-  log('Updating denormalized user data on comments...')
-  const commentRows = await pg.manyOrNone(
-    `select contract_id, comment_id from contract_comments where user_id = $1`,
-    [user.id]
-  )
-  const commentUpdate: Partial<Comment> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-  for (const row of commentRows) {
-    const ref = firestore
-      .collection('contracts')
-      .doc(row.contract_id)
-      .collection('comments')
-      .doc(row.comment_id)
-    bulkWriter.update(ref, commentUpdate)
-  }
-  log(`Updated ${commentRows.length} comments.`)
-
   log('Updating denormalized user data on bets...')
   const betRows = await pg.manyOrNone(
     `select contract_id, bet_id from contract_bets where user_id = $1`,

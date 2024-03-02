@@ -23,6 +23,7 @@ import { JobContext } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { convertBet } from 'common/supabase/bets'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -163,6 +164,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       allTime: allTimeTraders[user.id] ?? 0,
     }
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
+      if (contractsById[b.contractId].isResolved) return false
       const answers = answersByContractId[b.contractId]
       if (b.answerId === 'undefined' || !b.answerId) {
         return !contractsById[b.contractId].resolution
@@ -307,7 +309,7 @@ const getMetricRelevantUserBets = async (
   )
   return mapValues(
     groupBy(bets, (r) => r.data.userId as string),
-    (rows) => rows.map((r) => r.data as Bet)
+    (rows) => rows.map(convertBet)
   )
 }
 

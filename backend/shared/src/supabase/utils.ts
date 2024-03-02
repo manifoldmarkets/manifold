@@ -78,11 +78,17 @@ export async function bulkUpsert<
 }
 
 // Replacement for firebase updateDoc. Updates just the data field (what firebase would've replicated to)
-export async function updateData<
-  T extends TableName,
-  K extends Record<string, any>
->(db: SupabaseDirectClient, table: T, id: string, data: Partial<K>) {
-  await db.none(`update ${table} set data = data || $1 where id = '${id}'`, [
-    JSON.stringify(data),
-  ])
+export async function updateData<T extends TableName>(
+  db: SupabaseDirectClient,
+  table: T,
+  idField: Column<T>,
+  data: Partial<DataFor<T>>
+) {
+  const { [idField]: id, ...rest } = data
+  if (!id) throw new Error(`Missing id field ${idField} in data`)
+
+  await db.none(
+    `update ${table} set data = data || $1 where ${idField} = '${id}'`,
+    [JSON.stringify(rest)]
+  )
 }

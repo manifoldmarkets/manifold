@@ -42,7 +42,7 @@ export default function LabsPage() {
         <LabCard
           title="📂 Portfolios"
           description="Curate in a set of positions to invest in"
-          href="/portfolio"
+          href="/portfolios"
         />
         <LabCard
           title="💸 Manalinks"

@@ -11,6 +11,8 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -31,6 +33,8 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './order-book'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { MultiBetProps } from 'web/components/bet/bet-panel'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -38,7 +42,7 @@ export default function LimitOrderPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer }
+  multiProps?: MultiBetProps
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
@@ -59,7 +63,13 @@ export default function LimitOrderPanel(props: {
     className,
     outcome,
   } = props
-
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCOutcome =
+    isBinaryMC && multiProps
+      ? multiProps.answerText === multiProps.answerToBuy.text
+        ? 'YES'
+        : 'NO'
+      : undefined
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
@@ -72,13 +82,17 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Expiring orders
-  const [addExpiration, setAddExpiration] = useState(false)
+  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
+    false,
+    'add-limit-order-expiration'
+  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
-  const [expirationDate, setExpirationDate] = useState<string>(initDate)
+  const [expirationDate, setExpirationDate] =
+    usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
-    useState<string>(initTime)
+    usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
   const expiresAt = addExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
@@ -92,7 +106,7 @@ export default function LimitOrderPanel(props: {
   const betDisabled =
     isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
 
-  const limitProb =
+  const preLimitProb =
     limitProbInt === undefined
       ? undefined
       : clamp(
@@ -107,6 +121,10 @@ export default function LimitOrderPanel(props: {
           0.001,
           0.999
         )
+  const limitProb =
+    !preLimitProb || !isBinaryMC
+      ? preLimitProb
+      : getBinaryMCProb(preLimitProb, outcome as 'YES' | 'NO')
 
   const amount = betAmount ?? 0
 
@@ -185,7 +203,7 @@ export default function LimitOrderPanel(props: {
     amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    outcome ?? 'YES',
+    binaryMCOutcome ?? outcome ?? 'YES',
     amount,
     limitProb ?? initialProb,
     unfilledBets,
@@ -323,9 +341,9 @@ export default function LimitOrderPanel(props: {
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                <BinaryOutcomeLabel outcome={outcome} />
+                !isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
-              filled now
+              {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
               {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
@@ -341,7 +359,9 @@ export default function LimitOrderPanel(props: {
                   'Shares'
                 ) : (
                   <>
-                    Max <BinaryOutcomeLabel outcome={outcome} /> payout
+                    Max{' '}
+                    {!isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />}{' '}
+                    payout
                   </>
                 )}
               </div>

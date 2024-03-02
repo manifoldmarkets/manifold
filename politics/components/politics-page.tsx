@@ -4,6 +4,7 @@ import {
   HomeIcon as SolidHomeIcon,
   SearchIcon,
   UserCircleIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
@@ -83,7 +84,7 @@ export function PoliticsPage(props: {
         <main
           className={clsx(
             'flex flex-1 flex-col lg:mt-6 xl:px-2',
-            'col-span-10',
+            'col-span-8',
             className
           )}
         >
@@ -129,6 +130,7 @@ function getBottomNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Home', href: '/', icon: SolidHomeIcon },
   { name: 'Browse', href: '/browse', icon: SearchIcon },
+  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
@@ -153,7 +155,10 @@ const getDesktopNav = (user: User | null | undefined) => {
       }
     )
 
-  return buildArray({ name: 'Home', href: '/', icon: HomeIcon })
+  return buildArray(
+    { name: 'Home', href: '/', icon: HomeIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon }
+  )
 }
 
 // No sidebar when signed out

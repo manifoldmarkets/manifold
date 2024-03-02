@@ -4,7 +4,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
     { name: '🇺🇸 US Politics', groupId: 'AjxQR8JMpNyDqtiqoA96' },
     { name: '🇬🇧 UK Politics', groupId: 'aavkiDd6uZggfL3geuV2' },
-    { name: '🟠 Trump', groupId: 'cEzcLXuitr6o4VPI01Q1' },
+    { name: '👴 Trump', groupId: 'cEzcLXuitr6o4VPI01Q1' },
     { name: '👴🏼 Biden', groupId: 'pYwsGvORZFlcq7QrkI6n' },
   ],
   '💻 Technology': [
@@ -40,6 +40,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🎾 Tennis', groupId: '1mvN9vIVIopcWiAsXhzp' },
     { name: '🚲 Cycling', groupId: '2yisxJryUq9V5sG7P6Gy' },
     { name: '⚾ Baseball', groupId: '786nRQzgVyUnuUtaLTGW' },
+    { name: '🏏 Cricket', groupId: 'LcPYoqxSRdeQMms4lR3g' },
   ],
   '🍿 Media': [
     { name: '🍿 Movies', groupId: 'KSeNIu7AWgiBBM5FqVuB' },
@@ -50,15 +51,20 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🎨 Culture', groupId: 'eJZecx6r22G2NriYYXcC' },
   ],
   '🌍 World': [
-    { name: '🇷🇺 Russia', groupId: 'TIpf6j0hLpifpXN93FxE' },
-    { name: '🇨🇳 China', groupId: 'oWTzfoeemQGkSoPFn2T7' },
     { name: '🇪🇺 Europe', groupId: 'ue52QI4BQgJgAJJNjLHr' },
+    { name: '🇨🇳 China', groupId: 'oWTzfoeemQGkSoPFn2T7' },
     { name: '🇮🇳 India', groupId: 'Y2J00UcVhr3wKq2lAOAy' },
+    {
+      name: '🇮🇱🇵🇸 Israel & Hamas',
+      groupId: 'cea99c1c-afb9-49b2-adfa-9be739adce10',
+    },
+    { name: '🇷🇺 Russia', groupId: 'TIpf6j0hLpifpXN93FxE' },
     { name: '🇷🇺🇺🇦 Russia & Ukraine', groupId: 'OxcXOuxXvwsXtC0Dx5sr' },
     { name: '🌎 Latin America', groupId: 'DX94A1LQmpckcVdz5Hb3' },
     { name: '🌍 Middle East', groupId: 'xg8wCPeM9JP6gD0igBrA' },
     { name: '🌍 Africa', groupId: 'dFsZaGwyohGDVkJi1C3E' },
     { name: '🌏 Asia', groupId: 'bPTxMZhUYsIUXsWT969d' },
+    { name: '🗺️ World', groupId: '5mzNYaPKc4qXC5J0npKe' },
   ],
   '🪂 Lifestyle': [
     { name: '💪 Personal Development', groupId: 'izQp87CKagOVJp9Olm1p' },

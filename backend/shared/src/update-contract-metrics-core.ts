@@ -81,7 +81,14 @@ export async function updateContractMetricsCore({ log }: JobContext) {
         (a) => a.contractId === contract.id
       )
       for (const answer of contractAnswers) {
-        const { poolProb, resProb, resTime } = currentAnswerProbs[answer.id]
+        const { poolProb, resProb, resTime } =
+          contract.shouldAnswersSumToOne && contract.resolutions
+            ? {
+                poolProb: currentAnswerProbs[answer.id].poolProb,
+                resProb: (contract.resolutions[answer.id] ?? 0) / 100,
+                resTime: contract.resolutionTime,
+              }
+            : currentAnswerProbs[answer.id]
         const prob = resProb ?? poolProb
         const key = `${contract.id} ${answer.id}`
         const dayAgoProb = dayAgoProbs[key] ?? poolProb

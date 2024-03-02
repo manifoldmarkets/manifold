@@ -5,19 +5,19 @@ import toast from 'react-hot-toast'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
-import { unfollowTopic, SearchGroupInfo } from 'web/lib/supabase/groups'
+import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Button, SizeType } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Subtitle } from '../widgets/subtitle'
 import { followTopic } from 'web/lib/firebase/api'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Group } from 'common/group'
+import { Group, LiteGroup } from 'common/group'
 import { TopicOptions } from 'web/components/topics/topic-options'
 import { BookmarkIcon } from '@heroicons/react/outline'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 
 function LeavePrivateTopicButton(props: {
-  group: SearchGroupInfo
+  group: LiteGroup
   user: User | undefined | null
   setIsMember: (isMember: boolean) => void
   isMobile?: boolean
@@ -82,7 +82,7 @@ export function LeavePrivateGroupModal() {
 }
 
 export function FollowOrUnfolowTopicButton(props: {
-  group: SearchGroupInfo
+  group: LiteGroup
   isMember: boolean | undefined
   user: User | undefined | null
   size?: SizeType

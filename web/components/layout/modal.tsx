@@ -11,7 +11,7 @@ export const SCROLLABLE_MODAL_CLASS =
 export function Modal(props: {
   children: ReactNode
   open: boolean
-  setOpen: (open: boolean) => void
+  setOpen?: (open: boolean) => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
   position?: 'center' | 'top' | 'bottom'
   noAutoFocus?: boolean
@@ -55,7 +55,7 @@ export function Modal(props: {
     <Transition.Root show={open} as={Fragment}>
       <Dialog
         className="text-ink-1000 relative z-50"
-        onClose={setOpen}
+        onClose={setOpen ?? (() => {})}
         // prevent modal from re-opening from bubbled event if Modal is child of the open button
         onClick={(e: any) => e.stopPropagation()}
       >

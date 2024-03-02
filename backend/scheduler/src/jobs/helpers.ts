@@ -1,5 +1,6 @@
 import { Cron, CronOptions } from 'croner'
-import { JobContext, gLog as log } from 'shared/utils'
+import { JobContext } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 
@@ -27,48 +28,44 @@ export function createJob(
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
-    const logWithDetails = (message: any, details?: object | null) =>
-      log.debug(message, {
-        ...details,
-        job: name,
-        traceId,
-      })
+    const logContext = { job: name, traceId }
+    return await withLogContext(logContext, async () => {
+      log('Starting up.')
+      const db = createSupabaseClient()
 
-    logWithDetails(`[${name}] Starting up.`)
-    const db = createSupabaseClient()
+      // Get last end time in case function wants to use it
+      const lastEndTimeStamp = (
+        await db
+          .from('scheduler_info')
+          .select('last_end_time')
+          .eq('job_name', name)
+      ).data?.[0]?.last_end_time
 
-    // Get last end time in case function wants to use it
-    const lastEndTimeStamp = (
+      // Update last start time
       await db
         .from('scheduler_info')
-        .select('last_end_time')
-        .eq('job_name', name)
-    ).data?.[0]?.last_end_time
+        .upsert(
+          { job_name: name, last_start_time: new Date().toISOString() },
+          { onConflict: 'job_name' }
+        )
+      log(`Last end time: ${lastEndTimeStamp ?? 'never'}`)
 
-    // Update last start time
-    await db
-      .from('scheduler_info')
-      .upsert(
-        { job_name: name, last_start_time: new Date().toISOString() },
-        { onConflict: 'job_name' }
-      )
-    logWithDetails(`[${name}] Last end time: ${lastEndTimeStamp ?? 'never'}`)
+      // Run job
+      await fn({
+        log: log.info,
+        lastEndTime: lastEndTimeStamp
+          ? new Date(lastEndTimeStamp).valueOf()
+          : undefined,
+      })
 
-    // Run job
-    await fn({
-      log: logWithDetails,
-      lastEndTime: lastEndTimeStamp
-        ? new Date(lastEndTimeStamp).valueOf()
-        : undefined,
+      // Update last end time
+      await db
+        .from('scheduler_info')
+        .upsert(
+          { job_name: name, last_end_time: new Date().toISOString() },
+          { onConflict: 'job_name' }
+        )
+      log('Shutting down.')
     })
-
-    // Update last end time
-    await db
-      .from('scheduler_info')
-      .upsert(
-        { job_name: name, last_end_time: new Date().toISOString() },
-        { onConflict: 'job_name' }
-      )
-    logWithDetails(`[${name}] Shutting down.`)
   })
 }

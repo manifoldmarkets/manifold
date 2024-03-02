@@ -48,9 +48,20 @@ export const convertGroup = (
   sqlGroup: Partial<Row<'groups'>> & { id: string }
 ) =>
   convertSQLtoTS<'groups', Group>(sqlGroup, {
-    fs_updated_time: false,
     name_fts: false,
   })
+
+export const convertTopic = (
+  sqlGroup: Partial<Row<'groups'>> & { id: string }
+) =>
+  convertSQLtoTS<'groups', Topic>(
+    sqlGroup,
+    {
+      name_fts: false,
+      creator_id: false,
+    },
+    false
+  )
 
 export async function getTopics(groupIds: string[], db: SupabaseClient) {
   const { data } = await run(

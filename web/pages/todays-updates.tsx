@@ -19,6 +19,7 @@ import { useYourDailyChangedContracts } from 'web/hooks/use-your-daily-changed-c
 import { db } from 'web/lib/supabase/db'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 
 export default function TodaysUpdates() {
   const user = useUser()
@@ -109,6 +110,7 @@ const ContractChangeRow = forwardRef(
     const {
       creatorUsername,
       creatorAvatarUrl,
+      creatorId,
       closeTime,
       isResolved,
       question,
@@ -137,12 +139,14 @@ const ContractChangeRow = forwardRef(
           className
         )}
       >
-        <Avatar
-          className="hidden lg:mr-1 lg:flex"
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size="xs"
-        />
+        <UserHovercard userId={creatorId}>
+          <Avatar
+            className="hidden lg:mr-1 lg:flex"
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size="xs"
+          />
+        </UserHovercard>
         <div
           className={clsx(
             'break-anywhere mr-0.5 whitespace-normal font-medium lg:mr-auto',
@@ -152,12 +156,14 @@ const ContractChangeRow = forwardRef(
           {question}
         </div>
         <Row className="gap-3">
-          <Avatar
-            className="lg:hidden"
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size="xs"
-          />
+          <UserHovercard userId={creatorId}>
+            <Avatar
+              className="lg:hidden"
+              username={creatorUsername}
+              avatarUrl={creatorAvatarUrl}
+              size="xs"
+            />
+          </UserHovercard>
           <div className="min-w-[2rem] text-right font-semibold">
             <ContractStatusLabel contract={contract} />
           </div>

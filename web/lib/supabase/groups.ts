@@ -1,14 +1,8 @@
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
-import { Group } from 'common/group'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from 'common/contract'
 import { convertGroup } from 'common/supabase/groups'
-
-export type SearchGroupInfo = Pick<
-  Group,
-  'id' | 'name' | 'slug' | 'totalMembers' | 'privacyStatus' | 'creatorId'
->
 
 export async function getGroupContracts(groupId: string) {
   const { data } = await run(

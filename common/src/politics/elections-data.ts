@@ -1,9 +1,15 @@
+import { Bet } from 'common/bet'
+import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
 import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Headline } from 'common/news'
+import { Dashboard } from 'common/dashboard'
 
 export interface StateElectionMarket {
   slug: string
   state: string
+  additionalSlugs?: string[]
 }
 export const ELECTION_DASHBOARD_TITLE = '2024 Election Forecast'
 export const ELECTION_DASHBOARD_DESCRIPTION =
@@ -226,7 +232,9 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
-  rawMapContractsDictionary: MapContractsDictionary
+  rawPresidencyStateContracts: MapContractsDictionary
+  rawSenateStateContracts: MapContractsDictionary
+  rawGovernorStateContracts: MapContractsDictionary
   electionPartyContract: Contract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
@@ -235,4 +243,28 @@ export type ElectionsPageProps = {
   republicanVPContract: Contract | null
   democraticVPContract: Contract | null
   linkPreviews: LinkPreviews
+  partyChartParams?: ChartParams
+  newsDashboards: NewsDashboardPageProps[]
+  headlines: Headline[]
+  trendingDashboard: NewsDashboardPageProps
 }
+
+export type ChartParams = {
+  historyData: {
+    bets: Bet[]
+    points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
+  }
+  chartAnnotations: ChartAnnotation[]
+}
+
+export type SuccesNewsDashboardPageProps = {
+  state: 'success'
+  initialDashboard: Dashboard
+  previews: LinkPreviews
+  initialContracts: Contract[]
+  headlines: Headline[]
+  slug: string
+}
+export type NewsDashboardPageProps =
+  | SuccesNewsDashboardPageProps
+  | { state: 'not found' }

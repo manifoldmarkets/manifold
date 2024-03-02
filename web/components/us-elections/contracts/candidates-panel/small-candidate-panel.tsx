@@ -56,7 +56,9 @@ export function SmallCandidatePanel(props: {
     // then by prob or index
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
-  ]).slice(0, maxAnswers)
+  ])
+    .filter((answer) => answer.text !== 'Other')
+    .slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
 

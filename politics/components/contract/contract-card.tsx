@@ -178,7 +178,6 @@ export function FeedContractCard(props: {
             contract={contract}
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
-            addLeadingBetPoint={true}
           />
         )}
         {promotedData && (

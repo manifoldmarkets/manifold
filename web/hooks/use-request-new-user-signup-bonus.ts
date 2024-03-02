@@ -1,5 +1,5 @@
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { call } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import { getApiUrl } from 'common/api/utils'
@@ -10,10 +10,13 @@ import { formatMoney } from 'common/util/format'
 
 export const useRequestNewUserSignupBonus = (contractId: string) => {
   const user = useUser()
+
   const [newContractIdsVisited, setLastContractIdVisited] =
     usePersistentLocalState([contractId], 'newContractsVisited-' + user?.id)
+
   const authed = useIsAuthorized()
   const remainingBonuses = useRemainingNewUserSignupBonuses()
+
   const requestNewUserSignupBonus = async () => {
     const totalPaid = (user?.signupBonusPaid ?? 0) / 100
     const data = await call(getApiUrl('request-signup-bonus'), 'GET').catch(
@@ -37,16 +40,21 @@ export const useRequestNewUserSignupBonus = (contractId: string) => {
       console.log('no more bonus')
     }
   }
+
+  const [requestingBonus, setRequestingBonus] = useState(false)
+
   useEffect(() => {
     if (
       newContractIdsVisited.includes(contractId) ||
       !authed ||
-      remainingBonuses <= 0
+      remainingBonuses <= 0 ||
+      requestingBonus
     )
       return
+    setRequestingBonus(true)
     requestNewUserSignupBonus()
     setLastContractIdVisited(uniq([...newContractIdsVisited, contractId]))
-  }, [contractId, authed])
+  }, [contractId, authed, requestingBonus])
 }
 
 export const useRemainingNewUserSignupBonuses = () => {

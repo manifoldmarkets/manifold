@@ -35,10 +35,11 @@ import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
+  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -53,8 +54,9 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { Answer } from 'common/answer'
-import { ContractComment } from 'common/comment'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
+import { getCommentSafe } from 'shared/supabase/contract_comments'
+import { updateData } from 'shared/supabase/utils'
 
 const firestore = admin.firestore()
 
@@ -151,27 +153,30 @@ const handleBetReplyToComment = async (
   bettor: User,
   pg: SupabaseDirectClient
 ) => {
-  const commentSnap = await firestore
-    .doc(`contracts/${contract.id}/comments/${bet.replyToCommentId}`)
-    .get()
-  const comment = commentSnap.data() as ContractComment
+  if (!bet.replyToCommentId) return
+
+  const db = createSupabaseClient()
+  const comment = await getCommentSafe(db, bet.replyToCommentId)
+
+  if (!comment) return
   if (comment.userId === bettor.id) return
-  if (comment) {
-    const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
-    // This could potentially miss some bets if they're not replicated in time
-    if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
-    const groupedBetsByOutcome = groupBy(bets, 'outcome')
-    const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
-    for (const outcome in groupedBetsByOutcome) {
-      betReplyAmountsByOutcome[outcome] = sumBy(
-        groupedBetsByOutcome[outcome],
-        (b) => b.amount
-      )
-    }
-    await commentSnap.ref.update({
-      betReplyAmountsByOutcome,
-    })
+
+  const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+  // This could potentially miss some bets if they're not replicated in time
+  if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
+  const groupedBetsByOutcome = groupBy(bets, 'outcome')
+  const betReplyAmountsByOutcome: { [outcome: string]: number } = {}
+  for (const outcome in groupedBetsByOutcome) {
+    betReplyAmountsByOutcome[outcome] = sumBy(
+      groupedBetsByOutcome[outcome],
+      (b) => b.amount
+    )
   }
+
+  await updateData(pg, 'contract_comments', 'comment_id', {
+    comment_id: bet.replyToCommentId,
+    betReplyAmountsByOutcome,
+  })
   await createBetReplyToCommentNotification(
     comment.userId,
     contract,
@@ -215,6 +220,7 @@ const updateBettingStreak = async (
 
     const bonusTxnDetails = {
       currentBettingStreak: newBettingStreak,
+      contractId: contract.id,
     }
 
     const bonusTxn: Omit<
@@ -272,7 +278,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   bettor: User,
   bet: Bet
 ) => {
-  const { answerId, isRedemption } = bet
+  const { answerId, isRedemption, isApi } = bet
   const pg = createSupabaseDirectClient()
 
   const isBot = BOT_USERNAMES.includes(bettor.username)
@@ -287,8 +293,24 @@ export const giveUniqueBettorAndLiquidityBonus = async (
   const answerCreatorId = answer?.userId
   const creatorId = answerCreatorId ?? contract.creatorId
   const isCreator = bettor.id == creatorId
+  const isUnfilledLimitOrder =
+    bet.limitProb !== undefined && (!bet.fills || bet.fills.length === 0)
 
-  if (isCreator || isBot || isUnlisted || isRedemption || unSubsidized) return
+  const isPartner =
+    PARTNER_USER_IDS.includes(contract.creatorId) &&
+    // Require the contract creator to also be the answer creator for real-money bonus.
+    creatorId === contract.creatorId
+
+  if (
+    isCreator ||
+    isBot ||
+    isUnlisted ||
+    isRedemption ||
+    unSubsidized ||
+    isUnfilledLimitOrder ||
+    isApi
+  )
+    return
 
   const previousBet = answerId
     ? await pg.oneOrNone(
@@ -329,7 +351,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
-  const result = await firestore.runTransaction(async (trans) => {
+  const uniqueBonusResult = await firestore.runTransaction(async (trans) => {
     const query = firestore
       .collection('txns')
       .where('fromType', '==', 'BANK')
@@ -344,18 +366,19 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const bonusGivenAlready = txnsSnap.docs.length > 0
     if (bonusGivenAlready) return undefined
 
-    const bonusTxnData = removeUndefinedProps({
-      contractId: contract.id,
-      uniqueNewBettorId: bettor.id,
-      answerId,
-    })
-
     const bonusAmount =
       uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
         ? SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
         : contract.mechanism === 'cpmm-multi-1'
         ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
         : UNIQUE_BETTOR_BONUS_AMOUNT
+
+    const bonusTxnData = removeUndefinedProps({
+      contractId: contract.id,
+      uniqueNewBettorId: bettor.id,
+      answerId,
+      isPartner,
+    })
 
     const bonusTxn: Omit<
       UniqueBettorBonusTxn,
@@ -373,7 +396,36 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
     return await runTxnFromBank(trans, bonusTxn)
   })
-  if (!result) return
+
+  if (!uniqueBonusResult) return
+
+  if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
+    log(
+      `No bonus for user: ${contract.creatorId} - status:`,
+      uniqueBonusResult.status
+    )
+    log('message:', uniqueBonusResult.message)
+  } else {
+    log(
+      `Bonus txn for user: ${contract.creatorId} completed:`,
+      uniqueBonusResult.txn?.id
+    )
+    const overallUniqueBettorIds = answerId
+      ? await getUniqueBettorIds(contract.id, pg)
+      : uniqueBettorIds
+
+    await createUniqueBettorBonusNotification(
+      creatorId,
+      bettor,
+      uniqueBonusResult.txn.id,
+      contract,
+      uniqueBonusResult.txn.amount,
+      overallUniqueBettorIds,
+      eventId + '-unique-bettor-bonus',
+      bet,
+      uniqueBonusResult.txn?.data?.isPartner
+    )
+  }
 
   const subsidy =
     uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
@@ -396,26 +448,5 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     } else {
       await addHouseSubsidyToAnswer(contract.id, answerId, subsidy)
     }
-  }
-
-  if (result.status != 'success' || !result.txn) {
-    log(`No bonus for user: ${contract.creatorId} - status:`, result.status)
-    log('message:', result.message)
-  } else {
-    log(`Bonus txn for user: ${contract.creatorId} completed:`, result.txn?.id)
-    const overallUniqueBettorIds = answerId
-      ? await getUniqueBettorIds(contract.id, pg)
-      : uniqueBettorIds
-
-    await createUniqueBettorBonusNotification(
-      creatorId,
-      bettor,
-      result.txn.id,
-      contract,
-      result.txn.amount,
-      overallUniqueBettorIds,
-      eventId + '-unique-bettor-bonus',
-      bet
-    )
   }
 }

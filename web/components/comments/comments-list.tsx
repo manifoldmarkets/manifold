@@ -16,6 +16,7 @@ import { sum } from 'lodash'
 import { getCommentLink } from 'web/components/feed/copy-link-date-time'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
+import { UserHovercard } from '../user/user-hovercard'
 
 type ContractKey = {
   contractId: string
@@ -159,18 +160,26 @@ function ProfileComment(props: {
         'hover:bg-canvas-100 relative flex flex-row items-start space-x-3 rounded-lg p-2'
       }
     >
-      <Avatar noLink={true} username={userUsername} avatarUrl={userAvatarUrl} />
+      <UserHovercard userId={userId}>
+        <Avatar
+          noLink={true}
+          username={userUsername}
+          avatarUrl={userAvatarUrl}
+        />
+      </UserHovercard>
       <div className="min-w-0 flex-1">
         <div className="text-ink-500 mt-0.5 text-sm">
-          <UserLink
-            className="text-ink-500"
-            user={{
-              id: userId,
-              name: userName,
-              username: userUsername,
-            }}
-            noLink={true}
-          />{' '}
+          <UserHovercard userId={userId}>
+            <UserLink
+              className="text-ink-500"
+              user={{
+                id: userId,
+                name: userName,
+                username: userUsername,
+              }}
+              noLink={true}
+            />
+          </UserHovercard>{' '}
           <RelativeTimestamp time={createdTime} />
         </div>
         <Content content={content || text} size="sm" />

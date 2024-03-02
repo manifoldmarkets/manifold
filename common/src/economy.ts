@@ -1,18 +1,19 @@
 import { OutcomeType } from 'common/contract'
 
-export const FIXED_ANTE = 50
-export const ANSWER_COST = FIXED_ANTE / 2
+export const FIXED_ANTE = 100
+export const ANSWER_COST = FIXED_ANTE / 4
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
   FREE_RESPONSE: ANSWER_COST, // Amount per answer.
-  PSEUDO_NUMERIC: FIXED_ANTE * 5,
+  PSEUDO_NUMERIC: FIXED_ANTE * 2.5,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
-  POLL: 10,
+  POLL: 100,
 }
 
-export const MINIMUM_BOUNTY = 5
+export const MINIMUM_BOUNTY = 100
+export const MULTIPLE_CHOICE_MINIMUM_COST = 100
 
 export const getAnte = (
   outcomeType: OutcomeType,
@@ -21,7 +22,7 @@ export const getAnte = (
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
   if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
-    return Math.max(ante * (numAnswers ?? 0), 10)
+    return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
   }
 
   return ante

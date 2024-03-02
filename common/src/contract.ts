@@ -119,6 +119,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   importanceScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   dailyScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  freshnessScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
   unlistedById?: string
@@ -133,6 +135,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
   matchCreatorId?: string // The user id of the person who proposed the match.
+  isLove?: boolean
 
   // Politics
   isPolitics?: boolean
@@ -227,9 +230,10 @@ export type CPMMMulti = {
 
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
+  specialLiquidityPerAnswer?: number // Special liquidity mode, where initial ante is copied into each answer's pool, with a min probability, and only one answer can resolve YES. shouldAnswersSumToOne must be false.
 
   // Answers chosen on resolution, with the weights of each answer.
-  // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.
+  // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
   resolutions?: { [answerId: string]: number }
 
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
@@ -378,6 +382,21 @@ export function contractPool(contract: Contract) {
       )
     : 'Empty pool'
 }
+
+export const isBinaryMulti = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.answers.length === 2 &&
+  contract.addAnswersMode === 'DISABLED' &&
+  contract.shouldAnswersSumToOne &&
+  contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+
+export const getMainBinaryMCAnswer = (contract: Contract) =>
+  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers[0]
+    : undefined
+
+export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
+  outcome === 'YES' ? prob : 1 - prob
 
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))

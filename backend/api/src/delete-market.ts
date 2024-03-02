@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { Contract, contractPath } from 'common/contract'
-import { getDomainForContract, revalidateStaticProps } from 'shared/utils'
+import { revalidateStaticProps } from 'shared/utils'
 
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
@@ -39,10 +39,7 @@ export const deleteMarket = authEndpoint(async (req, auth, log) => {
 
   // Note: Wait for 3 seconds to allow the contract to replicated to supabase.
   await new Promise((resolve) => setTimeout(resolve, 3000))
-  await revalidateStaticProps(
-    contractPath(contract),
-    getDomainForContract(contract)
-  )
+  await revalidateStaticProps(contractPath(contract))
 
   log('contract ' + contractId + ' deleted')
 

@@ -2,9 +2,10 @@ import { Avatar, AvatarSizeType } from 'web/components/widgets/avatar'
 import { Col } from 'web/components/layout/col'
 import { Row } from './layout/row'
 import clsx from 'clsx'
+import { UserHovercard } from './user/user-hovercard'
 
 export const MultipleOrSingleAvatars = (props: {
-  avatarUrls: string[]
+  avatars: Array<{ avatarUrl: string; id: string }>
   onClick?: () => void
   size: AvatarSizeType
   // TODO: standardize these numbers so they are calculated from the size
@@ -12,11 +13,13 @@ export const MultipleOrSingleAvatars = (props: {
   startLeft?: number
   className?: string
 }) => {
-  const { avatarUrls, className, onClick, size } = props
-  const combineAvatars = (avatarUrls: string[]) => {
-    const totalAvatars = avatarUrls.length
+  const { avatars, className, onClick, size } = props
+  const combineAvatars = (
+    avatars: Array<{ avatarUrl: string; id: string }>
+  ) => {
+    const totalAvatars = avatars.length
     const maxToShow = Math.min(totalAvatars, 3)
-    const avatarsToCombine = avatarUrls.slice(
+    const avatarsToCombine = avatars.slice(
       totalAvatars - maxToShow,
       totalAvatars
     )
@@ -34,7 +37,9 @@ export const MultipleOrSingleAvatars = (props: {
             : {}
         }
       >
-        <Avatar size={size} avatarUrl={n} />
+        <UserHovercard userId={n.id}>
+          <Avatar size={size} avatarUrl={n.avatarUrl} />
+        </UserHovercard>
       </div>
     ))
   }
@@ -43,10 +48,12 @@ export const MultipleOrSingleAvatars = (props: {
       onClick={onClick}
       className={clsx(`relative cursor-pointer items-center`, className)}
     >
-      {avatarUrls.length === 1 ? (
-        <Avatar size={size} avatarUrl={avatarUrls[0]} />
+      {avatars.length === 1 ? (
+        <UserHovercard userId={avatars[0].id}>
+          <Avatar size={size} avatarUrl={avatars[0].avatarUrl} />
+        </UserHovercard>
       ) : (
-        <Row>{combineAvatars(avatarUrls)}</Row>
+        <Row>{combineAvatars(avatars)}</Row>
       )}
     </Col>
   )

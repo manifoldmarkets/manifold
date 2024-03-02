@@ -117,7 +117,7 @@ export const MessageChannelRow = (props: {
           size="md"
           spacing={numOthers === 2 ? 0.3 : 0.15}
           startLeft={numOthers === 2 ? 2.2 : 1.2}
-          avatarUrls={otherUsers?.map((user) => user.avatarUrl) ?? []}
+          avatars={otherUsers ?? []}
           className={numOthers > 1 ? '-ml-2' : ''}
         />
         <Col className={'w-full'}>

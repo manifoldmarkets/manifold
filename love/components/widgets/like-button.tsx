@@ -16,6 +16,7 @@ import { useUserById } from 'web/hooks/use-user-supabase'
 import { MatchAvatars } from '../matches/match-avatars'
 import { useLover } from 'love/hooks/use-lover'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useUser } from 'web/hooks/use-user'
 
 export const LikeButton = (props: {
   targetLover: Lover
@@ -54,7 +55,8 @@ export const LikeButton = (props: {
         disabled={isLoading}
         className={clsx(
           buttonClass('md', 'none'),
-          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 border-ink-100 dark:border-ink-300 !rounded-full border shadow disabled:cursor-not-allowed',
+          'text-ink-500 disabled:text-ink-500 bg-canvas-0 active:bg-canvas-100 disabled:bg-canvas-100 border-ink-100 dark:border-ink-300 !rounded-full border shadow',
+          isLoading && 'animate-pulse',
           className
         )}
         onClick={() => setShowConfirmation(true)}
@@ -103,10 +105,11 @@ const LikeConfimationDialog = (props: {
   const { open, setOpen, targetLover, hasFreeLike, submit } = props
   const youLover = useLover()
   const user = useUserById(targetLover.user_id)
+  const currentUser = useUser()
+
   return (
     <Modal
       open={open}
-      setOpen={setOpen}
       className={clsx(
         MODAL_CLASS,
         'pointer-events-auto max-h-[32rem] overflow-auto'
@@ -115,7 +118,12 @@ const LikeConfimationDialog = (props: {
       <Col className="gap-4">
         <div className="text-xl">Like {user ? user.name : ''}?</div>
 
-        <div className="text-ink-500">You get one free like per day.</div>
+        <Col className="gap-2">
+          <div className="text-ink-500">
+            They will get a notification. Unlocks messaging them.
+          </div>
+          <div className="text-ink-500">(You get one free like per day.)</div>
+        </Col>
 
         {youLover && user && (
           <MatchAvatars
@@ -124,11 +132,23 @@ const LikeConfimationDialog = (props: {
           />
         )}
 
+        {!hasFreeLike && currentUser && (
+          <div className="text-ink-500 mt-4 whitespace-nowrap text-sm">
+            Balance{' '}
+            <span className="text-ink-800">
+              {formatMoney(currentUser.balance)}
+            </span>
+          </div>
+        )}
+
         <Row className="mt-2 items-center justify-between">
           <Button color="gray-outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={() => submit()}>
+          <Button
+            onClick={() => submit()}
+            disabled={!!user && user.balance < LIKE_COST}
+          >
             {hasFreeLike ? (
               <>Use free like & submit</>
             ) : (

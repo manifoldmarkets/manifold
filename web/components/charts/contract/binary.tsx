@@ -1,8 +1,12 @@
 import { useMemo } from 'react'
 import { first, last } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { getProbability } from 'common/calculate'
-import { BinaryContract } from 'common/contract'
+import { getAnswerProbability, getProbability } from 'common/calculate'
+import {
+  BinaryContract,
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+} from 'common/contract'
 import {
   getEndDate,
   getRightmostVisibleDate,
@@ -16,7 +20,7 @@ import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 export const BinaryContractChart = (props: {
-  contract: BinaryContract
+  contract: BinaryContract | CPMMMultiContract
   betPoints: SingleContractPoint[]
   width: number
   height: number
@@ -27,6 +31,7 @@ export const BinaryContractChart = (props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  graphColor?: string
 }) => {
   const {
     contract,
@@ -40,11 +45,15 @@ export const BinaryContractChart = (props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations,
+    graphColor,
   } = props
 
   const start = first(betPoints)?.x ?? contract.createdTime
   const end = getEndDate(contract)
-  const endP = getProbability(contract)
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const endP = mainBinaryMCAnswer
+    ? getAnswerProbability(contract as CPMMMultiContract, mainBinaryMCAnswer.id)
+    : getProbability(contract as BinaryContract)
 
   const now = useMemo(() => Date.now(), [betPoints])
 
@@ -70,7 +79,7 @@ export const BinaryContractChart = (props: {
       showZoomer={showZoomer}
       yKind="percent"
       data={data}
-      color={YES_GRAPH_COLOR}
+      color={graphColor ?? YES_GRAPH_COLOR}
       Tooltip={(props) => (
         <SingleContractChartTooltip
           ttProps={props}
