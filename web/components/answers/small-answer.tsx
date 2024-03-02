@@ -13,11 +13,10 @@ import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sumBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useMemo, useState } from 'react'
+import { ReactNode } from 'react'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
@@ -27,12 +26,10 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerPosition,
   AnswerStatus,
-  BetButtons,
   CreatorAndAnswerLabel,
   MultiBettor,
 } from './answer-components'
 import {
-  LimitOrderBarChart,
   SHOW_LIMIT_ORDER_CHARTS_KEY,
 } from './answers-panel'
 

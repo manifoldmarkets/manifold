@@ -8,7 +8,6 @@ import {
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import type { Headline } from 'common/news'
 import { useUser } from 'web/hooks/use-user'
 import { Carousel } from 'web/components/widgets/carousel'
