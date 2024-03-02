@@ -83,16 +83,18 @@ function ElectionContent(props: ElectionsPageProps) {
             <Spacer h={4} />
           </Col>
         )}
+
+        <PoliticsCard
+          contract={electionCandidateContract as MultiContract}
+          viewType="CANDIDATE"
+          className="-mt-4"
+        />
         <PoliticsCard
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
-          className="-mt-4"
         />
-        <PoliticsCard
-          contract={electionCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
+
         <Col className="gap-6 sm:gap-8 lg:hidden">
           <PoliticsCard
             contract={democratCandidateContract as MultiContract}
