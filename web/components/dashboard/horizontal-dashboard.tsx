@@ -20,7 +20,6 @@ import {
 import { Carousel } from '../widgets/carousel'
 import { DashboardText } from './dashboard-text-card'
 import { HorizontalDashboardCard } from './horizontal-dashboard-card'
-import { Col } from '../layout/col'
 
 export function HorizontalDashboard(props: {
   initialDashboard: Dashboard
