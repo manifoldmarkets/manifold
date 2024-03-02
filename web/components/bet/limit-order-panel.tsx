@@ -29,7 +29,6 @@ import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './order-book'
-import { YesNoSelector } from './yes-no-selector'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 
@@ -43,9 +42,11 @@ export default function LimitOrderPanel(props: {
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
-  hidden: boolean
+
   onBuySuccess?: () => void
   className?: string
+  outcome: 'YES' | 'NO' | undefined
+  setOutcome: (outcome: 'YES' | 'NO') => void
 }) {
   const {
     contract,
@@ -53,9 +54,10 @@ export default function LimitOrderPanel(props: {
     user,
     unfilledBets,
     balanceByUserId,
-    hidden,
+
     onBuySuccess,
     className,
+    outcome,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -84,8 +86,6 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     undefined
   )
-
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
@@ -199,29 +199,9 @@ export default function LimitOrderPanel(props: {
   )
 
   return (
-    <Col className={clsx(className, hidden && 'hidden')}>
-      <Row className="mb-4 items-center justify-between">
-        <div className="text-lg">Place a limit order</div>
-
-        <OrderBookButton
-          limitBets={unfilledBetsMatchingAnswer}
-          contract={contract}
-        />
-      </Row>
-
-      <Col className="relative mb-8 w-full gap-3">
-        <Row className="items-center gap-3">
-          Outcome
-          <YesNoSelector
-            selected={outcome}
-            btnClassName={'!rounded-full'}
-            onSelect={(selected) => setOutcome(selected)}
-            disabled={isSubmitting}
-            yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
-            noLabel={isPseudoNumeric ? 'LOWER' : undefined}
-          />
-        </Row>
-        <Row className="w-full items-center gap-3">
+    <>
+      <Col className="relative my-2 w-full gap-3">
+        <Row className="text-ink-700 w-full items-center gap-3">
           {isPseudoNumeric ? 'Value' : 'Probability'}
           <ProbabilityOrNumericInput
             contract={contract}
@@ -231,10 +211,13 @@ export default function LimitOrderPanel(props: {
             onRangeError={setInputError}
             disabled={isSubmitting}
           />
+
+          <OrderBookButton
+            limitBets={unfilledBetsMatchingAnswer}
+            contract={contract}
+          />
         </Row>
       </Col>
-
-      <span className="text-ink-800 mb-2 text-sm">Amount</span>
 
       <BuyAmountInput
         amount={betAmount}
@@ -242,11 +225,10 @@ export default function LimitOrderPanel(props: {
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showBalance
         showSlider
       />
 
-      <div className="mb-4">
+      <div className="my-3">
         <Button
           className={'mt-4'}
           onClick={() => setAddExpiration(!addExpiration)}
@@ -375,30 +357,7 @@ export default function LimitOrderPanel(props: {
 
         {hasLimitBet && <Spacer h={8} />}
       </Col>
-
-      {user && (
-        <Button
-          size="xl"
-          disabled={betDisabled || inputError}
-          color={outcome === 'YES' ? 'green' : 'red'}
-          loading={isSubmitting}
-          className="flex-1"
-          onClick={submitBet}
-        >
-          {isSubmitting
-            ? 'Submitting...'
-            : !outcome
-            ? 'Choose YES or NO'
-            : !limitProb
-            ? 'Enter a probability'
-            : !betAmount
-            ? 'Enter an amount'
-            : `Submit ${outcome} order for ${formatMoney(
-                betAmount
-              )} at ${formatPercent(limitProb)}`}
-        </Button>
-      )}
-    </Col>
+    </>
   )
 }
 
