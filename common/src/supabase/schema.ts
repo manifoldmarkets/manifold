@@ -2588,33 +2588,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_seen_markets: {
-        Row: {
-          contract_id: string
-          created_time: string
-          id: number
-          is_promoted: boolean | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          contract_id: string
-          created_time?: string
-          id?: never
-          is_promoted?: boolean | null
-          type?: string
-          user_id: string
-        }
-        Update: {
-          contract_id?: string
-          created_time?: string
-          id?: never
-          is_promoted?: boolean | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_topics: {
         Row: {
           created_at: string
