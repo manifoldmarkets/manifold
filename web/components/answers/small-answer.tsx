@@ -29,9 +29,7 @@ import {
   CreatorAndAnswerLabel,
   MultiBettor,
 } from './answer-components'
-import {
-  SHOW_LIMIT_ORDER_CHARTS_KEY,
-} from './answers-panel'
+import { SHOW_LIMIT_ORDER_CHARTS_KEY } from './answers-panel'
 
 // just the bars
 export function SmallAnswerBars(props: {
