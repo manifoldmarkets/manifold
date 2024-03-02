@@ -4,7 +4,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { JobContext } from 'shared/utils'
-import { uniq } from 'lodash'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 export async function updateContractViews({ log }: JobContext) {
@@ -18,7 +17,7 @@ export async function updateContractViews({ log }: JobContext) {
   log(`Loaded ${contractIds.length} contracts.`)
 
   log('Computing contract views.')
-  const views = await getViews(pg)
+  const views = await getTotalViews(pg)
 
   let writes = 0
   log(`Setting views.`)
@@ -37,48 +36,12 @@ export async function updateContractViews({ log }: JobContext) {
   log('Done.')
 }
 
-const getViews = async (pg: SupabaseDirectClient) => {
-  const [signedInViews, signedOutViews] = await Promise.all([
-    getSignedInViews(pg),
-    getSignedOutViews(pg),
-  ])
-  return Object.fromEntries(
-    uniq(Object.keys(signedInViews).concat(Object.keys(signedOutViews))).map(
-      (contractId) => [
-        contractId,
-        Number(signedInViews[contractId] ?? 0) +
-          Number(signedOutViews[contractId] ?? 0),
-      ]
-    )
-  )
-}
-const getSignedInViews = async (pg: SupabaseDirectClient) => {
+const getTotalViews = async (pg: SupabaseDirectClient) => {
   return Object.fromEntries(
     await pg.map(
-      `select
-         contract_id,
-         sum(page_views) as logged_in_user_seen_markets_count
-     from user_contract_views
-     where page_views > 0
-     group by contract_id;
-    `,
+      `select contract_id, sum(page_views) as views from user_contract_views group by contract_id`,
       [],
-      (r) => [r.contract_id, r.logged_in_user_seen_markets_count]
-    )
-  )
-}
-const getSignedOutViews = async (pg: SupabaseDirectClient) => {
-  return Object.fromEntries(
-    await pg.map(
-      `select
-         contract_id,
-         sum(page_views) as logged_out_user_seen_markets_count
-     from user_contract_views
-     where page_views > 0 and user_id is null
-     group by contract_id;
-    `,
-      [],
-      (r) => [r.contract_id, r.logged_out_user_seen_markets_count]
+      (r) => [r.contract_id, r.views]
     )
   )
 }
