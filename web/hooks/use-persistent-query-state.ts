@@ -1,6 +1,6 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { pickBy } from 'lodash'
+import { pickBy, debounce } from 'lodash'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 
 type UrlParams = Record<string, string | undefined>
@@ -25,14 +25,18 @@ export const usePersistentQueriesState = <T extends UrlParams>(
     setState({ ...defaultValue, ...entries })
   }, [searchParams])
 
+  const setRouteQuery = debounce((newQuery: string) => {
+    router.replace(pathName + '?' + encodeURI(newQuery), { scroll: false })
+  })
+
   const updateState = (update: Partial<T>) => {
     const newState = { ...state, ...update }
     setState(newState)
     const query = pickBy(newState, (v) => v)
-    const newQ = Object.keys(query)
+    const newQuery = Object.keys(query)
       .map((key) => `${key}=${query[key]}`)
       .join('&')
-    router.replace(pathName + '?' + encodeURI(newQ), { scroll: false })
+    setRouteQuery(newQuery)
   }
 
   return [state, updateState, ready]
