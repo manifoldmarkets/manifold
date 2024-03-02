@@ -9,6 +9,7 @@ import {
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
+import { getContractPageViews } from 'common/supabase/contracts'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -56,6 +57,7 @@ export async function getContractParams(
     betReplies,
     chartAnnotations,
     topics,
+    totalViews,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
@@ -95,6 +97,7 @@ export async function getContractParams(
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
+    getContractPageViews(db, contract.id),
   ])
   if (!canAccessContract) {
     return contract && !contract.deleted
@@ -135,6 +138,7 @@ export async function getContractParams(
       userPositionsByOutcome,
       totalPositions,
       totalBets,
+      totalViews,
       topContractMetrics,
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,

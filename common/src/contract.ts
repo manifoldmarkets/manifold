@@ -440,6 +440,7 @@ export type ContractParams = {
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
+  totalViews: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
