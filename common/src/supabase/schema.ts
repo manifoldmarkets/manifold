@@ -3253,15 +3253,6 @@ export type Database = {
         }
         Relationships: []
       }
-      related_contracts: {
-        Row: {
-          contract_id: string | null
-          data: Json | null
-          distance: number | null
-          from_contract_id: string | null
-        }
-        Relationships: []
-      }
       trending_contracts: {
         Row: {
           close_time: string | null
