@@ -241,7 +241,7 @@ export const MultiBettor = (props: {
   contract: CPMMMultiContract
 }) => {
   const { answer, contract } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
 

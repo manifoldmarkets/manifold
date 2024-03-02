@@ -65,6 +65,7 @@ export function BuyPanel(props: {
   initialOutcome?: BinaryOutcomes
   location?: string
   replyToCommentId?: string
+  onCancel?: () => void
 }) {
   const {
     contract,
@@ -105,7 +106,7 @@ export function BuyPanel(props: {
     isBinaryMC && multiProps
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
-      const initialBetAmount = 10
+  const initialBetAmount = 10
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
   )
@@ -257,6 +258,7 @@ export function BuyPanel(props: {
       balanceByUserId
     )
     currentPayout = result.shares
+    
     probBefore = result.probBefore
     probAfter = result.probAfter
   }
@@ -368,13 +370,7 @@ export function BuyPanel(props: {
 
                 <Row className="min-w-[128px] items-baseline">
                   <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                    {isPseudoNumeric || isStonk ? (
-                      'Shares'
-                    ) : isBinaryMC ? (
-                      <>Potential payout</>
-                    ) : (
-                      <>Payout if {outcome ?? 'YES'}</>
-                    )}
+                    {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                   </div>
 
                   <span className="mr-1 whitespace-nowrap text-lg">
@@ -425,8 +421,11 @@ export function BuyPanel(props: {
               className="text-white"
               onClick={() => {
                 setIsYesNoSelectorVisible(true)
-                setOutcome(undefined)
+                if (initialOutcome == undefined) {
+                  setOutcome(undefined)
+                }
                 setBetAmount(initialBetAmount)
+                props.onCancel?.()
               }}
             >
               Cancel
@@ -438,6 +437,7 @@ export function BuyPanel(props: {
                 warning={warning}
                 userOptedOutOfWarning={user.optOutBetWarnings}
                 onSubmit={submitBet}
+                ButtonClassName="flex-grow"
                 actionLabelClassName={'line-clamp-1'}
                 isSubmitting={isSubmitting}
                 disabled={betDisabled}
@@ -500,7 +500,7 @@ export function BuyPanel(props: {
               </span>
               {!probStayedSame && !isPseudoNumeric && (
                 <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                  {outcome !== 'NO' ? '↑' : '↓'}
+                  {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
                     Math.abs(probAfter - probBefore)
@@ -508,16 +508,31 @@ export function BuyPanel(props: {
                 </span>
               )}
 
-              {!isAdvancedTrader && !isPseudoNumeric && !isStonk && (
-                <InfoTooltip
-                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
-                    contract,
-                    probBefore
-                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                  className="text-ink-600 ml-1 mt-0.5"
-                  size="sm"
-                />
-              )}
+              {!isAdvancedTrader &&
+                !isPseudoNumeric &&
+                !isStonk &&
+                !isBinaryMC && (
+                  <InfoTooltip
+                    text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                      contract,
+                      probBefore
+                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                    className="text-ink-600 ml-1 mt-0.5"
+                    size="sm"
+                  />
+                )}
+
+              {!isAdvancedTrader &&
+                isBinaryMC && (
+                  <InfoTooltip
+                    text={`Your bet will move the probability from ${getFormattedMappedValue(
+                      contract,
+                      probBefore
+                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                    className="text-ink-600 ml-1 mt-0.5"
+                    size="sm"
+                  />
+                )}
             </div>
             {user && (
               <div>

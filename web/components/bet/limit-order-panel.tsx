@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
 import { useState } from 'react'
@@ -18,12 +17,9 @@ import {
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
-import { APIError, api } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'
-import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -55,12 +51,9 @@ export default function LimitOrderPanel(props: {
   const {
     contract,
     multiProps,
-    user,
     unfilledBets,
     balanceByUserId,
 
-    onBuySuccess,
-    className,
     outcome,
   } = props
   const isBinaryMC = isBinaryMulti(contract)
@@ -93,9 +86,7 @@ export default function LimitOrderPanel(props: {
     usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
-  const expiresAt = addExpiration
-    ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
-    : undefined
+  
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     undefined
@@ -103,8 +94,7 @@ export default function LimitOrderPanel(props: {
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
-  const betDisabled =
-    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
+
 
   const preLimitProb =
     limitProbInt === undefined
@@ -132,53 +122,7 @@ export default function LimitOrderPanel(props: {
     setBetAmount(newAmount)
   }
 
-  async function submitBet() {
-    if (!user || betDisabled) return
-
-    setError(undefined)
-    setIsSubmitting(true)
-
-    const answerId = multiProps?.answerToBuy.id
-
-    await api(
-      'bet',
-      removeUndefinedProps({
-        outcome,
-        amount,
-        contractId: contract.id,
-        answerId,
-        limitProb: limitProb,
-        expiresAt,
-      })
-    )
-      .catch((e) => {
-        if (e instanceof APIError) {
-          setError(e.message.toString())
-        } else {
-          console.error(e)
-          setError('Error placing bet')
-        }
-        setIsSubmitting(false)
-      })
-      .then((r) => {
-        console.log('placed bet. Result:', r)
-        setIsSubmitting(false)
-        if (onBuySuccess) onBuySuccess()
-      })
-
-    await track('bet', {
-      location: 'bet panel',
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount,
-      outcome,
-      limitProb: limitProb,
-      isLimitOrder: true,
-      answerId: multiProps?.answerToBuy.id,
-    })
-  }
-
+  
   const cpmmState = isCpmmMulti
     ? {
         pool: {
