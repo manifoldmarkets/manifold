@@ -156,3 +156,12 @@ export const unfollowContract = async (
     .eq('contract_id', contractId)
     .eq('follow_id', userId)
 }
+
+export const getContractPageViews = async (
+  db: SupabaseClient,
+  contractId: string
+) => {
+  return (
+    await run(db.rpc('get_contract_page_views', { contract_id: contractId }))
+  ).data
+}

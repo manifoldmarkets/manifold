@@ -103,7 +103,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   closeEmailsSent?: number
 
-  views: number
   volume: number
   volume24Hours: number
   elasticity: number
@@ -440,6 +439,7 @@ export type ContractParams = {
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
+  totalViews: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]

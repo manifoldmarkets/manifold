@@ -3638,6 +3638,12 @@ export type Database = {
               contract: Json
             }[]
           }
+      get_contract_page_views: {
+        Args: {
+          contract_id: string
+        }
+        Returns: number
+      }
       get_contract_voters: {
         Args: {
           this_contract_id: string

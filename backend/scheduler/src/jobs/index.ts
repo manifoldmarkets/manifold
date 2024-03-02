@@ -2,7 +2,6 @@ import { createJob } from './helpers'
 import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
-import { updateContractViews } from 'shared/update-contract-views'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
 import { cleanOldFeedRows } from './clean-old-feed-rows'
@@ -27,11 +26,6 @@ export function createJobs() {
       'onboarding-notification',
       '0 0 11 * * *',
       sendOnboardingNotificationsInternal
-    ),
-    createJob(
-      'update-contract-views',
-      '0 55 * * * *', // on the 55th minute of every hour
-      updateContractViews
     ),
     createJob(
       'update-user-metrics',

@@ -15,13 +15,17 @@ import { EyeIcon } from '@heroicons/react/solid'
 
 export function ContractSummaryStats(props: {
   contract: Contract
+  views?: number
   editable?: boolean
 }) {
   const { contract, editable } = props
   const views =
-    contract.views < contract.uniqueBettorCount
+    props.views == null
+      ? null
+      : props.views < contract.uniqueBettorCount
       ? contract.uniqueBettorCount
-      : contract.views
+      : props.views
+
   return (
     <>
       {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
@@ -46,16 +50,17 @@ export function ContractSummaryStats(props: {
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
           </Tooltip>
-          <Tooltip
-            text={'Views: ' + formatWithCommas(views)}
-            placement="bottom"
-            noTap
-            className="flex flex-row items-center gap-1"
-          >
-            <EyeIcon className="text-ink-500 h-4 w-4" />
-            <div>{shortFormatNumber(views)}</div>
-          </Tooltip>
-
+          {!!views && (
+            <Tooltip
+              text={'Views: ' + formatWithCommas(views)}
+              placement="bottom"
+              noTap
+              className="flex flex-row items-center gap-1"
+            >
+              <EyeIcon className="text-ink-500 h-4 w-4" />
+              <div>{shortFormatNumber(views)}</div>
+            </Tooltip>
+          )}
           {!!contract.volume && (
             <Tooltip
               text={`Trading volume: ${formatMoney(contract.volume)}`}
