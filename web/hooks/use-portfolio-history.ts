@@ -8,12 +8,18 @@ import {
 } from 'common/supabase/portfolio-metrics'
 import { db } from 'web/lib/supabase/db'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-
-export const usePortfolioHistory = (userId: string, period: Period) => {
+export type PeriodToSnapshots = {
+  [time: number]: PortfolioSnapshot[]
+}
+export const usePortfolioHistory = (
+  userId: string,
+  period: Period,
+  preloadPoints?: PeriodToSnapshots
+) => {
   const cutoff = getCutoff(period)
   const [portfolioHistories, setPortfolioHistories] =
-    usePersistentInMemoryState<Record<string, PortfolioSnapshot[] | undefined>>(
-      {},
+    usePersistentInMemoryState<PeriodToSnapshots>(
+      preloadPoints ?? {},
       `user-portfolio-history-${userId}`
     )
 
