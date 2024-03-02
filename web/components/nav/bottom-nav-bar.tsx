@@ -7,9 +7,9 @@ import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
+  FlagIcon,
 } from '@heroicons/react/outline'
 import { BiSearchAlt2 } from 'react-icons/bi'
-import { FaFlagUsa } from 'react-icons/fa6'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -43,26 +43,25 @@ function getNavigation(user: User) {
       href: '/home',
       icon: HomeIcon,
     },
-
-    {
-      name: 'Politics',
-      href: '/politics',
-      icon: FaFlagUsa,
-      prefetch: false,
-    },
-    {
-      name: 'Portfolio',
-      href: `/${user.username}/portfolio`,
-    },
     {
       name: 'Browse',
       href: '/browse/for-you',
       icon: BiSearchAlt2,
     },
     {
+      name: 'Politics',
+      href: '/politics',
+      icon: FlagIcon,
+      prefetch: false,
+    },
+    {
       name: 'Notifs',
       href: `/notifications`,
       icon: NotificationsIcon,
+    },
+    {
+      name: 'Portfolio',
+      href: `/${user.username}/portfolio`,
     },
   ]
 }
@@ -71,7 +70,7 @@ const signedOutNavigation = () => [
   {
     name: 'Politics',
     href: '/politics',
-    icon: FaFlagUsa,
+    icon: FlagIcon,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },

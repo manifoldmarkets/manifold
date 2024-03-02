@@ -101,7 +101,9 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mb-6 mt-auto flex flex-col gap-1">
+      <div
+        className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
+      >
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}
