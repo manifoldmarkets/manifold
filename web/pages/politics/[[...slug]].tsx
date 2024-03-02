@@ -164,7 +164,7 @@ function Elections(props: ElectionsPageProps) {
               editByDefault={false}
               embeddedInParent={true}
               endpoint={'politics'}
-              className='!max-w-none'
+              className="!max-w-none"
             />
           </Col>
         )
