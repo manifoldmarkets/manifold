@@ -13,7 +13,7 @@ import {
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
-  FlagIcon
+  FlagIcon,
 } from '@heroicons/react/outline'
 // import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
