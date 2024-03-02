@@ -32,7 +32,7 @@ import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
 export type DashboardEndpoints = 'news' | 'politics'
-export function PoliticsDashboardPage(props: {
+export function DashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
   initialContracts: Contract[]
