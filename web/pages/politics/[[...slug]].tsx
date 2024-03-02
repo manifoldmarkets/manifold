@@ -154,9 +154,9 @@ function Elections(props: ElectionsPageProps) {
       <USElectionsPage {...props} />
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
-          <Col className={'relative'} key={dashboard.slug + 'section'}>
+          <Col className={'relative my-4'} key={dashboard.slug + 'section'}>
             <div
-              className={'absolute -top-8'}
+              className={'absolute -top-12'}
               ref={headlineSlugsToRefs.current[dashboard.slug]}
             />
             <DashboardPage
@@ -164,6 +164,7 @@ function Elections(props: ElectionsPageProps) {
               editByDefault={false}
               embeddedInParent={true}
               endpoint={'politics'}
+              className='!max-w-none'
             />
           </Col>
         )
