@@ -27,7 +27,7 @@ function Custom404Content() {
           />
         </p>
 
-        <Link href="/home">
+        <Link href="/politics/public">
           <Button className="mt-6">Go home</Button>
         </Link>
       </Col>

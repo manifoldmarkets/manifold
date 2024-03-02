@@ -1,10 +1,5 @@
 'use client'
-import {
-  HeartIcon,
-  LoginIcon,
-  LogoutIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/outline'
+import { HeartIcon, LoginIcon, LogoutIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
@@ -86,9 +81,7 @@ const bottomNav = (
 ) => {
   return buildArray(
     // TODO: theme switcher
-    { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'Share with friends', href: '/referrals', icon: HeartIcon },
-
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && {
       name: 'Sign out',
@@ -116,6 +109,24 @@ export const SignUpButton = (props: {
       className={clsx('w-full', className)}
     >
       {text ?? 'Sign up now'}
+    </Button>
+  )
+}
+
+export const SignUpAsMatchmaker = (props: {
+  className?: string
+  size?: SizeType
+}) => {
+  const { className, size } = props
+
+  return (
+    <Button
+      color={'indigo-outline'}
+      size={size ?? 'md'}
+      onClick={firebaseLogin}
+      className={clsx('w-full', className)}
+    >
+      Sign up as matchmaker
     </Button>
   )
 }
