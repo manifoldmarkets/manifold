@@ -6,7 +6,6 @@ create table if not exists
                   user_id text not null,
                   event_time timestamptz not null,
                   data_type text not null, -- 'new_contract'
-                  reason text not null, --  follow_user, follow_contract, etc
                   data jsonb null,
                   contract_id text null,
                   comment_id text null,
@@ -21,7 +20,7 @@ create table if not exists
                   bet_data jsonb null,
                   answer_ids text[] null,
                   relevance_score numeric default 0,
-                  reasons text[] null,
+                  reasons text[] not null, -- in order of importance
                   seen_duration bigint null, -- ms
                   unique (user_id, idempotency_key)
 );

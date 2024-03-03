@@ -52,8 +52,7 @@ export type FeedTimelineItem = {
   // These are stored in the db
   id: number
   dataType: FEED_DATA_TYPES
-  reason: FEED_REASON_TYPES
-  reasons: FEED_REASON_TYPES[] | null
+  reasons: FEED_REASON_TYPES[]
   createdTime: number
   supabaseTimestamp: string
   relevanceScore: number
@@ -399,7 +398,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     supabaseTimestamp: item.created_time,
     reasonDescription: getExplanation(
       item.data_type as FEED_DATA_TYPES,
-      item.reason as FEED_REASON_TYPES
+      item.reasons[0] as FEED_REASON_TYPES
     ),
   })
 

@@ -2391,8 +2391,7 @@ export type Database = {
           news_id: string | null
           post_id: number | null
           reaction_id: string | null
-          reason: string
-          reasons: string[] | null
+          reasons: string[]
           relevance_score: number | null
           seen_duration: number | null
           seen_time: string | null
@@ -2416,8 +2415,7 @@ export type Database = {
           news_id?: string | null
           post_id?: number | null
           reaction_id?: string | null
-          reason: string
-          reasons?: string[] | null
+          reasons: string[]
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
@@ -2441,8 +2439,7 @@ export type Database = {
           news_id?: string | null
           post_id?: number | null
           reaction_id?: string | null
-          reason?: string
-          reasons?: string[] | null
+          reasons?: string[]
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
