@@ -36,7 +36,6 @@ export const bulkInsertDataToUserFeed = async (
     groupId?: string
     reactionId?: string
     idempotencyKey?: string
-    betData?: any
     postId?: number
     betId?: string
   },

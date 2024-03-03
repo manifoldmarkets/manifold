@@ -29,7 +29,7 @@ import { DAY_MS } from 'common/util/time'
 import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
-import { PositionChangeData, convertBet } from 'common/supabase/bets'
+import { convertBet } from 'common/supabase/bets'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -58,7 +58,6 @@ export type FeedTimelineItem = {
   relevanceScore: number
   contractId: string | null
   commentId: string | null
-  betData: PositionChangeData | null
   answerIds: string[] | null
   creatorId: string | null
   seenTime: string | null
