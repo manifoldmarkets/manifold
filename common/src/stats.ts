@@ -8,7 +8,7 @@ export type Stats = {
   engagedUsers: number[]
   dailySales: number[]
   salesWeeklyAvg: number[]
-  salesMonthlyAvg: number[]
+  monthlySales: number[]
   d1: number[]
   d1WeeklyAvg: number[]
   nd1: number[]

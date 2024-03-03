@@ -247,10 +247,10 @@ export const updateStatsCore = async () => {
     const end = i + 1
     return average(dailySales.slice(start, end))
   })
-  const salesMonthlyAvg = dailySales.map((_, i) => {
+  const monthlySales = dailySales.map((_, i) => {
     const start = Math.max(0, i - 29)
     const end = i + 1
-    return average(dailySales.slice(start, end))
+    return sum(dailySales.slice(start, end))
   })
 
   const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
@@ -506,7 +506,7 @@ export const updateStatsCore = async () => {
     avgDailyUserActions,
     dailySales,
     salesWeeklyAvg,
-    salesMonthlyAvg,
+    monthlySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
     engagedUsers,
