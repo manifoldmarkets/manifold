@@ -13,7 +13,6 @@ create table if not exists
                   resolution_time timestamptz,
                   resolution_probability numeric,
                   resolution text,
-                  popularity_score numeric,
                   importance_score numeric,
                   freshness_score numeric default 0,
                   data jsonb not null,
@@ -93,7 +92,6 @@ begin
             end;
         new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
         new.resolution := (new.data) ->> 'resolution';
-        new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
         new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
         new.group_slugs := case
                                when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
