@@ -2388,7 +2388,6 @@ export type Database = {
           is_copied: boolean
           news_id: string | null
           post_id: number | null
-          reaction_id: string | null
           reasons: string[]
           relevance_score: number | null
           seen_duration: number | null
@@ -2410,7 +2409,6 @@ export type Database = {
           is_copied?: boolean
           news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
           reasons: string[]
           relevance_score?: number | null
           seen_duration?: number | null
@@ -2432,7 +2430,6 @@ export type Database = {
           is_copied?: boolean
           news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
           reasons?: string[]
           relevance_score?: number | null
           seen_duration?: number | null

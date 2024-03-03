@@ -12,7 +12,6 @@ create table if not exists
                   post_id bigint null,
                   creator_id text null,
                   news_id text null,
-                  reaction_id text null,
                   bet_id text null,
                   idempotency_key text null,
                   is_copied boolean not null default false,
