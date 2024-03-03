@@ -44,6 +44,8 @@ export function CustomAnalytics(props: Stats) {
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
     dailySales,
+    salesWeeklyAvg,
+    salesMonthlyAvg,
     weeklyActiveUsers,
     monthlyActiveUsers,
     engagedUsers,
@@ -174,6 +176,24 @@ export function CustomAnalytics(props: Stats) {
             title: 'Daily',
             content: (
               <DailyChart dailyValues={dailySales} startDate={startDate} />
+            ),
+          },
+          {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyChart
+                dailyValues={salesWeeklyAvg.map(Math.round)}
+                startDate={startDate}
+              />
+            ),
+          },
+          {
+            title: 'Daily (30d avg)',
+            content: (
+              <DailyChart
+                dailyValues={salesMonthlyAvg.map(Math.round)}
+                startDate={startDate}
+              />
             ),
           },
         ]}

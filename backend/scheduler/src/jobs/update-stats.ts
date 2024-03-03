@@ -242,6 +242,16 @@ export const updateStatsCore = async () => {
   const dailySales = dailyManaSales.map((sales) =>
     sum(sales.map((s) => s.amount))
   )
+  const salesWeeklyAvg = dailySales.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailySales.slice(start, end))
+  })
+  const salesMonthlyAvg = dailySales.map((_, i) => {
+    const start = Math.max(0, i - 29)
+    const end = i + 1
+    return average(dailySales.slice(start, end))
+  })
 
   const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
@@ -495,6 +505,8 @@ export const updateStatsCore = async () => {
     dailyActiveUsersWeeklyAvg,
     avgDailyUserActions,
     dailySales,
+    salesWeeklyAvg,
+    salesMonthlyAvg,
     weeklyActiveUsers,
     monthlyActiveUsers,
     engagedUsers,
