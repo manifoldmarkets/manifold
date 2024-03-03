@@ -53,6 +53,8 @@ export function CustomAnalytics(props: Stats) {
     d1WeeklyAvg,
     nd1,
     nd1WeeklyAvg,
+    fracDaysActiveD1ToD3,
+    fracDaysActiveD1ToD3Avg7d,
     nw1,
     dailyBetCounts,
     dailyContractCounts,
@@ -265,7 +267,7 @@ export function CustomAnalytics(props: Stats) {
 
       <Tabs
         className="mb-4"
-        defaultIndex={2}
+        defaultIndex={1}
         tabs={[
           {
             title: 'ND1',
@@ -273,7 +275,7 @@ export function CustomAnalytics(props: Stats) {
               <DailyChart
                 dailyValues={nd1}
                 startDate={startDate}
-                excludeFirstDays={1}
+                excludeLastDays={1}
                 pct
               />
             ),
@@ -285,6 +287,29 @@ export function CustomAnalytics(props: Stats) {
                 dailyValues={nd1WeeklyAvg}
                 startDate={startDate}
                 excludeFirstDays={7}
+                excludeLastDays={1}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'Active days D1-D3',
+            content: (
+              <DailyChart
+                dailyValues={fracDaysActiveD1ToD3}
+                startDate={startDate}
+                excludeLastDays={3}
+                pct
+              />
+            ),
+          },
+          {
+            title: 'Active days D1-D3 (7d avg)',
+            content: (
+              <DailyChart
+                dailyValues={fracDaysActiveD1ToD3Avg7d}
+                startDate={startDate}
+                excludeLastDays={3}
                 pct
               />
             ),

@@ -349,22 +349,38 @@ export const updateStatsCore = async () => {
     return average(d1.slice(start, end))
   })
 
-  const nd1 = dailyUserIds.map((today, i) => {
-    if (i === 0) return 0
+  const nd1 = dailyNewRealUserIds.map((today, i) => {
+    if (i === dailyNewRealUserIds.length - 1) return 0
+    if (today.length === 0) return 0
 
-    const newYesterday = dailyNewRealUserIds[i - 1]
-    if (newYesterday.length === 0) return 0
-
-    const retainedCount = sumBy(newYesterday, (userId) =>
-      today.includes(userId) ? 1 : 0
+    const activeTomorrow = dailyUserIds[i + 1]
+    const retainedCount = sumBy(today, (userId) =>
+      activeTomorrow.includes(userId) ? 1 : 0
     )
-    return retainedCount / newYesterday.length
+    return retainedCount / today.length
   })
 
   const nd1WeeklyAvg = nd1.map((_, i) => {
     const start = Math.max(0, i - 6)
     const end = i + 1
     return average(nd1.slice(start, end))
+  })
+  const fracDaysActiveD1ToD3 = dailyNewRealUserIds.map((today, i) => {
+    if (today.length === 0) return 0
+    if (i > dailyNewRealUserIds.length - 4) return 0
+
+    const thisWeekCounts = mapValues(
+      groupBy(dailyUserIds.slice(i + 1, i + 4).flat(), (id) => id),
+      (ids) => ids.length
+    )
+    const totalActive = sumBy(today, (userId) => thisWeekCounts[userId] ?? 0)
+    return totalActive / today.length / 3
+  })
+  const fracDaysActiveD1ToD3Avg7d = fracDaysActiveD1ToD3.map((_, i) => {
+    if (i > dailyNewRealUserIds.length - 4) return 0
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(fracDaysActiveD1ToD3.slice(start, end))
   })
   const nw1 = dailyNewRealUserIds.map((_userIds, i) => {
     if (i < 13) return 0
@@ -514,6 +530,8 @@ export const updateStatsCore = async () => {
     d1WeeklyAvg,
     nd1,
     nd1WeeklyAvg,
+    fracDaysActiveD1ToD3,
+    fracDaysActiveD1ToD3Avg7d,
     nw1,
     dailyBetCounts,
     dailyContractCounts,
@@ -538,8 +556,8 @@ export const updateStatsCore = async () => {
 
   // Write to postgres
   await bulkUpsert(pg, 'stats', 'title', rows)
+  log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
-  log('Done. Wrote', rows.length, ' rows to stats table')
-
   await saveCalibrationData(pg)
+  log('Done')
 }

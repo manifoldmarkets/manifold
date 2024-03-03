@@ -13,6 +13,8 @@ export type Stats = {
   d1WeeklyAvg: number[]
   nd1: number[]
   nd1WeeklyAvg: number[]
+  fracDaysActiveD1ToD3: number[]
+  fracDaysActiveD1ToD3Avg7d: number[]
   nw1: number[]
   dailyBetCounts: number[]
   dailyContractCounts: number[]
