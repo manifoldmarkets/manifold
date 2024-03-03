@@ -33,7 +33,6 @@ export const bulkInsertDataToUserFeed = async (
     creatorId?: string
     newsId?: string
     data?: any
-    groupId?: string
     reactionId?: string
     idempotencyKey?: string
     postId?: number

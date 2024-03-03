@@ -2383,7 +2383,6 @@ export type Database = {
           data: Json | null
           data_type: string
           event_time: string
-          group_id: string | null
           id: number
           idempotency_key: string | null
           is_copied: boolean
@@ -2406,7 +2405,6 @@ export type Database = {
           data?: Json | null
           data_type: string
           event_time: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
@@ -2429,7 +2427,6 @@ export type Database = {
           data?: Json | null
           data_type?: string
           event_time?: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean

@@ -26,7 +26,6 @@ import {
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
-import { Group } from 'common/group'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 import { convertBet } from 'common/supabase/bets'
@@ -70,7 +69,6 @@ export type FeedTimelineItem = {
   contract?: Contract
   contracts?: Contract[]
   comment?: ContractComment
-  groups?: Group[]
   answers?: Answer[]
   bet?: Bet
   reasonDescription?: string
