@@ -29,7 +29,6 @@ export const bulkInsertDataToUserFeed = async (
   dataProps: {
     contractId?: string
     commentId?: string
-    answerIds?: string[]
     creatorId?: string
     data?: any
     idempotencyKey?: string

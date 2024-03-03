@@ -2374,7 +2374,6 @@ export type Database = {
       }
       user_feed: {
         Row: {
-          answer_ids: string[] | null
           bet_id: string | null
           comment_id: string | null
           contract_id: string | null
@@ -2394,7 +2393,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          answer_ids?: string[] | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
@@ -2414,7 +2412,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          answer_ids?: string[] | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null

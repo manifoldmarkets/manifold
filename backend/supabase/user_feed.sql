@@ -14,7 +14,6 @@ create table if not exists
                   bet_id text null,
                   idempotency_key text null,
                   is_copied boolean not null default false,
-                  answer_ids text[] null,
                   relevance_score numeric default 0,
                   reasons text[] not null, -- in order of importance
                   seen_duration bigint null, -- ms

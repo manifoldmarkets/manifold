@@ -29,9 +29,8 @@ import { DAY_MS } from 'common/util/time'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { useFollowedIdsSupabase } from 'web/hooks/use-follows'
 import { convertBet } from 'common/supabase/bets'
-import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { convertContract } from 'common/supabase/contracts'
 import { compareTwoStrings } from 'string-similarity'
 import dayjs from 'dayjs'
 import { useBoosts } from 'web/hooks/use-boosts'
@@ -57,7 +56,6 @@ export type FeedTimelineItem = {
   relevanceScore: number
   contractId: string | null
   commentId: string | null
-  answerIds: string[] | null
   creatorId: string | null
   seenTime: string | null
   seenDuration: number | null
@@ -69,7 +67,6 @@ export type FeedTimelineItem = {
   contract?: Contract
   contracts?: Contract[]
   comment?: ContractComment
-  answers?: Answer[]
   bet?: Bet
   reasonDescription?: string
   isCopied?: boolean
@@ -189,7 +186,6 @@ export const useFeedTimeline = (
       newContractIds,
       newRepostCommentIds,
       newRepostCommentIdsFromFollowed,
-      answerIds,
       userIds,
       betIds,
     } = getOnePerCreatorContentIds(newFeedRows, followedIds)
@@ -199,7 +195,6 @@ export const useFeedTimeline = (
       commentsFromFollowed,
       openListedContracts,
       uninterestingContractIds,
-      answers,
       users,
       recentlySeenContractCards,
       bets,
@@ -232,13 +227,6 @@ export const useFeedTimeline = (
         .eq('user_id', userId)
         .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
-      answerIds.length
-        ? db
-            .from('answers')
-            .select('*')
-            .in('id', answerIds)
-            .then((res) => res.data?.map((a) => convertAnswer(a)))
-        : [],
       db
         .from('users')
         .select('id, data->>avatarUrl, name, username')
@@ -315,7 +303,6 @@ export const useFeedTimeline = (
       newFeedRows,
       freshAndInterestingContracts,
       unhiddenLikedOrFollowedComments ?? [],
-      answers,
       bets,
       users
     )
@@ -408,7 +395,6 @@ function createFeedTimelineItems(
   data: Row<'user_feed'>[],
   contracts: Contract[] | undefined,
   allComments: ContractComment[] | undefined,
-  allAnswers: Answer[] | undefined,
   allBets: Bet[] | undefined,
   creators: DisplayUser[] | undefined
 ): FeedTimelineItem[] {
@@ -435,7 +421,6 @@ function createFeedTimelineItems(
         ?.find((comment) => comment.id === item.comment_id)
       if (item.comment_id && !comment) return
       const creatorDetails = creators?.find((u) => u.id === item.creator_id)
-      const answers = allAnswers?.filter((a) => item.answer_ids?.includes(a.id))
       const bet = allBets?.find((b) => item.bet_id === b.id)
       return {
         ...getBaseTimelineItem(item),
@@ -444,7 +429,6 @@ function createFeedTimelineItems(
           : contract?.creatorAvatarUrl,
         contract,
         comment,
-        answers,
         bet,
         creatorDetails,
       } as FeedTimelineItem
@@ -570,10 +554,6 @@ const getOnePerCreatorContentIds = (
     )
   )
 
-  const answerIds = uniq(
-    filterDefined(data.map((item) => item.answer_ids))
-  ).flat()
-
   // At the moment, we only care about users with bet_ids
   const userIds = uniq(
     filterDefined(
@@ -589,7 +569,6 @@ const getOnePerCreatorContentIds = (
     newContractIds,
     newRepostCommentIds,
     newRepostCommentIdsFromFollowed,
-    answerIds,
     userIds,
     betIds,
   }
