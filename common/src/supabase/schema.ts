@@ -2386,7 +2386,6 @@ export type Database = {
           id: number
           idempotency_key: string | null
           is_copied: boolean
-          news_id: string | null
           post_id: number | null
           reasons: string[]
           relevance_score: number | null
@@ -2407,7 +2406,6 @@ export type Database = {
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
           reasons: string[]
           relevance_score?: number | null
@@ -2428,7 +2426,6 @@ export type Database = {
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
           reasons?: string[]
           relevance_score?: number | null
