@@ -26,6 +26,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     newHampshireContract,
+    republicanElectability,
+    democraticElectability,
   } = props
 
   if (
@@ -33,7 +35,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !electionCandidateContract ||
     !republicanCandidateContract ||
     !democratCandidateContract ||
-    !newHampshireContract
+    !newHampshireContract ||
+    !democraticElectability ||
+    !republicanElectability
   ) {
     return <Custom404 />
   }
@@ -52,6 +56,8 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     republicanVPContract,
     democraticVPContract,
+    democraticElectability,
+    republicanElectability,
     trendingDashboard,
   } = props
 
@@ -88,7 +94,6 @@ function ElectionContent(props: ElectionsPageProps) {
             />
           </Col>
         )}
-
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"
@@ -99,7 +104,6 @@ function ElectionContent(props: ElectionsPageProps) {
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
         />
-
         <Col className="gap-6 sm:gap-8 lg:hidden">
           <PoliticsCard
             contract={democratCandidateContract as MultiContract}
@@ -168,11 +172,22 @@ function ElectionContent(props: ElectionsPageProps) {
             </Row>
           </Col>
         </Col>
-
         <HomepageMap
           rawPresidencyStateContracts={rawPresidencyStateContracts}
           rawSenateStateContracts={rawSenateStateContracts}
           rawGovernorStateContracts={rawGovernorStateContracts}
+        />
+        <PoliticsCard
+          contract={democraticElectability as MultiContract}
+          viewType="CANDIDATE"
+          customTitle={'Who would win if they were the Democratic nominee?'}
+          excludeAnswers={['Joe Biden']}
+        />
+        <PoliticsCard
+          contract={republicanElectability as MultiContract}
+          viewType="CANDIDATE"
+          customTitle={'Who would win if they were the Republican nominee?'}
+          excludeAnswers={['Donald Trump']}
         />
       </Col>
       <Spacer h={4} />
