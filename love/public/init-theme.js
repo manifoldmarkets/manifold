@@ -4,7 +4,12 @@
   const localTheme = localStorage.getItem('theme')
   const theme = localTheme ? JSON.parse(localTheme) : 'auto'
 
-  if (theme === 'dark' || (theme === 'auto' && autoDark)) {
+  document.documentElement.classList.remove('no-js')
+
+  if (
+    theme === 'dark' ||
+    ((theme === 'auto' || theme === 'loading') && autoDark)
+  ) {
     document.documentElement.classList.add('dark')
   }
 }
