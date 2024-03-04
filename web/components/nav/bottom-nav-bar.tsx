@@ -7,7 +7,6 @@ import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
-  FlagIcon,
 } from '@heroicons/react/outline'
 import { BiSearchAlt2 } from 'react-icons/bi'
 import { animated } from '@react-spring/web'
@@ -28,6 +27,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
+import { GiCapitol } from 'react-icons/gi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -51,7 +51,7 @@ function getNavigation(user: User) {
     {
       name: 'Politics',
       href: '/politics',
-      icon: FlagIcon,
+      icon: GiCapitol,
       prefetch: false,
     },
     {
@@ -70,7 +70,7 @@ const signedOutNavigation = () => [
   {
     name: 'Politics',
     href: '/politics',
-    icon: FlagIcon,
+    icon: GiCapitol,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },
@@ -120,6 +120,7 @@ export function BottomNavBar(props: {
           item={item}
           currentPage={currentPage}
           user={user}
+          className={item.name === 'Politics' ? '-mt-1' : ''}
         />
       ))}
       {!!user && (
@@ -154,7 +155,7 @@ function NavBarItem(props: {
   user?: User | null
   className?: string
 }) {
-  const { item, currentPage, children, user } = props
+  const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
   const balance = useAnimatedNumber(user?.balance ?? 0)
@@ -166,7 +167,8 @@ function NavBarItem(props: {
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === `/${user.username}/portfolio` && selectedItemClass
+          currentPage === `/${user.username}/portfolio` && selectedItemClass,
+          className
         )}
         onClick={track}
         onTouchStart={() => setTouched(true)}
@@ -185,7 +187,7 @@ function NavBarItem(props: {
   if (!item.href) {
     return (
       <button
-        className={clsx(itemClass, touched && touchItemClass)}
+        className={clsx(itemClass, touched && touchItemClass, className)}
         onClick={() => {
           track()
           item.onClick?.()
@@ -209,7 +211,8 @@ function NavBarItem(props: {
       className={clsx(
         itemClass,
         touched && touchItemClass,
-        isCurrentPage && selectedItemClass
+        isCurrentPage && selectedItemClass,
+        className
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}

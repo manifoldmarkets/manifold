@@ -13,9 +13,7 @@ import {
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
-  FlagIcon,
 } from '@heroicons/react/outline'
-// import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
 import { capitalize } from 'lodash'
@@ -38,6 +36,7 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { IoPersonCircleOutline } from 'react-icons/io5'
+import { GiCapitol } from 'react-icons/gi'
 
 export default function Sidebar(props: {
   className?: string
@@ -131,7 +130,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
       {
         name: 'US Politics',
         href: '/politics',
-        icon: FlagIcon,
+        icon: GiCapitol,
       },
       {
         name: 'Notifications',
@@ -152,7 +151,7 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     {
       name: 'US Politics',
       href: '/politics',
-      icon: FlagIcon,
+      icon: GiCapitol,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'Browse', href: '/browse', icon: SearchIcon },
