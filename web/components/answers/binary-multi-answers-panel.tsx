@@ -21,7 +21,6 @@ import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Answer as AnswerComponent } from './answers-panel'
 import { BuyPanel } from 'web/components/bet/bet-panel'
-import { ChevronUpIcon } from '@heroicons/react/solid'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -85,7 +84,7 @@ export function BinaryMultiAnswersPanel(props: {
 const BetButton = (props: {
   answer: Answer
   betOnAnswer: Answer
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  outcome: 'YES' | 'NO' | undefined
   contract: CPMMMultiContract
   color?: ColorType
   size?: SizeType
@@ -161,11 +160,10 @@ function BinaryMultiChoiceBetPanel(props: {
   betOnAnswer: Answer
   contract: CPMMMultiContract
   closePanel: () => void
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  outcome: 'YES' | 'NO' | undefined
   me: User | null | undefined
 }) {
   const { answer, betOnAnswer, contract, closePanel, outcome, me } = props
-  const [limit, setLimit] = useState(false)
   return (
     <Col className="gap-2">
       <Row className="justify-between">
@@ -179,20 +177,7 @@ function BinaryMultiChoiceBetPanel(props: {
         </span>
         <div className="text-xl">{formatPercent(answer.prob)}</div>
       </Row>
-      <Row className={'justify-end'}>
-        <Button
-          color={'gray-white'}
-          size={'2xs'}
-          onClick={() => setLimit(!limit)}
-        >
-          {limit ? (
-            <ChevronUpIcon className="h-4 w-4" />
-          ) : (
-            <ChevronUpIcon className="h-4 w-4 rotate-180 transform" />
-          )}
-          {limit ? 'Place market order' : 'Place limit order'}
-        </Button>
-      </Row>
+
       <BuyPanel
         contract={contract}
         multiProps={{
@@ -201,11 +186,12 @@ function BinaryMultiChoiceBetPanel(props: {
           answerText: answer.text,
         }}
         user={me}
-        initialOutcome={limit ? 'LIMIT' : outcome}
+        initialOutcome={outcome}
         singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
         inModal={true}
+        onCancel={closePanel}
       />
     </Col>
   )
