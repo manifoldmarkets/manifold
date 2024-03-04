@@ -21,7 +21,7 @@ export function BetButton(props: {
     string | undefined
   >(undefined)
   if (isClosed) return null
-       const open=dialogueThatIsOpen === 'YES' || dialogueThatIsOpen === 'NO'
+  const open = dialogueThatIsOpen === 'YES' || dialogueThatIsOpen === 'NO'
 
   const handleBetButtonClick = (outcome: 'YES' | 'NO') => {
     if (!user) {
@@ -51,31 +51,33 @@ export function BetButton(props: {
         No
       </Button>
 
-      {open && <Modal
-        open={open}
-        setOpen={(open) => {
-          setDialogueThatIsOpen(open ? dialogueThatIsOpen : undefined)
-        }}
-        className={clsx(
-          MODAL_CLASS,
-          'pointer-events-auto max-h-[32rem] overflow-auto'
-        )}
-      >
-        <Col>
-          <div className="mb-4 mt-0 text-xl">{contract.question}</div>
-          <BuyPanel
-            contract={contract}
-            user={user}
-            initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
-            onCancel={() => setDialogueThatIsOpen(undefined)}
-            onBuySuccess={() =>
-              setTimeout(() => setDialogueThatIsOpen(undefined), 500)
-            }
-            location={'feed card'}
-            inModal={true}
-          />
-        </Col>
-      </Modal>}
+      {open && (
+        <Modal
+          open={open}
+          setOpen={(open) => {
+            setDialogueThatIsOpen(open ? dialogueThatIsOpen : undefined)
+          }}
+          className={clsx(
+            MODAL_CLASS,
+            'pointer-events-auto max-h-[32rem] overflow-auto'
+          )}
+        >
+          <Col>
+            <div className="mb-4 mt-0 text-xl">{contract.question}</div>
+            <BuyPanel
+              contract={contract}
+              user={user}
+              initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
+              onCancel={() => setDialogueThatIsOpen(undefined)}
+              onBuySuccess={() =>
+                setTimeout(() => setDialogueThatIsOpen(undefined), 500)
+              }
+              location={'feed card'}
+              inModal={true}
+            />
+          </Col>
+        </Modal>
+      )}
     </div>
   )
 }

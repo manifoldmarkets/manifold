@@ -220,7 +220,9 @@ export function BuyAmountInput(props: {
             <>
               <div className="text-ink-700 mb-1 mr-2 mt-2 ">Amount</div>
               <ChoicesToggleGroup
-                currentChoice={quickAmounts.includes(amount ?? 0) ? amount : undefined}
+                currentChoice={
+                  quickAmounts.includes(amount ?? 0) ? amount : undefined
+                }
                 choicesMap={quickAmounts.reduce<{ [key: number]: number }>(
                   (map, amount) => {
                     map[amount] = amount

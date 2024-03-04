@@ -663,7 +663,6 @@ export function Answer(props: {
                     {shortFormatNumber(limitOrderVolume)}
                   </Tooltip>
                 }
-        
               />
             ) : null}
             {'poolYes' in answer && (

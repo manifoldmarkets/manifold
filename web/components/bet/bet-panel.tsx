@@ -258,7 +258,7 @@ export function BuyPanel(props: {
       balanceByUserId
     )
     currentPayout = result.shares
-    
+
     probBefore = result.probBefore
     probAfter = result.probAfter
   }
@@ -522,17 +522,16 @@ export function BuyPanel(props: {
                   />
                 )}
 
-              {!isAdvancedTrader &&
-                isBinaryMC && (
-                  <InfoTooltip
-                    text={`Your bet will move the probability from ${getFormattedMappedValue(
-                      contract,
-                      probBefore
-                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                    className="text-ink-600 ml-1 mt-0.5"
-                    size="sm"
-                  />
-                )}
+              {!isAdvancedTrader && isBinaryMC && (
+                <InfoTooltip
+                  text={`Your bet will move the probability from ${getFormattedMappedValue(
+                    contract,
+                    probBefore
+                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                  className="text-ink-600 ml-1 mt-0.5"
+                  size="sm"
+                />
+              )}
             </div>
             {user && (
               <div>

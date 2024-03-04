@@ -86,15 +86,12 @@ export default function LimitOrderPanel(props: {
     usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
-  
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     undefined
   )
 
   const hasLimitBet = !!limitProbInt && !!betAmount
-
-
 
   const preLimitProb =
     limitProbInt === undefined
@@ -122,7 +119,6 @@ export default function LimitOrderPanel(props: {
     setBetAmount(newAmount)
   }
 
-  
   const cpmmState = isCpmmMulti
     ? {
         pool: {
