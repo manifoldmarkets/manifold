@@ -83,6 +83,8 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { parseJsonContentToText } from 'common/util/parse'
 import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -467,6 +469,15 @@ export function ContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
               />
+
+              {!tradingAllowed(contract) && (
+                <UserBetsSummary
+                  className="border-ink-200 !mb-2 mt-2 "
+                  contract={contract}
+                />
+              )}
+
+              <YourTrades contract={contract} />
             </Col>
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
@@ -556,13 +567,6 @@ export function ContractPageContent(props: ContractParams) {
               </>
             )}
 
-            {!tradingAllowed(contract) && (
-              <UserBetsSummary
-                className="border-ink-200 !mb-2 mt-2 "
-                contract={contract}
-              />
-            )}
-
             <div ref={tabsContainerRef}>
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
@@ -619,5 +623,33 @@ function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
         ADMIN
       </div>
     </Row>
+  )
+}
+
+function YourTrades(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
+
+  const { rows } = useRealtimeBets({
+    contractId: contract.id,
+    userId: user === undefined ? 'loading' : user?.id ?? '_',
+    filterAntes: true,
+    order: 'asc',
+  })
+  const userBets = rows ?? []
+
+  const visibleUserBets = userBets.filter((bet) => !bet.isRedemption)
+
+  if (visibleUserBets.length === 0) return null
+  return (
+    <Col>
+      <div className="text-ink-700 text-lg">Your trades</div>
+      <ContractBetsTable
+        contract={contract}
+        bets={userBets}
+        isYourBets
+        truncate
+      />
+    </Col>
   )
 }
