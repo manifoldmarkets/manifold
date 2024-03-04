@@ -147,7 +147,7 @@ const LikeConfimationDialog = (props: {
           </Button>
           <Button
             onClick={() => submit()}
-            disabled={!!user && user.balance < LIKE_COST}
+            disabled={!hasFreeLike && !!user && user.balance < LIKE_COST}
           >
             {hasFreeLike ? (
               <>Use free like & submit</>
