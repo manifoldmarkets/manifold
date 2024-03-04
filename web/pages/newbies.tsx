@@ -5,9 +5,14 @@ import { Title } from 'web/components/widgets/title'
 import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async () => {
-  const { data } = await db.rpc('get_noob_questions')
+  try {
+    const { data } = await db.rpc('get_noob_questions')
 
-  return { props: { contracts: data } }
+    return { props: { contracts: data }, revalidate: 60 * 60 }
+  } catch (err) {
+    console.error(err)
+    return { props: { contracts: [] }, revalidate: 60 }
+  }
 }
 
 export default function Newbies(props: { contracts: Contract[] }) {

@@ -1,5 +1,11 @@
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import {
+  CurrencyDollarIcon,
+  ViewListIcon,
+  ScaleIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/outline'
 
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage, User } from 'common/user'
@@ -41,6 +47,10 @@ import { useRouter } from 'next/router'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingContractRow } from 'web/components/contract/contracts-table'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { LuCrown } from 'react-icons/lu'
+import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { getCutoff } from 'web/lib/util/time'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 
 export const getStaticProps = async (props: {
   params: {
@@ -56,6 +66,9 @@ export const getStaticProps = async (props: {
         .select('*', { head: true, count: 'exact' })
         .eq('user_id', user.id)
     : { count: 0 }
+  const weeklyPortfolioData = user
+    ? await getPortfolioHistory(user.id, getCutoff('weekly'), db)
+    : []
   const oneWeekBalanceChanges = user
     ? await api('get-balance-changes', {
         userId: user.id,
@@ -70,7 +83,8 @@ export const getStaticProps = async (props: {
       username,
       shouldIgnoreUser,
       balanceChanges,
-      portfolioPoints: portfolioPoints ?? 0,
+      totalPortfolioPoints: portfolioPoints ?? 0,
+      weeklyPortfolioData,
     }),
     revalidate: 60, // Regenerate after a minute
   }
@@ -85,18 +99,12 @@ export default function UserPortfolio(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  if (!props.user) return <Custom404 />
-  return (
-    <UserPortfolioInternal
-      user={props.user}
-      username={props.username}
-      shouldIgnoreUser={props.shouldIgnoreUser}
-      balanceChanges={props.balanceChanges}
-      portfolioPoints={props.portfolioPoints}
-    />
-  )
+  const { user, ...rest } = props
+  if (!user) return <Custom404 />
+  return <UserPortfolioInternal user={user} {...rest} />
 }
 
 function UserPortfolioInternal(props: {
@@ -104,9 +112,15 @@ function UserPortfolioInternal(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  const { shouldIgnoreUser, balanceChanges, portfolioPoints } = props
+  const {
+    shouldIgnoreUser,
+    balanceChanges,
+    weeklyPortfolioData,
+    totalPortfolioPoints,
+  } = props
   const user = useUserById(props.user.id) ?? props.user
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
@@ -139,59 +153,91 @@ function UserPortfolioInternal(props: {
             <BackButton />
             <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
           </Row>
-          <Link
-            className={clsx('text-ink-500 hover:text-primary-500')}
-            href={'/' + user.username}
-          >
-            <Col className={'items-center px-3 text-sm'}>
-              <Avatar
-                size={'sm'}
-                noLink={true}
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-              />
-              Profile
-            </Col>
-          </Link>
+          <Row className="mx-3 items-end gap-3">
+            <div className="flex flex-col items-center">
+              <Link
+                href={`/${user.username}/partner`}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <LuCrown className="mx-auto text-2xl" />
+                Partner
+              </Link>
+            </div>
+            <div className="flex flex-col items-center">
+              <Link
+                href={'/' + user.username}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <Avatar
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  noLink
+                  size="xs"
+                  className={'mx-auto'}
+                />
+                Profile
+              </Link>
+            </div>
+          </Row>
         </Row>
         <Row
           className={
-            'mx-1 mb-4 hidden items-center justify-between md:inline-flex'
+            'mx-2 mb-4 hidden items-center justify-between md:inline-flex'
           }
         >
           <span className={'text-primary-700 text-2xl'}>Your portfolio</span>
-          <Link
-            href={'/' + user.username}
-            className={clsx('hover:text-primary-500  text-ink-600 text-md')}
-          >
-            <Avatar
-              avatarUrl={user.avatarUrl}
-              username={user.username}
-              noLink
-              size="xs"
-              className={'mx-auto'}
-            />
-            Profile
-          </Link>
+          <Row className="items-end gap-4">
+            <div className="flex flex-col items-center">
+              <Link
+                href={`/${user.username}/partner`}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <LuCrown className="mx-auto text-2xl" />
+                Partner
+              </Link>
+            </div>
+            <div className="flex flex-col items-center">
+              <Link
+                href={'/' + user.username}
+                className={clsx('hover:text-primary-500  text-ink-600 text-xs')}
+              >
+                <Avatar
+                  avatarUrl={user.avatarUrl}
+                  username={user.username}
+                  noLink
+                  size="xs"
+                  className={'mx-auto'}
+                />
+                Profile
+              </Link>
+            </div>
+          </Row>
         </Row>
 
         <QueryUncontrolledTabs
-          className={'mx-2 mb-3 mt-2 gap-6 sm:mt-0'}
-          minimalist
+          className={'mx-2 mb-3 gap-6'}
           renderAllTabs
           tabs={buildArray([
             {
               title: 'Summary',
+              stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
               content: (
                 <PortfolioSummary
                   user={user}
                   balanceChanges={balanceChanges}
-                  portfolioPoints={portfolioPoints}
+                  totalPortfolioPoints={totalPortfolioPoints}
+                  weeklyPortfolioData={weeklyPortfolioData}
                 />
               ),
             },
+            (!!user.lastBetTime || hasBetBalanceChanges) && {
+              title: 'Trades',
+              stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
+              content: <UserBetsTable user={user} />,
+            },
             {
-              title: 'Balance',
+              title: 'Balance log',
+              stackedTabIcon: <ViewListIcon className="h-5" />,
               content: (
                 <BalanceChangeTable
                   user={user}
@@ -200,13 +246,10 @@ function UserPortfolioInternal(props: {
               ),
               queryString: balanceChangesKey,
             },
-            (!!user.lastBetTime || hasBetBalanceChanges) && {
-              title: 'Trades',
-              content: <UserBetsTable user={user} />,
-            },
             (user.creatorTraders.allTime > 0 ||
               (user.freeQuestionsCreated ?? 0) > 0) && {
               title: 'Questions',
+              stackedTabIcon: <ScaleIcon className="h-5" />,
               content: (
                 <SupabaseSearch
                   defaultFilter="all"
@@ -238,16 +281,16 @@ function UserPortfolioInternal(props: {
 const PortfolioSummary = (props: {
   user: User
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) => {
-  const { user, portfolioPoints } = props
-
+  const { user, totalPortfolioPoints, weeklyPortfolioData } = props
   const router = useRouter()
   const pathName = usePathname()
   const currentUser = useUser()
   const privateUser = usePrivateUser()
   const CARD_CLASS =
-    'h-fit bg-canvas-50 relative w-full min-w-[300px] cursor-pointer justify-between rounded-md px-0 py-0 sm:w-[48%]'
+    'h-fit relative w-full min-w-[300px] cursor-pointer justify-between px-0 py-0 sm:w-[48%]'
   const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
@@ -259,7 +302,7 @@ const PortfolioSummary = (props: {
   const balanceChanges = newBalanceChanges ?? props.balanceChanges
 
   return (
-    <Col className="gap-6">
+    <Col className="gap-4">
       <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
         <BalanceCard
           onSeeChanges={() => {
@@ -269,19 +312,24 @@ const PortfolioSummary = (props: {
           }}
           user={user}
           balanceChanges={balanceChanges}
-          className={CARD_CLASS}
+          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
         />
-        <InvestmentValueCard user={user} className={CARD_CLASS} />
+        <InvestmentValueCard
+          user={user}
+          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
+          weeklyPortfolioData={weeklyPortfolioData}
+        />
       </Row>
 
-      {portfolioPoints > 1 && (
-        <Col className={'mb-6 px-1 md:pr-8'}>
+      {totalPortfolioPoints > 1 && (
+        <Col className={'px-1 md:pr-8'}>
           <PortfolioValueSection
             userId={user.id}
             onlyShowProfit={true}
             defaultTimePeriod={
               currentUser?.id === user.id ? 'weekly' : 'monthly'
             }
+            preloadPoints={{ [getCutoff('weekly')]: weeklyPortfolioData }}
             lastUpdatedTime={user.metricsLastUpdated}
             isCurrentUser={currentUser?.id === user.id}
             hideAddFundsButton={true}
@@ -290,10 +338,8 @@ const PortfolioSummary = (props: {
       )}
 
       {isCurrentUser && (
-        <Col className="mb-6 gap-5">
-          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
-            Recently viewed
-          </div>
+        <Col className="mb-6 gap-2">
+          <div className="text-ink-800 mx-2 text-xl lg:mx-0">Recent</div>
           {!isAuthed && (
             <Col>
               <LoadingContractRow />
@@ -303,7 +349,7 @@ const PortfolioSummary = (props: {
           )}
           {isAuthed && (
             <SupabaseSearch
-              persistPrefix="search"
+              persistPrefix="recent"
               additionalFilter={{
                 excludeContractIds: privateUser?.blockedContractIds,
                 excludeGroupSlugs: privateUser?.blockedGroupSlugs,
@@ -311,8 +357,8 @@ const PortfolioSummary = (props: {
               }}
               useUrlParams={false}
               isWholePage={false}
-              headerClassName={'pt-0 px-2 bg-canvas-50'}
-              defaultTopic="recent"
+              headerClassName={'!hidden'}
+              topicSlug="recent"
               contractsOnly
               hideContractFilters
               hideSearch

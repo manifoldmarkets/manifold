@@ -927,7 +927,8 @@ export const createUniqueBettorBonusNotification = async (
   amount: number,
   uniqueBettorIds: string[],
   idempotencyKey: string,
-  bet: Bet
+  bet: Bet,
+  isPartner: boolean | undefined
 ) => {
   const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
@@ -978,6 +979,8 @@ export const createUniqueBettorBonusNotification = async (
             : undefined,
         outcomeType,
         ...pseudoNumericData,
+        isPartner,
+        totalUniqueBettors: uniqueBettorIds.length,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -1019,7 +1022,7 @@ export const createUniqueBettorBonusNotification = async (
       ?.createdTime ?? contract.createdTime,
     pg
   )
-  if (creatorHasSeenMarketSinceBet) return
+  if (creatorHasSeenMarketSinceBet || amount === 0) return
 
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',

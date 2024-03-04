@@ -13,20 +13,20 @@ import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 
 export const CostSection = (props: {
-  ante: number
   balance: number
   outcomeType: CreateableOutcomeType
   visibility: Visibility
   amountSuppliedByUser: number
   isMulti: boolean
+  isPartner: boolean
 }) => {
   const {
-    ante,
     balance,
     outcomeType,
     visibility,
     amountSuppliedByUser,
     isMulti,
+    isPartner,
   } = props
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
@@ -51,7 +51,7 @@ export const CostSection = (props: {
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
           <>
             {formatMoney(amountSuppliedByUser)}
-            {visibility === 'public' && (
+            {visibility === 'public' && !isPartner && (
               <span>
                 {' '}
                 or <span className=" text-teal-500">FREE </span>
@@ -88,7 +88,7 @@ export const CostSection = (props: {
       </div>
       <div className="text-ink-500 pl-1"></div>
 
-      {ante > balance && (
+      {amountSuppliedByUser > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
           <span className="text-scarlet-500 mr-2">Insufficient balance</span>
           <Button

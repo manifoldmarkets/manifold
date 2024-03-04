@@ -218,7 +218,7 @@ const getSmallestCohort = async (
   season: number,
   division: number
 ) => {
-  return await pg.one<{ cohort: string; count: number }>(
+  return await pg.oneOrNone<{ cohort: string; count: number }>(
     `select cohort, count(user_id) as count from leagues
     where season = $1
       and division = $2
@@ -247,11 +247,10 @@ const addUserToLeague = async (
   season: number,
   division: number
 ) => {
-  const { cohort: smallestCohort, count } = await getSmallestCohort(
-    pg,
-    season,
-    division
-  )
+  const data = await getSmallestCohort(pg, season, division)
+  if (!data) return
+  const { cohort: smallestCohort, count } = data
+
   const cohort =
     count >= MAX_COHORT_SIZE
       ? await generateNewCohortName(pg, season)
@@ -323,7 +322,10 @@ export const addToLeagueIfNotInOne = async (
 
   const portfolio = await getCurrentPortfolio(pg, userId)
   const division = portfolio ? portfolioToDivision(portfolio) : 1
-  const { cohort } = await addUserToLeague(pg, userId, season, division)
+  const data = await addUserToLeague(pg, userId, season, division)
+  if (!data) return
+  const cohort = data.cohort
+
   await createLeagueChangedNotification(
     userId,
     undefined,
@@ -338,12 +340,9 @@ export const addNewUserToLeague = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
-  const { season, division, cohort } = await addUserToLeague(
-    pg,
-    userId,
-    CURRENT_SEASON,
-    1
-  )
+  const data = await addUserToLeague(pg, userId, CURRENT_SEASON, 1)
+  if (!data) return
+  const { season, division, cohort } = data
   await createLeagueChangedNotification(
     userId,
     undefined,

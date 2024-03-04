@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useReducer } from 'react'
 import { TableName, Row, run } from 'common/supabase/utils'
 import {
-  Change,
+  ChangedRow,
   Filter,
   SubscriptionStatus,
   applyChange,
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { Store } from 'web/lib/util/local'
 import { db } from 'web/lib/supabase/db'
 
@@ -39,7 +39,7 @@ async function fetchSnapshot<T extends TableName>(
 export interface State<T extends TableName> {
   status: 'starting' | 'fetching' | 'live' | 'errored' | 'disabled'
   rows?: Row<T>[]
-  pending: Change<T>[]
+  pending: ChangedRow<Row<T>>[]
 }
 
 type ActionBase<K, V = void> = V extends void ? { type: K } : { type: K } & V
@@ -48,8 +48,8 @@ type Action<T extends TableName> =
   | ActionBase<'ENABLED'>
   | ActionBase<'SUBSCRIBED'>
   | ActionBase<'FETCHED', { snapshot: Row<T>[] }>
-  | ActionBase<'RECEIVED_CHANGE', { change: Change<T> }>
-  | ActionBase<'RECEIVED_ERROR', { err?: Error }>
+  | ActionBase<'CHANGE', { change: ChangedRow<Row<T>> }>
+  | ActionBase<'ERROR', { err?: Error }>
   | ActionBase<'DISABLED'>
 
 const getReducer =
@@ -69,7 +69,7 @@ const getReducer =
         }
         return { status: 'live', rows: rows, pending: [] }
       }
-      case 'RECEIVED_CHANGE': {
+      case 'CHANGE': {
         if (state.rows != null) {
           return {
             ...state,
@@ -79,7 +79,7 @@ const getReducer =
           return { ...state, pending: [...state.pending, action.change] }
         }
       }
-      case 'RECEIVED_ERROR': {
+      case 'ERROR': {
         return { ...state, status: 'errored' }
       }
       case 'DISABLED': {
@@ -94,10 +94,7 @@ export function useSubscription<T extends TableName>(
   table: T,
   filter?: Filter<T>,
   fetcher?: () => PromiseLike<Row<T>[] | undefined>,
-  preload?: Row<T>[],
-  loadNewerQuery?: (
-    rows: Row<T>[] | undefined
-  ) => PromiseLike<Row<T>[] | undefined>
+  preload?: Row<T>[]
 ) {
   const fetch = fetcher ?? (() => fetchSnapshot(table, filter))
   const reducer = useMemo(() => getReducer(table), [table])
@@ -106,36 +103,9 @@ export function useSubscription<T extends TableName>(
     rows: preload,
     pending: [],
   })
-  const upsertRow = (r: Row<T>) =>
-    dispatch({
-      type: 'RECEIVED_CHANGE',
-      change: {
-        table,
-        new: r,
-        old: {},
-        eventType: 'UPDATE', // really is an upsert
-      } as any,
-    })
 
-  const loadNewer = useEvent(async () => {
-    const retryLoadNewer = async (attemptNumber: number): Promise<boolean> => {
-      const newRows = await loadNewerQuery?.(state.rows)
-      if (newRows?.length) {
-        newRows.map(upsertRow)
-        return true
-      } else if (attemptNumber < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 100 * attemptNumber))
-        return retryLoadNewer(attemptNumber + 1)
-      }
-      return false
-    }
-
-    const maxAttempts = 10
-    await retryLoadNewer(1)
-  })
-
-  const onChange = useEvent((change: Change<T>) => {
-    dispatch({ type: 'RECEIVED_CHANGE', change })
+  const onChange = useEvent((change: ChangedRow<Row<T>>) => {
+    dispatch({ type: 'CHANGE', change })
   })
 
   const onStatus = useEvent((status: SubscriptionStatus, err?: Error) => {
@@ -148,11 +118,11 @@ export function useSubscription<T extends TableName>(
         break
       }
       case 'TIMED_OUT': {
-        dispatch({ type: 'RECEIVED_ERROR', err })
+        dispatch({ type: 'ERROR', err })
         break
       }
       case 'CHANNEL_ERROR': {
-        dispatch({ type: 'RECEIVED_ERROR', err })
+        dispatch({ type: 'ERROR', err })
         break
       }
       case 'CLOSED': {
@@ -165,8 +135,9 @@ export function useSubscription<T extends TableName>(
     dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
   })
 
-  useRealtimeChannel('*', table, filter, onChange, onStatus, onEnabled)
-  return { ...state, loadNewer }
+  const bindings = [{ event: '*', table, filter } as const]
+  useRealtime({ bindings, onChange, onStatus, onEnabled })
+  return { ...state, dispatch }
 }
 
 export function usePersistentSubscription<T extends TableName>(

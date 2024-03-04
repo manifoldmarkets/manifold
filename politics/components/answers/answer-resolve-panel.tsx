@@ -22,7 +22,7 @@ import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { APIError, api } from 'web/lib/firebase/api'
 import {
   AnswerBar,
@@ -345,7 +345,7 @@ export function ResolutionAnswerItem(props: {
     showAvatar,
   } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
+  const user = useDisplayUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -471,7 +471,7 @@ function IndependentResolutionAnswerItem(props: {
   isInModal?: boolean
 }) {
   const { contract, answer, color, isAdmin } = props
-  const answerCreator = useUserByIdOrAnswer(answer)
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 

@@ -252,7 +252,7 @@ const useLastSeenMessagesPageTime = (userId: string) => {
       db
         .from('user_events')
         .select('ts')
-        .eq('name', 'view love messages page')
+        .in('name', ['view love messages page', 'view messages page'])
         .eq('user_id', userId)
         .order('ts', { ascending: false })
         .limit(1)

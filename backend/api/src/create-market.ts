@@ -50,8 +50,10 @@ import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 import { removeUndefinedProps } from 'common/util/object'
+import { onCreateMarket } from 'api/helpers/on-create-contract'
 
 type Body = ValidatedAPIParams<'market'>
+const firestore = admin.firestore()
 
 export const createMarket: APIHandler<'market'> = async (
   body,
@@ -59,7 +61,12 @@ export const createMarket: APIHandler<'market'> = async (
   { log }
 ) => {
   const market = await createMarketHelper(body, auth, log)
-  return toLiteMarket(market)
+  return {
+    result: toLiteMarket(market),
+    continue: async () => {
+      await onCreateMarket(market, firestore)
+    },
+  }
 }
 
 export async function createMarketHelper(
@@ -239,17 +246,6 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(trans, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contractId,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
-
   if (amountSuppliedByUser > 0) {
     await runTxn(trans, {
       fromId: user.id,
@@ -259,6 +255,17 @@ const runCreateMarketTxn = async (
       amount: amountSuppliedByUser,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
+    })
+  }
+
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contractId,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
     })
   }
 
@@ -293,8 +300,6 @@ const getSlug = async (trans: Transaction, question: string) => {
     ? proposedSlug + '-' + randomString()
     : proposedSlug
 }
-
-const firestore = admin.firestore()
 
 async function getContractFromSlug(trans: Transaction, slug: string) {
   const contractsRef = firestore.collection('contracts')

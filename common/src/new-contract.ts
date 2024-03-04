@@ -131,7 +131,6 @@ export function getNewContract(props: {
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
-    views: 0,
     volume: 0,
     volume24Hours: 0,
     elasticity:

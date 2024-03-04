@@ -22,22 +22,6 @@ export const getcontractparams = MaybeAuthedEndpoint<MaybeAuthedContractParams>(
       throw new APIError(404, 'This contract does not exist')
     }
 
-    if (contract.visibility === 'private') {
-      if (!contract.groupLinks) {
-        throw new APIError(
-          500,
-          'No associated group with this private contract'
-        )
-      }
-
-      if (contract.groupLinks.length > 1) {
-        throw new APIError(
-          500,
-          'Too many groups associated with this private contract'
-        )
-      }
-    }
-
     return getContractParams(contract, db, true, auth?.uid)
   }
 )

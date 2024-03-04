@@ -421,8 +421,9 @@ export const BinaryMultiSellRow = (props: {
 export const OpenProb = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  noNewIcon?: boolean
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, noNewIcon } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
   const cutoffTime = Date.now() - 6 * HOUR_MS
   const isNew =
@@ -434,7 +435,7 @@ export const OpenProb = (props: {
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
       </span>
-      {isNew && (
+      {isNew && !noNewIcon && (
         <Tooltip text={'Recently submitted'}>
           <SparklesIcon className="h-4 w-4 text-green-500" />
         </Tooltip>
@@ -467,6 +468,7 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
 export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  noNewIcon?: boolean
 }) => {
   const { contract, answer } = props
   const { resolutions } = contract
@@ -502,7 +504,7 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} />
+    <OpenProb contract={contract} answer={answer} noNewIcon />
   ) : (
     <ClosedProb prob={prob} resolvedProb={resolvedProb} />
   )

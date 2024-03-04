@@ -1,35 +1,42 @@
 import { memo, useEffect, useMemo, useState } from 'react'
+import { last, minBy, sum } from 'lodash'
+import clsx from 'clsx'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import Link from 'next/link'
+import { ArrowUpIcon } from '@heroicons/react/solid'
+
 import { User } from 'common/user'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { ContractMetric } from 'common/contract-metric'
 import { Contract, contractPath, CPMMContract } from 'common/contract'
-import { orderBy, sum } from 'lodash'
-import clsx from 'clsx'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { formatMoney, getMoneyNumber } from 'common/util/format'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
-import { ArrowUpIcon } from '@heroicons/react/solid'
 import { DailyLoan } from 'web/components/home/daily-loan'
 import { DAY_MS } from 'common/util/time'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
-import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { ChangeIcon } from 'web/components/portfolio/balance-card'
 import { Button } from 'web/components/buttons/button'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { getCutoff } from 'web/lib/util/time'
+
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
+
 export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  const { user, className } = props
-
-  const portfolio = useCurrentPortfolio(user.id)
-
+  const { user, className, weeklyPortfolioData } = props
+  const latestPortfolio = last(weeklyPortfolioData)
+  const dayAgoPortfolio = minBy(
+    weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
+    'timestamp'
+  )
   const [open, setOpen] = useState(false)
 
   const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
@@ -42,15 +49,24 @@ export const InvestmentValueCard = memo(function (props: {
     )
   }, [setContractMetrics])
 
-  const dailyProfit = Math.round(
+  const dailyProfitFromMetrics = Math.round(
     useMemo(() => {
       if (!contractMetrics) return 0
       return sum(contractMetrics.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [contractMetrics])
   )
+  const dailyProfit =
+    latestPortfolio && dayAgoPortfolio
+      ? latestPortfolio.investmentValue +
+        latestPortfolio.balance -
+        latestPortfolio.totalDeposits -
+        (dayAgoPortfolio.investmentValue +
+          dayAgoPortfolio.balance -
+          dayAgoPortfolio.totalDeposits)
+      : dailyProfitFromMetrics
 
   // If a user is new, then their portfolio value may be out of date, so show the metrics value instead
-  const portfolioValue = portfolio ? portfolio.investmentValue : 0
+  const portfolioValue = latestPortfolio ? latestPortfolio.investmentValue : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
     : 0
@@ -63,12 +79,7 @@ export const InvestmentValueCard = memo(function (props: {
   const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
     (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
   )
-  const previewMetrics = orderBy(
-    visibleMetrics,
-    (c) => Math.abs(c.from?.day.profit ?? 0),
-    'desc'
-  ).slice(0, 3)
-  const moreChanges = Math.max(visibleMetrics.length - previewMetrics.length, 0)
+  const moreChanges = visibleMetrics.length
 
   return (
     <Row
@@ -79,57 +90,40 @@ export const InvestmentValueCard = memo(function (props: {
     >
       <Col className={'w-full gap-1.5'}>
         <Col>
-          <div className={'text-ink-800 text-5xl'}>{formatMoney(netWorth)}</div>
+          <div className={'text-ink-800 text-2xl sm:text-4xl'}>
+            {formatMoney(netWorth)}
+          </div>
           <div className={'text-ink-800 ml-1'}>Your net worth</div>
         </Col>
         {netWorth !== 0 && (
-          <Row
-            className={clsx(
-              'mb-1 items-center',
-              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
-            )}
-          >
-            {dailyProfit > 0 ? (
-              <ArrowUpIcon className={'h-4 w-4'} />
-            ) : dailyProfit < 0 ? (
-              <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-            ) : null}
-            {formatMoney(dailyProfit)} profit today
+          <Row className="justify-between">
+            <Row
+              className={clsx(
+                'mb-1 items-center',
+                dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+              )}
+            >
+              {dailyProfit > 0 ? (
+                <ArrowUpIcon className={'h-4 w-4'} />
+              ) : dailyProfit < 0 ? (
+                <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
+              ) : null}
+              {formatMoney(dailyProfit)} profit today
+            </Row>
+            <Button
+              color={'gray-white'}
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpen(true)
+              }}
+            >
+              See {moreChanges} changes
+            </Button>
           </Row>
         )}
         <div className={'absolute right-1 top-1'}>
           <DailyLoan user={user} />
         </div>
-        {visibleMetrics.length > 0 && (
-          <Col className={'border-ink-200 gap-4 border-t pt-3'}>
-            {contractMetrics &&
-              previewMetrics.map((change) => (
-                <MetricChangeRow
-                  key={change.contractId}
-                  change={change}
-                  contract={
-                    contractMetrics.contracts.find(
-                      (c) => c.id === change.contractId
-                    )!
-                  }
-                  avatarSize={'sm'}
-                />
-              ))}
-            {moreChanges > 0 && (
-              <Row className={'justify-end'}>
-                <Button
-                  color={'gray-white'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setOpen(true)
-                  }}
-                >
-                  See {moreChanges} more changes
-                </Button>
-              </Row>
-            )}
-          </Col>
-        )}
 
         {open && (
           <DailyProfitModal

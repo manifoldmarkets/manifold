@@ -7,14 +7,14 @@ export function Banner(props: {
   setShowBanner: (show: boolean) => void
   className?: string
   children: React.ReactNode
-  link: string
+  link?: string
 }) {
   const { setShowBanner, className, children, link } = props
   return (
     <Row
       className={clsx(
         className,
-        'text-ink-900 group items-center justify-between gap-4 bg-pink-100 dark:bg-pink-800'
+        'text-ink-900 bg-primary-100 group items-center justify-between gap-4'
       )}
     >
       <a href={link} className="w-full py-3 pl-4">

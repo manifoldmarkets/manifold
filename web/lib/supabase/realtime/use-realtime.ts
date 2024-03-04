@@ -11,53 +11,77 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { db } from 'web/lib/supabase/db'
 
-export function useRealtimeChannel<T extends TableName, E extends Event>(
-  event: E,
-  table: T,
-  filter: Filter<T> | null | undefined,
-  onChange: (change: Change<T, E>) => void,
-  onStatus?: (status: SubscriptionStatus, err?: Error) => void,
+// true = channel is always open
+// false = channel is never open
+// foreground = channel is open only when tab is foregrounded
+type EnabledCondition = true | false | 'foreground'
+
+export type BindingSpec<
+  T extends TableName = TableName,
+  E extends Event = Event
+> = {
+  table: T
+  event: E
+  filter?: Filter<T>
+}
+
+export type RealtimeOptions<T extends TableName, E extends Event> = {
+  bindings: BindingSpec<T, E>[]
+  onChange: (change: Change<T, E>) => void
+  onStatus?: (status: SubscriptionStatus, err?: Error) => void
   onEnabled?: (enabled: boolean) => void
+  enabled?: EnabledCondition
+}
+
+function getChannelFilter<T extends TableName, E extends Event>(
+  spec: BindingSpec<T, E>
 ) {
+  const { event, table, filter } = spec
   const filterString = filter ? buildFilterString(filter) : undefined
-  const channelId = `${table}-${useId()}`
+  return { event, table, filter: filterString, schema: 'public' } as const
+}
+
+export function useRealtime<T extends TableName, E extends Event>(
+  opts: RealtimeOptions<T, E>
+) {
+  const { bindings, onChange, onStatus, onEnabled } = opts
+  const channelId = `${useId()}`
 
   const channel = useRef<RealtimeChannel | undefined>()
+  const enabled = opts.enabled ?? 'foreground'
   const isVisible = useIsPageVisible()
+  const isActive = enabled === true || (enabled === 'foreground' && isVisible)
 
   useEffect(() => {
-    if (isVisible) {
+    if (isActive) {
       onEnabled?.(true)
-      const opts = {
-        event,
-        schema: 'public',
-        table,
-        filter: filterString,
-      } as const
       const chan = (channel.current = db.channel(channelId))
-      chan
-        .on<Row<T>>('postgres_changes', opts as any, (change) => {
+      for (const spec of bindings) {
+        // mqp: realtime-js use of overloads makes this part hard to type correctly
+        const opts = getChannelFilter(spec) as any
+        chan.on<Row<T>>('postgres_changes', opts, ((c: any) => {
           // if we got this change over a channel we have recycled, ignore it
           if (channel.current === chan) {
-            onChange(change as any)
+            onChange(c)
           }
-        })
-        .subscribe((status, err) => {
-          if (onStatus != null) {
-            onStatus(status, err)
-          } else {
-            if (err != null) {
-              console.error(err)
-            }
+        }) as any)
+      }
+      chan.subscribe((status, err) => {
+        if (onStatus != null) {
+          onStatus(status, err)
+        } else {
+          if (err != null) {
+            console.error(err)
           }
-        })
+        }
+      })
       return () => {
         onEnabled?.(false)
         db.removeChannel(chan)
         channel.current = undefined
       }
     }
-  }, [table, filterString, isVisible])
+  }, [isActive])
 
   return channel
 }

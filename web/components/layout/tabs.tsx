@@ -151,7 +151,11 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
             )}
             aria-current={activeIndex === i ? 'page' : undefined}
           >
-            <Col>
+            <Col
+              className={clsx(
+                tab.stackedTabIcon && activeIndex !== i && 'opacity-85'
+              )}
+            >
               <Tooltip text={tab.tooltip}>
                 {tab.stackedTabIcon && (
                   <Row className="justify-center">{tab.stackedTabIcon}</Row>

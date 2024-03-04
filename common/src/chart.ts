@@ -39,7 +39,8 @@ export const maxMinBin = <P extends HistoryPoint>(
   const max = points[points.length - 1].x
   const binWidth = Math.ceil((max - min) / bins)
 
-  //  for each bin, get the max, min, and median in that bin
+  // for each bin, get the max, min, and median in that bin
+  // TODO: time-weighted average instead of median?
   const result = []
   let lastInBin = points[0]
   for (let i = 0; i < bins; i++) {

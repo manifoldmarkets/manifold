@@ -212,9 +212,9 @@ async function addContractsToSeenMarketsTable(
   await Promise.all(
     visitedContractIds.map((contractId) =>
       pg.none(
-        `insert into user_seen_markets (user_id, contract_id, type)
-            values ($1, $2, $3)`,
-        [userId, contractId, 'view market']
+        `insert into user_contract_views (user_id, contract_id, page_views, last_page_view_ts)
+            values ($1, $2, 1, now())`,
+        [userId, contractId]
       )
     )
   )

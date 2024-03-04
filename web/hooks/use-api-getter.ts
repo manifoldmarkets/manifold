@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { useEvent } from './use-event'
 
 export const useAPIGetter = <P extends APIPath>(
@@ -15,15 +15,21 @@ export const useAPIGetter = <P extends APIPath>(
     APIResponse<P> | undefined
   >(undefined, `${path}-${propsString}`)
 
+  const [error, setError] = usePersistentInMemoryState<APIError | undefined>(
+    undefined,
+    `${path}-${propsString}-error`
+  )
+
   const refresh = useEvent(async () => {
     if (!props) return
-    const data = await api(path, props)
-    setData(data)
+    await api(path, props)
+      .then(setData)
+      .catch((e) => setError(e))
   })
 
   useEffect(() => {
     refresh()
   }, [propsString])
 
-  return { data, refresh }
+  return { data, error, refresh }
 }

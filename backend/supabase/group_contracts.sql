@@ -37,17 +37,13 @@ select (g.id, g.data, g.importance_score, false)::group_with_score_and_bet_flag
 from
     groups g
         join group_contracts gc on g.id = gc.group_id
-        join user_seen_markets sm on gc.contract_id = sm.contract_id
-where
-        sm.user_id = uid
-  and sm.type  = 'view market'
+        join user_contract_views ucv on gc.contract_id = ucv.contract_id
+  where ucv.user_id = uid and ucv.page_views > 0
 union
 select (g.id, g.data, g.importance_score, true)::group_with_score_and_bet_flag
 from
     groups g
         join group_contracts gc on g.id = gc.group_id
         join contract_bets cb on gc.contract_id = cb.contract_id
-where
-        cb.user_id = uid
+where cb.user_id = uid
 $$;
-

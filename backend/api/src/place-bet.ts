@@ -49,7 +49,8 @@ export const placeBetMain = async (
       amount,
       contractId,
       trans,
-      log
+      log,
+      isApi
     )
 
     const { closeTime, outcomeType, mechanism } = contract
@@ -503,7 +504,8 @@ export const validateBet = async (
   amount: number,
   contractId: string,
   trans: Transaction,
-  log: GCPLog
+  log: GCPLog,
+  isApi: boolean
 ) => {
   log(`Inside main transaction for ${uid}.`)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -525,6 +527,13 @@ export const validateBet = async (
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )
+  if (contract.outcomeType === 'STONK' && isApi) {
+    throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
+
   return {
     user,
     contract,

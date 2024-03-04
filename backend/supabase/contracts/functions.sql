@@ -42,7 +42,7 @@ or replace function get_noob_questions () returns setof contracts language sql a
   with newbs as (
     select id
     from users
-    where (data->>'createdTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+    where created_time > now() - interval '2 weeks'
   )
   select * from contracts
   where creator_id in (select * from newbs)

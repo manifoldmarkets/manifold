@@ -324,7 +324,6 @@ function NotificationGroupItem(props: {
           notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
         )
       ),
-
     'createdTime'
   ).reverse()
   const onboardingNotifs = notifications.some(

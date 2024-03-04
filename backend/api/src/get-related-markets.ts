@@ -3,13 +3,22 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
+import { StructuredLogger } from 'shared/log'
 
-export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
-  body,
-  _,
-  { log }
-) => {
+export const getrelatedmarketscache: APIHandler<
+  'get-related-markets-cache'
+> = async (body, _, { log }) => {
   const { contractId, limit, limitTopics } = body
+  return getRelatedMarkets(contractId, limit, limitTopics, log)
+}
+
+const getRelatedMarkets = async (
+  contractId: string,
+  limit: number,
+  limitTopics: number,
+  log: StructuredLogger
+) => {
+  log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
@@ -45,7 +54,7 @@ export const getrelatedmarkets: APIHandler<'get-related-markets'> = async (
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
-      `select slug,importance_score from groups where slug = ANY(
+      `select slug, importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
               where id = $1

@@ -137,7 +137,7 @@ export function UserContractsList(props: {
   )
 }
 
-const MarketStats = (props: {
+export const MarketStats = (props: {
   title: string
   total: string
   subTitle?: ReactNode

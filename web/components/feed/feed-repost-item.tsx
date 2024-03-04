@@ -33,18 +33,18 @@ export const FeedRepost = memo(function (props: {
   trackingLocation: string
   user: User | null | undefined
   hide: () => void
-  onReplyClick?: (comment: ContractComment) => void
-  inTimeline?: boolean
 }) {
-  const { contract, user, item, hide, inTimeline, comment } = props
+  const { contract, user, item, hide, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
   const { bet, dataType } = item
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const commenterIsBettor = item.bet?.userUsername === comment.userUsername
-  const creatorRepostsOwnComment = item.creatorId === comment.userId
-  const showTopLevelRow = dataType === 'repost' && !commenterIsBettor && bet
+  const creatorRepostedTheirComment = item.creatorId === comment.userId
+  const showTopLevelRow =
+    (dataType === 'repost' && !commenterIsBettor && bet) ||
+    !creatorRepostedTheirComment
 
   return (
     <Col
@@ -58,13 +58,15 @@ export const FeedRepost = memo(function (props: {
           router.push(`${contractPath(contract)}#${comment.id}`)
         }}
       >
-        {showTopLevelRow && creatorRepostsOwnComment ? (
+        {showTopLevelRow && creatorRepostedTheirComment ? (
           <Row className="justify-between pr-2">
-            <CommentReplyHeaderWithBet
-              comment={comment}
-              contract={contract}
-              bet={bet}
-            />
+            {bet && (
+              <CommentReplyHeaderWithBet
+                comment={comment}
+                contract={contract}
+                bet={bet}
+              />
+            )}
             <FeedDropdown
               contract={contract}
               item={item}
@@ -75,9 +77,9 @@ export const FeedRepost = memo(function (props: {
           </Row>
         ) : (
           showTopLevelRow &&
-          !creatorRepostsOwnComment && (
+          !creatorRepostedTheirComment && (
             <Col>
-              <Row className={'mb-1 justify-end gap-2 pr-2'}>
+              <Row className={'mb-1 justify-end gap-1 pr-2'}>
                 <CardReason item={item} contract={contract} />
                 <FeedDropdown
                   contract={contract}
@@ -87,7 +89,7 @@ export const FeedRepost = memo(function (props: {
                   importanceScore={props.contract.importanceScore}
                 />
               </Row>
-              {!commenterIsBettor && (
+              {!commenterIsBettor && bet && (
                 <CommentReplyHeaderWithBet
                   comment={comment}
                   contract={contract}
@@ -109,16 +111,16 @@ export const FeedRepost = memo(function (props: {
                     className={clsx(marketCreator && 'shadow shadow-amber-300')}
                   />
                 </UserHovercard>
-                <Col className={''}>
+                <Col>
                   <FeedCommentHeader
                     comment={comment}
                     contract={contract}
-                    inTimeline={inTimeline}
+                    inTimeline={true}
                   />
-                  <Content content={comment.content} />
+                  <Content size={'md'} content={comment.content} />
                 </Col>
               </Row>
-              {(commenterIsBettor || !bet) && (
+              {(commenterIsBettor || !bet) && !showTopLevelRow && (
                 <Row className={' justify-end gap-2'}>
                   <FeedDropdown
                     contract={contract}

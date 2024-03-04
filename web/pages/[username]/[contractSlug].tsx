@@ -81,7 +81,6 @@ import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
-import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
 import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 export async function getStaticProps(ctx: {
@@ -165,6 +164,7 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
+    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
@@ -308,16 +308,6 @@ export function ContractPageContent(props: ContractParams) {
     contract,
     relatedContracts
   )
-  const seenContractIds = useHasSeenContracts(
-    user?.id,
-    relatedMarkets
-      .map((c) => c.id)
-      .concat(
-        Object.values(relatedContractsByTopicSlug)
-          .flat()
-          .map((c) => c.id)
-      )
-  )
 
   // detect whether header is stuck by observing if title is visible
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -458,6 +448,7 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
+                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
@@ -482,7 +473,6 @@ export function ContractPageContent(props: ContractParams) {
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 showOnlyAfterBet={true}
                 justBet={justBet}
@@ -550,7 +540,6 @@ export function ContractPageContent(props: ContractParams) {
             {comments.length > 3 && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 justBet={!showRelatedMarketsBelowBet && justBet}
               />
@@ -595,7 +584,6 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             <RelatedContractsGrid
               contracts={relatedMarkets}
-              seenContractIds={seenContractIds}
               loadMore={loadMore}
               contractsByTopicSlug={relatedContractsByTopicSlug}
               topics={topics}
@@ -608,7 +596,6 @@ export function ContractPageContent(props: ContractParams) {
 
           <RelatedContractsList
             contracts={relatedMarkets}
-            seenContractIds={seenContractIds}
             loadMore={loadMore}
             topics={topics}
             contractsByTopicSlug={relatedContractsByTopicSlug}

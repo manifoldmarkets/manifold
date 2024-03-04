@@ -21,7 +21,7 @@ export function median(xs: number[]) {
 }
 
 export function average(xs: number[]) {
-  return sum(xs) / xs.length
+  return xs.length === 0 ? 0 : sum(xs) / xs.length
 }
 
 export const EPSILON = 0.00000001

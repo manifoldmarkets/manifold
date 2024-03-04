@@ -8,6 +8,7 @@ import {
 import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
+import clsx from 'clsx'
 
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -32,8 +33,12 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
-import clsx from 'clsx'
 import { Linkify } from 'web/components/widgets/linkify'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
+  PARTNER_UNIQUE_TRADER_THRESHOLD,
+} from 'common/partner'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -51,7 +56,8 @@ export function combineAndSumIncomeNotifications(
       (notification) => {
         return (
           (notification.sourceTitle ?? notification.sourceContractTitle) +
-          (notification.data?.answerText ?? '')
+          (notification.data?.answerText ?? '') +
+          notification.data?.isPartner
         )
       }
     )
@@ -60,9 +66,9 @@ export function combineAndSumIncomeNotifications(
         groupedNotificationsBySourceTitle[sourceTitle]
 
       let sum = 0
-      notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseFloat(notification.sourceText) + sum)
-      )
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += parseFloat(notification.sourceText ?? '0')
+      })
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
@@ -70,6 +76,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
+          isPartner: notificationsForSourceTitle[0].data?.isPartner ?? false,
         },
       }
       newNotifications.push(newNotification)
@@ -86,7 +93,8 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = notification.data as UniqueBettorData
+  const data = (notification.data ?? {}) as UniqueBettorData
+  const { outcomeType, isPartner, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -98,6 +106,11 @@ export function UniqueBettorBonusIncomeNotification(props: {
       ? relatedNotifications[0].data?.answerText
       : undefined
 
+  const partnerBonusAmount =
+    numNewTraders *
+    (outcomeType === 'MULTIPLE_CHOICE'
+      ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
+      : PARTNER_UNIQUE_TRADER_BONUS)
   return (
     <NotificationFrame
       notification={notification}
@@ -115,9 +128,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel
-              uniqueBettorData={notification.data as UniqueBettorData}
-            />
+            <BettorStatusLabel uniqueBettorData={data} />
           </div>
         )
       }
@@ -133,6 +144,27 @@ export function UniqueBettorBonusIncomeNotification(props: {
         />{' '}
         <QuestionOrGroupLink notification={notification} />
       </span>
+      {isPartner && totalUniqueBettors && (
+        <div>
+          Partners bonus:{' '}
+          {totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD ? (
+            <>
+              only{' '}
+              <span className="font-semibold">
+                {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors}
+              </span>{' '}
+              more traders to collect{' '}
+              <span className="font-semibold text-teal-600">
+                ${partnerBonusAmount.toFixed(2)} each
+              </span>
+            </>
+          ) : (
+            <span className="font-semibold text-teal-600">
+              ${partnerBonusAmount.toFixed(2)}
+            </span>
+          )}
+        </div>
+      )}
       <MultiUserNotificationModal
         notification={notification}
         modalLabel={'Traders'}

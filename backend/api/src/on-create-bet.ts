@@ -1,4 +1,10 @@
-import { GCPLog, getDoc, getUsers, revalidateStaticProps } from 'shared/utils'
+import {
+  GCPLog,
+  getDoc,
+  getUsers,
+  revalidateContractStaticProps,
+  revalidateStaticProps,
+} from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -68,7 +74,7 @@ export const onCreateBets = async (
     } as Bet
   })
   const userIdsToRefreshMetrics = uniq(
-    bets.filter((b) => b.shares !== 0).map((bet) => bet.userId)
+    bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
   )
   const usersToRefreshMetrics = betUsers.filter((user) =>
     userIdsToRefreshMetrics.includes(user.id)
@@ -93,6 +99,8 @@ export const onCreateBets = async (
     )
     log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
   }
+  await revalidateContractStaticProps(contract)
+  log('Contract static props revalidated.')
 }
 
 const notifyUsersOfLimitFills = async (

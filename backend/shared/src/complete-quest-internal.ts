@@ -17,6 +17,8 @@ import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { GCPLog, log as oldLog } from 'shared/utils'
+import { StructuredLogger } from 'shared/log'
+import { WEEK_MS } from 'common/util/time'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -72,11 +74,18 @@ export const completeCalculatedQuestFromTrigger = async (
   )
 }
 
-export const completeReferralsQuest = async (userId: string) => {
+export const completeReferralsQuest = async (
+  userId: string,
+  log: StructuredLogger
+) => {
   // Bc we don't issue a payout here, (onCreateBet does that) we don't need an idempotency key
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
   const count = await getCurrentCountForQuest(userId, 'REFERRALS', db)
+  log('completing referrals quest', {
+    userId,
+    count,
+  })
   await setQuestScoreValue(userId, questDetails.scoreId, count, db)
 }
 
@@ -137,11 +146,19 @@ const getCurrentCountForQuest = async (
     oldLog('getting shares count for user', userId, 'from startTs', startTs)
     return await getUserShareEventsCount(userId, startTs, db)
   } else if (questType === 'REFERRALS') {
-    const startOfWeek = dayjs()
+    let startOfWeek = dayjs()
       .tz('America/Los_Angeles')
       .startOf('week')
       .add(1, 'day')
       .valueOf()
+    const ptNow = dayjs().tz('America/Los_Angeles').valueOf()
+    if (ptNow < startOfWeek) startOfWeek = startOfWeek - WEEK_MS
+    oldLog(
+      'refer-user: getting referrals count for user',
+      userId,
+      'from startOfWeek ts:',
+      startOfWeek
+    )
     return await getReferralCount(userId, startOfWeek, db)
   } else return 0
 }

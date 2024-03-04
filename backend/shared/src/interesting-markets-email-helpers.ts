@@ -78,9 +78,9 @@ export const getUsersRecommendedContracts = async (
                       and c.creator_id != $1
                       and not exists(select 1
                         from contract_bets
-                        where contract_id = c.id    
-                          and user_id = $1) 
-                      and not exists(select 1 from user_seen_markets
+                        where contract_id = c.id
+                          and user_id = $1)
+                      and not exists(select 1 from user_contract_views
                         where user_id = $1
                         and contract_id = c.id)
           `,

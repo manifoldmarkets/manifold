@@ -41,7 +41,8 @@ export const placeMultiBetMain = async (
       amount,
       contractId,
       trans,
-      log
+      log,
+      isApi
     )
 
     const { closeTime, mechanism } = contract

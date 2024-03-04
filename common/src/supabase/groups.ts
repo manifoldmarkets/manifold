@@ -20,17 +20,24 @@ export async function getGroup(db: SupabaseClient, groupId: string) {
   }
 }
 
-export async function getUserIsMember(
+export async function userCanAccess(
   db: SupabaseClient,
-  groupId: string | undefined | null,
+  contractId: string,
   userId: string | undefined | null
 ) {
-  if (!userId || !groupId) return false
+  if (!userId) return false
+
+  const groupQuery = await run(
+    db.from('group_contracts').select('group_id').eq('contract_id', contractId)
+  )
+
+  if (!groupQuery.data || groupQuery.data.length !== 1) return false
+
   const { data } = await run(
     db
       .from('group_members')
-      .select('group_id, member_id')
-      .eq('group_id', groupId)
+      .select()
+      .eq('group_id', groupQuery.data[0].group_id)
       .eq('member_id', userId)
       .limit(1)
   )
@@ -48,7 +55,6 @@ export const convertGroup = (
   sqlGroup: Partial<Row<'groups'>> & { id: string }
 ) =>
   convertSQLtoTS<'groups', Group>(sqlGroup, {
-    fs_updated_time: false,
     name_fts: false,
   })
 
@@ -58,20 +64,30 @@ export const convertTopic = (
   convertSQLtoTS<'groups', Topic>(
     sqlGroup,
     {
-      fs_updated_time: false,
       name_fts: false,
       creator_id: false,
     },
     false
   )
 
-export async function getTopics(groupIds: string[], db: SupabaseClient) {
+export async function getTopicsOnContract(
+  contractId: string,
+  db: SupabaseClient
+) {
   const { data } = await run(
     db
-      .from('groups')
-      .select('id,name,slug,importance_score,privacy_status')
-      .in('id', groupIds)
-      .order('importance_score', { ascending: false })
+      .from('group_contracts')
+      .select(
+        'groups (id, name, slug, importance_score, privacy_status, total_members)'
+      )
+      .eq('contract_id', contractId)
+      .order('importance_score', {
+        referencedTable: 'groups',
+        ascending: false,
+      })
   )
-  return data?.map(convertGroup) as Topic[]
+
+  return data
+    .filter((g) => g?.groups !== null)
+    .map((g) => convertGroup(g.groups as any) as Topic)
 }

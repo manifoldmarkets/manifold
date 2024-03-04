@@ -11,7 +11,7 @@ export async function getReferralCount(
     db
       .from('users')
       .select('*', { head: true, count: 'exact' })
-      .gte('data->>createdTime', since)
+      .gte('created_time', new Date(since).toISOString())
       .eq('data->>referredByUserId', userId)
   )
   return count
