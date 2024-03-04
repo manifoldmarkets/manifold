@@ -3,7 +3,10 @@ import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
 import { memo, ReactNode, useState, useMemo } from 'react'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import {
+  PeriodToSnapshots,
+  usePortfolioHistory,
+} from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
@@ -28,6 +31,7 @@ export const PortfolioValueSection = memo(
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
+    preloadPoints?: PeriodToSnapshots
   }) {
     const {
       userId,
@@ -36,10 +40,15 @@ export const PortfolioValueSection = memo(
       lastUpdatedTime,
       onlyShowProfit,
       graphContainerClassName,
+      preloadPoints,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
-    const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
+    const portfolioHistory = usePortfolioHistory(
+      userId,
+      currentTimePeriod,
+      preloadPoints
+    )
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
 
     const first = portfolioHistory?.[0]

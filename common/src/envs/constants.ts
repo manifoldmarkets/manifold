@@ -261,6 +261,7 @@ export const VERIFIED_USERNAMES = [
 export const BLESSED_BANNED_USER_IDS = [
   'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
   'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
+  '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
 ]
 
 export const PARTNER_USER_IDS: string[] = [

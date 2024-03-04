@@ -55,16 +55,13 @@ export function HorizontalDashboard(props: {
   if (dashboardLength < 2) {
     return (
       <>
-        {' '}
         {dashboard.items.map((item) => (
           <HorizontalCard
             key={key(item)}
             item={item}
             previews={previews}
             contracts={contracts}
-            className={clsx(
-              'from-primary-100 to-canvas-0 via-canvas-0 w-full bg-gradient-to-t'
-            )}
+            className={clsx('mb-6 w-full shadow-xl shadow-indigo-500/20')}
           />
         ))}
       </>
@@ -80,21 +77,19 @@ export function HorizontalDashboard(props: {
               item={item}
               previews={previews}
               contracts={contracts}
-              className={clsx(
-                'from-primary-100 to-canvas-0 via-canvas-0 w-1/2 bg-gradient-to-t'
-              )}
+              className={clsx(' mb-6 w-1/2 shadow-xl shadow-indigo-500/20')}
             />
           ))}
         </Row>
         <Carousel className="w-full max-w-3xl sm:hidden">
           {dashboard.items.map((item) => (
             <HorizontalCard
-              key={key(item)}
               item={item}
+              key={key(item)}
               previews={previews}
               contracts={contracts}
               className={clsx(
-                'from-primary-100 to-canvas-0 via-canvas-0 min-w-[320px] bg-gradient-to-t'
+                ' mb-6 min-w-[320px] shadow-xl shadow-indigo-500/20'
               )}
             />
           ))}
@@ -112,7 +107,7 @@ export function HorizontalDashboard(props: {
             previews={previews}
             contracts={contracts}
             className={clsx(
-              'from-primary-100 to-canvas-0 via-canvas-0 min-w-[320px] bg-gradient-to-t'
+              'mb-6 min-w-[320px] shadow-xl shadow-indigo-500/20'
             )}
           />
         ))}

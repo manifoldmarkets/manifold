@@ -9,6 +9,7 @@ import {
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
+import { getContractPageViews } from 'common/supabase/contracts'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -18,7 +19,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getTopics, getUserIsMember } from 'common/supabase/groups'
+import { getTopicsOnContract, userCanAccess } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
@@ -56,6 +57,7 @@ export async function getContractParams(
     betReplies,
     chartAnnotations,
     topics,
+    totalViews,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
@@ -94,7 +96,8 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
-    getTopics(contract.groupLinks?.map((gl) => gl.groupId) ?? [], db),
+    getTopicsOnContract(contract.id, db),
+    getContractPageViews(db, contract.id),
   ])
   if (!canAccessContract) {
     return contract && !contract.deleted
@@ -135,6 +138,7 @@ export async function getContractParams(
       userPositionsByOutcome,
       totalPositions,
       totalBets,
+      totalViews,
       topContractMetrics,
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
@@ -198,16 +202,12 @@ const getCanAccessContract = async (
   uid: string | undefined,
   db: SupabaseClient
 ): Promise<boolean> => {
-  const groupId = contract.groupLinks?.length
-    ? contract.groupLinks[0].groupId
-    : undefined
   const isAdmin = uid ? await getIsAdmin(db, uid) : false
 
   return (
     (!contract.deleted || isAdmin) &&
     (contract.visibility !== 'private' ||
-      (groupId !== undefined &&
-        uid !== undefined &&
-        (isAdmin || (await getUserIsMember(db, groupId, uid)))))
+      (uid !== undefined &&
+        (isAdmin || (await userCanAccess(db, contract.id, uid)))))
   )
 }

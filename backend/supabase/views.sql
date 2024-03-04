@@ -58,20 +58,6 @@ create or replace view
   );
 
 create or replace view
-  related_contracts as (
-    select
-      id1 as from_contract_id,
-      id2 as contract_id,
-      distance,
-      data
-    from
-      contract_distance
-      join listed_open_contracts on id = id2
-    where
-      id1 != id2
-  );
-
-create or replace view
   user_contract_distance as (
     select
       user_id,

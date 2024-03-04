@@ -11,6 +11,7 @@ import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
+import Link from 'next/link'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()
@@ -72,7 +73,12 @@ function ElectionContent(props: ElectionsPageProps) {
                 <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
                 <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
               </div>
-              Trending
+              <Link
+                href="/politics/politicsheadline"
+                className="hover:text-primary-700 hover:underline"
+              >
+                Trending
+              </Link>
             </Row>
             <HorizontalDashboard
               initialDashboard={trendingDashboard.initialDashboard}
@@ -80,19 +86,20 @@ function ElectionContent(props: ElectionsPageProps) {
               initialContracts={trendingDashboard.initialContracts}
               slug={trendingDashboard.slug}
             />
-            <Spacer h={4} />
           </Col>
         )}
+
+        <PoliticsCard
+          contract={electionCandidateContract as MultiContract}
+          viewType="CANDIDATE"
+          className="-mt-4"
+        />
         <PoliticsCard
           contract={electionPartyContract as MultiContract}
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
-          className="-mt-4"
         />
-        <PoliticsCard
-          contract={electionCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
+
         <Col className="gap-6 sm:gap-8 lg:hidden">
           <PoliticsCard
             contract={democratCandidateContract as MultiContract}

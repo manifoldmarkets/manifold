@@ -8,7 +8,6 @@ import {
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import type { Headline } from 'common/news'
 import { useUser } from 'web/hooks/use-user'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -25,6 +24,7 @@ import { USElectionsPage } from 'web/components/elections-page'
 import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
 import { useEvent } from 'web/hooks/use-event'
+import { PoliticsDashboardPage } from 'web/components/dashboard/politics-dashboard-page'
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -154,16 +154,17 @@ function Elections(props: ElectionsPageProps) {
       <USElectionsPage {...props} />
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
-          <Col className={'relative'} key={dashboard.slug + 'section'}>
+          <Col className={'relative my-4'} key={dashboard.slug + 'section'}>
             <div
-              className={'absolute -top-8'}
+              className={'absolute -top-12'}
               ref={headlineSlugsToRefs.current[dashboard.slug]}
             />
-            <DashboardPage
+            <PoliticsDashboardPage
               {...(dashboard as SuccesNewsDashboardPageProps)}
               editByDefault={false}
               embeddedInParent={true}
               endpoint={'politics'}
+              className="!max-w-none"
             />
           </Col>
         )

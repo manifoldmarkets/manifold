@@ -1,6 +1,6 @@
 import { NoSEO } from 'web/components/NoSEO'
 import { useEffect, useState } from 'react'
-import { Row as rowfor, run } from 'common/supabase/utils'
+import { Row as rowfor, run, tsToMillis } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { HOUR_MS } from 'common/util/time'
 import { groupBy, orderBy, uniq } from 'lodash'
@@ -18,13 +18,21 @@ import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
 import { Contract } from 'common/contract'
 
+function getMostRecentViewMillis(view: rowfor<'user_contract_views'>) {
+  return Math.max(
+    view.last_page_view_ts ? tsToMillis(view.last_page_view_ts) : 0,
+    view.last_promoted_view_ts ? tsToMillis(view.last_promoted_view_ts) : 0,
+    view.last_card_view_ts ? tsToMillis(view.last_card_view_ts) : 0
+  )
+}
+
 export default function Journeys() {
   const [eventsByUser, setEventsByUser] = useState<
     Record<string, rowfor<'user_events'>[]>
   >({})
 
   const [marketVisitsByUser, setMarketVisitsByUser] = useState<
-    Record<string, rowfor<'user_seen_markets'>[]>
+    Record<string, rowfor<'user_contract_views'>[]>
   >({})
   const [markets, setMarkets] = useState<
     Pick<Contract, 'question' | 'id' | 'slug'>[]
@@ -84,9 +92,9 @@ export default function Journeys() {
           users.data.map((u) => u.id)
         )
     )
-    const seenMarkets = await run(
+    const contractViews = await run(
       db
-        .from('user_seen_markets')
+        .from('user_contract_views')
         .select('*')
         .in(
           'user_id',
@@ -97,13 +105,17 @@ export default function Journeys() {
       db
         .from('contracts')
         .select('id, question, slug')
-        .in('id', uniq(seenMarkets.data.map((m) => m.contract_id)))
+        .in('id', uniq(contractViews.data.map((m) => m.contract_id)))
     )
     setMarkets(
       markets.data.map((m) => m as Pick<Contract, 'question' | 'id' | 'slug'>)
     )
     const marketVisitsByUser = groupBy(
-      orderBy(seenMarkets.data as rowfor<'user_seen_markets'>[], 'ts', 'asc'),
+      orderBy(
+        contractViews.data as rowfor<'user_contract_views'>[],
+        (v) => getMostRecentViewMillis(v),
+        'asc'
+      ),
       'user_id'
     )
     const eventsByUser = groupBy(
@@ -232,13 +244,13 @@ export default function Journeys() {
             eventName = ''
             groupKey = ''
             marketVisits.forEach((event, index) => {
-              if (event.type !== eventName) groupKey = `${event.type}_${index}`
+              groupKey = `view_${index}`
               if (!eventGroups[groupKey]) eventGroups[groupKey] = []
               eventGroups[groupKey].push({
                 ...event,
-                name: event.type,
+                name: 'view',
                 link: markets.find((m) => m.id === event.contract_id)?.slug,
-                ts: event.created_time,
+                ts: new Date(getMostRecentViewMillis(event)).toISOString(),
               })
               eventName = event.contract_id
             })

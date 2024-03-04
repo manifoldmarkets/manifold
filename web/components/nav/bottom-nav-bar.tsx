@@ -9,7 +9,6 @@ import {
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import { BiSearchAlt2 } from 'react-icons/bi'
-import { FaFlagUsa } from 'react-icons/fa6'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -28,6 +27,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
+import { GiCapitol } from 'react-icons/gi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -43,26 +43,25 @@ function getNavigation(user: User) {
       href: '/home',
       icon: HomeIcon,
     },
-
-    {
-      name: 'Politics',
-      href: '/politics',
-      icon: FaFlagUsa,
-      prefetch: false,
-    },
-    {
-      name: 'Portfolio',
-      href: `/${user.username}/portfolio`,
-    },
     {
       name: 'Browse',
       href: '/browse/for-you',
       icon: BiSearchAlt2,
     },
     {
+      name: 'Politics',
+      href: '/politics',
+      icon: GiCapitol,
+      prefetch: false,
+    },
+    {
       name: 'Notifs',
       href: `/notifications`,
       icon: NotificationsIcon,
+    },
+    {
+      name: 'Portfolio',
+      href: `/${user.username}/portfolio`,
     },
   ]
 }
@@ -71,7 +70,7 @@ const signedOutNavigation = () => [
   {
     name: 'Politics',
     href: '/politics',
-    icon: FaFlagUsa,
+    icon: GiCapitol,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },
@@ -121,6 +120,7 @@ export function BottomNavBar(props: {
           item={item}
           currentPage={currentPage}
           user={user}
+          className={item.name === 'Politics' ? '-mt-1' : ''}
         />
       ))}
       {!!user && (
@@ -155,7 +155,7 @@ function NavBarItem(props: {
   user?: User | null
   className?: string
 }) {
-  const { item, currentPage, children, user } = props
+  const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
   const balance = useAnimatedNumber(user?.balance ?? 0)
@@ -167,7 +167,8 @@ function NavBarItem(props: {
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === `/${user.username}/portfolio` && selectedItemClass
+          currentPage === `/${user.username}/portfolio` && selectedItemClass,
+          className
         )}
         onClick={track}
         onTouchStart={() => setTouched(true)}
@@ -186,7 +187,7 @@ function NavBarItem(props: {
   if (!item.href) {
     return (
       <button
-        className={clsx(itemClass, touched && touchItemClass)}
+        className={clsx(itemClass, touched && touchItemClass, className)}
         onClick={() => {
           track()
           item.onClick?.()
@@ -210,7 +211,8 @@ function NavBarItem(props: {
       className={clsx(
         itemClass,
         touched && touchItemClass,
-        isCurrentPage && selectedItemClass
+        isCurrentPage && selectedItemClass,
+        className
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}

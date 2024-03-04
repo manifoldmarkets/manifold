@@ -1,12 +1,11 @@
 import { memo, useEffect, useMemo, useState } from 'react'
-import { sum } from 'lodash'
+import { last, minBy, sum } from 'lodash'
 import clsx from 'clsx'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import Link from 'next/link'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 
 import { User } from 'common/user'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { ContractMetric } from 'common/contract-metric'
@@ -22,17 +21,22 @@ import { DAY_MS } from 'common/util/time'
 import { linkClass } from 'web/components/widgets/site-link'
 import { ChangeIcon } from 'web/components/portfolio/balance-card'
 import { Button } from 'web/components/buttons/button'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { getCutoff } from 'web/lib/util/time'
 
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 
 export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  const { user, className } = props
-
-  const portfolio = useCurrentPortfolio(user.id)
-
+  const { user, className, weeklyPortfolioData } = props
+  const latestPortfolio = last(weeklyPortfolioData)
+  const dayAgoPortfolio = minBy(
+    weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
+    'timestamp'
+  )
   const [open, setOpen] = useState(false)
 
   const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
@@ -45,15 +49,24 @@ export const InvestmentValueCard = memo(function (props: {
     )
   }, [setContractMetrics])
 
-  const dailyProfit = Math.round(
+  const dailyProfitFromMetrics = Math.round(
     useMemo(() => {
       if (!contractMetrics) return 0
       return sum(contractMetrics.metrics.map((m) => m.from?.day.profit ?? 0))
     }, [contractMetrics])
   )
+  const dailyProfit =
+    latestPortfolio && dayAgoPortfolio
+      ? latestPortfolio.investmentValue +
+        latestPortfolio.balance -
+        latestPortfolio.totalDeposits -
+        (dayAgoPortfolio.investmentValue +
+          dayAgoPortfolio.balance -
+          dayAgoPortfolio.totalDeposits)
+      : dailyProfitFromMetrics
 
   // If a user is new, then their portfolio value may be out of date, so show the metrics value instead
-  const portfolioValue = portfolio ? portfolio.investmentValue : 0
+  const portfolioValue = latestPortfolio ? latestPortfolio.investmentValue : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
     : 0

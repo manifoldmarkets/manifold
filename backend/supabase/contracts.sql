@@ -30,7 +30,6 @@ create table if not exists
                   fs_updated_time timestamp not null,
                   deleted boolean default false,
                   group_slugs text[],
-                  views int default 0,
                   last_updated_time timestamptz,
                   last_bet_time timestamptz,
                   last_comment_time timestamptz,
@@ -100,7 +99,6 @@ begin
                                when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')
                                else null
             end;
-        new.views := coalesce(((new.data) ->> 'views')::int, 0);
         new.last_updated_time := case
                                      when new.data ? 'lastUpdatedTime' then millis_to_ts(((new.data) ->> 'lastUpdatedTime')::bigint)
                                      else null

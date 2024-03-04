@@ -284,13 +284,15 @@ export function SupabaseSearch(props: {
   useDebouncedEffect(
     () => {
       const searchCount = ++searchCountRef.current
-      queryUsers(query).then((results) => {
-        if (searchCount === searchCountRef.current) setUserResults(results)
-      })
-      queryTopics(query).then((results) => {
-        if (searchCount === searchCountRef.current)
-          setTopicResults?.(results.lite)
-      })
+      // Wait for both queries to reduce visual flicker on update.
+      Promise.all([queryUsers(query), queryTopics(query)]).then(
+        ([userResults, topicResults]) => {
+          if (searchCount === searchCountRef.current) {
+            setUserResults(userResults)
+            setTopicResults?.(topicResults.lite)
+          }
+        }
+      )
     },
     100,
     [query]
@@ -400,6 +402,9 @@ export function SupabaseSearch(props: {
                 : `${numHits} `
             return (
               <PillButton
+                className={clsx(
+                  option === 'Questions' ? 'min-w-[120px]' : 'min-w-[100px]'
+                )}
                 key={option}
                 selected={
                   searchType === option ||

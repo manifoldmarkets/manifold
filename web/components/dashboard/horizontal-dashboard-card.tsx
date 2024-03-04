@@ -20,13 +20,13 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
-import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
+import { SmallAnswerBars } from '../answers/small-answer'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -187,7 +187,7 @@ export function HorizontalDashboardCard(props: {
           <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-          <SimpleAnswerBars contract={contract} maxAnswers={4} />
+          <SmallAnswerBars contract={contract} maxAnswers={4} />
         )}
 
         {isBinaryMc && contract.mechanism === 'cpmm-multi-1' && (

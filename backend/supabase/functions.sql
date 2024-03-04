@@ -140,11 +140,11 @@ limit count offset start $$;
 
 create
 or replace function sample_resolved_bets (trader_threshold int, p numeric) returns table (prob numeric, is_yes boolean) stable parallel safe language sql as $$
-select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob, 
+select  0.5 * ((contract_bets.prob_before)::numeric + (contract_bets.prob_after)::numeric)  as prob,
        ((contracts.resolution)::text = 'YES')::boolean as is_yes
 from contract_bets
   join contracts on contracts.id = contract_bets.contract_id
-where 
+where
    contracts.outcome_type = 'BINARY'
   and (contracts.resolution = 'YES' or contracts.resolution = 'NO')
   and contracts.visibility = 'public'
@@ -234,11 +234,10 @@ or replace function get_your_recent_contracts (uid text, n int, start int) retur
     ),
     your_viewed_contracts as (
         select contract_id,
-              ts_to_millis(created_time) as ts
-        from user_seen_markets
-        where user_id = uid
-          and type = 'view market'
-        order by created_time desc
+              ts_to_millis(last_page_view_ts) as ts
+        from user_contract_views
+        where user_id = uid and last_page_view_ts is not null
+        order by last_page_view_ts desc
         limit n * 10 + start * 5
     ),
     recent_contract_ids as (
@@ -418,7 +417,7 @@ unredeemed_market_ads as (
     id, market_id, funds, cost_per_view, embedding
   from
     market_ads
-  where 
+  where
     market_ads.user_id != uid -- hide your own ads; comment out to debug
     and not exists (
       SELECT 1
@@ -480,7 +479,7 @@ or replace function user_top_news (uid text, similarity numeric, n numeric) retu
   source_name text,
   contract_ids text[]
 ) as $$
-with 
+with
 user_embedding as (
   select interest_embedding
   from user_embeddings
@@ -745,3 +744,12 @@ or replace function get_user_manalink_claims (creator_id text) returns table (ma
     join txns as tx on mc.txn_id = tx.id
     where m.creator_id = creator_id
 $$ language sql;
+
+create or replace function get_contract_page_views(contract_id text)
+  returns numeric
+  language sql
+as $$
+  select coalesce(sum(page_views), 0)
+  from user_contract_views as ucv
+  where ucv.contract_id = get_contract_page_views.contract_id
+$$;

@@ -163,6 +163,7 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
+    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
@@ -445,6 +446,7 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
+                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>

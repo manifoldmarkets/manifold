@@ -485,6 +485,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return !contract ? 'Prediction streak bonus' : contract?.question
     case 'LOAN':
       return 'Loan'
+    case 'LEAGUE_PRIZE':
+      return 'League prize'
     case 'MARKET_BOOST_REDEEM':
       return 'Claim boost'
     case 'SIGNUP_BONUS':

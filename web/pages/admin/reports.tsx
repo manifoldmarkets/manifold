@@ -20,18 +20,20 @@ import { db } from 'web/lib/supabase/db'
 import { getUser } from 'web/lib/supabase/user'
 
 export async function getStaticProps() {
-  const { data } = await run(
-    db
-      .from('reports')
-      .select()
-      .order('created_time', { ascending: false })
-      .limit(500)
-  )
-  const reports = await getReports(data).catch((e) => {
+  try {
+    const { data } = await run(
+      db
+        .from('reports')
+        .select()
+        .order('created_time', { ascending: false })
+        .limit(500)
+    )
+    const reports = await getReports(data)
+    return { props: { reports }, revalidate: 60 }
+  } catch (e) {
     console.error(e)
-    return []
-  })
-  return { props: { reports } }
+    return { props: { reports: [] }, revalidate: 60 }
+  }
 }
 
 export default function Reports(props: { reports: LiteReport[] }) {

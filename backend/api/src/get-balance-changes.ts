@@ -131,6 +131,7 @@ const getContractIdFromTxn = (txn: Txn) => {
       'LOAN',
       'MARKET_BOOST_CREATE',
       'SIGNUP_BONUS',
+      'LEAGUE_PRIZE',
     ].includes(txn.category)
   )
     log('No contractId in get-balance-changes for txn', txn)

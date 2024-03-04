@@ -48,6 +48,9 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingContractRow } from 'web/components/contract/contracts-table'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { LuCrown } from 'react-icons/lu'
+import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { getCutoff } from 'web/lib/util/time'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 
 export const getStaticProps = async (props: {
   params: {
@@ -63,6 +66,9 @@ export const getStaticProps = async (props: {
         .select('*', { head: true, count: 'exact' })
         .eq('user_id', user.id)
     : { count: 0 }
+  const weeklyPortfolioData = user
+    ? await getPortfolioHistory(user.id, getCutoff('weekly'), db)
+    : []
   const oneWeekBalanceChanges = user
     ? await api('get-balance-changes', {
         userId: user.id,
@@ -77,7 +83,8 @@ export const getStaticProps = async (props: {
       username,
       shouldIgnoreUser,
       balanceChanges,
-      portfolioPoints: portfolioPoints ?? 0,
+      totalPortfolioPoints: portfolioPoints ?? 0,
+      weeklyPortfolioData,
     }),
     revalidate: 60, // Regenerate after a minute
   }
@@ -92,18 +99,12 @@ export default function UserPortfolio(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  if (!props.user) return <Custom404 />
-  return (
-    <UserPortfolioInternal
-      user={props.user}
-      username={props.username}
-      shouldIgnoreUser={props.shouldIgnoreUser}
-      balanceChanges={props.balanceChanges}
-      portfolioPoints={props.portfolioPoints}
-    />
-  )
+  const { user, ...rest } = props
+  if (!user) return <Custom404 />
+  return <UserPortfolioInternal user={user} {...rest} />
 }
 
 function UserPortfolioInternal(props: {
@@ -111,9 +112,15 @@ function UserPortfolioInternal(props: {
   username: string
   shouldIgnoreUser: boolean
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) {
-  const { shouldIgnoreUser, balanceChanges, portfolioPoints } = props
+  const {
+    shouldIgnoreUser,
+    balanceChanges,
+    weeklyPortfolioData,
+    totalPortfolioPoints,
+  } = props
   const user = useUserById(props.user.id) ?? props.user
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
@@ -218,7 +225,8 @@ function UserPortfolioInternal(props: {
                 <PortfolioSummary
                   user={user}
                   balanceChanges={balanceChanges}
-                  portfolioPoints={portfolioPoints}
+                  totalPortfolioPoints={totalPortfolioPoints}
+                  weeklyPortfolioData={weeklyPortfolioData}
                 />
               ),
             },
@@ -273,10 +281,10 @@ function UserPortfolioInternal(props: {
 const PortfolioSummary = (props: {
   user: User
   balanceChanges: AnyBalanceChangeType[]
-  portfolioPoints: number
+  totalPortfolioPoints: number
+  weeklyPortfolioData: PortfolioSnapshot[]
 }) => {
-  const { user, portfolioPoints } = props
-
+  const { user, totalPortfolioPoints, weeklyPortfolioData } = props
   const router = useRouter()
   const pathName = usePathname()
   const currentUser = useUser()
@@ -309,10 +317,11 @@ const PortfolioSummary = (props: {
         <InvestmentValueCard
           user={user}
           className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
+          weeklyPortfolioData={weeklyPortfolioData}
         />
       </Row>
 
-      {portfolioPoints > 1 && (
+      {totalPortfolioPoints > 1 && (
         <Col className={'px-1 md:pr-8'}>
           <PortfolioValueSection
             userId={user.id}
@@ -320,6 +329,7 @@ const PortfolioSummary = (props: {
             defaultTimePeriod={
               currentUser?.id === user.id ? 'weekly' : 'monthly'
             }
+            preloadPoints={{ [getCutoff('weekly')]: weeklyPortfolioData }}
             lastUpdatedTime={user.metricsLastUpdated}
             isCurrentUser={currentUser?.id === user.id}
             hideAddFundsButton={true}

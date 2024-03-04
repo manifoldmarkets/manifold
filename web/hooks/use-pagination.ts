@@ -85,7 +85,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
   const allItems = [...state.prefix, ...state.items]
   const lastItem = allItems[allItems.length - 1]
   const itemCount = allItems.length
-  const pageStart = Math.min(state.at, itemCount - opts.pageSize)
+  const pageStart = Math.max(0, Math.min(state.at, itemCount - opts.pageSize))
   const pageEnd = pageStart + opts.pageSize
   const pageItems = allItems.slice(pageStart, pageEnd)
 
@@ -127,7 +127,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     pageSize: opts.pageSize,
     isLoading: loading,
     isComplete: state.isComplete,
-    isStart: pageStart <= 0,
+    isStart: pageStart === 0,
     isEnd: state.isComplete && pageEnd >= itemCount,
     getPrev,
     getNext,
