@@ -222,7 +222,7 @@ export function AnswerCpmmBetPanel(props: {
   answer: Answer
   contract: CPMMMultiContract
   closePanel: () => void
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  outcome: 'YES' | 'NO' | undefined
   me: User | null | undefined
 }) {
   const { answer, contract, closePanel, outcome, me } = props

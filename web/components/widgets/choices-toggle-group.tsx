@@ -14,7 +14,7 @@ const colorClasses = {
 export type ColorType = keyof typeof colorClasses
 
 export function ChoicesToggleGroup(props: {
-  currentChoice: number | string | boolean
+  currentChoice: number | string | boolean | undefined
   choicesMap: { [key: string]: string | number | boolean }
   disabled?: boolean
   disabledOptions?: Array<string | number | boolean> //values
