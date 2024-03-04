@@ -134,5 +134,5 @@ async function handleReferral(
     txn.amount.toString(),
     referredByContract
   )
-  await completeReferralsQuest(referredByUserId)
+  await completeReferralsQuest(referredByUserId, log)
 }
