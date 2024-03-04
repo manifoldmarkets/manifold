@@ -111,6 +111,7 @@ function PartyAnswer(props: {
           'cursor-pointer py-1.5',
           selected && 'ring-primary-600 ring-2'
         )}
+        barColor="bg-canvas-0"
         label={
           <Row className={'items-center gap-1'}>
             <CreatorAndAnswerLabel

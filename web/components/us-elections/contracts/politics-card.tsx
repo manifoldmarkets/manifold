@@ -82,7 +82,7 @@ export function PoliticsCard(props: {
       <Col
         className={clsx(
           className,
-          'fade-in bg-canvas-0 group relative cursor-pointer gap-4 rounded-lg p-4 '
+          'fade-in group relative cursor-pointer gap-4 rounded-lg '
         )}
       >
         <Link
