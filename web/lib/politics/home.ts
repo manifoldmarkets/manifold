@@ -44,6 +44,8 @@ export async function getElectionsPageProps() {
     'who-will-win-the-new-hampshire-repu',
     'who-will-be-the-republican-nominee-8a36dedc6445',
     'who-will-be-the-democratic-nominee-9d4a78f63ce1',
+    'who-would-win-the-us-presidential-e-e43c62c31980',
+    'who-would-win-the-us-presidential-e-2f4e0b318013',
   ]
   const contractsPromises = specialContractSlugs.map(async (slug) =>
     getContract(slug)
@@ -57,6 +59,8 @@ export async function getElectionsPageProps() {
     newHampshireContract,
     republicanVPContract,
     democraticVPContract,
+    democraticElectability,
+    republicanElectability,
   ] = await Promise.all(contractsPromises)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
@@ -72,6 +76,8 @@ export async function getElectionsPageProps() {
     newHampshireContract,
     republicanVPContract,
     democraticVPContract,
+    democraticElectability,
+    republicanElectability,
     linkPreviews,
     newsDashboards,
     headlines,

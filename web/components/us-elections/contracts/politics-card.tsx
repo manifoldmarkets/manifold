@@ -26,6 +26,7 @@ export function PoliticsCard(props: {
   titleSize?: 'lg'
   maxAnswers?: number
   viewType: 'PARTY' | 'CANDIDATE' | 'STATE' | 'SMALL CANDIDATE'
+  excludeAnswers?: string[]
 }) {
   const {
     promotedData,
@@ -37,6 +38,7 @@ export function PoliticsCard(props: {
     maxAnswers,
     viewType,
     children,
+    excludeAnswers,
   } = props
 
   const contract =
@@ -122,7 +124,11 @@ export function PoliticsCard(props: {
           <VisibilityIcon contract={contract} />{' '}
           {customTitle ? customTitle : extractPhrase(contract.question)}
         </Link>
-        <CandidatePanel contract={contract} maxAnswers={8} />
+        <CandidatePanel
+          contract={contract}
+          maxAnswers={8}
+          excludeAnswers={excludeAnswers}
+        />
       </Col>
     )
   }
@@ -150,7 +156,11 @@ export function PoliticsCard(props: {
           {customTitle ?? contract.question}
         </Link>
         <Spacer h={4} />
-        <SmallCandidatePanel contract={contract} maxAnswers={maxAnswers ?? 6} />
+        <SmallCandidatePanel
+          contract={contract}
+          maxAnswers={maxAnswers ?? 6}
+          excludeAnswers={excludeAnswers}
+        />
       </ClickFrame>
     )
   }

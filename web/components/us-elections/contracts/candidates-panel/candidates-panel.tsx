@@ -13,13 +13,15 @@ import { Col } from '../../../layout/col'
 import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
+import { Row } from 'web/components/layout/row'
 
 // just the bars
 export function CandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  excludeAnswers?: string[]
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, excludeAnswers } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -55,7 +57,11 @@ export function CandidatePanel(props: {
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ])
-    .filter((a) => a.text !== 'Other')
+    .filter(
+      (a) =>
+        a.text !== 'Other' &&
+        (!excludeAnswers || !excludeAnswers.includes(a.text))
+    )
     .slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
@@ -66,13 +72,53 @@ export function CandidatePanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
+  const shownAnswersLength = displayedAnswers.length
+
   return (
     <Col className="mx-[2px]">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
         <>
-          <Carousel labelsParentClassName="gap-2">
+          <Row
+            className={clsx(
+              'w-min gap-4',
+              shownAnswersLength < 5 ? 'hidden sm:flex' : 'hidden'
+            )}
+          >
+            {displayedAnswers.map((answer) => (
+              <CandidateAnswer
+                key={answer.id}
+                answer={answer as Answer}
+                contract={contract}
+                color={getCandidateColor(removeTextInParentheses(answer.text))}
+                user={user}
+              />
+            ))}
+            {moreCount > 0 && (
+              <Link href={contractPath(contract)} className="my-auto h-full">
+                <Col
+                  className={clsx(
+                    ' text-ink-1000 items-center justify-center overflow-hidden text-sm transition-all hover:underline '
+                  )}
+                >
+                  <Col className=" items-center gap-1 whitespace-nowrap">
+                    {moreCount} more{' '}
+                    <span>
+                      <ArrowRightIcon className="h-4 w-4" />
+                    </span>
+                  </Col>
+                </Col>
+              </Link>
+            )}
+          </Row>
+
+          <Carousel
+            className={clsx(
+              'w-full gap-2',
+              shownAnswersLength < 5 ? 'sm:hidden' : ''
+            )}
+          >
             {displayedAnswers.map((answer) => (
               <CandidateAnswer
                 key={answer.id}
