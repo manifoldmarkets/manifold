@@ -156,7 +156,11 @@ export function PoliticsCard(props: {
           {customTitle ?? contract.question}
         </Link>
         <Spacer h={4} />
-        <SmallCandidatePanel contract={contract} maxAnswers={maxAnswers ?? 6} />
+        <SmallCandidatePanel
+          contract={contract}
+          maxAnswers={maxAnswers ?? 6}
+          excludeAnswers={excludeAnswers}
+        />
       </ClickFrame>
     )
   }
