@@ -74,7 +74,7 @@ export const RequiredLoveUserForm = (props: {
             ? v !== ''
             : Array.isArray(v)
             ? v.length > 0
-            : v !== undefined
+            : v !== undefined && v !== 0
         )) &&
     !loadingUsername &&
     !loadingName
