@@ -196,7 +196,7 @@ function ElectionContent(props: ElectionsPageProps) {
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
               <div className="text-ink-600  ">
-                Who would win if they were the nominee?
+                Who would win the presidency if they were the nominee?
               </div>
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             </Row>
