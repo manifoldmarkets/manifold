@@ -21,7 +21,7 @@ import { DAY_MS } from 'common/util/time'
 
 type AnyContract = Contract & CPMMMultiContract & MultiContract
 const propsThatTriggerRevalidation: (keyof AnyContract)[] = [
-  'volume',
+  // 'volume', // This DOES trigger revalidation, but is run in place-bet.ts
   'question',
   'closeTime',
   'description',
