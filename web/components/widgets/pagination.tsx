@@ -23,6 +23,7 @@ export function PaginationNextPrev(props: {
     props
   return (
     <Row
+      aria-label="Pagination"
       className={clsx(className, 'flex-1 justify-between gap-2 sm:justify-end')}
     >
       <button
