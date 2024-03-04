@@ -43,8 +43,7 @@ export function Page(props: {
     boolean | undefined
   >(undefined, 'show-banner')
   useEffect(() => {
-    const shouldHide =
-      safeLocalStorage?.getItem('show-banner') === 'false'
+    const shouldHide = safeLocalStorage?.getItem('show-banner') === 'false'
     if (!shouldHide) {
       setShowBanner(true)
     }
