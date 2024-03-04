@@ -13,46 +13,56 @@ import { NewsDashboardPageProps } from 'common/politics/elections-data'
 
 export async function getStaticProps() {
   // redirect to first news item
-  const headlines = await api('headlines', {})
+  try {
+    const headlines = await api('headlines', {})
 
-  const first = headlines[0]
+    const first = headlines[0]
 
-  if (!first) {
+    if (!first) {
+      return {
+        props: { state: 'not found' },
+        revalidate: 60,
+      }
+    }
+
+    const dashboard = await api('get-dashboard-from-slug', {
+      dashboardSlug: first.slug,
+    })
+
+    const links = dashboard.items
+      .filter((item): item is DashboardLinkItem => item.type === 'link')
+      .map((item) => item.url)
+
+    const questionSlugs = dashboard.items
+      .filter((item): item is DashboardQuestionItem => item.type === 'question')
+      .map((item) => item.slug)
+      .slice(0, 20) // preload just the first n questions
+
+    const previews = await fetchLinkPreviews(links)
+    const fullContracts = await getContracts(questionSlugs, 'slug')
+    const contracts = fullContracts.map((c) =>
+      // remove some heavy fields that are not needed for the cards
+      removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
+    )
+
     return {
-      props: { state: 'not found' },
+      props: {
+        state: 'success',
+        initialDashboard: dashboard,
+        headlines,
+        previews,
+        initialContracts: contracts,
+        slug: first.slug,
+      },
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      props: {
+        state: 'not found',
+      },
       revalidate: 60,
     }
-  }
-
-  const dashboard = await api('get-dashboard-from-slug', {
-    dashboardSlug: first.slug,
-  })
-
-  const links = dashboard.items
-    .filter((item): item is DashboardLinkItem => item.type === 'link')
-    .map((item) => item.url)
-
-  const questionSlugs = dashboard.items
-    .filter((item): item is DashboardQuestionItem => item.type === 'question')
-    .map((item) => item.slug)
-    .slice(0, 20) // preload just the first n questions
-
-  const previews = await fetchLinkPreviews(links)
-  const fullContracts = await getContracts(questionSlugs, 'slug')
-  const contracts = fullContracts.map((c) =>
-    // remove some heavy fields that are not needed for the cards
-    removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
-  )
-
-  return {
-    props: {
-      state: 'success',
-      initialDashboard: dashboard,
-      headlines,
-      previews,
-      initialContracts: contracts,
-      slug: first.slug,
-    },
   }
 }
 

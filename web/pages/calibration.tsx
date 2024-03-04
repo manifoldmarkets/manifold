@@ -22,27 +22,42 @@ const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
 
 export const getStaticProps = async () => {
-  const result = await db
-    .from('platform_calibration')
-    .select('*')
-    .order('created_time', { ascending: false })
-    .limit(1)
+  try {
+    const result = await db
+      .from('platform_calibration')
+      .select('*')
+      .order('created_time', { ascending: false })
+      .limit(1)
 
-  const { points, score, n } = result.data?.[0]?.data as any
-  const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
-  const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
-  const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
+    const { points, score, n } = result.data?.[0]?.data as any
+    const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
+    const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
+    const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
 
-  return {
-    props: {
-      points,
-      score,
-      n,
-      trumpMarket,
-      gazaMarket,
-      sbfMarket,
-    },
-    revalidate: 60 * 60, // Regenerate after an hour
+    return {
+      props: {
+        points,
+        score,
+        n,
+        trumpMarket,
+        gazaMarket,
+        sbfMarket,
+      },
+      revalidate: 60 * 60, // Regenerate after an hour
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      props: {
+        points: [],
+        score: 0,
+        n: 0,
+        trumpMarket: null,
+        gazaMarket: null,
+        sbfMarket: null,
+      },
+      revalidate: 60,
+    }
   }
 }
 

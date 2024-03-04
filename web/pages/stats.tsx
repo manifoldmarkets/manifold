@@ -16,17 +16,23 @@ import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 
 export const getStaticProps = async () => {
-  const stats = await getStats().catch((e) => {
-    console.error('Failed to get stats', e)
-    return {}
-  })
-  return {
-    props: stats,
-    revalidate: 60 * 60, // One hour
+  try {
+    const stats = await getStats()
+    return {
+      props: { stats },
+      revalidate: 60 * 60, // One hour
+    }
+  } catch (err) {
+    console.error(err)
+    return { props: { stats: null }, revalidate: 60 }
   }
 }
 
-export default function Analytics(props: Stats) {
+export default function Analytics(props: { stats: Stats | null }) {
+  const { stats } = props
+  if (!stats) {
+    return null
+  }
   return (
     <Page trackPageView={'site stats page'}>
       <SEO
@@ -34,12 +40,12 @@ export default function Analytics(props: Stats) {
         description="See site-wide usage statistics."
         url="/stats"
       />
-      <CustomAnalytics {...props} />
+      <CustomAnalytics stats={stats} />
     </Page>
   )
 }
 
-export function CustomAnalytics(props: Stats) {
+export function CustomAnalytics(props: { stats: Stats }) {
   const {
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
@@ -69,9 +75,9 @@ export function CustomAnalytics(props: Stats) {
     dailyNewRealUserSignups,
     d1BetAverage,
     d1Bet3DayAverage,
-  } = props
+  } = props.stats
 
-  const startDate = props.startDate[0]
+  const startDate = props.stats.startDate[0]
 
   const dailyDividedByWeekly = dailyActiveUsers.map(
     (dailyActive, i) => dailyActive / weeklyActiveUsers[i]
