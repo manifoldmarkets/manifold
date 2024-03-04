@@ -336,11 +336,10 @@ export const updateStatsCore = async () => {
     if (today.length === 0) return 0
 
     const yesterday = dailyUserIds[i - 1]
-
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
     )
-    return retainedCount / yesterday.length
+    return yesterday.length === 0 ? 0 : retainedCount / yesterday.length
   })
 
   const d1WeeklyAvg = d1.map((_, i) => {

@@ -18,12 +18,16 @@ import { DAY_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 
 export async function getStaticProps() {
-  const headlines = await api('headlines', {})
-  return {
-    props: {
-      headlines,
-      revalidate: 30 * 60, // 30 minutes
-    },
+  try {
+    const headlines = await api('headlines', {})
+    return {
+      props: {
+        headlines,
+        revalidate: 30 * 60, // 30 minutes
+      },
+    }
+  } catch (err) {
+    return { props: { headlines: [] }, revalidate: 60 }
   }
 }
 
