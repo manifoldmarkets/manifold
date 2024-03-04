@@ -112,15 +112,13 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
 }
 const BetButton = (props: {
   answer: Answer
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  outcome: 'YES' | 'NO' | undefined
   contract: CPMMNumericContract
   color?: ColorType
   size?: SizeType
 }) => {
   const { answer, size, contract, color } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
-    undefined
-  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   const user = useUser()
   // This accommodates for bets on the non-main answer, perhaps made through the api

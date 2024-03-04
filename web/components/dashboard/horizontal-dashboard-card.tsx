@@ -49,13 +49,8 @@ export function HorizontalDashboardCard(props: {
     trackingPostfix,
     item,
     className,
-    children,
-    hide,
     showGraph,
-    hideBottomRow,
     size = 'md',
-    hideTags,
-    hideReason,
   } = props
   const user = useUser()
 
@@ -190,12 +185,14 @@ export function HorizontalDashboardCard(props: {
           <SmallAnswerBars contract={contract} maxAnswers={4} />
         )}
 
-        {isBinaryMc && contract.mechanism === 'cpmm-multi-1' && (
-          <BinaryMultiAnswersPanel
-            contract={contract}
-            answers={contract.answers}
-          />
-        )}
+        {isBinaryMc &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          contract.outcomeType !== 'NUMBER' && (
+            <BinaryMultiAnswersPanel
+              contract={contract}
+              answers={contract.answers}
+            />
+          )}
 
         {isBinaryCpmm && (showGraph || !ignore) && (
           <FeedBinaryChart
