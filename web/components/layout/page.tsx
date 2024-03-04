@@ -20,7 +20,6 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
-  maintainanceBannerEnabled?: boolean
 }) {
   const {
     trackPageView,
@@ -31,9 +30,8 @@ export function Page(props: {
     hideBottomBar,
   } = props
 
-  // TODO: Turn off maintainance banner!
   // Force enable maintainance banner.
-  const maintainanceBannerEnabled = true
+  const maintainanceBannerEnabled = false
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
