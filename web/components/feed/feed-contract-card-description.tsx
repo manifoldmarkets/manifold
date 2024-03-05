@@ -1,14 +1,16 @@
-import { Contract, contractPath } from 'common/contract'
 import { useRef, useState } from 'react'
-import { Content } from '../widgets/editor'
+import Link from 'next/link'
 import { ArrowRightIcon } from '@heroicons/react/solid'
+
+import { Contract, contractPath } from 'common/contract'
+import { Content } from '../widgets/editor'
 import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { Spacer } from '../layout/spacer'
-import Link from 'next/link'
-export const TEXT_MAX_HEIGHT = 250
-export const NON_TEXT_MAX_HEIGHT = 2000
+
+export const TEXT_MAX_HEIGHT = 120
+export const NON_TEXT_MAX_HEIGHT = 120
 
 export default function FeedContractCardDescription(props: {
   contract: Contract
