@@ -224,13 +224,14 @@ export const combineBetsOnSameAnswers = (
   bets: PreliminaryBetResults[],
   outcome: 'YES' | 'NO',
   answers: Answer[],
-  firstFillAmountOnly?: boolean // The following fills amounts are free from the arbitrage mana.
+  // The fills after the first are free bc they're due to arbitrage.
+  fillsFollowingFirstAreFree?: boolean
 ) => {
   return answers.map((answer) => {
     const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
     return {
       ...betsForAnswer[betsForAnswer.length - 1],
-      takers: firstFillAmountOnly
+      takers: fillsFollowingFirstAreFree
         ? [
             {
               ...betsForAnswer[0].takers[0],
