@@ -84,7 +84,6 @@ export function ContractTabs(props: {
     (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
     maybePluralize('Trade', totalBets)
 
-
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
     maybePluralize('Position', totalPositions)
@@ -155,7 +154,7 @@ export function ContractTabs(props: {
               />
             </Col>
           ),
-        },
+        }
       )}
     />
   )
