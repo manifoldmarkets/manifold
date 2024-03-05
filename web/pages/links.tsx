@@ -145,7 +145,7 @@ function ManalinksDisplay(props: {
         </Col>
         <Pagination
           page={page}
-          itemsPerPage={LINKS_PER_PAGE}
+          pageSize={LINKS_PER_PAGE}
           totalItems={items.length}
           setPage={setPage}
           className="bg-transparent"

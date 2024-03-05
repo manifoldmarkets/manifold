@@ -13,8 +13,8 @@ interface State<T> {
   prefix: T[]
   // items we have loaded in the list during the course of events
   items: T[]
-  // the index of the start of the requested page. may or may not have loaded items
-  index: number
+  // the index of the requested page. may or may not have loaded items
+  page: number
   // whether we are currently loading the next page
   isLoading: boolean
   // whether we believe we have loaded all items
@@ -27,7 +27,7 @@ type Action<T> =
   | ActionBase<'PREFIX', { prefix: T[] }>
   | ActionBase<'LOADING'>
   | ActionBase<'LOADED', { items: T[]; isComplete: boolean }>
-  | ActionBase<'MOVE', { index: number }>
+  | ActionBase<'MOVE', { page: number }>
 
 function getReducer<T>() {
   return (state: State<T>, action: Action<T>): State<T> => {
@@ -42,7 +42,7 @@ function getReducer<T>() {
         return { ...state, isLoading: false, ...action }
       }
       case 'MOVE': {
-        return { ...state, index: Math.max(0, action.index) }
+        return { ...state, page: Math.max(0, action.page) }
       }
       default:
         throw new Error('Invalid action.')
@@ -74,7 +74,7 @@ function getInitialState<T>(opts: PaginationOptions<T>): State<T> {
   return {
     prefix: opts.prefix ?? [],
     items: [],
-    index: 0,
+    page: 0,
     isLoading: false,
     isComplete: false,
   }
@@ -87,8 +87,8 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
   const lastItem = allItems[allItems.length - 1]
   const itemCount = allItems.length
   const pagesCount = Math.ceil(itemCount / opts.pageSize)
-  const pageIndex = Math.min(state.index, pagesCount - 1)
-  const pageStart = pageIndex * opts.pageSize
+  const page = Math.min(state.page, Math.max(pagesCount - 1, 0))
+  const pageStart = page * opts.pageSize
   const pageEnd = pageStart + opts.pageSize
   const pageItems = allItems.slice(pageStart, pageEnd)
 
@@ -99,12 +99,12 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
   // note: i guess if q changed we would probably want to wipe existing items,
   // and ignore the results of in-progress queries here? unclear with no example
 
-  const shouldLoad = !state.isComplete && state.index >= pagesCount
-  console.log(state.index, shouldLoad)
+  const itemsRequested = (state.page + 1) * opts.pageSize - itemCount
+  const shouldLoad = itemsRequested > 0 && !state.isComplete
   useEffect(() => {
     if (shouldLoad) {
-      const offset = state.index * opts.pageSize
-      const spec = { limit: opts.pageSize, offset, after: lastItem }
+      const offset = state.page * opts.pageSize
+      const spec = { limit: itemsRequested, offset, after: lastItem }
       dispatch({ type: 'LOADING' })
       opts.q(spec).then((newItems) => {
         const isComplete = newItems.length < opts.pageSize
@@ -112,22 +112,22 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
         dispatch({ type: 'LOADED', items, isComplete })
       })
     }
-  }, [shouldLoad, state.index, opts.pageSize, lastItem, opts.q])
+  }, [shouldLoad, state.page, opts.pageSize, lastItem, opts.q])
 
-  const getPage = useCallback(
-    (index: number) => dispatch({ type: 'MOVE', index }),
+  const setPage = useCallback(
+    (page: number) => dispatch({ type: 'MOVE', page }),
     [dispatch]
   )
 
   const getPrev = useCallback(
-    () => dispatch({ type: 'MOVE', index: pageIndex - 1 }),
-    [dispatch, pageIndex]
+    () => dispatch({ type: 'MOVE', page: page - 1 }),
+    [dispatch, page]
   )
 
   const getNext = useCallback(
     // allow page past the end -- we'll load the new page
-    () => dispatch({ type: 'MOVE', index: pageIndex + 1 }),
-    [dispatch, pageIndex]
+    () => dispatch({ type: 'MOVE', page: page + 1 }),
+    [dispatch, page]
   )
 
   const prepend = useCallback(
@@ -138,7 +138,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
 
   return {
     items: pageItems,
-    pageIndex,
+    page,
     pageStart,
     pageEnd,
     pageSize: opts.pageSize,
@@ -146,7 +146,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     isComplete: state.isComplete,
     isStart: pageStart === 0,
     isEnd: pageEnd >= itemCount,
-    getPage,
+    setPage,
     getPrev,
     getNext,
     prepend,

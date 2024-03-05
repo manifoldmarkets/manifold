@@ -77,7 +77,7 @@ export function FeedDropdown(props: {
         toast(
           item?.dataType +
             ' : ' +
-            item?.reasons?.join(', ') +
+            item?.reasons.join(', ') +
             ', importance: ' +
             importanceScore.toPrecision(2)
         ),

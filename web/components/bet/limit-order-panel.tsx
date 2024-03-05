@@ -23,7 +23,6 @@ import { User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './order-book'
@@ -377,20 +376,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {hasLimitBet && <Spacer h={8} />}
         <Row className="items-center justify-between gap-2">
-          <Button
-            color="gray"
-            size="xl"
-            className="text-white"
-            onClick={() => {
-              setIsYesNoSelectorVisible(true)
-
-              setOutcome(undefined)
-            }}
-          >
-            Cancel
-          </Button>
           {user && (
             <Button
               size="xl"

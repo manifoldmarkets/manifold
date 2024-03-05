@@ -70,13 +70,15 @@ export function combineAndSumIncomeNotifications(
         sum += parseFloat(notification.sourceText ?? '0')
       })
 
+      const { bet, ...otherData } = notificationsForSourceTitle[0]?.data ?? {}
+
       const newNotification = {
         ...notificationsForSourceTitle[0],
         sourceText: sum.toString(),
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
-          isPartner: notificationsForSourceTitle[0].data?.isPartner ?? false,
+          ...otherData,
         },
       }
       newNotifications.push(newNotification)
@@ -106,11 +108,11 @@ export function UniqueBettorBonusIncomeNotification(props: {
       ? relatedNotifications[0].data?.answerText
       : undefined
 
-  const partnerBonusAmount =
-    numNewTraders *
-    (outcomeType === 'MULTIPLE_CHOICE'
+  const partnerBonusPerTrader =
+    outcomeType === 'MULTIPLE_CHOICE'
       ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
-      : PARTNER_UNIQUE_TRADER_BONUS)
+      : PARTNER_UNIQUE_TRADER_BONUS
+  const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   return (
     <NotificationFrame
       notification={notification}
@@ -155,7 +157,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
               </span>{' '}
               more traders to collect{' '}
               <span className="font-semibold text-teal-600">
-                ${partnerBonusAmount.toFixed(2)} each
+                ${partnerBonusPerTrader.toFixed(2)} each
               </span>
             </>
           ) : (
