@@ -638,7 +638,9 @@ function YourTrades(props: { contract: Contract }) {
   })
   const userBets = rows ?? []
 
-  const visibleUserBets = userBets.filter((bet) => !bet.isRedemption)
+  const visibleUserBets = userBets.filter(
+    (bet) => !bet.isRedemption && bet.amount !== 0
+  )
 
   if (visibleUserBets.length === 0) return null
   return (
