@@ -50,7 +50,7 @@ export default function LimitOrderPanel(props: {
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
-  setOutcome: (outcome: 'YES' | 'NO' | undefined ) => void
+  setOutcome: (outcome: 'YES' | 'NO' | undefined) => void
   setIsYesNoSelectorVisible: (isVisible: boolean) => void
 }) {
   const {
@@ -385,11 +385,8 @@ export default function LimitOrderPanel(props: {
             className="text-white"
             onClick={() => {
               setIsYesNoSelectorVisible(true)
-              
-                setOutcome(undefined)
-              
-              
-              
+
+              setOutcome(undefined)
             }}
           >
             Cancel
