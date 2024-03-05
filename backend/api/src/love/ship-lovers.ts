@@ -7,13 +7,9 @@ import { createLoveShipNotification } from 'shared/create-love-notification'
 import { createAnswerCpmmMain } from 'api/create-answer-cpmm'
 import { addTargetToUserMarket } from 'shared/love/love-markets'
 import { LOVE_MARKET_COST } from 'common/love/constants'
+import { log } from 'shared/utils'
 
-export const shipLovers: APIHandler<'ship-lovers'> = async (
-  props,
-  auth,
-  gcpLogs
-) => {
-  const { log } = gcpLogs
+export const shipLovers: APIHandler<'ship-lovers'> = async (props, auth) => {
   const { targetUserId1, targetUserId2, remove } = props
   const creatorId = auth.uid
 
@@ -70,7 +66,7 @@ export const shipLovers: APIHandler<'ship-lovers'> = async (
       targetUserId: string,
       text: string
     ) =>
-      createAnswerCpmmMain(contractId, text, creatorId, gcpLogs, {
+      createAnswerCpmmMain(contractId, text, creatorId, {
         overrideAddAnswersMode: 'ONLY_CREATOR',
         specialLiquidityPerAnswer: LOVE_MARKET_COST,
         loverUserId: targetUserId,

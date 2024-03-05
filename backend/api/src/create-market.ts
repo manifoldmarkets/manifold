@@ -16,12 +16,7 @@ import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import {
-  GCPLog,
-  getUser,
-  getUserByUsername,
-  htmlToRichText,
-} from 'shared/utils'
+import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -52,12 +47,8 @@ import { onCreateMarket } from 'api/helpers/on-create-contract'
 type Body = ValidatedAPIParams<'market'>
 const firestore = admin.firestore()
 
-export const createMarket: APIHandler<'market'> = async (
-  body,
-  auth,
-  { log }
-) => {
-  const market = await createMarketHelper(body, auth, log)
+export const createMarket: APIHandler<'market'> = async (body, auth) => {
+  const market = await createMarketHelper(body, auth)
   return {
     result: toLiteMarket(market),
     continue: async () => {
@@ -66,11 +57,7 @@ export const createMarket: APIHandler<'market'> = async (
   }
 }
 
-export async function createMarketHelper(
-  body: Body,
-  auth: AuthedUser,
-  log: GCPLog
-) {
+export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {
     question,
     description,

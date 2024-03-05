@@ -18,17 +18,17 @@ export async function getDonationsByCharity() {
 }
 
 export function getDonationsPageQuery(charityId: string) {
-  return async (limit: number, after?: { ts: number }) => {
+  return async (p: { limit: number; after?: { ts: number } }) => {
     let q = db
       .from('txns')
       .select('from_id, created_time, amount')
       .eq('category', 'CHARITY')
       .eq('to_id', charityId)
       .order('created_time', { ascending: false } as any)
-      .limit(limit)
+      .limit(p.limit)
 
-    if (after?.ts) {
-      q = q.lt('created_time', millisToTs(after.ts))
+    if (p.after?.ts) {
+      q = q.lt('created_time', millisToTs(p.after.ts))
     }
     const txnData = (await run(q)).data
     const userIds = uniq(txnData.map((t) => t.from_id!))

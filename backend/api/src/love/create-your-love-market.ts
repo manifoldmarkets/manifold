@@ -4,7 +4,7 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getPrivateUser, getUser } from 'shared/utils'
+import { log, getPrivateUser, getUser } from 'shared/utils'
 import { createMarketHelper } from '../create-market'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { User } from 'common/user'
@@ -17,7 +17,7 @@ import { MONTH_MS } from 'common/util/time'
 
 export const createYourLoveMarket: APIHandler<
   'create-your-love-market'
-> = async (req, auth, { log }) => {
+> = async (_req, auth) => {
   const userId = auth.uid
   const db = createSupabaseClient()
 
@@ -105,7 +105,7 @@ export const createYourLoveMarket: APIHandler<
 This market resolves once I've gone on 3 dates with someone on Manifold Love or once 6 months have passed.
 
 The person I went on 3 dates with resolves YES. Other candidates where we have exchanged messages on Manifold Love resolve NO. Candidates where we have not both exchanged messages resolve N/A.
-  
+
 See [FAQ](https://manifold.love/faq) for more details.`,
       outcomeType: 'MULTIPLE_CHOICE',
       shouldAnswersSumToOne: false,
@@ -116,8 +116,7 @@ See [FAQ](https://manifold.love/faq) for more details.`,
       isLove: true,
       specialLiquidityPerAnswer: LOVE_MARKET_COST,
     },
-    auth,
-    log
+    auth
   )) as CPMMMultiContract
 
   return {

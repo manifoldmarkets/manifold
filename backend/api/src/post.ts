@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { getContractSupabase, getUser } from 'shared/utils'
+import { getContractSupabase, getUser, log } from 'shared/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -11,11 +11,7 @@ import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 
-export const post: APIHandler<'post'> = async (
-  props,
-  auth,
-  { log, logError }
-) => {
+export const post: APIHandler<'post'> = async (props, auth) => {
   const { contractId, content, betId: passedBetId, commentId } = props
 
   const contract = await getContractSupabase(contractId)
@@ -42,7 +38,6 @@ export const post: APIHandler<'post'> = async (
           content,
           isRepost: true,
           replyToBetId: passedBetId,
-          logError,
         })
       )
     comment = result
@@ -124,7 +119,6 @@ export const post: APIHandler<'post'> = async (
         poster.id,
         result.id,
         [auth.uid],
-        log,
         betId
       )
     },

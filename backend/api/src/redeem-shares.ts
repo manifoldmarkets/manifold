@@ -7,12 +7,11 @@ import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { APIError } from 'common/api/utils'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 
 export const redeemShares = async (
   userId: string,
-  contract: CPMMContract | CPMMMultiContract,
-  log: GCPLog
+  contract: CPMMContract | CPMMMultiContract
 ) => {
   return await firestore.runTransaction(async (trans) => {
     const { id: contractId } = contract

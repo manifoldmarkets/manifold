@@ -3,7 +3,7 @@ import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser } from 'shared/utils'
+import { log, getUser } from 'shared/utils'
 import { manifoldLoveUserId } from 'common/love/constants'
 
 const confirmLoverStageSchema = z.object({
@@ -11,7 +11,7 @@ const confirmLoverStageSchema = z.object({
   answerId: z.string(),
 })
 
-export const confirmLoverStage = authEndpoint(async (req, auth, log) => {
+export const confirmLoverStage = authEndpoint(async (req, auth) => {
   const { contractId, answerId } = validate(confirmLoverStageSchema, req.body)
   const yourUserId = auth.uid
 
@@ -84,8 +84,7 @@ export const confirmLoverStage = authEndpoint(async (req, auth, log) => {
     {
       answerId: answer.id,
       outcome: 'YES',
-    },
-    log
+    }
   )
 
   return { status: 'success', contract: resolvedContract }

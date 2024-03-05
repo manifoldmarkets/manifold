@@ -1,7 +1,7 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { NEW_USER_FEED_DATA_TYPES } from 'common/feed'
 import { Row, SupabaseClient } from 'common/supabase/utils'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { MINUTE_MS, WEEK_MS } from 'common/util/time'
@@ -43,12 +43,11 @@ export const generateNewUserFeedFromContracts = async (
   pg: SupabaseDirectClient,
   userIdFeedSource: string,
   targetContractIds: string[],
-  estimatedRelevance: number,
-  log: GCPLog
+  estimatedRelevance: number
 ) => {
   await pg.tx(async (t) => {
     const relatedFeedItems = await t.map(
-      `              
+      `
           WITH recent_feed as (
              SELECT distinct on (contract_id) * FROM user_feed
              where created_time > now() - interval '14 days'

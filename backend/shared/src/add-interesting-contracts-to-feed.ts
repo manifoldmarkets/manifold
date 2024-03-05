@@ -1,7 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import {
   insertMarketMovementContractToUsersFeeds,
@@ -28,7 +28,6 @@ export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   reloadAllEmbeddings: boolean,
-  log: GCPLog,
   readOnly = false
 ) {
   log(`Starting feed population. Loading user embeddings to store...`)
@@ -103,8 +102,7 @@ export async function addInterestingContractsToFeed(
           thisWeekScore,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'new',
-        log
+        'new'
       )
     } else if (
       !readOnly &&
@@ -124,8 +122,7 @@ export async function addInterestingContractsToFeed(
           tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'old',
-        log
+        'old'
       )
     }
 
@@ -139,8 +136,7 @@ export async function addInterestingContractsToFeed(
         todayScore,
         importanceScore,
       })
-      if (!readOnly)
-        await insertMarketMovementContractToUsersFeeds(contract, log)
+      if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
     }
   }
   log('Done adding trending contracts to feed')

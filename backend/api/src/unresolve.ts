@@ -10,7 +10,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { validate, authEndpoint, APIError } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { GCPLog, getContractSupabase } from 'shared/utils'
+import { log, getContractSupabase } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -24,7 +24,7 @@ const bodySchema = z
   .strict()
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
-export const unresolve = authEndpoint(async (req, auth, log) => {
+export const unresolve = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
 
   const contract = await getContractSupabase(contractId)
@@ -72,13 +72,13 @@ export const unresolve = authEndpoint(async (req, auth, log) => {
   await trackPublicEvent(auth.uid, 'unresolve market', {
     contractId,
   })
-  const updatedAttrs = await undoResolution(contractId, log)
+  const updatedAttrs = await undoResolution(contractId)
   await recordContractEdit(contract, auth.uid, Object.keys(updatedAttrs))
 
   return { success: true }
 })
 
-const undoResolution = async (contractId: string, log: GCPLog) => {
+const undoResolution = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
   const uniqueStartTimes = await pg.map(
     `select distinct data->'data'->'payoutStartTime' as payout_start_time
@@ -102,7 +102,7 @@ const undoResolution = async (contractId: string, log: GCPLog) => {
   } else {
     txns = await pg.map(
       `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
-                     AND from_type = 'CONTRACT' 
+                     AND from_type = 'CONTRACT'
                      AND from_id = $1`,
       [contractId],
       (r) => r.data as ContractResolutionPayoutTxn

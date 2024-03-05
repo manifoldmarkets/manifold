@@ -1,6 +1,5 @@
 import { DpmAnswer } from 'common/answer'
 import { Bet } from 'common/bet'
-import { Comment } from 'common/comment'
 import {
   Contract,
   FreeResponseContract,
@@ -16,7 +15,7 @@ import { getUser, getUserByUsername } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
@@ -29,7 +28,7 @@ const bodySchema = z
   })
   .strict()
 
-export const changeuserinfo = authEndpoint(async (req, auth, log, logError) => {
+export const changeuserinfo = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
@@ -45,18 +44,14 @@ export const changeuserinfo = authEndpoint(async (req, auth, log, logError) => {
   }
 
   try {
-    await changeUser(
-      user,
-      {
-        username: cleanedUsername,
-        name,
-        avatarUrl,
-      },
-      log
-    )
+    await changeUser(user, {
+      username: cleanedUsername,
+      name,
+      avatarUrl,
+    })
     return { message: 'Successfully changed user info.' }
   } catch (e) {
-    logError(e)
+    log.error(e)
     throw new APIError(500, 'update failed, please revert changes')
   }
 })
@@ -67,8 +62,7 @@ export const changeUser = async (
     username?: string
     name?: string
     avatarUrl?: string
-  },
-  log: GCPLog
+  }
 ) => {
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()

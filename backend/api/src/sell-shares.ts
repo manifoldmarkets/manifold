@@ -13,11 +13,11 @@ import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
+import { log } from 'shared/utils'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
-  auth,
-  { log }
+  auth
 ) => {
   const { contractId, shares, outcome, answerId } = props
 
@@ -194,7 +194,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const fullBets = []
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
-    updateMakers(makers, newBetDoc.id, contractDoc, transaction, log)
+    updateMakers(makers, newBetDoc.id, contractDoc, transaction)
 
     transaction.update(userDoc, {
       balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
@@ -277,7 +277,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           prob,
         })
       )
-      updateMakers(makers, betDoc.id, contractDoc, transaction, log)
+      updateMakers(makers, betDoc.id, contractDoc, transaction)
       for (const bet of ordersToCancel) {
         transaction.update(contractDoc.collection('bets').doc(bet.id), {
           isCancelled: true,
@@ -318,7 +318,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   }
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, log, allOrdersToCancel, [
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, [
       ...makers,
       ...otherResultsWithBet.flatMap((r) => r.makers),
     ])

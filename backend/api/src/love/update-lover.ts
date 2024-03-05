@@ -5,6 +5,7 @@ import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { contentSchema } from 'common/api/zod-types'
+import { log } from 'shared/utils'
 
 const optionalLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
@@ -33,7 +34,7 @@ const optionalLoversSchema = z.object({
 // TODO: make strict
 const combinedLoveUsersSchema = baseLoversSchema.merge(optionalLoversSchema)
 
-export const updatelover = authEndpoint(async (req, auth, log) => {
+export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()

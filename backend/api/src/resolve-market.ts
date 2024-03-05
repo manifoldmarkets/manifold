@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
 import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
-import { getUser } from 'shared/utils'
+import { log, getUser } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -18,8 +18,7 @@ import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
-  auth,
-  { log }
+  auth
 ) => {
   const { contractId } = props
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -81,8 +80,7 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
       contract,
       caller,
       creator,
-      resolutionParams,
-      log
+      resolutionParams
     )
 
     // Refresh answers.
@@ -92,7 +90,7 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
     contract.answers = answersSnap.docs.map((doc) => doc.data() as Answer)
   }
 
-  await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
+  await resolveMarketHelper(contract, caller, creator, resolutionParams)
   // TODO: return?
 }
 
