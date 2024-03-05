@@ -263,7 +263,7 @@ function BetRow(props: {
       )}
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       {isCpmmMulti && !isBinaryMC && (
-        <td>
+        <td className="max-w-[200px] truncate sm:max-w-[250px]">
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
         </td>
       )}
