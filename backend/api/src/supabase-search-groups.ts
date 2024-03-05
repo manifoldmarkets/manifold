@@ -91,8 +91,7 @@ function getSearchGroupSQL(props: {
 
 export const supabasesearchmygroups: APIHandler<'search-my-groups'> = async (
   props,
-  auth,
-  logs
+  auth
 ) => {
-  return supabasesearchgroups({ ...props, memberGroupsOnly: true }, auth, logs)
+  return supabasesearchgroups({ ...props, memberGroupsOnly: true }, auth)
 }

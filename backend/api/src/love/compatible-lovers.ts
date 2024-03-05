@@ -9,11 +9,11 @@ import {
   getGenderCompatibleLovers,
 } from 'shared/love/supabase'
 import { filterDefined } from 'common/util/array'
+import { log } from 'shared/utils'
 
 export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
   props,
-  _auth,
-  { log }
+  _auth
 ) => {
   const { userId } = props
 

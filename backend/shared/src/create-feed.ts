@@ -12,7 +12,7 @@ import {
   FEED_DATA_TYPES,
   FEED_REASON_TYPES,
 } from 'common/feed'
-import { GCPLog, log as oldLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
 import { DAY_MS } from 'common/util/time'
 
@@ -40,8 +40,7 @@ export const bulkInsertDataToUserFeed = async (
     postId?: number
     betId?: string
   },
-  pg: SupabaseDirectClient,
-  log?: GCPLog
+  pg: SupabaseDirectClient
 ) => {
   const eventTimeTz = new Date(eventTime).toISOString()
 
@@ -157,7 +156,6 @@ export const repostContractToFeed = async (
   creatorId: string,
   postId: number,
   userIdsToExclude: string[],
-  log: GCPLog,
   betId?: string
 ) => {
   const pg = createSupabaseDirectClient()
@@ -192,8 +190,7 @@ export const repostContractToFeed = async (
       betId,
       postId,
     },
-    pg,
-    log
+    pg
   )
 }
 
@@ -231,7 +228,7 @@ export const addContractToFeed = async (
     },
     pg
   )
-  oldLog(
+  log(
     `Added contract ${contract.id} to feed of ${
       Object.keys(usersToReasonsInterestedInContract).length
     } users`
@@ -244,7 +241,6 @@ export const addContractToFeedIfNotDuplicative = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   unseenNewerThanTime: number,
-  log: GCPLog,
   data?: Record<string, any>,
   trendingContractType?: 'old' | 'new'
 ) => {
@@ -284,8 +280,7 @@ export const addContractToFeedIfNotDuplicative = async (
 }
 
 export const insertMarketMovementContractToUsersFeeds = async (
-  contract: CPMMContract,
-  log: GCPLog
+  contract: CPMMContract
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -298,7 +293,6 @@ export const insertMarketMovementContractToUsersFeeds = async (
     'contract_probability_changed',
     [],
     Date.now() - 1.5 * DAY_MS,
-    log,
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
@@ -309,8 +303,7 @@ export const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
   unseenNewerThanTime: number,
   data: Record<string, any>,
-  trendingContractType: 'old' | 'new',
-  log: GCPLog
+  trendingContractType: 'old' | 'new'
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -323,7 +316,6 @@ export const insertTrendingContractToUsersFeeds = async (
     'trending_contract',
     [contract.creatorId],
     unseenNewerThanTime,
-    log,
     data,
     trendingContractType
   )

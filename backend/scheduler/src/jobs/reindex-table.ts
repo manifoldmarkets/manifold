@@ -1,9 +1,8 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 
 export function createReindexTablesJob(...tableNames: string[]) {
-  return async (ctx: JobContext) => {
-    const { log } = ctx
+  return async () => {
     const pg = createSupabaseDirectClient()
     const indexNames = await pg.map(
       `select indexname from pg_indexes

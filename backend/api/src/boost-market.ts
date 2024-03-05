@@ -4,7 +4,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { MarketAdCreateTxn } from 'common/txn'
-import { getContractSupabase } from 'shared/utils'
+import { log, getContractSupabase } from 'shared/utils'
 import { MIN_AD_COST_PER_VIEW } from 'common/boost'
 import { runTxn } from 'shared/txn/run-txn'
 import { generateContractEmbeddings } from 'shared/supabase/contracts'
@@ -17,7 +17,7 @@ const schema = z
   })
   .strict()
 
-export const boostmarket = authEndpoint(async (req, auth, log) => {
+export const boostmarket = authEndpoint(async (req, auth) => {
   const { marketId, totalCost, costPerView } = validate(schema, req.body)
 
   if (totalCost < costPerView) {

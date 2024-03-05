@@ -1,7 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 
-export async function cleanOldFeedRows({ log }: JobContext) {
+export async function cleanOldFeedRows() {
   log('Running clean old feed rows...')
   const pg = createSupabaseDirectClient()
   const BATCH_SIZE = 1000000

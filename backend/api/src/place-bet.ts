@@ -20,7 +20,7 @@ import {
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
@@ -28,17 +28,16 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 
-export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
+export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(props, auth.uid, isApi, log)
+  return await placeBetMain(props, auth.uid, isApi)
 }
 
 // Note: this returns a continuation function that should be run for consistency.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
-  isApi: boolean,
-  log: GCPLog
+  isApi: boolean
 ) => {
   const { amount, contractId, replyToCommentId } = body
 
@@ -292,7 +291,7 @@ export const placeBetMain = async (
     log(`Created new bet document for ${user.username} - auth ${uid}.`)
 
     if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans, log)
+      updateMakers(makers, betDoc.id, contractDoc, trans)
     }
     if (ordersToCancel) {
       for (const bet of ordersToCancel) {
@@ -376,7 +375,7 @@ export const placeBetMain = async (
               })
             )
           }
-          updateMakers(makers, betDoc.id, contractDoc, trans, log)
+          updateMakers(makers, betDoc.id, contractDoc, trans)
           for (const bet of ordersToCancel) {
             trans.update(contractDoc.collection('bets').doc(bet.id), {
               isCancelled: true,
@@ -408,7 +407,7 @@ export const placeBetMain = async (
     result
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, log, allOrdersToCancel, makers)
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
   return {
@@ -469,8 +468,7 @@ export const updateMakers = (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction,
-  log: GCPLog
+  trans: Transaction
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {

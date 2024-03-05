@@ -1,5 +1,5 @@
 import {
-  GCPLog,
+  log,
   getDoc,
   getUsers,
   revalidateContractStaticProps,
@@ -30,7 +30,6 @@ export const onCreateBets = async (
   normalBets: NormalizedBet[],
   contract: Contract,
   bettor: User,
-  log: GCPLog,
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
@@ -41,7 +40,7 @@ export const onCreateBets = async (
       ...(makers?.map((maker) => maker.bet.userId) ?? []),
     ])
     await Promise.all(
-      userIds.map(async (userId) => redeemShares(userId, contract, log))
+      userIds.map(async (userId) => redeemShares(userId, contract))
     )
     log('Share redemption transaction finished.')
   }

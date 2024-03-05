@@ -2,7 +2,7 @@ import { runScript } from './run-script'
 import { Contract } from 'common/contract'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -24,15 +24,9 @@ if (require.main === module) {
     for (const contract of oldLoveContracts) {
       console.log('resolving', contract.id, contract.slug, contract.question)
 
-      await resolveMarketHelper(
-        contract,
-        manifoldLoveUser,
-        manifoldLoveUser,
-        {
-          outcome: 'CANCEL',
-        },
-        log.debug
-      )
+      await resolveMarketHelper(contract, manifoldLoveUser, manifoldLoveUser, {
+        outcome: 'CANCEL',
+      })
     }
   })
 }

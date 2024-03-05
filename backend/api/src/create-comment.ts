@@ -4,7 +4,7 @@ import { ContractComment } from 'common/comment'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { GCPLog, getContract, getUserFirebase } from 'shared/utils'
+import { log, getContract, getUserFirebase } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
@@ -21,11 +21,7 @@ export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment: APIHandler<'comment'> = async (
-  props,
-  auth,
-  { logError }
-) => {
+export const createComment: APIHandler<'comment'> = async (props, auth) => {
   const {
     contractId,
     content,
@@ -42,7 +38,6 @@ export const createComment: APIHandler<'comment'> = async (
     replyToCommentId,
     replyToAnswerId,
     replyToBetId,
-    logError,
   })
 }
 
@@ -57,7 +52,6 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
-    logError: GCPLog
   }
 ) => {
   const {
@@ -68,7 +62,6 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
-    logError,
   } = options
 
   const {
@@ -165,7 +158,6 @@ export const createCommentOnContractInternal = async (
         comment,
         creator,
         bet,
-        logError,
       })
     },
   }

@@ -10,7 +10,7 @@ import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import * as admin from 'firebase-admin'
-import { GCPLog, getContractSupabase, getUserFirebase } from 'shared/utils'
+import { log, getContractSupabase, getUserFirebase } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
@@ -24,7 +24,7 @@ const bodySchema = z
   })
   .strict()
 
-export const referuser = authEndpoint(async (req, auth, log) => {
+export const referuser = authEndpoint(async (req, auth) => {
   const { referredByUsername, contractId } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
@@ -56,7 +56,7 @@ export const referuser = authEndpoint(async (req, auth, log) => {
     }
     log(`referredByContract: ${referredByContract.slug}`)
   }
-  await handleReferral(newUser.id, referredByUser.id, log, referredByContract)
+  await handleReferral(newUser.id, referredByUser.id, referredByContract)
   await trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
@@ -68,7 +68,6 @@ export const referuser = authEndpoint(async (req, auth, log) => {
 async function handleReferral(
   newUserId: string,
   referredByUserId: string,
-  log: GCPLog,
   referredByContract?: Contract
 ) {
   const firestore = admin.firestore()

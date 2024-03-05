@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import { getLocalEnv } from 'shared/init-admin'
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
-import { gLog as log } from 'shared/utils'
+import { log } from 'shared/utils'
 
 export async function initGoogleCredentialsAndSecrets() {
   try {

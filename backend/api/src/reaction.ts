@@ -2,12 +2,9 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { createLikeNotification } from 'shared/create-notification'
 import { assertUnreachable } from 'common/util/types'
+import { log } from 'shared/utils'
 
-export const addOrRemoveReaction: APIHandler<'react'> = async (
-  props,
-  auth,
-  { log }
-) => {
+export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const { contentId, contentType, remove } = props
   const userId = auth.uid
 

@@ -8,7 +8,7 @@ import {
   resolveMarketHelper,
 } from 'shared/resolve-market-helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { GCPLog, getUser } from 'shared/utils'
+import { log, getUser } from 'shared/utils'
 
 export const getUserLoveMarket = async (userId: string) => {
   const pg = createSupabaseDirectClient()
@@ -92,8 +92,7 @@ export const resolveLoveMarketOtherAnswers = async (
   contract: Contract,
   resolver: User,
   creator: User,
-  resolutionParams: ResolutionParams,
-  log: GCPLog
+  resolutionParams: ResolutionParams
 ) => {
   if (
     !(
@@ -120,15 +119,9 @@ export const resolveLoveMarketOtherAnswers = async (
 
     log(`Resolving ${otherAnswer.text} to ${outcome}`)
 
-    await resolveMarketHelper(
-      contract,
-      resolver,
-      creator,
-      {
-        outcome,
-        answerId: otherAnswer.id,
-      },
-      log
-    )
+    await resolveMarketHelper(contract, resolver, creator, {
+      outcome,
+      answerId: otherAnswer.id,
+    })
   }
 }

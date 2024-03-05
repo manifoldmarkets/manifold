@@ -1,11 +1,8 @@
 import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
+import { log } from 'shared/utils'
 
-export const starLover: APIHandler<'star-lover'> = async (
-  props,
-  auth,
-  { log }
-) => {
+export const starLover: APIHandler<'star-lover'> = async (props, auth) => {
   const { targetUserId, remove } = props
   const creatorId = auth.uid
 

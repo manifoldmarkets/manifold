@@ -8,7 +8,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { getUser } from 'shared/utils'
+import { log, getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -24,7 +24,7 @@ const bodySchema = z
   })
   .strict()
 
-export const creategroup = authEndpoint(async (req, auth, log) => {
+export const creategroup = authEndpoint(async (req, auth) => {
   const { name, about, memberIds, privacyStatus } = validate(
     bodySchema,
     req.body

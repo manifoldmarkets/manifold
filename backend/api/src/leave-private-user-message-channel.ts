@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { getUser } from 'shared/utils'
+import { log, getUser } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   insertPrivateMessage,
@@ -14,7 +14,7 @@ const postSchema = z
   .strict()
 
 export const leaveprivateusermessagechannel = authEndpoint(
-  async (req, auth, log) => {
+  async (req, auth) => {
     const { channelId } = validate(postSchema, req.body)
     const pg = createSupabaseDirectClient()
     const user = await getUser(auth.uid)

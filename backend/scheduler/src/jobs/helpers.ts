@@ -1,9 +1,14 @@
 import { Cron, CronOptions } from 'croner'
-import { JobContext } from 'shared/utils'
 import { log, withLogContext } from 'shared/log'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 
+// type for scheduled job functions
+export type JobContext = {
+  lastEndTime?: number
+}
+
+// todo: would be nice if somehow we got these hooked up to the job logging context
 const DEFAULT_OPTS: CronOptions = {
   timezone: 'America/Los_Angeles',
   protect: (job) => {
@@ -52,7 +57,6 @@ export function createJob(
 
       // Run job
       await fn({
-        log: log.info,
         lastEndTime: lastEndTimeStamp
           ? new Date(lastEndTimeStamp).valueOf()
           : undefined,

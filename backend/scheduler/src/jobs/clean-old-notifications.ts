@@ -1,8 +1,8 @@
 import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 
-export async function cleanOldNotifications({ log }: JobContext) {
+export async function cleanOldNotifications() {
   log('Running clean old notifications...')
   const pg = createSupabaseDirectClient()
   const userIds = await pg.map(

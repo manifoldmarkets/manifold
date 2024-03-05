@@ -3,7 +3,7 @@ import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { gLog, isProd } from '../utils'
+import { log, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
@@ -11,7 +11,7 @@ import { HOUR_MS } from 'common/util/time'
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
     // Read more: https://node-postgres.com/apis/pool#error
-    gLog('ERROR', 'pgPromise background error', {
+    log.error('pgPromise background error', {
       error: err,
       event: e,
     })

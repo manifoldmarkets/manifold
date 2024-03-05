@@ -2,12 +2,9 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { sumBy } from 'lodash'
+import { log } from 'shared/utils'
 
-export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
-  body,
-  _,
-  { log }
-) => {
+export const getadanalytics: APIHandler<'get-ad-analytics'> = async (body) => {
   const { contractId } = body
   const db = createSupabaseClient()
   const [{ data: adData }, { data: viewData }] = await Promise.all([
