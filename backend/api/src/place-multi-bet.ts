@@ -4,7 +4,6 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { BetInfo, CandidateBet, getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { GCPLog } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -16,22 +15,18 @@ import {
   processRedemptions,
   validateBet,
 } from 'api/place-bet'
+import { log } from 'shared/utils'
 
-export const placeMultiBet: APIHandler<'multi-bet'> = async (
-  props,
-  auth,
-  { log }
-) => {
+export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeMultiBetMain(props, auth.uid, isApi, log)
+  return await placeMultiBetMain(props, auth.uid, isApi)
 }
 
 // Note: this returns a continuation function that should be run for consistency.
 export const placeMultiBetMain = async (
   body: ValidatedAPIParams<'multi-bet'>,
   uid: string,
-  isApi: boolean,
-  log: GCPLog
+  isApi: boolean
 ) => {
   const { amount, contractId } = body
 
@@ -41,7 +36,6 @@ export const placeMultiBetMain = async (
       amount,
       contractId,
       trans,
-      log,
       isApi
     )
 
@@ -134,16 +128,13 @@ export const placeMultiBetMain = async (
         userDoc,
         user,
         isApi,
-        log,
         trans
       )
     )
   })
 
   log(`Main transaction finished - auth ${uid}.`)
-  await Promise.all(
-    results.map(async (result) => processRedemptions(result, log))
-  )
+  await Promise.all(results.map(async (result) => processRedemptions(result)))
 
   const continuation = async () => {
     await Promise.all(
@@ -156,7 +147,6 @@ export const placeMultiBetMain = async (
           [bet.data() as Bet],
           contract,
           user,
-          log,
           allOrdersToCancel,
           makers
         )

@@ -246,9 +246,7 @@ export const processRedemptions = async (
       userId,
       ...(makers ?? []).map((maker) => maker.bet.userId),
     ])
-    await Promise.all(
-      userIds.map((userId) => redeemShares(userId, contract, log))
-    )
+    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
     log(`Share redemption transaction finished - auth ${userId}.`)
   }
 }
