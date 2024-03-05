@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
@@ -42,7 +43,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { ChevronDownIcon } from '@heroicons/react/outline'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -324,13 +324,13 @@ export function BuyPanel(props: {
                 ? 'bg-teal-50'
                 : 'hidden'
               : '',
-            'rounded-xl',
+            'relative rounded-xl',
             singularView ? '' : ' px-4 py-2'
           )}
         >
           {isAdvancedTrader && (
-            <Row className=" mb-2 space-x-1">
-              <div className="text-ink-700 mb-1 mr-2 mt-2 ">Bet Type</div>
+            <Row className="mb-2 items-center space-x-3">
+              <div className="text-ink-700">Bet type</div>
               <ChoicesToggleGroup
                 currentChoice={betType}
                 choicesMap={{
@@ -345,6 +345,20 @@ export function BuyPanel(props: {
               />
             </Row>
           )}
+          <Button
+            color="gray-white"
+            className="absolute right-1 top-1"
+            onClick={() => {
+              setIsYesNoSelectorVisible(true)
+              if (initialOutcome == undefined) {
+                setOutcome(undefined)
+              }
+              setBetAmount(initialBetAmount)
+              props.onCancel?.()
+            }}
+          >
+            <XIcon className="h-7 w-7" />
+          </Button>
           {betType === 'Market' ? (
             <>
               <Row
@@ -418,21 +432,6 @@ export function BuyPanel(props: {
 
           {betType !== 'Limit' && (
             <Row className="items-center justify-between gap-2">
-              <Button
-                color="gray"
-                size="xl"
-                className="text-white"
-                onClick={() => {
-                  setIsYesNoSelectorVisible(true)
-                  if (initialOutcome == undefined) {
-                    setOutcome(undefined)
-                  }
-                  setBetAmount(initialBetAmount)
-                  props.onCancel?.()
-                }}
-              >
-                Cancel
-              </Button>
               {user ? (
                 <WarningConfirmationButton
                   marketType="binary"
