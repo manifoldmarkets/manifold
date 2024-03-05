@@ -56,33 +56,22 @@ export function calculateCpmmMultiArbitrageBet(
   return result
 }
 
-export function calculateCpmmMultiArbitrageBets(
+export function calculateCpmmMultiArbitrageYesBets(
   answers: Answer[],
   answersToBuy: Answer[],
-  outcome: 'YES' | 'NO',
   betAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number }
 ) {
-  const result =
-    outcome === 'YES'
-      ? calculateCpmmMultiArbitrageBetsYes(
-          answers,
-          answersToBuy,
-          betAmount,
-          limitProb,
-          unfilledBets,
-          balanceByUserId
-        )
-      : calculateCpmmMultiArbitrageBetsYes(
-          answers,
-          answersToBuy,
-          betAmount,
-          limitProb,
-          unfilledBets,
-          balanceByUserId
-        )
+  const result = calculateCpmmMultiArbitrageBetsYes(
+    answers,
+    answersToBuy,
+    betAmount,
+    limitProb,
+    unfilledBets,
+    balanceByUserId
+  )
   if (
     floatingEqual(
       sumBy(

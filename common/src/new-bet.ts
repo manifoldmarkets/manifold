@@ -27,7 +27,7 @@ import { Answer } from './answer'
 import {
   buyNoSharesUntilAnswersSumToOne,
   calculateCpmmMultiArbitrageBet,
-  calculateCpmmMultiArbitrageBets,
+  calculateCpmmMultiArbitrageYesBets,
   combineBetsOnSameAnswers,
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
@@ -467,7 +467,7 @@ export const getNewMultiCpmmBetsInfo = (
   contract: CPMMMultiContract | CPMMNumericContract,
   answers: Answer[],
   answersToBuy: Answer[],
-  outcome: 'YES' | 'NO',
+  outcome: 'YES',
   betAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
@@ -524,10 +524,10 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         ...(otherBetResults as ReturnType<typeof combineBetsOnSameAnswers>)
       )
   } else {
-    const multiRes = calculateCpmmMultiArbitrageBets(
+    // TODO: only accepts YES bets atm
+    const multiRes = calculateCpmmMultiArbitrageYesBets(
       answers,
       answersToBuy,
-      outcome,
       betAmount,
       limitProb,
       unfilledBets,
