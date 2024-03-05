@@ -15,10 +15,12 @@ export function PaginationNextPrev(props: {
   isStart: boolean
   isEnd: boolean
   isLoading: boolean
+  isComplete: boolean
   getPrev: () => void
   getNext: () => void
 }) {
-  const { className, isStart, isEnd, isLoading, getPrev, getNext } = props
+  const { className, isStart, isEnd, isLoading, isComplete, getPrev, getNext } =
+    props
   return (
     <Row
       className={clsx(className, 'flex-1 justify-between gap-2 sm:justify-end')}
@@ -33,9 +35,9 @@ export function PaginationNextPrev(props: {
       <button
         className={buttonClass('lg', 'gray-outline')}
         onClick={getNext}
-        disabled={isLoading || isEnd}
+        disabled={isEnd && (isLoading || isComplete)}
       >
-        {isLoading ? <LoadingIndicator size="sm" /> : 'Next'}
+        {isEnd && isLoading ? <LoadingIndicator size="sm" /> : 'Next'}
       </button>
     </Row>
   )
