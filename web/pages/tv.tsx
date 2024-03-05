@@ -143,7 +143,7 @@ export default function TVPage(props: {
           )}
 
           {/* mobile comments */}
-          {comments && (
+          {/* {comments && (
             <div className="m-4">
               <CommentsTabContent
                 contract={contract}
@@ -158,12 +158,12 @@ export default function TVPage(props: {
                 appRouter={undefined}
               />
             </div>
-          )}
+          )} */}
         </Col>
 
         {/* desktop comments */}
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
-          {comments && (
+          {/* {comments && (
             <CommentsTabContent
               contract={contract}
               comments={comments}
@@ -177,7 +177,7 @@ export default function TVPage(props: {
               appRouter={undefined}
               scrollToEnd
             />
-          )}
+          )} */}
         </Col>
       </Row>
     </Page>
