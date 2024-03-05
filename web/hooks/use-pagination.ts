@@ -42,7 +42,7 @@ function getReducer<T>() {
         return { ...state, isLoading: false, ...action }
       }
       case 'MOVE': {
-        return { ...state, ...action }
+        return { ...state, index: Math.max(0, action.index) }
       }
       default:
         throw new Error('Invalid action.')
@@ -114,14 +114,22 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     }
   }, [shouldLoad, state.index, opts.pageSize, lastItem, opts.q])
 
+  const getPage = useCallback(
+    (index: number) => dispatch({ type: 'MOVE', index }),
+    [dispatch]
+  )
+
   const getPrev = useCallback(
-    () => dispatch({ type: 'MOVE', index: Math.max(0, pageIndex - 1) }),
+    () => dispatch({ type: 'MOVE', index: pageIndex - 1 }),
     [dispatch, pageIndex]
   )
+
   const getNext = useCallback(
-    () => dispatch({ type: 'MOVE', index: pageIndex + 1 }), // allow page past the end
+    // allow page past the end -- we'll load the new page
+    () => dispatch({ type: 'MOVE', index: pageIndex + 1 }),
     [dispatch, pageIndex]
   )
+
   const prepend = useCallback(
     (...items: T[]) =>
       dispatch({ type: 'PREFIX', prefix: [...items, ...state.prefix] }),
@@ -138,6 +146,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
     isComplete: state.isComplete,
     isStart: pageStart === 0,
     isEnd: pageEnd >= itemCount,
+    getPage,
     getPrev,
     getNext,
     prepend,
