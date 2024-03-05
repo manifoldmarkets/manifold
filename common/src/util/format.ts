@@ -61,7 +61,11 @@ export function manaToUSD(mana: number) {
 }
 
 export function formatPercentShort(zeroToOne: number) {
-  return Math.min(zeroToOne * 100, 99).toFixed(0) + '%'
+  return getPercent(zeroToOne).toFixed(0) + '%'
+}
+
+export function getPercent(zeroToOne: number) {
+  return Math.min(zeroToOne * 100, 99)
 }
 
 function getPercentDecimalPlaces(zeroToOne: number) {

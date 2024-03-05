@@ -109,7 +109,6 @@ export function ActivityLog(props: {
 
   const realtimeComments = useRealtimeComments(count * 3)
 
-  // TODO: could change the initial query to factor in topicSlugs
   const newContracts = useRealtimeNewContracts(count * 3)?.filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&

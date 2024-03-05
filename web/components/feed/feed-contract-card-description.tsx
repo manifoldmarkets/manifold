@@ -34,7 +34,7 @@ export default function FeedContractCardDescription(props: {
         style={{ maxHeight: `${maxHeight}px` }}
       >
         <Spacer h={2} className="hidden sm:inline-block" />
-        <Content content={contract.description} />
+        <Content size={'md'} content={contract.description} />
       </div>
       {isOverflowing && (
         <Col className="from-canvas-0 via-canvas-0 absolute bottom-0 left-0 right-0 h-12 justify-end bg-gradient-to-t via-30% to-transparent">

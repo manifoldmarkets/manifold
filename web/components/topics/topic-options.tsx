@@ -1,4 +1,4 @@
-import { Group, GroupRole, PrivacyStatusType, TOPIC_KEY } from 'common/group'
+import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { useGroupRole } from 'web/hooks/use-group-supabase'
@@ -21,7 +21,6 @@ import {
   AddContractToGroupPermissionType,
 } from 'web/components/topics/add-contract-to-group-modal'
 import { BsFillPersonDashFill } from 'react-icons/bs'
-import { AiFillTrophy } from 'react-icons/ai'
 import { BiSolidVolumeMute } from 'react-icons/bi'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
@@ -48,11 +47,6 @@ export function TopicOptions(props: {
         icon: <PlusCircleIcon className="h-5 w-5" />,
         onClick: () => setShowAddContract(true),
       },
-    {
-      name: 'Leaderboards',
-      icon: <AiFillTrophy className="h-5 w-5" />,
-      onClick: () => router.push(`/leaderboards?${TOPIC_KEY}=${group.slug}`),
-    },
     userRole === 'admin' && {
       name: 'Edit name',
       icon: <PencilIcon className="h-5 w-5" />,

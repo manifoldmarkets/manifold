@@ -233,4 +233,5 @@ const MANA_EARNED_CATEGORY_LABELS = {
   QUEST_REWARD: 'Quests',
   MARKET_BOOST_REDEEM: 'Boosts claimed',
   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
+  REFERRAL: 'Referrals',
 } as { [key: string]: string }

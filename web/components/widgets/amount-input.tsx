@@ -12,6 +12,8 @@ import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementDecrementAmountButton } from './increment-button'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { ChoicesToggleGroup } from './choices-toggle-group'
 
 export function AmountInput(
   props: {
@@ -47,6 +49,8 @@ export function AmountInput(
   const [amountString, setAmountString] = useState(amount?.toString() ?? '')
 
   const parse = allowFloat ? parseFloat : parseInt
+
+  const isAdvancedTrader = useIsAdvancedTrader()
 
   const bannedChars = new RegExp(
     `[^\\d${allowFloat && '.'}${allowNegative && '-'}]`,
@@ -107,7 +111,7 @@ export function AmountInput(
                 )}
                 onClick={() => onChangeAmount(undefined)}
               />
-              {quickAddMoreButton}
+              {isAdvancedTrader && quickAddMoreButton}
             </Row>
           </div>
         </label>
@@ -188,6 +192,7 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
+  const quickAmounts = [10, 25, 100]
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
@@ -205,13 +210,41 @@ export function BuyAmountInput(props: {
       ? [100, 500]
       : quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
+        <Row className=" space-x-1">
+          {!isAdvancedTrader && (
+            <>
+              <div className="text-ink-700 mb-1 mr-2 mt-2 ">Amount</div>
+              <ChoicesToggleGroup
+                currentChoice={
+                  quickAmounts.includes(amount ?? 0) ? amount : undefined
+                }
+                choicesMap={quickAmounts.reduce<{ [key: number]: number }>(
+                  (map, amount) => {
+                    map[amount] = amount
+                    return map
+                  },
+                  {}
+                )}
+                setChoice={(amount) => {
+                  if (typeof amount === 'number') {
+                    onChange(amount)
+                  }
+                }}
+              />
+            </>
+          )}
+        </Row>
+
         <AmountInput
           className={className}
           inputClassName={clsx(
-            '!h-[72px] w-full',
+            ' w-full',
+            isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
             hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]',
             inputClassName
           )}
@@ -233,7 +266,6 @@ export function BuyAmountInput(props: {
             </Row>
           }
         />
-
         {showSlider && (
           <BetSlider
             className="-mt-2"
@@ -244,7 +276,6 @@ export function BuyAmountInput(props: {
             smallManaAmounts={!hasLotsOfMana}
           />
         )}
-
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
             {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}

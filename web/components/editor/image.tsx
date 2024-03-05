@@ -10,19 +10,29 @@ export const DisplayImage = Image.extend({
   renderReact: (attrs: any) => <ExpandingImage {...attrs} />,
 })
 
-function ExpandingImage(props: { src: string; alt?: string; title?: string }) {
-  const [expanded, setExpanded] = useState(false)
+export const MediumDisplayImage = Image.extend({
+  renderReact: (attrs: any) => <ExpandingImage size={'md'} {...attrs} />,
+})
 
+function ExpandingImage(props: {
+  src: string
+  alt?: string
+  title?: string
+  size?: 'md'
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const { size, ...rest } = props
+  const height = size === 'md' ? 400 : 128
   return (
     <img
       loading="lazy"
-      {...props}
+      {...rest}
       onClick={() => setExpanded((expanded) => !expanded)}
       className={clsx(
         'cursor-pointer object-contain',
-        expanded ? 'min-h-[128px]' : 'h-[128px]'
+        expanded ? 'min-h-[128px]' : size === 'md' ? 'h-[400px]' : 'h-[128px]'
       )}
-      height={expanded ? undefined : 128}
+      height={expanded ? undefined : height}
     />
   )
 }

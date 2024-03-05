@@ -10,7 +10,7 @@ const schema = z
   .object({
     id: z.string(),
     about: contentSchema.or(z.string().max(MAX_ABOUT_LENGTH)).optional(),
-    name: z.string().max(MAX_GROUP_NAME_LENGTH).optional(),
+    name: z.string().min(2).max(MAX_GROUP_NAME_LENGTH).optional(),
     bannerUrl: z.string().optional(),
   })
   .strict()
@@ -26,6 +26,16 @@ export const updategroup = authEndpoint(async (req, auth) => {
 
   if (requester?.role !== 'admin' && !isAdminId(auth.uid)) {
     throw new APIError(403, 'You do not have permission to update this group')
+  }
+
+  if (data.name) {
+    const existingName = await db.oneOrNone(
+      `select 1 from groups where name = $1`,
+      [data.name]
+    )
+    if (existingName) {
+      throw new APIError(400, `The group ${data.name} already exists`)
+    }
   }
 
   await updateData(db, 'groups', 'id', data)

@@ -18,12 +18,16 @@ import { DAY_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 
 export async function getStaticProps() {
-  const headlines = await api('headlines', {})
-  return {
-    props: {
-      headlines,
-      revalidate: 30 * 60, // 30 minutes
-    },
+  try {
+    const headlines = await api('headlines', {})
+    return {
+      props: {
+        headlines,
+        revalidate: 30 * 60, // 30 minutes
+      },
+    }
+  } catch (err) {
+    return { props: { headlines: [] }, revalidate: 60 }
   }
 }
 
@@ -43,8 +47,16 @@ export default function Home(props: { headlines: Headline[] }) {
   return (
     <>
       <Welcome />
-      <Page trackPageView={'home'} trackPageProps={{ kind: 'desktop' }}>
-        <HeadlineTabs headlines={headlines} currentSlug={'home'} />
+      <Page
+        trackPageView={'home'}
+        trackPageProps={{ kind: 'desktop' }}
+        className="!mt-0"
+      >
+        <HeadlineTabs
+          endpoint={'news'}
+          headlines={headlines}
+          currentSlug={'home'}
+        />
         <Row className="mx-3 mb-2 items-center gap-2">
           <Title className="!mb-0 whitespace-nowrap">Home</Title>
 

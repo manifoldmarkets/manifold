@@ -90,7 +90,7 @@ function CharityPage(props: {
   const pagination = usePagination({
     pageSize: PAGE_SIZE,
     q: paginationCallback,
-    preload: donations,
+    prefix: donations,
   })
   return (
     <Page
@@ -124,7 +124,7 @@ function CharityPage(props: {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {(pagination.items ?? []).map((d, i) => (
+          {pagination.items.map((d, i) => (
             <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
           ))}
           <PaginationNextPrev {...pagination} />

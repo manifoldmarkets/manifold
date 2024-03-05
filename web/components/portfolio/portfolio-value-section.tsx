@@ -3,7 +3,10 @@ import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
 import { memo, ReactNode, useState, useMemo } from 'react'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import {
+  PeriodToSnapshots,
+  usePortfolioHistory,
+} from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
@@ -27,6 +30,8 @@ export const PortfolioValueSection = memo(
     lastUpdatedTime: number | undefined
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
+    graphContainerClassName?: string
+    preloadPoints?: PeriodToSnapshots
   }) {
     const {
       userId,
@@ -34,10 +39,16 @@ export const PortfolioValueSection = memo(
       defaultTimePeriod,
       lastUpdatedTime,
       onlyShowProfit,
+      graphContainerClassName,
+      preloadPoints,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
-    const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
+    const portfolioHistory = usePortfolioHistory(
+      userId,
+      currentTimePeriod,
+      preloadPoints
+    )
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
 
     const first = portfolioHistory?.[0]
@@ -111,7 +122,7 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={!onlyShowProfit ? placeholderSection : undefined}
           valueElement={!onlyShowProfit ? placeholderSection : undefined}
-          className={showDisclaimer ? 'h-8' : ''}
+          className={clsx(showDisclaimer ? 'h-8' : '', graphContainerClassName)}
           graphElement={(_width, height) => {
             if (showDisclaimer) {
               return (
@@ -196,8 +207,8 @@ export const PortfolioValueSection = memo(
         }
         graphElement={(width, height) => (
           <PortfolioGraph
-            key={graphMode} // we need to reset axis scale state if mode changes
             mode={graphMode}
+            duration={currentTimePeriod}
             points={graphPoints}
             width={width}
             height={height}
@@ -208,6 +219,7 @@ export const PortfolioValueSection = memo(
         )}
         onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
+        className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
       />
     )
   }
@@ -337,9 +349,7 @@ function PortfolioValueSkeleton(props: {
         )}
       </Row>
       <SizedContainer
-        className={clsx(
-          className ? className : 'mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0'
-        )}
+        className={clsx(className, 'h-[125px] pr-11 sm:h-[200px] lg:pr-0')}
       >
         {graphElement}
       </SizedContainer>

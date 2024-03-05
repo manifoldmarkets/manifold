@@ -103,24 +103,29 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   closeEmailsSent?: number
 
-  views: number
   volume: number
   volume24Hours: number
   elasticity: number
 
   collectedFees: Fees
-
-  groupSlugs?: string[]
-  groupLinks?: GroupLink[]
   uniqueBettorCount: number
+
+  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  groupSlugs?: string[]
+  /** @deprecated */
+  groupLinks?: GroupLink[]
+
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   importanceScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   dailyScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  freshnessScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
+
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean
@@ -381,6 +386,21 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+export const isBinaryMulti = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.answers.length === 2 &&
+  contract.addAnswersMode === 'DISABLED' &&
+  contract.shouldAnswersSumToOne &&
+  contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+
+export const getMainBinaryMCAnswer = (contract: Contract) =>
+  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers[0]
+    : undefined
+
+export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
+  outcome === 'YES' ? prob : 1 - prob
+
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
@@ -419,6 +439,7 @@ export type ContractParams = {
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
+  totalViews: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]

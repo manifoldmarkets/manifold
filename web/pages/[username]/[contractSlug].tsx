@@ -6,7 +6,11 @@ import {
   unserializeMultiPoints,
   unserializePoints,
 } from 'common/chart'
-import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
+import {
+  ContractParams,
+  MaybeAuthedContractParams,
+  tradingAllowed,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
@@ -77,8 +81,10 @@ import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
-import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
 import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -159,6 +165,7 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
+    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
@@ -301,16 +308,6 @@ export function ContractPageContent(props: ContractParams) {
     contract,
     relatedContracts
   )
-  const seenContractIds = useHasSeenContracts(
-    user?.id,
-    relatedMarkets
-      .map((c) => c.id)
-      .concat(
-        Object.values(relatedContractsByTopicSlug)
-          .flat()
-          .map((c) => c.id)
-      )
-  )
 
   // detect whether header is stuck by observing if title is visible
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -451,6 +448,7 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
+                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
@@ -471,11 +469,19 @@ export function ContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
               />
+
+              {!tradingAllowed(contract) && (
+                <UserBetsSummary
+                  className="border-ink-200 !mb-2 mt-2 "
+                  contract={contract}
+                />
+              )}
+
+              <YourTrades contract={contract} />
             </Col>
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 showOnlyAfterBet={true}
                 justBet={justBet}
@@ -543,7 +549,6 @@ export function ContractPageContent(props: ContractParams) {
             {comments.length > 3 && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 justBet={!showRelatedMarketsBelowBet && justBet}
               />
@@ -561,6 +566,7 @@ export function ContractPageContent(props: ContractParams) {
                 <Spacer h={12} />
               </>
             )}
+
             <div ref={tabsContainerRef}>
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
@@ -580,7 +586,6 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             <RelatedContractsGrid
               contracts={relatedMarkets}
-              seenContractIds={seenContractIds}
               loadMore={loadMore}
               contractsByTopicSlug={relatedContractsByTopicSlug}
               topics={topics}
@@ -593,7 +598,6 @@ export function ContractPageContent(props: ContractParams) {
 
           <RelatedContractsList
             contracts={relatedMarkets}
-            seenContractIds={seenContractIds}
             loadMore={loadMore}
             topics={topics}
             contractsByTopicSlug={relatedContractsByTopicSlug}
@@ -619,5 +623,33 @@ function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
         ADMIN
       </div>
     </Row>
+  )
+}
+
+function YourTrades(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
+
+  const { rows } = useRealtimeBets({
+    contractId: contract.id,
+    userId: user === undefined ? 'loading' : user?.id ?? '_',
+    filterAntes: true,
+    order: 'asc',
+  })
+  const userBets = rows ?? []
+
+  const visibleUserBets = userBets.filter((bet) => !bet.isRedemption)
+
+  if (visibleUserBets.length === 0) return null
+  return (
+    <Col>
+      <div className="text-ink-700 text-lg">Your trades</div>
+      <ContractBetsTable
+        contract={contract}
+        bets={userBets}
+        isYourBets
+        truncate
+      />
+    </Col>
   )
 }

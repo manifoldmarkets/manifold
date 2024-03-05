@@ -151,6 +151,7 @@ export const BOT_USERNAMES = [
 
 export const MOD_IDS = [
   '9hWkzPveXIelUk4XOrm5WroriST2', // a
+  'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
@@ -171,6 +172,7 @@ export const MOD_IDS = [
   'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
   'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
   'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'XeQf3ygmrGM1MxdsE3JSlmq8vL42', // Jacy
   'eSqS9cD5mzYcP2o7FrST8aC5IWn2', // JosephNoonan
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
@@ -189,6 +191,7 @@ export const MOD_IDS = [
   'mowZ7T5LBUQuy5CWgctdHMkLo8J3', // NuñoSempere
   'EzsnDabZsZTcpcD1UmChzRUn9Bk1', // PeterWildeford
   'FSqqnRObrqf0GX63gp5Hk4lUvqn1', // ScottLawrence
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
@@ -252,11 +255,33 @@ export const VERIFIED_USERNAMES = [
   'MatthewYglesias',
   'BillyMcRascal',
   'kyootbot',
+  'MaximLott',
 ]
 
 export const BLESSED_BANNED_USER_IDS = [
   'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
   'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
+  '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
+]
+
+export const PARTNER_USER_IDS: string[] = [
+  'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
+  'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson
+  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'cb6PJqGOSVPEUhprDHCKWWMuJqu1', // DanMan314
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'hDq0cvn68jbAUVd6aWIU9aSv9ZA2', // strutheo
+  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+  'xQqqZqlgcoSxTgPe03BiXmVE2JJ2', // Soli
+  'Iiok8KHMCRfUiwtMq1tl5PeDbA73', // Lion
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
+  'SqOJYkeySMQjqP3UAypw6DxPx4Z2', // Shump
+  'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
+  'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

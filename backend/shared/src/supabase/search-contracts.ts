@@ -268,13 +268,24 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: 'importance_score',
-    sortCallback: (c: Contract) => c.importanceScore,
+    sql: `
+    case
+      when resolution is null
+      then importance_score::numeric
+      else (data->>'uniqueBettorCount')::numeric
+    end`,
+    sortCallback: (c: Contract) =>
+      c.isResolved ? c.uniqueBettorCount : c.importanceScore,
     order: 'DESC',
   },
   'daily-score': {
     sql: "(data->>'dailyScore')::numeric",
     sortCallback: (c: Contract) => c.dailyScore,
+    order: 'DESC',
+  },
+  'freshness-score': {
+    sql: 'freshness_score',
+    sortCallback: (c: Contract) => c.freshnessScore,
     order: 'DESC',
   },
   '24-hour-vol': {

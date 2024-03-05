@@ -74,7 +74,7 @@ export async function runTxnFromBank(
       message: 'This method is only for transfers from banks',
     }
 
-  if (!isFinite(amount) || amount <= 0) {
+  if (!isFinite(amount) || amount < 0) {
     return { status: 'error', message: 'Invalid amount' }
   }
 

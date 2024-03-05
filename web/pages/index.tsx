@@ -13,7 +13,7 @@ import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { AboutPrivacyTerms } from 'web/components/privacy-terms'
 import { formatMoney } from 'common/util/format'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
-import { STARTING_BALANCE } from 'common/economy'
+import { MARKET_VISIT_BONUS_TOTAL, STARTING_BALANCE } from 'common/economy'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
@@ -24,7 +24,7 @@ import { db } from 'web/lib/supabase/db'
 import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
+import { getContract } from 'web/lib/supabase/contracts'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
@@ -35,10 +35,18 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     .neq('outcome_type', 'STONK')
     .gt('data->uniqueBettorCount', 10)
     .limit(50)
+
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
-  const filteredContracts = contracts.filter(
-    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
-  )
+
+  const prezContract = await getContract('ikSUiiNS8MwAI75RwEJf')
+
+  const filteredContracts = [prezContract, ...contracts]
+    .filter(
+      (c) => c && !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+    )
+    .filter(
+      (c) => c?.outcomeType !== 'POLL' && c?.outcomeType !== 'BOUNTIED_QUESTION'
+    ) as Contract[]
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
     some(contract.groupSlugs ?? [], (slug) => groupSlugsSet.includes(slug))
@@ -91,16 +99,13 @@ export default function LandingPage(props: {
                   Markets
                 </Button>
               </Link>
-              <Link
-                href="https://manifoldpolitics.com/"
-                className="hidden lg:flex"
-              >
+              <Link href="/politics" className="hidden lg:flex">
                 <Button
                   color="gray-white"
                   size="xs"
                   className="whitespace-nowrap"
                 >
-                  US Politics <ExternalLinkIcon className="ml-2 h-3 w-3" />
+                  US Politics
                 </Button>
               </Link>
               <Button
@@ -137,15 +142,13 @@ export default function LandingPage(props: {
 
           <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-lg gap-2">
-              <h1 className="mb-4 text-4xl">Predict the future</h1>
+              <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
               <h1 className="text-lg">
                 Play-money markets. Real-world accuracy.
               </h1>
               <h1 className="text-lg">
-                Compete with your friends by betting on literally anything. It's
-                play money,{' '}
-                <strong className="font-semibold">not crypto</strong>, and free
-                to play.
+                Compete with your friends by betting on politics, tech, sports,
+                and more. It's play money and free to play.
               </h1>
 
               <Button
@@ -160,7 +163,7 @@ export default function LandingPage(props: {
               <div className="text-md ml-8 ">
                 ...and get{'   '}
                 <span className="z-10 font-semibold">
-                  {formatMoney(STARTING_BALANCE)}
+                  {formatMoney(STARTING_BALANCE + MARKET_VISIT_BONUS_TOTAL)}
                 </span>
                 {'   '}
                 in play money!

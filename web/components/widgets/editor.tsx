@@ -29,7 +29,7 @@ import { generateReact, insertContent } from '../editor/utils'
 import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { DisplaySpoiler } from '../editor/spoiler'
 import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-import { BasicImage, DisplayImage } from '../editor/image'
+import { BasicImage, DisplayImage, MediumDisplayImage } from '../editor/image'
 
 import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
 import { useEvent } from 'web/hooks/use-event'
@@ -258,7 +258,11 @@ function RichContent(props: {
     () =>
       generateReact(content, [
         StarterKit,
-        size === 'sm' ? DisplayImage : BasicImage,
+        size === 'sm'
+          ? DisplayImage
+          : size === 'md'
+          ? MediumDisplayImage
+          : BasicImage,
         DisplayLink,
         DisplayMention,
         DisplayContractMention,

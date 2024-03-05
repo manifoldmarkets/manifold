@@ -7,7 +7,7 @@ import {
   revalidateContractStaticProps,
 } from 'shared/utils'
 import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import { Contract } from 'common/contract'
+import { Contract, CPMMMultiContract, MultiContract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { difference, isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
@@ -19,16 +19,22 @@ import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { addContractToFeed } from 'shared/create-feed'
 import { DAY_MS } from 'common/util/time'
 
-const propsThatTriggerRevalidation = [
-  'volume',
+type AnyContract = Contract & CPMMMultiContract & MultiContract
+const propsThatTriggerRevalidation: (keyof AnyContract)[] = [
+  // 'volume', // This DOES trigger revalidation, but is run in place-bet.ts
   'question',
   'closeTime',
   'description',
   'groupLinks',
   'lastCommentTime',
+  'visibility',
+  'addAnswersMode',
+  'sort',
+  'coverImageUrl',
+  'isPolitics',
 ] as const
 
-const propsThatTriggerUpdatedTime = [
+const propsThatTriggerUpdatedTime: (keyof AnyContract)[] = [
   'question',
   'description',
   'closeTime',
@@ -68,7 +74,8 @@ export const onUpdateContract = functions
     // Adding a contract to a group is ~similar~ to creating a new contract in that group
     if (
       onlyNewGroupIds.length > 0 &&
-      contract.createdTime > Date.now() - 2 * DAY_MS
+      contract.createdTime > Date.now() - 2 * DAY_MS &&
+      contract.visibility === 'public'
     ) {
       const contractWithScore = await getContractSupabase(contract.id)
       if (!contractWithScore) return
@@ -100,7 +107,7 @@ export const onUpdateContract = functions
       // Check if replicated to supabase before revalidating contract.
       const result = await db
         .from('contracts')
-        .select('*')
+        .select('id')
         .eq('id', contract.id)
         .limit(1)
       if (result.data && result.data.length > 0) {

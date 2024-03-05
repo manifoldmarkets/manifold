@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import { api, getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
@@ -17,7 +17,7 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
@@ -26,6 +26,7 @@ import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { DAY_MS } from 'common/util/time'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -132,7 +133,6 @@ export function useRealtimeMemberTopics(
 
   return groups
 }
-
 export function useNewUserMemberTopicsAndContracts(
   user: User | null | undefined
 ) {
@@ -144,18 +144,14 @@ export function useNewUserMemberTopicsAndContracts(
     TopicWithContracts[] | undefined
   >(undefined, `member-topics-and-contracts-${user?.id ?? ''}`)
 
-  const { data, refresh } = useAPIGetter('get-groups-with-top-contracts', {})
-
   useEffect(() => {
-    if (!data?.length) setGroups(undefined) // Show loading indicator right after selecting topics
-    refresh()
+    if (!groups?.length) setGroups(undefined) // Show loading indicator right after selecting topics
+    const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+    if (createdRecently)
+      api('get-groups-with-top-contracts', {}).then((result) => {
+        setGroups(result)
+      })
   }, [user?.shouldShowWelcome])
-
-  useEffect(() => {
-    if (data) {
-      setGroups(data)
-    }
-  }, [JSON.stringify(data)])
 
   return groups
 }
@@ -245,9 +241,12 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  const channelFilter = { k: 'group_id', v: groupId } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
-    fetchGroupMembers()
+  const filter = { k: 'group_id', v: groupId } as const
+  useRealtime({
+    bindings: [{ table: 'group_members', event: '*', filter }],
+    onChange: (_change) => {
+      fetchGroupMembers()
+    },
   })
 
   return { admins, moderators, members, loadMore }

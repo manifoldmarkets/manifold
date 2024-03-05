@@ -122,3 +122,28 @@ export const getTotalContractsCreated = async (userId: string) => {
   )
   return count
 }
+
+export const getContractsCreatedProgress = async (
+  userId: string,
+  minTraders = 0
+) => {
+  const currentDate = new Date()
+  const startDate = new Date()
+
+  startDate.setMonth(startDate.getMonth() - 2)
+
+  const startIsoString = startDate.toISOString()
+  const endIsoString = currentDate.toISOString()
+
+  const { count } = await run(
+    db
+      .from('public_contracts')
+      .select('*', { head: true, count: 'exact' })
+      .eq('creator_id', userId)
+      .gte('created_time', startIsoString)
+      .lt('created_time', endIsoString)
+      .not('mechanism', 'eq', 'none')
+      .gte('data->uniqueBettorCount', minTraders)
+  )
+  return count
+}

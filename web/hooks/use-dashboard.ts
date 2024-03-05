@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useIsAuthorized } from './use-user'
 import { Dashboard } from 'common/dashboard'
-import { getDashboardFromSlug, getYourDashboards } from 'web/lib/firebase/api'
+import { api, getYourDashboards } from 'web/lib/firebase/api'
 import { getYourFollowedDashboards } from 'web/lib/firebase/api'
 
 export function useDashboardFromSlug(slug: string) {
   const [dashboard, setDashboard] = useState<Dashboard>()
 
   useEffect(() => {
-    getDashboardFromSlug({ dashboardSlug: slug }).then((result) => {
+    api('get-dashboard-from-slug', { dashboardSlug: slug }).then((result) => {
       setDashboard(result as Dashboard)
     })
   }, [slug])

@@ -8,7 +8,7 @@ import { ContractComment } from 'common/comment'
 import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
+import { BaseDashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
@@ -339,14 +339,6 @@ export function updateDashboard(params: {
 
 export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
-}
-
-export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return call(
-    getApiUrl('getdashboardfromslug'),
-    'POST',
-    params
-  ) as Promise<Dashboard>
 }
 
 export function referUser(params: {

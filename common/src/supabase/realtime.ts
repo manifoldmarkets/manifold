@@ -23,8 +23,20 @@ export type Change<
   E extends Event = '*'
 > = EventChangeTypes<T>[E]
 
-// we could support the other filters that realtime supports rather than just 'eq'
-export type Filter<T extends TableName> = { k: Column<T>; v: string | number }
+// Currently supabase only allows you to filter on a single column so this type works
+// See https://github.com/supabase/realtime-js/issues/97
+export type Filter<T extends TableName> =
+  | {
+      k: Column<T>
+      v: string | number
+      op?: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' // default 'eq' by convention
+    }
+  | {
+      k: Column<T>
+      v: (string | number)[]
+      op: 'in'
+    }
+
 export type SubscriptionStatus = `${REALTIME_SUBSCRIBE_STATES}`
 
 // to work with realtime, the table needs a primary key we can use to identify
@@ -86,7 +98,11 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
 }
 
 export function buildFilterString<T extends TableName>(filter: Filter<T>) {
-  return `${filter.k}=eq.${filter.v}`
+  if (filter.op === 'in') {
+    return `${filter.k}=in.(${filter.v.join(',')})`
+  }
+
+  return `${filter.k}=${filter.op ?? 'eq'}.${filter.v}`
 }
 
 const getIdenticalSpec = <T extends TableName>(table: T) => {
@@ -102,10 +118,16 @@ const getIdenticalSpec = <T extends TableName>(table: T) => {
   return { identical, spec }
 }
 
+// useful to define these types so that people can manually manipulate the structure
+export type InsertedRow<R> = { eventType: 'INSERT'; new: R }
+export type UpdatedRow<R> = { eventType: 'UPDATE'; new: R; old: Partial<R> }
+export type DeletedRow<R> = { eventType: 'DELETE'; old: Partial<R> }
+export type ChangedRow<R> = InsertedRow<R> | UpdatedRow<R> | DeletedRow<R>
+
 export function applyChange<T extends TableName>(
   table: T,
   rows: Row<T>[],
-  change: Change<T>
+  change: ChangedRow<Row<T>>
 ) {
   const { identical, spec } = getIdenticalSpec(table)
   // apply the change to the existing row set, taking into account timestamps.

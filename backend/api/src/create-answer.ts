@@ -27,6 +27,8 @@ export const createanswer = authEndpoint(async (req, auth) => {
     if (!userSnap.exists) throw new APIError(403, 'Your account was not found')
     const user = userSnap.data() as User
 
+    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
     const contractDoc = firestore.doc(`contracts/${contractId}`)

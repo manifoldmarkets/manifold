@@ -8,6 +8,7 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
+import { getContractPageViews } from 'common/supabase/contracts'
 import { getRelatedPoliticsContracts } from 'common/supabase/related-contracts'
 import { SupabaseClient } from 'common/supabase/utils'
 import { Bet } from 'common/bet'
@@ -41,6 +42,7 @@ export const getContractParams = async function (
     relatedContracts,
     betReplies,
     chartAnnotations,
+    totalViews,
   ] = await Promise.all([
     hasMechanism ? getTotalBetCount(contract.id, db) : 0,
     hasMechanism
@@ -78,6 +80,7 @@ export const getContractParams = async function (
         })
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
+    getContractPageViews(db, contract.id),
   ])
 
   const chartPoints =
@@ -106,6 +109,7 @@ export const getContractParams = async function (
     userPositionsByOutcome,
     totalPositions,
     totalBets,
+    totalViews,
     topContractMetrics,
 
     // Not sure if these will be used on politics, if so will need to implement

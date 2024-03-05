@@ -7,7 +7,8 @@ create table if not exists
     primary key (contract_id, comment_id),
     visibility text,
     user_id text not null,
-    created_time timestamptz not null
+    created_time timestamptz not null,
+    likes int not null default 0
   );
 
 alter table contract_comments enable row level security;
@@ -27,6 +28,8 @@ create index contract_replies on contract_comments (
 );
 
 create index contract_comments_created_time_idx on contract_comments (created_time desc);
+
+create index contract_comments_id on contract_comments (comment_id);
 
 alter table contract_comments
 cluster on contract_comments_pkey;

@@ -222,7 +222,7 @@ export function AnswerCpmmBetPanel(props: {
   answer: Answer
   contract: CPMMMultiContract
   closePanel: () => void
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
+  outcome: 'YES' | 'NO' | undefined
   me: User | null | undefined
 }) {
   const { answer, contract, closePanel, outcome, me } = props
@@ -240,6 +240,7 @@ export function AnswerCpmmBetPanel(props: {
         }}
         user={me}
         initialOutcome={outcome}
+        onCancel={closePanel}
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}

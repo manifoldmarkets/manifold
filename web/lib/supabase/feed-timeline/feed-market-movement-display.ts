@@ -1,7 +1,8 @@
 import { Contract } from 'common/contract'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { ProbChangeData } from 'common/feed'
+import dayjs from 'dayjs'
 
 const PROB_CHANGE_THRESHOLD = 0.05
 export const getMarketMovementInfo = (
@@ -9,10 +10,9 @@ export const getMarketMovementInfo = (
   feedItem?: FeedTimelineItem
 ) => {
   const nullCase = { ignore: true, probChange: undefined, startTime: undefined }
-  if (
-    contract.mechanism !== 'cpmm-1' ||
-    contract.createdTime > Date.now() - DAY_MS
-  ) {
+  // Now as the start of the hour to prevent rerenders on every ms change
+  const now = dayjs().startOf('hour').valueOf()
+  if (contract.mechanism !== 'cpmm-1' || contract.createdTime > now - DAY_MS) {
     return nullCase
   }
   const probChangeData = feedItem?.data as ProbChangeData | undefined
@@ -35,7 +35,7 @@ export const getMarketMovementInfo = (
       probChangeIsSignificant(feedRowCurrentProbChange) &&
       !previousProbAbout50(feedRowCurrentProb)
 
-    const dayAgoTime = Date.now() - DAY_MS
+    const dayAgoTime = now - DAY_MS
     const dayAgoProb = contract.prob - contract.probChanges.day
     const dayAgoChange = contract.probChanges.day
 
@@ -45,7 +45,7 @@ export const getMarketMovementInfo = (
     const longTimeElapsed = feedRowStartTime < dayAgoTime - 7 * DAY_MS
 
     if (canUseContractChange && canUseFeedRowChange) {
-      if (feedRowStartTime > Date.now() - 1.5 * DAY_MS) {
+      if (feedRowStartTime > now - 1.5 * DAY_MS) {
         return {
           previousProb: feedRowPreviousProb,
           startTime: feedRowStartTime - 1.01 * DAY_MS,
@@ -80,7 +80,7 @@ export const getMarketMovementInfo = (
   const { previousProb, startTime } = calculatePreviousProbability()
 
   if (
-    contract.createdTime > Date.now() - 2 * DAY_MS &&
+    contract.createdTime > now - 2 * DAY_MS &&
     previousProbAbout50(previousProb)
   ) {
     return nullCase
@@ -94,5 +94,9 @@ export const getMarketMovementInfo = (
 
   const probChange = Math.round(probChangeSinceAdd * 100)
 
-  return { ignore: false, probChange, startTime }
+  // idk blame ian
+  const leadingBetDays = dayjs(contract.lastBetTime).diff(startTime, 'day')
+  const realStart = startTime - leadingBetDays * HOUR_MS
+
+  return { ignore: false, probChange, startTime: realStart }
 }

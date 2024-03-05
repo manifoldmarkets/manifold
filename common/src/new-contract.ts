@@ -126,10 +126,10 @@ export function getNewContract(props: {
     dailyScore: 0,
     popularityScore: 0,
     importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
+    freshnessScore: 0,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
-    views: 0,
     volume: 0,
     volume24Hours: 0,
     elasticity:

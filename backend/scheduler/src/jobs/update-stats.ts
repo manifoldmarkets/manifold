@@ -27,6 +27,7 @@ import { bulkUpsert } from 'shared/supabase/utils'
 import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
+import { convertTxn } from 'common/supabase/txns'
 
 const numberOfDays = 365
 
@@ -173,15 +174,16 @@ export async function getSales(
   startTime: number,
   numberOfDays: number
 ) {
-  const sales: { data: ManaPurchaseTxn }[] = await pg.manyOrNone(
-    `select data from txns
-      where data->'category' = '"MANA_PURCHASE"'
-      and (data->'createdTime')::bigint >= $1 and (data->'createdTime')::bigint < $2`,
-    [startTime, startTime + numberOfDays * DAY_MS]
+  const sales: ManaPurchaseTxn[] = await pg.map(
+    `select * from txns
+      where category = 'MANA_PURCHASE'
+      and created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)`,
+    [startTime, startTime + numberOfDays * DAY_MS],
+    convertTxn as any
   )
 
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
-  for (const { data: sale } of sales) {
+  for (const sale of sales) {
     const ts = sale.createdTime
     const amount = sale.amount / 100 // convert to dollars
     const userId = sale.toId
@@ -240,6 +242,16 @@ export const updateStatsCore = async () => {
   const dailySales = dailyManaSales.map((sales) =>
     sum(sales.map((s) => s.amount))
   )
+  const salesWeeklyAvg = dailySales.map((_, i) => {
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(dailySales.slice(start, end))
+  })
+  const monthlySales = dailySales.map((_, i) => {
+    const start = Math.max(0, i - 29)
+    const end = i + 1
+    return sum(dailySales.slice(start, end))
+  })
 
   const dailyUserIds = zip(dailyContracts, dailyBets, dailyComments).map(
     ([contracts, bets, comments]) => {
@@ -324,11 +336,10 @@ export const updateStatsCore = async () => {
     if (today.length === 0) return 0
 
     const yesterday = dailyUserIds[i - 1]
-
     const retainedCount = sumBy(yesterday, (userId) =>
       today.includes(userId) ? 1 : 0
     )
-    return retainedCount / yesterday.length
+    return yesterday.length === 0 ? 0 : retainedCount / yesterday.length
   })
 
   const d1WeeklyAvg = d1.map((_, i) => {
@@ -337,14 +348,13 @@ export const updateStatsCore = async () => {
     return average(d1.slice(start, end))
   })
 
-  const nd1 = dailyUserIds.map((today, i) => {
-    if (i === 0) return 0
+  const nd1 = dailyNewRealUserIds.map((today, i) => {
+    if (i === dailyNewRealUserIds.length - 1) return 0
     if (today.length === 0) return 0
 
-    const yesterday = dailyNewRealUserIds[i - 1]
-
-    const retainedCount = sumBy(yesterday, (userId) =>
-      today.includes(userId) ? 1 : 0
+    const activeTomorrow = dailyUserIds[i + 1]
+    const retainedCount = sumBy(today, (userId) =>
+      activeTomorrow.includes(userId) ? 1 : 0
     )
     return retainedCount / today.length
   })
@@ -353,6 +363,23 @@ export const updateStatsCore = async () => {
     const start = Math.max(0, i - 6)
     const end = i + 1
     return average(nd1.slice(start, end))
+  })
+  const fracDaysActiveD1ToD3 = dailyNewRealUserIds.map((today, i) => {
+    if (today.length === 0) return 0
+    if (i > dailyNewRealUserIds.length - 4) return 0
+
+    const thisWeekCounts = mapValues(
+      groupBy(dailyUserIds.slice(i + 1, i + 4).flat(), (id) => id),
+      (ids) => ids.length
+    )
+    const totalActive = sumBy(today, (userId) => thisWeekCounts[userId] ?? 0)
+    return totalActive / today.length / 3
+  })
+  const fracDaysActiveD1ToD3Avg7d = fracDaysActiveD1ToD3.map((_, i) => {
+    if (i > dailyNewRealUserIds.length - 4) return 0
+    const start = Math.max(0, i - 6)
+    const end = i + 1
+    return average(fracDaysActiveD1ToD3.slice(start, end))
   })
   const nw1 = dailyNewRealUserIds.map((_userIds, i) => {
     if (i < 13) return 0
@@ -493,6 +520,8 @@ export const updateStatsCore = async () => {
     dailyActiveUsersWeeklyAvg,
     avgDailyUserActions,
     dailySales,
+    salesWeeklyAvg,
+    monthlySales,
     weeklyActiveUsers,
     monthlyActiveUsers,
     engagedUsers,
@@ -500,6 +529,8 @@ export const updateStatsCore = async () => {
     d1WeeklyAvg,
     nd1,
     nd1WeeklyAvg,
+    fracDaysActiveD1ToD3,
+    fracDaysActiveD1ToD3Avg7d,
     nw1,
     dailyBetCounts,
     dailyContractCounts,
@@ -524,8 +555,8 @@ export const updateStatsCore = async () => {
 
   // Write to postgres
   await bulkUpsert(pg, 'stats', 'title', rows)
+  log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
-  log('Done. Wrote', rows.length, ' rows to stats table')
-
   await saveCalibrationData(pg)
+  log('Done')
 }

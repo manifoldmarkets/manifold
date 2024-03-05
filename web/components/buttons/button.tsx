@@ -19,6 +19,7 @@ export type ColorType =
   | 'gray-white'
   | 'yellow-outline'
   | 'gold'
+  | 'amber'
   | 'none'
 
 const sizeClasses = {
@@ -51,6 +52,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
       'text-scarlet-500 hover:bg-scarlet-500',
     ],
     color === 'yellow' && [solid, 'bg-yellow-400 hover:bg-yellow-500'],
+    color === 'amber' && [solid, 'bg-amber-500 hover:bg-amber-600'],
     color === 'yellow-outline' && [
       outline,
       'text-yellow-500 hover:bg-yellow-500',
@@ -63,7 +65,7 @@ export function buttonClass(size: SizeType, color: ColorType | 'none') {
     ],
     color === 'gray' &&
       'bg-ink-300 text-ink-900 disabled:bg-ink-200 disabled:text-ink-500 hover:bg-ink-200 dark:enabled:hover:bg-ink-400 hover:text-ink-1000',
-    color === 'gray-outline' && [outline, 'text-ink-500 hover:bg-ink-500'],
+    color === 'gray-outline' && [outline, 'text-ink-600 hover:bg-ink-500'],
     color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
     color === 'gray-white' &&

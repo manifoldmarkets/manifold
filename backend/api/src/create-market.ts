@@ -47,8 +47,10 @@ import {
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { onCreateMarket } from 'api/helpers/on-create-contract'
 
 type Body = ValidatedAPIParams<'market'>
+const firestore = admin.firestore()
 
 export const createMarket: APIHandler<'market'> = async (
   body,
@@ -56,7 +58,12 @@ export const createMarket: APIHandler<'market'> = async (
   { log }
 ) => {
   const market = await createMarketHelper(body, auth, log)
-  return toLiteMarket(market)
+  return {
+    result: toLiteMarket(market),
+    continue: async () => {
+      await onCreateMarket(market, firestore)
+    },
+  }
 }
 
 export async function createMarketHelper(
@@ -191,16 +198,9 @@ export async function createMarketHelper(
       specialLiquidityPerAnswer,
     })
 
-    const res = await runCreateMarketTxn(
-      contract,
-      ante,
-      user,
-      userDoc.ref,
-      contractRef,
-      trans
-    )
+    await runCreateMarketTxn(contractRef.id, ante, user, userDoc.ref, trans)
     trans.create(contractRef, contract)
-    return res
+    return contract
   })
 
   log('created contract ', {
@@ -230,11 +230,10 @@ export async function createMarketHelper(
 }
 
 const runCreateMarketTxn = async (
-  contract: Contract,
+  contractId: string,
   ante: number,
   user: User,
   userDocRef: admin.firestore.DocumentReference,
-  contractRef: admin.firestore.DocumentReference,
   trans: Transaction
 ) => {
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -242,22 +241,11 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(trans, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contract.id,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
-
   if (amountSuppliedByUser > 0) {
     await runTxn(trans, {
       fromId: user.id,
       fromType: 'USER',
-      toId: contract.id,
+      toId: contractId,
       toType: 'CONTRACT',
       amount: amountSuppliedByUser,
       token: 'M$',
@@ -265,12 +253,21 @@ const runCreateMarketTxn = async (
     })
   }
 
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contractId,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
+    })
+  }
+
   if (amountSuppliedByHouse > 0)
     trans.update(userDocRef, {
       freeQuestionsCreated: FieldValue.increment(1),
     })
-
-  return contract
 }
 
 async function getCloseTimestamp(
@@ -298,8 +295,6 @@ const getSlug = async (trans: Transaction, question: string) => {
     ? proposedSlug + '-' + randomString()
     : proposedSlug
 }
-
-const firestore = admin.firestore()
 
 async function getContractFromSlug(trans: Transaction, slug: string) {
   const contractsRef = firestore.collection('contracts')

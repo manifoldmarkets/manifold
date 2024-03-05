@@ -3,6 +3,8 @@ import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
 import { Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Headline } from 'common/news'
+import { Dashboard } from 'common/dashboard'
 
 export interface StateElectionMarket {
   slug: string
@@ -230,7 +232,9 @@ export type MapContractsDictionary = {
 }
 
 export type ElectionsPageProps = {
-  rawMapContractsDictionary: MapContractsDictionary
+  rawPresidencyStateContracts: MapContractsDictionary
+  rawSenateStateContracts: MapContractsDictionary
+  rawGovernorStateContracts: MapContractsDictionary
   electionPartyContract: Contract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
@@ -238,8 +242,13 @@ export type ElectionsPageProps = {
   newHampshireContract: Contract | null
   republicanVPContract: Contract | null
   democraticVPContract: Contract | null
+  republicanElectability: Contract | null
+  democraticElectability: Contract | null
   linkPreviews: LinkPreviews
   partyChartParams?: ChartParams
+  newsDashboards: NewsDashboardPageProps[]
+  headlines: Headline[]
+  trendingDashboard: NewsDashboardPageProps
 }
 
 export type ChartParams = {
@@ -249,3 +258,15 @@ export type ChartParams = {
   }
   chartAnnotations: ChartAnnotation[]
 }
+
+export type SuccesNewsDashboardPageProps = {
+  state: 'success'
+  initialDashboard: Dashboard
+  previews: LinkPreviews
+  initialContracts: Contract[]
+  headlines: Headline[]
+  slug: string
+}
+export type NewsDashboardPageProps =
+  | SuccesNewsDashboardPageProps
+  | { state: 'not found' }

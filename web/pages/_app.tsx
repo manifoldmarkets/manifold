@@ -11,7 +11,6 @@ import { Major_Mono_Display, Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
 import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
-import { useReloadIfClientOld } from 'web/hooks/use-reload-if-client-old'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useThemeManager } from 'web/hooks/use-theme'
 
@@ -67,7 +66,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
-  useReloadIfClientOld()
 
   useThemeManager()
 

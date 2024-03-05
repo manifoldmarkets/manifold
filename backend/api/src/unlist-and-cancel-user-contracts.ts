@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -12,30 +13,31 @@ export const unlistAndCancelUserContracts: APIHandler<
 
   await throwErrorIfNotMod(auth.uid)
 
-  const firestore = admin.firestore()
-  const snapshot = await firestore
-    .collection('contracts')
-    .where('creatorId', '==', userId)
-    .get()
+  const db = createSupabaseClient()
+  const { data, error } = await db
+    .from('contracts')
+    .select('id')
+    .eq('creatorId', userId)
+  if (error) {
+    throw new APIError(500, 'Failed to fetch contracts: ' + error.message)
+  }
 
-  if (snapshot.empty) {
+  if (data.length === 0) {
     console.log('No contracts found for this user.')
     return
   }
 
-  const contracts = snapshot.docs.map((doc) => doc.data())
-
-  if (contracts.length > 5) {
+  if (data.length > 5) {
     throw new APIError(
       400,
-      'This user has too many markets. You can only super ban users with 5 or less.'
+      `This user has ${data.length} markets. You can only super ban users with 5 or less.`
     )
   }
 
   try {
     await Promise.all(
-      contracts.map((contract) => {
-        return firestore.doc(`contracts/${contract.id}`).update({
+      data.map(({ id }) => {
+        return firestore.doc(`contracts/${id}`).update({
           visibility: 'unlisted',
           resolution: 'CANCEL',
         })
@@ -46,3 +48,5 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
 }
+
+const firestore = admin.firestore()

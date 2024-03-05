@@ -12,6 +12,7 @@ import { Linkify } from '../widgets/linkify'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -24,6 +25,8 @@ export function UserHovercard({
   userId,
   className,
 }: UserHovercardProps) {
+  const isClient = useIsClient()
+  if (!isClient) return null
   return (
     <HoverCard.Root openDelay={150}>
       <HoverCard.Trigger className={className}>{children}</HoverCard.Trigger>

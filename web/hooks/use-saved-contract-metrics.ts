@@ -3,40 +3,44 @@ import { Contract } from 'common/contract'
 import { useUser } from './use-user'
 import { getUserContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { first, isEqual } from 'lodash'
+import { useEvent } from 'web/hooks/use-event'
 
-export const useSavedContractMetrics = (
-  contract: Contract,
-  answerId?: string,
-  extraDeps?: any[],
-  retry = 2
-) => {
+export const useSavedContractMetrics = (contract: Contract) => {
   const user = useUser()
+  const lastBetTimeRef = useRef<number>(user?.lastBetTime ?? 0)
+
+  useEffect(() => {
+    lastBetTimeRef.current = user?.lastBetTime ?? 0
+  }, [user?.lastBetTime])
 
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric | undefined
   >(undefined, `contract-metrics-${contract.id}`)
 
-  useEffect(() => {
+  const callback = useEvent(async () => {
     if (!user?.id) return
     // Wait a small amount for the bet to replicate to supabase
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    const retry = lastBetTimeRef.current > Date.now() - 5000 ? 5 : 0
     const queryAndSet = async (retries: number) =>
-      setTimeout(() => {
-        getUserContractMetrics(user.id, contract.id, db, answerId).then(
-          (metrics) =>
-            tryToGetDifferentMetricsThanSaved(
-              savedMetrics,
-              metrics,
-              retries,
-              setSavedMetrics,
-              queryAndSet
-            )
+      getUserContractMetrics(user.id, contract.id, db).then((metrics) =>
+        tryToGetDifferentMetricsThanSaved(
+          savedMetrics,
+          metrics,
+          retries,
+          setSavedMetrics,
+          queryAndSet
         )
-      }, 50)
+      )
     queryAndSet(retry)
-  }, [user?.id, contract.id, contract.lastBetTime, ...(extraDeps ?? [])])
+  })
+
+  useEffect(() => {
+    callback()
+  }, [user?.id, contract.id, contract.lastBetTime])
 
   return savedMetrics
 }

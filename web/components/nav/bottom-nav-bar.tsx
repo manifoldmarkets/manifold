@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import clsx from 'clsx'
+import { MenuAlt3Icon } from '@heroicons/react/solid'
 import {
   HomeIcon,
-  MenuAlt3Icon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
-} from '@heroicons/react/solid'
+} from '@heroicons/react/outline'
+import { BiSearchAlt2 } from 'react-icons/bi'
 import { animated } from '@react-spring/web'
 import { Transition, Dialog } from '@headlessui/react'
 import { useState, Fragment } from 'react'
@@ -16,7 +17,7 @@ import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
 import { formatMoney } from 'common/util/format'
-import { SolidNotificationsIcon } from 'web/components/notifications-icon'
+import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
 import { User } from 'common/user'
@@ -26,6 +27,7 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
+import { GiCapitol } from 'react-icons/gi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -36,30 +38,56 @@ const touchItemClass = 'bg-primary-100'
 
 function getNavigation(user: User) {
   return [
-    { name: 'Home', href: '/home', icon: HomeIcon },
-    { name: 'Browse', href: '/browse?topic=for-you', icon: SearchIcon },
     {
-      name: 'Portfolio',
-      href: `/${user.username}/portfolio`,
+      name: 'Home',
+      href: '/home',
+      icon: HomeIcon,
+    },
+    {
+      name: 'Browse',
+      href: '/browse/for-you',
+      icon: BiSearchAlt2,
+    },
+    {
+      name: 'Politics',
+      href: '/politics',
+      icon: GiCapitol,
+      prefetch: false,
     },
     {
       name: 'Notifs',
       href: `/notifications`,
-      icon: SolidNotificationsIcon,
+      icon: NotificationsIcon,
+    },
+    {
+      name: 'Portfolio',
+      href: `/${user.username}/portfolio`,
     },
   ]
 }
 
 const signedOutNavigation = () => [
-  { name: 'Browse', href: '/browse', icon: SearchIcon },
-  { name: 'News', href: '/news', icon: NewspaperIcon },
-  { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-  // {
-  //   name: 'Get app',
-  //   href: appStoreUrl,
-  //   icon: DeviceMobileIcon,
-  // },
-  { name: 'Sign in', onClick: firebaseLogin, icon: UserCircleIcon },
+  {
+    name: 'Politics',
+    href: '/politics',
+    icon: GiCapitol,
+    alwaysShowName: true,
+    // prefetch: false, // should we not prefetch this?
+  },
+  { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
+  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
+  {
+    name: 'About',
+    href: '/about',
+    icon: QuestionMarkCircleIcon,
+    alwaysShowName: true,
+  },
+  {
+    name: 'Sign in',
+    onClick: firebaseLogin,
+    icon: UserCircleIcon,
+    alwaysShowName: true,
+  },
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
@@ -92,6 +120,7 @@ export function BottomNavBar(props: {
           item={item}
           currentPage={currentPage}
           user={user}
+          className={item.name === 'Politics' ? '-mt-1' : ''}
         />
       ))}
       {!!user && (
@@ -126,18 +155,20 @@ function NavBarItem(props: {
   user?: User | null
   className?: string
 }) {
-  const { item, currentPage, children, user } = props
+  const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
   const balance = useAnimatedNumber(user?.balance ?? 0)
   if (item.name === 'Portfolio' && user) {
     return (
       <Link
+        prefetch={item?.prefetch ?? true}
         href={item.href ?? '#'}
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === `/${user.username}/portfolio` && selectedItemClass
+          currentPage === `/${user.username}/portfolio` && selectedItemClass,
+          className
         )}
         onClick={track}
         onTouchStart={() => setTouched(true)}
@@ -156,7 +187,7 @@ function NavBarItem(props: {
   if (!item.href) {
     return (
       <button
-        className={clsx(itemClass, touched && touchItemClass)}
+        className={clsx(itemClass, touched && touchItemClass, className)}
         onClick={() => {
           track()
           item.onClick?.()
@@ -166,6 +197,7 @@ function NavBarItem(props: {
       >
         {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
         {children}
+        {item.alwaysShowName && item.name}
       </button>
     )
   }
@@ -179,7 +211,8 @@ function NavBarItem(props: {
       className={clsx(
         itemClass,
         touched && touchItemClass,
-        isCurrentPage && selectedItemClass
+        isCurrentPage && selectedItemClass,
+        className
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}
@@ -187,6 +220,7 @@ function NavBarItem(props: {
     >
       {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
       {children}
+      {item.alwaysShowName && item.name}
     </Link>
   )
 }
@@ -219,16 +253,19 @@ export function MobileSidebar(props: {
             {/* background cover */}
             <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
+          <div className="w-14 flex-shrink-0" aria-hidden="true">
+            {/* Dummy element to force sidebar content to the right */}
+          </div>
           <Transition.Child
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
-            enterFrom="-translate-x-full"
+            enterFrom="translate-x-full"
             enterTo="translate-x-0"
             leave="transition ease-in-out duration-300 transform"
             leaveFrom="translate-x-0"
-            leaveTo="-translate-x-full"
+            leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative flex w-full max-w-xs flex-1 flex-col">
+            <div className="bg-canvas-0 relative ml-auto flex w-full max-w-xs flex-1 flex-col">
               <div className="mx-2 h-0 flex-1 overflow-y-auto">
                 <Sidebar
                   navigationOptions={props.sidebarNavigationOptions}
@@ -238,9 +275,6 @@ export function MobileSidebar(props: {
               </div>
             </div>
           </Transition.Child>
-          <div className="w-14 flex-shrink-0" aria-hidden="true">
-            {/* Dummy element to force sidebar to shrink to fit close icon */}
-          </div>
         </Dialog>
       </Transition.Root>
     </div>

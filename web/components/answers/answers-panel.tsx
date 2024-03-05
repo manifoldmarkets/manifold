@@ -22,7 +22,7 @@ import { Button, IconButton, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import {
@@ -38,7 +38,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
@@ -60,51 +60,106 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
 import { CirclePicker } from 'react-color'
 import { UserHovercard } from '../user/user-hovercard'
+import { searchInAny } from 'common/util/parse'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
-const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
+export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
+const MAX_DEFAULT_ANSWERS = 20
+const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
   contract: MultiContract
-  answersToShow: (Answer | DpmAnswer)[]
-  selected: string[]
+  selectedAnswerIds: string[]
   sort: MultiSort
   setSort: (sort: MultiSort) => void
   query: string
   setQuery: (query: string) => void
-  setShowAll: (showAll: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
   onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
   onAnswerClick: (answer: Answer | DpmAnswer) => void
   showSetDefaultSort?: boolean
+  setDefaultAnswerIdsToGraph?: (ids: string[]) => void
 }) {
   const {
     contract,
     onAnswerCommentClick,
     onAnswerHover,
     onAnswerClick,
-    answersToShow,
-    selected,
+    selectedAnswerIds,
     sort,
     setSort,
     query,
     setQuery,
-    setShowAll,
     showSetDefaultSort,
+    setDefaultAnswerIdsToGraph,
   } = props
-  const { outcomeType, answers } = contract
+  const { outcomeType, resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract
       ? contract.addAnswersMode
       : outcomeType === 'FREE_RESPONSE'
       ? 'ANYONE'
       : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
-
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+
+  const answers = contract.answers
+    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
+    .map((a) => ({
+      ...a,
+      prob: getAnswerProbability(contract, a.id),
+    }))
+  const [showAll, setShowAll] = useState(
+    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+      answers.length <= 5
+  )
+  const sortedAnswers = useMemo(
+    () => sortAnswers(contract, answers, sort),
+    [answers, resolutions, shouldAnswersSumToOne, sort]
+  )
+  const searchedAnswers = useMemo(() => {
+    if (!answers.length || !query) return []
+
+    return sortedAnswers.filter(
+      (answer) =>
+        selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
+    )
+  }, [sortedAnswers, query])
+
+  const allResolved =
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => 'resolution' in a)
+
+  const answersToShow = query
+    ? searchedAnswers
+    : showAll
+    ? sortedAnswers
+    : sortedAnswers
+        .filter((answer) => {
+          if (selectedAnswerIds.includes(answer.id)) {
+            return true
+          }
+
+          if (allResolved) return true
+          if (sort === 'prob-asc') {
+            return answer.prob < 0.99
+          } else if (sort === 'prob-desc') {
+            return answer.prob > 0.01
+          } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+            return !('resolution' in answer)
+          }
+          return true
+        })
+        .slice(0, MAX_DEFAULT_ANSWERS)
+  useEffect(() => {
+    if (!selectedAnswerIds.length)
+      setDefaultAnswerIdsToGraph?.(
+        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
+      )
+  }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
 
@@ -112,11 +167,13 @@ export function AnswersPanel(props: {
 
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
-  const unfilledBets = useUnfilledBets(contract.id)
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
     usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
+  const unfilledBets = useUnfilledBets(contract.id, {
+    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
+  })
 
   const moreCount = answers.length - answersToShow.length
   // Note: Hide answers if there is just one "Other" answer.
@@ -189,7 +246,11 @@ export function AnswersPanel(props: {
               user={user}
               answer={answer}
               contract={contract}
-              onCommentClick={() => onAnswerCommentClick?.(answer)}
+              onCommentClick={
+                onAnswerCommentClick
+                  ? () => onAnswerCommentClick(answer)
+                  : undefined
+              }
               onHover={(hovering) =>
                 onAnswerHover?.(hovering ? answer : undefined)
               }
@@ -205,10 +266,9 @@ export function AnswersPanel(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              selected={selected?.includes(answer.id)}
+              selected={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
-              showAvatars={showAvatars}
               expanded={expandedIds.includes(answer.id)}
               shouldShowLimitOrderChart={
                 isAdvancedTrader && shouldShowLimitOrderChart
@@ -237,7 +297,7 @@ export function AnswersPanel(props: {
   )
 }
 
-const EditAnswerModal = (props: {
+export const EditAnswerModal = (props: {
   open: boolean
   setOpen: (show: boolean) => void
   contract: Contract
@@ -316,22 +376,12 @@ export function SimpleAnswerBars(props: {
         outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
 
   const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-  const unfilledBets = useUnfilledBets(contract.id)
 
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
@@ -341,6 +391,9 @@ export function SimpleAnswerBars(props: {
     true,
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
+  const unfilledBets = useUnfilledBets(contract.id, {
+    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
+  })
 
   return (
     <Col className="mx-[2px] gap-2">
@@ -355,7 +408,6 @@ export function SimpleAnswerBars(props: {
               answer={answer}
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
-              showAvatars={showAvatars}
               barColor={barColor}
               shouldShowLimitOrderChart={
                 isAdvancedTrader && shouldShowLimitOrderChart
@@ -382,7 +434,7 @@ export function SimpleAnswerBars(props: {
   )
 }
 
-function Answer(props: {
+export function Answer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   unfilledBets?: Array<LimitBet>
@@ -393,7 +445,6 @@ function Answer(props: {
   onClick?: () => void
   selected?: boolean
   userBets?: Bet[]
-  showAvatars?: boolean
   expanded?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
@@ -408,14 +459,12 @@ function Answer(props: {
     selected,
     color,
     userBets,
-    showAvatars,
     expanded,
     user,
     barColor,
     shouldShowLimitOrderChart,
   } = props
 
-  const answerCreator = useUserByIdOrAnswer(answer)
   const prob = getAnswerProbability(contract, answer.id)
   const [editAnswer, setEditAnswer] = useState<Answer>()
 
@@ -534,19 +583,7 @@ function Answer(props: {
 
       {expanded && (
         <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
-          {showAvatars && answerCreator && (
-            <UserHovercard userId={answerCreator.id}>
-              <Row className={'items-center self-start'}>
-                <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
-                <UserLink
-                  user={answerCreator}
-                  noLink={false}
-                  className="ml-1 text-sm"
-                  short={isMobile}
-                />
-              </Row>
-            </UserHovercard>
-          )}
+          <AnswerAvatar answer={answer} isMobile={isMobile} />
           <Row className={'w-full justify-end gap-2'}>
             {user &&
               'isOther' in answer &&
@@ -626,7 +663,6 @@ function Answer(props: {
                     {shortFormatNumber(limitOrderVolume)}
                   </Tooltip>
                 }
-                buttonColor="gray-outline"
               />
             ) : null}
             {'poolYes' in answer && (
@@ -652,7 +688,29 @@ function Answer(props: {
   )
 }
 
-function LimitOrderBarChart({
+const AnswerAvatar = (props: {
+  answer: Answer | DpmAnswer
+  isMobile: boolean
+}) => {
+  const { answer, isMobile } = props
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
+  if (!answerCreator) return <LoadingIndicator size={'sm'} />
+  return (
+    <UserHovercard userId={answerCreator.id}>
+      <Row className={'items-center self-start'}>
+        <Avatar avatarUrl={answerCreator.avatarUrl} size={'xs'} />
+        <UserLink
+          user={answerCreator}
+          noLink={false}
+          className="ml-1 text-sm"
+          short={isMobile}
+        />
+      </Row>
+    </UserHovercard>
+  )
+}
+
+export function LimitOrderBarChart({
   limitOrders,
   prob,
   activeColor,
