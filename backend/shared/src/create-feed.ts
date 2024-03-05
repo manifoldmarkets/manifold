@@ -29,14 +29,9 @@ export const bulkInsertDataToUserFeed = async (
   dataProps: {
     contractId?: string
     commentId?: string
-    answerIds?: string[]
     creatorId?: string
-    newsId?: string
     data?: any
-    groupId?: string
-    reactionId?: string
     idempotencyKey?: string
-    betData?: any
     postId?: number
     betId?: string
   },
@@ -57,7 +52,6 @@ export const bulkInsertDataToUserFeed = async (
         ...dataProps,
         userId,
         ...reasonAndScore,
-        reason: reasonAndScore.reasons[0],
         dataType,
         eventTime: eventTimeTz,
       })
@@ -86,31 +80,10 @@ export const createManualTrendingFeedRow = (
         creatorId: contract.creatorId,
         userId: forUserId,
         eventTime: new Date(now).toISOString(),
-        reason: 'similar_interest_vector_to_contract',
         dataType: 'trending_contract',
         reasons,
         relevanceScore: contract.importanceScore * estimatedRelevance,
       }) as Row<'user_feed'>
-  )
-}
-
-const matchingFeedRows = async (
-  contractId: string,
-  userIds: string[],
-  seenTime: number,
-  dataTypes: FEED_DATA_TYPES[],
-  pg: SupabaseDirectClient
-) => {
-  return await pg.map(
-    `select *
-            from user_feed
-            where contract_id = $1 and
-                user_id = ANY($2) and
-                greatest(created_time, seen_time) > $3 and
-                data_type = ANY($4)
-                `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
-    (row) => row as Row<'user_feed'>
   )
 }
 
