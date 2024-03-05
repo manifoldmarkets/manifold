@@ -173,6 +173,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   highlightCommentId?: string
   pinnedComments: ContractComment[]
   appRouter?: boolean
+  scrollToEnd?: boolean
 }) {
   const {
     contract,
@@ -184,6 +185,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     bets,
     highlightCommentId,
     appRouter,
+    scrollToEnd,
   } = props
   const user = useUser()
 
@@ -312,8 +314,19 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     if (visible) loadMore()
   })
 
+  const endOfMessagesRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (endOfMessagesRef && scrollToEnd)
+      endOfMessagesRef.current?.scrollIntoView({
+        behavior: 'auto',
+        block: 'start',
+      })
+  }, [endOfMessagesRef])
+
   return (
-    <Col className={className}>
+    <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
+      <div ref={endOfMessagesRef} />
       {user && (
         <ContractCommentInput
           replyTo={replyTo}

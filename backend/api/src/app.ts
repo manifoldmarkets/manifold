@@ -147,6 +147,7 @@ import { getLoverAnswers } from './love/get-lover-answers'
 import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
+import { settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
@@ -369,6 +370,8 @@ app.post(
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 app.post('/unresolve', ...apiRoute(unresolve))
+
+app.post('/settv', ...apiRoute(settv))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))

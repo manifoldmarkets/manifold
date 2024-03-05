@@ -67,6 +67,7 @@ import { AlertBox } from '../widgets/alert-box'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { orderBy } from 'lodash'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const ContractOverview = memo(
   (props: {
@@ -775,6 +776,55 @@ const BinaryChoiceOverview = (props: {
           />
         </>
       )}
+    </>
+  )
+}
+
+export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
+  const { contract } = props
+  const user = useUser()
+  const answers = useAnswersCpmm(contract.id) ?? contract.answers
+  const defaultSort = getDefaultSort(contract)
+
+  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
+    defaultSort,
+    'answer-sort' + contract.id
+  )
+
+  const [query, setQuery] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+
+  return (
+    <>
+      <Row className="justify-between gap-2">
+        {contract.resolution === 'CANCEL' ? (
+          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
+            <span className="text-base">Resolved</span>
+            <CancelLabel />
+          </div>
+        ) : (
+          <div />
+        )}
+      </Row>
+
+      <AnswersPanel
+        contract={{ ...contract, answers }}
+        selectedAnswerIds={[]}
+        sort={sort}
+        setSort={setSort}
+        query={query}
+        setQuery={setQuery}
+        onAnswerHover={() => null}
+        onAnswerClick={() => null}
+      />
+
+      <UserBetsSummary
+        className="border-ink-200 !mb-2 mt-2 "
+        contract={contract}
+        includeSellButton={user}
+      />
     </>
   )
 }
