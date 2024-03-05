@@ -62,7 +62,7 @@ export const placeMultiBetMain = async (
         )
       }
       const { shouldAnswersSumToOne } = contract
-      const { answerIds, outcome, limitProb, expiresAt } = body
+      const { answerIds, limitProb, expiresAt } = body
       if (expiresAt && expiresAt < Date.now())
         throw new APIError(403, 'Bet cannot expire in the past.')
       const answersSnap = await trans.get(contractDoc.collection('answersCpmm'))
@@ -109,7 +109,7 @@ export const placeMultiBetMain = async (
         contract,
         answers,
         betOnAnswers,
-        outcome,
+        'YES',
         amount,
         roundedLimitProb,
         unfilledBets,

@@ -78,7 +78,6 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       api(
         'multi-bet',
         removeUndefinedProps({
-          outcome: 'YES',
           amount: betAmount ?? 0,
           contractId: contract.id,
           answerIds: filterDefined([
