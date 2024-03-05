@@ -31,6 +31,10 @@ import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { MultiBetProps } from 'web/components/bet/bet-panel'
+import { track } from '@amplitude/analytics-browser'
+import { APIError } from 'common/api/utils'
+import { removeUndefinedProps } from 'common/util/object'
+import { api } from 'web/lib/firebase/api'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -46,15 +50,19 @@ export default function LimitOrderPanel(props: {
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
-  setOutcome: (outcome: 'YES' | 'NO') => void
+  setOutcome: (outcome: 'YES' | 'NO' | undefined ) => void
+  setIsYesNoSelectorVisible: (isVisible: boolean) => void
 }) {
   const {
     contract,
     multiProps,
     unfilledBets,
     balanceByUserId,
-
+    user,
     outcome,
+    onBuySuccess,
+    setOutcome,
+    setIsYesNoSelectorVisible,
   } = props
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCOutcome =
@@ -87,11 +95,18 @@ export default function LimitOrderPanel(props: {
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
 
+  const expiresAt = addExpiration
+    ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
+    : undefined
+
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     undefined
   )
 
   const hasLimitBet = !!limitProbInt && !!betAmount
+
+  const betDisabled =
+    isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
 
   const preLimitProb =
     limitProbInt === undefined
@@ -128,6 +143,53 @@ export default function LimitOrderPanel(props: {
         p: 0.5,
       }
     : { pool: contract.pool, p: contract.p }
+
+  async function submitBet() {
+    if (!user || betDisabled) return
+
+    setError(undefined)
+    setIsSubmitting(true)
+
+    const answerId = multiProps?.answerToBuy.id
+
+    await api(
+      'bet',
+      removeUndefinedProps({
+        outcome,
+        amount,
+        contractId: contract.id,
+        answerId,
+        limitProb: limitProb,
+        expiresAt,
+      })
+    )
+      .catch((e) => {
+        if (e instanceof APIError) {
+          setError(e.message.toString())
+        } else {
+          console.error(e)
+          setError('Error placing bet')
+        }
+        setIsSubmitting(false)
+      })
+      .then((r) => {
+        console.log('placed bet. Result:', r)
+        setIsSubmitting(false)
+        if (onBuySuccess) onBuySuccess()
+      })
+
+    await track('bet', {
+      location: 'bet panel',
+      outcomeType: contract.outcomeType,
+      slug: contract.slug,
+      contractId: contract.id,
+      amount,
+      outcome,
+      limitProb: limitProb,
+      isLimitOrder: true,
+      answerId: multiProps?.answerToBuy.id,
+    })
+  }
 
   const initialProb = isCpmmMulti
     ? multiProps!.answerToBuy.prob
@@ -316,6 +378,57 @@ export default function LimitOrderPanel(props: {
         )}
 
         {hasLimitBet && <Spacer h={8} />}
+        <Row className="items-center justify-between gap-2">
+          <Button
+            color="gray"
+            size="xl"
+            className="text-white"
+            onClick={() => {
+              setIsYesNoSelectorVisible(true)
+              
+                setOutcome(undefined)
+              
+              
+              
+            }}
+          >
+            Cancel
+          </Button>
+          {user && (
+            <Button
+              size="xl"
+              disabled={betDisabled || inputError}
+              color={
+                binaryMCOutcome === 'YES'
+                  ? 'indigo'
+                  : binaryMCOutcome === 'NO'
+                  ? 'amber'
+                  : outcome === 'YES'
+                  ? 'green'
+                  : 'red'
+              }
+              loading={isSubmitting}
+              className="flex-1"
+              onClick={submitBet}
+            >
+              {isSubmitting
+                ? 'Submitting...'
+                : !outcome
+                ? 'Choose YES or NO'
+                : !limitProb
+                ? 'Enter a probability'
+                : !betAmount
+                ? 'Enter an amount'
+                : binaryMCOutcome
+                ? `Submit order for ${formatMoney(
+                    betAmount
+                  )} at ${formatPercent(preLimitProb ?? 0)}`
+                : `Submit ${outcome} order for ${formatMoney(
+                    betAmount
+                  )} at ${formatPercent(limitProb)}`}
+            </Button>
+          )}
+        </Row>
       </Col>
     </>
   )

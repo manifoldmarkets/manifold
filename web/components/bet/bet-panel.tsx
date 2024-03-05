@@ -153,10 +153,6 @@ export function BuyPanel(props: {
     }
   }, [user])
 
-  if (!user) {
-    return null
-  }
-
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
     if (!outcome) {
@@ -397,7 +393,12 @@ export function BuyPanel(props: {
                 unfilledBets={unfilledBets}
                 balanceByUserId={balanceByUserId}
                 outcome={outcome}
-                setOutcome={onOutcomeChoice}
+                setOutcome={(outcome) =>
+                  outcome === undefined
+                    ? setOutcome(undefined)
+                    : onOutcomeChoice(outcome)
+                }
+                setIsYesNoSelectorVisible={setIsYesNoSelectorVisible}
               />
               <YourOrders
                 className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
@@ -414,66 +415,69 @@ export function BuyPanel(props: {
               )}
             </>
           )}
-          <Row className="items-center justify-between gap-2">
-            <Button
-              color="gray"
-              size="xl"
-              className="text-white"
-              onClick={() => {
-                setIsYesNoSelectorVisible(true)
-                if (initialOutcome == undefined) {
-                  setOutcome(undefined)
-                }
-                setBetAmount(initialBetAmount)
-                props.onCancel?.()
-              }}
-            >
-              Cancel
-            </Button>
-            {user ? (
-              <WarningConfirmationButton
-                marketType="binary"
-                amount={betAmount}
-                warning={warning}
-                userOptedOutOfWarning={user.optOutBetWarnings}
-                onSubmit={submitBet}
-                ButtonClassName="flex-grow"
-                actionLabelClassName={'line-clamp-1'}
-                isSubmitting={isSubmitting}
-                disabled={betDisabled}
-                size="xl"
-                color={
-                  isBinaryMC && outcome === 'YES'
-                    ? 'indigo'
-                    : isBinaryMC && outcome === 'NO'
-                    ? 'amber'
-                    : outcome === 'NO'
-                    ? 'red'
-                    : 'green'
-                }
-                actionLabel={
-                  betDisabled
-                    ? `Select ${formatOutcomeLabel(
-                        contract,
-                        'YES'
-                      )} or ${formatOutcomeLabel(contract, 'NO')}`
-                    : `Bet ${formatMoney(betAmount)} on ${
-                        binaryMCOutcomeLabel ?? outcome
-                      }`
-                }
-                inModal={inModal}
-              />
-            ) : (
+
+          {betType !== 'Limit' && (
+            <Row className="items-center justify-between gap-2">
               <Button
-                color={outcome === 'NO' ? 'red' : 'green'}
+                color="gray"
                 size="xl"
-                onClick={withTracking(firebaseLogin, 'login from bet panel')}
-                className="flex-grow"
+                className="text-white"
+                onClick={() => {
+                  setIsYesNoSelectorVisible(true)
+                  if (initialOutcome == undefined) {
+                    setOutcome(undefined)
+                  }
+                  setBetAmount(initialBetAmount)
+                  props.onCancel?.()
+                }}
               >
-                Sign up to predict
+                Cancel
               </Button>
-            )}
-          </Row>
+              {user ? (
+                <WarningConfirmationButton
+                  marketType="binary"
+                  amount={betAmount}
+                  warning={warning}
+                  userOptedOutOfWarning={user.optOutBetWarnings}
+                  onSubmit={submitBet}
+                  ButtonClassName="flex-grow"
+                  actionLabelClassName={'line-clamp-1'}
+                  isSubmitting={isSubmitting}
+                  disabled={betDisabled}
+                  size="xl"
+                  color={
+                    isBinaryMC && outcome === 'YES'
+                      ? 'indigo'
+                      : isBinaryMC && outcome === 'NO'
+                      ? 'amber'
+                      : outcome === 'NO'
+                      ? 'red'
+                      : 'green'
+                  }
+                  actionLabel={
+                    betDisabled
+                      ? `Select ${formatOutcomeLabel(
+                          contract,
+                          'YES'
+                        )} or ${formatOutcomeLabel(contract, 'NO')}`
+                      : `Bet ${formatMoney(betAmount)} on ${
+                          binaryMCOutcomeLabel ?? outcome
+                        }`
+                  }
+                  inModal={inModal}
+                />
+              ) : (
+                <Button
+                  color={outcome === 'NO' ? 'red' : 'green'}
+                  size="xl"
+                  onClick={withTracking(firebaseLogin, 'login from bet panel')}
+                  className="flex-grow"
+                >
+                  Sign up to predict
+                </Button>
+              )}
+            </Row>
+          )}
           {user ? (
             <div className="text-ink-700 mt-4 whitespace-nowrap text-sm">
               Balance{' '}
