@@ -164,7 +164,7 @@ const BrowseMatchesDialog = (props: {
             page={index}
             setPage={setPotentialIndex}
             totalItems={filteredLovers.length}
-            itemsPerPage={1}
+            pageSize={1}
           />
         )}
 
@@ -220,7 +220,7 @@ function CompatibilityScoreDisplay(props: {
   return (
     <Row className="text-ink-600 items-center gap-1">
       <CompatibleBadge
-        className="text-primary-600 font-semibold self-end"
+        className="text-primary-600 self-end font-semibold"
         compatibility={compatibility}
       />
       compatible

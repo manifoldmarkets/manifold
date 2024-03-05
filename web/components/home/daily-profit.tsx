@@ -214,7 +214,7 @@ export function ProfitChangeTable(props: {
       {showPagination && (
         <Pagination
           page={page}
-          itemsPerPage={rowsPerSection * 2}
+          pageSize={rowsPerSection * 2}
           totalItems={contracts.length}
           setPage={setPage}
         />

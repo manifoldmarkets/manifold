@@ -504,7 +504,7 @@ const BinaryUserPositionsTable = memo(
         </Col>
         <Pagination
           page={page}
-          itemsPerPage={pageSize}
+          pageSize={pageSize}
           totalItems={largestColumnLength}
           setPage={setPage}
         />

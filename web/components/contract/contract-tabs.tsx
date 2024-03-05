@@ -529,7 +529,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       </Col>
       <Pagination
         page={page}
-        itemsPerPage={ITEMS_PER_PAGE}
+        pageSize={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)

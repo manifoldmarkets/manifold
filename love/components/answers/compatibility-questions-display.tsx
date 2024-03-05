@@ -253,7 +253,7 @@ export function CompatibilityQuestionsDisplay(props: {
       {NUM_QUESTIONS_TO_SHOW < answers.length && (
         <Pagination
           page={page}
-          itemsPerPage={NUM_QUESTIONS_TO_SHOW}
+          pageSize={NUM_QUESTIONS_TO_SHOW}
           totalItems={sortedAndFilteredAnswers.length}
           setPage={setPage}
         />
@@ -555,9 +555,7 @@ function CompatibilityDisplay(props: {
                 : 'bg-red-500/20 hover:bg-red-500/30'
             )}
           >
-            {answerCompatibility
-              ? 'Compatible'
-              : 'Incompatible'}
+            {answerCompatibility ? 'Compatible' : 'Incompatible'}
           </button>
         </>
       )}
