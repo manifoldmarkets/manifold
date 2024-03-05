@@ -2,11 +2,11 @@ import { APIError } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { type APIHandler } from 'api/helpers/endpoint'
 import { isAdminId } from 'common/envs/constants'
+import { log } from 'shared/utils'
 
 export const removePinnedPhoto: APIHandler<'remove-pinned-photo'> = async (
   body: { userId: string },
-  auth,
-  { log }
+  auth
 ) => {
   const { userId } = body
   log('remove pinned url', { userId })

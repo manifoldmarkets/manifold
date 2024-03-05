@@ -12,31 +12,28 @@ import {
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { toLiteMarket } from 'common/api/market-types'
 import { searchProps } from 'common/api/market-search-types'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
-  auth,
-  { logError }
+  auth
 ) => {
-  const contracts = await search(props, auth?.uid, logError)
+  const contracts = await search(props, auth?.uid)
   return contracts.map(toLiteMarket)
 }
 
 export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   props,
-  auth,
-  { logError }
+  auth
 ) => {
-  return await search(props, auth?.uid, logError)
+  return await search(props, auth?.uid)
 }
 
 const search = async (
   props: z.infer<typeof searchProps>,
-  userId: string | undefined,
-  logError: GCPLog
+  userId: string | undefined
 ) => {
   const {
     term = '',
@@ -111,8 +108,7 @@ const search = async (
           }))
           .catch((e) => {
             // to_tsquery is sensitive to special characters and can throw an error
-            logError(`Error with type: ${searchType} for term: ${term}`)
-            logError(e)
+            log.error(`Error with type: ${searchType} for term: ${term}`, e)
             return []
           })
       })

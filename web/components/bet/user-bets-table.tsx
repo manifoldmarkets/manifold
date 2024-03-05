@@ -634,7 +634,7 @@ function BetsTable(props: {
 
       <Pagination
         page={page}
-        itemsPerPage={rowsPerSection}
+        pageSize={rowsPerSection}
         totalItems={contracts.length}
         setPage={setPage}
       />

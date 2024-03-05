@@ -5,6 +5,8 @@ import { MAX_QUESTION_LENGTH } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertGroup } from 'common/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
+import { log } from 'shared/utils'
+
 const bodySchema = z
   .object({
     question: z.string().min(1).max(MAX_QUESTION_LENGTH),
@@ -21,7 +23,7 @@ const GROUPS_SLUGS_TO_IGNORE = [
   'test',
   'sf-bay-rationalists',
 ]
-export const getsimilargroupstocontract = authEndpoint(async (req, _, log) => {
+export const getsimilargroupstocontract = authEndpoint(async (req) => {
   const { question } = bodySchema.parse(req.body)
   const embedding = await generateEmbeddings(question)
   if (!embedding) return { error: 'Failed to generate embeddings' }
@@ -35,7 +37,7 @@ export const getsimilargroupstocontract = authEndpoint(async (req, _, log) => {
             and importance_score > 0.15
             and privacy_status = 'public'
             and slug not in ($2:list)
-      order by POW(1-(embedding <=> ($1)::vector) - 0.8, 2) * importance_score desc 
+      order by POW(1-(embedding <=> ($1)::vector) - 0.8, 2) * importance_score desc
             limit 3
     `,
     [embedding, GROUPS_SLUGS_TO_IGNORE],

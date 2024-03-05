@@ -6,6 +6,7 @@ import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
+import { log } from 'shared/utils'
 
 const schema = z
   .object({
@@ -15,7 +16,7 @@ const schema = z
   })
   .strict()
 
-export const createdashboard = authEndpoint(async (req, auth, log) => {
+export const createdashboard = authEndpoint(async (req, auth) => {
   const { title, items, topics } = validate(schema, req.body)
 
   log('creating dashboard')

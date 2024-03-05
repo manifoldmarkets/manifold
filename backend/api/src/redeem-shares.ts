@@ -11,12 +11,11 @@ import {
   CPMMNumericContract,
 } from 'common/contract'
 import { APIError } from 'common/api/utils'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 
 export const redeemShares = async (
   userId: string,
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  log: GCPLog
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
 ) => {
   return await firestore.runTransaction(async (trans) => {
     const { id: contractId } = contract

@@ -19,7 +19,7 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
@@ -35,7 +35,7 @@ const userToPortfolioMetrics: {
   }
 } = {}
 
-export async function updateUserMetricsCore({ log }: JobContext) {
+export async function updateUserMetricsCore() {
   const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
@@ -46,7 +46,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
 
   log('Loading users...')
   const userIds = await pg.map(
-    `select id from users 
+    `select id from users
             order by data->'metricsLastUpdated' nulls first limit 2000`,
     [],
     (r) => r.id as string
@@ -158,7 +158,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   // Load user data right before calculating metrics to avoid out-of-date deposit/balance data (esp. for new users that
   // get their first 9 deposits upon visiting new markets).
   const users = await pg.map(
-    `select data from users 
+    `select data from users
             where id in ($1:list)`,
     [userIds],
     (r) => r.data as User

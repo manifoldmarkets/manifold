@@ -31,14 +31,17 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { api } from 'web/lib/firebase/api'
+import { Button } from '../buttons/button'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
   hideRedemptionAndLoanMessages?: boolean
+  truncate?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages } = props
+  const { contract, isYourBets, hideRedemptionAndLoanMessages, truncate } =
+    props
   const { isResolved, mechanism, outcomeType, closeTime } = contract
 
   const bets = sortBy(
@@ -78,6 +81,9 @@ export function ContractBetsTable(props: {
   const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && Date.now() > closeTime
   const isBinaryMC = isBinaryMulti(contract)
+
+  const [truncated, setTruncated] = useState(truncate ?? false)
+  const truncatedBetCount = 5
 
   return (
     <div className="overflow-x-auto">
@@ -142,7 +148,10 @@ export function ContractBetsTable(props: {
           </tr>
         </thead>
         <tbody>
-          {normalBets.map((bet) => (
+          {(truncated
+            ? normalBets.slice(0, truncatedBetCount)
+            : normalBets
+          ).map((bet) => (
             <BetRow
               key={bet.id}
               bet={bet}
@@ -153,6 +162,18 @@ export function ContractBetsTable(props: {
           ))}
         </tbody>
       </Table>
+
+      {truncate && normalBets.length > truncatedBetCount && (
+        <Button
+          className="w-full"
+          color="gray-outline"
+          onClick={() => setTruncated((b) => !b)}
+        >
+          {truncated
+            ? `Show ${normalBets.length - truncatedBetCount} more`
+            : 'Show fewer'}
+        </Button>
+      )}
     </div>
   )
 }
@@ -242,7 +263,7 @@ function BetRow(props: {
       )}
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       {isCpmmMulti && !isBinaryMC && (
-        <td>
+        <td className="max-w-[200px] truncate sm:max-w-[250px]">
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
         </td>
       )}

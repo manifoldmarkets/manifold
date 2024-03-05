@@ -20,8 +20,9 @@ import { removeTextInParentheses } from './candidate-bar'
 export function SmallCandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  excludeAnswers?: string[]
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, excludeAnswers } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -57,7 +58,11 @@ export function SmallCandidatePanel(props: {
     (answer) =>
       !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
   ])
-    .filter((answer) => answer.text !== 'Other')
+    .filter(
+      (a) =>
+        a.text !== 'Other' &&
+        (!excludeAnswers || !excludeAnswers.includes(a.text))
+    )
     .slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length

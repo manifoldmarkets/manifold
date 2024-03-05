@@ -3,20 +3,19 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
-import { StructuredLogger } from 'shared/log'
+import { log } from 'shared/log'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
-> = async (body, _, { log }) => {
+> = async (body) => {
   const { contractId, limit, limitTopics } = body
-  return getRelatedMarkets(contractId, limit, limitTopics, log)
+  return getRelatedMarkets(contractId, limit, limitTopics)
 }
 
 const getRelatedMarkets = async (
   contractId: string,
   limit: number,
-  limitTopics: number,
-  log: StructuredLogger
+  limitTopics: number
 ) => {
   log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()

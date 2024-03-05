@@ -18,7 +18,6 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
@@ -31,9 +30,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
-import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { Button } from '../buttons/button'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { ArrowRightIcon } from '@heroicons/react/outline'
@@ -83,29 +80,9 @@ export function ContractTabs(props: {
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
     maybePluralize('Comment', totalComments)
 
-  const user = useUser()
-
-  const { rows } = useRealtimeBets({
-    contractId: contract.id,
-    userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
-    filterAntes: true,
-    order: 'asc',
-  })
-  const userBets = rows ?? []
-
   const tradesTitle =
     (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
     maybePluralize('Trade', totalBets)
-
-  const visibleUserBets = userBets.filter(
-    (bet) => bet.amount !== 0 && !bet.isRedemption
-  )
-
-  const isMobile = useIsMobile()
-
-  const yourBetsTitle =
-    (visibleUserBets.length > 0 ? `${visibleUserBets.length} ` : '') +
-    (isMobile ? 'You' : 'Your Trades')
 
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
@@ -123,8 +100,6 @@ export function ContractTabs(props: {
               ? 'comments'
               : title === tradesTitle
               ? 'trades'
-              : title === yourBetsTitle
-              ? 'your trades'
               : title === positionsTitle
               ? 'positions'
               : 'contract'
@@ -178,12 +153,6 @@ export function ContractTabs(props: {
                 setReplyToBet={setReplyTo}
               />
             </Col>
-          ),
-        },
-        userBets.length > 0 && {
-          title: yourBetsTitle,
-          content: (
-            <ContractBetsTable contract={contract} bets={userBets} isYourBets />
           ),
         }
       )}
@@ -560,7 +529,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       </Col>
       <Pagination
         page={page}
-        itemsPerPage={ITEMS_PER_PAGE}
+        pageSize={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)

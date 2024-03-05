@@ -53,6 +53,7 @@ export async function updateLeagueCore() {
     'AD_REDEEM',
     'MARKET_BOOST_REDEEM',
     'QUEST_REWARD',
+    'REFERRAL',
   ]
   const txnData = await pg.manyOrNone<{
     user_id: string

@@ -1,11 +1,10 @@
 import { groupBy, mapValues, sortBy } from 'lodash'
 
-import { getIds } from 'shared/supabase/utils'
+import { getIds, updateData } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { updateData } from 'shared/supabase/utils'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 
-export async function updateGroupMetricsCore({ log }: JobContext) {
+export async function updateGroupMetricsCore() {
   const pg = createSupabaseDirectClient()
   log('Loading group IDs...')
   const groupIds = await getIds(pg, 'groups')

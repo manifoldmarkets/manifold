@@ -3,7 +3,7 @@ import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
@@ -54,8 +54,7 @@ if (require.main === module) {
           {
             answerId: answer.id,
             outcome,
-          },
-          log.debug
+          }
         )
 
         lastResolution = outcome

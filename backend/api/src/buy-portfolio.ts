@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPortfolio } from 'common/portfolio'
 import { placeBetMain } from './place-bet'
+import { log } from 'shared/utils'
 
 const schema = z
   .object({
@@ -12,7 +13,7 @@ const schema = z
   })
   .strict()
 
-export const buyportfolio = authEndpoint(async (req, auth, log) => {
+export const buyportfolio = authEndpoint(async (req, auth) => {
   const { portfolioId, amount, buyOpposite } = validate(schema, req.body)
 
   const db = createSupabaseDirectClient()
@@ -52,8 +53,7 @@ export const buyportfolio = authEndpoint(async (req, auth, log) => {
         amount: itemAmount,
       },
       user.id,
-      isAPI,
-      log
+      isAPI
     )
   }
 

@@ -24,7 +24,7 @@ import {
   isProd,
   getValues,
   checkAndMergePayouts,
-  GCPLog,
+  log,
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
@@ -47,8 +47,7 @@ export const resolveMarketHelper = async (
   unresolvedContract: Contract,
   resolver: User,
   creator: User,
-  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams,
-  log: GCPLog
+  { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
 ) => {
   const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
@@ -175,12 +174,12 @@ export const resolveMarketHelper = async (
     await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
   }
   log('processing payouts', { payouts })
-  await payUsersTransactions(log, payouts, contractId, answerId)
+  await payUsersTransactions(payouts, contractId, answerId)
 
   await updateContractMetricsForUsers(contract, bets)
   // TODO: we may want to support clawing back trader bonuses on MC markets too
   if (!answerId) {
-    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome, log)
+    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
   }
   await revalidateStaticProps(contractPath(contract))
 
@@ -327,8 +326,7 @@ export const getDataAndPayoutInfo = async (
 }
 async function undoUniqueBettorRewardsIfCancelResolution(
   contract: Contract,
-  outcome: string,
-  log: GCPLog
+  outcome: string
 ) {
   if (outcome === 'CANCEL') {
     const creatorsBonusTxns = await getValues<Txn>(
@@ -376,7 +374,6 @@ async function undoUniqueBettorRewardsIfCancelResolution(
 }
 
 export const payUsersTransactions = async (
-  log: GCPLog,
   payouts: {
     userId: string
     payout: number

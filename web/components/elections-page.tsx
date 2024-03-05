@@ -26,6 +26,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     newHampshireContract,
+    republicanElectability,
+    democraticElectability,
   } = props
 
   if (
@@ -33,7 +35,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !electionCandidateContract ||
     !republicanCandidateContract ||
     !democratCandidateContract ||
-    !newHampshireContract
+    !newHampshireContract ||
+    !democraticElectability ||
+    !republicanElectability
   ) {
     return <Custom404 />
   }
@@ -52,6 +56,8 @@ function ElectionContent(props: ElectionsPageProps) {
     democratCandidateContract,
     republicanVPContract,
     democraticVPContract,
+    democraticElectability,
+    republicanElectability,
     trendingDashboard,
   } = props
 
@@ -88,7 +94,6 @@ function ElectionContent(props: ElectionsPageProps) {
             />
           </Col>
         )}
-
         <PoliticsCard
           contract={electionCandidateContract as MultiContract}
           viewType="CANDIDATE"
@@ -99,8 +104,7 @@ function ElectionContent(props: ElectionsPageProps) {
           viewType="PARTY"
           customTitle="Which party will win the Presidential Election?"
         />
-
-        <Col className="gap-6 sm:gap-8 lg:hidden">
+        <Col className="gap-6 sm:hidden sm:gap-8">
           <PoliticsCard
             contract={democratCandidateContract as MultiContract}
             viewType="CANDIDATE"
@@ -120,7 +124,7 @@ function ElectionContent(props: ElectionsPageProps) {
             viewType="CANDIDATE"
           />
         </Col>
-        <Col className="hidden gap-6 sm:gap-8 lg:flex">
+        <Col className="hidden gap-6 sm:flex sm:gap-8">
           <Col className="gap-2">
             <Row className="items-center gap-2">
               <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -168,12 +172,54 @@ function ElectionContent(props: ElectionsPageProps) {
             </Row>
           </Col>
         </Col>
-
         <HomepageMap
           rawPresidencyStateContracts={rawPresidencyStateContracts}
           rawSenateStateContracts={rawSenateStateContracts}
           rawGovernorStateContracts={rawGovernorStateContracts}
         />
+        <Col className="gap-6 sm:hidden sm:gap-8">
+          <PoliticsCard
+            contract={democraticElectability as MultiContract}
+            viewType="CANDIDATE"
+            customTitle={'Who would win if they were the Democratic nominee?'}
+            excludeAnswers={['Joe Biden']}
+          />
+          <PoliticsCard
+            contract={republicanElectability as MultiContract}
+            viewType="CANDIDATE"
+            customTitle={'Who would win if they were the Republican nominee?'}
+            excludeAnswers={['Donald Trump']}
+          />
+        </Col>
+        <Col className="hidden gap-6 sm:flex sm:gap-8">
+          <Col className="gap-2">
+            <Row className="items-center gap-2">
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+              <div className="text-ink-600  ">
+                Who would win the presidency if they were the nominee?
+              </div>
+              <div className="bg-ink-600 flex h-[1px] grow flex-row" />
+            </Row>
+            <Row className="gap-4">
+              <PoliticsCard
+                contract={democraticElectability as MultiContract}
+                maxAnswers={3}
+                customTitle="Democratic"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+                excludeAnswers={['Joe Biden']}
+              />
+              <PoliticsCard
+                contract={republicanElectability as MultiContract}
+                maxAnswers={3}
+                customTitle="Republican"
+                className="w-1/2"
+                viewType="SMALL CANDIDATE"
+                excludeAnswers={['Donald Trump']}
+              />
+            </Row>
+          </Col>
+        </Col>
       </Col>
       <Spacer h={4} />
     </>

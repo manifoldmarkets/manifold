@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { z } from 'zod'
 
 import { Contract, contractPath } from 'common/contract'
-import { revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 
 import { isAdminId } from 'common/envs/constants'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
@@ -13,7 +13,7 @@ const bodySchema = z
   })
   .strict()
 
-export const deleteMarket = authEndpoint(async (req, auth, log) => {
+export const deleteMarket = authEndpoint(async (req, auth) => {
   const { contractId } = validate(bodySchema, req.body)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await contractDoc.get()

@@ -55,6 +55,11 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/desantis.png',
     shortName: 'DeSantis',
   },
+  'Ron Desantis': {
+    party: 'Republican',
+    photo: '/political-candidates/desantis.png',
+    shortName: 'DeSantis',
+  },
   'Vivek Ramaswamy': {
     party: 'Republican',
     photo: '/political-candidates/ramaswamy.png',
@@ -164,5 +169,40 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     party: 'Democrat',
     photo: '/political-candidates/bobama.png',
     shortName: 'Obama',
+  },
+  'Andy Beshear': {
+    party: 'Democrat',
+    photo: '/political-candidates/beshear.png',
+    shortName: 'Beshear',
+  },
+  'Hakeem Jeffries': {
+    party: 'Democrat',
+    photo: '/political-candidates/jeffries.png',
+    shortName: 'Jeffries',
+  },
+  'J. B. Pritzker': {
+    party: 'Democrat',
+    photo: '/political-candidates/pritzker.png',
+    shortName: 'Pritzker',
+  },
+  'Josh Shapiro': {
+    party: 'Democrat',
+    photo: '/political-candidates/shapiro.png',
+    shortName: 'Shapiro',
+  },
+  'Jared Polis': {
+    party: 'Democrat',
+    photo: '/political-candidates/polis.png',
+    shortName: 'Polis',
+  },
+  'Glenn Youngkin': {
+    party: 'Republican',
+    photo: '/political-candidates/youngkin.png',
+    shortName: 'Youngkin',
+  },
+  'Greg Abbott': {
+    party: 'Republican',
+    photo: '/political-candidates/abbott.png',
+    shortName: 'Abbott',
   },
 }

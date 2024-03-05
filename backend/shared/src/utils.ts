@@ -26,18 +26,8 @@ import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
-import { log, Logger, StructuredLogger } from 'shared/log'
-
+import { log, Logger } from 'shared/log'
 export { log, Logger }
-
-// for old code
-export { log as gLog, StructuredLogger as GCPLog }
-
-// type for scheduled job functions
-export type JobContext = {
-  log: StructuredLogger
-  lastEndTime?: number
-}
 
 export const logMemory = () => {
   const used = process.memoryUsage()

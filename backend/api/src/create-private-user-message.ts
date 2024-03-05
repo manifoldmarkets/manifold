@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { GCPLog, getPrivateUser, getUser } from 'shared/utils'
+import { log, getPrivateUser, getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -35,7 +35,7 @@ const postSchema = z
   })
   .strict()
 
-export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
+export const createprivateusermessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
   if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
@@ -52,7 +52,6 @@ export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
     channelId,
     content,
     pg,
-    log,
     'private'
   )
 })
@@ -62,7 +61,6 @@ export const createPrivateUserMessageMain = async (
   channelId: number,
   content: JSONContent,
   pg: SupabaseDirectClient,
-  log: GCPLog,
   visibility: ChatVisibility,
   overrideCreatorId?: string
 ) => {
@@ -80,7 +78,7 @@ export const createPrivateUserMessageMain = async (
   } else if (overrideCreatorId !== manifoldLoveUserId) {
     throw new APIError(403, 'Only manifold love can post to arbitrary channels')
   }
-  await notifyOtherUserInChannelIfInactive(channelId, creator, pg, log)
+  await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
   await insertPrivateMessage(
     content,
     channelId,
@@ -133,8 +131,7 @@ export const createPrivateUserMessageMain = async (
 const notifyOtherUserInChannelIfInactive = async (
   channelId: number,
   creator: User,
-  pg: SupabaseDirectClient,
-  log: GCPLog
+  pg: SupabaseDirectClient
 ) => {
   const otherUserIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from private_user_message_channel_members

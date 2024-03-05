@@ -2374,8 +2374,6 @@ export type Database = {
       }
       user_feed: {
         Row: {
-          answer_ids: string[] | null
-          bet_data: Json | null
           bet_id: string | null
           comment_id: string | null
           contract_id: string | null
@@ -2384,23 +2382,17 @@ export type Database = {
           data: Json | null
           data_type: string
           event_time: string
-          group_id: string | null
           id: number
           idempotency_key: string | null
           is_copied: boolean
-          news_id: string | null
           post_id: number | null
-          reaction_id: string | null
-          reason: string
-          reasons: string[] | null
+          reasons: string[]
           relevance_score: number | null
           seen_duration: number | null
           seen_time: string | null
           user_id: string
         }
         Insert: {
-          answer_ids?: string[] | null
-          bet_data?: Json | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
@@ -2409,23 +2401,17 @@ export type Database = {
           data?: Json | null
           data_type: string
           event_time: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
-          reason: string
-          reasons?: string[] | null
+          reasons: string[]
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
           user_id: string
         }
         Update: {
-          answer_ids?: string[] | null
-          bet_data?: Json | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
@@ -2434,15 +2420,11 @@ export type Database = {
           data?: Json | null
           data_type?: string
           event_time?: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
-          reason?: string
-          reasons?: string[] | null
+          reasons?: string[]
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
