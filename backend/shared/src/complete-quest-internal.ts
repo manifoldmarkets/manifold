@@ -73,10 +73,7 @@ export const completeCalculatedQuestFromTrigger = async (
   )
 }
 
-export const completeReferralsQuest = async (
-  userId: string,
-  log: StructuredLogger
-) => {
+export const completeReferralsQuest = async (userId: string) => {
   // Bc we don't issue a payout here, (onCreateBet does that) we don't need an idempotency key
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
@@ -151,7 +148,7 @@ const getCurrentCountForQuest = async (
       .valueOf()
     const ptNow = dayjs().tz('America/Los_Angeles').valueOf()
     if (ptNow < startOfWeek) startOfWeek = startOfWeek - WEEK_MS
-    oldLog(
+    log(
       'refer-user: getting referrals count for user',
       userId,
       'from startOfWeek ts:',
