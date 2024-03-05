@@ -229,20 +229,6 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
-  const buckets = 10
-  useEffect(() => {
-    if (max === undefined || min === undefined || !buckets) return
-    const answers = Array.from(
-      { length: buckets },
-      (_, i) => min + (max + 1 - min) * (i / buckets)
-    )
-    setNumericAnswers(answers)
-  }, [buckets, max, min])
-
-  const [numericAnswers, setNumericAnswers] = usePersistentLocalState<
-    number[] | undefined
-  >(undefined, 'new-numeric-answers' + paramsKey)
-
   const [neverCloses, setNeverCloses] = useState(false)
 
   const shouldHaveCloseDate =
@@ -276,9 +262,7 @@ export function ContractParamsForm(props: {
 
   const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
-    !hasAnswers ||
-    answers.every((answer) => answer.trim().length > 0) ||
-    buckets > 2
+    !hasAnswers || answers.every((answer) => answer.trim().length > 0)
 
   const isValidDate =
     // closeTime must be in the future
@@ -310,8 +294,6 @@ export function ContractParamsForm(props: {
     if (!isValid) {
       if (!isValidDate) {
         setErrorText('Close date must be in the future')
-      } else if (buckets < 3) {
-        setErrorText('You must have at least 3 buckets.')
       } else if (!isValidMultipleChoice) {
         setErrorText(
           `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
@@ -380,7 +362,6 @@ export function ContractParamsForm(props: {
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
-        numericAnswers,
       })
       const newContract = await api('market', createProps as any)
 

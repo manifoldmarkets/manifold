@@ -7,6 +7,7 @@ import {
   CPMMBinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
@@ -51,6 +52,7 @@ import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-contract'
+import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
 
 type Body = ValidatedAPIParams<'market'>
 const firestore = admin.firestore()
@@ -338,8 +340,7 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     extraLiquidity: number | undefined,
-    specialLiquidityPerAnswer: number | undefined,
-    numericAnswers: number[] | undefined
+    specialLiquidityPerAnswer: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -372,14 +373,21 @@ function validateMarketBody(body: Body) {
     ;({ initialProb, extraLiquidity } = parsed)
   }
   if (outcomeType === 'NUMBER') {
-    ;({ numericAnswers } = validateMarketType(
+    if (!MULTI_NUMERIC_CREATION_ENABLED)
+      throw new APIError(
+        400,
+        'Creating numeric markets is not currently enabled.'
+      )
+    ;({ min, max } = validateMarketType(
       outcomeType,
       createMultiNumericSchema,
       body
     ))
-    if (numericAnswers.length < 2)
-      throw new APIError(400, 'Numeric markets must have at least 2 answers')
-    answers = numericAnswers.map((n) => n.toString())
+    if (min >= max)
+      throw new APIError(400, 'Numeric markets must have min < max.')
+    answers = getMultiNumericAnswerMidpoints(max, min).map((midpoint) =>
+      midpoint.toFixed(2)
+    )
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {

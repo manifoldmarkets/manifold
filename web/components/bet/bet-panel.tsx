@@ -47,7 +47,6 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChevronDownIcon } from '@heroicons/react/outline'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
-
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 export type MultiBetProps = {
   answers: Answer[]
@@ -182,10 +181,7 @@ export function BuyPanel(props: {
               outcome,
               amount: betAmount,
               contractId: contract.id,
-              answerIds: filterDefined([
-                multiProps?.answerToBuy.id,
-                multiProps?.answers[0].id,
-              ]),
+              answerIds: filterDefined([multiProps?.answerToBuy.id]),
             })
           )
         : api(

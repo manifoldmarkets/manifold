@@ -37,7 +37,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import { average, floatingEqual } from './util/math'
+import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer, DpmAnswer } from './answer'
 import { DAY_MS } from 'common/util/time'
@@ -72,7 +72,7 @@ export function getExpectedValue(
     )
   )
   const answerValues = answers.map((a) => parseFloat(a.text))
-  return average(answerProbabilities.map((p, i) => p * answerValues[i]))
+  return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
 
 export function getInitialProbability(

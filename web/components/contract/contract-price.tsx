@@ -1,5 +1,6 @@
 import {
   BinaryContract,
+  CPMMNumericContract,
   NumericContract,
   PseudoNumericContract,
   StonkContract,
@@ -12,7 +13,11 @@ import {
   NumericValueLabel,
 } from 'web/components/outcome-label'
 import { getMappedValue } from 'common/pseudo-numeric'
-import { getDisplayProbability, getProbability } from 'common/calculate'
+import {
+  getDisplayProbability,
+  getExpectedValue,
+  getProbability,
+} from 'common/calculate'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { animated } from '@react-spring/web'
@@ -97,6 +102,46 @@ export function PseudoNumericResolutionOrExpectation(props: {
       ? resolutionValue
       : getMappedValue(contract, resolutionProbability ?? 0)
     : getMappedValue(contract, getProbability(contract))
+  const spring = useAnimatedNumber(value)
+
+  return (
+    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+      {resolution ? (
+        <>
+          <div className="text-base">Resolved</div>
+          {resolution === 'CANCEL' ? (
+            <CancelLabel />
+          ) : (
+            <>
+              <Tooltip text={value.toFixed(2)} placement="bottom">
+                <NumericValueLabel value={value} />
+              </Tooltip>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <Tooltip text={value.toFixed(2)} placement="bottom">
+            <animated.div>
+              {spring.to((val) => formatLargeNumber(val))}
+            </animated.div>
+          </Tooltip>
+          <div className="text-base">expected</div>
+        </>
+      )}
+    </Row>
+  )
+}
+
+export function MultiNumericResolutionOrExpectation(props: {
+  contract: CPMMNumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  // TODO: display numeric resolutions
+  const { resolution, resolutions } = contract
+
+  const value = getExpectedValue(contract)
   const spring = useAnimatedNumber(value)
 
   return (

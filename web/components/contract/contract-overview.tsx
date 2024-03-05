@@ -21,6 +21,7 @@ import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
+  MultiNumericResolutionOrExpectation,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
@@ -700,14 +701,8 @@ const NumericChoiceOverview = (props: {
   return (
     <>
       <Row className="justify-between gap-2">
-        {contract.resolution === 'CANCEL' ? (
-          <div className="flex items-end gap-2 text-2xl sm:text-3xl">
-            <span className="text-base">Resolved</span>
-            <CancelLabel />
-          </div>
-        ) : (
-          <div />
-        )}
+        <MultiNumericResolutionOrExpectation contract={contract} />
+        {resolutionRating}
         <Row className={'gap-1'}>
           {enableAdd && (
             <EditChartAnnotationsButton

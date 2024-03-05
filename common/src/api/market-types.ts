@@ -294,7 +294,8 @@ export const createMultiSchema = z.object({
 })
 export const createMultiNumericSchema = z.object({
   outcomeType: z.enum(['NUMBER']),
-  numericAnswers: z.array(z.number().safe()).min(2).max(MAX_ANSWERS),
+  min: z.number().safe(),
+  max: z.number().safe(),
 })
 
 export const createBountySchema = z.object({

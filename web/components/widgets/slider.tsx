@@ -23,6 +23,7 @@ export function Slider(props: {
   color?: keyof typeof colors
   className?: string
   disabled?: boolean
+  inverted?: boolean
 }) {
   const {
     amount,
@@ -34,6 +35,7 @@ export function Slider(props: {
     className,
     disabled,
     color = 'indigo',
+    inverted,
   } = props
 
   const [trackClasses, thumbClasses] = colors[color]
@@ -51,6 +53,7 @@ export function Slider(props: {
       max={max}
       step={step}
       disabled={disabled}
+      inverted={inverted}
     >
       <Track className={trackClasses}>
         <div className="absolute left-2.5 right-2.5 h-full">

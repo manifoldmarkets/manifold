@@ -103,7 +103,7 @@ export function getNewContract(props: {
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
     POLL: () => getPollProps(answers),
-    NUMBER: () => getNumberProps(id, creator.id, answers, ante),
+    NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -261,6 +261,8 @@ const getMultipleChoiceProps = (
 const getNumberProps = (
   contractId: string,
   userId: string,
+  min: number,
+  max: number,
   answers: string[],
   ante: number
 ) => {
@@ -280,6 +282,8 @@ const getNumberProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
+    max,
+    min,
   }
 
   return system

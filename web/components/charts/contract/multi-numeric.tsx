@@ -64,8 +64,8 @@ export const MultiNumericContractChart = (props: {
   const start = contract.createdTime
   const end = getEndDate(contract)
   const scaleP = useMemo(() => getScaleP(min, max, false), [min, max])
-  const startP = scaleP(getExpectedValue(contract, true))
-  const endP = scaleP(getExpectedValue(contract))
+  const startP = getExpectedValue(contract, true)
+  const endP = getExpectedValue(contract)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints, scaleP),
     [multiPoints, scaleP]
