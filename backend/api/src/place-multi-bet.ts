@@ -135,13 +135,14 @@ export const placeMultiBetMain = async (
   log(`Main transaction finished - auth ${uid}.`)
 
   const continuation = async () => {
-    await Promise.all(
-      results.map(async (result) => {
-        const { contract, fullBets, makers, allOrdersToCancel, user } = result
-
-        await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
-      })
+    const fullBets = results.flatMap((result) => result.fullBets)
+    const allOrdersToCancel = results.flatMap(
+      (result) => result.allOrdersToCancel
     )
+    const makers = results.flatMap((result) => result.makers ?? [])
+    const contract = results[0].contract
+    const user = results[0].user
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
   return {
