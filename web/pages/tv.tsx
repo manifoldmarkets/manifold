@@ -142,7 +142,7 @@ export default function TVPage(props: {
             </Row>
           )}
 
-          {/* mobile comments */}
+          {/* mobile comments, TODO: replace w chat */}
           {/* {comments && (
             <div className="m-4">
               <CommentsTabContent
@@ -161,7 +161,7 @@ export default function TVPage(props: {
           )} */}
         </Col>
 
-        {/* desktop comments */}
+        {/* desktop comments, TODO: replace w chat  */}
         <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
           {/* {comments && (
             <CommentsTabContent
