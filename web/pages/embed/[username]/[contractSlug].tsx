@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { HistoryPoint, unserializeMultiPoints } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
