@@ -47,7 +47,7 @@ import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-contract'
-import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 
 type Body = ValidatedAPIParams<'market'>
 const firestore = admin.firestore()
@@ -372,9 +372,7 @@ function validateMarketBody(body: Body) {
     ))
     if (min >= max)
       throw new APIError(400, 'Numeric markets must have min < max.')
-    answers = getMultiNumericAnswerMidpoints(max, min).map((midpoint) =>
-      midpoint.toFixed(2)
-    )
+    answers = getMultiNumericAnswerBucketRangeNames(min, max)
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {

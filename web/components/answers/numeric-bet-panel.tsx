@@ -2,7 +2,12 @@ import { CPMMNumericContract } from 'common/contract'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
-import { Button, ColorType, SizeType } from 'web/components/buttons/button'
+import {
+  Button,
+  ColorType,
+  IconButton,
+  SizeType,
+} from 'web/components/buttons/button'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
@@ -25,18 +30,15 @@ import { getExpectedValue } from 'common/calculate'
 import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
-  getMultiNumericAnswerBucketRanges,
+  getMultiNumericAnswerMidpoints,
+  getMultiNumericAnswerToRange,
   getNumericBucketWidth,
 } from 'common/multi-numeric'
+import { XIcon } from '@heroicons/react/solid'
 
 export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { contract } = props
   const { answers, min: minimum, max: maximum } = contract
-  const buckets = orderBy(
-    answers.map((a) => parseFloat(a.text)),
-    (a) => a,
-    'asc'
-  )
   const [amount, setAmount] = useState(getExpectedValue(contract))
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [range, setRange] = useState<[number, number]>([minimum, maximum])
@@ -50,22 +52,30 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const isAdvancedTrader = useIsAdvancedTrader()
   const niceAmount = formatLargeNumber(amount)
   const aboutRightBuckets = (amountGiven: number) => {
-    // get the two buckets on either side of the amount
-    const bucketsOrderedByDistance = orderBy(
-      buckets,
+    // get the 2 buckets on either side of the amount
+    const midpoints = getMultiNumericAnswerMidpoints(minimum, maximum)
+    const midpointsOrderedByDistance = orderBy(
+      midpoints,
       (a) => Math.abs(a - amountGiven),
       'asc'
     )
-    const bucketsToBid = orderBy(
-      bucketsOrderedByDistance.slice(0, 4),
-      (a) => a,
-      'asc'
-    )
+    const bucketsToBid = midpointsOrderedByDistance.slice(0, 4)
     const bucketWidth = getNumericBucketWidth(contract) / 2
     return [
       (min(bucketsToBid) ?? minimum) - bucketWidth,
       (max(bucketsToBid) ?? maximum) + bucketWidth,
     ] as [number, number]
+  }
+
+  const shouldIncludeAnswer = (a: Answer) => {
+    return mode === 'less than'
+      ? getMultiNumericAnswerToRange(a.text)[0] < amount
+      : mode === 'more than'
+      ? getMultiNumericAnswerToRange(a.text)[0] >= amount
+      : mode === 'about right'
+      ? getMultiNumericAnswerToRange(a.text)[0] >= range[0] &&
+        getMultiNumericAnswerToRange(a.text)[1] <= range[1]
+      : false
   }
   const placeBet = async () => {
     if (!betAmount) {
@@ -81,18 +91,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           amount: betAmount ?? 0,
           contractId: contract.id,
           answerIds: filterDefined([
-            ...answers
-              .filter((a) =>
-                mode === 'less than'
-                  ? parseFloat(a.text) <= amount
-                  : mode === 'more than'
-                  ? parseFloat(a.text) >= amount
-                  : mode === 'about right'
-                  ? parseFloat(a.text) >= range[0] &&
-                    parseFloat(a.text) <= range[1]
-                  : false
-              )
-              .map((a) => a.id),
+            ...answers.filter((a) => shouldIncludeAnswer(a)).map((a) => a.id),
           ]),
         })
       ),
@@ -124,6 +123,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       focusAmountInput()
     }
   }, [mode])
+  const step = getNumericBucketWidth(contract)
 
   return (
     <Col className={'gap-2'}>
@@ -138,22 +138,21 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               Hide distribution
             </Button>
           </Row>
-          <Row className={'justify-around gap-1'}>
+          <Row className={'flex-wrap gap-1 sm:gap-2 '}>
             {answers.map((a) => (
               <Col key={a.id}>
                 <BetButton
                   color={
                     mode === 'less than'
-                      ? parseFloat(a.text) <= amount
+                      ? shouldIncludeAnswer(a)
                         ? 'red'
                         : 'gray-outline'
                       : mode === 'more than'
-                      ? parseFloat(a.text) >= amount
+                      ? shouldIncludeAnswer(a)
                         ? 'green'
                         : 'gray-outline'
                       : mode === 'about right'
-                      ? parseFloat(a.text) >= range[0] &&
-                        parseFloat(a.text) <= range[1]
+                      ? shouldIncludeAnswer(a)
                         ? 'blue'
                         : 'gray-outline'
                       : 'gray-outline'
@@ -176,7 +175,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                   : 'indigo'
               }
               className={'w-full'}
-              step={Math.abs(buckets[0] - buckets[1])}
+              step={step}
               amount={
                 mode === 'more than' ? maximum - amount + minimum : amount
               }
@@ -189,6 +188,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
             mode === 'about right' && (
               <RangeSlider
                 color={'indigo'}
+                step={step}
                 className={'w-full'}
                 highValue={range[1]}
                 lowValue={range[0]}
@@ -230,7 +230,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       ) : (
         <Col
           className={clsx(
-            'gap-2 rounded-md p-2',
+            'gap-2 rounded-md px-3 py-2',
             mode === 'less than'
               ? 'bg-red-50'
               : mode === 'more than'
@@ -239,27 +239,38 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           )}
         >
           <Row className={'justify-between'}>
-            <span className={'text-2xl'}>
+            <span className={'text-xl'}>
               {mode === 'less than'
                 ? 'Lower than ' + niceAmount
                 : mode === 'more than'
                 ? 'Higher than ' + niceAmount
-                : 'Between'}{' '}
+                : ''}
               {mode === 'about right' && (
                 <span>
-                  {range[0]} and {range[1]}
+                  {range[0]} - {range[1]}
                 </span>
               )}
             </span>
-            <Button
-              color={'gray-white'}
-              size={'2xs'}
-              onClick={() => {
-                setShowDistribution(!showDistribution)
-              }}
-            >
-              {showDistribution ? 'Hide ' : 'Show '} distribution
-            </Button>
+            <Row className={' items-center'}>
+              <Button
+                color={'gray-white'}
+                size={'2xs'}
+                onClick={() => {
+                  setShowDistribution(!showDistribution)
+                }}
+                className={'whitespace-nowrap'}
+              >
+                {showDistribution ? 'Hide ' : 'Show '} distribution
+              </Button>
+              <IconButton
+                color={'gray'}
+                className={'w-12'}
+                onClick={() => setMode(undefined)}
+                disabled={isSubmitting}
+              >
+                <XIcon className={'h-4 w-4'} />
+              </IconButton>
+            </Row>
           </Row>
           <Row>
             <BuyAmountInput
@@ -274,7 +285,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           </Row>
           <Row className={'justify-between'}>
             <Button
-              color={'gray'}
+              color={'gray-white'}
               onClick={() => setMode(undefined)}
               disabled={isSubmitting}
             >
@@ -312,8 +323,6 @@ const BetButton = (props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const showSell = !floatingEqual(sharesSum, 0)
-  const ranges = getMultiNumericAnswerBucketRanges(contract)
-  const answerRange = ranges[answer.index]
   return (
     <Col className={'h-full items-end justify-end'}>
       <Modal
@@ -365,7 +374,7 @@ const BetButton = (props: {
               'text-left font-bold'
             )}
           >
-            {answerRange[0]} - {answerRange[1]}
+            {answer.text}
           </span>
         </Col>
       </Button>

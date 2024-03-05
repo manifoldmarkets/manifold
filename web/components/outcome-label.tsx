@@ -49,6 +49,21 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />
   }
+  if (outcomeType === 'NUMBER') {
+    return (
+      <span>
+        {answerId && (
+          <MultiOutcomeLabel
+            contract={contract}
+            resolution={answerId}
+            truncate={truncate}
+            answerClassName={'font-bold text-base-400 !break-normal'}
+          />
+        )}{' '}
+        <BinaryOutcomeLabel outcome={outcome as any} />
+      </span>
+    )
+  }
 
   if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-multi-1') {
     return (

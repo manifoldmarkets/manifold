@@ -14,6 +14,7 @@ import {
 } from 'web/components/charts/contract/choice'
 import { HistoryPoint } from 'common/chart'
 import { map, mean, zip } from 'd3-array'
+import { getMultiNumericAnswerToMidpoint } from 'common/multi-numeric'
 
 // mqp: note that we have an idiosyncratic version of 'log scale'
 // contracts. the values are stored "linearly" and can include zero.
@@ -37,7 +38,9 @@ const getBetPoints = (
   const expectedValues = Object.entries(bets).map(([answerId, pts]) =>
     pts.map((pt) => ({
       x: pt.x,
-      y: scaleP(pt.y * parseFloat(answerTexts[answerId].text)),
+      y: scaleP(
+        pt.y * getMultiNumericAnswerToMidpoint(answerTexts[answerId].text)
+      ),
       obj: pt.obj,
     }))
   )
@@ -58,9 +61,7 @@ export const MultiNumericContractChart = (props: {
   showZoomer?: boolean
 }) => {
   const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
-  const { answers } = contract
-  const min = Math.min(...answers.map((a) => parseFloat(a.text)))
-  const max = Math.max(...answers.map((a) => parseFloat(a.text)))
+  const { answers, min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
   const scaleP = useMemo(() => getScaleP(min, max, false), [min, max])

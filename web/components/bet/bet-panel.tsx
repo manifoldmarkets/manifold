@@ -174,7 +174,7 @@ export function BuyPanel(props: {
         ? api(
             'multi-bet',
             removeUndefinedProps({
-              outcome,
+              outcome: 'YES',
               amount: betAmount,
               contractId: contract.id,
               answerIds: filterDefined([multiProps?.answerToBuy.id]),

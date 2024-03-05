@@ -43,6 +43,7 @@ import { Answer, DpmAnswer } from './answer'
 import { DAY_MS } from 'common/util/time'
 import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
 import { filterDefined } from 'common/util/array'
+import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -71,7 +72,10 @@ export function getExpectedValue(
         : getAnswerProbability(contract, a.id)
     )
   )
-  const answerValues = answers.map((a) => parseFloat(a.text))
+  const answerValues = getMultiNumericAnswerMidpoints(
+    contract.min,
+    contract.max
+  )
   return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
 

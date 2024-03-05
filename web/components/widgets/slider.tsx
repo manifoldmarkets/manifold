@@ -91,7 +91,7 @@ export function RangeSlider(props: {
   min?: number
   max?: number
   disabled?: boolean
-  overlappable?: boolean
+  step?: number
   color?: keyof typeof colors
   handleSize?: number
   className?: string
@@ -103,7 +103,7 @@ export function RangeSlider(props: {
     setValues,
     min,
     max,
-    overlappable,
+    step,
     disabled,
     color = 'indigo',
     className,
@@ -119,7 +119,7 @@ export function RangeSlider(props: {
         'relative flex h-7 touch-none select-none items-center'
       )}
       value={[lowValue, highValue]}
-      minStepsBetweenThumbs={overlappable ? 0 : 1}
+      step={step ?? 1}
       onValueChange={([low, high]) => setValues(low, high)}
       min={min}
       max={max}
