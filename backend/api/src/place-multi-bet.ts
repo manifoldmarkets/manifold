@@ -139,17 +139,9 @@ export const placeMultiBetMain = async (
   const continuation = async () => {
     await Promise.all(
       results.map(async (result) => {
-        const { betId, contract, makers, allOrdersToCancel, user } = result
-        const bet = await firestore
-          .doc(`contracts/${contract.id}/bets/${betId}`)
-          .get()
-        await onCreateBets(
-          [bet.data() as Bet],
-          contract,
-          user,
-          allOrdersToCancel,
-          makers
-        )
+        const { contract, fullBets, makers, allOrdersToCancel, user } = result
+
+        await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
       })
     )
   }
