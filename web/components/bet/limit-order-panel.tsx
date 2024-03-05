@@ -377,20 +377,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {hasLimitBet && <Spacer h={8} />}
         <Row className="items-center justify-between gap-2">
-          <Button
-            color="gray"
-            size="xl"
-            className="text-white"
-            onClick={() => {
-              setIsYesNoSelectorVisible(true)
-
-              setOutcome(undefined)
-            }}
-          >
-            Cancel
-          </Button>
           {user && (
             <Button
               size="xl"
