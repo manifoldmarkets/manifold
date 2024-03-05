@@ -289,6 +289,8 @@ export function BuyPanel(props: {
     ? `Are you sure you want to move the probability by ${displayedDifference}?`
     : undefined
 
+  const quickAmounts = [10, 25, 100]
+
   return (
     <Col>
       {isYesNoSelectorVisible ? (
@@ -361,6 +363,30 @@ export function BuyPanel(props: {
           </Button>
           {betType === 'Market' ? (
             <>
+              {!isAdvancedTrader && (
+                <Row className="mb-4 items-center space-x-3">
+                  <div className="text-ink-700">Amount</div>
+                  <ChoicesToggleGroup
+                    currentChoice={
+                      quickAmounts.includes(betAmount ?? 0)
+                        ? betAmount
+                        : undefined
+                    }
+                    choicesMap={quickAmounts.reduce<{
+                      [key: number]: number
+                    }>((map, amount) => {
+                      map[amount] = amount
+                      return map
+                    }, {})}
+                    setChoice={(amount) => {
+                      if (typeof amount === 'number') {
+                        onBetChange(amount)
+                      }
+                    }}
+                  />
+                </Row>
+              )}
+
               <Row
                 className={clsx(
                   'mb-6 flex-wrap gap-x-8 gap-y-4',
@@ -376,6 +402,7 @@ export function BuyPanel(props: {
                   inputRef={inputRef}
                   binaryOutcome={isBinaryMC ? undefined : outcome}
                   showSlider={isAdvancedTrader}
+                  disableQuickButtons={!isAdvancedTrader}
                 />
 
                 <Row className="min-w-[128px] items-baseline">
