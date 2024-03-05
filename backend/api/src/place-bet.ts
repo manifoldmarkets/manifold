@@ -27,7 +27,6 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
-import { redeemShares } from 'api/redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -230,25 +229,6 @@ const getUnfilledBetsQuery = (
     return q.where('answerId', '==', answerId)
   }
   return q
-}
-
-export const processRedemptions = async (
-  result: ReturnType<typeof processNewBetResult>
-) => {
-  const { newBet, makers, contract, user } = result
-  const { mechanism } = contract
-  const userId = user.id
-  if (
-    (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') &&
-    newBet.amount !== 0
-  ) {
-    const userIds = uniq([
-      userId,
-      ...(makers ?? []).map((maker) => maker.bet.userId),
-    ])
-    await Promise.all(userIds.map((userId) => redeemShares(userId, contract)))
-    log(`Share redemption transaction finished - auth ${userId}.`)
-  }
 }
 
 export const getUnfilledBetsAndUserBalances = async (

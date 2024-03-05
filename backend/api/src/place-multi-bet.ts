@@ -12,7 +12,6 @@ import {
   getUnfilledBetsAndUserBalances,
   maker,
   processNewBetResult,
-  processRedemptions,
   validateBet,
 } from 'api/place-bet'
 import { log } from 'shared/utils'
@@ -134,7 +133,6 @@ export const placeMultiBetMain = async (
   })
 
   log(`Main transaction finished - auth ${uid}.`)
-  await Promise.all(results.map(async (result) => processRedemptions(result)))
 
   const continuation = async () => {
     await Promise.all(
