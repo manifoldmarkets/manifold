@@ -2,11 +2,7 @@ import { SupabaseClient, convertSQLtoTS } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
 import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'
-import { User } from 'common/user'
-import { getContractBetMetrics } from 'common/calculate'
-import { Contract } from 'common/contract'
-import { chunk, groupBy, maxBy, minBy, sortBy } from 'lodash'
-import { removeUndefinedProps } from 'common/util/object'
+import { chunk, sortBy } from 'lodash'
 import { buildArray } from 'common/util/array'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
