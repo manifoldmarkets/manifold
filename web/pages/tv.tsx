@@ -24,6 +24,7 @@ import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useAdmin } from 'web/hooks/use-admin'
+import { SimpleBinaryChoiceOverview } from 'web/components/contract/contract-overview'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -69,6 +70,9 @@ export default function TVPage(props: {
     useFirebasePublicContract('public', contractId) ?? props.contract
 
   const isBinary = contract.outcomeType === 'BINARY'
+  const isMulti =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1'
 
   const comments = useCommentsOnContract(contractId)
 
@@ -120,6 +124,9 @@ export default function TVPage(props: {
 
             {tradingAllowed(contract) && isBinary && (
               <SignedInBinaryMobileBetting contract={contract} user={user} />
+            )}
+            {tradingAllowed(contract) && isMulti && (
+              <SimpleBinaryChoiceOverview contract={contract} />
             )}
           </Col>
 
