@@ -192,7 +192,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             <PoliticsCard
               contract={democraticElectability as MultiContract}
               maxAnswers={3}
-              customTitle="Democratic"
+              customTitle="Democratic electability"
               className="w-1/2"
               viewType="SMALL CANDIDATE"
               excludeAnswers={['Joe Biden']}
@@ -200,7 +200,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             <PoliticsCard
               contract={republicanElectability as MultiContract}
               maxAnswers={3}
-              customTitle="Republican"
+              customTitle="Republican electability"
               className="w-1/2"
               viewType="SMALL CANDIDATE"
               excludeAnswers={['Donald Trump']}
