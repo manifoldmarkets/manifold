@@ -27,7 +27,7 @@ export type NewQuestionParams = {
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
 }
-
+// We can use this to customize the create form for the same outcome type
 export type OutcomeTypeModifiers = string
 
 export type CreateContractStateType =

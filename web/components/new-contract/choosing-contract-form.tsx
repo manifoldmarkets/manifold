@@ -36,7 +36,6 @@ export function ChoosingContractForm(props: {
         ].map(([_, { label, name, descriptor, example, value, visual }]) => (
           <OutcomeButton
             key={value + name}
-            name={name}
             label={label}
             descriptor={descriptor}
             example={example}
@@ -55,7 +54,6 @@ export function ChoosingContractForm(props: {
 
 function OutcomeButton(props: {
   label: string
-  name: string
   descriptor: string
   example: string | ReactNode
   value: CreateableOutcomeType
@@ -81,8 +79,6 @@ function OutcomeButton(props: {
     outcomeType,
     setOutcomeType,
     setState,
-    setOutcomeTypeModifier,
-    name,
   } = props
   const [touch, setTouch] = useState(false)
   return (
@@ -98,11 +94,6 @@ function OutcomeButton(props: {
       )}
       onClick={() => {
         setOutcomeType(value)
-        if (name === 'numeric') {
-          setOutcomeTypeModifier('numeric')
-        } else {
-          setOutcomeTypeModifier(undefined)
-        }
         setState('filling contract params')
       }}
       onTouchStart={() => setTouch(true)}
