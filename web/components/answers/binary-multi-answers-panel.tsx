@@ -90,9 +90,7 @@ const BetButton = (props: {
   size?: SizeType
 }) => {
   const { answer, size, contract, betOnAnswer, color } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
-    undefined
-  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   const user = useUser()
   // This accommodates for bets on the non-main answer, perhaps made through the api

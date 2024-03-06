@@ -437,11 +437,7 @@ export function BuyPanel(props: {
 
                   <Row className="min-w-[128px] items-baseline">
                     <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                      {isPseudoNumeric || isStonk ? (
-                        'Shares'
-                      ) : (
-                        <>Max payout</>
-                      )}
+                      {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
 
                     <span className="mr-1 whitespace-nowrap text-lg">
