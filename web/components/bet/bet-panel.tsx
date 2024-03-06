@@ -351,7 +351,7 @@ export function BuyPanel(props: {
               />
             </Row>
           )}
-          <Button
+          { !alwaysShowOutcomeSwitcher==true &&(<Button
             color="gray-white"
             className="absolute right-1 top-1"
             onClick={() => {
@@ -363,10 +363,8 @@ export function BuyPanel(props: {
               props.onCancel?.()
             }}
           >
-            {!alwaysShowOutcomeSwitcher == true && (
-              <XIcon className="h-5 w-5" />
-            )}
-          </Button>
+           <XIcon className="h-5 w-5" />
+          </Button>)}
           {betType === 'Market' ? (
             <>
               {!isAdvancedTrader && (
