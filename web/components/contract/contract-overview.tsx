@@ -684,7 +684,7 @@ const NumericChoiceOverview = (props: {
 }) => {
   const { points, contract, showResolver, resolutionRating, setShowResolver } =
     props
-
+  const user = useUser()
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
@@ -757,6 +757,7 @@ const NumericChoiceOverview = (props: {
             <UserBetsSummary
               className="border-ink-200 !mb-2 mt-2 "
               contract={contract}
+              includeSellButton={user}
             />
           )}
         </>

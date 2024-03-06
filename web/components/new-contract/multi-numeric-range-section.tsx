@@ -2,6 +2,9 @@ import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
+import { useEffect, useState } from 'react'
+import { getMultiNumericAnswerBucketRanges } from 'common/multi-numeric'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export const MultiNumericRangeSection = (props: {
   minString: string
@@ -11,6 +14,7 @@ export const MultiNumericRangeSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   min: number | undefined
   max: number | undefined
+  paramsKey: string
 }) => {
   const {
     minString,
@@ -20,8 +24,20 @@ export const MultiNumericRangeSection = (props: {
     submitState,
     min,
     max,
+    paramsKey,
   } = props
+  useEffect(() => {
+    if (max === undefined || min === undefined) return
+    const ranges = getMultiNumericAnswerBucketRanges(min, max)
+    setBuckets(ranges)
+  }, [max, min])
 
+  const [buckets, setBuckets] = usePersistentLocalState<number[][] | undefined>(
+    undefined,
+    'new-buckets' + paramsKey
+  )
+  const [showBuckets, setShowBuckets] = useState(false)
+  const bucketsToShow = 2
   return (
     <Col>
       <Col className="mb-2 items-start">
@@ -53,6 +69,17 @@ export const MultiNumericRangeSection = (props: {
             disabled={submitState === 'LOADING'}
             value={maxString}
           />
+          {buckets && showBuckets && (
+            <Row className={'items-center gap-2'}>
+              <span>E.g. </span>
+              {buckets.slice(0, bucketsToShow).map((a, i) => (
+                <span key={a[0]}>
+                  {a[0]}-{a[1]}
+                  {bucketsToShow === i + 1 ? '' : ', '}
+                </span>
+              ))}
+            </Row>
+          )}
         </Row>
 
         {min !== undefined && max !== undefined && min >= max && (

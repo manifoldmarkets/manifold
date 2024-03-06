@@ -528,6 +528,7 @@ export function ContractParamsForm(props: {
           submitState={submitState}
           min={min}
           max={max}
+          paramsKey={paramsKey}
         />
       )}
       <TopicSelectorSection

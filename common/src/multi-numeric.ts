@@ -6,26 +6,25 @@ import { formatLargeNumber } from 'common/util/format'
 
 const epsilon = 0.000001
 export const getMultiNumericAnswerMidpoints = (min: number, max: number) => {
-  const bucketWidth = getNumericBucketWidth({ max, min } as CPMMNumericContract)
+  const bucketSize = getNumericBucketSize({ max, min } as CPMMNumericContract)
   return Array.from({ length: MULTI_NUMERIC_BUCKETS_COUNT }, (_, i) =>
-    Number(
-      (
-        Math.round((min + i * bucketWidth + bucketWidth / 2) / epsilon) *
-        epsilon
-      ).toFixed(10)
-    )
+    roundToEpsilon(min + i * bucketSize + bucketSize / 2)
   )
 }
+const roundToEpsilon = (num: number) =>
+  Number((Math.round(num / epsilon) * epsilon).toFixed(10))
 
-export const getNumericBucketWidth = (contract: CPMMNumericContract) =>
-  (contract.max - contract.min) / MULTI_NUMERIC_BUCKETS_COUNT
+export const getNumericBucketSize = (contract: CPMMNumericContract) =>
+  (contract.max - contract.min + 1) / MULTI_NUMERIC_BUCKETS_COUNT
 
 export const getMultiNumericAnswerBucketRanges = (min: number, max: number) => {
-  const bucketWidth = getNumericBucketWidth({ max, min } as CPMMNumericContract)
+  const bucketSize = getNumericBucketSize({ max, min } as CPMMNumericContract)
 
   return Array.from({ length: MULTI_NUMERIC_BUCKETS_COUNT }, (_, i) => [
-    min + i * bucketWidth,
-    min + (i + 1) * bucketWidth,
+    roundToEpsilon(min + i * bucketSize),
+    i === MULTI_NUMERIC_BUCKETS_COUNT
+      ? max
+      : roundToEpsilon(min - 1 + (i + 1) * bucketSize),
   ])
 }
 
