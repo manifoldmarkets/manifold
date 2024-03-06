@@ -204,7 +204,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     <Col className={'gap-2'}>
       {showDistribution && (
         <Col className={'gap-2'}>
-          <div className={'grid grid-cols-5 sm:grid-cols-10'}>
+          <div className={'grid grid-cols-5 gap-y-3 sm:grid-cols-10'}>
             {answers.map((a) => (
               <Col
                 key={a.id}
