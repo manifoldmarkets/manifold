@@ -1,6 +1,4 @@
 import {
-  ELECTION_DASHBOARD_DESCRIPTION,
-  ELECTION_DASHBOARD_TITLE,
   ElectionsPageProps,
   NewsDashboardPageProps,
   SuccesNewsDashboardPageProps,
@@ -69,6 +67,7 @@ export default function ElectionsOrDashboardPage(
 
 export const TOP_SLUG = 'home'
 const MAX_DASHBOARDS = 8
+
 function Elections(props: ElectionsPageProps) {
   const [currentSlug, setCurrentSlug] = useState<string>('')
   const [ignoreScroll, setIgnoreScroll] = useState(false)
@@ -136,21 +135,22 @@ function Elections(props: ElectionsPageProps) {
 
   return (
     <Page trackPageView="us elections page 2024">
+      <SEO
+        title="Manifold 2024 Election Forecast"
+        description="Live prediction market odds on the 2024 US election"
+        image="/election-map24.png"
+      />
+
       <HeadlineTabs
         headlines={headlines}
         currentSlug={currentSlug}
         onClick={onClick}
       />
-
-      <SEO
-        title={ELECTION_DASHBOARD_TITLE}
-        description={ELECTION_DASHBOARD_DESCRIPTION}
-        // TODO: add a nice preview image
-      />
       <div
         className="absolute top-1"
         ref={headlineSlugsToRefs.current[TOP_SLUG]}
       />
+
       <USElectionsPage {...props} />
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
