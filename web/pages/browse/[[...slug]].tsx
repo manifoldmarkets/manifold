@@ -154,7 +154,10 @@ export function GroupPageContent(props: {
     otherQueryParams as Record<string, string>
   )
   const setTopicSlug = (slug: string) => {
-    router.push(`/browse/${slug}?${queryParams}`, undefined, { shallow: true })
+    const queryStr = queryParams.toString()
+    const q = queryStr ? `?${queryStr}` : ''
+
+    router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
   }
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],

@@ -5,7 +5,6 @@ import {
   PlusCircleIcon,
 } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
 import {
@@ -22,6 +21,7 @@ import { useRouter } from 'next/router'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { Col } from 'web/components/layout/col'
 import { toast } from 'react-hot-toast'
+import { getTopicShareUrl } from 'common/util/share'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -78,7 +78,7 @@ export const QuestionsTopicTitle = forwardRef(
           {currentTopic && (
             <>
               <CopyLinkOrShareButton
-                url={`https://${DOMAIN}/browse/${currentTopic?.slug ?? ''}`}
+                url={getTopicShareUrl(currentTopic?.slug ?? '', user?.username)}
                 className={'gap-1 whitespace-nowrap'}
                 eventTrackingName={'copy questions page link'}
                 size={isMobile ? 'sm' : 'md'}
