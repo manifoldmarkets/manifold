@@ -51,6 +51,7 @@ import { LuCrown } from 'react-icons/lu'
 import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { getCutoff } from 'web/lib/util/time'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { UserContractsList } from 'web/components/profile/user-contracts-list'
 
 export const getStaticProps = async (props: {
   params: {
@@ -215,6 +216,7 @@ function UserPortfolioInternal(props: {
         </Row>
 
         <QueryUncontrolledTabs
+          trackingName="portfolio"
           className={'mx-2 mb-3 gap-6'}
           renderAllTabs
           tabs={buildArray([
@@ -250,26 +252,7 @@ function UserPortfolioInternal(props: {
               (user.freeQuestionsCreated ?? 0) > 0) && {
               title: 'Questions',
               stackedTabIcon: <ScaleIcon className="h-5" />,
-              content: (
-                <SupabaseSearch
-                  defaultFilter="all"
-                  defaultSearchType={'Questions'}
-                  defaultSort="newest"
-                  additionalFilter={{
-                    creatorId: user.id,
-                  }}
-                  persistPrefix={`user-contracts-list-${user.id}`}
-                  useUrlParams
-                  emptyState={
-                    <>
-                      <div className="text-ink-700 mx-2 mt-3 text-center">
-                        No questions found
-                      </div>
-                    </>
-                  }
-                  contractsOnly
-                />
-              ),
+              content: <UserContractsList creator={user} />,
             },
           ])}
         />
@@ -339,7 +322,9 @@ const PortfolioSummary = (props: {
 
       {isCurrentUser && (
         <Col className="mb-6 gap-2">
-          <div className="text-ink-800 mx-2 text-xl lg:mx-0">Recent</div>
+          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
+            Recently viewed
+          </div>
           {!isAuthed && (
             <Col>
               <LoadingContractRow />

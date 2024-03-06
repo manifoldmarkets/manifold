@@ -23,11 +23,13 @@ export const usePersistentQueriesState = <T extends UrlParams>(
 
   const setRouteQuery = debounce((newQuery: string) => {
     const { pathname } = router
-    router.replace(pathname + '?' + encodeURI(newQuery))
+    const q = newQuery ? '?' + encodeURI(newQuery) : ''
+    router.replace(pathname + q)
   }, 200)
 
   const updateState = (update: Partial<T>) => {
-    const newState = { ...state, ...update }
+    // Include current query because it might have been updated by another component.
+    const newState = { ...state, ...router.query, ...update } as T
     setState(newState)
     const query = pickBy(newState, (v) => v)
     const newQuery = Object.keys(query)
