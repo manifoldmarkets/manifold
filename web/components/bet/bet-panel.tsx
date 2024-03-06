@@ -294,8 +294,6 @@ export function BuyPanel(props: {
     ? `Are you sure you want to move the probability by ${displayedDifference}?`
     : undefined
 
-  const quickAmounts = [10, 25, 100]
-
   return (
     <Col>
       {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
@@ -370,27 +368,12 @@ export function BuyPanel(props: {
           {betType === 'Market' ? (
             <>
               {!isAdvancedTrader && (
-                <Row className="mb-2 items-center space-x-3">
-                  <div className="text-ink-700">Amount</div>
-                  <ChoicesToggleGroup
-                    currentChoice={
-                      quickAmounts.includes(betAmount ?? 0)
-                        ? betAmount
-                        : undefined
-                    }
-                    choicesMap={quickAmounts.reduce<{
-                      [key: number]: number
-                    }>((map, amount) => {
-                      map[amount] = amount
-                      return map
-                    }, {})}
-                    setChoice={(amount) => {
-                      if (typeof amount === 'number') {
-                        onBetChange(amount)
-                      }
-                    }}
-                  />
-                </Row>
+                <QuickBetAmountsRow
+                  betAmount={betAmount}
+                  onAmountChange={(amount) => {
+                    onBetChange(amount)
+                  }}
+                />
               )}
 
               <Row
@@ -639,5 +622,34 @@ export function BuyPanel(props: {
         </Col>
       )}
     </Col>
+  )
+}
+export const QuickBetAmountsRow = (props: {
+  onAmountChange: (amount: number) => void
+  betAmount: number | undefined
+  className?: string
+}) => {
+  const { onAmountChange, betAmount, className } = props
+  const QUICK_BET_AMOUNTS = [10, 25, 100]
+  return (
+    <Row className={clsx('mb-2 items-center space-x-3', className)}>
+      <div className="text-ink-700">Amount</div>
+      <ChoicesToggleGroup
+        currentChoice={
+          QUICK_BET_AMOUNTS.includes(betAmount ?? 0) ? betAmount : undefined
+        }
+        choicesMap={QUICK_BET_AMOUNTS.reduce<{
+          [key: number]: number
+        }>((map, amount) => {
+          map[amount] = amount
+          return map
+        }, {})}
+        setChoice={(amount) => {
+          if (typeof amount === 'number') {
+            onAmountChange(amount)
+          }
+        }}
+      />
+    </Row>
   )
 }

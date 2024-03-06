@@ -8,15 +8,19 @@ import {
   IconButton,
   SizeType,
 } from 'web/components/buttons/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { find, findLast, groupBy, sumBy } from 'lodash'
+import { find, findLast, first, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
@@ -38,6 +42,9 @@ import { XIcon } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { SellSharesModal } from 'web/components/bet/sell-row'
+import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
+import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 
 export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { contract } = props
@@ -58,7 +65,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   const step = getNumericBucketSize(contract)
-
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
   const aboutRightBuckets = (amountGiven: number) => {
     const buckets = getMultiNumericAnswerBucketRanges(minimum, maximum)
     const containingBucket = find(buckets, (bucket) => {
@@ -93,6 +102,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
   }
+  const answersToBuy = answers.filter((a) => shouldIncludeAnswer(a))
   const placeBet = async () => {
     if (!betAmount) {
       setError('Please enter a bet amount')
@@ -106,9 +116,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
         removeUndefinedProps({
           amount: betAmount ?? 0,
           contractId: contract.id,
-          answerIds: filterDefined([
-            ...answers.filter((a) => shouldIncludeAnswer(a)).map((a) => a.id),
-          ]),
+          answerIds: filterDefined(answersToBuy.map((a) => a.id)),
         })
       ),
       {
@@ -146,6 +154,52 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   }, [mode])
   useEffect(() => {}, [showDistribution])
 
+  const { potentialPayout, currentReturnPercent, newExpectedValue } =
+    useMemo(() => {
+      const { newBetResults, updatedAnswers } =
+        calculateCpmmMultiArbitrageYesBets(
+          answers,
+          answersToBuy,
+          betAmount ?? 0,
+          undefined,
+          unfilledBets,
+          balanceByUserId
+        )
+      const potentialPayout = sumBy(
+        first(newBetResults)?.takers ?? [],
+        (taker) => taker.shares
+      )
+      const currentReturn = betAmount
+        ? (potentialPayout - betAmount) / betAmount
+        : 0
+      const currentReturnPercent = formatPercent(currentReturn)
+      const newExpectedValue = getExpectedValue({
+        ...contract,
+        answers: answers.map((a) => {
+          const newAnswer = find(updatedAnswers, (newAnswer) => {
+            return newAnswer.id === a.id
+          })
+          return newAnswer ? newAnswer : a
+        }),
+      })
+      return { potentialPayout, currentReturnPercent, newExpectedValue }
+    }, [betAmount, answers, unfilledBets, balanceByUserId])
+
+  const betLabel =
+    mode === 'less than'
+      ? niceAmount + ' or lower'
+      : mode === 'more than'
+      ? niceAmount + ' or higher'
+      : `${range[0]} - ${range[1]}`
+  const modeColor =
+    mode === 'less than'
+      ? 'red'
+      : mode === 'more than'
+      ? 'green'
+      : mode === 'about right'
+      ? 'blue'
+      : 'gray-outline'
+
   return (
     <Col className={'gap-2'}>
       {showDistribution && (
@@ -158,17 +212,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               >
                 <BetButton
                   betsOnAnswer={userBetsByAnswer[a.id] ?? []}
-                  color={
-                    shouldIncludeAnswer(a)
-                      ? mode === 'less than'
-                        ? 'red'
-                        : mode === 'more than'
-                        ? 'green'
-                        : mode === 'about right'
-                        ? 'blue'
-                        : 'gray-outline'
-                      : 'gray-outline'
-                  }
+                  color={shouldIncludeAnswer(a) ? modeColor : 'gray-outline'}
                   answer={a}
                   size={'xs'}
                   outcome={'YES'}
@@ -257,7 +301,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       ) : (
         <Col
           className={clsx(
-            'gap-2 rounded-md px-3 py-2',
+            'gap-4 rounded-md px-3 py-2',
             mode === 'less than'
               ? 'bg-red-50'
               : mode === 'more than'
@@ -266,19 +310,8 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           )}
         >
           <Row className={'justify-between'}>
-            <span className={'text-xl'}>
-              {mode === 'less than'
-                ? niceAmount + ' or lower'
-                : mode === 'more than'
-                ? niceAmount + ' or higher'
-                : ''}
-              {mode === 'about right' && (
-                <span>
-                  {range[0]} - {range[1]}
-                </span>
-              )}
-            </span>
-            <Row className={' items-center'}>
+            <span className={'ml-1 text-xl'}>{betLabel}</span>
+            <Row className={'items-center'}>
               <Button
                 color={'gray-white'}
                 size={'2xs'}
@@ -301,8 +334,13 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               </IconButton>
             </Row>
           </Row>
-          <Row>
+          <QuickBetAmountsRow
+            onAmountChange={setBetAmount}
+            betAmount={betAmount}
+          />
+          <Row className={' flex-wrap gap-2'}>
             <BuyAmountInput
+              parentClassName={'!w-56'}
               amount={betAmount}
               onChange={setBetAmount}
               error={error}
@@ -311,25 +349,30 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
             />
+            <Col className={'mt-0.5'}>
+              <Row className={'gap-1'}>
+                <span className={'text-ink-700'}>Max payout:</span>
+                {formatMoney(potentialPayout)}
+                <span className=" text-green-500">
+                  {'+' + currentReturnPercent}
+                </span>
+              </Row>
+              <Row className={'gap-1'}>
+                <span className={'text-ink-700'}>New value:</span>
+                {formatLargeNumber(newExpectedValue)}
+              </Row>
+            </Col>
           </Row>
-          <Row className={'justify-between'}>
+          <Row>
             <Button
-              color={'gray-white'}
-              onClick={() => {
-                setMode(undefined)
-                setShowDistribution(false)
-              }}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-
-            <Button
+              size={'xl'}
+              color={modeColor}
+              className={'w-full'}
               loading={isSubmitting}
               onClick={placeBet}
               disabled={isSubmitting}
             >
-              Submit
+              Bet {betLabel}
             </Button>
           </Row>
         </Col>
