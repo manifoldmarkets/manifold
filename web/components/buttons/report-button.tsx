@@ -73,7 +73,7 @@ export const ReportModal = (props: {
             href="https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21?pvs=4"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary-600 hover:underline hover:text-primary-800"
+            className="text-primary-600 hover:text-primary-800 hover:underline"
           >
             guidelines
           </a>
