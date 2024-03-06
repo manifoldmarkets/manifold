@@ -134,7 +134,6 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
-        outcome: z.enum(['YES']).optional(),
         // Multi-buy
         answerIds: z.array(z.string()).min(1),
       })

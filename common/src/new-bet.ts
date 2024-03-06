@@ -386,7 +386,7 @@ export const getNewMultiBetInfo = (
 }
 
 export const getNewMultiCpmmBetInfo = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answers: Answer[],
   answer: Answer,
   outcome: 'YES' | 'NO',

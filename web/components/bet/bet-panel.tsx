@@ -42,7 +42,6 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
-import { filterDefined } from 'common/util/array'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChevronDownIcon } from '@heroicons/react/outline'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
@@ -81,7 +80,6 @@ export function BuyPanel(props: {
     inModal,
     replyToCommentId,
   } = props
-  const { outcomeType } = contract
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
@@ -169,28 +167,17 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
-    const placeBet = async () =>
-      outcomeType === 'NUMBER'
-        ? api(
-            'multi-bet',
-            removeUndefinedProps({
-              outcome: 'YES',
-              amount: betAmount,
-              contractId: contract.id,
-              answerIds: filterDefined([multiProps?.answerToBuy.id]),
-            })
-          )
-        : api(
-            'bet',
-            removeUndefinedProps({
-              outcome,
-              amount: betAmount,
-              contractId: contract.id,
-              answerId: multiProps?.answerToBuy.id,
-              replyToCommentId,
-            })
-          )
-    placeBet()
+
+    api(
+      'bet',
+      removeUndefinedProps({
+        outcome,
+        amount: betAmount,
+        contractId: contract.id,
+        answerId: multiProps?.answerToBuy.id,
+        replyToCommentId,
+      })
+    )
       .then((r) => {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)

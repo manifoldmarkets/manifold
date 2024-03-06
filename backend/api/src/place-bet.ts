@@ -121,7 +121,7 @@ export const placeBetMain = async (
         if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
         return getNewMultiBetInfo(answerId, amount, contract)
       } else if (
-        outcomeType === 'MULTIPLE_CHOICE' &&
+        (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
         mechanism == 'cpmm-multi-1'
       ) {
         const { shouldAnswersSumToOne } = contract
