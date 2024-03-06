@@ -226,7 +226,14 @@ export function AnswerCpmmBetPanel(props: {
   me: User | null | undefined
   alwaysShowOutcomeSwitcher?: boolean
 }) {
-  const { answer, contract, closePanel, outcome, me, alwaysShowOutcomeSwitcher } = props
+  const {
+    answer,
+    contract,
+    closePanel,
+    outcome,
+    me,
+    alwaysShowOutcomeSwitcher,
+  } = props
   return (
     <Col className="gap-2">
       <Row className="justify-between">
