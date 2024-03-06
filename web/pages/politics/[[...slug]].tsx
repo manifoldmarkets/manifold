@@ -23,6 +23,10 @@ import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
 import { useEvent } from 'web/hooks/use-event'
 import { PoliticsDashboardPage } from 'web/components/dashboard/politics-dashboard-page'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -53,6 +57,12 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
 export default function ElectionsOrDashboardPage(
   props: ElectionsPageProps | NewsDashboardPageProps
 ) {
+   const user = useUser()
+   useSaveReferral(user)
+   // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
+   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
+   useSaveCampaign()
+
   // Unknown politics dashboard
   if ('state' in props && props.state === 'not found') {
     return <Custom404 />
@@ -152,6 +162,7 @@ function Elections(props: ElectionsPageProps) {
       />
 
       <USElectionsPage {...props} />
+
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
           <Col className={'relative my-4'} key={dashboard.slug + 'section'}>
