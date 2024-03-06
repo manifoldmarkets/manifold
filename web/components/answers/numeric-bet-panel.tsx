@@ -11,7 +11,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { groupBy, max, min, orderBy, sumBy } from 'lodash'
+import { find, findLast, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
@@ -26,11 +26,11 @@ import { filterDefined } from 'common/util/array'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { getExpectedValue } from 'common/calculate'
 import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
-  getMultiNumericAnswerMidpoints,
+  getExpectedValue,
+  getMultiNumericAnswerBucketRanges,
   getMultiNumericAnswerToRange,
   getNumericBucketSize,
 } from 'common/multi-numeric'
@@ -60,27 +60,35 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const step = getNumericBucketSize(contract)
 
   const aboutRightBuckets = (amountGiven: number) => {
-    // get the buckets on either side of the amount
-    const midpoints = getMultiNumericAnswerMidpoints(minimum, maximum)
-    const midpointsOrderedByDistance = orderBy(
-      midpoints,
-      (a) => Math.abs(a - amountGiven),
-      'asc'
-    )
-    const bucketsToBid = midpointsOrderedByDistance.slice(0, 2)
-    const bucketWidth = getNumericBucketSize(contract) / 2
-    return [
-      (min(bucketsToBid) ?? minimum) - bucketWidth,
-      (max(bucketsToBid) ?? maximum) + bucketWidth,
-    ] as [number, number]
+    const buckets = getMultiNumericAnswerBucketRanges(minimum, maximum)
+    const containingBucket = find(buckets, (bucket) => {
+      const [start, end] = bucket
+      return amountGiven >= start && amountGiven <= end
+    })
+
+    if (containingBucket) return containingBucket as [number, number]
+
+    const bucketBelow = findLast(buckets, (bucket) => {
+      const [, end] = bucket
+      return amountGiven > end
+    })
+    const bucketAbove = find(buckets, (bucket) => {
+      const [start] = bucket
+      return amountGiven < start
+    })
+
+    return [bucketBelow?.[0] ?? minimum, bucketAbove?.[1] ?? maximum] as [
+      number,
+      number
+    ]
   }
 
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
     return mode === 'less than'
-      ? answerRange[0] <= amount && answerRange[1] <= amount
+      ? answerRange[0] <= amount
       : mode === 'more than'
-      ? answerRange[0] >= amount && answerRange[1] >= amount
+      ? answerRange[1] >= amount
       : mode === 'about right'
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
@@ -151,16 +159,12 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                 <BetButton
                   betsOnAnswer={userBetsByAnswer[a.id] ?? []}
                   color={
-                    mode === 'less than'
-                      ? shouldIncludeAnswer(a)
+                    shouldIncludeAnswer(a)
+                      ? mode === 'less than'
                         ? 'red'
-                        : 'gray-outline'
-                      : mode === 'more than'
-                      ? shouldIncludeAnswer(a)
+                        : mode === 'more than'
                         ? 'green'
-                        : 'gray-outline'
-                      : mode === 'about right'
-                      ? shouldIncludeAnswer(a)
+                        : mode === 'about right'
                         ? 'blue'
                         : 'gray-outline'
                       : 'gray-outline'
@@ -189,8 +193,10 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               }
               onChange={onChange}
               min={
-                mode === 'less than' || mode === 'more than'
+                mode === 'more than'
                   ? minimum + step
+                  : mode === 'less than'
+                  ? minimum - 1 + step
                   : minimum
               }
               max={maximum}
@@ -204,7 +210,16 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                 className={'w-full'}
                 highValue={range[1]}
                 lowValue={range[0]}
-                setValues={(low, high) => setRange([low, high])}
+                setValues={(low, high) =>
+                  setRange([
+                    low,
+                    high !== range[1]
+                      ? high === maximum
+                        ? maximum
+                        : high - 1
+                      : range[1],
+                  ])
+                }
                 min={minimum}
                 max={maximum}
               />
@@ -253,9 +268,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           <Row className={'justify-between'}>
             <span className={'text-xl'}>
               {mode === 'less than'
-                ? 'Lower than ' + niceAmount
+                ? niceAmount + ' or lower'
                 : mode === 'more than'
-                ? 'Higher than ' + niceAmount
+                ? niceAmount + ' or higher'
                 : ''}
               {mode === 'about right' && (
                 <span>

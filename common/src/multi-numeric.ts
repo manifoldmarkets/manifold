@@ -3,13 +3,17 @@ import {
   MULTI_NUMERIC_BUCKETS_COUNT,
 } from 'common/contract'
 import { formatLargeNumber } from 'common/util/format'
+import { filterDefined } from 'common/util/array'
+import { sum } from 'lodash'
+import {
+  getAnswerProbability,
+  getInitialAnswerProbability,
+} from 'common/calculate'
 
 const epsilon = 0.000001
 export const getMultiNumericAnswerMidpoints = (min: number, max: number) => {
-  const bucketSize = getNumericBucketSize({ max, min } as CPMMNumericContract)
-  return Array.from({ length: MULTI_NUMERIC_BUCKETS_COUNT }, (_, i) =>
-    roundToEpsilon(min + i * bucketSize + bucketSize / 2)
-  )
+  const buckets = getMultiNumericAnswerBucketRanges(min, max)
+  return buckets.map(([min, max]) => (max + min) / 2)
 }
 const roundToEpsilon = (num: number) =>
   Number((Math.round(num / epsilon) * epsilon).toFixed(10))
@@ -46,4 +50,24 @@ export const getMultiNumericAnswerToRange = (answerText: string) => {
 export const getMultiNumericAnswerToMidpoint = (answerText: string) => {
   const [min, max] = getMultiNumericAnswerToRange(answerText)
   return (max + min) / 2
+}
+
+export function getExpectedValue(
+  contract: CPMMNumericContract,
+  initialOnly?: boolean
+) {
+  const { answers } = contract
+
+  const answerProbabilities = filterDefined(
+    answers.map((a) =>
+      initialOnly
+        ? getInitialAnswerProbability(contract, a)
+        : getAnswerProbability(contract, a.id)
+    )
+  )
+  const answerValues = getMultiNumericAnswerMidpoints(
+    contract.min,
+    contract.max
+  )
+  return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }

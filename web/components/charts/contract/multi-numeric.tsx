@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { keyBy, last, sum } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { getExpectedValue } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { CPMMNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
@@ -10,7 +9,10 @@ import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 import { MultiPoints } from 'web/components/charts/contract/choice'
 import { map, zip } from 'd3-array'
-import { getMultiNumericAnswerToMidpoint } from 'common/multi-numeric'
+import {
+  getExpectedValue,
+  getMultiNumericAnswerToMidpoint,
+} from 'common/multi-numeric'
 
 const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
   // create answerId : answer text map
