@@ -107,7 +107,7 @@ export function ContractParamsForm(props: {
     params?.addAnswersMode ?? 'DISABLED'
   )
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(
-    params?.shouldAnswersSumToOne ?? outcomeTypeModifier === 'numeric' ?? true
+    params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true
   )
   // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
@@ -429,7 +429,7 @@ export function ContractParamsForm(props: {
   }
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-  const isNumericMulti = outcomeTypeModifier === 'numeric'
+  const isNumericMulti = outcomeType === 'NUMBER'
   return (
     <Col className="gap-6">
       <Col>

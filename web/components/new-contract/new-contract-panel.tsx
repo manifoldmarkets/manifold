@@ -28,7 +28,7 @@ export type NewQuestionParams = {
   shouldAnswersSumToOne?: boolean
 }
 
-export type OutcomeTypeModifiers = 'numeric'
+export type OutcomeTypeModifiers = string
 
 export type CreateContractStateType =
   | 'choosing contract'
