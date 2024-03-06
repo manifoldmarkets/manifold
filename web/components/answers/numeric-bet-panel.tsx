@@ -78,7 +78,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
     return mode === 'less than'
-      ? answerRange[0] < amount && answerRange[1] < amount
+      ? answerRange[0] <= amount && answerRange[1] <= amount
       : mode === 'more than'
       ? answerRange[0] >= amount && answerRange[1] >= amount
       : mode === 'about right'
@@ -113,7 +113,12 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   }
   const onChange = (newAmount: number) => {
     const realAmount =
-      mode === 'more than' ? maximum - newAmount + minimum : newAmount
+      mode === 'more than'
+        ? maximum -
+          newAmount +
+          minimum +
+          (newAmount === minimum || newAmount === maximum ? 0 : 1)
+        : newAmount
     if (realAmount < minimum) {
       setAmount(minimum)
     } else if (realAmount > maximum) {
