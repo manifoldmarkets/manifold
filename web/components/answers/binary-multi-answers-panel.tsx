@@ -90,7 +90,7 @@ const BetButton = (props: {
   size?: SizeType
 }) => {
   const { answer, size, contract, betOnAnswer, color } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(
     undefined
   )
 

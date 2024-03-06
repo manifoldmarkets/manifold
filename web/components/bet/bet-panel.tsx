@@ -359,12 +359,12 @@ export function BuyPanel(props: {
               props.onCancel?.()
             }}
           >
-            <XIcon className="h-7 w-7" />
+            <XIcon className="h-5 w-5" />
           </Button>
           {betType === 'Market' ? (
             <>
               {!isAdvancedTrader && (
-                <Row className="mb-4 items-center space-x-3">
+                <Row className="mb-2 items-center space-x-3">
                   <div className="text-ink-700">Amount</div>
                   <ChoicesToggleGroup
                     currentChoice={
@@ -389,8 +389,9 @@ export function BuyPanel(props: {
 
               <Row
                 className={clsx(
-                  'mb-6 flex-wrap gap-x-8 gap-y-4',
-                  isAdvancedTrader ? 'items-center' : 'items-end'
+                  'flex-wrap gap-x-8 gap-y-4',
+                  isAdvancedTrader ? 'items-center' : 'items-end',
+                  isAdvancedTrader ? 'mb-5' : 'mb-3'
                 )}
               >
                 <BuyAmountInput
@@ -405,24 +406,58 @@ export function BuyPanel(props: {
                   disableQuickButtons={!isAdvancedTrader}
                 />
 
-                <Row className="min-w-[128px] items-baseline">
-                  <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                    {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
-                  </div>
+                <Col className="gap-3">
+                  {isAdvancedTrader && (
+                    <div className="flex-grow">
+                      <span className="text-ink-700 mr-2 whitespace-nowrap">
+                        {isPseudoNumeric
+                          ? 'Estimated value'
+                          : isStonk
+                          ? 'New stock price'
+                          : 'New probability'}
+                      </span>
 
-                  <span className="mr-1 whitespace-nowrap text-lg">
-                    {isStonk
-                      ? getStonkDisplayShares(contract, currentPayout, 2)
-                      : isPseudoNumeric
-                      ? Math.floor(currentPayout)
-                      : formatMoney(currentPayout)}
-                  </span>
-                  <span className="text-green-500 ">
-                    {isStonk || isPseudoNumeric
-                      ? ''
-                      : ' +' + currentReturnPercent}
-                  </span>
-                </Row>
+                      <span className="text-lg font-semibold">
+                        {getFormattedMappedValue(
+                          contract,
+                          probStayedSame ? probBefore : probAfter
+                        )}
+                      </span>
+                      {!probStayedSame && !isPseudoNumeric && (
+                        <span className={clsx('ml-1', 'text-ink-700')}>
+                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                          {getFormattedMappedValue(
+                            contract,
+                            Math.abs(probAfter - probBefore)
+                          )}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <Row className="min-w-[128px] items-baseline">
+                    <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                      {isPseudoNumeric || isStonk ? (
+                        'Shares'
+                      ) : (
+                        <>Max payout</>
+                      )}
+                    </div>
+
+                    <span className="mr-1 whitespace-nowrap text-lg">
+                      {isStonk
+                        ? getStonkDisplayShares(contract, currentPayout, 2)
+                        : isPseudoNumeric
+                        ? Math.floor(currentPayout)
+                        : formatMoney(currentPayout)}
+                    </span>
+                    <span className="text-green-500 ">
+                      {isStonk || isPseudoNumeric
+                        ? ''
+                        : ' +' + currentReturnPercent}
+                    </span>
+                  </Row>
+                </Col>
               </Row>
             </>
           ) : (
@@ -486,9 +521,7 @@ export function BuyPanel(props: {
                           contract,
                           'YES'
                         )} or ${formatOutcomeLabel(contract, 'NO')}`
-                      : `Bet ${formatMoney(betAmount)} on ${
-                          binaryMCOutcomeLabel ?? outcome
-                        }`
+                      : `BET ${binaryMCOutcomeLabel ?? outcome}`
                   }
                   inModal={inModal}
                 />
@@ -505,43 +538,65 @@ export function BuyPanel(props: {
             </Row>
           )}
           {user ? (
-            <div className="text-ink-700 mt-4 whitespace-nowrap text-sm">
-              Balance{' '}
-              <span className="text-ink-700 font-semibold">
-                {formatMoney(user.balance)}
-              </span>
-            </div>
+            <Row className="mt-3 items-start justify-between">
+              <div className="flex-grow">
+                <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
+                  Balance{' '}
+                  <span className="text-ink-700 font-semibold">
+                    {formatMoney(user.balance)}
+                  </span>
+                </span>
+              </div>
+              {isAdvancedTrader && (
+                <div>
+                  <button
+                    className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                    onClick={() => {
+                      const tradingMode = !advancedTraderMode
+                      setAdvancedTraderMode(tradingMode)
+                      if (!tradingMode) {
+                        setBetType('Market')
+                      }
+                      updateUser(user.id, { isAdvancedTrader: tradingMode })
+                    }}
+                  >
+                    <span className="hover:underline">
+                      {advancedTraderMode ? 'Default' : 'Advanced'}
+                    </span>
+                    <ChevronDownIcon className="ml-1 h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </Row>
           ) : null}
-          <Row className=" items-start justify-between">
-            <div className="aksdjflkfs flex-grow">
-              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
-                {isPseudoNumeric
-                  ? 'Estimated value'
-                  : isStonk
-                  ? 'New stock price'
-                  : 'New probability'}
-              </span>
+          {!isAdvancedTrader && (
+            <Row className=" items-start justify-between">
+              <div className=" flex-grow">
+                <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+                  {isPseudoNumeric
+                    ? 'Estimated value'
+                    : isStonk
+                    ? 'New stock price'
+                    : 'New probability'}
+                </span>
 
-              <span className="text-sm font-semibold">
-                {getFormattedMappedValue(
-                  contract,
-                  probStayedSame ? probBefore : probAfter
-                )}
-              </span>
-              {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                  {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                <span className="text-sm font-semibold">
                   {getFormattedMappedValue(
                     contract,
-                    Math.abs(probAfter - probBefore)
+                    probStayedSame ? probBefore : probAfter
                   )}
                 </span>
-              )}
+                {!probStayedSame && !isPseudoNumeric && (
+                  <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                    {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                    {getFormattedMappedValue(
+                      contract,
+                      Math.abs(probAfter - probBefore)
+                    )}
+                  </span>
+                )}
 
-              {!isAdvancedTrader &&
-                !isPseudoNumeric &&
-                !isStonk &&
-                !isBinaryMC && (
+                {!isPseudoNumeric && !isStonk && !isBinaryMC && (
                   <InfoTooltip
                     text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
                       contract,
@@ -552,57 +607,41 @@ export function BuyPanel(props: {
                   />
                 )}
 
-              {!isAdvancedTrader && isBinaryMC && (
-                <InfoTooltip
-                  text={`Your bet will move the probability from ${getFormattedMappedValue(
-                    contract,
-                    probBefore
-                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                  className="text-ink-600 ml-1 mt-0.5"
-                  size="sm"
-                />
-              )}
-            </div>
-            {user && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
+                {isBinaryMC && (
+                  <InfoTooltip
+                    text={`Your bet will move the probability from ${getFormattedMappedValue(
+                      contract,
+                      probBefore
+                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                    className="text-ink-600 ml-1 mt-0.5"
+                    size="sm"
+                  />
+                )}
               </div>
-            )}
-          </Row>
+              {user && (
+                <div>
+                  <button
+                    className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                    onClick={() => {
+                      const tradingMode = !advancedTraderMode
+                      setAdvancedTraderMode(tradingMode)
+                      if (!tradingMode) {
+                        setBetType('Market')
+                      }
+                      updateUser(user.id, { isAdvancedTrader: tradingMode })
+                    }}
+                  >
+                    <span className="hover:underline">
+                      {advancedTraderMode ? 'Default' : 'Advanced'}
+                    </span>
+                    <ChevronDownIcon className="ml-1 h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </Row>
+          )}
         </Col>
       )}
-      {/* <Col className={clsx(option !== 'LIMIT' && 'hidden')}>
-        <LimitOrderPanel
-        
-          contract={contract}
-          multiProps={multiProps}
-          hidden={!seeLimit}
-          user={user}
-          unfilledBets={unfilledBets}
-          balanceByUserId={balanceByUserId}
-        />
-
-        <YourOrders
-          className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-          contract={contract}
-          bets={unfilledBetsMatchingAnswer}
-        />
-      </Col> */}
     </Col>
   )
 }
