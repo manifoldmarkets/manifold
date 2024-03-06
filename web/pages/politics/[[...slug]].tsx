@@ -57,11 +57,11 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
 export default function ElectionsOrDashboardPage(
   props: ElectionsPageProps | NewsDashboardPageProps
 ) {
-   const user = useUser()
-   useSaveReferral(user)
-   // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
-   useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
-   useSaveCampaign()
+  const user = useUser()
+  useSaveReferral(user)
+  // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
+  useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
+  useSaveCampaign()
 
   // Unknown politics dashboard
   if ('state' in props && props.state === 'not found') {
