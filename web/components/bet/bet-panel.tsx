@@ -351,20 +351,22 @@ export function BuyPanel(props: {
               />
             </Row>
           )}
-          { !alwaysShowOutcomeSwitcher==true &&(<Button
-            color="gray-white"
-            className="absolute right-1 top-1"
-            onClick={() => {
-              setIsPanelBodyVisible(false)
-              if (initialOutcome == undefined) {
-                setOutcome(undefined)
-              }
-              setBetAmount(initialBetAmount)
-              props.onCancel?.()
-            }}
-          >
-           <XIcon className="h-5 w-5" />
-          </Button>)}
+          {!alwaysShowOutcomeSwitcher == true && (
+            <Button
+              color="gray-white"
+              className="absolute right-1 top-1"
+              onClick={() => {
+                setIsPanelBodyVisible(false)
+                if (initialOutcome == undefined) {
+                  setOutcome(undefined)
+                }
+                setBetAmount(initialBetAmount)
+                props.onCancel?.()
+              }}
+            >
+              <XIcon className="h-5 w-5" />
+            </Button>
+          )}
           {betType === 'Market' ? (
             <>
               {!isAdvancedTrader && (
