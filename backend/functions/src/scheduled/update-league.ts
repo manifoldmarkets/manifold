@@ -204,6 +204,15 @@ export async function updateLeagueCore() {
     'user_id'
   )
 
+  // Set Genzy's referral mana to 0.
+  const GENZY_USER_ID = 'cA1JupYR5AR8btHUs2xvkui7jA93'
+  const genzyManaEarned = amountByUserId[GENZY_USER_ID]
+  if (genzyManaEarned) {
+    genzyManaEarned
+      .filter((a) => a.category === 'REFERRAL')
+      .forEach((a) => (a.amount = 0))
+  }
+
   const manaEarnedUpdates = []
   for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
     const keys = manaEarned.map((a) => a.category)
