@@ -335,7 +335,6 @@ export function BuyPanel(props: {
           )}
         >
           {isAdvancedTrader && !isStonk && (
-            
             <Row className="mb-2 items-center space-x-3">
               <div className="text-ink-700">Bet type</div>
               <ChoicesToggleGroup
