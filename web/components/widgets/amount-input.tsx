@@ -13,7 +13,6 @@ import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
 import { IncrementDecrementAmountButton } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { ChoicesToggleGroup } from './choices-toggle-group'
 
 export function AmountInput(
   props: {
@@ -153,6 +152,7 @@ export function BuyAmountInput(props: {
   inputRef?: React.MutableRefObject<any>
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
+  disableQuickButtons?: boolean
 }) {
   const {
     amount,
@@ -171,6 +171,7 @@ export function BuyAmountInput(props: {
     maximumAmount,
     disregardUserBalance,
     quickButtonValues,
+    disableQuickButtons,
   } = props
   const user = useUser()
 
@@ -192,7 +193,6 @@ export function BuyAmountInput(props: {
   }, [amount, user, minimumAmount, maximumAmount, disregardUserBalance])
 
   const portfolio = useCurrentPortfolio(user?.id)
-  const quickAmounts = [10, 25, 100]
   const hasLotsOfMana =
     !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
 
@@ -215,37 +215,13 @@ export function BuyAmountInput(props: {
   return (
     <>
       <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
-        <Row className=" space-x-1">
-          {!isAdvancedTrader && (
-            <>
-              <div className="text-ink-700 mb-1 mr-2 mt-2 ">Amount</div>
-              <ChoicesToggleGroup
-                currentChoice={
-                  quickAmounts.includes(amount ?? 0) ? amount : undefined
-                }
-                choicesMap={quickAmounts.reduce<{ [key: number]: number }>(
-                  (map, amount) => {
-                    map[amount] = amount
-                    return map
-                  },
-                  {}
-                )}
-                setChoice={(amount) => {
-                  if (typeof amount === 'number') {
-                    onChange(amount)
-                  }
-                }}
-              />
-            </>
-          )}
-        </Row>
-
         <AmountInput
           className={className}
           inputClassName={clsx(
-            ' w-full',
+            'w-full',
             isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
-            hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]',
+            !disableQuickButtons &&
+              (hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
           amount={amount}
@@ -255,15 +231,17 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           quickAddMoreButton={
-            <Row className="divide-ink-300 divide-x text-sm">
-              {incrementValues.map((increment) => (
-                <IncrementDecrementAmountButton
-                  key={increment}
-                  amount={increment}
-                  incrementBy={incrementBy}
-                />
-              ))}
-            </Row>
+            disableQuickButtons ? undefined : (
+              <Row className="divide-ink-300 divide-x text-sm">
+                {incrementValues.map((increment) => (
+                  <IncrementDecrementAmountButton
+                    key={increment}
+                    amount={increment}
+                    incrementBy={incrementBy}
+                  />
+                ))}
+              </Row>
+            )
           }
         />
         {showSlider && (

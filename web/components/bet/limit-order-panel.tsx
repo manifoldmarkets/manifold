@@ -24,7 +24,6 @@ import { User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { OrderBookButton } from './order-book'
@@ -52,8 +51,6 @@ export default function LimitOrderPanel(props: {
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
-  setOutcome: (outcome: 'YES' | 'NO' | undefined) => void
-  setIsYesNoSelectorVisible: (isVisible: boolean) => void
 }) {
   const {
     contract,
@@ -63,8 +60,6 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
-    setOutcome,
-    setIsYesNoSelectorVisible,
   } = props
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCOutcome =
@@ -379,20 +374,7 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {hasLimitBet && <Spacer h={8} />}
         <Row className="items-center justify-between gap-2">
-          <Button
-            color="gray"
-            size="xl"
-            className="text-white"
-            onClick={() => {
-              setIsYesNoSelectorVisible(true)
-
-              setOutcome(undefined)
-            }}
-          >
-            Cancel
-          </Button>
           {user && (
             <Button
               size="xl"

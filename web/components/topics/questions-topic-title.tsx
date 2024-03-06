@@ -45,7 +45,7 @@ export const QuestionsTopicTitle = forwardRef(
     return (
       <Row
         className={
-          'col-span-8 my-1 items-center justify-between gap-1 sm:mb-3 xl:col-span-7'
+          'col-span-8 my-1 items-center justify-between gap-1 sm:mb-1 xl:col-span-7'
         }
         ref={ref}
       >

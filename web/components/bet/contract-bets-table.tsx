@@ -1,3 +1,4 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import {
   Contract,
   DPMContract,
@@ -83,7 +84,7 @@ export function ContractBetsTable(props: {
   const isBinaryMC = isBinaryMulti(contract)
 
   const [truncated, setTruncated] = useState(truncate ?? false)
-  const truncatedBetCount = 5
+  const truncatedBetCount = 3
 
   return (
     <div className="overflow-x-auto">
@@ -166,12 +167,19 @@ export function ContractBetsTable(props: {
       {truncate && normalBets.length > truncatedBetCount && (
         <Button
           className="w-full"
-          color="gray-outline"
+          color="gray-white"
           onClick={() => setTruncated((b) => !b)}
         >
-          {truncated
-            ? `Show ${normalBets.length - truncatedBetCount} more`
-            : 'Show fewer'}
+          {truncated ? (
+            <>
+              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+              {`Show ${normalBets.length - truncatedBetCount} more trades`}
+            </>
+          ) : (
+            <>
+              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
+            </>
+          )}
         </Button>
       )}
     </div>

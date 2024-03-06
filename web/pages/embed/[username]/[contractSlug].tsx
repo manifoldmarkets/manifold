@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { HistoryPoint, unserializeMultiPoints } from 'common/chart'
+import { HistoryPoint } from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
@@ -40,7 +40,6 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
-import { getMultiBetPoints } from 'common/contract-params'
 import {
   ChoiceContractChart,
   MultiPoints,
@@ -74,15 +73,15 @@ export async function getStaticProps(props: {
   }
   const points = await getHistoryData(contract)
 
-  let multiPoints = null
-  if (contract.mechanism == 'cpmm-multi-1') {
-    const allBetPoints = await getBetPoints(db, contract.id)
-    const serializedMultiPoints = getMultiBetPoints(
-      allBetPoints,
-      contract as CPMMMultiContract
-    )
-    multiPoints = unserializeMultiPoints(serializedMultiPoints)
-  }
+  const multiPoints = null
+  // if (contract.mechanism == 'cpmm-multi-1') {
+  //   const allBetPoints = await getBetPoints(db, contract.id)
+  //   const serializedMultiPoints = getMultiBetPoints(
+  //     allBetPoints,
+  //     contract as CPMMMultiContract
+  //   )
+  //   multiPoints = unserializeMultiPoints(serializedMultiPoints)
+  // }
   return {
     props: { contract, points, multiPoints },
   }

@@ -176,6 +176,16 @@ export function saveTopic(params: { topic: string }) {
   }>
 }
 
+export function setTV(params: {
+  streamId: string
+  slug: string
+  source: string
+}) {
+  return call(getApiUrl('settv'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}
+
 export function getContractParams(params: { contractSlug: string }) {
   return call(
     getApiUrl('getcontractparams'),
