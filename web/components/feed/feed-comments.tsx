@@ -735,7 +735,6 @@ function CommentActions(props: {
             track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
-            
           }}
           size={'xs'}
         >
