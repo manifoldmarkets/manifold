@@ -99,7 +99,7 @@ export function HorizontalDashboard(props: {
   }
   return (
     <>
-      <Carousel className="w-full max-w-3xl">
+      <Carousel className="w-full">
         {dashboard.items.map((item) => (
           <HorizontalCard
             key={key(item)}
