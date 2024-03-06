@@ -1,13 +1,13 @@
 import clsx from 'clsx'
-import { CreateableOutcomeType } from 'common/contract'
+import {
+  CreateableOutcomeType,
+  MULTI_NUMERIC_CREATION_ENABLED,
+} from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
-import {
-  NON_PREDICTIVE_CONTRACT_TYPES,
-  PREDICTIVE_CONTRACT_TYPES,
-} from './create-contract-types'
+import { ALL_CONTRACT_TYPES } from './create-contract-types'
 import {
   CreateContractStateType,
   OutcomeTypeModifiers,
@@ -31,9 +31,10 @@ export function ChoosingContractForm(props: {
       <Spacer h={4} />
       <Col className="gap-2">
         {[
-          ...Object.entries(PREDICTIVE_CONTRACT_TYPES),
-          ...Object.entries(NON_PREDICTIVE_CONTRACT_TYPES),
-        ].map(([_, { label, name, descriptor, example, value, visual }]) => (
+          ...Object.values(ALL_CONTRACT_TYPES).filter(({ value }) =>
+            MULTI_NUMERIC_CREATION_ENABLED ? true : value !== 'NUMBER'
+          ),
+        ].map(({ label, name, descriptor, example, value, visual }) => (
           <OutcomeButton
             key={value + name}
             label={label}
