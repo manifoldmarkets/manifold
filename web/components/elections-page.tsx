@@ -54,6 +54,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             }`}
             eventTrackingName="copy politics share link"
             tooltip="Share"
+            className="hidden sm:inline"
           />
         </div>
         <div className="text-canvas-500 text-md mt-2 flex font-normal">
