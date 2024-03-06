@@ -17,6 +17,7 @@ export type Tab = {
   stackedTabIcon?: ReactNode
   inlineTabIcon?: ReactNode
   tooltip?: string
+  prerender?: boolean
   className?: string
   queryString?: string
 }
@@ -85,7 +86,10 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
       </Carousel>
       {tabs
         .map((tab, i) => ({ tab, i }))
-        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .filter(
+          ({ tab, i }) =>
+            renderAllTabs || tab.prerender || hasRenderedIndexRef.current.has(i)
+        )
         .map(({ tab, i }) => (
           <div
             key={i}
@@ -171,7 +175,10 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
       </Carousel>
       {tabs
         .map((tab, i) => ({ tab, i }))
-        .filter(({ i }) => renderAllTabs || hasRenderedIndexRef.current.has(i))
+        .filter(
+          ({ tab, i }) =>
+            renderAllTabs || tab.prerender || hasRenderedIndexRef.current.has(i)
+        )
         .map(({ tab, i }) => (
           <div
             key={i}

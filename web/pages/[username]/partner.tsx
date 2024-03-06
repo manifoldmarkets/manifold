@@ -89,18 +89,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           <Row className={'items-center gap-2'}>
             <span className={'text-primary-700 text-2xl'}>Partner Program</span>
           </Row>
-          <Row className="items-end gap-3 ">
-            <div className="flex flex-col items-end">
-              <Link
-                href={`/${user.username}/portfolio`}
-                className={clsx(
-                  'hover:text-primary-500  text-ink-600 text-xs '
-                )}
-              >
-                <TbReportMoney className="mx-auto text-2xl " />
-                Portfolio
-              </Link>
-            </div>
+          <Row className="items-end gap-3">
             <div className="flex flex-col items-end">
               <Link
                 href={'/' + user.username}

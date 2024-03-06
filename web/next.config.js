@@ -191,6 +191,11 @@ module.exports = {
         permanent: false,
         destination: '/news/:slug',
       },
+      {
+        source: '/:username/portfolio',
+        destination: '/:username',
+        permanent: false,
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
