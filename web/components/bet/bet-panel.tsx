@@ -389,8 +389,9 @@ export function BuyPanel(props: {
 
               <Row
                 className={clsx(
-                  'mb-3 flex-wrap gap-x-8 gap-y-4',
-                  isAdvancedTrader ? 'items-center' : 'items-end'
+                  'flex-wrap gap-x-8 gap-y-4',
+                  isAdvancedTrader ? 'items-center' : 'items-end',
+                  isAdvancedTrader ? 'mb-5' : 'mb-3'
                 )}
               >
                 <BuyAmountInput
@@ -407,7 +408,7 @@ export function BuyPanel(props: {
 
                 <Col className="gap-3">
                   {isAdvancedTrader && (
-                    <div className="aksdjflkfs flex-grow">
+                    <div className="flex-grow">
                       <span className="text-ink-700 mr-2 whitespace-nowrap">
                         {isPseudoNumeric
                           ? 'Estimated value'
@@ -439,7 +440,7 @@ export function BuyPanel(props: {
                       {isPseudoNumeric || isStonk ? (
                         'Shares'
                       ) : (
-                        <>Potential profit</>
+                        <>Max payout</>
                       )}
                     </div>
 
