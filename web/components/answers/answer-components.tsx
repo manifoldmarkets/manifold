@@ -258,6 +258,7 @@ export const MultiBettor = (props: {
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
           me={user}
+          alwaysShowOutcomeSwitcher
         />
       </Modal>
 

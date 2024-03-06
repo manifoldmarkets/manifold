@@ -224,8 +224,9 @@ export function AnswerCpmmBetPanel(props: {
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
   me: User | null | undefined
+  alwaysShowOutcomeSwitcher?: boolean
 }) {
-  const { answer, contract, closePanel, outcome, me } = props
+  const { answer, contract, closePanel, outcome, me, alwaysShowOutcomeSwitcher } = props
   return (
     <Col className="gap-2">
       <Row className="justify-between">
@@ -245,7 +246,7 @@ export function AnswerCpmmBetPanel(props: {
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
         inModal={true}
-        alwaysShowOutcomeSwitcher
+        alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
       />
     </Col>
   )
