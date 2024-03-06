@@ -250,7 +250,7 @@ export type CPMMMultiNumeric = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'NUMBER'
   shouldAnswersSumToOne: true
-  addAnswersMode?: add_answers_mode
+  addAnswersMode: 'DISABLED'
   max: number
   min: number
 
