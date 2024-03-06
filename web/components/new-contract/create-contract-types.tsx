@@ -8,7 +8,6 @@ import { GiReceiveMoney } from 'react-icons/gi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'
-import { OutcomeTypeModifiers } from 'web/components/new-contract/new-contract-panel'
 import { OutcomeType } from 'common/contract'
 
 export const PREDICTIVE_CONTRACT_TYPES = {
@@ -95,14 +94,8 @@ export const ALL_CONTRACT_TYPES = {
 
 export function getContractTypeFromValue(
   outcomeType: OutcomeType,
-  key: 'example' | 'name',
-  modifier?: OutcomeTypeModifiers
+  key: 'example' | 'name'
 ): string | undefined {
-  if (modifier) {
-    return Object.entries(PREDICTIVE_CONTRACT_TYPES).find(
-      ([_, { value }]) => value === outcomeType
-    )?.[1][key]
-  }
   return Object.keys(ALL_CONTRACT_TYPES).includes(outcomeType)
     ? ALL_CONTRACT_TYPES[outcomeType as keyof typeof ALL_CONTRACT_TYPES][key]
     : undefined

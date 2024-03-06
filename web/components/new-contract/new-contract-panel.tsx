@@ -27,8 +27,6 @@ export type NewQuestionParams = {
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
 }
-// We can use this to customize the create form for the same outcome type
-export type OutcomeTypeModifiers = string
 
 export type CreateContractStateType =
   | 'choosing contract'
@@ -43,9 +41,6 @@ export function NewContractPanel(props: {
   const [outcomeType, setOutcomeType] = useState<
     CreateableOutcomeType | undefined
   >(params?.outcomeType ?? undefined)
-  const [outcomeTypeModifier, setOutcomeTypeModifier] = useState<
-    OutcomeTypeModifiers | undefined
-  >()
 
   const [state, setState] = useState<CreateContractStateType>(
     params?.outcomeType ? 'filling contract params' : 'choosing contract'
@@ -66,18 +61,13 @@ export function NewContractPanel(props: {
         'text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl transition-colors'
       )}
     >
-      <CreateStepTracker
-        outcomeTypeModifier={outcomeTypeModifier}
-        outcomeType={outcomeType}
-        setState={setState}
-      />
+      <CreateStepTracker outcomeType={outcomeType} setState={setState} />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <ChoosingContractForm
             outcomeType={outcomeType}
             setOutcomeType={setOutcomeType}
             setState={setState}
-            setOutcomeTypeModifier={setOutcomeTypeModifier}
           />
         )}
         {state == 'filling contract params' && outcomeType && (
@@ -85,7 +75,6 @@ export function NewContractPanel(props: {
             outcomeType={outcomeType}
             creator={creator}
             params={params}
-            outcomeTypeModifier={outcomeTypeModifier}
           />
         )}
       </Col>
@@ -96,9 +85,8 @@ export function NewContractPanel(props: {
 function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
   setState: (state: CreateContractStateType) => void
-  outcomeTypeModifier?: OutcomeTypeModifiers
 }) {
-  const { outcomeType, outcomeTypeModifier, setState } = props
+  const { outcomeType, setState } = props
   return (
     <Row
       className={clsx(
@@ -119,9 +107,7 @@ function CreateStepTracker(props: {
         }}
       >
         {outcomeType
-          ? `${capitalize(
-              getContractTypeFromValue(outcomeType, 'name', outcomeTypeModifier)
-            )}`
+          ? `${capitalize(getContractTypeFromValue(outcomeType, 'name'))}`
           : ''}
       </CreateStepButton>
     </Row>

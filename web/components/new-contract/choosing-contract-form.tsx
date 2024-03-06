@@ -8,10 +8,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { ALL_CONTRACT_TYPES } from './create-contract-types'
-import {
-  CreateContractStateType,
-  OutcomeTypeModifiers,
-} from './new-contract-panel'
+import { CreateContractStateType } from './new-contract-panel'
 import { MINIMUM_BOUNTY, getAnte } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 
@@ -19,12 +16,8 @@ export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
   setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
-  setOutcomeTypeModifier: (
-    outcomeTypeModifier: OutcomeTypeModifiers | undefined
-  ) => void
 }) {
-  const { outcomeType, setOutcomeType, setState, setOutcomeTypeModifier } =
-    props
+  const { outcomeType, setOutcomeType, setState } = props
   return (
     <Col>
       <div className="text-lg">Choose your question type.</div>
@@ -45,7 +38,6 @@ export function ChoosingContractForm(props: {
             outcomeType={outcomeType}
             setOutcomeType={setOutcomeType}
             setState={setState}
-            setOutcomeTypeModifier={setOutcomeTypeModifier}
           />
         ))}
       </Col>
@@ -65,9 +57,6 @@ function OutcomeButton(props: {
   outcomeType: CreateableOutcomeType | undefined
   setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   setState: (state: CreateContractStateType) => void
-  setOutcomeTypeModifier: (
-    outcomeTypeModifier: OutcomeTypeModifiers | undefined
-  ) => void
 }) {
   const {
     label,

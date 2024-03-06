@@ -49,7 +49,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeFromValue } from './create-contract-types'
-import { NewQuestionParams, OutcomeTypeModifiers } from './new-contract-panel'
+import { NewQuestionParams } from './new-contract-panel'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { LiteMarket } from 'common/api/market-types'
@@ -65,10 +65,9 @@ import { MultiNumericRangeSection } from 'web/components/new-contract/multi-nume
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
-  outcomeTypeModifier?: OutcomeTypeModifiers
   params?: NewQuestionParams
 }) {
-  const { creator, params, outcomeTypeModifier, outcomeType } = props
+  const { creator, params, outcomeType } = props
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
@@ -438,11 +437,7 @@ export function ContractParamsForm(props: {
         </label>
 
         <ExpandingInput
-          placeholder={getContractTypeFromValue(
-            outcomeType,
-            'example',
-            outcomeTypeModifier
-          )}
+          placeholder={getContractTypeFromValue(outcomeType, 'example')}
           autoFocus
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
