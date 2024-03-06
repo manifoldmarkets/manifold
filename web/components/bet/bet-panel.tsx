@@ -334,7 +334,8 @@ export function BuyPanel(props: {
             singularView ? '' : ' px-4 py-2'
           )}
         >
-          {isAdvancedTrader && (
+          {isAdvancedTrader && !isStonk && (
+            
             <Row className="mb-2 items-center space-x-3">
               <div className="text-ink-700">Bet type</div>
               <ChoicesToggleGroup
