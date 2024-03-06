@@ -303,10 +303,10 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           className={clsx(
             'gap-4 rounded-md px-3 py-2',
             mode === 'less than'
-              ? 'bg-red-50'
+              ? 'bg-scarlet-50'
               : mode === 'more than'
-              ? 'bg-green-50'
-              : 'bg-blue-50'
+              ? 'bg-teal-50'
+              : 'bg-blue-50 dark:bg-blue-900/30'
           )}
         >
           <Row className={'justify-between'}>
