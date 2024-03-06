@@ -49,8 +49,6 @@ export default function LimitOrderPanel(props: {
   onBuySuccess?: () => void
   className?: string
   outcome: 'YES' | 'NO' | undefined
-  setOutcome: (outcome: 'YES' | 'NO' | undefined) => void
-  setIsYesNoSelectorVisible: (isVisible: boolean) => void
 }) {
   const {
     contract,
@@ -60,8 +58,6 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
-    setOutcome,
-    setIsYesNoSelectorVisible,
   } = props
   const isBinaryMC = isBinaryMulti(contract)
   const binaryMCOutcome =

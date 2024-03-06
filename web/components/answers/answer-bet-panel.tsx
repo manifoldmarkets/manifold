@@ -245,6 +245,7 @@ export function AnswerCpmmBetPanel(props: {
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
         inModal={true}
+        alwaysShowOutcomeSwitcher
       />
     </Col>
   )

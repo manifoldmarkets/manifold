@@ -65,6 +65,7 @@ export function BuyPanel(props: {
   initialOutcome?: BinaryOutcomes
   location?: string
   replyToCommentId?: string
+  alwaysShowOutcomeSwitcher?: boolean
   onCancel?: () => void
 }) {
   const {
@@ -77,6 +78,7 @@ export function BuyPanel(props: {
     location = 'bet panel',
     inModal,
     replyToCommentId,
+    alwaysShowOutcomeSwitcher,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -115,7 +117,7 @@ export function BuyPanel(props: {
 
   const [inputRef, focusAmountInput] = useFocus()
 
-  const [isYesNoSelectorVisible, setIsYesNoSelectorVisible] = useState(true)
+  const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
@@ -129,18 +131,18 @@ export function BuyPanel(props: {
   useEffect(() => {
     if (initialOutcome) {
       setOutcome(initialOutcome)
-      setIsYesNoSelectorVisible(false)
+      setIsPanelBodyVisible(true)
     }
   }, [initialOutcome])
 
   function onOutcomeChoice(choice: 'YES' | 'NO') {
     if (outcome === choice && !initialOutcome) {
       setOutcome(undefined)
-      setIsYesNoSelectorVisible(true)
+      setIsPanelBodyVisible(false)
     } else {
       track('bet intent', { location, option: outcome })
       setOutcome(choice)
-      setIsYesNoSelectorVisible(false)
+      setIsPanelBodyVisible(true)
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -293,7 +295,7 @@ export function BuyPanel(props: {
 
   return (
     <Col>
-      {isYesNoSelectorVisible ? (
+      {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
         <Row
           className={clsx(
             'mb-2 w-full items-center gap-2',
@@ -316,7 +318,8 @@ export function BuyPanel(props: {
             }
           />
         </Row>
-      ) : (
+      )}
+      {isPanelBodyVisible && (
         <Col
           className={clsx(
             !singularView
@@ -351,7 +354,7 @@ export function BuyPanel(props: {
             color="gray-white"
             className="absolute right-1 top-1"
             onClick={() => {
-              setIsYesNoSelectorVisible(true)
+              setIsPanelBodyVisible(false)
               if (initialOutcome == undefined) {
                 setOutcome(undefined)
               }
@@ -465,12 +468,6 @@ export function BuyPanel(props: {
                 unfilledBets={unfilledBets}
                 balanceByUserId={balanceByUserId}
                 outcome={outcome}
-                setOutcome={(outcome) =>
-                  outcome === undefined
-                    ? setOutcome(undefined)
-                    : onOutcomeChoice(outcome)
-                }
-                setIsYesNoSelectorVisible={setIsYesNoSelectorVisible}
               />
               <YourOrders
                 className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"

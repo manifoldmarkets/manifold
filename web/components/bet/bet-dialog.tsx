@@ -43,11 +43,12 @@ export function BetDialog(props: {
         <BuyPanel
           contract={contract}
           user={user}
-          initialOutcome={initialOutcome}
+          initialOutcome={initialOutcome ?? 'YES'}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}
           inModal={true}
           onCancel={() => setOpen(false)}
+          alwaysShowOutcomeSwitcher
         />
       </Col>
     </Modal>
