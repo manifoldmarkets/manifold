@@ -83,7 +83,7 @@ export function ContractBetsTable(props: {
   const isBinaryMC = isBinaryMulti(contract)
 
   const [truncated, setTruncated] = useState(truncate ?? false)
-  const truncatedBetCount = 5
+  const truncatedBetCount = 3
 
   return (
     <div className="overflow-x-auto">
