@@ -32,6 +32,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -41,6 +42,8 @@ import { ContractMetric } from 'common/contract-metric'
 import { Answer, DpmAnswer } from './answer'
 import { DAY_MS } from 'common/util/time'
 import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
+import { filterDefined } from 'common/util/array'
+import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -54,6 +57,26 @@ export function getDisplayProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
   return contract.resolutionProbability ?? getProbability(contract)
+}
+
+export function getExpectedValue(
+  contract: CPMMNumericContract,
+  initialOnly?: boolean
+) {
+  const { answers } = contract
+
+  const answerProbabilities = filterDefined(
+    answers.map((a) =>
+      initialOnly
+        ? getInitialAnswerProbability(contract, a)
+        : getAnswerProbability(contract, a.id)
+    )
+  )
+  const answerValues = getMultiNumericAnswerMidpoints(
+    contract.min,
+    contract.max
+  )
+  return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
 
 export function getInitialProbability(
@@ -121,7 +144,7 @@ export function getAnswerProbability(
 }
 
 export function getInitialAnswerProbability(
-  contract: MultiContract,
+  contract: MultiContract | CPMMNumericContract,
   answer: Answer | DpmAnswer
 ) {
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -553,7 +576,7 @@ export const getContractBetMetricsPerAnswer = (
 }
 
 const calculatePeriodProfit = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer

@@ -58,6 +58,11 @@ export const createAnswerCpmmMain = async (
 
       if (contract.mechanism !== 'cpmm-multi-1')
         throw new APIError(403, 'Requires a cpmm multiple choice contract')
+      if (contract.outcomeType === 'NUMBER')
+        throw new APIError(
+          403,
+          'Cannot create new answers for numeric contracts'
+        )
 
       const { closeTime, shouldAnswersSumToOne } = contract
       if (closeTime && Date.now() > closeTime)

@@ -49,7 +49,7 @@ export const resolveMarketHelper = async (
   creator: User,
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
 ) => {
-  const { closeTime, id: contractId } = unresolvedContract
+  const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
   const resolutionTime = Date.now()
   const newCloseTime = closeTime
@@ -97,6 +97,7 @@ export const resolveMarketHelper = async (
       outcome === 'YES'
     if (
       allAnswersResolved &&
+      outcomeType !== 'NUMBER' &&
       // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
       (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
     )
@@ -226,7 +227,7 @@ export const getDataAndPayoutInfo = async (
   probabilityInt: number | undefined,
   answerId: string | undefined
 ) => {
-  const { id: contractId, creatorId } = unresolvedContract
+  const { id: contractId, creatorId, outcomeType } = unresolvedContract
   const liquiditiesSnap = await firestore
     .collection(`contracts/${contractId}/liquidity`)
     .get()
@@ -237,6 +238,7 @@ export const getDataAndPayoutInfo = async (
 
   const liquidities =
     unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    outcomeType !== 'NUMBER' &&
     unresolvedContract.specialLiquidityPerAnswer
       ? // Filter out initial liquidity if set up with special liquidity per answer.
         liquidityDocs.filter((l) => !l.isAnte)

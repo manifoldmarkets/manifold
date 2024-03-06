@@ -8,6 +8,7 @@ import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
@@ -57,6 +58,7 @@ export function BuyPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   multiProps?: MultiBetProps
   user: User | null | undefined
   inModal: boolean
@@ -167,6 +169,7 @@ export function BuyPanel(props: {
 
     setError(undefined)
     setIsSubmitting(true)
+
     api(
       'bet',
       removeUndefinedProps({

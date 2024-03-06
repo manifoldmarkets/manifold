@@ -10,7 +10,11 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
 import { User } from 'common/user'
 import {
@@ -35,7 +39,7 @@ import toast from 'react-hot-toast'
 import { Answer } from 'common/answer'
 
 export function SellPanel(props: {
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -312,7 +316,7 @@ export function SellPanel(props: {
 }
 
 const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],

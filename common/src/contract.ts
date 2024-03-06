@@ -47,6 +47,7 @@ type AnyOutcomeType =
   | Stonk
   | BountiedQuestion
   | Poll
+  | MultipleNumeric
 
 type AnyContractType =
   | (CPMM & Binary)
@@ -62,6 +63,7 @@ type AnyContractType =
   | CPMMMulti
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
+  | CPMMMultiNumeric
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -147,6 +149,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
+export type CPMMNumericContract = Contract & CPMMMultiNumeric
 
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
@@ -243,6 +246,25 @@ export type CPMMMulti = {
   answers: Answer[]
 }
 
+export type CPMMMultiNumeric = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'NUMBER'
+  shouldAnswersSumToOne: true
+  addAnswersMode: 'DISABLED'
+  max: number
+  min: number
+
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
+
+  // Answers chosen on resolution, with the weights of each answer.
+  // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
+  resolutions?: { [answerId: string]: number }
+
+  // NOTE: This field is stored in the answers table and must be denormalized to the client.
+  answers: Answer[]
+}
+
 export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
 
 export type Cert = {
@@ -295,6 +317,13 @@ export type MultipleChoice = {
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
+export type MultipleNumeric = {
+  outcomeType: 'NUMBER'
+  answers: Answer[]
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
 export type Numeric = {
   outcomeType: 'NUMERIC'
   bucketCount: number
@@ -327,6 +356,7 @@ export type MultiContract = (
   | FreeResponseContract
   | MultipleChoiceContract
   | CPMMMultiContract
+  | CPMMNumericContract
 ) & {
   answers: (DpmAnswer | Answer)[]
   resolutions?: { [outcome: string]: number }
@@ -343,6 +373,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'STONK',
   'BOUNTIED_QUESTION',
   'POLL',
+  'NUMBER',
 ] as const
 export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
 
@@ -388,6 +419,7 @@ export function contractPool(contract: Contract) {
 
 export const isBinaryMulti = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType !== 'NUMBER' &&
   contract.answers.length === 2 &&
   contract.addAnswersMode === 'DISABLED' &&
   contract.shouldAnswersSumToOne &&
@@ -418,6 +450,8 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
+export const MULTI_NUMERIC_BUCKETS_COUNT = 10
+export const MULTI_NUMERIC_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const

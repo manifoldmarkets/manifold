@@ -1,4 +1,8 @@
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import { getInvested } from 'common/calculate'
 import { useState } from 'react'
@@ -98,7 +102,7 @@ export function SellRow(props: {
 
 export function SellSharesModal(props: {
   className?: string
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'

@@ -13,6 +13,7 @@ import {
   isBinaryMulti,
   CPMMMultiContract,
   getMainBinaryMCAnswer,
+  CPMMNumericContract,
 } from 'common/contract'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
@@ -20,6 +21,7 @@ import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
+  MultiNumericResolutionOrExpectation,
   NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
@@ -67,6 +69,8 @@ import { AlertBox } from '../widgets/alert-box'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { orderBy } from 'lodash'
+import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
+import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 export const ContractOverview = memo(
@@ -133,6 +137,18 @@ export const ContractOverview = memo(
         }
         return (
           <ChoiceOverview
+            contract={contract}
+            points={betPoints as any}
+            showResolver={showResolver}
+            setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
+            chartAnnotations={chartAnnotations}
+          />
+        )
+      case 'NUMBER':
+        return (
+          <NumericChoiceOverview
             contract={contract}
             points={betPoints as any}
             showResolver={showResolver}
@@ -612,7 +628,9 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+        !shouldAnswersSumToOne &&
+        contract.mechanism === 'cpmm-multi-1' &&
+        contract.outcomeType !== 'NUMBER' ? (
           <IndependentAnswersResolvePanel
             contract={contract}
             onClose={() => setShowResolver(false)}
@@ -649,6 +667,98 @@ const ChoiceOverview = (props: {
             <UserBetsSummary
               className="border-ink-200 !mb-2 mt-2 "
               contract={contract}
+            />
+          )}
+        </>
+      )}
+    </>
+  )
+}
+const NumericChoiceOverview = (props: {
+  points: MultiPoints
+  contract: CPMMNumericContract
+  showResolver: boolean
+  resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  chartAnnotations: ChartAnnotation[]
+}) => {
+  const { points, contract, showResolver, resolutionRating, setShowResolver } =
+    props
+  const user = useUser()
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
+
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
+
+  return (
+    <>
+      <Row className="justify-between gap-2">
+        <MultiNumericResolutionOrExpectation contract={contract} />
+        {resolutionRating}
+        <Row className={'gap-1'}>
+          {enableAdd && (
+            <EditChartAnnotationsButton
+              pointerMode={pointerMode}
+              setPointerMode={setPointerMode}
+            />
+          )}
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="indigo"
+          />
+        </Row>
+      </Row>
+      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+        <SizedContainer
+          className={clsx(
+            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            showZoomer && 'mb-12'
+          )}
+        >
+          {(w, h) => (
+            <MultiNumericContractChart
+              width={w}
+              height={h}
+              multiPoints={points}
+              zoomParams={zoomParams}
+              contract={contract}
+              showZoomer={showZoomer}
+            />
+          )}
+        </SizedContainer>
+      )}
+      {chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {showResolver ? (
+        <AnswersResolvePanel
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+        />
+      ) : (
+        <>
+          {resolutionRating}
+          <NumericBetPanel contract={contract} />
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+              includeSellButton={user}
             />
           )}
         </>

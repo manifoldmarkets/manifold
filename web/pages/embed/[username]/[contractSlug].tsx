@@ -277,7 +277,9 @@ function ContractSmolView(props: {
             )}
           >
             {(w, h) =>
-              mainBinaryMCAnswer && contract.mechanism === 'cpmm-multi-1' ? (
+              mainBinaryMCAnswer &&
+              contract.mechanism === 'cpmm-multi-1' &&
+              contract.outcomeType !== 'NUMBER' ? (
                 <div className="flex h-full flex-col justify-center">
                   {showMultiChart && (
                     <div className="relative">

@@ -3,6 +3,7 @@ import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
   MultiContract,
@@ -41,6 +42,7 @@ export function YourOrders(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   bets: LimitBet[]
   className?: string
 }) {

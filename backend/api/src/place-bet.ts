@@ -42,46 +42,19 @@ export const placeBetMain = async (
   const { amount, contractId, replyToCommentId } = body
 
   const result = await firestore.runTransaction(async (trans) => {
-    log(`Inside main transaction for ${uid}.`)
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const userDoc = firestore.doc(`users/${uid}`)
-    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
-
-    if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(404, 'User not found.')
-
-    const contract = contractSnap.data() as Contract
-    const user = userSnap.data() as User
-    if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
-    if (
-      (user.isBannedFromPosting || user.userDeleted) &&
-      !BLESSED_BANNED_USER_IDS.includes(uid)
-    ) {
-      throw new APIError(403, 'You are banned or deleted. And not #blessed.')
-    }
-    if (contract.outcomeType === 'STONK' && isApi) {
-      throw new APIError(403, 'API users cannot bet on STONK contracts.')
-    }
-    log(
-      `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+    const { user, contract, contractDoc, userDoc } = await validateBet(
+      uid,
+      amount,
+      contractId,
+      trans,
+      isApi
     )
 
-    const { closeTime, outcomeType, mechanism, collectedFees, volume } =
-      contract
+    const { closeTime, outcomeType, mechanism } = contract
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
-    const {
-      newBet,
-      otherBetResults,
-      newPool,
-      newTotalShares,
-      newTotalBets,
-      newTotalLiquidity,
-      newP,
-      makers,
-      ordersToCancel,
-    } = await (async (): Promise<
+    const newBetResult = await (async (): Promise<
       BetInfo & {
         makers?: maker[]
         ordersToCancel?: LimitBet[]
@@ -148,7 +121,7 @@ export const placeBetMain = async (
         if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
         return getNewMultiBetInfo(answerId, amount, contract)
       } else if (
-        outcomeType === 'MULTIPLE_CHOICE' &&
+        (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
         mechanism == 'cpmm-multi-1'
       ) {
         const { shouldAnswersSumToOne } = contract
@@ -215,190 +188,16 @@ export const placeBetMain = async (
       }
     })()
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-
-    if (
-      mechanism == 'cpmm-1' &&
-      (!newP ||
-        !isFinite(newP) ||
-        Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
-    ) {
-      throw new APIError(403, 'Trade too large for current liquidity pool.')
-    }
-
-    // Special case for relationship markets.
-    if (
-      contract.isLove &&
-      newPool &&
-      contract.outcomeType === 'MULTIPLE_CHOICE'
-    ) {
-      const answer = contract.answers.find((a) => a.id === newBet.answerId) as
-        | Answer
-        | undefined
-      if (
-        user.id === contract.creatorId ||
-        (answer && user.id === answer.loverUserId)
-      ) {
-        throw new APIError(
-          403,
-          'You cannot bet on your own relationship market.'
-        )
-      }
-      const prob = getCpmmProbability(newPool, 0.5)
-      if (prob < 0.02) {
-        throw new APIError(
-          403,
-          'Minimum of 2% probability in relationship markets.'
-        )
-      }
-    }
-    // Special case for relationship markets. (Old markets.)
-    if (contract.loverUserId1 && newPool) {
-      if (contract.outcomeType === 'BINARY') {
-        // Binary relationship markets deprecated.
-        const prob = getCpmmProbability(newPool, newP ?? 0.5)
-        if (prob < 0.01) {
-          throw new APIError(
-            403,
-            'Minimum of 1% probability in relationship markets.'
-          )
-        }
-      } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
-        const prob = getCpmmProbability(newPool, 0.5)
-        if (prob < 0.05) {
-          throw new APIError(
-            403,
-            'Minimum of 5% probability in relationship markets.'
-          )
-        }
-      }
-    }
-
-    const allOrdersToCancel = []
-    const fullBets = [] as Bet[]
-    const betDoc = contractDoc.collection('bets').doc()
-    const fullBet = removeUndefinedProps({
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi,
-      replyToCommentId,
-      ...newBet,
-    }) as Bet
-    trans.create(betDoc, fullBet)
-    fullBets.push(fullBet)
-    log(`Created new bet document for ${user.username} - auth ${uid}.`)
-
-    if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans)
-    }
-    if (ordersToCancel) {
-      for (const bet of ordersToCancel) {
-        trans.update(contractDoc.collection('bets').doc(bet.id), {
-          isCancelled: true,
-        })
-      }
-      allOrdersToCancel.push(...ordersToCancel)
-    }
-
-    trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log(`Updated user ${user.username} balance - auth ${uid}.`)
-
-    if (newBet.amount !== 0) {
-      if (newBet.answerId) {
-        // Multi-cpmm-1 contract
-        trans.update(
-          contractDoc,
-          removeUndefinedProps({
-            volume: volume + newBet.amount,
-          })
-        )
-        if (newPool) {
-          const { YES: poolYes, NO: poolNo } = newPool
-          const prob = getCpmmProbability(newPool, 0.5)
-          trans.update(
-            contractDoc.collection('answersCpmm').doc(newBet.answerId),
-            removeUndefinedProps({
-              poolYes,
-              poolNo,
-              prob,
-            })
-          )
-        }
-      } else {
-        trans.update(
-          contractDoc,
-          removeUndefinedProps({
-            pool: newPool,
-            p: newP,
-            totalShares: newTotalShares,
-            totalBets: newTotalBets,
-            totalLiquidity: newTotalLiquidity,
-            collectedFees: addObjects(newBet.fees, collectedFees),
-            volume: volume + newBet.amount,
-          })
-        )
-      }
-
-      if (otherBetResults) {
-        for (const result of otherBetResults) {
-          const { answer, bet, cpmmState, makers, ordersToCancel } = result
-          const { probBefore, probAfter } = bet
-          const smallEnoughToIgnore =
-            probBefore < 0.001 &&
-            probAfter < 0.001 &&
-            Math.abs(probAfter - probBefore) < 0.00001
-          // These bets on tiny prob answers are mostly ignored, but every now
-          // and then we should bet the answer down
-          if (!smallEnoughToIgnore || Math.random() < 0.01) {
-            const betDoc = contractDoc.collection('bets').doc()
-            const fullBet = removeUndefinedProps({
-              id: betDoc.id,
-              userId: user.id,
-              userAvatarUrl: user.avatarUrl,
-              userUsername: user.username,
-              userName: user.name,
-              isApi,
-              ...bet,
-            }) as Bet
-            trans.create(betDoc, fullBet)
-            fullBets.push(fullBet)
-            const { YES: poolYes, NO: poolNo } = cpmmState.pool
-            const prob = getCpmmProbability(cpmmState.pool, 0.5)
-            trans.update(
-              contractDoc.collection('answersCpmm').doc(answer.id),
-              removeUndefinedProps({
-                poolYes,
-                poolNo,
-                prob,
-              })
-            )
-          }
-          updateMakers(makers, betDoc.id, contractDoc, trans)
-          for (const bet of ordersToCancel) {
-            trans.update(contractDoc.collection('bets').doc(bet.id), {
-              isCancelled: true,
-            })
-          }
-          allOrdersToCancel.push(...ordersToCancel)
-        }
-      }
-
-      log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
-    }
-
-    return {
-      fullBets,
-      allOrdersToCancel,
-      newBet,
-      betId: betDoc.id,
+    return processNewBetResult(
+      newBetResult,
+      contractDoc,
       contract,
-      makers,
-      ordersToCancel,
+      userDoc,
       user,
-      fullBet,
-    }
+      isApi,
+      trans,
+      replyToCommentId
+    )
   })
 
   log(`Main transaction finished - auth ${uid}.`)
@@ -456,6 +255,263 @@ export const getUnfilledBetsAndUserBalances = async (
   )
 
   return { unfilledBets, balanceByUserId }
+}
+export type NewBetResult = BetInfo & {
+  makers?: maker[]
+  ordersToCancel?: LimitBet[]
+  otherBetResults?: {
+    answer: Answer
+    bet: CandidateBet<Bet>
+    cpmmState: CpmmState
+    makers: maker[]
+    ordersToCancel: LimitBet[]
+  }[]
+}
+
+export const processNewBetResult = (
+  newBetResult: NewBetResult,
+  contractDoc: DocumentReference,
+  contract: Contract,
+  userDoc: DocumentReference,
+  user: User,
+  isApi: boolean,
+  trans: Transaction,
+  replyToCommentId?: string
+) => {
+  const allOrdersToCancel = []
+  const fullBets = [] as Bet[]
+
+  const {
+    newBet,
+    otherBetResults,
+    newPool,
+    newTotalShares,
+    newTotalBets,
+    newTotalLiquidity,
+    newP,
+    makers,
+    ordersToCancel,
+  } = newBetResult
+  const { mechanism, collectedFees, volume } = contract
+  if (
+    mechanism == 'cpmm-1' &&
+    (!newP ||
+      !isFinite(newP) ||
+      Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
+  ) {
+    throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+
+  // Special case for relationship markets.
+  if (
+    contract.isLove &&
+    newPool &&
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+  ) {
+    const answer = contract.answers.find((a) => a.id === newBet.answerId) as
+      | Answer
+      | undefined
+    if (
+      user.id === contract.creatorId ||
+      (answer && user.id === answer.loverUserId)
+    ) {
+      throw new APIError(403, 'You cannot bet on your own relationship market.')
+    }
+    const prob = getCpmmProbability(newPool, 0.5)
+    if (prob < 0.02) {
+      throw new APIError(
+        403,
+        'Minimum of 2% probability in relationship markets.'
+      )
+    }
+  }
+  // Special case for relationship markets. (Old markets.)
+  if (contract.loverUserId1 && newPool) {
+    if (contract.outcomeType === 'BINARY') {
+      // Binary relationship markets deprecated.
+      const prob = getCpmmProbability(newPool, newP ?? 0.5)
+      if (prob < 0.01) {
+        throw new APIError(
+          403,
+          'Minimum of 1% probability in relationship markets.'
+        )
+      }
+    } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+      const prob = getCpmmProbability(newPool, 0.5)
+      if (prob < 0.05) {
+        throw new APIError(
+          403,
+          'Minimum of 5% probability in relationship markets.'
+        )
+      }
+    }
+  }
+
+  const betDoc = contractDoc.collection('bets').doc()
+
+  const fullBet = removeUndefinedProps({
+    id: betDoc.id,
+    userId: user.id,
+    userAvatarUrl: user.avatarUrl,
+    userUsername: user.username,
+    userName: user.name,
+    isApi,
+    replyToCommentId,
+    ...newBet,
+  })
+  trans.create(betDoc, fullBet)
+  fullBets.push(fullBet)
+  log(`Created new bet document for ${user.username} - auth ${user.id}.`)
+
+  if (makers) {
+    updateMakers(makers, betDoc.id, contractDoc, trans)
+  }
+  if (ordersToCancel) {
+    for (const bet of ordersToCancel) {
+      trans.update(contractDoc.collection('bets').doc(bet.id), {
+        isCancelled: true,
+      })
+    }
+    allOrdersToCancel.push(...ordersToCancel)
+  }
+
+  trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
+  log(`Updated user ${user.username} balance - auth ${user.id}.`)
+
+  if (newBet.amount !== 0) {
+    if (newBet.answerId) {
+      // Multi-cpmm-1 contract
+      trans.update(
+        contractDoc,
+        removeUndefinedProps({
+          volume: volume + newBet.amount,
+        })
+      )
+      if (newPool) {
+        const { YES: poolYes, NO: poolNo } = newPool
+        const prob = getCpmmProbability(newPool, 0.5)
+        trans.update(
+          contractDoc.collection('answersCpmm').doc(newBet.answerId),
+          removeUndefinedProps({
+            poolYes,
+            poolNo,
+            prob,
+          })
+        )
+      }
+    } else {
+      trans.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          p: newP,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+          totalLiquidity: newTotalLiquidity,
+          collectedFees: addObjects(newBet.fees, collectedFees),
+          volume: volume + newBet.amount,
+        })
+      )
+    }
+
+    if (otherBetResults) {
+      for (const result of otherBetResults) {
+        const { answer, bet, cpmmState, makers, ordersToCancel } = result
+        const { probBefore, probAfter } = bet
+        const smallEnoughToIgnore =
+          probBefore < 0.001 &&
+          probAfter < 0.001 &&
+          Math.abs(probAfter - probBefore) < 0.00001
+
+        if (!smallEnoughToIgnore || Math.random() < 0.01) {
+          const betDoc = contractDoc.collection('bets').doc()
+          const fullBet = {
+            id: betDoc.id,
+            userId: user.id,
+            userAvatarUrl: user.avatarUrl,
+            userUsername: user.username,
+            userName: user.name,
+            isApi,
+            ...bet,
+          }
+          trans.create(betDoc, fullBet)
+          fullBets.push(fullBet)
+          const { YES: poolYes, NO: poolNo } = cpmmState.pool
+          const prob = getCpmmProbability(cpmmState.pool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(answer.id),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+        }
+        updateMakers(makers, betDoc.id, contractDoc, trans)
+        for (const bet of ordersToCancel) {
+          trans.update(contractDoc.collection('bets').doc(bet.id), {
+            isCancelled: true,
+          })
+        }
+        allOrdersToCancel.push(...ordersToCancel)
+      }
+    }
+
+    log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
+  }
+
+  return {
+    newBet,
+    betId: betDoc.id,
+    contract,
+    makers,
+    allOrdersToCancel,
+    fullBets,
+    user,
+    fullBet,
+  }
+}
+
+export const validateBet = async (
+  uid: string,
+  amount: number,
+  contractId: string,
+  trans: Transaction,
+  isApi: boolean
+) => {
+  log(`Inside main transaction for ${uid}.`)
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const userDoc = firestore.doc(`users/${uid}`)
+  const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
+
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+  if (!userSnap.exists) throw new APIError(404, 'User not found.')
+
+  const contract = contractSnap.data() as Contract
+  const user = userSnap.data() as User
+  if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+  if (
+    (user.isBannedFromPosting || user.userDeleted) &&
+    !BLESSED_BANNED_USER_IDS.includes(uid)
+  ) {
+    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
+  if (contract.outcomeType === 'STONK' && isApi) {
+    throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
+
+  return {
+    user,
+    contract,
+    contractDoc,
+    userDoc,
+  }
 }
 
 export type maker = {

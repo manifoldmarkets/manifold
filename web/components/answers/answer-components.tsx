@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
   CPMMMultiContract,
+  CPMMNumericContract,
   DpmMultipleChoiceContract,
   FreeResponseContract,
   getMainBinaryMCAnswer,
@@ -333,7 +334,7 @@ export const YesNoBetButtons = (props: {
 
 export const MultiSeller = (props: {
   answer: Answer
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   user: User
 }) => {
@@ -531,7 +532,7 @@ export const BetButtons = (props: {
 }
 
 export function AnswerPosition(props: {
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   answer: Answer
   user: User

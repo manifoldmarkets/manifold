@@ -1,12 +1,16 @@
 import { getCpmmLiquidity } from './calculate-cpmm'
-import { CPMMContract, CPMMMultiContract } from './contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 import { removeUndefinedProps } from './util/object'
 
 export const getNewLiquidityProvision = (
   userId: string,
   amount: number,
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   newLiquidityProvisionId: string,
   answerId?: string
 ) => {

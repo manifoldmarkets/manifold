@@ -6,6 +6,8 @@ import {
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
+  MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
@@ -34,6 +36,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
   createBountySchema,
+  createMultiNumericSchema,
   createMultiSchema,
   createNumericSchema,
   createPollSchema,
@@ -42,7 +45,9 @@ import {
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-contract'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 
 type Body = ValidatedAPIParams<'market'>
 const firestore = admin.firestore()
@@ -150,40 +155,42 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       console.log('answerLoverUserIds', answerLoverUserIds)
     }
 
-    const contract = getNewContract({
-      id: contractRef.id,
-      slug,
-      creator: user,
-      question,
-      outcomeType,
-      description:
-        typeof description !== 'string' && description
-          ? description
-          : anythingToRichText({
-              raw: description,
-              html: descriptionHtml,
-              markdown: descriptionMarkdown,
-              jsonString: descriptionJson,
-              // default: use a single empty space as the description
-            }) ?? htmlToRichText(`<p> </p>`),
-      initialProb: initialProb ?? 50,
-      ante,
-      closeTime,
-      visibility,
-      isTwitchContract,
-      min: min ?? 0,
-      max: max ?? 0,
-      isLogScale: isLogScale ?? false,
-      answers: answers ?? [],
-      addAnswersMode,
-      shouldAnswersSumToOne,
-      loverUserId1,
-      loverUserId2,
-      matchCreatorId,
-      isLove,
-      answerLoverUserIds,
-      specialLiquidityPerAnswer,
-    })
+    const contract = getNewContract(
+      removeUndefinedProps({
+        id: contractRef.id,
+        slug,
+        creator: user,
+        question,
+        outcomeType,
+        description:
+          typeof description !== 'string' && description
+            ? description
+            : anythingToRichText({
+                raw: description,
+                html: descriptionHtml,
+                markdown: descriptionMarkdown,
+                jsonString: descriptionJson,
+                // default: use a single empty space as the description
+              }) ?? htmlToRichText(`<p> </p>`),
+        initialProb: initialProb ?? 50,
+        ante,
+        closeTime,
+        visibility,
+        isTwitchContract,
+        min: min ?? 0,
+        max: max ?? 0,
+        isLogScale: isLogScale ?? false,
+        answers: answers ?? [],
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        loverUserId1,
+        loverUserId2,
+        matchCreatorId,
+        isLove,
+        answerLoverUserIds,
+        specialLiquidityPerAnswer,
+      })
+    )
 
     await runCreateMarketTxn(contractRef.id, ante, user, userDoc.ref, trans)
     trans.create(contractRef, contract)
@@ -352,6 +359,21 @@ function validateMarketBody(body: Body) {
 
     ;({ initialProb, extraLiquidity } = parsed)
   }
+  if (outcomeType === 'NUMBER') {
+    if (!MULTI_NUMERIC_CREATION_ENABLED)
+      throw new APIError(
+        400,
+        'Creating numeric markets is not currently enabled.'
+      )
+    ;({ min, max } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (min >= max)
+      throw new APIError(400, 'Numeric markets must have min < max.')
+    answers = getMultiNumericAnswerBucketRangeNames(min, max)
+  }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
@@ -478,7 +500,9 @@ async function getGroupCheckPermissions(
   return group
 }
 
-async function createAnswers(contract: CPMMMultiContract) {
+async function createAnswers(
+  contract: CPMMMultiContract | CPMMNumericContract
+) {
   const { isLove } = contract
   let { answers } = contract
 
@@ -538,7 +562,8 @@ async function generateAntes(
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'NUMBER'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)

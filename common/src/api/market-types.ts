@@ -292,6 +292,11 @@ export const createMultiSchema = z.object({
   shouldAnswersSumToOne: z.boolean().optional(),
   extraLiquidity: z.number().min(1).optional(),
 })
+export const createMultiNumericSchema = z.object({
+  outcomeType: z.enum(['NUMBER']),
+  min: z.number().safe(),
+  max: z.number().safe(),
+})
 
 export const createBountySchema = z.object({
   outcomeType: z.enum(['BOUNTIED_QUESTION']),
@@ -336,6 +341,7 @@ export const createMarketProps = z
       createBountySchema,
       createPollSchema,
       createBinarySchema,
+      createMultiNumericSchema,
     ])
   )
 

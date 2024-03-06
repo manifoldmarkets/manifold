@@ -7,7 +7,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
-import { getContractTypeThingFromValue } from './create-contract-types'
+import { getContractTypeFromValue } from './create-contract-types'
 import { capitalize } from 'lodash'
 
 export type NewQuestionParams = {
@@ -28,7 +28,6 @@ export type NewQuestionParams = {
   shouldAnswersSumToOne?: boolean
 }
 
-export type ContractVisibilityType = 'public' | 'unlisted'
 export type CreateContractStateType =
   | 'choosing contract'
   | 'filling contract params'
@@ -62,11 +61,7 @@ export function NewContractPanel(props: {
         'text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl transition-colors'
       )}
     >
-      <CreateStepTracker
-        outcomeType={outcomeType}
-        setState={setState}
-        privacy={'non-private'}
-      />
+      <CreateStepTracker outcomeType={outcomeType} setState={setState} />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
           <ChoosingContractForm
@@ -90,9 +85,8 @@ export function NewContractPanel(props: {
 function CreateStepTracker(props: {
   outcomeType: CreateableOutcomeType | undefined
   setState: (state: CreateContractStateType) => void
-  privacy: 'non-private' | 'private'
 }) {
-  const { outcomeType, setState, privacy } = props
+  const { outcomeType, setState } = props
   return (
     <Row
       className={clsx(
@@ -113,9 +107,7 @@ function CreateStepTracker(props: {
         }}
       >
         {outcomeType
-          ? `${privacy == 'private' ? 'private' : ''} ${capitalize(
-              getContractTypeThingFromValue('name', outcomeType)
-            )}`
+          ? `${capitalize(getContractTypeFromValue(outcomeType, 'name'))}`
           : ''}
       </CreateStepButton>
     </Row>

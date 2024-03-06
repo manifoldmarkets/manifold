@@ -1,10 +1,10 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { getDisplayProbability } from 'common/calculate'
+import { getDisplayProbability, getExpectedValue } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatPercentShort } from 'common/util/format'
+import { formatLargeNumber, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
@@ -209,6 +209,14 @@ export function ContractStatusLabel(props: {
       return (
         <span className={clsx(probTextColor, className)}>
           {getFormattedMappedValue(contract, val)}
+        </span>
+      )
+    }
+    case 'NUMBER': {
+      const val = getExpectedValue(contract)
+      return (
+        <span className={clsx(probTextColor, className)}>
+          {formatLargeNumber(val)}
         </span>
       )
     }
