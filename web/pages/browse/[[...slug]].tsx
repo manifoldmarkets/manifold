@@ -38,6 +38,8 @@ import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
 import LoadingUserRows from 'manifold-politics/components/loading/loading-user-rows'
 import { Title } from 'web/components/widgets/title'
+import { Content } from 'web/components/widgets/editor'
+import Image from 'next/image'
 
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 
@@ -199,12 +201,13 @@ export function GroupPageContent(props: {
       useUrlParams
       isWholePage
       showTopicTag={headerStuck}
-      headerClassName={'pt-0 px-2 bg-canvas-0 md:bg-canvas-50'}
+      headerClassName={'pt-0 px-2 mt-2 bg-canvas-0 md:bg-canvas-50'}
       topics={topicResults}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
     />
   )
+
   // TODO: Overtly prompt users to follow topic, maybe w/ bottom bar
   return (
     <>
@@ -229,7 +232,7 @@ export function GroupPageContent(props: {
               setTopicSlug(slug === topicSlug ? '' : slug)
             }
           />
-          <div className=" flex md:contents">
+          <div className="flex md:contents">
             <Col
               className={clsx(
                 'relative col-span-8 mx-auto w-full xl:col-span-7'
@@ -238,7 +241,7 @@ export function GroupPageContent(props: {
               {!currentTopic && searchComponent}
               {currentTopic && (
                 <QueryUncontrolledTabs
-                  className={'mb-2 px-1'}
+                  className={'px-1'}
                   renderAllTabs={false}
                   tabs={buildArray(
                     {
@@ -246,37 +249,62 @@ export function GroupPageContent(props: {
                       title: 'Browse',
                     },
                     currentTopic &&
-                      !NON_GROUP_SLUGS.includes(currentTopic.slug) && {
-                        title: 'Leaderboards',
-                        content: (
-                          <Col className={''}>
-                            <div className="text-ink-500 mb-4 text-sm">
-                              Updates every 15 minutes
-                            </div>
-                            <Col className="gap-2 ">
-                              <GroupLeaderboard
-                                topic={currentTopic}
-                                type={'trader'}
-                                cachedTopUsers={
-                                  staticTopicIsCurrent
-                                    ? staticTopicParams?.topTraders
-                                    : undefined
-                                }
-                              />
-                              <GroupLeaderboard
-                                topic={currentTopic}
-                                type={'creator'}
-                                cachedTopUsers={
-                                  staticTopicIsCurrent
-                                    ? staticTopicParams?.topCreators
-                                    : undefined
-                                }
-                                noFormatting={true}
+                      !NON_GROUP_SLUGS.includes(currentTopic.slug) && [
+                        {
+                          title: 'Leaderboards',
+                          content: (
+                            <Col className={''}>
+                              <div className="text-ink-500 mb-4 mt-2 text-sm">
+                                Updates every 15 minutes
+                              </div>
+                              <Col className="gap-2 ">
+                                <GroupLeaderboard
+                                  topic={currentTopic}
+                                  type={'trader'}
+                                  cachedTopUsers={
+                                    staticTopicIsCurrent
+                                      ? staticTopicParams?.topTraders
+                                      : undefined
+                                  }
+                                />
+                                <GroupLeaderboard
+                                  topic={currentTopic}
+                                  type={'creator'}
+                                  cachedTopUsers={
+                                    staticTopicIsCurrent
+                                      ? staticTopicParams?.topCreators
+                                      : undefined
+                                  }
+                                  noFormatting={true}
+                                />
+                              </Col>
+                            </Col>
+                          ),
+                        },
+                        currentTopic.about && {
+                          title: 'About',
+                          content: (
+                            <Col className="w-full">
+                              {currentTopic.bannerUrl && (
+                                <div className="relative h-[200px]">
+                                  <Image
+                                    fill
+                                    src={currentTopic.bannerUrl}
+                                    sizes="100vw"
+                                    className="object-cover"
+                                    alt=""
+                                  />
+                                </div>
+                              )}
+                              <Content
+                                size="lg"
+                                className="p-4 sm:p-6"
+                                content={currentTopic.about}
                               />
                             </Col>
-                          </Col>
-                        ),
-                      }
+                          ),
+                        },
+                      ]
                   )}
                 />
               )}
