@@ -363,7 +363,7 @@ export function BuyPanel(props: {
               props.onCancel?.()
             }}
           >
-            <XIcon className="h-5 w-5" />
+            { !alwaysShowOutcomeSwitcher==true &&(<XIcon className="h-5 w-5" />)}
           </Button>
           {betType === 'Market' ? (
             <>

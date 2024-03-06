@@ -713,7 +713,7 @@ function CommentActions(props: {
     comment.userId != user.id &&
     onAward
   const [showBetModal, setShowBetModal] = useState(false)
-  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
   const diff =
     (comment.betReplyAmountsByOutcome?.YES ?? 0) -
     (comment.betReplyAmountsByOutcome?.NO ?? 0)
@@ -735,6 +735,7 @@ function CommentActions(props: {
             track('bet intent', { location: 'comment on contract' })
             setOutcome('YES')
             setShowBetModal(true)
+            
           }}
           size={'xs'}
         >
@@ -800,6 +801,7 @@ function CommentActions(props: {
               location={'comment on contract'}
               inModal={true}
               replyToCommentId={comment.id}
+              alwaysShowOutcomeSwitcher={true}
             />
           </Col>
         </Modal>
