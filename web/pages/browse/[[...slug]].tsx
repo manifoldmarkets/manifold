@@ -36,10 +36,10 @@ import { removeUndefinedProps } from 'common/util/object'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { Leaderboard } from 'web/components/leaderboard'
 import { formatMoney } from 'common/util/format'
-import LoadingUserRows from 'manifold-politics/components/loading/loading-user-rows'
 import { Title } from 'web/components/widgets/title'
 import { Content } from 'web/components/widgets/editor'
 import Image from 'next/image'
+import LoadingUserRows from 'web/components/loading-user-rows'
 
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 

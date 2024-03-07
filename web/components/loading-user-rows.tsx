@@ -1,6 +1,7 @@
-import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
+
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 
 export default function LoadingUserRows() {
   return (
