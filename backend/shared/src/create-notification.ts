@@ -1138,6 +1138,7 @@ export const createContractResolvedNotifications = async (
       (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText
+    else if (outcome === 'CHOOSE_MULTIPLE') resolutionText = 'multiple answers'
   } else if (contract.outcomeType === 'BINARY') {
     if (resolutionText === 'MKT' && probabilityInt)
       resolutionText = `${probabilityInt}%`
