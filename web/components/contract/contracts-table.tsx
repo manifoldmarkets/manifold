@@ -1,6 +1,6 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { getDisplayProbability, getExpectedValue } from 'common/calculate'
+import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -23,6 +23,7 @@ import {
   ColumnFormat,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
+import { getExpectedValue } from 'common/multi-numeric'
 
 export function ContractsTable(props: {
   contracts: Contract[]

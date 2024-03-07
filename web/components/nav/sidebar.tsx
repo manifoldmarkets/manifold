@@ -35,7 +35,6 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
-import { IoPersonCircleOutline } from 'react-icons/io5'
 import { GiCapitol } from 'react-icons/gi'
 
 export default function Sidebar(props: {
@@ -60,10 +59,7 @@ export default function Sidebar(props: {
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
-    ? getMobileNav(
-        () => setIsAddFundsModalOpen(!isAddFundsModalOpen),
-        user?.username ?? ''
-      )
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
     : getDesktopNav(!!user, () => setIsModalOpen(true))
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
@@ -161,9 +157,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void, username: string) => {
+const getMobileNav = (toggleModal: () => void) => {
   return buildArray<NavItem>(
-    { name: 'Profile', href: '/' + username, icon: IoPersonCircleOutline },
     // {
     //   name: 'US Politics',
     //   href: '/politics',

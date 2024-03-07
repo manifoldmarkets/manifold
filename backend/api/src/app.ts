@@ -152,6 +152,7 @@ import { settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
+import { createPublicChatMessage } from 'api/create-public-chat-message'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -284,6 +285,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
+  'create-public-chat-message': createPublicChatMessage,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -1,6 +1,4 @@
 import {
-  ELECTION_DASHBOARD_DESCRIPTION,
-  ELECTION_DASHBOARD_TITLE,
   ElectionsPageProps,
   NewsDashboardPageProps,
   SuccesNewsDashboardPageProps,
@@ -25,6 +23,10 @@ import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
 import { useEvent } from 'web/hooks/use-event'
 import { PoliticsDashboardPage } from 'web/components/dashboard/politics-dashboard-page'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
@@ -55,6 +57,12 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
 export default function ElectionsOrDashboardPage(
   props: ElectionsPageProps | NewsDashboardPageProps
 ) {
+  const user = useUser()
+  useSaveReferral(user)
+  // mark US prez contract as seen to ensure US Politics group is auto-selected during onboarding
+  useSaveContractVisitsLocally(user === null, 'ikSUiiNS8MwAI75RwEJf')
+  useSaveCampaign()
+
   // Unknown politics dashboard
   if ('state' in props && props.state === 'not found') {
     return <Custom404 />
@@ -69,6 +77,7 @@ export default function ElectionsOrDashboardPage(
 
 export const TOP_SLUG = 'home'
 const MAX_DASHBOARDS = 8
+
 function Elections(props: ElectionsPageProps) {
   const [currentSlug, setCurrentSlug] = useState<string>('')
   const [ignoreScroll, setIgnoreScroll] = useState(false)
@@ -136,22 +145,24 @@ function Elections(props: ElectionsPageProps) {
 
   return (
     <Page trackPageView="us elections page 2024">
+      <SEO
+        title="Manifold 2024 Election Forecast"
+        description="Live prediction market odds on the 2024 US election"
+        image="/election-map24.png"
+      />
+
       <HeadlineTabs
         headlines={headlines}
         currentSlug={currentSlug}
         onClick={onClick}
       />
-
-      <SEO
-        title={ELECTION_DASHBOARD_TITLE}
-        description={ELECTION_DASHBOARD_DESCRIPTION}
-        // TODO: add a nice preview image
-      />
       <div
         className="absolute top-1"
         ref={headlineSlugsToRefs.current[TOP_SLUG]}
       />
+
       <USElectionsPage {...props} />
+
       {newsDashboards.map((dashboard) =>
         dashboard.state === 'not found' ? null : (
           <Col className={'relative my-4'} key={dashboard.slug + 'section'}>

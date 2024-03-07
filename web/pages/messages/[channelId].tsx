@@ -8,12 +8,11 @@ import {
 } from 'web/hooks/use-private-messages'
 import { Col } from 'web/components/layout/col'
 import { MANIFOLD_LOVE_LOGO, User } from 'common/user'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { forEach, last, uniq } from 'lodash'
+import { uniq } from 'lodash'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { ChatMessage } from 'common/chat-message'
 import { useTextEditor } from 'web/components/widgets/editor'
 import {
   leavePrivateMessageChannel,
@@ -26,7 +25,7 @@ import {
 } from 'web/components/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS, HOUR_MS, MINUTE_MS, YEAR_MS } from 'common/util/time'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
 import { Row as rowFor, run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
@@ -47,11 +46,13 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { GiSpeakerOff } from 'react-icons/gi'
 import toast from 'react-hot-toast'
 import { Avatar } from 'web/components/widgets/avatar'
-import { richTextToString } from 'common/util/parse'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import {
+  useGroupedMessages,
+  usePaginatedScrollingMessages,
+} from 'web/lib/supabase/chat-messages'
 
 export default function PrivateMessagesPage() {
   return (
@@ -84,14 +85,6 @@ export function PrivateMessagesContent() {
     </>
   )
 }
-const systemStatusType = (message: ChatMessage) => {
-  const chatContent = richTextToString(message.content)
-  return chatContent.includes('left the chat')
-    ? 'left'
-    : chatContent.includes('joined the chat')
-    ? 'joined'
-    : 'other'
-}
 
 export const PrivateChat = (props: {
   user: User
@@ -112,11 +105,7 @@ export const PrivateChat = (props: {
     totalMessagesToLoad
   )
 
-  const [page, setPage] = useState(1)
-  const scrollToOldTop = useRef(false)
-
   const totalMessages = useMessagesCount(true, channelId)
-  const messagesPerPage = 50
 
   const [showUsers, setShowUsers] = useState(false)
   const channelMemberships = useOtherUserIdsInPrivateMessageChannelIds(
@@ -124,7 +113,6 @@ export const PrivateChat = (props: {
     true,
     [channel]
   )
-  const initialScroll = useRef(realtimeMessages === undefined)
   const maxUsersToGet = 100
   const messageUserIds = uniq(
     (realtimeMessages ?? [])
@@ -160,10 +148,9 @@ export const PrivateChat = (props: {
     otherUsers?.filter((user) => membershipUserIds.includes(user.id)) ?? []
   )
   const router = useRouter()
-  const messages = useMemo(
-    () => (realtimeMessages ?? []).slice(0, messagesPerPage * page).reverse(),
-    [realtimeMessages?.length, page]
-  )
+
+  const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
+    usePaginatedScrollingMessages(realtimeMessages, 200, user?.id)
 
   const notShowingMessages = realtimeMessages
     ? Math.max(0, totalMessages - messages.length)
@@ -179,67 +166,8 @@ export const PrivateChat = (props: {
   }, [messages.length])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const outerDiv = useRef<HTMLDivElement | null>(null)
-  const innerDiv = useRef<HTMLDivElement | null>(null)
 
-  const [prevInnerDivHeight, setPrevInnerDivHeight] = useState<number>()
-
-  const [showMessages, setShowMessages] = useState(false)
-
-  const groupedMessages = useMemo(() => {
-    // Group messages created within a short time of each other.
-    const tempGrouped: ChatMessage[][] = []
-    let systemStatusGroup: ChatMessage[] = []
-
-    forEach(messages, (message, i) => {
-      const isSystemStatus = message.visibility === 'system_status'
-      const systemType = systemStatusType(message)
-      if (isSystemStatus && systemType === 'left') return
-
-      if (i === 0) {
-        if (isSystemStatus) systemStatusGroup.push(message)
-        else tempGrouped.push([message])
-      } else {
-        const prevMessage = messages[i - 1]
-        const timeDifference = Math.abs(
-          message.createdTime - prevMessage.createdTime
-        )
-        const creatorsMatch = message.userId === prevMessage.userId
-        const isMatchingPrevSystemStatus =
-          prevMessage.visibility === 'system_status' &&
-          systemStatusType(prevMessage) === systemType
-
-        if (isSystemStatus) {
-          // Check if the current message should be grouped with the previous system_status message(s)
-          if (isMatchingPrevSystemStatus && timeDifference < 4 * HOUR_MS) {
-            systemStatusGroup.push(message)
-          } else {
-            if (systemStatusGroup.length > 0) {
-              tempGrouped.push([...systemStatusGroup])
-              systemStatusGroup = []
-            }
-            systemStatusGroup.push(message)
-          }
-        } else if (
-          timeDifference < 2 * MINUTE_MS &&
-          creatorsMatch &&
-          !isMatchingPrevSystemStatus
-        ) {
-          last(tempGrouped)?.push(message)
-        } else {
-          if (systemStatusGroup.length > 0) {
-            tempGrouped.push([...systemStatusGroup])
-            systemStatusGroup = []
-          }
-          tempGrouped.push([message])
-        }
-      }
-    })
-
-    if (systemStatusGroup.length > 0) tempGrouped.push(systemStatusGroup)
-
-    return tempGrouped
-  }, [messages])
+  const groupedMessages = useGroupedMessages(messages)
 
   async function submitMessage() {
     if (!user) {
@@ -252,59 +180,20 @@ export const PrivateChat = (props: {
     await sendUserPrivateMessage({
       channelId,
       content: editor.getJSON(),
-    }).catch((e) => {
-      console.error(e)
-      setIsSubmitting(false)
     })
-    editor.commands.clearContent()
+      .then(() => {
+        editor.commands.clearContent()
+        editor.commands.focus()
+      })
+      .catch((e) => {
+        toast.error(e.message)
+        console.error(e)
+      })
     setIsSubmitting(false)
-    editor?.commands?.focus()
   }
 
-  useEffect(() => {
-    const outerDivHeight = outerDiv?.current?.clientHeight ?? 0
-    const innerDivHeight = innerDiv?.current?.clientHeight ?? 0
-    const outerDivScrollTop = outerDiv?.current?.scrollTop ?? 0
-    if (
-      (!prevInnerDivHeight ||
-        outerDivScrollTop === prevInnerDivHeight - outerDivHeight ||
-        initialScroll.current) &&
-      realtimeMessages
-    ) {
-      // Initial load, scroll to bottom
-      outerDiv?.current?.scrollTo({
-        top: innerDivHeight! - outerDivHeight!,
-        left: 0,
-        behavior: prevInnerDivHeight ? 'smooth' : 'auto',
-      })
-      setShowMessages(true)
-      initialScroll.current = false
-    } else if (scrollToOldTop.current) {
-      // Loaded more messages, scroll to old top
-      const height = innerDivHeight! - prevInnerDivHeight! + heightFromTop
-      outerDiv?.current?.scrollTo({
-        top: height,
-        left: 0,
-        behavior: 'auto',
-      })
-      scrollToOldTop.current = false
-    } else if (last(messages)?.userId === user.id) {
-      // Sent a message, scroll to bottom
-      outerDiv?.current?.scrollTo({
-        top: innerDivHeight! - outerDivHeight!,
-        left: 0,
-        behavior: 'smooth',
-      })
-    }
-
-    setPrevInnerDivHeight(innerDivHeight)
-  }, [messages])
-
   const heightFromTop = 200
-  const { ref: topVisibleRef } = useIsVisible(() => {
-    scrollToOldTop.current = true
-    setPage(page + 1)
-  })
+
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
   return (

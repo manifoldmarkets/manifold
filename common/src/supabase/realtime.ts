@@ -54,7 +54,6 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   },
   tv_schedule: {
     pk: ['id'],
-
   },
   contract_comments: {
     pk: ['contract_id', 'comment_id'],
@@ -84,6 +83,10 @@ export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
     ts: (r) => Date.parse(r.created_time),
   },
   private_user_messages: {
+    pk: ['id'],
+    ts: (r) => Date.parse(r.created_time),
+  },
+  chat_messages: {
     pk: ['id'],
     ts: (r) => Date.parse(r.created_time),
   },

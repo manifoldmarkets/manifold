@@ -60,8 +60,8 @@ function getNavigation(user: User) {
       icon: NotificationsIcon,
     },
     {
-      name: 'Portfolio',
-      href: `/${user.username}/portfolio`,
+      name: 'Profile',
+      href: `/${user.username}`,
     },
   ]
 }
@@ -159,7 +159,7 @@ function NavBarItem(props: {
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
   const balance = useAnimatedNumber(user?.balance ?? 0)
-  if (item.name === 'Portfolio' && user) {
+  if (item.name === 'Profile' && user) {
     return (
       <Link
         prefetch={item?.prefetch ?? true}
@@ -167,7 +167,7 @@ function NavBarItem(props: {
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === `/${user.username}/portfolio` && selectedItemClass,
+          currentPage === `/${user.username}` && selectedItemClass,
           className
         )}
         onClick={track}

@@ -217,7 +217,7 @@ function calculateCpmmMultiArbitrageBetsYes(
     updatedAnswers
   )
 
-  return { newBetResults, otherBetResults }
+  return { newBetResults, otherBetResults, updatedAnswers }
 }
 
 export const combineBetsOnSameAnswers = (

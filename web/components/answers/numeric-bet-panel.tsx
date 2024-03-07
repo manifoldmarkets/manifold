@@ -8,15 +8,19 @@ import {
   IconButton,
   SizeType,
 } from 'web/components/buttons/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { groupBy, max, min, orderBy, sumBy } from 'lodash'
+import { find, findLast, first, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import { formatLargeNumber, formatPercent } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatPercent,
+} from 'common/util/format'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
@@ -26,11 +30,11 @@ import { filterDefined } from 'common/util/array'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { getExpectedValue } from 'common/calculate'
 import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
-  getMultiNumericAnswerMidpoints,
+  getExpectedValue,
+  getMultiNumericAnswerBucketRanges,
   getMultiNumericAnswerToRange,
   getNumericBucketSize,
 } from 'common/multi-numeric'
@@ -38,6 +42,9 @@ import { XIcon } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { SellSharesModal } from 'web/components/bet/sell-row'
+import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
+import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
+import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 
 export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { contract } = props
@@ -58,33 +65,44 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   const step = getNumericBucketSize(contract)
-
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id
+  )
   const aboutRightBuckets = (amountGiven: number) => {
-    // get the buckets on either side of the amount
-    const midpoints = getMultiNumericAnswerMidpoints(minimum, maximum)
-    const midpointsOrderedByDistance = orderBy(
-      midpoints,
-      (a) => Math.abs(a - amountGiven),
-      'asc'
-    )
-    const bucketsToBid = midpointsOrderedByDistance.slice(0, 2)
-    const bucketWidth = getNumericBucketSize(contract) / 2
-    return [
-      (min(bucketsToBid) ?? minimum) - bucketWidth,
-      (max(bucketsToBid) ?? maximum) + bucketWidth,
-    ] as [number, number]
+    const buckets = getMultiNumericAnswerBucketRanges(minimum, maximum)
+    const containingBucket = find(buckets, (bucket) => {
+      const [start, end] = bucket
+      return amountGiven >= start && amountGiven <= end
+    })
+
+    if (containingBucket) return containingBucket as [number, number]
+
+    const bucketBelow = findLast(buckets, (bucket) => {
+      const [, end] = bucket
+      return amountGiven > end
+    })
+    const bucketAbove = find(buckets, (bucket) => {
+      const [start] = bucket
+      return amountGiven < start
+    })
+
+    return [bucketBelow?.[0] ?? minimum, bucketAbove?.[1] ?? maximum] as [
+      number,
+      number
+    ]
   }
 
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
     return mode === 'less than'
-      ? answerRange[0] <= amount && answerRange[1] <= amount
+      ? answerRange[0] <= amount
       : mode === 'more than'
-      ? answerRange[0] >= amount && answerRange[1] >= amount
+      ? answerRange[1] >= amount
       : mode === 'about right'
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
   }
+  const answersToBuy = answers.filter((a) => shouldIncludeAnswer(a))
   const placeBet = async () => {
     if (!betAmount) {
       setError('Please enter a bet amount')
@@ -98,9 +116,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
         removeUndefinedProps({
           amount: betAmount ?? 0,
           contractId: contract.id,
-          answerIds: filterDefined([
-            ...answers.filter((a) => shouldIncludeAnswer(a)).map((a) => a.id),
-          ]),
+          answerIds: filterDefined(answersToBuy.map((a) => a.id)),
         })
       ),
       {
@@ -138,11 +154,57 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   }, [mode])
   useEffect(() => {}, [showDistribution])
 
+  const { potentialPayout, currentReturnPercent, newExpectedValue } =
+    useMemo(() => {
+      const { newBetResults, updatedAnswers } =
+        calculateCpmmMultiArbitrageYesBets(
+          answers,
+          answersToBuy,
+          betAmount ?? 0,
+          undefined,
+          unfilledBets,
+          balanceByUserId
+        )
+      const potentialPayout = sumBy(
+        first(newBetResults)?.takers ?? [],
+        (taker) => taker.shares
+      )
+      const currentReturn = betAmount
+        ? (potentialPayout - betAmount) / betAmount
+        : 0
+      const currentReturnPercent = formatPercent(currentReturn)
+      const newExpectedValue = getExpectedValue({
+        ...contract,
+        answers: answers.map((a) => {
+          const newAnswer = find(updatedAnswers, (newAnswer) => {
+            return newAnswer.id === a.id
+          })
+          return newAnswer ? newAnswer : a
+        }),
+      })
+      return { potentialPayout, currentReturnPercent, newExpectedValue }
+    }, [betAmount, answers, unfilledBets, balanceByUserId])
+
+  const betLabel =
+    mode === 'less than'
+      ? niceAmount + ' or lower'
+      : mode === 'more than'
+      ? niceAmount + ' or higher'
+      : `${range[0]} - ${range[1]}`
+  const modeColor =
+    mode === 'less than'
+      ? 'red'
+      : mode === 'more than'
+      ? 'green'
+      : mode === 'about right'
+      ? 'blue'
+      : 'gray-outline'
+
   return (
     <Col className={'gap-2'}>
       {showDistribution && (
         <Col className={'gap-2'}>
-          <div className={'grid grid-cols-5 sm:grid-cols-10'}>
+          <div className={'grid grid-cols-5 gap-y-3 sm:grid-cols-10'}>
             {answers.map((a) => (
               <Col
                 key={a.id}
@@ -150,21 +212,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               >
                 <BetButton
                   betsOnAnswer={userBetsByAnswer[a.id] ?? []}
-                  color={
-                    mode === 'less than'
-                      ? shouldIncludeAnswer(a)
-                        ? 'red'
-                        : 'gray-outline'
-                      : mode === 'more than'
-                      ? shouldIncludeAnswer(a)
-                        ? 'green'
-                        : 'gray-outline'
-                      : mode === 'about right'
-                      ? shouldIncludeAnswer(a)
-                        ? 'blue'
-                        : 'gray-outline'
-                      : 'gray-outline'
-                  }
+                  color={shouldIncludeAnswer(a) ? modeColor : 'gray-outline'}
                   answer={a}
                   size={'xs'}
                   outcome={'YES'}
@@ -189,8 +237,10 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               }
               onChange={onChange}
               min={
-                mode === 'less than' || mode === 'more than'
+                mode === 'more than'
                   ? minimum + step
+                  : mode === 'less than'
+                  ? minimum - 1 + step
                   : minimum
               }
               max={maximum}
@@ -204,7 +254,16 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                 className={'w-full'}
                 highValue={range[1]}
                 lowValue={range[0]}
-                setValues={(low, high) => setRange([low, high])}
+                setValues={(low, high) =>
+                  setRange([
+                    low,
+                    high !== range[1]
+                      ? high === maximum
+                        ? maximum
+                        : high - 1
+                      : range[1],
+                  ])
+                }
                 min={minimum}
                 max={maximum}
               />
@@ -242,28 +301,17 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       ) : (
         <Col
           className={clsx(
-            'gap-2 rounded-md px-3 py-2',
+            'gap-4 rounded-md px-3 py-2',
             mode === 'less than'
-              ? 'bg-red-50'
+              ? 'bg-scarlet-50'
               : mode === 'more than'
-              ? 'bg-green-50'
-              : 'bg-blue-50'
+              ? 'bg-teal-50'
+              : 'bg-blue-50 dark:bg-blue-900/30'
           )}
         >
           <Row className={'justify-between'}>
-            <span className={'text-xl'}>
-              {mode === 'less than'
-                ? 'Lower than ' + niceAmount
-                : mode === 'more than'
-                ? 'Higher than ' + niceAmount
-                : ''}
-              {mode === 'about right' && (
-                <span>
-                  {range[0]} - {range[1]}
-                </span>
-              )}
-            </span>
-            <Row className={' items-center'}>
+            <span className={'ml-1 text-xl'}>{betLabel}</span>
+            <Row className={'items-center'}>
               <Button
                 color={'gray-white'}
                 size={'2xs'}
@@ -286,8 +334,13 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               </IconButton>
             </Row>
           </Row>
-          <Row>
+          <QuickBetAmountsRow
+            onAmountChange={setBetAmount}
+            betAmount={betAmount}
+          />
+          <Row className={' flex-wrap gap-2'}>
             <BuyAmountInput
+              parentClassName={'!w-56'}
               amount={betAmount}
               onChange={setBetAmount}
               error={error}
@@ -296,25 +349,30 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
             />
+            <Col className={'mt-0.5'}>
+              <Row className={'gap-1'}>
+                <span className={'text-ink-700'}>Max payout:</span>
+                {formatMoney(potentialPayout)}
+                <span className=" text-green-500">
+                  {'+' + currentReturnPercent}
+                </span>
+              </Row>
+              <Row className={'gap-1'}>
+                <span className={'text-ink-700'}>New value:</span>
+                {formatLargeNumber(newExpectedValue)}
+              </Row>
+            </Col>
           </Row>
-          <Row className={'justify-between'}>
+          <Row>
             <Button
-              color={'gray-white'}
-              onClick={() => {
-                setMode(undefined)
-                setShowDistribution(false)
-              }}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-
-            <Button
+              size={'xl'}
+              color={modeColor}
+              className={'w-full'}
               loading={isSubmitting}
               onClick={placeBet}
               disabled={isSubmitting}
             >
-              Submit
+              Bet {betLabel}
             </Button>
           </Row>
         </Col>

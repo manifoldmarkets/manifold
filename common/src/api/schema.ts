@@ -34,6 +34,7 @@ import { Row } from 'common/supabase/utils'
 import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
+import { ChatMessage } from 'common/chat-message'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -928,6 +929,16 @@ export const API = (_apiTypeCheck = {
       dashboardSlug: z.string(),
     }),
     returns: {} as Dashboard,
+  },
+  'create-public-chat-message': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as ChatMessage,
+    props: z.object({
+      content: contentSchema,
+      channelId: z.string(),
+    }),
   },
 } as const)
 

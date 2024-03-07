@@ -31,7 +31,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🚘 Elon Musk', groupId: '9OR5MrEu1F01FhmBRcre' },
   ],
   '🏟️ Sports': [
-    { name: '🏅 Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
+    // { name: '🏅 Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
     { name: '🏈 NFL', groupId: 'TNQwmbE5p6dnKx2e6Qlp' },
     { name: '🏀 Basketball', groupId: 'NjkFkdkvRvBHoeMDQ5NB' },
     { name: '⚽ Soccer', groupId: 'ypd6vR44ZzJyN9xykx6e' },
@@ -49,6 +49,10 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🎵 Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
     { name: '💅 Celebrities', groupId: '4QIcUOfCSSha0JZHAg9X' },
     { name: '🎨 Culture', groupId: 'eJZecx6r22G2NriYYXcC' },
+    {
+      name: '🏴‍☠️ One Piece',
+      groupId: 'uJSql24HUqpEpVU0FrjI',
+    },
   ],
   '🌍 World': [
     { name: '🇪🇺 Europe', groupId: 'ue52QI4BQgJgAJJNjLHr' },

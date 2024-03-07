@@ -6,7 +6,8 @@ import {
   getTopAnswer,
 } from './calculate'
 import { richTextToString } from './util/parse'
-import { formatPercent } from './util/format'
+import { formatLargeNumber, formatPercent } from './util/format'
+import { getExpectedValue } from 'common/multi-numeric'
 
 export const getContractOGProps = (
   contract: Contract
@@ -38,7 +39,9 @@ export const getContractOGProps = (
       : undefined
 
   const numericValue =
-    outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
+    outcomeType === 'NUMBER'
+      ? formatLargeNumber(getExpectedValue(contract))
+      : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined
 

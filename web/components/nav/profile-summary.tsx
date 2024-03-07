@@ -12,17 +12,13 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 
-export function ProfileSummary(props: {
-  user: User
-  className?: string
-  showProfile?: boolean
-}) {
-  const { user, className, showProfile } = props
+export function ProfileSummary(props: { user: User; className?: string }) {
+  const { user, className } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const balance = useAnimatedNumber(user.balance)
   const currentPage = usePathname() ?? ''
-  const url = showProfile ? `/${user.username}` : `/${user.username}/portfolio`
+  const url = `/${user.username}`
   return (
     <Link
       href={url}
@@ -38,7 +34,7 @@ export function ProfileSummary(props: {
         avatarUrl={user.avatarUrl}
         username={user.username}
         noLink
-        size={showProfile ? 'sm' : 'md'}
+        size="md"
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">

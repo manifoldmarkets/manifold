@@ -4,6 +4,7 @@ import {
   contractPath,
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   isBinaryMulti,
 } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
@@ -17,6 +18,9 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
+import { Row } from 'web/components/layout/row'
+import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
 
 export function BetDialog(props: {
   contract: CPMMBinaryContract
@@ -55,7 +59,7 @@ export function BetDialog(props: {
   )
 }
 export function MultiBetDialog(props: {
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   open: boolean
   setOpen: (open: boolean) => void
 }) {
@@ -83,30 +87,55 @@ export function MultiBetDialog(props: {
       )}
     >
       <Col>
+        {contract.outcomeType === 'NUMBER' ? (
+          <NumericBetDialog contract={contract as CPMMNumericContract} />
+        ) : (
+          <>
+            <Link
+              href={contractPath(contract)}
+              className={clsx('mb-4 text-xl text-indigo-700', linkClass)}
+            >
+              {question}
+            </Link>
+            {isBinaryMC ? (
+              <BinaryMultiAnswersPanel
+                contract={contract as CPMMMultiContract}
+                answers={contract.answers}
+              />
+            ) : (
+              <AnswersPanel
+                contract={contract}
+                selectedAnswerIds={[]}
+                sort={sort}
+                setSort={setSort}
+                query={query}
+                setQuery={setQuery}
+                onAnswerHover={() => null}
+                onAnswerClick={() => null}
+              />
+            )}
+          </>
+        )}
+      </Col>
+    </Modal>
+  )
+}
+
+const NumericBetDialog = (props: { contract: CPMMNumericContract }) => {
+  const { contract } = props
+  const { question } = contract
+  return (
+    <Col>
+      <Row className={'mb-2 justify-between'}>
         <Link
           href={contractPath(contract)}
           className={clsx('mb-4 text-xl text-indigo-700', linkClass)}
         >
           {question}
         </Link>
-        {isBinaryMC ? (
-          <BinaryMultiAnswersPanel
-            contract={contract}
-            answers={contract.answers}
-          />
-        ) : (
-          <AnswersPanel
-            contract={contract}
-            selectedAnswerIds={[]}
-            sort={sort}
-            setSort={setSort}
-            query={query}
-            setQuery={setQuery}
-            onAnswerHover={() => null}
-            onAnswerClick={() => null}
-          />
-        )}
-      </Col>
-    </Modal>
+        <MultiNumericResolutionOrExpectation contract={contract} />
+      </Row>
+      <NumericBetPanel contract={contract} />
+    </Col>
   )
 }

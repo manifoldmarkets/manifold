@@ -24,7 +24,6 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import DonutChart from 'web/components/donut-chart'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useEffect, useState } from 'react'
-import { TbReportMoney } from 'react-icons/tb'
 import { EditablePaymentInfo } from 'web/components/contract/editable-payment-info'
 import { useAdmin } from 'web/hooks/use-admin'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -89,18 +88,7 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
           <Row className={'items-center gap-2'}>
             <span className={'text-primary-700 text-2xl'}>Partner Program</span>
           </Row>
-          <Row className="items-end gap-3 ">
-            <div className="flex flex-col items-end">
-              <Link
-                href={`/${user.username}/portfolio`}
-                className={clsx(
-                  'hover:text-primary-500  text-ink-600 text-xs '
-                )}
-              >
-                <TbReportMoney className="mx-auto text-2xl " />
-                Portfolio
-              </Link>
-            </div>
+          <Row className="items-end gap-3">
             <div className="flex flex-col items-end">
               <Link
                 href={'/' + user.username}

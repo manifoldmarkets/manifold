@@ -140,7 +140,7 @@ export function PoliticsDashboardPage(props: {
                   url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}${
                     user?.username ? referralQuery(user.username) : ''
                   }`}
-                  eventTrackingName="copy dashboard link"
+                  eventTrackingName="copy politics dashboard link"
                   tooltip="Share"
                 />
 

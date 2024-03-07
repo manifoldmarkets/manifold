@@ -36,7 +36,7 @@ export const MultiNumericRangeSection = (props: {
     undefined,
     'new-buckets' + paramsKey
   )
-  const [showBuckets, setShowBuckets] = useState(false)
+  const [showBuckets, _] = useState(false)
   const bucketsToShow = 2
   return (
     <Col>
@@ -50,7 +50,7 @@ export const MultiNumericRangeSection = (props: {
           <Input
             type="number"
             className="w-32"
-            placeholder="LOW"
+            placeholder="Low"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setMinString(e.target.value)}
             min={Number.MIN_SAFE_INTEGER}
@@ -61,7 +61,7 @@ export const MultiNumericRangeSection = (props: {
           <Input
             type="number"
             className="w-32"
-            placeholder="HIGH"
+            placeholder="High"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setMaxString(e.target.value)}
             min={Number.MIN_SAFE_INTEGER}
