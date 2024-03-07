@@ -4,7 +4,7 @@ import { Row } from '../layout/row'
 import clsx from 'clsx'
 
 export function Banner(props: {
-  setShowBanner: (show: boolean) => void
+  setShowBanner?: (show: boolean) => void
   className?: string
   children: React.ReactNode
   link?: string
@@ -20,9 +20,12 @@ export function Banner(props: {
       <a href={link} className="w-full py-3 pl-4">
         {children}
       </a>
-      <IconButton onClick={() => setShowBanner(false)}>
-        <XIcon className="h-5 w-5 cursor-pointer" />
-      </IconButton>
+
+      {setShowBanner && (
+        <IconButton onClick={() => setShowBanner(false)}>
+          <XIcon className="h-5 w-5 cursor-pointer" />
+        </IconButton>
+      )}
     </Row>
   )
 }
