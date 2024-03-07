@@ -3,7 +3,8 @@ import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { omit } from 'lodash'
+import { capitalize, omit } from 'lodash'
+import { TOP_SLUG } from 'web/pages/politics/[[...slug]]'
 
 export const getDashboardProps = async (slug: string, isPolitics?: boolean) => {
   const dashboard = await api('get-dashboard-from-slug', {
@@ -30,6 +31,13 @@ export const getDashboardProps = async (slug: string, isPolitics?: boolean) => {
     isPolitics ? 'politics-headlines' : 'headlines',
     {}
   )
+  if (isPolitics) {
+    headlines.unshift({
+      id: TOP_SLUG,
+      slug: '',
+      title: capitalize(TOP_SLUG),
+    })
+  }
   return {
     state: 'success',
     initialDashboard: dashboard,

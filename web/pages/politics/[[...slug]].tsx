@@ -48,6 +48,11 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     }
   }
   const electionsPageProps = await getElectionsPageProps()
+  electionsPageProps.headlines.unshift({
+    id: TOP_SLUG,
+    slug: TOP_SLUG,
+    title: capitalize(TOP_SLUG),
+  })
   return {
     props: electionsPageProps,
     revalidate,
@@ -83,13 +88,7 @@ function Elections(props: ElectionsPageProps) {
   const [ignoreScroll, setIgnoreScroll] = useState(false)
   // TODO: Lots of INSUFFICIENT_RESOURCES errors when trying to render all newsDashboards
   const newsDashboards = props.newsDashboards.slice(0, MAX_DASHBOARDS)
-  const headlines = [
-    {
-      id: TOP_SLUG,
-      slug: TOP_SLUG,
-      title: capitalize(TOP_SLUG),
-    },
-  ].concat(props.headlines.slice(0, MAX_DASHBOARDS))
+  const headlines = props.headlines.slice(0, MAX_DASHBOARDS)
 
   const headlineSlugsToRefs = useRef(
     mapValues(keyBy(headlines, 'slug'), () => createRef<HTMLDivElement>())
@@ -206,7 +205,7 @@ function HeadlineTabs(props: {
         {user && (isAdminId(user.id) || isModId(user.id)) && (
           <EditNewsButton
             defaultDashboards={headlines.filter(
-              (headline) => headline.slug !== TOP_SLUG
+              (headline) => headline.id !== TOP_SLUG
             )}
             isPolitics={true}
           />
