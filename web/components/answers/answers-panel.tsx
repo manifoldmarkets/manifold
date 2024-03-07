@@ -4,6 +4,7 @@ import {
   PencilIcon,
   PresentationChartLineIcon,
   ScaleIcon,
+  SearchIcon,
 } from '@heroicons/react/outline'
 import { groupBy, sumBy } from 'lodash'
 import clsx from 'clsx'
@@ -187,6 +188,10 @@ export function AnswersPanel(props: {
       error: 'Failed to update sort order',
     })
   }
+
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
+
   return (
     <Col>
       <SearchCreateAnswerPanel
@@ -194,6 +199,8 @@ export function AnswersPanel(props: {
         addAnswersMode={addAnswersMode}
         text={query}
         setText={setQuery}
+        isSearchOpen={isSearchOpen}
+        setIsSearchOpen={setIsSearchOpen}
       >
         <Row className={'mb-1 items-center gap-4'}>
           <DropdownMenu
@@ -213,7 +220,6 @@ export function AnswersPanel(props: {
               Set default
             </Button>
           )}
-
           {isAdvancedTrader && (
             <Row className="items-center gap-2">
               <input
@@ -231,6 +237,14 @@ export function AnswersPanel(props: {
               >
                 Show limit orders
               </label>
+            </Row>
+          )}
+          {!isSearchOpen && (
+            <Row
+              onClick={toggleSearch}
+              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+            >
+              <SearchIcon className="h-4 w-4" /> Search or add answer
             </Row>
           )}
         </Row>

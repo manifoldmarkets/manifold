@@ -36,8 +36,9 @@ export function CreateAnswerCpmmPanel(props: {
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
+  close: () => void
 }) {
-  const { contract, text, setText, children } = props
+  const { contract, text, setText, children, close } = props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -68,6 +69,8 @@ export function CreateAnswerCpmmPanel(props: {
         placeholder="Search or add answer"
         rows={1}
         maxLength={MAX_ANSWER_LENGTH}
+        onBlur={() => !text && close()}
+        autoFocus
       />
 
       <Row className="justify-between">
@@ -75,7 +78,11 @@ export function CreateAnswerCpmmPanel(props: {
 
         {text && (
           <Row className="gap-1">
-            <Button size="2xs" color="gray" onClick={() => setText('')}>
+            <Button
+              size="2xs"
+              color="gray"
+              onClick={() => (setText(''), close())}
+            >
               Clear
             </Button>
             <Button
@@ -230,8 +237,18 @@ export function SearchCreateAnswerPanel(props: {
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
+  isSearchOpen?: boolean
+  setIsSearchOpen?: (isSearchOpen: boolean) => void
 }) {
-  const { contract, addAnswersMode, text, setText, children } = props
+  const {
+    contract,
+    addAnswersMode,
+    text,
+    setText,
+    children,
+    isSearchOpen,
+    setIsSearchOpen,
+  } = props
 
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -242,6 +259,8 @@ export function SearchCreateAnswerPanel(props: {
     contract.mechanism === 'cpmm-multi-1'
       ? contract.shouldAnswersSumToOne
       : true
+
+  if (!isSearchOpen) return <>{children}</>
 
   if (
     user &&
@@ -254,7 +273,12 @@ export function SearchCreateAnswerPanel(props: {
     contract.outcomeType !== 'NUMBER'
   ) {
     return contract.mechanism === 'cpmm-multi-1' ? (
-      <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>
+      <CreateAnswerCpmmPanel
+        contract={contract}
+        text={text}
+        setText={setText}
+        close={() => setIsSearchOpen?.(false)}
+      >
         {children}
       </CreateAnswerCpmmPanel>
     ) : (
@@ -276,6 +300,8 @@ export function SearchCreateAnswerPanel(props: {
         onChange={(e) => setText(e.target.value)}
         className="!text-md"
         placeholder="Search answers"
+        onBlur={() => !text && setIsSearchOpen?.(false)}
+        autoFocus
       />
       {children}
     </>
