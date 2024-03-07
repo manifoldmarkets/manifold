@@ -196,6 +196,19 @@ module.exports = {
         destination: '/:username',
         permanent: false,
       },
+      {
+        source: '/browse',
+        has: [
+          {
+            type: 'query',
+            key: 'topic',
+            // Using a named capture group to capture the value of 'topic'
+            value: '(?<slug>.*)',
+          },
+        ],
+        permanent: true,
+        destination: '/browse/:slug', // Using the captured value here
+      },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]
   },
