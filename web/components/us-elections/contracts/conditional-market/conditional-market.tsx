@@ -1,19 +1,18 @@
-import { track } from '@amplitude/analytics-browser'
 import clsx from 'clsx'
 import { CPMMBinaryContract, contractPath } from 'common/contract'
 import { PolicyContractType } from 'common/politics/policy-data'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { BuyPanel } from 'web/components/bet/bet-panel'
-import { Button } from 'web/components/buttons/button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
-import { BinaryBetButton, PolicyRow } from './big-conditional-market'
+import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import { useUser } from 'web/hooks/use-user'
+import { BuyPanel } from 'web/components/bet/bet-panel'
+import { Button } from 'web/components/buttons/button'
+import { track } from '@amplitude/analytics-browser'
 
 export function ConditionalMarketVisual(props: {
   policyContracts: PolicyContractType[]
@@ -134,5 +133,58 @@ export function MobilePolicyRow(props: {
         {sideContent2}
       </div>
     </Row>
+  )
+}
+
+export const BinaryBetButton = (props: { contract: CPMMBinaryContract }) => {
+  const { contract } = props
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+
+  const user = useUser()
+
+  function closePanel() {
+    setOutcome(undefined)
+  }
+
+  return (
+    <>
+      <Modal
+        open={outcome != undefined}
+        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
+        className={clsx(MODAL_CLASS)}
+      >
+        <Link
+          className={clsx(
+            'hover:text-primary-700 mb-4 grow items-start font-semibold transition-colors hover:underline sm:text-lg'
+          )}
+          href={contractPath(contract)}
+        >
+          {contract.question}
+        </Link>
+        <BuyPanel
+          contract={contract}
+          user={user}
+          initialOutcome={outcome}
+          onCancel={closePanel}
+          onBuySuccess={() => setTimeout(closePanel, 500)}
+          location={'contract page answer'}
+          inModal={true}
+          alwaysShowOutcomeSwitcher
+        />
+      </Modal>
+
+      <Button
+        size="2xs"
+        color="indigo-outline"
+        className="bg-primary-50 h-fit w-fit"
+        onClick={(e) => {
+          e.stopPropagation()
+          track('bet intent', { location: 'binary panel' })
+          setOutcome('YES')
+        }}
+      >
+        Bet
+      </Button>
+    </>
   )
 }
