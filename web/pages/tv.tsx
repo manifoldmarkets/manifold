@@ -92,7 +92,7 @@ export default function TVPage(props: {
   )
 
   return (
-    <Page trackPageView="tv page" className="!mt-0 xl:col-span-10">
+    <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO title="Manifold TV" description="Stream and trade" />
       <Row className="w-full items-start justify-center gap-8">
         <Col
@@ -152,12 +152,12 @@ export default function TVPage(props: {
           )}
         </Col>
 
-        <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[3750px] ">
+        <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[350px] ">
           <Col className={'sticky top-0'}>
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
             </Row>
-            <PublicChat channelId={'tv'} />
+            <PublicChat channelId={'tv'} className="gap-2" />
           </Col>
         </Col>
       </Row>
