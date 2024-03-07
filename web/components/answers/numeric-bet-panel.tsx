@@ -156,11 +156,17 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
 
   const { potentialPayout, currentReturnPercent, newExpectedValue } =
     useMemo(() => {
+      if (!betAmount || !answersToBuy)
+        return {
+          potentialPayout: 0,
+          currentReturnPercent: '0%',
+          newExpectedValue: amount,
+        }
       const { newBetResults, updatedAnswers } =
         calculateCpmmMultiArbitrageYesBets(
           answers,
           answersToBuy,
-          betAmount ?? 0,
+          betAmount,
           undefined,
           unfilledBets,
           balanceByUserId
