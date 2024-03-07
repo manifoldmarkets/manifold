@@ -88,8 +88,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </div>
       </Col>
 
-      {/* Show trending at the top for authed users */}
-      {user && trending}
 
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
@@ -101,6 +99,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
         viewType="PARTY"
         customTitle="Which party will win the Presidential Election?"
       />
+
+      {trending}
+
       <Col className="gap-6 sm:hidden sm:gap-8">
         <PoliticsCard
           contract={democratCandidateContract as MultiContract}
@@ -218,9 +219,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </Row>
         </Col>
       </Col>
+
       <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
-      {/* Show trending at the bottom for non-authed users */}
-      {!user && trending}
     </Col>
   )
 }
