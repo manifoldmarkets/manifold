@@ -43,6 +43,30 @@ export function USElectionsPage(props: ElectionsPageProps) {
     return <Custom404 />
   }
 
+  const trending =
+    trendingDashboard.state == 'not found' ? null : (
+      <Col>
+        <Row className="mb-2 items-center gap-1 font-semibold sm:text-lg">
+          <div className="relative">
+            <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
+            <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
+          </div>
+          <Link
+            href="/politics/politicsheadline"
+            className="hover:text-primary-700 hover:underline"
+          >
+            Trending
+          </Link>
+        </Row>
+        <HorizontalDashboard
+          initialDashboard={trendingDashboard.initialDashboard}
+          previews={trendingDashboard.previews}
+          initialContracts={trendingDashboard.initialContracts}
+          slug={trendingDashboard.slug}
+        />
+      </Col>
+    )
+
   return (
     <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
       <Col>
@@ -61,28 +85,10 @@ export function USElectionsPage(props: ElectionsPageProps) {
           Live prediction market odds on the US election
         </div>
       </Col>
-      {trendingDashboard.state == 'not found' ? null : (
-        <Col>
-          <Row className="mb-2 items-center gap-1 font-semibold sm:text-lg">
-            <div className="relative">
-              <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-              <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
-            </div>
-            <Link
-              href="/politics/politicsheadline"
-              className="hover:text-primary-700 hover:underline"
-            >
-              Trending
-            </Link>
-          </Row>
-          <HorizontalDashboard
-            initialDashboard={trendingDashboard.initialDashboard}
-            previews={trendingDashboard.previews}
-            initialContracts={trendingDashboard.initialContracts}
-            slug={trendingDashboard.slug}
-          />
-        </Col>
-      )}
+
+      {/* Show trending at the top for authed users */}
+      {user && trending}
+
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
         viewType="CANDIDATE"
@@ -113,6 +119,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           viewType="CANDIDATE"
         />
       </Col>
+
       <Col className="hidden gap-6 sm:flex sm:gap-8">
         <Col className="gap-2">
           <Row className="items-center gap-2">
@@ -209,6 +216,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </Row>
         </Col>
       </Col>
+
+      {/* Show trending at the bottom for non-authed users */}
+      {!user && trending}
     </Col>
   )
 }
