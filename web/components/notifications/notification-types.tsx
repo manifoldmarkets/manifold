@@ -1451,17 +1451,17 @@ function FollowSuggestionNotification(props: {
         />
       }
       link={`/browse?${SEARCH_TYPE_KEY}=Users`}
-      subtitle={`Or, tap here to find more people to follow!`}
+      subtitle={`Or, tap here to find other people to follow!`}
     >
       <>
         <span>
-          Want to follow{' '}
+          Follow{' '}
           <NotificationUserLink
             userId={sourceId}
             name={sourceUserName}
             username={sourceUserUsername}
-          />
-          ? You just bet on their question!
+          />{' '}
+          to get notified when they make new questions.
         </span>
       </>
     </NotificationFrame>

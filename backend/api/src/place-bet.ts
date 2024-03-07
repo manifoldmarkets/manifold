@@ -385,6 +385,8 @@ export const processNewBetResult = (
         contractDoc,
         removeUndefinedProps({
           volume: volume + newBet.amount,
+          lastBetTime: newBet.createdTime,
+          lastUpdatedTime: Date.now(),
         })
       )
       if (newPool) {
@@ -410,6 +412,8 @@ export const processNewBetResult = (
           totalLiquidity: newTotalLiquidity,
           collectedFees: addObjects(newBet.fees, collectedFees),
           volume: volume + newBet.amount,
+          lastBetTime: newBet.createdTime,
+          lastUpdatedTime: Date.now(),
         })
       )
     }
