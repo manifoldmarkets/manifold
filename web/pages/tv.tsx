@@ -24,6 +24,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { useAdmin } from 'web/hooks/use-admin'
 import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
+import { Tabs } from 'web/components/layout/tabs'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -76,6 +77,17 @@ export default function TVPage(props: {
 
   if (!contract) return <div>Loading...</div>
 
+  const betPanel = (
+    <>
+      {tradingAllowed(contract) && isBinary && (
+        <SignedInBinaryMobileBetting contract={contract} user={user} />
+      )}
+      {tradingAllowed(contract) && isMulti && (
+        <SimpleMultiOverview contract={contract} />
+      )}
+    </>
+  )
+
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10">
       <SEO title="Manifold TV" description="Stream and trade" />
@@ -113,17 +125,15 @@ export default function TVPage(props: {
               )}
             </Row>
 
-            {/* <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
-            <AuthorInfo contract={contract} />
-            <ContractSummaryStats contract={contract} editable={false} />
-          </div> */}
+            <Tabs
+              tabs={[
+                { title: 'Market', content: betPanel },
+                { title: 'Chat', content: <PublicChat channelId={'tv'} /> },
+              ]}
+              className="flex xl:hidden"
+            />
 
-            {tradingAllowed(contract) && isBinary && (
-              <SignedInBinaryMobileBetting contract={contract} user={user} />
-            )}
-            {tradingAllowed(contract) && isMulti && (
-              <SimpleMultiOverview contract={contract} />
-            )}
+            <Col className="hidden xl:flex">{betPanel}</Col>
           </Col>
 
           {isAdmin && (
