@@ -3,6 +3,9 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { resolveMarketHelper } from 'shared/resolve-market-helpers'
+import { getUser } from 'shared/utils'
+import { Contract } from 'common/contract'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -13,38 +16,52 @@ export const unlistAndCancelUserContracts: APIHandler<
 
   await throwErrorIfNotMod(auth.uid)
 
+  const resolver = await getUser(auth.uid)
+  if (!resolver) {
+    throw new APIError(500, 'Resolver not found')
+  }
+  const creator = await getUser(userId)
+  if (!creator) {
+    throw new APIError(500, 'Creator not found')
+  }
+
   const db = createSupabaseClient()
   const { data, error } = await db
     .from('contracts')
-    .select('id')
+    .select('data')
     .eq('creatorId', userId)
   if (error) {
     throw new APIError(500, 'Failed to fetch contracts: ' + error.message)
   }
 
-  if (data.length === 0) {
+  const contracts = data.map((contract) => contract.data as Contract)
+
+  if (contracts.length === 0) {
     console.log('No contracts found for this user.')
     return
   }
 
-  if (data.length > 5) {
+  if (contracts.length > 5) {
     throw new APIError(
       400,
-      `This user has ${data.length} markets. You can only super ban users with 5 or less.`
+      `This user has ${contracts.length} markets. You can only super ban users with 5 or less.`
     )
   }
 
+  for (const contract of contracts) {
+    await firestore.doc(`contracts/${contract.id}`).update({
+      visibility: 'unlisted',
+    })
+  }
+
   try {
-    await Promise.all(
-      data.map(({ id }) => {
-        return firestore.doc(`contracts/${id}`).update({
-          visibility: 'unlisted',
-          resolution: 'CANCEL',
-        })
+    for (const contract of contracts) {
+      await resolveMarketHelper(contract, resolver, creator, {
+        outcome: 'CANCEL',
       })
-    )
+    }
   } catch (error) {
-    console.error('Error updating contracts:', error)
+    console.error('Error resolving contracts:', error)
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
 }
