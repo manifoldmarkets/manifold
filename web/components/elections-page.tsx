@@ -88,7 +88,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </div>
       </Col>
 
-
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
         viewType="CANDIDATE"
