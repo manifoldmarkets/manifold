@@ -15,7 +15,7 @@ import Link from 'next/link'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
 import { manifoldLoveUserId } from 'common/love/constants'
-import { UserHovercard } from './user/user-hovercard'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]

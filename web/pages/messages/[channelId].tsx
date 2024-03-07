@@ -22,7 +22,7 @@ import {
 import {
   ChatMessageItem,
   SystemChatMessageItem,
-} from 'web/components/chat-message'
+} from 'web/components/chat/chat-message'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS, YEAR_MS } from 'common/util/time'

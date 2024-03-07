@@ -23,7 +23,7 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useAdmin } from 'web/hooks/use-admin'
 import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
-import { PublicChat } from 'web/pages/public-messages/[channelId]'
+import { PublicChat } from 'web/components/chat/public-chat'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
