@@ -73,11 +73,13 @@ export const revalidateStaticProps = async (
     const resp = await fetch(
       `https://${domain ?? ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
     )
-    if (!resp.ok) {
+
+    if (resp.ok) {
+      log('Revalidated', pathToRevalidate)
+    } else {
       const body = await resp.text()
-      throw new Error(`HTTP ${resp.status} revalidating ${queryStr}: ${body}`)
+      log.error(`HTTP ${resp.status} revalidating ${queryStr}: ${body}`)
     }
-    log('Revalidated', pathToRevalidate)
   }
 }
 
