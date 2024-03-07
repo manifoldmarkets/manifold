@@ -315,7 +315,13 @@ export function SupabaseSearch(props: {
 
   return (
     <Col className="w-full">
-      <Col className={clsx('sticky top-0 z-20 ', headerClassName)}>
+      <Col
+        className={clsx(
+          'sticky top-0 z-20',
+          !headerClassName && ' bg-canvas-50',
+          headerClassName
+        )}
+      >
         {!hideSearch && (
           <Row>
             <Col className={'w-full'}>
@@ -783,13 +789,8 @@ function ContractFilters(props: {
   const resetTopic = () => router.push(`/browse`)
 
   return (
-    <Col
-      className={clsx(
-        'my-1 items-stretch gap-2 pb-1 pt-px sm:gap-2',
-        className
-      )}
-    >
-      <Row className={'h-6 gap-3'}>
+    <Col className={clsx('my-1 items-stretch gap-2 pt-px sm:gap-2', className)}>
+      <Row className={'h-5 gap-3'}>
         <DropdownMenu
           items={generateFilterDropdownItems(
             contractType == 'BOUNTIED_QUESTION'
