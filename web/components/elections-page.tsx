@@ -8,6 +8,7 @@ import { Row } from './layout/row'
 import { HomepageMap } from './usa-map/homepage-map'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
+import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 import { CopyLinkOrShareButton } from './buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
@@ -19,6 +20,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
+    rawPolicyContracts,
     electionCandidateContract,
     electionPartyContract,
     republicanCandidateContract,
@@ -216,7 +218,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </Row>
         </Col>
       </Col>
-
+      <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
       {/* Show trending at the bottom for non-authed users */}
       {!user && trending}
     </Col>

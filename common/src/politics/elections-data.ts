@@ -5,6 +5,7 @@ import { LinkPreviews } from 'common/link-preview'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
+import { PolicyContractType } from './policy-data'
 
 export interface StateElectionMarket {
   slug: string
@@ -232,6 +233,7 @@ export type ElectionsPageProps = {
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
+  rawPolicyContracts: PolicyContractType[]
   electionPartyContract: Contract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
