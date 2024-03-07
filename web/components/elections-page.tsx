@@ -169,7 +169,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
             />
           </Row>
         </Col>
-        <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
       </Col>
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
@@ -219,7 +218,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </Row>
         </Col>
       </Col>
-
+      <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
       {/* Show trending at the bottom for non-authed users */}
       {!user && trending}
     </Col>
