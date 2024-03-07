@@ -38,7 +38,10 @@ import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import { SearchCreateAnswerPanel } from './create-answer-panel'
+import {
+  CreateAnswerPanel,
+  SearchCreateAnswerPanel,
+} from './create-answer-panel'
 import { useEffect, useMemo, useState } from 'react'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
@@ -220,6 +223,14 @@ export function AnswersPanel(props: {
               Set default
             </Button>
           )}
+          {!isSearchOpen && (
+            <Row
+              onClick={toggleSearch}
+              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+            >
+              <SearchIcon className="h-4 w-4" /> Search
+            </Row>
+          )}
           {isAdvancedTrader && (
             <Row className="items-center gap-2">
               <input
@@ -237,14 +248,6 @@ export function AnswersPanel(props: {
               >
                 Show limit orders
               </label>
-            </Row>
-          )}
-          {!isSearchOpen && (
-            <Row
-              onClick={toggleSearch}
-              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
-            >
-              <SearchIcon className="h-4 w-4" /> Search or add answer
             </Row>
           )}
         </Row>
@@ -305,6 +308,14 @@ export function AnswersPanel(props: {
                 Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               </Button>
             ))}
+
+          {showAll && (
+            <CreateAnswerPanel
+              contract={contract}
+              addAnswersMode={addAnswersMode}
+              placeholder="Add answer"
+            />
+          )}
         </Col>
       )}
     </Col>
