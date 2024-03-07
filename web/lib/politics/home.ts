@@ -13,6 +13,7 @@ import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/firebase/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
+import { PolicyContractType, PolicyData } from 'common/politics/policy-data'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
@@ -29,6 +30,8 @@ export async function getElectionsPageProps() {
     getStateContracts(getContract, governors2024),
     api('politics-headlines', {}),
   ])
+
+  const policyContracts = await getPolicyContracts(getContract)
 
   const newsDashboards = await Promise.all(
     headlines.map(async (headline) => getDashboardProps(headline.slug))
@@ -69,6 +72,7 @@ export async function getElectionsPageProps() {
     rawPresidencyStateContracts: presidencyStateContracts,
     rawSenateStateContracts: senateStateContracts,
     rawGovernorStateContracts: governorStateContracts,
+    rawPolicyContracts: policyContracts,
     electionPartyContract,
     electionCandidateContract,
     republicanCandidateContract,
@@ -104,4 +108,22 @@ async function getStateContracts(
     }, {} as MapContractsDictionary)
 
   return mapContractsDictionary
+}
+
+async function getPolicyContracts(
+  getContract: (slug: string) => Promise<Contract | null>
+): Promise<PolicyContractType[]> {
+  const mapContractsPromises = PolicyData.map(async (m) => {
+    const bidenContract = await getContract(m.bidenSlug)
+    const trumpContract = await getContract(m.trumpSlug)
+    return {
+      title: m.title,
+      bidenContract: bidenContract,
+      trumpContract: trumpContract,
+    }
+  })
+
+  const mapContractsArray = await Promise.all(mapContractsPromises)
+
+  return mapContractsArray
 }

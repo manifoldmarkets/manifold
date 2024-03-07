@@ -12,6 +12,7 @@ import { HomepageMap } from './usa-map/homepage-map'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { HorizontalDashboard } from './dashboard/horizontal-dashboard'
 import Link from 'next/link'
+import { ConditionalMarkets } from './us-elections/contracts/conditional-market/conditional-markets'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()
@@ -50,6 +51,7 @@ function ElectionContent(props: ElectionsPageProps) {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
+    rawPolicyContracts,
     electionCandidateContract,
     electionPartyContract,
     republicanCandidateContract,
@@ -220,6 +222,7 @@ function ElectionContent(props: ElectionsPageProps) {
             </Row>
           </Col>
         </Col>
+        <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
       </Col>
       <Spacer h={4} />
     </>
