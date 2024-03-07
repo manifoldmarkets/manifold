@@ -1,4 +1,5 @@
 import { JSONContent } from '@tiptap/core'
+import { convertSQLtoTS, Row, tsToMillis } from 'common/supabase/utils'
 export type ChatVisibility = 'private' | 'system_status'
 
 export type ChatMessage = {
@@ -9,3 +10,8 @@ export type ChatMessage = {
   createdTime: number
   visibility: ChatVisibility
 }
+
+export const convertPublicChatMessage = (row: Row<'chat_messages'>) =>
+  convertSQLtoTS<'chat_messages', ChatMessage>(row, {
+    created_time: tsToMillis as any,
+  })

@@ -14,7 +14,6 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
-import { useCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { setTV } from 'web/lib/firebase/api'
@@ -24,6 +23,7 @@ import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { Linkify } from 'web/components/widgets/linkify'
 import { useAdmin } from 'web/hooks/use-admin'
 import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
+import { PublicChat } from 'web/pages/public-messages/[channelId]'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -72,9 +72,6 @@ export default function TVPage(props: {
   const isMulti =
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
     contract.mechanism === 'cpmm-multi-1'
-
-  const comments = useCommentsOnContract(contractId)
-
   const [showSettings, setShowSettings] = useState(false)
 
   if (!contract) return <div>Loading...</div>
@@ -140,43 +137,15 @@ export default function TVPage(props: {
               <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
             </Row>
           )}
-
-          {/* mobile comments, TODO: replace w chat */}
-          {/* {comments && (
-            <div className="m-4">
-              <CommentsTabContent
-                contract={contract}
-                comments={comments}
-                pinnedComments={[]}
-                setCommentsLength={() => {}}
-                blockedUserIds={[]}
-                replyTo={undefined}
-                clearReply={() => {}}
-                className="-ml-2 -mr-1 flex xl:hidden"
-                bets={[]}
-                appRouter={undefined}
-              />
-            </div>
-          )} */}
         </Col>
 
-        {/* desktop comments, TODO: replace w chat  */}
-        <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex">
-          {/* {comments && (
-            <CommentsTabContent
-              contract={contract}
-              comments={comments}
-              pinnedComments={[]}
-              setCommentsLength={() => {}}
-              blockedUserIds={[]}
-              replyTo={undefined}
-              clearReply={() => {}}
-              className="-ml-2 -mr-1"
-              bets={[]}
-              appRouter={undefined}
-              scrollToEnd
-            />
-          )} */}
+        <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[3750px] ">
+          <Col className={'sticky top-0'}>
+            <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
+              Live chat
+            </Row>
+            <PublicChat channelId={'tv'} />
+          </Col>
         </Col>
       </Row>
     </Page>
