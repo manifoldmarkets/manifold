@@ -351,8 +351,8 @@ export const EditAnswerModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-50 gap-2 rounded-md p-4'}>
-        <Row className={'mb-2 justify-between'}>
-          <span className={'mb-2 line-clamp-2 text-2xl text-indigo-700'}>
+        <Row className={'mb-4 justify-between gap-1'}>
+          <span className={'line-clamp-2 text-xl text-indigo-700'}>
             Edit {answer.text}
           </span>
           <IconButton
