@@ -59,7 +59,7 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
         titleContent={
           <Link
             href={bidenPath}
-            className="hover:text-primary-700  hover:underline"
+            className="hover:text-primary-700  text-ink-700 hover:underline"
           >
             <Row className="gap-2">
               <Image
@@ -88,7 +88,7 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
         titleContent={
           <Link
             href={trumpPath}
-            className="hover:text-primary-700 py-2 hover:underline"
+            className="hover:text-primary-700 text-ink-700 py-2 hover:underline"
           >
             <Row className="gap-2">
               <Image
