@@ -90,7 +90,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
       </Col>
 
       <Banner link="/tv" className="hover:underline">
-        📺🇺🇸 State of the Union watch-party tonight at 9 pm ET 📺🇺🇸
+        State of the Union watch-party 9 pm ET 📺 🇺🇸
       </Banner>
 
       <PoliticsCard
