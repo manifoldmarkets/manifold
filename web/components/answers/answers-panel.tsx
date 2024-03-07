@@ -42,7 +42,6 @@ import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { useEffect, useMemo, useState } from 'react'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
-import { Title } from 'web/components/widgets/title'
 import { Input } from 'web/components/widgets/input'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
@@ -353,7 +352,9 @@ export const EditAnswerModal = (props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-50 gap-2 rounded-md p-4'}>
         <Row className={'mb-2 justify-between'}>
-          <Title className={'!mb-2'}>Edit answer</Title>
+          <span className={'mb-2 line-clamp-2 text-2xl text-indigo-700'}>
+            Edit {answer.text}
+          </span>
           <IconButton
             size={'sm'}
             disabled={isSubmitting}
