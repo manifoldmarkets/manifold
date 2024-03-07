@@ -688,7 +688,7 @@ export function ContractParamsForm(props: {
             )
             setHasChosenCategory(true)
           }}
-          ignoreGroupIds={selectedGroups.map((g) => g.id)}
+          selectedIds={selectedGroups.map((g) => g.id)}
           placeholder="List extracurriculars (e.g. Soccer, Art, CS Competitions) and colleges you are interested in"
           onlyGroupIds={allGroupIds}
         />

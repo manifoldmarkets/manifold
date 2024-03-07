@@ -1,7 +1,7 @@
 import { Combobox } from '@headlessui/react'
 import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Group, LiteGroup } from 'common/group'
+import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { useEffect, useRef, useState } from 'react'
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { Row } from 'web/components/layout/row'
@@ -17,8 +17,9 @@ import { Col } from '../layout/col'
 
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
+  max?: number
   label?: string
-  ignoreGroupIds?: string[]
+  selectedIds?: string[]
   onlyGroupIds?: string[]
   onCreateTopic?: (group: Group) => void
   className?: string
@@ -26,9 +27,10 @@ export function TopicSelector(props: {
 }) {
   const {
     setSelectedGroup,
+    max,
     label,
     onCreateTopic,
-    ignoreGroupIds,
+    selectedIds,
     onlyGroupIds,
     className,
     placeholder,
@@ -81,6 +83,8 @@ export function TopicSelector(props: {
     setQuery('') // Clear the input
   }
 
+  const atMax = max != undefined && selectedIds && selectedIds.length >= max
+
   return (
     <Col className={clsx('w-full items-start', className)}>
       <Combobox
@@ -89,6 +93,7 @@ export function TopicSelector(props: {
         onChange={handleSelectGroup}
         nullable={true}
         className={'w-full text-sm'}
+        disabled={atMax}
       >
         {label && (
           <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
@@ -99,10 +104,14 @@ export function TopicSelector(props: {
         <div className="relative w-full">
           <Combobox.Button as="div">
             <Combobox.Input
-              className="border-ink-300 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
+              className="border-ink-300 disabled:border-ink-100 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
               onChange={(e) => setQuery(e.target.value)}
               displayValue={(group: Group) => group && group.name}
-              placeholder={placeholder ?? 'e.g. Science, Politics'}
+              placeholder={
+                atMax
+                  ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
+                  : placeholder ?? 'e.g. Science, Politics'
+              }
             />
           </Combobox.Button>
           <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
@@ -121,9 +130,7 @@ export function TopicSelector(props: {
               </>
             ) : (
               searchedGroups
-                .filter(
-                  (group) => !ignoreGroupIds?.some((id) => id == group.id)
-                )
+                .filter((group) => !selectedIds?.some((id) => id == group.id))
                 .map((group: LiteGroup) => (
                   <Combobox.Option
                     key={group.id}

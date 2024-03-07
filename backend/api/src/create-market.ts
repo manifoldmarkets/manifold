@@ -48,6 +48,7 @@ import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-contract'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
 
 type Body = ValidatedAPIParams<'market'>
 const firestore = admin.firestore()
@@ -160,33 +161,33 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         id: contractRef.id,
         slug,
         creator: user,
-        question,
-        outcomeType,
-        description:
-          typeof description !== 'string' && description
-            ? description
-            : anythingToRichText({
-                raw: description,
-                html: descriptionHtml,
-                markdown: descriptionMarkdown,
-                jsonString: descriptionJson,
-                // default: use a single empty space as the description
-              }) ?? htmlToRichText(`<p> </p>`),
-        initialProb: initialProb ?? 50,
-        ante,
-        closeTime,
-        visibility,
-        isTwitchContract,
-        min: min ?? 0,
-        max: max ?? 0,
-        isLogScale: isLogScale ?? false,
-        answers: answers ?? [],
-        addAnswersMode,
-        shouldAnswersSumToOne,
-        loverUserId1,
-        loverUserId2,
-        matchCreatorId,
-        isLove,
+      question,
+      outcomeType,
+      description:
+        typeof description !== 'string' && description
+          ? description
+          : anythingToRichText({
+              raw: description,
+              html: descriptionHtml,
+              markdown: descriptionMarkdown,
+              jsonString: descriptionJson,
+              // default: use a single empty space as the description
+            }) ?? htmlToRichText(`<p> </p>`),
+      initialProb: initialProb ?? 50,
+      ante,
+      closeTime,
+      visibility,
+      isTwitchContract,
+      min: min ?? 0,
+      max: max ?? 0,
+      isLogScale: isLogScale ?? false,
+      answers: answers ?? [],
+      addAnswersMode,
+      shouldAnswersSumToOne,
+      loverUserId1,
+      loverUserId2,
+      matchCreatorId,
+      isLove,
         answerLoverUserIds,
         specialLiquidityPerAnswer,
       })
@@ -317,6 +318,12 @@ function validateMarketBody(body: Body) {
     matchCreatorId,
     isLove,
   } = body
+
+  if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
+    throw new APIError(
+      400,
+      `You may only tag up to ${MAX_GROUPS_PER_MARKET} topics on a question`
+    )
 
   let min: number | undefined,
     max: number | undefined,

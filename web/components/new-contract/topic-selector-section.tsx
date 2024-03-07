@@ -1,4 +1,4 @@
-import { Group } from 'common/group'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
@@ -50,10 +50,7 @@ export const TopicSelectorSection = (props: {
       )}
       <TopicSelector
         setSelectedGroup={(group) => {
-          const topicsAllowed = 4
-          if (selectedGroups.length >= topicsAllowed) {
-            toast.error(`You can only choose up to ${topicsAllowed} topics.`)
-          } else if (group.privacyStatus === 'private') {
+          if (group.privacyStatus === 'private') {
             toast.error('You cannot use private groups.')
           } else {
             setSelectedGroups((groups) =>
@@ -62,7 +59,8 @@ export const TopicSelectorSection = (props: {
           }
           setHasChosenCategory(true)
         }}
-        ignoreGroupIds={selectedGroups.map((g) => g.id)}
+        max={MAX_GROUPS_PER_MARKET}
+        selectedIds={selectedGroups.map((g) => g.id)}
       />
     </Col>
   )

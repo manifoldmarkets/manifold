@@ -27,7 +27,7 @@ import {
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Group } from 'common/group'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import {
   freeQuestionRemaining,
@@ -267,12 +267,15 @@ export function ContractParamsForm(props: {
     // closeTime must be in the future
     !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
+  const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
+
   const isValid =
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
     (ante <= balance || creator.id === BTE_USER_ID) &&
     isValidDate &&
+    isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -297,9 +300,20 @@ export function ContractParamsForm(props: {
         setErrorText(
           `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
         )
+      } else if (!isValidTopics) {
+        // can happen in rare cases when duplicating old question
+        setErrorText(
+          `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
+        )
       }
     }
-  }, [isValid, isValidDate, isValidMultipleChoice, isValidQuestion])
+  }, [
+    isValid,
+    isValidDate,
+    isValidMultipleChoice,
+    isValidQuestion,
+    isValidTopics,
+  ])
 
   const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({

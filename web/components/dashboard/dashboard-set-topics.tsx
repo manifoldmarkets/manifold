@@ -49,7 +49,7 @@ export function DashboardSetTopics(props: {
       </Row>
 
       <TopicSelector
-        ignoreGroupIds={selectedGroups.map((g) => g.id)}
+        selectedIds={selectedGroups.map((g) => g.id)}
         setSelectedGroup={(group) =>
           setSelectedGroups([...selectedGroups, group])
         }

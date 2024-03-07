@@ -33,6 +33,7 @@ export type PrivacyStatusType = 'public' | 'curated' | 'private'
 export const MAX_GROUP_NAME_LENGTH = 75
 export const MAX_ABOUT_LENGTH = 140
 export const MAX_ID_LENGTH = 60
+export const MAX_GROUPS_PER_MARKET = 5
 
 export type GroupLink = {
   slug: string

@@ -14,7 +14,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from 'common/group'
+import { MAX_GROUPS_PER_MARKET, MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
 import { MINIMUM_BOUNTY } from 'common/economy'
 

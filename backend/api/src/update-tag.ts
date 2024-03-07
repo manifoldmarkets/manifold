@@ -6,6 +6,7 @@ import {
   removeGroupFromContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
 
 export const addOrRemoveGroupFromContract: APIHandler<
   'market/:contractId/group'
@@ -39,6 +40,13 @@ export const addOrRemoveGroupFromContract: APIHandler<
   }
   if (group.privacy_status == 'private') {
     throw new APIError(403, `private groups can't be tagged or untagged`)
+  }
+
+  if (!remove && (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET) {
+    throw new APIError(
+      403,
+      `A question can only have up to ${MAX_GROUPS_PER_MARKET} topic tags.`
+    )
   }
 
   const canUpdate = canUserAddGroupToMarket({
