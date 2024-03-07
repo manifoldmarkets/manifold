@@ -164,7 +164,8 @@ export const onCreateBets = async (
       })
   )
 
-  // Handle bonuses, other stuff for non-bot users below:
+  // NOTE: if place-multi-bet is added for any MULTIPLE_CHOICE question, this won't give multiple bonuses for every answer
+  // as it only runs the following once per unique user. This is intentional behavior for NUMBER markets
   await Promise.all(
     uniqueNonRedemptionBetsByUserId
       .filter((bet) => !bet.isApi)
