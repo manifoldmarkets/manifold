@@ -384,6 +384,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  unresolve: {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        contractId: z.string().max(MAX_ANSWER_LENGTH),
+        answerId: z.string().max(MAX_ANSWER_LENGTH).optional(),
+      })
+      .strict(),
+  },
   leagues: {
     method: 'GET',
     visibility: 'public',

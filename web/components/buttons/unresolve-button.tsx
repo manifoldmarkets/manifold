@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Modal } from '../layout/modal'
 import { Button } from './button'
-import { unresolveMarket } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
 import { Input } from '../widgets/input'
 
@@ -43,7 +43,7 @@ export function UnresolveButton(props: { contractId: string }) {
             onClick={() => {
               if (unresolving) return
               setUnresolving(true)
-              unresolveMarket({ contractId })
+              api('unresolve', { contractId })
                 .then(() => {
                   setUnresolving(false)
                   setText('')

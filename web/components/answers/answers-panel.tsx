@@ -40,7 +40,7 @@ import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { useEffect, useMemo, useState } from 'react'
-import { editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
+import { api, editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
 import { Title } from 'web/components/widgets/title'
 import { Input } from 'web/components/widgets/input'
@@ -63,6 +63,7 @@ import { CirclePicker } from 'react-color'
 import { UserHovercard } from '../user/user-hovercard'
 import { searchInAny } from 'common/util/parse'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { XIcon } from '@heroicons/react/solid'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -316,11 +317,15 @@ export const EditAnswerModal = (props: {
   setOpen: (show: boolean) => void
   contract: Contract
   answer: Answer
+  color: string
+  user: User
 }) => {
-  const { answer, contract, open, setOpen } = props
+  const { answer, user, color, contract, open, setOpen } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUnresolving, setIsUnresolving] = useState(false)
 
   const [text, setText] = useState(answer.text)
+  const [unresolveText, setUnresolveText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const editAnswer = async () => {
     if (isSubmitting) return
@@ -346,27 +351,104 @@ export const EditAnswerModal = (props: {
 
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={'bg-canvas-50 rounded-md p-4'}>
-        <Title>Edit answer</Title>
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="w-full"
-        />
-        {error ? <span className="text-red-500">{error}</span> : null}
-
-        <Row className={'mt-2 justify-between'}>
-          <Button
-            color={'gray-outline'}
+      <Col className={'bg-canvas-50 gap-2 rounded-md p-4'}>
+        <Row className={'mb-2 justify-between'}>
+          <Title className={'!mb-2'}>Edit answer</Title>
+          <IconButton
+            size={'sm'}
             disabled={isSubmitting}
             onClick={() => setOpen(false)}
           >
-            Cancel
-          </Button>
-          <Button color={'indigo'} loading={isSubmitting} onClick={editAnswer}>
-            Submit
+            <XIcon className="h-5 w-5" />
+          </IconButton>
+        </Row>
+        <span className={'font-semibold'}>Edit bar color</span>
+        <CustomizeableDropdown
+          menuWidth="200px"
+          buttonClass={clsx(buttonClass('sm', 'gray-outline'), 'h-full')}
+          buttonContent={() => (
+            <div
+              className="h-5 w-5 rounded-full"
+              style={{ background: color }}
+            />
+          )}
+          dropdownMenuContent={(close) => (
+            <CirclePicker
+              className="w-[240px] py-2"
+              onChange={async (change) => {
+                try {
+                  await editAnswerCpmm({
+                    answerId: answer.id,
+                    contractId: contract.id,
+                    color: change.hex,
+                  })
+                } catch (error) {
+                  console.error(error)
+                } finally {
+                  close()
+                }
+              }}
+            />
+          )}
+        />
+        <span className={'font-semibold'}>Edit title</span>
+        <Row className={'gap-1'}>
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="w-full"
+          />
+          <Button
+            size={'xs'}
+            color={'indigo'}
+            loading={isSubmitting}
+            onClick={editAnswer}
+          >
+            Save
           </Button>
         </Row>
+        {(isModId(user.id) ||
+          isAdminId(user.id) ||
+          contract.creatorId === user.id) &&
+          answer.resolutionTime && (
+            <>
+              <span className={'font-semibold'}>Unresolve</span>
+              <Row className={'gap-1'}>
+                <Input
+                  value={unresolveText}
+                  placeholder={'Type UNRESOLVE to unresolve'}
+                  onChange={(e) => setUnresolveText(e.target.value)}
+                  className="w-full"
+                  disabled={isUnresolving}
+                />
+                <Button
+                  size={'xs'}
+                  color={'red'}
+                  loading={isUnresolving}
+                  onClick={async () => {
+                    setIsUnresolving(true)
+                    api('unresolve', {
+                      contractId: contract.id,
+                      answerId: answer.id,
+                    })
+                      .then(() => {
+                        setIsUnresolving(false)
+                        setUnresolveText('')
+                        setOpen(false)
+                      })
+                      .catch((e) => {
+                        setIsUnresolving(false)
+                        setError(e.message)
+                      })
+                  }}
+                  disabled={unresolveText !== 'UNRESOLVE' || isUnresolving}
+                >
+                  Unresolve
+                </Button>
+              </Row>
+            </>
+          )}
+        {error ? <span className="text-red-500">{error}</span> : null}
       </Col>
     </Modal>
   )
@@ -480,7 +562,7 @@ export function Answer(props: {
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
-  const [editAnswer, setEditAnswer] = useState<Answer>()
+  const [editingAnswer, setEditingAnswer] = useState<Answer>()
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isOther = 'isOther' in answer && answer.isOther
@@ -504,6 +586,14 @@ export function Answer(props: {
     () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
     [unfilledBets]
   )
+  const canEdit =
+    user &&
+    'isOther' in answer &&
+    !answer.isOther &&
+    (isAdminId(user.id) ||
+      isModId(user.id) ||
+      user.id === contract.creatorId ||
+      user.id === answer.userId)
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
@@ -599,66 +689,20 @@ export function Answer(props: {
         <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
           <AnswerAvatar answer={answer} isMobile={isMobile} />
           <Row className={'w-full justify-end gap-2'}>
-            {user &&
-              'isOther' in answer &&
-              !answer.isOther &&
-              (isAdminId(user.id) ||
-                isModId(user.id) ||
-                user.id === contract.creatorId ||
-                user.id === answer.userId) && (
-                <CustomizeableDropdown
-                  menuWidth="200px"
-                  buttonClass={clsx(
-                    buttonClass('2xs', 'gray-outline'),
-                    'h-full'
-                  )}
-                  buttonContent={() => (
-                    <div
-                      className="h-4 w-4 rounded-full"
-                      style={{ background: color }}
-                    />
-                  )}
-                  dropdownMenuContent={(close) => (
-                    <CirclePicker
-                      className="w-[240px] py-2"
-                      onChange={async (change) => {
-                        try {
-                          await editAnswerCpmm({
-                            answerId: answer.id,
-                            contractId: contract.id,
-                            color: change.hex,
-                          })
-                        } catch (error) {
-                          console.error(error)
-                        } finally {
-                          close()
-                        }
-                      }}
-                    />
-                  )}
-                />
-              )}
-
-            {user &&
-              'isOther' in answer &&
-              !answer.isOther &&
-              (isAdminId(user.id) ||
-                isModId(user.id) ||
-                user.id === contract.creatorId ||
-                user.id === answer.userId) && (
-                <Button
-                  color={'gray-outline'}
-                  size="2xs"
-                  onClick={() =>
-                    'poolYes' in answer && !answer.isOther
-                      ? setEditAnswer(answer)
-                      : null
-                  }
-                >
-                  <PencilIcon className="mr-1 h-4 w-4" />
-                  Edit
-                </Button>
-              )}
+            {canEdit && (
+              <Button
+                color={'gray-outline'}
+                size="2xs"
+                onClick={() =>
+                  'poolYes' in answer && !answer.isOther
+                    ? setEditingAnswer(answer)
+                    : null
+                }
+              >
+                <PencilIcon className="mr-1 h-4 w-4" />
+                Edit
+              </Button>
+            )}
 
             {unfilledBets?.length && limitOrderVolume ? (
               <OrderBookButton
@@ -690,12 +734,14 @@ export function Answer(props: {
           </Row>
         </Row>
       )}
-      {editAnswer && (
+      {editingAnswer && user && (
         <EditAnswerModal
-          open={!!editAnswer}
-          setOpen={() => setEditAnswer(undefined)}
+          open={!!editingAnswer}
+          setOpen={() => setEditingAnswer(undefined)}
           contract={contract}
-          answer={editAnswer}
+          answer={editingAnswer}
+          color={color}
+          user={user}
         />
       )}
     </Col>

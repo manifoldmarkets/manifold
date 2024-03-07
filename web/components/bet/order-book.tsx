@@ -256,17 +256,9 @@ export function OrderBookButton(props: {
     | StonkContract
     | CPMMMultiContract
     | MultiContract
-  className?: string
   label?: React.ReactNode
-  buttonColor?: 'gray-white'
 }) {
-  const {
-    limitBets,
-    contract,
-    label,
-    className,
-    buttonColor = 'gray-white',
-  } = props
+  const { limitBets, contract, label } = props
   const [open, setOpen] = useState(false)
 
   const yesBets = sortBy(
@@ -286,11 +278,10 @@ export function OrderBookButton(props: {
   return (
     <>
       <Button
-        className={clsx({ className }, ' underline')}
         onClick={() => setOpen(true)}
         disabled={limitBets.length === 0}
         size="xs"
-        color={buttonColor}
+        color={'gray-outline'}
       >
         {label ||
           `${limitBets.length === 0 ? 'Currently' : 'View'} ${

@@ -126,10 +126,6 @@ export function updateMemberRole(params: {
   return call(getApiUrl('updatememberrole'), 'POST', params)
 }
 
-export function unresolveMarket(params: { contractId: string }) {
-  return call(getApiUrl('unresolve'), 'POST', params)
-}
-
 export function updateGroupPrivacy(params: {
   groupId: string
   privacy: PrivacyStatusType

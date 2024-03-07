@@ -287,6 +287,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
   createanswer: createAnswerDpm,
+  unresolve: unresolve,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -373,7 +374,6 @@ app.post(
 )
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
-app.post('/unresolve', ...apiRoute(unresolve))
 
 app.post('/settv', ...apiRoute(settv))
 
