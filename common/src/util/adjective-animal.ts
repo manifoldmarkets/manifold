@@ -169,7 +169,7 @@ const animals = [
   'misfits',
   'titans',
   'demigods',
-  'heros',
+  'heroes',
   'villains',
 ]
 
