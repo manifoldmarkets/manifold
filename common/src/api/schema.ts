@@ -245,6 +245,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'group/:slug/delete': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ slug: z.string() }),
+  },
+  'group/by-id/:id/delete': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ id: z.string() }),
+  },
   groups: {
     method: 'GET',
     visibility: 'public',

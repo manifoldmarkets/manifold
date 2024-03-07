@@ -7,6 +7,7 @@ import {
   DotsVerticalIcon,
   PencilIcon,
   PlusCircleIcon,
+  TrashIcon,
 } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
@@ -25,6 +26,7 @@ import { BiSolidVolumeMute } from 'react-icons/bi'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { DeleteTopicModal } from './delete-topic-modal'
 
 export function TopicOptions(props: {
   group: Group
@@ -36,6 +38,7 @@ export function TopicOptions(props: {
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
   const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
   const isMobile = useIsMobile()
@@ -68,7 +71,12 @@ export function TopicOptions(props: {
           privateUser.blockedGroupSlugs?.includes(group.slug)
             ? unBlockGroup(privateUser, group.slug)
             : blockGroup(privateUser, group.slug),
-      }
+      },
+    userRole === 'admin' && {
+      name: 'Delete',
+      icon: <TrashIcon className="text-scarlet-500 h-5 w-5" />,
+      onClick: () => setShowDelete(true),
+    }
   ) as DropdownItem[]
   return (
     <Col onClick={(e) => e.stopPropagation()}>
@@ -101,6 +109,11 @@ export function TopicOptions(props: {
           user={user}
         />
       )}
+      <DeleteTopicModal
+        group={group}
+        open={showDelete}
+        setOpen={setShowDelete}
+      />
     </Col>
   )
 }

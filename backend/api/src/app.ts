@@ -154,6 +154,7 @@ import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
+import { deleteGroup } from './delete-group'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -227,6 +228,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
     getMarkets({ groupId: id, limit }, ...rest),
+  'group/:slug/delete': deleteGroup,
+  'group/by-id/:id/delete': deleteGroup,
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
