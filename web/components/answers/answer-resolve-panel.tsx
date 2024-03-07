@@ -377,12 +377,13 @@ export function ResolutionAnswerItem(props: {
 
           {showChoice === 'checkbox' && (
             <AmountInput
-              inputClassName="w-16 h-7 !px-2"
+              inputClassName="w-12 h-7 !px-2"
               label=""
               amount={chosenProb ? Math.round(chosenProb) : undefined}
               onChangeAmount={(value) =>
                 onChoose(answer.id, value ? value : undefined)
               }
+              disableClearButton
             />
           )}
           <>

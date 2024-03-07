@@ -28,6 +28,7 @@ export function AmountInput(
     quickAddMoreButton?: ReactNode
     allowFloat?: boolean
     allowNegative?: boolean
+    disableClearButton?: boolean
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -42,6 +43,7 @@ export function AmountInput(
     quickAddMoreButton,
     allowFloat,
     allowNegative,
+    disableClearButton,
     ...rest
   } = props
 
@@ -102,13 +104,15 @@ export function AmountInput(
             }}
           />
           <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
-            <ClearInputButton
-              className={clsx(
-                'w-12 transition-opacity',
-                amount === undefined && 'opacity-0'
-              )}
-              onClick={() => onChangeAmount(undefined)}
-            />
+            {!disableClearButton && (
+              <ClearInputButton
+                className={clsx(
+                  'w-12 transition-opacity',
+                  amount === undefined && 'opacity-0'
+                )}
+                onClick={() => onChangeAmount(undefined)}
+              />
+            )}
             {isAdvancedTrader && quickAddMoreButton}
           </Row>
         </Row>
