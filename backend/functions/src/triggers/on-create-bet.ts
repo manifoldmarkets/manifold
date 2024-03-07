@@ -104,8 +104,9 @@ export const onCreateBet = functions
     if (bet.replyToCommentId)
       await handleBetReplyToComment(bet, contract, bettor, pg)
 
+    const betRemovesLiquidity = bet.isFilled ?? true
     const isApiOrBot = bet.isApi || BOT_USERNAMES.includes(bettor.username)
-    if (isApiOrBot) {
+    if (isApiOrBot && betRemovesLiquidity) {
       // assess flat fee for bots
       const userRef = firestore.doc(`users/${bettor.id}`)
       await userRef.update({
