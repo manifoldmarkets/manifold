@@ -25,6 +25,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
 import { Tabs } from 'web/components/layout/tabs'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export async function getStaticProps() {
   const result = await run(db.from('tv_schedule').select('*').limit(1))
@@ -75,6 +76,8 @@ export default function TVPage(props: {
     contract.mechanism === 'cpmm-multi-1'
   const [showSettings, setShowSettings] = useState(false)
 
+  const isMobile = useIsMobile()
+
   if (!contract) return <div>Loading...</div>
 
   const betPanel = (
@@ -124,16 +127,16 @@ export default function TVPage(props: {
                 <BinaryResolutionOrChance isCol contract={contract} />
               )}
             </Row>
-
-            <Tabs
-              tabs={[
-                { title: 'Market', content: betPanel },
-                { title: 'Chat', content: <PublicChat channelId={'tv'} /> },
-              ]}
-              className="flex xl:hidden"
-            />
-
-            <Col className="hidden xl:flex">{betPanel}</Col>
+            {isMobile ? (
+              <Tabs
+                tabs={[
+                  { title: 'Market', content: betPanel },
+                  { title: 'Chat', content: <PublicChat channelId={'tv'} /> },
+                ]}
+              />
+            ) : (
+              betPanel
+            )}
           </Col>
 
           {isAdmin && (
