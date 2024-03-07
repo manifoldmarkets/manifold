@@ -9,7 +9,6 @@ import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
 import { createuser } from './create-user'
-import { createanswer } from './create-answer'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -153,6 +152,7 @@ import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
+import { createAnswerDpm } from 'api/create-answer-dpm'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -286,6 +286,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
+  createanswer: createAnswerDpm,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -318,7 +319,6 @@ app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
 app.post('/createuser', ...apiRoute(createuser))
-app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))

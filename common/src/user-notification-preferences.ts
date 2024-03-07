@@ -9,16 +9,12 @@ export type notification_preference = keyof notification_preferences
 export type notification_preferences = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[]
-  all_answers_on_watched_markets: notification_destination_types[]
   poll_close_on_watched_markets: notification_destination_types[]
 
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
   all_comments_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
-
-  // Answers
-  all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
   // On users' markets
   your_contract_closed: notification_destination_types[]
@@ -91,7 +87,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
   const defaults: notification_preferences = {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
-    all_answers_on_watched_markets: constructPref(true, false, false),
 
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
@@ -106,13 +101,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     ),
     all_comments_on_contracts_with_shares_in_on_watched_markets: constructPref(
       false,
-      false,
-      false
-    ),
-
-    // Answers
-    all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      true,
       false,
       false
     ),
@@ -197,13 +185,10 @@ export const notificationReasonToSubscriptionType: Partial<
   comment_on_your_contract: 'all_comments_on_my_markets',
   answer_on_your_contract: 'all_answers_on_my_markets',
   comment_on_contract_you_follow: 'all_comments_on_watched_markets',
-  answer_on_contract_you_follow: 'all_answers_on_watched_markets',
   update_on_contract_you_follow: 'market_updates_on_watched_markets',
   resolution_on_contract_you_follow: 'resolutions_on_watched_markets',
   comment_on_contract_with_users_shares_in:
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
-  answer_on_contract_with_users_shares_in:
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
   update_on_contract_with_users_shares_in:
     'market_updates_on_watched_markets_with_shares_in',
   resolution_on_contract_with_users_shares_in:
@@ -211,9 +196,7 @@ export const notificationReasonToSubscriptionType: Partial<
   comment_on_contract_with_users_answer: 'all_comments_on_watched_markets',
   update_on_contract_with_users_answer: 'market_updates_on_watched_markets',
   resolution_on_contract_with_users_answer: 'resolutions_on_watched_markets',
-  answer_on_contract_with_users_answer: 'all_answers_on_watched_markets',
   comment_on_contract_with_users_comment: 'all_comments_on_watched_markets',
-  answer_on_contract_with_users_comment: 'all_answers_on_watched_markets',
   update_on_contract_with_users_comment: 'market_updates_on_watched_markets',
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',

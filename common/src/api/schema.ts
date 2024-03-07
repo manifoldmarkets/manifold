@@ -27,7 +27,7 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
-import { MAX_ANSWER_LENGTH } from 'common/answer'
+import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
@@ -366,6 +366,20 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string().max(MAX_ANSWER_LENGTH),
+        text: z.string().min(1).max(MAX_ANSWER_LENGTH),
+      })
+      .strict(),
+  },
+  // dpm answers
+  createanswer: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { answer: DpmAnswer },
+    props: z
+      .object({
+        contractId: z.string().max(MAX_ANSWER_LENGTH),
+        amount: z.number().gt(0).int().finite(),
         text: z.string().min(1).max(MAX_ANSWER_LENGTH),
       })
       .strict(),

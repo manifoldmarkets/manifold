@@ -254,14 +254,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: "Only replies to your answers on questions you're watching",
     verb: 'replied to you',
   },
-  all_answers_on_watched_markets: {
-    simple: 'All new answers',
-    detailed: "All new answers on questions you're watching",
-  },
-  all_answers_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on questions you've ${PAST_BET}`,
-    detailed: `Answers on questions that you're watching and that you've ${PAST_BET}`,
-  },
   opt_out_all: {
     simple: 'Opt out of all notifications (excludes when your questions close)',
     detailed:

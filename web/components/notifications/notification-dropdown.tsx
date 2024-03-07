@@ -48,6 +48,9 @@ function useNotificationPreferenceItem(notification: Notification) {
   }
   const reason = notification.reason
   const subType = getNotificationPreference(reason)
+  if (!subType) {
+    return []
+  }
   const destinations = getUsersSavedPreference(subType, privateUser)
 
   const inAppEnabled = destinations.includes('browser')

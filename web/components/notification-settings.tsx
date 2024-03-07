@@ -7,7 +7,6 @@ import {
   ExclamationIcon,
   InboxInIcon,
   InformationCircleIcon,
-  LightBulbIcon,
   RefreshIcon,
   TrendingUpIcon,
   UserIcon,
@@ -48,9 +47,7 @@ const emailsEnabled: Array<notification_preference> = [
   'all_replies_to_my_comments_on_watched_markets',
   'all_comments_on_contracts_with_shares_in_on_watched_markets',
 
-  'all_answers_on_watched_markets',
   'all_replies_to_my_answers_on_watched_markets',
-  'all_answers_on_contracts_with_shares_in_on_watched_markets',
 
   'your_contract_closed',
   'all_comments_on_my_markets',
@@ -118,13 +115,6 @@ const comments: NotificationSectionData = {
   ],
 }
 
-const answers: NotificationSectionData = {
-  label: 'New Answers',
-  subscriptionTypes: [
-    'all_answers_on_watched_markets',
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
-  ],
-}
 const updates: NotificationSectionData = {
   label: 'Updates & Resolutions',
   subscriptionTypes: [
@@ -225,10 +215,6 @@ export function NotificationSettings(props: {
         <NotificationSection
           icon={<TrendingUpIcon className={'h-6 w-6'} />}
           data={updates}
-        />
-        <NotificationSection
-          icon={<LightBulbIcon className={'h-6 w-6'} />}
-          data={answers}
         />
         <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}

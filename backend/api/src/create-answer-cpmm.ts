@@ -20,8 +20,7 @@ import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { log } from 'shared/utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
-import * as crypto from 'crypto'
+import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
@@ -190,17 +189,17 @@ export const createAnswerCpmmMain = async (
   if (shouldAnswersSumToOne && addAnswersMode !== 'DISABLED') {
     await convertOtherAnswerShares(contractId, newAnswerId)
   }
-  await createCommentOrAnswerOrUpdatedContractNotification(
-    newAnswerId,
-    'answer',
-    'created',
-    user,
-    crypto.randomUUID(),
-    text,
-    contract
-  )
-  await addUserToContractFollowers(contractId, creatorId)
-  return { newAnswerId }
+
+  const continuation = async () => {
+    await createNewAnswerOnContractNotification(
+      newAnswerId,
+      user,
+      text,
+      contract
+    )
+    await addUserToContractFollowers(contractId, creatorId)
+  }
+  return { result: { newAnswerId }, continue: continuation }
 }
 
 async function createAnswerAndSumAnswersToOne(

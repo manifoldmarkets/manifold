@@ -6,7 +6,7 @@ import {
   processPaginated,
   revalidateContractStaticProps,
 } from 'shared/utils'
-import { createCommentOrAnswerOrUpdatedContractNotification } from 'shared/create-notification'
+import { createCommentOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract, CPMMMultiContract, MultiContract } from 'common/contract'
 import * as admin from 'firebase-admin'
 import { difference, isEqual, pick } from 'lodash'
@@ -151,7 +151,7 @@ async function handleUpdatedCloseTime(
     sourceText = contract.question
   }
 
-  await createCommentOrAnswerOrUpdatedContractNotification(
+  await createCommentOrUpdatedContractNotification(
     contract.id,
     'contract',
     'updated',
