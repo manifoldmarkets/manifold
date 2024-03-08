@@ -966,6 +966,18 @@ export const API = (_apiTypeCheck = {
       channelId: z.string(),
     }),
   },
+  'get-followed-groups': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as {
+      status: 'success'
+      groups: Group[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

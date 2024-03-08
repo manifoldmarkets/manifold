@@ -153,6 +153,7 @@ import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createAnswerDpm } from 'api/create-answer-dpm'
+import { getFollowedGroups } from './get-followed-groups'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -288,6 +289,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'create-public-chat-message': createPublicChatMessage,
   createanswer: createAnswerDpm,
   unresolve: unresolve,
+  'get-followed-groups': getFollowedGroups,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

@@ -45,7 +45,7 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { User } from 'common/user'
-import { Group } from 'common/group'
+import { YourTopicsSection } from 'web/components/topics/your-topics'
 
 export async function getStaticProps() {
   try {
@@ -140,7 +140,7 @@ export function HomeContent(props: {
       )}
       <Tabs
         className="bg-canvas-50 sticky top-6 z-10 mb-1 px-1"
-        tabs={[
+        tabs={buildArray(
           {
             title: 'Feed',
             content: privateUser && (
@@ -153,7 +153,12 @@ export function HomeContent(props: {
             content: <BrowseSection privateUser={privateUser} user={user} />,
             prerender: true,
           },
-        ]}
+          user && {
+            title: 'Follow topics',
+            content: <YourTopicsSection user={user} />,
+            prerender: false,
+          }
+        )}
       />
       <button
         type="button"
@@ -185,10 +190,7 @@ const BrowseSection = (props: {
   )
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
   const userTrendingTopics = useUserTrendingTopics(user, 25)
-  const trendingTopics = useTrendingTopics(
-    50,
-    'home-page-trending-topics'
-  ) as Group[]
+  const trendingTopics = useTrendingTopics(50, 'home-page-trending-topics')
   const topics = uniqBy(
     [...(userTrendingTopics ?? []), ...(trendingTopics ?? [])],
     'slug'
