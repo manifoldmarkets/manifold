@@ -29,7 +29,7 @@ export const BrowseTopicPills = (props: {
     <Col className={className}>
       <Row
         className={clsx(
-          'gap-1 overflow-auto',
+          'gap-x-1 gap-y-2 overflow-auto',
           showMore ? 'h-[12.75rem] flex-wrap' : 'scrollbar-hide h-[2rem]'
         )}
       >

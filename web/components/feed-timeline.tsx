@@ -1,4 +1,4 @@
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { useIsAuthorized, useShouldBlockDestiny } from 'web/hooks/use-user'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
 import { range, uniq, uniqBy } from 'lodash'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { DAY_MS, MINUTE_MS } from 'common/util/time'
 import {
   DAYS_TO_USE_FREE_QUESTIONS,
@@ -25,6 +25,13 @@ import {
 } from 'common/user'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { Tabs } from './layout/tabs'
+import { SupabaseSearch } from './supabase-search'
+import { BrowseTopicPills } from './topics/browse-topic-pills'
+import { useTrendingTopics, useUserTrendingTopics } from './search/query-topics'
+import { Group } from 'common/group'
+import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function FeedTimeline(props: {
   user: User | undefined | null
@@ -36,9 +43,9 @@ export function FeedTimeline(props: {
     user?.createdTime
   )
   return (
-    <Col className="w-full items-center pb-4 sm:px-2">
+    <Col className="w-full pb-4 sm:px-2">
       {user && remaining > 0 && (
-        <Row className="text-md mb-2 items-center justify-between gap-2 rounded-md border-2 border-indigo-500 p-2">
+        <Row className="text-md mb-2 items-center justify-between gap-2 self-center rounded-md border-2 border-indigo-500 p-2">
           <span>
             🎉 You've got{' '}
             <span className="font-semibold">{remaining} free questions</span>!
@@ -51,9 +58,23 @@ export function FeedTimeline(props: {
           <CreateQuestionButton className={'max-w-[10rem]'} />
         </Row>
       )}
-      {privateUser && (
-        <FeedTimelineContent user={user} privateUser={privateUser} />
-      )}
+      <Tabs
+        className="bg-canvas-50 sticky top-6 z-10 mb-1 px-1"
+        tabs={[
+          {
+            title: 'Feed',
+            content: privateUser && (
+              <FeedTimelineContent user={user} privateUser={privateUser} />
+            ),
+            prerender: true,
+          },
+          {
+            title: 'Browse',
+            content: <BrowseSection privateUser={privateUser} user={user} />,
+            prerender: true,
+          },
+        ]}
+      />
       <button
         type="button"
         className={clsx(
@@ -221,5 +242,56 @@ const NewActivityButton = (props: {
         <div className="ml-1">New updates</div>
       </Row>
     </button>
+  )
+}
+
+const BrowseSection = (props: {
+  privateUser: PrivateUser | null | undefined
+  user: User | undefined | null
+}) => {
+  const { privateUser, user } = props
+
+  const [topicSlug, setTopicSlug] = usePersistentInMemoryState(
+    '',
+    'home-browse'
+  )
+  const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
+  const userTrendingTopics = useUserTrendingTopics(user, 25)
+  const trendingTopics = useTrendingTopics(
+    50,
+    'home-page-trending-topics'
+  ) as Group[]
+  const topics = uniqBy(
+    [...(userTrendingTopics ?? []), ...trendingTopics],
+    'slug'
+  )
+
+  return (
+    <Col>
+      <BrowseTopicPills
+        className={'relative w-full py-1 pl-1'}
+        topics={topics}
+        currentTopicSlug={topicSlug}
+        setTopicSlug={(slug) => setTopicSlug(slug === topicSlug ? '' : slug)}
+      />
+      <SupabaseSearch
+        persistPrefix="browse-home"
+        autoFocus={false}
+        additionalFilter={{
+          excludeContractIds: privateUser?.blockedContractIds,
+          excludeGroupSlugs: buildArray(
+            privateUser?.blockedGroupSlugs,
+            shouldFilterDestiny &&
+              !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
+              DESTINY_GROUP_SLUGS
+          ),
+          excludeUserIds: privateUser?.blockedUserIds,
+        }}
+        hideSearch
+        hideContractFilters
+        topicSlug={topicSlug}
+        contractsOnly
+      />
+    </Col>
   )
 }
