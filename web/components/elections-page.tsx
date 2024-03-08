@@ -89,10 +89,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
         </div>
       </Col>
 
-      <Banner link="/tv" className="hover:underline">
-        State of the Union watch-party 9 pm ET 📺 🇺🇸
-      </Banner>
-
       <PoliticsCard
         contract={electionCandidateContract as MultiContract}
         viewType="CANDIDATE"
