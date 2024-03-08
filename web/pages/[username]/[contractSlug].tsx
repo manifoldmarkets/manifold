@@ -36,7 +36,7 @@ import { MarketTopics } from 'web/components/contract/market-topics'
 import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsGrid,
-  RelatedContractsList,
+  SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { ExplainerPanel } from 'web/components/explainer-panel'
@@ -598,7 +598,7 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && <ExplainerPanel />}
 
-          <RelatedContractsList
+          <SidebarRelatedContractsList
             contracts={relatedMarkets}
             loadMore={loadMore}
             topics={topics}

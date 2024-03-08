@@ -27,7 +27,7 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { UserHovercard } from '../user/user-hovercard'
 
-export const RelatedContractsList = memo(function (props: {
+export const SidebarRelatedContractsList = memo(function (props: {
   contracts: Contract[]
   loadMore?: () => Promise<boolean>
   topics?: Topic[]
@@ -153,19 +153,20 @@ export const RelatedContractsGrid = memo(function (props: {
       contracts.slice(0, MAX_CONTRACTS_PER_GROUP).map((c) => c.id)
     )
     .flat()
+  const titleClass = 'text-ink-600 mb-2 text-xl'
 
   return (
     <Col
       ref={ref}
       className={clsx(
         className,
-        'mb-2 mt-4 flex-1 py-2 xl:hidden',
+        'bg-canvas-50 -mx-4 mb-2 mt-4 flex-1 px-4 py-2 xl:hidden',
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
       {relatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
-          <h2 className={clsx('mb-1 text-lg')}>
+          <h2 className={clsx(titleClass)}>
             <Link className={linkClass} href={`/browse/${topic.slug}`}>
               Related in {removeEmojis(topic.name)}
             </Link>
@@ -203,13 +204,13 @@ export const RelatedContractsGrid = memo(function (props: {
           </Row>
         </Col>
       ))}
-      <h2 className={clsx('mb-2 text-lg')}>
+      <h2 className={clsx(titleClass)}>
         {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
       </h2>
       <Col
         className={clsx(
           'scrollbar-hide overflow-y-auto scroll-smooth',
-          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-48'
+          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-64'
         )}
       >
         <Masonry
