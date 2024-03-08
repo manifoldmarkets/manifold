@@ -520,7 +520,6 @@ export const SellButton = (props: {
       )}
       <Button color={'gray-outline'} onClick={() => setOpen(true)}>
         <Col>
-          <span className={'font-bold'}>{formatPercent(answer.prob)}</span>
           <span>{answer.text}</span>
           <span>Sell {Math.round(sharesSum)} shares</span>
         </Col>

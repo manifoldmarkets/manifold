@@ -60,7 +60,8 @@ export function SellPanel(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne
+    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
+    outcomeType === 'NUMBER'
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)
@@ -353,7 +354,7 @@ const getSaleResult = (
 }
 
 const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answerId: string,
   shares: number,
   outcome: 'YES' | 'NO',
