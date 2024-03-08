@@ -76,7 +76,7 @@ export default function TVPage(props: {
     contract.mechanism === 'cpmm-multi-1'
   const [showSettings, setShowSettings] = useState(false)
 
-  const isMobile = useIsMobile()
+  const isMobile = useIsMobile(1280) //xl
 
   if (!contract) return <div>Loading...</div>
 
@@ -94,7 +94,7 @@ export default function TVPage(props: {
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO title="Manifold TV" description="Stream and trade" />
-      <Row className="w-full items-start justify-center gap-8">
+      <Row className="w-full items-start">
         <Col
           className={clsx(
             'bg-canvas-0 w-full  rounded-b ',
@@ -112,7 +112,7 @@ export default function TVPage(props: {
             className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"
           ></iframe>
 
-          <Col className={clsx('mb-4 p-4 md:pb-8 lg:px-8')}>
+          <Col className="mb-4 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
               <Row className="gap-2 text-xl font-medium sm:text-2xl">
                 <Link
@@ -131,7 +131,12 @@ export default function TVPage(props: {
               <Tabs
                 tabs={[
                   { title: 'Market', content: betPanel },
-                  { title: 'Chat', content: <PublicChat channelId={'tv'} /> },
+                  {
+                    title: 'Chat',
+                    content: (
+                      <PublicChat channelId={'tv'} className="bg-canvas-50" />
+                    ),
+                  },
                 ]}
               />
             ) : (
@@ -157,7 +162,7 @@ export default function TVPage(props: {
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
             </Row>
-            <PublicChat channelId={'tv'} className="gap-2" />
+            <PublicChat channelId={'tv'} />
           </Col>
         </Col>
       </Row>

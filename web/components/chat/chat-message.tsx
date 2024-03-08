@@ -48,7 +48,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   return (
     <Row
       className={clsx(
-        'items-end justify-start gap-1',
+        '@container items-end justify-start gap-1',
         isMe && 'flex-row-reverse',
         firstOfUser ? 'mt-2' : 'mt-1'
       )}
@@ -61,7 +61,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
           userId={id}
         />
       )}
-      <Col className="max-w-[calc(100vw-6rem)] md:max-w-[80%]">
+      <Col className="@sm:max-w-[calc(100vw-6rem)] @md:max-w-[80%] max-w-[calc(100vw-2rem)]">
         {firstOfUser && !isMe && chat.visibility !== 'system_status' && (
           <Row className={'items-center gap-3'}>
             <Link

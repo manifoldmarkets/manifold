@@ -504,6 +504,7 @@ module.exports = {
   plugins: [
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
+    require('@tailwindcss/container-queries'),
     plugin(function ({ addUtilities }) {
       addUtilities({
         '.scrollbar-hide': {
