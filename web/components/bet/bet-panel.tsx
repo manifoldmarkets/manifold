@@ -193,7 +193,11 @@ export function BuyPanel(props: {
       })
       .catch((e) => {
         if (e instanceof APIError) {
-          setError(e.message.toString())
+          const message = e.message.toString()
+          if (message.includes('cross-transaction contention')) {
+            setError('Error placing bet')
+            console.error('Error placing bet', e)
+          } else setError(message)
         } else {
           console.error(e)
           setError('Error placing bet')
