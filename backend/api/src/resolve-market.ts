@@ -1,6 +1,11 @@
 import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
-import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  Contract,
+  MultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { log, getUser } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
@@ -137,7 +142,7 @@ function getResolutionParams(
       resolutions: undefined,
     }
   } else if (
-    outcomeType === 'MULTIPLE_CHOICE' &&
+    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
     contract.mechanism === 'cpmm-multi-1'
   ) {
     const cpmmMultiParams = validate(resolveMultiSchema, props)
@@ -226,7 +231,10 @@ function validateAnswer(contract: MultiContract, answer: number) {
     throw new APIError(403, `${answer} is not a valid answer ID`)
   }
 }
-function validateAnswerCpmm(contract: CPMMMultiContract, answerId: string) {
+function validateAnswerCpmm(
+  contract: CPMMMultiContract | CPMMNumericContract,
+  answerId: string
+) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answerId)) {
     throw new APIError(403, `${answerId} is not a valid answer ID`)

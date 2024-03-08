@@ -83,5 +83,7 @@ export function formatExpectedValue(
   value: number,
   contract: CPMMNumericContract
 ) {
+  // There are a few NaN values on dev
+  if (isNaN(value)) return 'N/A'
   return value.toFixed(getDecimalPlaces(contract))
 }

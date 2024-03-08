@@ -148,7 +148,7 @@ export const ContractOverview = memo(
         )
       case 'NUMBER':
         return (
-          <NumericChoiceOverview
+          <MultiNumericOverview
             contract={contract}
             points={betPoints as any}
             showResolver={showResolver}
@@ -674,7 +674,7 @@ const ChoiceOverview = (props: {
     </>
   )
 }
-const NumericChoiceOverview = (props: {
+const MultiNumericOverview = (props: {
   points: MultiPoints
   contract: CPMMNumericContract
   showResolver: boolean
@@ -753,13 +753,15 @@ const NumericChoiceOverview = (props: {
       ) : (
         <>
           {resolutionRating}
-          <NumericBetPanel contract={contract} />
           {tradingAllowed(contract) && (
-            <UserBetsSummary
-              className="border-ink-200 !mb-2 mt-2 "
-              contract={contract}
-              includeSellButton={user}
-            />
+            <>
+              <NumericBetPanel contract={contract} />
+              <UserBetsSummary
+                className="border-ink-200 !mb-2 mt-2 "
+                contract={contract}
+                includeSellButton={user}
+              />
+            </>
           )}
         </>
       )}

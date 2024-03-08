@@ -207,6 +207,11 @@ export function NumericValueLabel(props: { value: number }) {
   return <span className="text-sky-600">{formatLargeNumber(value)}</span>
 }
 
+export function MultiNumericValueLabel(props: { formattedValue: string }) {
+  const { formattedValue } = props
+  return <span className="text-sky-600">{formattedValue}</span>
+}
+
 export function BetOutcomeLabel(props: {
   contractOutcomeType: OutcomeType
   bet: Bet

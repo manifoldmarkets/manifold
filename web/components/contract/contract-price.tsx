@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import {
   BinaryContractOutcomeLabel,
   CancelLabel,
+  MultiNumericValueLabel,
   NumericValueLabel,
 } from 'web/components/outcome-label'
 import { getMappedValue } from 'common/pseudo-numeric'
@@ -20,7 +21,11 @@ import { animated } from '@react-spring/web'
 import { getTextColor } from 'web/components/contract/text-color'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
+import {
+  formatExpectedValue,
+  getExpectedValue,
+  getMultiNumericAnswerToRange,
+} from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -146,6 +151,11 @@ export function MultiNumericResolutionOrExpectation(props: {
   const value = getExpectedValue(contract)
   const formattedValue = formatExpectedValue(value, contract)
   const spring = useAnimatedNumber(value)
+  const resolutionBuckets = contract.answers
+    .filter((a) => resolutions && resolutions[a.id])
+    .map((a) => getMultiNumericAnswerToRange(a.text))
+  const smallestBucket = Math.min(...resolutionBuckets.map((b) => b[0]))
+  const largestBucket = Math.max(...resolutionBuckets.map((b) => b[1]))
 
   return (
     <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
@@ -157,7 +167,13 @@ export function MultiNumericResolutionOrExpectation(props: {
           ) : (
             <>
               <Tooltip text={formattedValue} placement="bottom">
-                <NumericValueLabel value={value} />
+                <MultiNumericValueLabel
+                  formattedValue={
+                    formatExpectedValue(smallestBucket, contract) +
+                    '-' +
+                    formatExpectedValue(largestBucket, contract)
+                  }
+                />
               </Tooltip>
             </>
           )}
