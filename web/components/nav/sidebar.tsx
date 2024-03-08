@@ -165,11 +165,6 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    {
-      name: 'US Politics',
-      href: '/politics',
-      icon: GiCapitol,
-    },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
