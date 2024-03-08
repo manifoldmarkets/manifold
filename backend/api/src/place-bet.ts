@@ -148,20 +148,7 @@ export const placeBetMain = async (
               'Cannot bet until at least two answers are added.'
             )
 
-          let roundedLimitProb = limitProb
-          if (limitProb !== undefined) {
-            const isRounded = floatingEqual(
-              Math.round(limitProb * 100),
-              limitProb * 100
-            )
-            if (!isRounded)
-              throw new APIError(
-                400,
-                'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-              )
-
-            roundedLimitProb = Math.round(limitProb * 100) / 100
-          }
+          const roundedLimitProb = getRoundedLimitProb(limitProb)
 
           const { unfilledBets, balanceByUserId } =
             await getUnfilledBetsAndUserBalances(
@@ -553,4 +540,16 @@ export const updateMakers = (
     const userDoc = firestore.collection('users').doc(userId)
     trans.update(userDoc, { balance: FieldValue.increment(-spent) })
   }
+}
+
+export const getRoundedLimitProb = (limitProb: number | undefined) => {
+  if (limitProb === undefined) return limitProb
+  const isRounded = floatingEqual(Math.round(limitProb * 100), limitProb * 100)
+  if (!isRounded)
+    throw new APIError(
+      400,
+      'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+    )
+
+  return Math.round(limitProb * 100) / 100
 }

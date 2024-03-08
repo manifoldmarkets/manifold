@@ -3,12 +3,12 @@ import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { BetInfo, CandidateBet, getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Bet, LimitBet } from 'common/bet'
-import { floatingEqual } from 'common/util/math'
 import { Answer } from 'common/answer'
 import { CpmmState } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
+  getRoundedLimitProb,
   getUnfilledBetsAndUserBalances,
   maker,
   processNewBetResult,
@@ -77,20 +77,7 @@ export const placeMultiBetMain = async (
           'Cannot bet until at least two answers are added.'
         )
 
-      let roundedLimitProb = limitProb
-      if (limitProb !== undefined) {
-        const isRounded = floatingEqual(
-          Math.round(limitProb * 100),
-          limitProb * 100
-        )
-        if (!isRounded)
-          throw new APIError(
-            400,
-            'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-          )
-
-        roundedLimitProb = Math.round(limitProb * 100) / 100
-      }
+      const roundedLimitProb = getRoundedLimitProb(limitProb)
       const unfilledBetsAndBalances = await Promise.all(
         answerIds.map(
           async (answerId) =>
