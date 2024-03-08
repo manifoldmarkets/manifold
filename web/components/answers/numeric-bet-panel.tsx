@@ -91,11 +91,10 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
 
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
-
     return mode === 'less than'
       ? answerRange[0] < amount
       : mode === 'more than'
-      ? answerRange[0] >= amount
+      ? answerRange[0] >= amount || answerRange[1] > amount
       : mode === 'about right'
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
