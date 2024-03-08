@@ -23,9 +23,6 @@ import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { linkClass } from 'web/components/widgets/site-link'
 import { removeEmojis } from 'common/topics'
 import { useRemainingNewUserSignupBonuses } from 'web/hooks/use-request-new-user-signup-bonus'
-import { MARKET_VISIT_BONUS } from 'common/economy'
-import { formatMoney } from 'common/util/format'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { UserHovercard } from '../user/user-hovercard'
@@ -51,7 +48,6 @@ export const RelatedContractsList = memo(function (props: {
 
   return (
     <Col className={clsx(className, 'flex-1')}>
-      <VisitNewMarketForBonuses />
       {relatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
           <h2 className={clsx('text-ink-600 mb-2 text-lg')}>
@@ -167,7 +163,6 @@ export const RelatedContractsGrid = memo(function (props: {
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
-      {hasRelatedContractByTopic && <VisitNewMarketForBonuses />}
       {relatedContractsByTopic?.map((topic) => (
         <Col key={'related-topics-' + topic.id} className={'my-2'}>
           <h2 className={clsx('mb-1 text-lg')}>
@@ -210,9 +205,6 @@ export const RelatedContractsGrid = memo(function (props: {
       ))}
       <h2 className={clsx('mb-2 text-lg')}>
         {hasRelatedContractByTopic ? 'More related ' : 'Related '} questions
-        {!hasRelatedContractByTopic && (
-          <VisitNewMarketForBonuses inline={true} />
-        )}
       </h2>
       <Col
         className={clsx(
@@ -259,36 +251,6 @@ export const RelatedContractsGrid = memo(function (props: {
     </Col>
   )
 })
-
-const VisitNewMarketForBonuses = (props: {
-  inline?: boolean
-  className?: string
-}) => {
-  const { className, inline } = props
-  const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
-  if (remainingMarketsToVisit <= 0) return <div />
-  const upTo = formatMoney(remainingMarketsToVisit * MARKET_VISIT_BONUS)
-
-  return (
-    <div
-      className={clsx(
-        'text-ink-950 my-2 items-center text-lg font-medium',
-        className
-      )}
-    >
-      {inline && <span> - </span>}
-      Earn
-      <span className={'mx-1 font-semibold text-teal-500'}>{upTo}</span>
-      for visiting other markets!{' '}
-      <InfoTooltip
-        className={'mb-0.5 !h-4 !w-4'}
-        text={`Earn a ${formatMoney(
-          MARKET_VISIT_BONUS
-        )} bonus for each new market you visit, up to ${upTo}.`}
-      />
-    </div>
-  )
-}
 
 const SidebarRelatedContractCard = memo(function (props: {
   contract: Contract
