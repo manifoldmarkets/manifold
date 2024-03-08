@@ -58,7 +58,10 @@ import {
   getUniqueBettorIdsForAnswer,
 } from 'shared/supabase/contracts'
 import { Answer } from 'common/answer'
-import { removeUndefinedProps } from 'common/util/object'
+import {
+  removeNullOrUndefinedProps,
+  removeUndefinedProps,
+} from 'common/util/object'
 import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
@@ -131,7 +134,7 @@ export const onCreateBets = async (
     })
   )
   if (usersToRefreshMetrics.length > 0) {
-    await updateContractMetrics(
+    await updateUserContractMetrics(
       contract,
       uniqBy(usersToRefreshMetrics, 'id'),
       bets,
@@ -139,7 +142,7 @@ export const onCreateBets = async (
     )
     log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
   }
-  debouncedRevalidateContractStaticProps(contract)
+  debouncedContractUpdates(contract)
 
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
@@ -183,8 +186,6 @@ export const onCreateBets = async (
             !bet.isSold &&
             addUserToContractFollowers(contract.id, bettor.id),
 
-          updateUniqueBettors(contract, bet),
-
           updateUserInterestEmbedding(pg, bettor.id),
 
           addToLeagueIfNotInOne(pg, bettor.id),
@@ -198,14 +199,43 @@ export const onCreateBets = async (
   )
 }
 
-const debouncedRevalidateContractStaticProps = (contract: Contract) => {
-  const revalidate = async () => {
-    revalidateContractStaticProps(contract).then(() => {
-      log('Contract static props revalidated.')
+const debouncedContractUpdates = (contract: Contract) => {
+  const writeUpdates = async () => {
+    const pg = createSupabaseDirectClient()
+    const { uniqueBettorCount } = contract
+    const result = await pg.oneOrNone(
+      `
+        select
+          (select sum(amount) from contract_bets where contract_id = $1) as volume,
+          (select max(created_time) from contract_bets where contract_id = $1) as time,
+          (select count(distinct user_id) from contract_bets where contract_id = $1) as count
+      `,
+      [contract.id]
+    )
+    const { volume, time: lastBetTime, count } = result
+    log('Got updated stats for contract id: ' + contract.id, {
+      volume,
+      lastBetTime,
+      count,
     })
+
+    await firestore.doc(`contracts/${contract.id}`).update(
+      removeNullOrUndefinedProps({
+        volume,
+        lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
+        lastUpdatedTime: Date.now(),
+        uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+      })
+    )
+    log('Wrote debounced updates for contract id: ' + contract.id)
+    await revalidateContractStaticProps(contract)
+    log('Contract static props revalidated.')
   }
-  const key = `revalidate-contract-static-props-${contract.id}`
-  debounce(key, revalidate, 2000)
+  debounce(
+    `update-contract-props-and-static-props-${contract.id}`,
+    writeUpdates,
+    3000
+  )
 }
 
 const notifyUsersOfLimitFills = async (
@@ -259,7 +289,7 @@ const notifyUsersOfLimitFills = async (
   )
 }
 
-const updateContractMetrics = async (
+const updateUserContractMetrics = async (
   contract: Contract,
   users: User[],
   recentBets: Bet[],
@@ -402,19 +432,6 @@ const updateBettingStreak = async (
       eventId
     )
   }
-}
-
-export const updateUniqueBettors = async (contract: Contract, bet: Bet) => {
-  const pg = createSupabaseDirectClient()
-  const contractDoc = firestore.collection(`contracts`).doc(contract.id)
-  const supabaseUniqueBettorIds = await getUniqueBettorIds(contract.id, pg)
-  if (!supabaseUniqueBettorIds.includes(bet.userId))
-    supabaseUniqueBettorIds.push(bet.userId)
-
-  if (contract.uniqueBettorCount == supabaseUniqueBettorIds.length) return
-  await contractDoc.update({
-    uniqueBettorCount: supabaseUniqueBettorIds.length,
-  })
 }
 
 const giveUniqueBettorAndLiquidityBonus = async (
