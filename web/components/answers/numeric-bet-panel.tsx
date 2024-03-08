@@ -433,10 +433,10 @@ const BetButton = (props: {
       >
         <Col
           style={{
-            height: `${answer.prob * 200}px`,
+            height: `${52 + answer.prob * 150}px`,
           }}
           className={
-            'min-h-[2.6rem] w-full min-w-[2rem] items-center justify-between '
+            'min-h-[52px] w-full min-w-[2rem] items-center justify-between '
           }
         >
           <span className={'text-base'}>{formatPercent(answer.prob)}</span>
