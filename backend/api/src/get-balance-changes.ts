@@ -177,6 +177,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
       const nextBetExists = i < bets.length - 1
       const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
       if (isRedemption && nextBetIsRedemption) continue
+      if (isRedemption && amount === 0) continue
 
       const { question, visibility, creatorUsername, slug } = contract
       const text =
@@ -212,7 +213,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           balanceChanges.push(balanceChange)
         }
       } else {
-        const changeToBalance = isRedemption ? -shares : -amount
+        const changeToBalance = isRedemption ? Math.abs(shares) : -amount
         const balanceChange = {
           ...balanceChangeProps,
           type: isRedemption
