@@ -38,8 +38,10 @@ export function CreateAnswerCpmmPanel(props: {
   children?: React.ReactNode
   close?: () => void
   placeholder?: string
+  autoFocus?: boolean
 }) {
-  const { contract, text, setText, children, close, placeholder } = props
+  const { contract, text, setText, children, close, placeholder, autoFocus } =
+    props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -71,7 +73,7 @@ export function CreateAnswerCpmmPanel(props: {
         rows={1}
         maxLength={MAX_ANSWER_LENGTH}
         onBlur={() => !text && close?.()}
-        autoFocus
+        autoFocus={autoFocus}
       />
 
       <Row className="justify-between">
@@ -280,6 +282,7 @@ export function SearchCreateAnswerPanel(props: {
         setText={setText}
         close={() => setIsSearchOpen?.(false)}
         placeholder="Search"
+        autoFocus
       >
         {children}
       </CreateAnswerCpmmPanel>
