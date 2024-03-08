@@ -27,7 +27,10 @@ export const MultiNumericRangeSection = (props: {
     paramsKey,
   } = props
   useEffect(() => {
-    if (max === undefined || min === undefined) return
+    if (max === undefined || min === undefined) {
+      setBuckets(undefined)
+      return
+    }
     const ranges = getMultiNumericAnswerBucketRanges(min, max)
     setBuckets(ranges)
   }, [max, min])
@@ -36,7 +39,7 @@ export const MultiNumericRangeSection = (props: {
     undefined,
     'new-buckets' + paramsKey
   )
-  const [showBuckets, _] = useState(false)
+  const [showBuckets, _] = useState(true)
   const bucketsToShow = 2
   return (
     <Col>
@@ -53,8 +56,6 @@ export const MultiNumericRangeSection = (props: {
             placeholder="Low"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setMinString(e.target.value)}
-            min={Number.MIN_SAFE_INTEGER}
-            max={Number.MAX_SAFE_INTEGER}
             disabled={submitState === 'LOADING'}
             value={minString ?? ''}
           />
@@ -64,22 +65,9 @@ export const MultiNumericRangeSection = (props: {
             placeholder="High"
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => setMaxString(e.target.value)}
-            min={Number.MIN_SAFE_INTEGER}
-            max={Number.MAX_SAFE_INTEGER}
             disabled={submitState === 'LOADING'}
             value={maxString}
           />
-          {buckets && showBuckets && (
-            <Row className={'items-center gap-2'}>
-              <span>E.g. </span>
-              {buckets.slice(0, bucketsToShow).map((a, i) => (
-                <span key={a[0]}>
-                  {a[0]}-{a[1]}
-                  {bucketsToShow === i + 1 ? '' : ', '}
-                </span>
-              ))}
-            </Row>
-          )}
         </Row>
 
         {min !== undefined && max !== undefined && min >= max && (
@@ -88,6 +76,29 @@ export const MultiNumericRangeSection = (props: {
           </div>
         )}
       </Col>
+      {buckets && showBuckets && (
+        <Col>
+          <label className="gap-2 px-1 py-2">
+            <span className="mb-1">Buckets </span>
+            <InfoTooltip text="Users will trade on the sum of the probability of each bucket x their value" />
+          </label>
+          <Row className={'ml-1 flex-wrap items-center gap-2'}>
+            {buckets.slice(0, bucketsToShow).map((a, i) => (
+              <span key={a[0]}>
+                {a[0]}-{a[1]}
+                {i === 0 ? ', ' : ''}
+              </span>
+            ))}
+            {buckets.length > 4 && <span>...</span>}
+            {buckets.slice(-bucketsToShow).map((a, i) => (
+              <span key={a[0]}>
+                {a[0]}-{a[1]}
+                {bucketsToShow === i + 1 ? '' : ', '}
+              </span>
+            ))}
+          </Row>
+        </Col>
+      )}
     </Col>
   )
 }

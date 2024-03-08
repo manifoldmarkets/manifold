@@ -16,11 +16,7 @@ import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatPercent,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { MultiSeller } from 'web/components/answers/answer-components'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { RangeSlider, Slider } from 'web/components/widgets/slider'
@@ -33,6 +29,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
+  formatExpectedValue,
   getExpectedValue,
   getMultiNumericAnswerBucketRanges,
   getMultiNumericAnswerToRange,
@@ -45,6 +42,7 @@ import { SellSharesModal } from 'web/components/bet/sell-row'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
+import { getContractBetMetrics } from 'common/calculate'
 
 export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { contract } = props
@@ -60,7 +58,6 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const [inputRef, focusAmountInput] = useFocus()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const isAdvancedTrader = useIsAdvancedTrader()
-  const niceAmount = formatLargeNumber(amount)
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
@@ -94,10 +91,11 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
 
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
+
     return mode === 'less than'
-      ? answerRange[0] <= amount
+      ? answerRange[0] < amount
       : mode === 'more than'
-      ? answerRange[1] >= amount
+      ? answerRange[0] >= amount
       : mode === 'about right'
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
@@ -110,31 +108,27 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     }
     setIsSubmitting(true)
     setError(undefined)
-    await toast.promise(
-      api(
-        'multi-bet',
-        removeUndefinedProps({
-          amount: betAmount ?? 0,
-          contractId: contract.id,
-          answerIds: filterDefined(answersToBuy.map((a) => a.id)),
-        })
-      ),
-      {
-        loading: 'Placing bet...',
-        success: 'Bet placed!',
-        error: (e) => e.message,
-      }
-    )
-    setIsSubmitting(false)
+    toast
+      .promise(
+        api(
+          'multi-bet',
+          removeUndefinedProps({
+            amount: betAmount ?? 0,
+            contractId: contract.id,
+            answerIds: filterDefined(answersToBuy.map((a) => a.id)),
+          })
+        ),
+        {
+          loading: 'Placing bet...',
+          success: 'Bet placed!',
+          error: (e) => e.message,
+        }
+      )
+      .finally(() => setIsSubmitting(false))
   }
   const onChange = (newAmount: number) => {
     const realAmount =
-      mode === 'more than'
-        ? maximum -
-          newAmount +
-          minimum +
-          (newAmount === minimum || newAmount === maximum ? 0 : 1)
-        : newAmount
+      mode === 'more than' ? maximum - newAmount + minimum : newAmount
     if (realAmount < minimum) {
       setAmount(minimum)
     } else if (realAmount > maximum) {
@@ -191,11 +185,12 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       return { potentialPayout, currentReturnPercent, newExpectedValue }
     }, [betAmount, answers, unfilledBets, balanceByUserId])
 
+  const formattedAmount = formatExpectedValue(amount, contract)
   const betLabel =
     mode === 'less than'
-      ? niceAmount + ' or lower'
+      ? 'Lower than ' + formattedAmount
       : mode === 'more than'
-      ? niceAmount + ' or higher'
+      ? formattedAmount + ' or higher'
       : `${range[0]} - ${range[1]}`
   const modeColor =
     mode === 'less than'
@@ -246,7 +241,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                 mode === 'more than'
                   ? minimum + step
                   : mode === 'less than'
-                  ? minimum - 1 + step
+                  ? minimum + step
                   : minimum
               }
               max={maximum}
@@ -266,7 +261,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                     high !== range[1]
                       ? high === maximum
                         ? maximum
-                        : high - 1
+                        : high
                       : range[1],
                   ])
                 }
@@ -365,7 +360,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               </Row>
               <Row className={'gap-1'}>
                 <span className={'text-ink-700'}>New value:</span>
-                {formatLargeNumber(newExpectedValue)}
+                {formatExpectedValue(newExpectedValue, contract)}
               </Row>
             </Col>
           </Row>
@@ -403,7 +398,7 @@ const BetButton = (props: {
   )
   const showSell = !floatingEqual(sharesSum, 0)
   return (
-    <Col className={'h-full items-end justify-end'}>
+    <Col className={'h-full w-full justify-end px-0.5'}>
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? props.outcome : undefined)}
@@ -430,7 +425,7 @@ const BetButton = (props: {
       <Button
         size={size ?? 'sm'}
         color={color}
-        className={clsx('')}
+        className={clsx('!px-1')}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -450,7 +445,7 @@ const BetButton = (props: {
           <span
             className={clsx(
               size === 'xs' ? 'line-clamp-1' : 'line-clamp-2',
-              'text-left font-bold'
+              'text-left'
             )}
           >
             {answer.text}
@@ -464,10 +459,12 @@ const BetButton = (props: {
 export const SellPanel = (props: {
   contract: CPMMNumericContract
   user: User
+  userBets: Bet[]
 }) => {
-  const { contract, user } = props
+  const { contract, user, userBets } = props
   const [showSellButtons, setShowSellButtons] = useState(false)
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const metric = getContractBetMetrics(contract, userBets)
+  if (metric.invested === 0) return null
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   return (
     <Col className={'mt-2 gap-2'}>

@@ -4,7 +4,7 @@ import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatLargeNumber, formatPercentShort } from 'common/util/format'
+import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
@@ -23,7 +23,7 @@ import {
   ColumnFormat,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
-import { getExpectedValue } from 'common/multi-numeric'
+import { getFormattedExpectedValue } from 'common/multi-numeric'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -214,12 +214,8 @@ export function ContractStatusLabel(props: {
       )
     }
     case 'NUMBER': {
-      const val = getExpectedValue(contract)
-      return (
-        <span className={clsx(probTextColor, className)}>
-          {formatLargeNumber(val)}
-        </span>
-      )
+      const val = getFormattedExpectedValue(contract)
+      return <span className={clsx(probTextColor, className)}>{val}</span>
     }
     case 'NUMERIC': {
       // all old numeric contracts are resolved

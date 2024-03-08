@@ -20,7 +20,7 @@ import { animated } from '@react-spring/web'
 import { getTextColor } from 'web/components/contract/text-color'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { getExpectedValue } from 'common/multi-numeric'
+import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -144,6 +144,7 @@ export function MultiNumericResolutionOrExpectation(props: {
   const { resolution, resolutions } = contract
 
   const value = getExpectedValue(contract)
+  const formattedValue = formatExpectedValue(value, contract)
   const spring = useAnimatedNumber(value)
 
   return (
@@ -155,7 +156,7 @@ export function MultiNumericResolutionOrExpectation(props: {
             <CancelLabel />
           ) : (
             <>
-              <Tooltip text={value.toFixed(2)} placement="bottom">
+              <Tooltip text={formattedValue} placement="bottom">
                 <NumericValueLabel value={value} />
               </Tooltip>
             </>
@@ -163,9 +164,9 @@ export function MultiNumericResolutionOrExpectation(props: {
         </>
       ) : (
         <>
-          <Tooltip text={value.toFixed(2)} placement="bottom">
+          <Tooltip text={formattedValue} placement="bottom">
             <animated.div>
-              {spring.to((val) => formatLargeNumber(val))}
+              {spring.to((val) => formatExpectedValue(val, contract))}
             </animated.div>
           </Tooltip>
           <div className="text-base">expected</div>
