@@ -309,7 +309,7 @@ export function AnswersPanel(props: {
               </Button>
             ))}
 
-          {showAll && (
+          {(moreCount === 0 || showAll) && !isSearchOpen && (
             <CreateAnswerPanel
               contract={contract}
               addAnswersMode={addAnswersMode}
