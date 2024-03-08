@@ -17,7 +17,11 @@ import {
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import {
+  addObjects,
+  removeNullOrUndefinedProps,
+  removeUndefinedProps,
+} from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { log } from 'shared/utils'
@@ -27,6 +31,8 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
+import { debounce } from 'api/helpers/debounce'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -296,7 +302,7 @@ export const processNewBetResult = (
     makers,
     ordersToCancel,
   } = newBetResult
-  const { mechanism, collectedFees, volume } = contract
+  const { mechanism, collectedFees } = contract
   if (
     mechanism == 'cpmm-1' &&
     (!newP ||
@@ -385,14 +391,6 @@ export const processNewBetResult = (
   if (newBet.amount !== 0) {
     if (newBet.answerId) {
       // Multi-cpmm-1 contract
-      trans.update(
-        contractDoc,
-        removeUndefinedProps({
-          volume: volume + newBet.amount,
-          lastBetTime: newBet.createdTime,
-          lastUpdatedTime: Date.now(),
-        })
-      )
       if (newPool) {
         const { YES: poolYes, NO: poolNo } = newPool
         const prob = getCpmmProbability(newPool, 0.5)
@@ -415,12 +413,10 @@ export const processNewBetResult = (
           totalBets: newTotalBets,
           totalLiquidity: newTotalLiquidity,
           collectedFees: addObjects(newBet.fees, collectedFees),
-          volume: volume + newBet.amount,
-          lastBetTime: newBet.createdTime,
-          lastUpdatedTime: Date.now(),
         })
       )
     }
+    debouncedUpdateContractVolumeAndUpdatedTime(contract.id)
 
     if (otherBetResults) {
       for (const result of otherBetResults) {
@@ -564,4 +560,40 @@ export const updateMakers = (
     const userDoc = firestore.collection('users').doc(userId)
     trans.update(userDoc, { balance: FieldValue.increment(-spent) })
   }
+}
+const debouncedUpdateContractVolumeAndUpdatedTime = (contractId: string) => {
+  const writeUpdates = async () => {
+    const pg = createSupabaseDirectClient()
+    const volume = await pg.oneOrNone(
+      `select sum(amount) as sum from contract_bets where contract_id = $1`,
+      [contractId],
+      (r) => r.sum
+    )
+    const lastBetTime = await pg.oneOrNone(
+      `select max(created_time) as max from contract_bets where contract_id = $1`,
+      [contractId],
+      (r) => r.max
+    )
+    log('Got volume and lastBetTime for contract id: ' + contractId, {
+      volume,
+      lastBetTime,
+    })
+    await firestore.doc(`contracts/${contractId}`).update(
+      removeNullOrUndefinedProps({
+        volume,
+        lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
+        lastUpdatedTime: Date.now(),
+      })
+    )
+    log(
+      'Wrote debounced volume, lastBetTime, lastUpdatedTime, for contract id: ' +
+        contractId
+    )
+  }
+
+  debounce(
+    `update-contract-volume-last-updated-time-${contractId}`,
+    writeUpdates,
+    2000
+  )
 }
