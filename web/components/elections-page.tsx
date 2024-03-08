@@ -12,7 +12,6 @@ import { ConditionalMarkets } from './us-elections/contracts/conditional-market/
 import { CopyLinkOrShareButton } from './buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
-import { Banner } from './nav/banner'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()
