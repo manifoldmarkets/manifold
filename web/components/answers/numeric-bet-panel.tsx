@@ -340,7 +340,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           />
           <Row className={' flex-wrap gap-2'}>
             <BuyAmountInput
-              parentClassName={'!w-56'}
+              parentClassName={isAdvancedTrader ? '' : '!w-56'}
               amount={betAmount}
               onChange={setBetAmount}
               error={error}
