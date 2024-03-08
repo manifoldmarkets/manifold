@@ -83,13 +83,6 @@ export function TopicsList(props: {
             currentTopicSlug={currentTopicSlug}
             setCurrentTopicSlug={setCurrentTopicSlug}
           />
-          <SidebarItem
-            key={'sidebar-recent'}
-            slug={'recent'}
-            name={'⏳ Your recents'}
-            currentTopicSlug={currentTopicSlug}
-            setCurrentTopicSlug={setCurrentTopicSlug}
-          />
         </>
       )}
       {topics.length > 0 &&

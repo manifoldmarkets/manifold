@@ -41,12 +41,6 @@ export const BrowseTopicPills = (props: {
             >
               ⭐️ For you
             </PillButton>
-            <PillButton
-              selected={currentTopicSlug === 'recent'}
-              onSelect={() => setTopicSlug('recent')}
-            >
-              ⏳ Recent
-            </PillButton>
           </>
         )}
 
