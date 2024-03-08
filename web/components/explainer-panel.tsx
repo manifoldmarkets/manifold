@@ -13,9 +13,9 @@ export const ExplainerPanel = (props: { className?: string }) => {
     <div className={className}>
       <Col className="mx-auto max-w-[60ch]">
         <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
+        <WhyManifold />
         <WhatIsAPM />
         <WhatIsMana />
-        <WhyManifold />
       </Col>
     </div>
   )
@@ -44,10 +44,6 @@ export const ExpandSection = (props: {
     </Card>
   )
 }
-
-const Caps = (props: { children: React.ReactNode }) => (
-  <span className="font-bold uppercase">{props.children}</span>
-)
 
 export const WhatIsAPM = () => (
   <ExpandSection
@@ -97,7 +93,7 @@ export const WhyManifold = () => (
   <ExpandSection
     title={
       <>
-        <TbTargetArrow className="mr-2" /> Is Manifold accurate?
+        <TbTargetArrow className="mr-2" /> Are Manifold's forecasts accurate?
       </>
     }
   >
