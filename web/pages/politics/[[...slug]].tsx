@@ -120,26 +120,31 @@ function Elections(props: ElectionsPageProps) {
     })
     if (lastSlugPosition.slug !== '' && lastSlugPosition.slug !== currentSlug) {
       setCurrentSlug(lastSlugPosition.slug)
+      setShallowSlugInRouter(lastSlugPosition.slug)
     }
   })
 
   const onClick = (slug: string) => {
     setIgnoreScroll(true)
-    if (slug === TOP_SLUG) {
-      router.push(`/politics`, undefined, {
-        shallow: true,
-      })
-    } else {
-      router.push(`/politics/${slug}`, undefined, {
-        shallow: true,
-      })
-    }
+    setShallowSlugInRouter(slug)
     setCurrentSlug(slug)
     headlineSlugsToRefs.current[slug].current?.scrollIntoView({
       behavior: 'smooth',
       block: 'start',
     })
     setTimeout(() => setIgnoreScroll(false), 1000)
+  }
+
+  const setShallowSlugInRouter = (slug: string) => {
+    if (slug === TOP_SLUG) {
+      router.replace(`/politics`, undefined, {
+        shallow: true,
+      })
+    } else {
+      router.replace(`/politics/${slug}`, undefined, {
+        shallow: true,
+      })
+    }
   }
 
   return (
