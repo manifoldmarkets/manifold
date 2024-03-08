@@ -315,8 +315,8 @@ const updateUserContractMetrics = async (
 
   await bulkUpdateContractMetrics(metrics.flat())
   await Promise.all(
-    uniqBy(metrics.flat(), 'userUsername').map((metric) =>
-      revalidateStaticProps(`/${metric.userUsername}/portfolio`)
+    uniqBy(metrics.flat(), 'userUsername').map(async (metric) =>
+      revalidateStaticProps(`/${metric.userUsername}`)
     )
   )
 }
