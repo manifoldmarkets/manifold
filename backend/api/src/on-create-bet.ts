@@ -332,6 +332,7 @@ const updateBettingStreak = async (
   contract: Contract,
   eventId: string
 ) => {
+  const ineligibleMessage = 'User has already bet after the reset time'
   const result = await firestore.runTransaction(async (trans) => {
     const userDoc = firestore.collection('users').doc(user.id)
     const bettor = (await trans.get(userDoc)).data() as User
@@ -341,7 +342,7 @@ const updateBettingStreak = async (
     // If they've already bet after the reset time
     if (lastBetTime > betStreakResetTime)
       return {
-        message: 'User has already bet after the reset time',
+        message: ineligibleMessage,
         status: 'error',
       }
 
@@ -379,7 +380,7 @@ const updateBettingStreak = async (
     return { message, txn, status, bonusAmount, newBettingStreak }
   })
 
-  if (result.status != 'success') {
+  if (result.status != 'success' && result.message != ineligibleMessage) {
     log("betting streak bonus txn couldn't be made")
     log('status:', result.status)
     log('message:', result.message)
