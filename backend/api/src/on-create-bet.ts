@@ -63,6 +63,7 @@ import {
   addHouseSubsidy,
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
+import { debounce } from 'api/helpers/debounce'
 const firestore = admin.firestore()
 
 export const onCreateBets = async (
@@ -138,13 +139,7 @@ export const onCreateBets = async (
     )
     log(`Contract metrics updated for ${usersToRefreshMetrics.length} users.`)
   }
-  await revalidateContractStaticProps(contract)
-    .then(() => {
-      log('Contract static props revalidated.')
-    })
-    .catch((e) => {
-      log('Error revalidating contract static props:', e)
-    })
+  debouncedRevalidateContractStaticProps(contract)
 
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
@@ -201,6 +196,16 @@ export const onCreateBets = async (
         ])
       })
   )
+}
+
+const debouncedRevalidateContractStaticProps = (contract: Contract) => {
+  const revalidate = async () => {
+    revalidateContractStaticProps(contract).then(() => {
+      log('Contract static props revalidated.')
+    })
+  }
+  const key = `revalidate-contract-static-props-${contract.id}`
+  debounce(key, revalidate, 2000)
 }
 
 const notifyUsersOfLimitFills = async (
