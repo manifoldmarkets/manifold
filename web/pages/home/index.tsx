@@ -190,7 +190,7 @@ const BrowseSection = (props: {
     'home-page-trending-topics'
   ) as Group[]
   const topics = uniqBy(
-    [...(userTrendingTopics ?? []), ...trendingTopics],
+    [...(userTrendingTopics ?? []), ...(trendingTopics ?? [])],
     'slug'
   )
 
