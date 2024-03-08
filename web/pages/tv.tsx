@@ -157,7 +157,7 @@ export default function TVPage(props: {
           )}
         </Col>
 
-        <Col className="hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[350px] ">
+        <Col className="ml-4 hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
           <Col className={'sticky top-0'}>
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
