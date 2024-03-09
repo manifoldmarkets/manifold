@@ -39,6 +39,7 @@ import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
 import SuperBanControl from '../SuperBanControl'
+import { BoostButton } from './boost-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -485,6 +486,7 @@ export function ContractInfoDialog(props: {
   const { contract, user, open, setOpen } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
+  const isCreator = user?.id === contract.creatorId
 
   return (
     <Modal
@@ -499,6 +501,7 @@ export function ContractInfoDialog(props: {
       {!!user && (
         <>
           <Row className="flex-wrap gap-2">
+            {!isCreator && <BoostButton contract={contract} />}
             <DuplicateContractButton contract={contract} />
 
             <ContractHistoryButton contract={contract} />

@@ -59,7 +59,6 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
 
   return (
     <Row className="my-4 flex-wrap gap-4">
-      <BoostButton contract={contract} />
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
