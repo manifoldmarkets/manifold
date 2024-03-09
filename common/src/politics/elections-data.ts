@@ -4,7 +4,7 @@ import {
   MultiSerializedPoints,
   SerializedPoint,
 } from 'common/chart'
-import { CPMMMulti, CPMMMultiContract, Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Headline } from 'common/news'

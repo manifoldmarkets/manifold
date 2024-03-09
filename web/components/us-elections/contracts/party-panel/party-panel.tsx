@@ -16,7 +16,6 @@ import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
 import { MultiBettor } from 'web/components/answers/answer-components'
 import { CPMMMultiContract } from 'common/contract'
 import { PercentChangeToday } from '../candidates-panel/candidate-bar'
-import { getBetPoints } from 'common/supabase/bets'
 
 // just the bars
 export function PartyPanel(props: {

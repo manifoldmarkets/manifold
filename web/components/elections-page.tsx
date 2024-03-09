@@ -1,4 +1,4 @@
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { ElectionsPageProps } from 'common/politics/elections-data'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
@@ -12,7 +12,6 @@ import { ConditionalMarkets } from './us-elections/contracts/conditional-market/
 import { CopyLinkOrShareButton } from './buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
-import { ChoiceContractChart } from './charts/contract/choice'
 import { SizedContainer } from './sized-container'
 import clsx from 'clsx'
 import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
