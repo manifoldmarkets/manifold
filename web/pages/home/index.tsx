@@ -135,9 +135,9 @@ export function HomeContent(props: {
         </Row>
       )}
 
-      <Row className="mb-2 w-full justify-between">
+      <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
         <ControlledTabs
-          className="bg-canvas-50 sticky top-6 z-10 mb-1 px-1"
+          className="mb-1 px-1"
           onClick={(_, i) => {
             setActiveIndex(i)
           }}
@@ -162,7 +162,7 @@ export function HomeContent(props: {
 
       {privateUser && (
         <FeedTimeline
-          className={clsx(activeIndex !== 0 && 'hidden')}
+          className={clsx(activeIndex !== 0 && 'hidden', 'sm:px-2')}
           user={user}
           privateUser={privateUser}
         />
