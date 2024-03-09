@@ -6,12 +6,16 @@ import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 // note: you should turn off the on-update-contract trigger (notifications, embedding recalculation) if it's a ton of contracts
 
-async function mergeGroups(
+export async function mergeGroups(
   pg: SupabaseDirectClient,
   firestore: any,
   fromSlug: string,
   toSlug: string
 ) {
+  if (fromSlug === toSlug) {
+    return
+  }
+
   const from = await pg.one(
     'select id from groups where slug = $1',
     [fromSlug],
@@ -26,11 +30,11 @@ async function mergeGroups(
 
   console.log(`merging ${from} into ${to}`)
 
-  // console.log('update posts')
-  // await pg.none('update old_posts set group_id = $1 where group_id = $2', [
-  //   to,
-  //   from,
-  // ])
+  console.log('update posts')
+  await pg.none('update old_posts set group_id = $1 where group_id = $2', [
+    to,
+    from,
+  ])
 
   const contracts: string[] = await pg.map(
     'select contract_id from group_contracts where group_id = $1',
