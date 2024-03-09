@@ -1,4 +1,4 @@
-import { BookmarkIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon, MinusCircleIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
@@ -66,7 +66,7 @@ export const YourTopicsSection = (props: {
   return (
     <Col className={clsx('mt-1 justify-between gap-4 px-3', className)}>
       <div className="text-ink-800 text-xl">Your followed topics</div>
-      <div className="grid w-full grid-cols-2 gap-x-2">
+      <div className="grid w-full grid-cols-2 gap-x-2 sm:gap-x-4">
         {data === undefined && <LoadingIndicator />}
         {followedGroups.map((g) => {
           return (
@@ -86,11 +86,7 @@ export const YourTopicsSection = (props: {
                   unfollow(g)
                 }}
               >
-                <Row className="gap-1">
-                  <BookmarkIcon
-                    className={'h-6 w-6 fill-indigo-500 group-hover:fill-none'}
-                  />
-                </Row>
+                <MinusCircleIcon className={'h-6 w-6 group-hover:fill-none'} />
               </Button>
             </Row>
           )
@@ -98,7 +94,7 @@ export const YourTopicsSection = (props: {
       </div>
 
       <div className="text-ink-800 mt-4 text-xl">Trending topics</div>
-      <div className="grid w-full grid-cols-2 gap-x-2">
+      <div className="grid w-full grid-cols-2 gap-x-2 sm:gap-x-4">
         {trendingTopics === undefined && <LoadingIndicator />}
         {nonFollowedTopics.map((g) => {
           return (
@@ -118,13 +114,9 @@ export const YourTopicsSection = (props: {
                   follow(g)
                 }}
               >
-                <Row className="gap-1">
-                  <BookmarkIcon
-                    className={
-                      'h-6 w-6 transition-colors focus:fill-indigo-500 group-hover:fill-indigo-500'
-                    }
-                  />
-                </Row>
+                <PlusCircleIcon
+                  className={'focus:fill-ink-500 h-6 w-6 transition-colors'}
+                />
               </Button>
             </Row>
           )
