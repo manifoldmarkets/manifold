@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions'
 import {
-  getContractSupabase,
   getUser,
   log,
   processPaginated,
@@ -9,15 +8,9 @@ import {
 import { createCommentOrUpdatedContractNotification } from 'shared/create-notification'
 import { Contract, CPMMMultiContract, MultiContract } from 'common/contract'
 import * as admin from 'firebase-admin'
-import { difference, isEqual, pick } from 'lodash'
+import { isEqual, pick } from 'lodash'
 import { secrets } from 'common/secrets'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
-import { addContractToFeed } from 'shared/create-feed'
-import { DAY_MS } from 'common/util/time'
+import { createSupabaseClient } from 'shared/supabase/init'
 
 type AnyContract = Contract & CPMMMultiContract & MultiContract
 const propsThatTriggerRevalidation: (keyof AnyContract)[] = [
@@ -52,43 +45,9 @@ export const onUpdateContract = functions
     const contract = change.after.data() as Contract
     const previousContract = change.before.data() as Contract
     const { eventId } = context
-    const { closeTime, question, groupLinks } = contract
+    const { closeTime, question } = contract
 
     const db = createSupabaseClient()
-    const pg = createSupabaseDirectClient()
-
-    // Update group embeddings if group links changed
-    const previousGroupIds = (previousContract.groupLinks ?? []).map(
-      (gl) => gl.groupId
-    )
-    const currentGroupIds = (groupLinks ?? []).map((gl) => gl.groupId)
-    const onlyNewGroupIds = difference(currentGroupIds, previousGroupIds)
-    const differentGroupIds = onlyNewGroupIds.concat(
-      difference(previousGroupIds, currentGroupIds)
-    )
-    await Promise.all(
-      differentGroupIds.map(async (groupId) =>
-        upsertGroupEmbedding(pg, groupId)
-      )
-    )
-    // Adding a contract to a group is ~similar~ to creating a new contract in that group
-    if (
-      onlyNewGroupIds.length > 0 &&
-      contract.createdTime > Date.now() - 2 * DAY_MS &&
-      contract.visibility === 'public'
-    ) {
-      const contractWithScore = await getContractSupabase(contract.id)
-      if (!contractWithScore) return
-      await addContractToFeed(
-        contractWithScore,
-        ['contract_in_group_you_are_in'],
-        'new_contract',
-        [contractWithScore.creatorId],
-        {
-          idempotencyKey: contractWithScore.id + '_new_contract',
-        }
-      )
-    }
 
     if (
       (previousContract.closeTime !== closeTime ||
