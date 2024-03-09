@@ -2,7 +2,7 @@ import { ReactNode, memo, useState, useEffect, useRef } from 'react'
 import clsx from 'clsx'
 
 import { Bet } from 'common/bet'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   BinaryContract,
   CPMMStonkContract,
@@ -17,7 +17,7 @@ import {
 } from 'common/contract'
 import { NumericContractChart } from '../charts/contract/numeric'
 import { BinaryContractChart } from '../charts/contract/binary'
-import { ChoiceContractChart, MultiPoints } from '../charts/contract/choice'
+import { ChoiceContractChart } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
@@ -616,6 +616,7 @@ const ChoiceOverview = (props: {
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
               chartAnnotations={chartAnnotations}
+              showMinimumYScale
             />
           )}
         </SizedContainer>

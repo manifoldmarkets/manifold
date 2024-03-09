@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoints } from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
@@ -42,7 +42,6 @@ import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
 import {
   ChoiceContractChart,
-  MultiPoints,
 } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
