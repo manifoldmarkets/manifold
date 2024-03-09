@@ -206,7 +206,7 @@ const debouncedContractUpdates = (contract: Contract) => {
     const result = await pg.oneOrNone(
       `
         select
-          (select sum(amount) from contract_bets where contract_id = $1) as volume,
+          (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
           (select count(distinct user_id) from contract_bets where contract_id = $1) as count
       `,
