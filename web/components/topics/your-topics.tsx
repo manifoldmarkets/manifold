@@ -16,7 +16,10 @@ import { linkClass } from '../widgets/site-link'
 import { User } from 'common/user'
 import { track } from 'web/lib/service/analytics'
 
-export const YourTopicsSection = (props: { user: User, className?: string }) => {
+export const YourTopicsSection = (props: {
+  user: User
+  className?: string
+}) => {
   const { user, className } = props
   const { data, refresh } = useAPIGetter('get-followed-groups', {
     userId: user.id,
