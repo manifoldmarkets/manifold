@@ -16,6 +16,7 @@ import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
 import { MultiBettor } from 'web/components/answers/answer-components'
 import { CPMMMultiContract } from 'common/contract'
 import { PercentChangeToday } from '../candidates-panel/candidate-bar'
+import { getBetPoints } from 'common/supabase/bets'
 
 // just the bars
 export function PartyPanel(props: {
@@ -99,7 +100,6 @@ function PartyAnswer(props: {
       : resolution === answer.id
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
-
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -111,7 +111,6 @@ function PartyAnswer(props: {
           'cursor-pointer py-1.5',
           selected && 'ring-primary-600 ring-2'
         )}
-        barColor="bg-canvas-0"
         label={
           <Row className={'items-center gap-1'}>
             <CreatorAndAnswerLabel

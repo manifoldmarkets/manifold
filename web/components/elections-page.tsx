@@ -1,4 +1,4 @@
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { ElectionsPageProps } from 'common/politics/elections-data'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
@@ -12,6 +12,10 @@ import { ConditionalMarkets } from './us-elections/contracts/conditional-market/
 import { CopyLinkOrShareButton } from './buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
+import { ChoiceContractChart } from './charts/contract/choice'
+import { SizedContainer } from './sized-container'
+import clsx from 'clsx'
+import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()
@@ -31,6 +35,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanElectability,
     newHampshireContract,
     trendingDashboard,
+    partyGraphData,
   } = props
 
   if (
@@ -43,6 +48,11 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !republicanElectability
   ) {
     return <Custom404 />
+  }
+
+  const { partyPoints, afterTime } = partyGraphData || {
+    partyPoints: null,
+    afterTime: 0,
   }
 
   const trending =
@@ -93,11 +103,32 @@ export function USElectionsPage(props: ElectionsPageProps) {
         viewType="CANDIDATE"
         className="-mt-4"
       />
+
       <PoliticsCard
         contract={electionPartyContract as MultiContract}
         viewType="PARTY"
         customTitle="Which party will win the Presidential Election?"
-      />
+      >
+        {partyPoints && afterTime && (
+          <SizedContainer
+            className={clsx('h-[50px] w-full pb-4 pr-10 sm:h-[100px]')}
+          >
+            {(w, h) => (
+              <ChoiceMiniGraph
+                width={w}
+                height={h}
+                multiPoints={partyPoints}
+                contract={electionPartyContract}
+                selectedAnswerIds={electionPartyContract?.answers
+                  .filter((a) => a.text !== 'Other')
+                  .map((a) => a.id)}
+                showMinimumYScale
+                startTime={afterTime}
+              />
+            )}
+          </SizedContainer>
+        )}
+      </PoliticsCard>
 
       {trending}
 

@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
 import {
   ElectionsPageProps,
@@ -14,6 +14,9 @@ import { senate2024 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/firebase/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { PolicyContractType, PolicyData } from 'common/politics/policy-data'
+import { getBetPoints } from 'common/supabase/bets'
+import { getMultiBetPoints } from 'common/contract-params'
+import { unserializeMultiPoints } from 'common/chart'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
@@ -67,6 +70,27 @@ export async function getElectionsPageProps() {
   ] = await Promise.all(contractsPromises)
 
   const linkPreviews = await fetchLinkPreviews([NH_LINK])
+  const afterTime = new Date().getTime() - 7 * 24 * 60 * 60 * 1000
+
+  let partyPoints = null
+  if (
+    electionPartyContract &&
+    electionPartyContract.mechanism == 'cpmm-multi-1'
+  ) {
+    const allBetPoints = await getBetPoints(adminDb, electionPartyContract.id, {
+      afterTime: afterTime,
+    })
+
+    const serializedMultiPoints = getMultiBetPoints(
+      allBetPoints,
+      electionPartyContract as CPMMMultiContract
+    )
+    partyPoints = unserializeMultiPoints(serializedMultiPoints)
+    // weird hack to get rid of points that I can't figure out how it's getting there
+    Object.values(partyPoints).forEach((points) => {
+      points.shift()
+    })
+  }
 
   return {
     rawPresidencyStateContracts: presidencyStateContracts,
@@ -86,6 +110,7 @@ export async function getElectionsPageProps() {
     newsDashboards,
     headlines,
     trendingDashboard,
+    partyGraphData: { partyPoints, afterTime },
   } as ElectionsPageProps
 }
 

@@ -1,6 +1,10 @@
 import { Bet } from 'common/bet'
-import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
-import { Contract } from 'common/contract'
+import {
+  MultiPoints,
+  MultiSerializedPoints,
+  SerializedPoint,
+} from 'common/chart'
+import { CPMMMulti, CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Headline } from 'common/news'
@@ -234,7 +238,7 @@ export type ElectionsPageProps = {
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
   rawPolicyContracts: PolicyContractType[]
-  electionPartyContract: Contract | null
+  electionPartyContract: CPMMMultiContract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
   democratCandidateContract: Contract | null
@@ -244,10 +248,10 @@ export type ElectionsPageProps = {
   republicanElectability: Contract | null
   democraticElectability: Contract | null
   linkPreviews: LinkPreviews
-  partyChartParams?: ChartParams
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
   trendingDashboard: NewsDashboardPageProps
+  partyGraphData: { partyPoints: MultiPoints; afterTime: number }
 }
 
 export type ChartParams = {

@@ -19,7 +19,7 @@ import {
   PointerMode,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoints } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
@@ -101,9 +101,6 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-type Point = HistoryPoint<never>
-export type MultiPoints = { [answerId: string]: Point[] }
-
 // new multi only
 export const getMultiBetPoints = (bets: Bet[]) => {
   return mapValues(groupBy(bets, 'answerId'), (bets) =>
@@ -152,7 +149,10 @@ export const ChoiceContractChart = (props: {
 
   const data = useMemo(() => {
     const answerOrder = answers.map((a) => a.text)
-    const ret = {} as Record<string, { points: Point[]; color: string }>
+    const ret = {} as Record<
+      string,
+      { points: HistoryPoint<never>[]; color: string }
+    >
 
     answers.forEach((a) => {
       const points = cloneDeep(multiPoints[a.id] ?? [])
@@ -184,8 +184,8 @@ export const ChoiceContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
-
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
+
   return (
     <MultiValueHistoryChart
       w={width}
@@ -216,7 +216,7 @@ export const ChoiceContractChart = (props: {
   )
 }
 
-const ChoiceTooltip = (props: {
+export const ChoiceTooltip = (props: {
   ttProps: TooltipProps<HistoryPoint> & { ans: string }
   xScale: any
   answers: (DpmAnswer | Answer)[]

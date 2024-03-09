@@ -6,13 +6,13 @@ import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
-import { MultiPoints } from 'web/components/charts/contract/choice'
 import { map, zip } from 'd3-array'
 import {
   formatExpectedValue,
   getExpectedValue,
   getMultiNumericAnswerToMidpoint,
 } from 'common/multi-numeric'
+import { MultiPoints } from 'common/chart'
 
 const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
   // create answerId : answer text map

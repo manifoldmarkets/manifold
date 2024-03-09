@@ -6,6 +6,8 @@ export type HistoryPoint<T = unknown> = Point<number, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
 export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
+export type MultiPoints = { [answerId: string]: HistoryPoint<never>[] }
+
 /** [x, [y0, y1, ...]] */
 export type MultiSerializedPoints = { [answerId: string]: [number, number][] }
 /** [x, y, obj] */
