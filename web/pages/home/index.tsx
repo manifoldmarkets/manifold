@@ -1,13 +1,11 @@
 import { track } from '@amplitude/analytics-browser'
 import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { uniqBy } from 'lodash'
 
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import Welcome from 'web/components/onboarding/welcome'
-import { Title } from 'web/components/widgets/title'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -36,11 +34,8 @@ import {
 import { buildArray } from 'common/util/array'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
-import { Tabs } from 'web/components/layout/tabs'
-import {
-  useUserTrendingTopics,
-  useTrendingTopics,
-} from 'web/components/search/query-topics'
+import { ControlledTabs } from 'web/components/layout/tabs'
+import { useUserTrendingTopics } from 'web/components/search/query-topics'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -87,11 +82,6 @@ export default function Home(props: { headlines: Headline[] }) {
           headlines={headlines}
           currentSlug={'home'}
         />
-        <Row className="mx-3 mb-2 items-center gap-2">
-          <Title className="!mb-0 whitespace-nowrap">Home</Title>
-
-          <DailyStats user={user} />
-        </Row>
         {!user ? (
           <LoadingIndicator />
         ) : !createdRecently ? (
@@ -122,8 +112,14 @@ export function HomeContent(props: {
     user?.freeQuestionsCreated,
     user?.createdTime
   )
+
+  const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
+    0,
+    `tabs-home`
+  )
+
   return (
-    <Col className="w-full pb-4 sm:px-2">
+    <Col className="w-full max-w-3xl items-center self-center pb-4 sm:px-2">
       {user && remaining > 0 && (
         <Row className="text-md mb-2 items-center justify-between gap-2 self-center rounded-md border-2 border-indigo-500 p-2">
           <span>
@@ -138,28 +134,48 @@ export function HomeContent(props: {
           <CreateQuestionButton className={'max-w-[10rem]'} />
         </Row>
       )}
-      <Tabs
-        className="bg-canvas-50 sticky top-6 z-10 mb-1 px-1"
-        tabs={buildArray(
-          {
-            title: 'Feed',
-            content: privateUser && (
-              <FeedTimeline user={user} privateUser={privateUser} />
-            ),
-            prerender: true,
-          },
-          {
-            title: 'Browse',
-            content: <BrowseSection privateUser={privateUser} user={user} />,
-            prerender: true,
-          },
-          user && {
-            title: 'Follow topics',
-            content: <YourTopicsSection user={user} />,
-            prerender: false,
-          }
-        )}
+
+      <Row className="mb-2 w-full justify-between">
+        <ControlledTabs
+          className="bg-canvas-50 sticky top-6 z-10 mb-1 px-1"
+          onClick={(_, i) => {
+            setActiveIndex(i)
+          }}
+          activeIndex={activeIndex}
+          tabs={buildArray(
+            {
+              title: 'Home',
+              content: null,
+            },
+            {
+              title: 'Browse',
+              content: null,
+            },
+            user && {
+              title: 'Topics',
+              content: null,
+            }
+          )}
+        />
+        <DailyStats className="mr-2" user={user} />
+      </Row>
+
+      {privateUser && (
+        <FeedTimeline
+          className={clsx(activeIndex !== 0 && 'hidden')}
+          user={user}
+          privateUser={privateUser}
+        />
+      )}
+      <BrowseSection
+        className={clsx(activeIndex !== 1 && 'hidden')}
+        privateUser={privateUser}
+        user={user}
       />
+      {user && activeIndex === 2 && (
+        <YourTopicsSection className="w-full" user={user} />
+      )}
+
       <button
         type="button"
         className={clsx(
@@ -181,8 +197,9 @@ export function HomeContent(props: {
 const BrowseSection = (props: {
   privateUser: PrivateUser | null | undefined
   user: User | undefined | null
+  className?: string
 }) => {
-  const { privateUser, user } = props
+  const { privateUser, user, className } = props
 
   const [topicSlug, setTopicSlug] = usePersistentInMemoryState(
     '',
@@ -190,17 +207,12 @@ const BrowseSection = (props: {
   )
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
   const userTrendingTopics = useUserTrendingTopics(user, 25)
-  const trendingTopics = useTrendingTopics(50, 'home-page-trending-topics')
-  const topics = uniqBy(
-    [...(userTrendingTopics ?? []), ...(trendingTopics ?? [])],
-    'slug'
-  )
 
   return (
-    <Col>
+    <Col className={clsx('max-w-full', className)}>
       <BrowseTopicPills
         className={'relative w-full py-1 pl-1'}
-        topics={topics}
+        topics={userTrendingTopics ?? []}
         currentTopicSlug={topicSlug}
         setTopicSlug={(slug) => setTopicSlug(slug === topicSlug ? '' : slug)}
       />

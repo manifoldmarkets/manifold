@@ -20,8 +20,9 @@ import { PrivateUser, User } from 'common/user'
 export function FeedTimeline(props: {
   privateUser: PrivateUser
   user: User | undefined | null
+  className?: string
 }) {
-  const { privateUser, user } = props
+  const { privateUser, user, className } = props
   const {
     boosts,
     checkForNewer,
@@ -83,7 +84,7 @@ export function FeedTimeline(props: {
   }
 
   return (
-    <Col className={'relative w-full max-w-3xl gap-4'}>
+    <Col className={clsx('relative w-full gap-4', className)}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {

@@ -1,6 +1,7 @@
 import { BookmarkIcon } from '@heroicons/react/outline'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import clsx from 'clsx'
 
 import { Group, groupPath } from 'common/group'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -15,8 +16,8 @@ import { linkClass } from '../widgets/site-link'
 import { User } from 'common/user'
 import { track } from 'web/lib/service/analytics'
 
-export const YourTopicsSection = (props: { user: User }) => {
-  const { user } = props
+export const YourTopicsSection = (props: { user: User, className?: string }) => {
+  const { user, className } = props
   const { data, refresh } = useAPIGetter('get-followed-groups', {
     userId: user.id,
   })
@@ -60,7 +61,7 @@ export const YourTopicsSection = (props: { user: User }) => {
   )
 
   return (
-    <Col className="mt-1 justify-between gap-4 px-3">
+    <Col className={clsx('mt-1 justify-between gap-4 px-3', className)}>
       <div className="text-ink-800 text-xl">Your followed topics</div>
       <div className="grid w-full grid-cols-2 gap-x-2">
         {data === undefined && <LoadingIndicator />}

@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
@@ -11,11 +12,11 @@ export function DailyStats(props: {
   user: User | null | undefined
   className?: string
 }) {
-  const { user } = props
+  const { user, className } = props
   const isMobile = useIsMobile()
   if (!user) return <></>
   return (
-    <Row className={'z-30 w-full items-center justify-end gap-3'}>
+    <Row className={clsx('z-30 items-center justify-end gap-3', className)}>
       {!isMobile && <DailyLoan user={user} showChest={true} />}
       {/*{!isMobile && <DailyProfit user={user} />}*/}
       <DailyLeagueStat user={user} />
