@@ -68,6 +68,7 @@ export type Bet = {
     betId: string // id of BUY bet being sold
   }
   replyToCommentId?: string
+  betGroupId?: string // Used to group buys on MC sumsToOne contracts
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {

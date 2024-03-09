@@ -472,12 +472,8 @@ export const getNewMultiCpmmBetsInfo = (
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  expiresAt?: number,
-  equalShares: boolean = true
+  expiresAt?: number
 ) => {
-  if (!equalShares) {
-    throw new APIError(400, 'Not yet implemented')
-  }
   if (contract.shouldAnswersSumToOne) {
     return getNewMultiCpmmBetsInfoSumsToOne(
       contract,
@@ -537,7 +533,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     otherBetsResults.push(...multiRes.otherBetResults)
   }
   const now = Date.now()
-  return newBetResults.map((newBetResult) => {
+  return newBetResults.map((newBetResult, i) => {
     const { takers, cpmmState, answer } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const amount = sumBy(takers, 'amount')
@@ -602,7 +598,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       newPool: cpmmState.pool,
       makers: newBetResult.makers,
       ordersToCancel: newBetResult.ordersToCancel,
-      otherBetResults: otherResultsWithBet,
+      otherBetResults: i === 0 ? otherResultsWithBet : [],
     }
   })
 }

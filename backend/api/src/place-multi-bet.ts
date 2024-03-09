@@ -15,6 +15,7 @@ import {
   validateBet,
 } from 'api/place-bet'
 import { log } from 'shared/utils'
+import * as crypto from 'crypto'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -101,11 +102,11 @@ export const placeMultiBetMain = async (
         roundedLimitProb,
         unfilledBets,
         balancesByUserId,
-        expiresAt,
-        true
+        expiresAt
       )
     })()
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+    const betGroupId = crypto.randomBytes(16).toString('hex')
     return newBetResults.map((newBetResult) =>
       processNewBetResult(
         newBetResult,
@@ -114,7 +115,9 @@ export const placeMultiBetMain = async (
         userDoc,
         user,
         isApi,
-        trans
+        trans,
+        undefined,
+        betGroupId
       )
     )
   })

@@ -27,6 +27,7 @@ import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
+import * as crypto from 'crypto'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -177,6 +178,10 @@ export const placeBetMain = async (
         }
       })()
       log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+      const betGroupId =
+        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+          ? crypto.randomBytes(16).toString('hex')
+          : undefined
       return processNewBetResult(
         newBetResult,
         contractDoc,
@@ -185,7 +190,8 @@ export const placeBetMain = async (
         user,
         isApi,
         trans,
-        replyToCommentId
+        replyToCommentId,
+        betGroupId
       )
     },
     { maxAttempts: 2 }
@@ -267,7 +273,8 @@ export const processNewBetResult = (
   user: User,
   isApi: boolean,
   trans: Transaction,
-  replyToCommentId?: string
+  replyToCommentId?: string,
+  betGroupId?: string
 ) => {
   const allOrdersToCancel = []
   const fullBets = [] as Bet[]
@@ -348,6 +355,7 @@ export const processNewBetResult = (
     userName: user.name,
     isApi,
     replyToCommentId,
+    betGroupId,
     ...newBet,
   })
   trans.create(betDoc, fullBet)
@@ -409,15 +417,16 @@ export const processNewBetResult = (
 
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
           const betDoc = contractDoc.collection('bets').doc()
-          const fullBet = {
+          const fullBet = removeUndefinedProps({
             id: betDoc.id,
             userId: user.id,
             userAvatarUrl: user.avatarUrl,
             userUsername: user.username,
             userName: user.name,
             isApi,
+            betGroupId,
             ...bet,
-          }
+          })
           trans.create(betDoc, fullBet)
           fullBets.push(fullBet)
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
