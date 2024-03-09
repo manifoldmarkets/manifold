@@ -40,9 +40,7 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
-import {
-  ChoiceContractChart,
-} from 'web/components/charts/contract/choice'
+import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
