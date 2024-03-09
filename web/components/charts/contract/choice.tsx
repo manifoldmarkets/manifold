@@ -183,14 +183,8 @@ export const ChoiceContractChart = (props: {
   )
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
-
-  const flattenedYValues = chosenAnswerIds.flatMap((key) =>
-    data[key] ? data[key].points.map((point) => point.y) : []
-  )
-  const globalMaxY = Math.max(...flattenedYValues)
-  const globalMinY = Math.min(...flattenedYValues)
   const yScale = scaleLinear([0, 1], [height, 0])
+  const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
 
   return (
     <MultiValueHistoryChart
@@ -222,7 +216,7 @@ export const ChoiceContractChart = (props: {
   )
 }
 
-const ChoiceTooltip = (props: {
+export const ChoiceTooltip = (props: {
   ttProps: TooltipProps<HistoryPoint> & { ans: string }
   xScale: any
   answers: (DpmAnswer | Answer)[]

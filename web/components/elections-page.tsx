@@ -54,6 +54,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     partyPoints: null,
     afterTime: 0,
   }
+
+  console.log(partyPoints)
   const trending =
     trendingDashboard.state == 'not found' ? null : (
       <Col>

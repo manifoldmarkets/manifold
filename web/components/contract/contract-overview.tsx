@@ -616,7 +616,6 @@ const ChoiceOverview = (props: {
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
               chartAnnotations={chartAnnotations}
-              showMinimumYScale
             />
           )}
         </SizedContainer>

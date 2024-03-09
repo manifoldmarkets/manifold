@@ -1,16 +1,22 @@
+import { Answer, DpmAnswer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
-import { buildArray } from 'common/util/array'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { cloneDeep, last, pick } from 'lodash'
+import { cloneDeep, last } from 'lodash'
 import { useMemo } from 'react'
-import { getAnswerColor, useChartAnswers } from 'web/components/charts/contract/choice'
+import {
+  getAnswerColor,
+  useChartAnswers,
+} from 'web/components/charts/contract/choice'
 import { MultiValueHistoryChart } from 'web/components/charts/generic-charts'
 import {
+  TooltipProps,
+  formatPct,
   getEndDate,
   getRightmostVisibleDate,
 } from 'web/components/charts/helpers'
+import { Row } from 'web/components/layout/row'
 
 export const ChoiceMiniGraph = (props: {
   contract: CPMMMultiContract | CPMMNumericContract
@@ -61,7 +67,6 @@ export const ChoiceMiniGraph = (props: {
           y: getAnswerProbability(contract, a.id),
         })
       }
-
       const color = getAnswerColor(a, answerOrder)
       ret[a.id] = { points, color }
     })
@@ -78,6 +83,7 @@ export const ChoiceMiniGraph = (props: {
   const flattenedYValues = (selectedAnswerIds ?? []).flatMap((key) =>
     data[key] ? data[key].points.map((point) => point.y) : []
   )
+
   const globalMaxY = Math.max(...flattenedYValues)
   const globalMinY = Math.min(...flattenedYValues)
   const yScale = showMinimumYScale
@@ -92,6 +98,31 @@ export const ChoiceMiniGraph = (props: {
       yScale={yScale}
       contractId={contract.id}
       data={data}
+      Tooltip={(props) => <ChoiceTooltip answers={answers} ttProps={props} />}
     />
+  )
+}
+
+const ChoiceTooltip = (props: {
+  ttProps: TooltipProps<HistoryPoint> & { ans: string }
+  answers: (DpmAnswer | Answer)[]
+}) => {
+  const { ttProps, answers } = props
+  const { prev, ans } = ttProps
+
+  if (!prev) return null
+
+  const answer = answers.find((a) => a.id === ans)?.text ?? 'Other'
+  const value = formatPct(prev.y)
+
+  return (
+    <>
+      <div className="flex max-w-xs flex-row justify-between gap-4">
+        <Row className="items-center gap-2 overflow-hidden">
+          <span className="overflow-hidden text-ellipsis">{answer}</span>
+        </Row>
+        <span className="text-ink-600">{value}</span>
+      </div>
+    </>
   )
 }

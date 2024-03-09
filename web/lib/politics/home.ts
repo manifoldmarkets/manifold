@@ -80,11 +80,16 @@ export async function getElectionsPageProps() {
     const allBetPoints = await getBetPoints(adminDb, electionPartyContract.id, {
       afterTime: afterTime,
     })
+
     const serializedMultiPoints = getMultiBetPoints(
       allBetPoints,
       electionPartyContract as CPMMMultiContract
     )
     partyPoints = unserializeMultiPoints(serializedMultiPoints)
+    // weird hack to get rid of points that I can't figure out how it's getting there
+    Object.values(partyPoints).forEach((points) => {
+      points.shift()
+    })
   }
 
   return {
