@@ -512,6 +512,12 @@ const TopicResults = (props: {
                 {group.totalMembers > 1 && (
                   <span>{group.totalMembers} followers</span>
                 )}
+                {group.privacyStatus !== 'public' && (
+                  <>
+                    &middot;
+                    <span>{group.privacyStatus}</span>
+                  </>
+                )}
               </Row>
             </Col>
             <div>
