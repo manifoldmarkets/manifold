@@ -71,9 +71,12 @@ export async function bulkUpsert<
 
   const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
   const upsertAssigns = cs.assignColumns({ from: 'excluded', skip: idField })
-  const query = `${baseQueryReplaced} on ${
-    onConflict ? onConflict : `conflict(${primaryKey})`
-  } do update set ${upsertAssigns}`
+  const query =
+    `${baseQueryReplaced} on ` +
+    (onConflict ? onConflict : `conflict(${primaryKey})`) +
+    ' ' +
+    (upsertAssigns ? `do update set ${upsertAssigns}` : `do nothing`)
+
   await db.none(query)
 }
 
