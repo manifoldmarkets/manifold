@@ -202,9 +202,9 @@ function NavBarItem(props: {
     )
   }
 
-  const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
-  const isCurrentPage = currentBasePath === item.href.split('?')[0]
-
+  const currentBasePath = currentPage?.split('/')[1] ?? ''
+  const itemPath = item.href.split('/')[1]
+  const isCurrentPage = currentBasePath === itemPath
   return (
     <Link
       href={item.href}
