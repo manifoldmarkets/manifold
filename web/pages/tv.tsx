@@ -97,7 +97,7 @@ export default function TVPage(props: {
       <Row className="w-full items-start">
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
-            src={'https://www.youtube.com/embed/' + streamId}
+            src={'https://www.youtube.com/embed/' + streamId + '?autoplay=1'}
             title="Manifold Live video"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
