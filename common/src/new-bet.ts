@@ -534,10 +534,11 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   }
   const now = Date.now()
   return newBetResults.map((newBetResult, i) => {
-    const { takers, cpmmState, answer } = newBetResult
+    const { takers, cpmmState, answer: updatedAnswer } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const amount = sumBy(takers, 'amount')
     const shares = sumBy(takers, 'shares')
+    const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
 
     const newBet: CandidateBet = removeUndefinedProps({
       contractId: contract.id,
@@ -563,7 +564,8 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     })
 
     const otherResultsWithBet = otherBetsResults.map((result) => {
-      const { answer, takers, cpmmState, outcome } = result
+      const { answer: updatedAnswer, takers, cpmmState, outcome } = result
+      const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
