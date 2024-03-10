@@ -40,8 +40,6 @@ import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 
-export const EMPTY_USER = '_'
-
 export function ContractTabs(props: {
   contract: Contract
   bets: Bet[]
@@ -56,6 +54,7 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
+  betReplies: Bet[]
   appRouter?: boolean
 }) {
   const {
@@ -71,6 +70,7 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     pinnedComments,
     appRouter,
+    betReplies,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -119,7 +119,7 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={bets}
+              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
               appRouter={appRouter}
             />
           ),

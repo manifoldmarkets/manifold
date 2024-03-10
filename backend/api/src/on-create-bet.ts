@@ -144,6 +144,16 @@ export const onCreateBets = async (
   }
   debouncedContractUpdates(contract)
 
+  await Promise.all(
+    bets
+      .filter((bet) => bet.replyToCommentId)
+      .map(async (bet) => {
+        const bettor = betUsers.find((user) => user.id === bet.userId)
+        if (!bettor) return
+        await handleBetReplyToComment(bet, contract, bettor, pg)
+      })
+  )
+
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
     'userId'
@@ -179,9 +189,6 @@ export const onCreateBets = async (
         await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
 
         await Promise.all([
-          bet.replyToCommentId &&
-            (await handleBetReplyToComment(bet, contract, bettor, pg)),
-
           bet.amount >= 0 &&
             !bet.isSold &&
             addUserToContractFollowers(contract.id, bettor.id),
@@ -333,7 +340,6 @@ const handleBetReplyToComment = async (
   const comment = await getCommentSafe(db, bet.replyToCommentId)
 
   if (!comment) return
-  if (comment.userId === bettor.id) return
 
   const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
   // This could potentially miss some bets if they're not replicated in time

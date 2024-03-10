@@ -173,6 +173,7 @@ export function ContractPageContent(props: ContractParams) {
     relatedContractsByTopicSlug,
     topics,
     pinnedComments,
+    betReplies,
   } = props
 
   const contract =
@@ -234,6 +235,7 @@ export function ContractPageContent(props: ContractParams) {
     order: 'asc',
   })
 
+  // TODO: now that contract volume updates are debounced, we may want to just poll on a timer
   useEffect(() => {
     loadNewer()
   }, [contract.volume])
@@ -584,6 +586,7 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
+                betReplies={betReplies}
               />
             </div>
             <RelatedContractsGrid

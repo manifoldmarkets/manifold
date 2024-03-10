@@ -480,6 +480,7 @@ export type ContractParams = {
   relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   pinnedComments: ContractComment[]
+  betReplies: Bet[]
 }
 
 export type MaybeAuthedContractParams =

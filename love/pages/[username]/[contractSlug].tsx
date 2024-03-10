@@ -566,6 +566,7 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={[]}
+                betReplies={[]}
               />
             </div>
           </Col>
