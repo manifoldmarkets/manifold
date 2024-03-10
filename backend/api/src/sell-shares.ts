@@ -14,6 +14,7 @@ import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
+import * as crypto from 'crypto'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -189,6 +190,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     ) {
       throw new APIError(403, 'Sale too large for current liquidity pool.')
     }
+    const betGroupId = crypto.randomBytes(16).toString('hex')
 
     const allOrdersToCancel = []
     const fullBets = []
@@ -209,6 +211,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       userName: user.name,
       isApi,
       ...newBet,
+      betGroupId,
     }
     transaction.create(newBetDoc, fullBet)
     fullBets.push(fullBet)
@@ -230,6 +233,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         })
       )
     } else if (newBet.answerId) {
+      // TODO: add to continuation
       transaction.update(
         contractDoc,
         removeUndefinedProps({
@@ -264,6 +268,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         userName: user.name,
         isApi,
         ...bet,
+        betGroupId,
       }
       transaction.create(betDoc, fullBet)
       fullBets.push(fullBet)
