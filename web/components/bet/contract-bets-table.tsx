@@ -96,6 +96,8 @@ export function ContractBetsTable(props: {
 
   const [truncated, setTruncated] = useState(truncate ?? false)
   const truncatedBetCount = 3
+  const moreBetsCount =
+    (isMultiNumber ? groupedBets.length : normalBets.length) - truncatedBetCount
 
   return (
     <div className="overflow-x-auto">
@@ -187,27 +189,24 @@ export function ContractBetsTable(props: {
         </tbody>
       </Table>
 
-      {truncate && isMultiNumber
-        ? groupedBets.length > truncatedBetCount
-        : normalBets.length > truncatedBetCount && (
-            <Button
-              className="w-full"
-              color="gray-white"
-              onClick={() => setTruncated((b) => !b)}
-            >
-              {truncated ? (
-                <>
-                  <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
-                  {`Show ${normalBets.length - truncatedBetCount} more trades`}
-                </>
-              ) : (
-                <>
-                  <ChevronUpIcon className="mr-1 h-4 w-4" />{' '}
-                  {`Show fewer trades`}
-                </>
-              )}
-            </Button>
+      {truncate && moreBetsCount > 0 && (
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setTruncated((b) => !b)}
+        >
+          {truncated ? (
+            <>
+              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+              {`Show ${moreBetsCount} more trades`}
+            </>
+          ) : (
+            <>
+              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
+            </>
           )}
+        </Button>
+      )}
     </div>
   )
 }
