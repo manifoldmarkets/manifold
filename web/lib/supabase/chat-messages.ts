@@ -31,13 +31,16 @@ export const usePaginatedScrollingMessages = (
     const outerDivHeight = outerDiv?.current?.clientHeight ?? 0
     const innerDivHeight = innerDiv?.current?.clientHeight ?? 0
     const outerDivScrollTop = outerDiv?.current?.scrollTop ?? 0
+    // For the private messages page a tolerance of 0 suffices, but for some reason the tv page requires a tolerance of 43
+    const tolerance = 43
+    const difference = prevInnerDivHeight
+      ? prevInnerDivHeight - outerDivHeight - outerDivScrollTop
+      : 0
+    const isScrolledToBottom = difference <= tolerance
     if (
-      (!prevInnerDivHeight ||
-        outerDivScrollTop === prevInnerDivHeight - outerDivHeight ||
-        initialScroll.current) &&
+      (!prevInnerDivHeight || isScrolledToBottom || initialScroll.current) &&
       realtimeMessages
     ) {
-      // Initial load, scroll to bottom
       outerDiv?.current?.scrollTo({
         top: innerDivHeight! - outerDivHeight!,
         left: 0,
