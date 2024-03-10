@@ -1,6 +1,7 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import {
   Contract,
+  CPMMNumericContract,
   DPMContract,
   FreeResponseContract,
   getBinaryMCProb,
@@ -8,7 +9,7 @@ import {
   MultipleChoiceContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
-import { partition, sortBy, sumBy } from 'lodash'
+import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
 import {
   formatMoney,
   formatPercent,
@@ -33,6 +34,7 @@ import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { api } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
+import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -82,6 +84,15 @@ export function ContractBetsTable(props: {
   const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && Date.now() > closeTime
   const isBinaryMC = isBinaryMulti(contract)
+  const isMultiNumber = outcomeType === 'NUMBER'
+  const betsByBetGroupId = isMultiNumber
+    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+    : {}
+  const groupedBets = orderBy(
+    Object.values(betsByBetGroupId),
+    (bets) => bets[0].createdTime,
+    'desc'
+  )
 
   const [truncated, setTruncated] = useState(truncate ?? false)
   const truncatedBetCount = 3
@@ -130,15 +141,16 @@ export function ContractBetsTable(props: {
               <th></th>
             )}
             {(isCPMM || isCpmmMulti) && <th>Type</th>}
-            {isCpmmMulti && !isBinaryMC && <th>Answer</th>}
-            <th>Outcome</th>
+            {isCpmmMulti && !isBinaryMC && !isMultiNumber && <th>Answer</th>}
+            {isMultiNumber && <th>Range</th>}
+            {!isMultiNumber && <th>Outcome</th>}
             <th>Amount</th>
             {isDPM && !isNumeric && (
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
-            {isPseudoNumeric ? (
+            {isPseudoNumeric || isMultiNumber ? (
               <th>Value</th>
             ) : isStonk ? (
               <th>Stock price</th>
@@ -149,39 +161,53 @@ export function ContractBetsTable(props: {
           </tr>
         </thead>
         <tbody>
-          {(truncated
-            ? normalBets.slice(0, truncatedBetCount)
-            : normalBets
-          ).map((bet) => (
-            <BetRow
-              key={bet.id}
-              bet={bet}
-              saleBet={salesDict[bet.id]}
-              contract={contract}
-              isYourBet={isYourBets}
-            />
-          ))}
+          {isMultiNumber
+            ? groupedBets
+                .slice(0, truncated ? truncatedBetCount : undefined)
+                .map((bets) => (
+                  <MultiNumberBetRow
+                    key={bets[0].id}
+                    bets={bets}
+                    contract={contract as CPMMNumericContract}
+                    isYourBet={isYourBets}
+                  />
+                ))
+            : (truncated
+                ? normalBets.slice(0, truncatedBetCount)
+                : normalBets
+              ).map((bet) => (
+                <BetRow
+                  key={bet.id}
+                  bet={bet}
+                  saleBet={salesDict[bet.id]}
+                  contract={contract}
+                  isYourBet={isYourBets}
+                />
+              ))}
         </tbody>
       </Table>
 
-      {truncate && normalBets.length > truncatedBetCount && (
-        <Button
-          className="w-full"
-          color="gray-white"
-          onClick={() => setTruncated((b) => !b)}
-        >
-          {truncated ? (
-            <>
-              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
-              {`Show ${normalBets.length - truncatedBetCount} more trades`}
-            </>
-          ) : (
-            <>
-              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
-            </>
+      {truncate && isMultiNumber
+        ? groupedBets.length > truncatedBetCount
+        : normalBets.length > truncatedBetCount && (
+            <Button
+              className="w-full"
+              color="gray-white"
+              onClick={() => setTruncated((b) => !b)}
+            >
+              {truncated ? (
+                <>
+                  <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+                  {`Show ${normalBets.length - truncatedBetCount} more trades`}
+                </>
+              ) : (
+                <>
+                  <ChevronUpIcon className="mr-1 h-4 w-4" />{' '}
+                  {`Show fewer trades`}
+                </>
+              )}
+            </Button>
           )}
-        </Button>
-      )}
     </div>
   )
 }
@@ -323,6 +349,67 @@ function BetRow(props: {
         ) : (
           formatPercent(bet.limitProb ?? 0)
         )}
+      </td>
+      <td>{formatTimeShort(createdTime)}</td>
+    </tr>
+  )
+}
+function MultiNumberBetRow(props: {
+  bets: Bet[]
+  contract: CPMMNumericContract
+  saleBet?: Bet
+  isYourBet: boolean
+}) {
+  const { bets, contract } = props
+  const nonRedemptionBets = bets.filter((b) => !b.isRedemption)
+  const betOnAnswers = contract.answers.filter((a) =>
+    nonRedemptionBets.some((b) => b.answerId === a.id)
+  )
+  if (betOnAnswers.length === 0) return null
+  const lowestAnswer = betOnAnswers[0]
+  const highestAnswer = betOnAnswers[betOnAnswers.length - 1]
+  const firstNonRedemptionBet = nonRedemptionBets[0]
+  const bet = {
+    ...firstNonRedemptionBet,
+    amount: sumBy(bets, (b) => b.amount),
+    shares: sumBy(bets, (b) => b.shares),
+  }
+  const getExpectedValueAtProbs = (probs: number[]) => {
+    const answerValues = getMultiNumericAnswerMidpoints(
+      contract.min,
+      contract.max
+    )
+    return sum(probs.map((p, i) => p * answerValues[i]))
+  }
+  const betProbAfters = contract.answers.map(
+    (a) => bets.find((b) => b.answerId === a.id)?.probAfter ?? 0
+  )
+  const expectedValueAfter = getExpectedValueAtProbs(betProbAfters)
+  const betProbBefores = contract.answers.map(
+    (a) => bets.find((b) => b.answerId === a.id)?.probBefore ?? 0
+  )
+  const expectedValueBefore = getExpectedValueAtProbs(betProbBefores)
+  const { amount, createdTime, shares } = bet
+
+  const ofTotalAmount =
+    bet.limitProb === undefined || bet.orderAmount === undefined
+      ? ''
+      : ` / ${formatMoney(bet.orderAmount)}`
+
+  return (
+    <tr>
+      <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>
+      <td className="max-w-[200px] truncate sm:max-w-[250px]">
+        {lowestAnswer.text.split('-')[0]} - {highestAnswer.text.split('-')[1]}
+      </td>
+      <td>
+        {formatMoney(Math.abs(amount))}
+        {ofTotalAmount}
+      </td>
+      <td>{formatWithCommas(Math.abs(bet.shares))}</td>
+
+      <td>
+        {expectedValueBefore.toFixed(2)} → {expectedValueAfter.toFixed(2)}
       </td>
       <td>{formatTimeShort(createdTime)}</td>
     </tr>
