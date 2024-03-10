@@ -137,7 +137,7 @@ export function HomeContent(props: {
 
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
         <ControlledTabs
-          className="mb-1 px-1"
+          className="mb-1"
           onClick={(_, i) => {
             setActiveIndex(i)
           }}
@@ -157,7 +157,7 @@ export function HomeContent(props: {
             }
           )}
         />
-        <DailyStats className="mr-2" user={user} />
+        <DailyStats className="mr-1 sm:mr-2" user={user} />
       </Row>
 
       {privateUser && (

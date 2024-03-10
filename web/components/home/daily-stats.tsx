@@ -16,7 +16,7 @@ export function DailyStats(props: {
   const isMobile = useIsMobile()
   if (!user) return <></>
   return (
-    <Row className={clsx('z-30 items-center justify-end gap-3', className)}>
+    <Row className={clsx('z-30 items-center justify-end gap-1', className)}>
       {!isMobile && <DailyLoan user={user} showChest={true} />}
       {/*{!isMobile && <DailyProfit user={user} />}*/}
       <DailyLeagueStat user={user} />
