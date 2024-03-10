@@ -93,7 +93,10 @@ export default function TVPage(props: {
 
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
-      <SEO title="Manifold TV" description="Bet on live video streams with Manifold TV" />
+      <SEO
+        title="Manifold TV"
+        description="Bet on live video streams with Manifold TV"
+      />
       <Row className="w-full items-start">
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
