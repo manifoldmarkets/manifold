@@ -342,7 +342,7 @@ export function ContractParamsForm(props: {
     setMaxString('')
     setInitialValueString('')
     setIsLogScale(false)
-    setBountyAmount(50)
+    setBountyAmount(defaultBountyAmount)
     setHasChosenCategory(false)
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
