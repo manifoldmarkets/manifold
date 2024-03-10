@@ -233,13 +233,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         })
       )
     } else if (newBet.answerId) {
-      // TODO: add to continuation
-      transaction.update(
-        contractDoc,
-        removeUndefinedProps({
-          volume: volume + Math.abs(newBet.amount),
-        })
-      )
       const prob = getCpmmProbability(newPool, 0.5)
       const { YES: poolYes, NO: poolNo } = newPool
       transaction.update(
