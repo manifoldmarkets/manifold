@@ -100,7 +100,7 @@ export const PublicChat = (props: {
 
   return (
     <Col className={clsx(' w-full', className)}>
-      <Col className="relative h-[calc(100dvh-213px)]  lg:h-[calc(100dvh-150px)] xl:px-0">
+      <Col className="relative h-[100dvh]  lg:h-[calc(100dvh-150px)] xl:px-0">
         <div
           ref={outerDiv}
           className="relative h-full overflow-y-auto"

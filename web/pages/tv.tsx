@@ -95,15 +95,7 @@ export default function TVPage(props: {
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO title="Manifold TV" description="Stream and trade" />
       <Row className="w-full items-start">
-        <Col
-          className={clsx(
-            'bg-canvas-0 w-full  rounded-b ',
-            // Keep content in view when scrolling related questions on desktop.
-            'sticky bottom-0 min-h-screen self-end',
-            // Accommodate scroll to top button at bottom of page.
-            'pb-10 xl:pb-0'
-          )}
-        >
+        <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
             src={'https://www.youtube.com/embed/' + streamId}
             title="Manifold Live video"
@@ -112,7 +104,7 @@ export default function TVPage(props: {
             className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"
           ></iframe>
 
-          <Col className="mb-4 p-4 md:pb-8 lg:px-8">
+          <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
               <Row className="gap-2 text-xl font-medium sm:text-2xl">
                 <Link
