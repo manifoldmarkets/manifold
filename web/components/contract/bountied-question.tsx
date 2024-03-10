@@ -247,10 +247,9 @@ export function AddBountyButton(props: {
 
 export function CancelBountyButton(props: {
   contract: BountiedQuestionContract
-  buttonClassName?: string
   disabled?: boolean
 }) {
-  const { contract, buttonClassName, disabled } = props
+  const { contract, disabled } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function onCancel() {
@@ -265,19 +264,19 @@ export function CancelBountyButton(props: {
   return (
     <ConfirmationButton
       openModalBtn={{
-        label: 'Cancel Bounty',
+        label: 'Close bounty',
         size: 'sm',
         color: 'gray-outline',
         disabled: isSubmitting || disabled,
         icon: <FaXmark className="mr-1 h-5 w-5" />,
       }}
       cancelBtn={{
-        label: 'Go back',
+        label: 'Cancel',
         color: 'gray',
         disabled: isSubmitting,
       }}
       submitBtn={{
-        label: 'Yes, Cancel Bounty',
+        label: 'Yes, close bounty',
         color: 'indigo',
         isSubmitting,
       }}
@@ -289,9 +288,9 @@ export function CancelBountyButton(props: {
       </Row>
 
       <p>
-        If you decide to cancel this bounty, the remaining money will be
-        returned to you. Please take a moment to ensure that everyone who
-        contributed has been fairly compensated.
+        If you decide to close this bounty, the remaining money will be returned
+        to you. Please take a moment to ensure that everyone who contributed has
+        been fairly compensated.
       </p>
     </ConfirmationButton>
   )
