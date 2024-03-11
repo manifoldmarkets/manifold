@@ -29,7 +29,7 @@ import { BuyAmountInput } from '../widgets/amount-input'
 
 import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { YourOrders } from './order-book'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { YesNoSelector } from './yes-no-selector'
