@@ -354,6 +354,7 @@ export function ContractParamsForm(props: {
     setHasChosenCategory(false)
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
+    setNumberOfBuckets(MULTI_NUMERIC_BUCKETS_MAX)
   }
 
   const [submitState, setSubmitState] = useState<
