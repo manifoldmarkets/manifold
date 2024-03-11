@@ -11,8 +11,7 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
-import { IncrementDecrementAmountButton } from './increment-button'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { IncrementButton } from './increment-button'
 
 export function AmountInput(
   props: {
@@ -50,8 +49,6 @@ export function AmountInput(
   const [amountString, setAmountString] = useState(amount?.toString() ?? '')
 
   const parse = allowFloat ? parseFloat : parseInt
-
-  const isAdvancedTrader = useIsAdvancedTrader()
 
   const bannedChars = new RegExp(
     `[^\\d${allowFloat && '.'}${allowNegative && '-'}]`,
@@ -113,7 +110,7 @@ export function AmountInput(
                 onClick={() => onChangeAmount(undefined)}
               />
             )}
-            {isAdvancedTrader && quickAddMoreButton}
+            {quickAddMoreButton}
           </Row>
         </Row>
       </label>
@@ -210,9 +207,7 @@ export function BuyAmountInput(props: {
   const incrementValues =
     quickButtonValues === 'large'
       ? [100, 500]
-      : quickButtonValues ?? (hasLotsOfMana ? [10, 50, 250] : [1, 10])
-
-  const isAdvancedTrader = useIsAdvancedTrader()
+      : quickButtonValues ?? (hasLotsOfMana ? [10, 100, 1000] : [10, 100])
 
   return (
     <>
@@ -220,8 +215,8 @@ export function BuyAmountInput(props: {
         <AmountInput
           className={className}
           inputClassName={clsx(
-            'w-full',
-            isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
+            'w-full !text-xl',
+            // isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
             !!disableQuickButtons &&
               (hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
@@ -232,14 +227,15 @@ export function BuyAmountInput(props: {
           error={!!error}
           disabled={disabled}
           inputRef={inputRef}
+          disableClearButton
           quickAddMoreButton={
             disableQuickButtons ? undefined : (
-              <Row className="divide-ink-300 divide-x text-sm">
+              <Row className="divide-ink-300 divide-x border-x text-sm">
                 {incrementValues.map((increment) => (
-                  <IncrementDecrementAmountButton
+                  <IncrementButton
                     key={increment}
                     amount={increment}
-                    incrementBy={incrementBy}
+                    onIncrement={() => incrementBy(increment)}
                   />
                 ))}
               </Row>

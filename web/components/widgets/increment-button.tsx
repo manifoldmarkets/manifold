@@ -9,7 +9,7 @@ export const IncrementButton = (props: {
   return (
     <button
       className={clsx(
-        'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex h-[54px] w-12 flex-row items-center justify-center'
+        'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex  w-12 flex-row items-center justify-center'
       )}
       onClick={onIncrement}
     >

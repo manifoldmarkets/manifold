@@ -273,12 +273,9 @@ export function BuyPanel(props: {
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
-  const rawDifference = Math.abs(
-    getMappedValue(contract, probAfter) - getMappedValue(contract, probBefore)
-  )
-  const displayedDifference = isPseudoNumeric
-    ? formatLargeNumber(rawDifference)
-    : formatPercent(rawDifference)
+  const displayedAfter = isPseudoNumeric
+    ? formatLargeNumber(probAfter)
+    : formatPercent(probAfter)
 
   const bankrollFraction = (betAmount ?? 0) / (user?.balance ?? 1e9)
 
@@ -295,7 +292,7 @@ export function BuyPanel(props: {
         user?.balance ?? 0
       )}`
     : highProbMove
-    ? `Are you sure you want to move the probability by ${displayedDifference}?`
+    ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
   return (
@@ -373,14 +370,9 @@ export function BuyPanel(props: {
           )}
           {betType === 'Market' ? (
             <>
-              {!isAdvancedTrader && (
-                <QuickBetAmountsRow
-                  betAmount={betAmount}
-                  onAmountChange={(amount) => {
-                    onBetChange(amount)
-                  }}
-                />
-              )}
+              <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
+                Bet amount
+              </Row>
 
               <Row
                 className={clsx(
@@ -398,11 +390,10 @@ export function BuyPanel(props: {
                   inputRef={inputRef}
                   binaryOutcome={isBinaryMC ? undefined : outcome}
                   showSlider={isAdvancedTrader}
-                  disableQuickButtons={!isAdvancedTrader}
                 />
 
-                <Col className="gap-3">
-                  {isAdvancedTrader && (
+                {isAdvancedTrader && (
+                  <Col className="gap-3">
                     <div className="flex-grow">
                       <span className="text-ink-700 mr-2 whitespace-nowrap">
                         {isPseudoNumeric
@@ -411,7 +402,6 @@ export function BuyPanel(props: {
                           ? 'New stock price'
                           : 'New probability'}
                       </span>
-
                       <span className="text-lg font-semibold">
                         {getFormattedMappedValue(
                           contract,
@@ -428,27 +418,29 @@ export function BuyPanel(props: {
                         </span>
                       )}
                     </div>
-                  )}
-
-                  <Row className="min-w-[128px] items-baseline">
-                    <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                      {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
-                    </div>
-
-                    <span className="mr-1 whitespace-nowrap text-lg">
-                      {isStonk
-                        ? getStonkDisplayShares(contract, currentPayout, 2)
-                        : isPseudoNumeric
-                        ? Math.floor(currentPayout)
-                        : formatMoney(currentPayout)}
-                    </span>
-                    <span className="text-green-500 ">
-                      {isStonk || isPseudoNumeric
-                        ? ''
-                        : ' +' + currentReturnPercent}
-                    </span>
-                  </Row>
-                </Col>
+                    <Row className="min-w-[128px] items-baseline">
+                      <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                        {isPseudoNumeric || isStonk ? (
+                          'Shares'
+                        ) : (
+                          <>Max payout</>
+                        )}
+                      </div>
+                      <span className="mr-1 whitespace-nowrap text-lg">
+                        {isStonk
+                          ? getStonkDisplayShares(contract, currentPayout, 2)
+                          : isPseudoNumeric
+                          ? Math.floor(currentPayout)
+                          : formatMoney(currentPayout)}
+                      </span>
+                      <span className="text-green-500 ">
+                        {isStonk || isPseudoNumeric
+                          ? ''
+                          : ' +' + currentReturnPercent}
+                      </span>
+                    </Row>
+                  </Col>
+                )}
               </Row>
             </>
           ) : (
@@ -465,7 +457,7 @@ export function BuyPanel(props: {
           )}
 
           {betType !== 'Limit' && (
-            <Row className="items-center justify-between gap-2">
+            <Col className="gap-2">
               {user ? (
                 <WarningConfirmationButton
                   marketType="binary"
@@ -493,7 +485,9 @@ export function BuyPanel(props: {
                           contract,
                           'YES'
                         )} or ${formatOutcomeLabel(contract, 'NO')}`
-                      : `BET ${binaryMCOutcomeLabel ?? outcome}`
+                      : `Bet ${
+                          binaryMCOutcomeLabel ?? outcome
+                        } to win ${formatMoney(currentPayout)}`
                   }
                   inModal={inModal}
                 />
@@ -507,18 +501,20 @@ export function BuyPanel(props: {
                   Sign up to predict
                 </Button>
               )}
-            </Row>
+            </Col>
           )}
+
           {user ? (
             <Row className="mt-3 items-start justify-between">
               <div className="flex-grow">
                 <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
-                  Balance{' '}
+                  Your balance{' '}
                   <span className="text-ink-700 font-semibold">
                     {formatMoney(user.balance)}
                   </span>
                 </span>
               </div>
+
               {isAdvancedTrader && (
                 <div>
                   <button
@@ -541,6 +537,7 @@ export function BuyPanel(props: {
               )}
             </Row>
           ) : null}
+
           {!isAdvancedTrader && (
             <Row className=" items-start justify-between">
               <div className=" flex-grow">
@@ -590,6 +587,7 @@ export function BuyPanel(props: {
                   />
                 )}
               </div>
+
               {user && (
                 <div>
                   <button
