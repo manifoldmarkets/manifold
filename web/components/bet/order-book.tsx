@@ -58,9 +58,9 @@ export function YourOrders(props: {
   if (yourBets.length === 0) return null
 
   return (
-    <Col className={clsx(className, 'gap-2 overflow-hidden')}>
+    <Col className={clsx(className, 'gap-2 overflow-x-scroll')}>
       <Row className="items-center justify-between">
-        <Subtitle className="!my-0">Your orders</Subtitle>
+        <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
       </Row>
 
       <OrderTable limitBets={yourBets} contract={contract} isYou />

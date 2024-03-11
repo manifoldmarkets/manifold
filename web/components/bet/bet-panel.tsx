@@ -461,19 +461,6 @@ export function BuyPanel(props: {
                 balanceByUserId={balanceByUserId}
                 outcome={outcome}
               />
-              <YourOrders
-                className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-                contract={contract}
-                bets={unfilledBetsMatchingAnswer}
-              />
-              {/* Stonks don't allow limit orders but users may have them from before the conversion */}
-              {isStonk && unfilledBets.length > 0 && (
-                <YourOrders
-                  className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
-                  contract={contract}
-                  bets={unfilledBets as LimitBet[]}
-                />
-              )}
             </>
           )}
 
@@ -626,6 +613,23 @@ export function BuyPanel(props: {
             </Row>
           )}
         </Col>
+      )}
+      {isPanelBodyVisible && (
+        <>
+          <YourOrders
+            className="mt-2 rounded-lg bg-indigo-400/10 py-2"
+            contract={contract}
+            bets={unfilledBetsMatchingAnswer}
+          />
+          {/* Stonks don't allow limit orders but users may have them from before the conversion */}
+          {isStonk && unfilledBets.length > 0 && (
+            <YourOrders
+              className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+              contract={contract}
+              bets={unfilledBets as LimitBet[]}
+            />
+          )}
+        </>
       )}
     </Col>
   )
