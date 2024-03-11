@@ -32,7 +32,7 @@ export const getMultiNumericAnswerBucketRanges = (
   buckets: number
 ) => {
   const rangeSize = max - min
-  if (rangeSize === 0) {
+  if (rangeSize === 0 || isNaN(buckets)) {
     return [[min, max]]
   }
   const stepSize = rangeSize / buckets

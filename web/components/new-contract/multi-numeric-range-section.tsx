@@ -42,13 +42,14 @@ export const MultiNumericRangeSection = (props: {
     setBuckets(ranges)
   }, [max, min, numBuckets])
 
-  const [showBucketInput, setShowBucketInput] = useState(false)
+  const [showBucketInput, setShowBucketInput] = useState(
+    numBuckets < 2 || numBuckets > MULTI_NUMERIC_BUCKETS_MAX
+  )
 
   const [buckets, setBuckets] = usePersistentLocalState<number[][] | undefined>(
     undefined,
     'new-buckets' + paramsKey
   )
-  const [showBuckets, _] = useState(true)
   const bucketsToShow = 2
   const [showAllBuckets, setShowAllBuckets] = useState(
     numBuckets <= bucketsToShow * 2
@@ -88,7 +89,7 @@ export const MultiNumericRangeSection = (props: {
           </div>
         )}
       </Col>
-      {buckets && showBuckets && (
+      {buckets && (
         <Col className={'gap-1'}>
           <Row className={'items-center'}>
             <label className="gap-2 px-1 py-2">
@@ -124,7 +125,7 @@ export const MultiNumericRangeSection = (props: {
             {buckets
               .slice(0, showAllBuckets ? numBuckets : bucketsToShow)
               .map((a, i) => (
-                <span className={'whitespace-nowrap'} key={a[0]}>
+                <span className={'whitespace-nowrap'} key={a[0] + a[1]}>
                   {a[0]}-{a[1]}
                   {i === 0 ? ', ' : ''}
                 </span>
@@ -140,7 +141,7 @@ export const MultiNumericRangeSection = (props: {
                   </span>
                 )}
                 {buckets.slice(-bucketsToShow).map((a, i) => (
-                  <span className={'whitespace-nowrap'} key={a[0]}>
+                  <span className={'whitespace-nowrap'} key={a[0] + a[1]}>
                     {a[0]}-{a[1]}
                     {bucketsToShow === i + 1 ? '' : ', '}
                   </span>
