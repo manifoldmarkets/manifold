@@ -5,6 +5,7 @@ import { Input } from 'web/components/widgets/input'
 import { useEffect, useState } from 'react'
 import { getMultiNumericAnswerBucketRanges } from 'common/multi-numeric'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { MULTI_NUMERIC_BUCKETS_COUNT } from 'common/contract'
 
 export const MultiNumericRangeSection = (props: {
   minString: string
@@ -80,7 +81,9 @@ export const MultiNumericRangeSection = (props: {
         <Col>
           <label className="gap-2 px-1 py-2">
             <span className="mb-1">Buckets </span>
-            <InfoTooltip text="Users will trade on the sum of the probability of each bucket x their value" />
+            <InfoTooltip
+              text={`Users will see the expected value computed across the ${MULTI_NUMERIC_BUCKETS_COUNT} buckets, & can bet on them individually.`}
+            />
           </label>
           <Row className={'ml-1 flex-wrap items-center gap-2'}>
             {buckets.slice(0, bucketsToShow).map((a, i) => (
