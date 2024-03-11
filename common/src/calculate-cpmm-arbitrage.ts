@@ -224,18 +224,20 @@ function calculateCpmmMultiArbitrageBetsYes(
 export const combineBetsOnSameAnswers = (
   bets: PreliminaryBetResults[],
   outcome: 'YES' | 'NO',
-  answers: Answer[],
+  updatedAnswers: Answer[],
   // The fills after the first are free bc they're due to arbitrage.
   fillsFollowingFirstAreFree?: boolean
 ) => {
-  return answers.map((answer) => {
+  return updatedAnswers.map((answer) => {
     const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
+    const { poolYes, poolNo } = answer
+    const bet = betsForAnswer[0]
     return {
-      ...betsForAnswer[betsForAnswer.length - 1],
+      ...bet,
       takers: fillsFollowingFirstAreFree
         ? [
             {
-              ...betsForAnswer[0].takers[0],
+              ...bet.takers[0],
               shares: sumBy(
                 betsForAnswer.flatMap((r) => r.takers),
                 'shares'
@@ -244,7 +246,9 @@ export const combineBetsOnSameAnswers = (
           ]
         : betsForAnswer.flatMap((r) => r.takers),
       makers: betsForAnswer.flatMap((r) => r.makers),
+      ordersToCancel: betsForAnswer.flatMap((r) => r.ordersToCancel),
       outcome,
+      cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
       answer,
     }
   })
