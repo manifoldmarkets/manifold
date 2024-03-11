@@ -10,7 +10,7 @@ import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
 
 const DEBUG = false
-
+export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
 export function calculateCpmmMultiArbitrageBet(
   answers: Answer[],
   answerToBuy: Answer,
@@ -49,8 +49,9 @@ export function calculateCpmmMultiArbitrageBet(
         makers: [],
         ordersToCancel: [],
         cpmmState: { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 },
+        totalFees: { creatorFee: 0, liquidityFee: 0, platformFee: 0 },
       },
-      otherBetResults: [] as ReturnType<typeof combineBetsOnSameAnswers>,
+      otherBetResults: [] as ArbitrageBetArray,
     }
   }
   return result

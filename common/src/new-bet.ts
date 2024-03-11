@@ -25,10 +25,10 @@ import {
 } from './util/math'
 import { Answer } from './answer'
 import {
+  ArbitrageBetArray,
   buyNoSharesUntilAnswersSumToOne,
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageYesBets,
-  combineBetsOnSameAnswers,
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
 
@@ -502,8 +502,9 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
-  const newBetResults = []
-  const otherBetsResults: ReturnType<typeof combineBetsOnSameAnswers> = []
+  const newBetResults: ArbitrageBetArray = []
+  const isMultiBuy = answersToBuy.length > 1
+  const otherBetsResults: ArbitrageBetArray = []
   if (answersToBuy.length === 1) {
     const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
@@ -514,11 +515,9 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       unfilledBets,
       balanceByUserId
     )
-    newBetResults.push(newBetResult)
+    newBetResults.push(...([newBetResult] as ArbitrageBetArray))
     if (otherBetResults.length > 0)
-      otherBetsResults.push(
-        ...(otherBetResults as ReturnType<typeof combineBetsOnSameAnswers>)
-      )
+      otherBetsResults.push(...(otherBetResults as ArbitrageBetArray))
   } else {
     // TODO: only accepts YES bets atm
     const multiRes = calculateCpmmMultiArbitrageYesBets(
@@ -539,6 +538,10 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     const amount = sumBy(takers, 'amount')
     const shares = sumBy(takers, 'shares')
     const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
+    const multiBuyAmount = sumBy(
+      newBetResults.flatMap((r) => r.takers),
+      'amount'
+    )
 
     const newBet: CandidateBet = removeUndefinedProps({
       contractId: contract.id,
@@ -551,7 +554,9 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       shares,
       answerId: answer.id,
       fills: takers,
-      isFilled: floatingEqual(amount, betAmount),
+      isFilled: isMultiBuy
+        ? floatingEqual(multiBuyAmount, betAmount)
+        : floatingEqual(amount, betAmount),
       probBefore: answer.prob,
       probAfter,
       createdTime: now,
