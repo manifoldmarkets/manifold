@@ -92,18 +92,12 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract)
+  if (!contract || contract.visibility === 'private' || contract.deleted) {
     return {
       props: { state: 'not found' },
       revalidate: 60,
     }
-
-  if (contract.visibility === 'private')
-    return {
-      props: { state: 'not authed', slug: contract.slug },
-      revalidate: 60,
-    }
-
+  }
   if (contract.deleted) {
     return {
       props: {
