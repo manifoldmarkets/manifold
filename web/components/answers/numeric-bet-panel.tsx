@@ -465,7 +465,7 @@ export const SellPanel = (props: {
   const { contract, user, userBets } = props
   const [showSellButtons, setShowSellButtons] = useState(false)
   const metric = getContractBetMetrics(contract, userBets)
-  if (metric.invested === 0) return null
+  if (floatingEqual(metric.invested, 0)) return null
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
   return (
     <Col className={'mt-2 gap-2'}>
