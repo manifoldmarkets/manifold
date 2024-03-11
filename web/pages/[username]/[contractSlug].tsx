@@ -33,7 +33,6 @@ import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
-import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
@@ -117,17 +116,11 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: MaybeAuthedContractParams) {
-  if (props.state === 'not found') {
+  if (props.state === 'not found' || props.state === 'not authed') {
     return <Custom404 />
   }
 
-  return props.state === 'not authed' ? (
-    <Page trackPageView={false} className="xl:col-span-10">
-      <PrivateContractPage contractSlug={props.slug} />
-    </Page>
-  ) : (
-    <NonPrivateContractPage contractParams={props.params} />
-  )
+  return <NonPrivateContractPage contractParams={props.params} />
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {

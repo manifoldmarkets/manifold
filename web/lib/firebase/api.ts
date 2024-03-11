@@ -5,7 +5,6 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { Contract } from './contracts'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
-import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, DashboardItem } from 'common/dashboard'
@@ -180,14 +179,6 @@ export function setTV(params: {
   return call(getApiUrl('settv'), 'POST', params) as Promise<{
     status: 'success'
   }>
-}
-
-export function getContractParams(params: { contractSlug: string }) {
-  return call(
-    getApiUrl('getcontractparams'),
-    'POST',
-    params
-  ) as Promise<MaybeAuthedContractParams>
 }
 
 export function createGroupInvite(params: {

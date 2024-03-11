@@ -36,7 +36,6 @@ import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
-import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
@@ -352,7 +351,6 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
-app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
