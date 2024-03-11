@@ -94,7 +94,8 @@ export const MultiNumericRangeSection = (props: {
             <label className="gap-2 px-1 py-2">
               <span className="mb-1">Buckets </span>
               <InfoTooltip
-                text={`Users will see the expected value computed across the ${buckets.length} buckets, & can bet on them individually.`}
+                text={`Users will see the expected value computed across the 
+                ${buckets.length} buckets, & can bet on any number of buckets at once.`}
               />
             </label>
             {!showBucketInput ? (

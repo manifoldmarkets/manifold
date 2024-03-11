@@ -47,7 +47,7 @@ import { getContractBetMetrics } from 'common/calculate'
 export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { contract } = props
   const { answers, min: minimum, max: maximum } = contract
-  const [amount, setAmount] = useState(getExpectedValue(contract))
+  const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [range, setRange] = useState<[number, number]>([minimum, maximum])
   const [mode, setMode] = useState<
@@ -96,9 +96,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
     return mode === 'less than'
-      ? answerRange[0] < amount
+      ? answerRange[0] < expectedValue
       : mode === 'more than'
-      ? answerRange[0] >= amount || answerRange[1] > amount
+      ? answerRange[0] >= expectedValue || answerRange[1] > expectedValue
       : mode === 'about right'
       ? answerRange[0] >= range[0] && answerRange[1] <= range[1]
       : false
@@ -135,17 +135,17 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       mode === 'more than' ? maximum - newAmount + minimum : newAmount
     )
     if (realAmount < minimum) {
-      setAmount(minimum)
+      setExpectedValue(minimum)
     } else if (realAmount > maximum) {
-      setAmount(maximum)
+      setExpectedValue(maximum)
     } else {
-      setAmount(realAmount)
+      setExpectedValue(realAmount)
     }
   }
   useEffect(() => {
-    setAmount(getExpectedValue(contract))
+    setExpectedValue(getExpectedValue(contract))
     if (mode === 'about right') {
-      setRange(aboutRightBuckets(amount))
+      setRange(aboutRightBuckets(expectedValue))
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
@@ -159,7 +159,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
         return {
           potentialPayout: 0,
           currentReturnPercent: '0%',
-          newExpectedValue: amount,
+          newExpectedValue: expectedValue,
         }
       const { newBetResults, updatedAnswers } =
         calculateCpmmMultiArbitrageYesBets(
@@ -190,7 +190,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       return { potentialPayout, currentReturnPercent, newExpectedValue }
     }, [betAmount, answers, unfilledBets, balanceByUserId])
 
-  const formattedAmount = formatExpectedValue(amount, contract)
+  const formattedAmount = formatExpectedValue(expectedValue, contract)
   const betLabel =
     mode === 'less than'
       ? 'Lower than ' + formattedAmount
@@ -250,7 +250,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
               className={'w-full'}
               step={step}
               amount={
-                mode === 'more than' ? maximum - amount + minimum : amount
+                mode === 'more than'
+                  ? maximum - expectedValue + minimum
+                  : expectedValue
               }
               onChange={onChange}
               min={
