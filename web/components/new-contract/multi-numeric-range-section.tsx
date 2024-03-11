@@ -5,13 +5,17 @@ import { Input } from 'web/components/widgets/input'
 import { useEffect, useState } from 'react'
 import { getMultiNumericAnswerBucketRanges } from 'common/multi-numeric'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { MULTI_NUMERIC_BUCKETS_COUNT } from 'common/contract'
+import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
+import { IconButton } from 'web/components/buttons/button'
+import { PencilIcon } from '@heroicons/react/outline'
 
 export const MultiNumericRangeSection = (props: {
   minString: string
   setMinString: (value: string) => void
   maxString: string
   setMaxString: (value: string) => void
+  numBuckets: number
+  setNumBuckets: (value: number) => void
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   min: number | undefined
   max: number | undefined
@@ -20,6 +24,8 @@ export const MultiNumericRangeSection = (props: {
   const {
     minString,
     setMinString,
+    numBuckets,
+    setNumBuckets,
     maxString,
     setMaxString,
     submitState,
@@ -32,9 +38,11 @@ export const MultiNumericRangeSection = (props: {
       setBuckets(undefined)
       return
     }
-    const ranges = getMultiNumericAnswerBucketRanges(min, max)
+    const ranges = getMultiNumericAnswerBucketRanges(min, max, numBuckets)
     setBuckets(ranges)
-  }, [max, min])
+  }, [max, min, numBuckets])
+
+  const [showBucketInput, setShowBucketInput] = useState(false)
 
   const [buckets, setBuckets] = usePersistentLocalState<number[][] | undefined>(
     undefined,
@@ -42,6 +50,7 @@ export const MultiNumericRangeSection = (props: {
   )
   const [showBuckets, _] = useState(true)
   const bucketsToShow = 2
+  const showAllBuckets = numBuckets <= bucketsToShow * 2
   return (
     <Col>
       <Col className="mb-2 items-start">
@@ -78,27 +87,58 @@ export const MultiNumericRangeSection = (props: {
         )}
       </Col>
       {buckets && showBuckets && (
-        <Col>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Buckets </span>
-            <InfoTooltip
-              text={`Users will see the expected value computed across the ${MULTI_NUMERIC_BUCKETS_COUNT} buckets, & can bet on them individually.`}
-            />
-          </label>
-          <Row className={'ml-1 flex-wrap items-center gap-2'}>
-            {buckets.slice(0, bucketsToShow).map((a, i) => (
-              <span key={a[0]}>
-                {a[0]}-{a[1]}
-                {i === 0 ? ', ' : ''}
-              </span>
-            ))}
-            {buckets.length > 4 && <span>...</span>}
-            {buckets.slice(-bucketsToShow).map((a, i) => (
-              <span key={a[0]}>
-                {a[0]}-{a[1]}
-                {bucketsToShow === i + 1 ? '' : ', '}
-              </span>
-            ))}
+        <Col className={'gap-1'}>
+          <Row className={'items-center'}>
+            <label className="gap-2 px-1 py-2">
+              <span className="mb-1">Buckets </span>
+              <InfoTooltip
+                text={`Users will see the expected value computed across the ${buckets.length} buckets, & can bet on them individually.`}
+              />
+            </label>
+            {!showBucketInput ? (
+              <IconButton
+                onClick={() => setShowBucketInput(!showBucketInput)}
+                size="2xs"
+                className="text-ink-500"
+              >
+                <PencilIcon className="h-4 w-4" />
+              </IconButton>
+            ) : (
+              <Input
+                type="number"
+                className="h-8 w-24"
+                placeholder="Buckets"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setNumBuckets(parseInt(e.target.value))}
+                disabled={submitState === 'LOADING'}
+                min={2}
+                max={MULTI_NUMERIC_BUCKETS_MAX}
+                value={numBuckets}
+              />
+            )}
+          </Row>
+          <Row className={'ml-1 flex-wrap items-center gap-5'}>
+            <Row className={'gap-2'}>
+              {buckets
+                .slice(0, showAllBuckets ? numBuckets : bucketsToShow)
+                .map((a, i) => (
+                  <span key={a[0]}>
+                    {a[0]}-{a[1]}
+                    {i === 0 ? ', ' : ''}
+                  </span>
+                ))}
+              {!showAllBuckets && (
+                <>
+                  {buckets.length > 4 && <span>...</span>}
+                  {buckets.slice(-bucketsToShow).map((a, i) => (
+                    <span key={a[0]}>
+                      {a[0]}-{a[1]}
+                      {bucketsToShow === i + 1 ? '' : ', '}
+                    </span>
+                  ))}
+                </>
+              )}
+            </Row>
           </Row>
         </Col>
       )}

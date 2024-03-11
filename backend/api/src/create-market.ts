@@ -161,33 +161,33 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         id: contractRef.id,
         slug,
         creator: user,
-      question,
-      outcomeType,
-      description:
-        typeof description !== 'string' && description
-          ? description
-          : anythingToRichText({
-              raw: description,
-              html: descriptionHtml,
-              markdown: descriptionMarkdown,
-              jsonString: descriptionJson,
-              // default: use a single empty space as the description
-            }) ?? htmlToRichText(`<p> </p>`),
-      initialProb: initialProb ?? 50,
-      ante,
-      closeTime,
-      visibility,
-      isTwitchContract,
-      min: min ?? 0,
-      max: max ?? 0,
-      isLogScale: isLogScale ?? false,
-      answers: answers ?? [],
-      addAnswersMode,
-      shouldAnswersSumToOne,
-      loverUserId1,
-      loverUserId2,
-      matchCreatorId,
-      isLove,
+        question,
+        outcomeType,
+        description:
+          typeof description !== 'string' && description
+            ? description
+            : anythingToRichText({
+                raw: description,
+                html: descriptionHtml,
+                markdown: descriptionMarkdown,
+                jsonString: descriptionJson,
+                // default: use a single empty space as the description
+              }) ?? htmlToRichText(`<p> </p>`),
+        initialProb: initialProb ?? 50,
+        ante,
+        closeTime,
+        visibility,
+        isTwitchContract,
+        min: min ?? 0,
+        max: max ?? 0,
+        isLogScale: isLogScale ?? false,
+        answers: answers ?? [],
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        loverUserId1,
+        loverUserId2,
+        matchCreatorId,
+        isLove,
         answerLoverUserIds,
         specialLiquidityPerAnswer,
       })
@@ -379,7 +379,12 @@ function validateMarketBody(body: Body) {
     ))
     if (min >= max)
       throw new APIError(400, 'Numeric markets must have min < max.')
-    answers = getMultiNumericAnswerBucketRangeNames(min, max)
+    const { numberOfBuckets } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    )
+    answers = getMultiNumericAnswerBucketRangeNames(min, max, numberOfBuckets)
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {

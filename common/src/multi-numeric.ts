@@ -1,7 +1,4 @@
-import {
-  CPMMNumericContract,
-  MULTI_NUMERIC_BUCKETS_COUNT,
-} from 'common/contract'
+import { CPMMNumericContract } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { sum } from 'lodash'
 import {
@@ -9,39 +6,51 @@ import {
   getInitialAnswerProbability,
 } from 'common/calculate'
 
-export const getMultiNumericAnswerMidpoints = (min: number, max: number) => {
-  const buckets = getMultiNumericAnswerBucketRanges(min, max)
-  return buckets.map(([min, max]) => (max + min) / 2)
+export const getMultiNumericAnswerMidpoints = (
+  min: number,
+  max: number,
+  buckets: number
+) => {
+  const ranges = getMultiNumericAnswerBucketRanges(min, max, buckets)
+  return ranges.map(([min, max]) => (max + min) / 2)
 }
-export const getNumericBucketSize = (contract: { max: number; min: number }) =>
-  (contract.max - contract.min) / MULTI_NUMERIC_BUCKETS_COUNT
+export const getNumericBucketSize = (
+  min: number,
+  max: number,
+  buckets: number
+) => (max - min) / buckets
 
-export const getDecimalPlaces = (contract: { max: number; min: number }) =>
-  Math.max(0, Math.ceil(-Math.log10(getNumericBucketSize(contract))))
+export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
+  Math.max(0, Math.ceil(-Math.log10(getNumericBucketSize(min, max, buckets))))
 
-export const getMultiNumericAnswerBucketRanges = (min: number, max: number) => {
+export const getMultiNumericAnswerBucketRanges = (
+  min: number,
+  max: number,
+  buckets: number
+) => {
   const rangeSize = max - min
   if (rangeSize === 0) {
     return [[min, max]]
   }
-  const stepSize = rangeSize / MULTI_NUMERIC_BUCKETS_COUNT
-  const decimalPlaces = getDecimalPlaces({ min, max })
+  const stepSize = rangeSize / buckets
+  const decimalPlaces = getDecimalPlaces(min, max, buckets)
 
-  const buckets: [number, number][] = []
-  for (let i = 0; i < MULTI_NUMERIC_BUCKETS_COUNT; i++) {
+  const ranges: [number, number][] = []
+  for (let i = 0; i < buckets; i++) {
     const bucketStart = Number((min + i * stepSize).toFixed(decimalPlaces))
     const bucketEnd = Number((min + (i + 1) * stepSize).toFixed(decimalPlaces))
-    buckets.push([bucketStart, bucketEnd])
+    ranges.push([bucketStart, bucketEnd])
   }
 
-  return buckets
+  return ranges
 }
 
 export const getMultiNumericAnswerBucketRangeNames = (
   min: number,
-  max: number
+  max: number,
+  buckets: number
 ) => {
-  const ranges = getMultiNumericAnswerBucketRanges(min, max)
+  const ranges = getMultiNumericAnswerBucketRanges(min, max, buckets)
   return ranges.map(([min, max]) => `${min}-${max}`)
 }
 
@@ -70,7 +79,8 @@ export function getExpectedValue(
   )
   const answerValues = getMultiNumericAnswerMidpoints(
     contract.min,
-    contract.max
+    contract.max,
+    contract.answers.length
   )
   return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
@@ -85,5 +95,7 @@ export function formatExpectedValue(
 ) {
   // There are a few NaN values on dev
   if (isNaN(value)) return 'N/A'
-  return value.toFixed(getDecimalPlaces(contract))
+  return value.toFixed(
+    getDecimalPlaces(contract.min, contract.max, contract.answers.length)
+  )
 }

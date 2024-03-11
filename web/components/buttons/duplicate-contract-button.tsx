@@ -46,6 +46,11 @@ function duplicateContractHref(contract: Contract) {
     }
     params.initValue = getMappedValue(contract, contract.initialProbability)
   }
+  if (contract.outcomeType === 'NUMBER') {
+    params.min = contract.min
+    params.max = contract.max
+    params.numBuckets = contract.answers.length
+  }
 
   if (contract.outcomeType === 'MULTIPLE_CHOICE') {
     params.answers = contract.answers

@@ -10,6 +10,7 @@ import {
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
+  MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
   Visibility,
 } from 'common/contract'
@@ -74,11 +75,15 @@ export function ContractParamsForm(props: {
     (params?.groupIds?.join('') ?? '')
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
-    'new-min' + paramsKey
+    'min' + paramsKey
   )
   const [maxString, setMaxString] = usePersistentLocalState(
     params?.max?.toString() ?? '',
-    'new-max' + paramsKey
+    'max' + paramsKey
+  )
+  const [numberOfBuckets, setNumberOfBuckets] = usePersistentLocalState(
+    params?.numBuckets ?? MULTI_NUMERIC_BUCKETS_MAX,
+    'buckets-num' + paramsKey
   )
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
     !!params?.isLogScale,
@@ -287,7 +292,10 @@ export function ContractParamsForm(props: {
         min < initialValue &&
         initialValue < max)) &&
     isValidMultipleChoice &&
-    (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined)
+    (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
+    (outcomeType === 'NUMBER'
+      ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
+      : true)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -375,6 +383,7 @@ export function ContractParamsForm(props: {
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+        numberOfBuckets,
       })
       const newContract = await api('market', createProps as any)
 
@@ -537,6 +546,8 @@ export function ContractParamsForm(props: {
           submitState={submitState}
           min={min}
           max={max}
+          numBuckets={numberOfBuckets}
+          setNumBuckets={setNumberOfBuckets}
           paramsKey={paramsKey}
         />
       )}

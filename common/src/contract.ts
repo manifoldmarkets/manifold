@@ -450,7 +450,7 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
-export const MULTI_NUMERIC_BUCKETS_COUNT = 10
+export const MULTI_NUMERIC_BUCKETS_MAX = 10
 export const MULTI_NUMERIC_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted' | 'private'

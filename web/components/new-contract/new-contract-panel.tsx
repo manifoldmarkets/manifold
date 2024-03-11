@@ -26,6 +26,7 @@ export type NewQuestionParams = {
   answers?: string[]
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
+  numBuckets?: number
 }
 
 export type CreateContractStateType =

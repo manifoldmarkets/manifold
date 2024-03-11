@@ -61,12 +61,16 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const user = useUser()
   const userBets = useUserContractBets(user?.id, contract.id)
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
-  const step = getNumericBucketSize(contract)
+  const step = getNumericBucketSize(contract.min, contract.max, answers.length)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
   const aboutRightBuckets = (amountGiven: number) => {
-    const buckets = getMultiNumericAnswerBucketRanges(minimum, maximum)
+    const buckets = getMultiNumericAnswerBucketRanges(
+      minimum,
+      maximum,
+      answers.length
+    )
     const containingBucket = find(buckets, (bucket) => {
       const [start, end] = bucket
       return amountGiven >= start && amountGiven <= end
@@ -201,12 +205,23 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       : mode === 'about right'
       ? 'blue'
       : 'gray-outline'
-
+  const gridClasses: { [key: number]: string } = {
+    2: 'grid-cols-2',
+    3: 'grid-cols-3',
+    4: 'grid-cols-4',
+    5: 'grid-cols-5',
+    6: 'grid-cols-3 sm:grid-cols-6',
+    7: 'grid-cols-4 md:grid-cols-7',
+    8: 'grid-cols-4 lg:grid-cols-8',
+    9: 'grid-cols-5 lg:grid-cols-9',
+    10: 'grid-cols-5 lg:grid-cols-10',
+  }
+  const itemCount = contract.answers.length
   return (
     <Col className={'gap-2'}>
       {showDistribution && (
         <Col className={'gap-2'}>
-          <div className={'grid grid-cols-5 gap-y-3 sm:grid-cols-10'}>
+          <div className={`grid gap-y-3 ${gridClasses[itemCount]}`}>
             {answers.map((a) => (
               <Col
                 key={a.id}

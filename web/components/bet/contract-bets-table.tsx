@@ -376,7 +376,8 @@ export const groupMultiNumericBets = (
   const getExpectedValueAtProbs = (probs: number[]) => {
     const answerValues = getMultiNumericAnswerMidpoints(
       contract.min,
-      contract.max
+      contract.max,
+      contract.answers.length
     )
     return sum(probs.map((p, i) => p * answerValues[i]))
   }
