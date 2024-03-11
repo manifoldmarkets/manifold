@@ -129,11 +129,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: '/politics',
         icon: GiCapitol,
       },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimple,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimple,
+      // },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -169,7 +169,7 @@ const getMobileNav = (toggleModal: () => void) => {
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
+    // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
