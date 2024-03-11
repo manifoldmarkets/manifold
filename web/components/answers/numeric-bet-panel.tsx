@@ -125,9 +125,11 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       )
       .finally(() => setIsSubmitting(false))
   }
+  const roundToEpsilon = (num: number) => Number(num.toFixed(7))
   const onChange = (newAmount: number) => {
-    const realAmount =
+    const realAmount = roundToEpsilon(
       mode === 'more than' ? maximum - newAmount + minimum : newAmount
+    )
     if (realAmount < minimum) {
       setAmount(minimum)
     } else if (realAmount > maximum) {
