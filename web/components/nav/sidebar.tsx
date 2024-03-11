@@ -36,7 +36,6 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { GiCapitol } from 'react-icons/gi'
-import { PiTelevisionSimple } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
