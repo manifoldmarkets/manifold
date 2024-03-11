@@ -4,7 +4,7 @@ import { ensureDeviceToken } from 'web/components/auth-context'
 import { track } from 'web/lib/service/analytics'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 
-const TEST_CACHE: any = {}
+const AB_TEST_CACHE: { [testName: string]: boolean } = {}
 
 export const useABTest = <T>(
   testName: string,
@@ -24,8 +24,8 @@ export const useABTest = <T>(
     setVariant(variants[key])
 
     // only track once per user session
-    if (!TEST_CACHE[testName]) {
-      TEST_CACHE[testName] = true
+    if (!AB_TEST_CACHE[testName]) {
+      AB_TEST_CACHE[testName] = true
 
       track(testName, { ...trackingProperties, variant: key })
     }

@@ -25,6 +25,7 @@ import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { getContract } from 'web/lib/supabase/contracts'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
@@ -75,6 +76,11 @@ export default function LandingPage(props: {
   useRedirectIfSignedIn()
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const abTestVariant = useABTest('landing-page-bet-vs-predict', {
+    bet: 'bet',
+    predict: 'predict',
+  })
 
   return (
     <Page trackPageView={'signed out home page'} hideSidebar>
@@ -142,15 +148,32 @@ export default function LandingPage(props: {
 
           <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-lg gap-2">
-              <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
-              <h1 className="text-lg">
-                Play-money markets. Real-world accuracy.
-              </h1>
-              <h1 className="text-lg">
-                Compete with your friends by betting on politics, tech, sports,
-                and more. It's play money and free to play.
-              </h1>
-
+              {abTestVariant === 'bet' && (
+                <>
+                  <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
+                  <h1 className="text-lg">
+                    Play-money markets. Real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Compete with your friends by betting on politics, tech,
+                    sports, and more. It's play money and free to play.
+                  </h1>
+                </>
+              )}
+              {abTestVariant !== 'bet' && (
+                <>
+                  <h1 className="mb-4 text-4xl">
+                    Predict & win internet points
+                  </h1>
+                  <h1 className="text-lg">
+                    Trade in markets with real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Compete with your friends on politics, tech, sports, and
+                    more.
+                  </h1>
+                </>
+              )}
               <Button
                 color="gradient"
                 size="2xl"
@@ -159,7 +182,6 @@ export default function LandingPage(props: {
               >
                 Start predicting
               </Button>
-
               <div className="text-md ml-8 ">
                 ...and get{'   '}
                 <span className="z-10 font-semibold">
