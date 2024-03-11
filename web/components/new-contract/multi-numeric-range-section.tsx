@@ -120,35 +120,33 @@ export const MultiNumericRangeSection = (props: {
               />
             )}
           </Row>
-          <Row className={'ml-1 flex-wrap items-center gap-5'}>
-            <Row className={'gap-2'}>
-              {buckets
-                .slice(0, showAllBuckets ? numBuckets : bucketsToShow)
-                .map((a, i) => (
-                  <span key={a[0]}>
+          <Row className={'ml-1 flex-wrap items-center gap-2'}>
+            {buckets
+              .slice(0, showAllBuckets ? numBuckets : bucketsToShow)
+              .map((a, i) => (
+                <span className={'whitespace-nowrap'} key={a[0]}>
+                  {a[0]}-{a[1]}
+                  {i === 0 ? ', ' : ''}
+                </span>
+              ))}
+            {!showAllBuckets && (
+              <>
+                {buckets.length > 4 && (
+                  <span
+                    className="cursor-pointer hover:underline "
+                    onClick={() => setShowAllBuckets(true)}
+                  >
+                    ...
+                  </span>
+                )}
+                {buckets.slice(-bucketsToShow).map((a, i) => (
+                  <span className={'whitespace-nowrap'} key={a[0]}>
                     {a[0]}-{a[1]}
-                    {i === 0 ? ', ' : ''}
+                    {bucketsToShow === i + 1 ? '' : ', '}
                   </span>
                 ))}
-              {!showAllBuckets && (
-                <>
-                  {buckets.length > 4 && (
-                    <span
-                      className="cursor-pointer hover:underline "
-                      onClick={() => setShowAllBuckets(true)}
-                    >
-                      ...
-                    </span>
-                  )}
-                  {buckets.slice(-bucketsToShow).map((a, i) => (
-                    <span key={a[0]}>
-                      {a[0]}-{a[1]}
-                      {bucketsToShow === i + 1 ? '' : ', '}
-                    </span>
-                  ))}
-                </>
-              )}
-            </Row>
+              </>
+            )}
           </Row>
         </Col>
       )}

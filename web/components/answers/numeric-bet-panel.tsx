@@ -30,6 +30,7 @@ import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
   formatExpectedValue,
+  getDecimalPlaces,
   getExpectedValue,
   getMultiNumericAnswerBucketRanges,
   getMultiNumericAnswerToRange,
@@ -129,8 +130,12 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       )
       .finally(() => setIsSubmitting(false))
   }
-  const roundToEpsilon = (num: number) => Number(num.toFixed(7))
-  const onChange = (newAmount: number) => {
+  const roundToEpsilon = (num: number) =>
+    Number(
+      num.toFixed(getDecimalPlaces(minimum, maximum, contract.answers.length))
+    )
+
+  const onChangeLimit = (newAmount: number) => {
     const realAmount = roundToEpsilon(
       mode === 'more than' ? maximum - newAmount + minimum : newAmount
     )
@@ -141,6 +146,15 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     } else {
       setExpectedValue(realAmount)
     }
+  }
+
+  const onChangeRange = (low: number, high: number) => {
+    setRange([
+      roundToEpsilon(low),
+      roundToEpsilon(
+        high !== range[1] ? (high === maximum ? maximum : high) : range[1]
+      ),
+    ])
   }
   useEffect(() => {
     setExpectedValue(getExpectedValue(contract))
@@ -254,7 +268,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                   ? maximum - expectedValue + minimum
                   : expectedValue
               }
-              onChange={onChange}
+              onChange={onChangeLimit}
               min={
                 mode === 'more than'
                   ? minimum + step
@@ -273,16 +287,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
                 className={'w-full'}
                 highValue={range[1]}
                 lowValue={range[0]}
-                setValues={(low, high) =>
-                  setRange([
-                    low,
-                    high !== range[1]
-                      ? high === maximum
-                        ? maximum
-                        : high
-                      : range[1],
-                  ])
-                }
+                setValues={onChangeRange}
                 min={minimum}
                 max={maximum}
               />

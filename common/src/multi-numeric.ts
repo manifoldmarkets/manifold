@@ -20,7 +20,7 @@ export const getNumericBucketSize = (
   buckets: number
 ) => (max - min) / buckets
 
-const getDecimalPlaces = (min: number, max: number, buckets: number) =>
+export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
   Math.max(
     0,
     Math.ceil(Math.abs(Math.log10(getNumericBucketSize(min, max, buckets))))
