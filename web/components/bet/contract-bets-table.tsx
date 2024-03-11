@@ -353,25 +353,25 @@ function BetRow(props: {
     </tr>
   )
 }
-function MultiNumberBetRow(props: {
-  bets: Bet[]
+export const groupMultiNumericBets = (
+  bets: Bet[],
   contract: CPMMNumericContract
-  saleBet?: Bet
-  isYourBet: boolean
-}) {
-  const { bets, contract } = props
+) => {
   const nonRedemptionBets = bets.filter((b) => !b.isRedemption)
   const betOnAnswers = contract.answers.filter((a) =>
     nonRedemptionBets.some((b) => b.answerId === a.id)
   )
-  if (betOnAnswers.length === 0) return null
+  if (betOnAnswers.length === 0) return { bet: undefined }
   const lowestAnswer = betOnAnswers[0]
+  const lowerRange = lowestAnswer.text.split('-')[0]
   const highestAnswer = betOnAnswers[betOnAnswers.length - 1]
+  const higherRange = highestAnswer.text.split('-')[1]
   const firstNonRedemptionBet = nonRedemptionBets[0]
   const bet = {
     ...firstNonRedemptionBet,
     amount: sumBy(bets, (b) => b.amount),
     shares: sumBy(bets, (b) => b.shares),
+    isApi: nonRedemptionBets.some((b) => b.isApi),
   }
   const getExpectedValueAtProbs = (probs: number[]) => {
     const answerValues = getMultiNumericAnswerMidpoints(
@@ -383,32 +383,61 @@ function MultiNumberBetRow(props: {
   const betProbAfters = contract.answers.map(
     (a) => bets.find((b) => b.answerId === a.id)?.probAfter ?? 0
   )
-  const expectedValueAfter = getExpectedValueAtProbs(betProbAfters)
+  const expectedValueAfter = getExpectedValueAtProbs(betProbAfters).toFixed(2)
   const betProbBefores = contract.answers.map(
     (a) => bets.find((b) => b.answerId === a.id)?.probBefore ?? 0
   )
-  const expectedValueBefore = getExpectedValueAtProbs(betProbBefores)
-  const { amount, createdTime, shares } = bet
+  const expectedValueBefore = getExpectedValueAtProbs(betProbBefores).toFixed(2)
 
-  const ofTotalAmount =
-    bet.limitProb === undefined || bet.orderAmount === undefined
-      ? ''
-      : ` / ${formatMoney(bet.orderAmount)}`
+  const ofTotalAmount = bets.some(
+    (b) => b.orderAmount !== undefined && b.limitProb !== undefined
+  )
+    ? ` / ${formatMoney(sumBy(bets, (b) => b.orderAmount ?? 0))}`
+    : ''
+
+  return {
+    bet,
+    lowerRange,
+    higherRange,
+    expectedValueBefore,
+    expectedValueAfter,
+    ofTotalAmount,
+  }
+}
+
+function MultiNumberBetRow(props: {
+  bets: Bet[]
+  contract: CPMMNumericContract
+  saleBet?: Bet
+  isYourBet: boolean
+}) {
+  const { bets, contract } = props
+  const {
+    bet,
+    lowerRange,
+    higherRange,
+    expectedValueBefore,
+    expectedValueAfter,
+    ofTotalAmount,
+  } = groupMultiNumericBets(bets, contract)
+  if (!bet) return null
+
+  const { amount, createdTime, shares } = bet
 
   return (
     <tr>
       <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>
       <td className="max-w-[200px] truncate sm:max-w-[250px]">
-        {lowestAnswer.text.split('-')[0]} - {highestAnswer.text.split('-')[1]}
+        {lowerRange} - {higherRange}
       </td>
       <td>
         {formatMoney(Math.abs(amount))}
         {ofTotalAmount}
       </td>
-      <td>{formatWithCommas(Math.abs(bet.shares))}</td>
+      <td>{formatWithCommas(Math.abs(shares))}</td>
 
       <td>
-        {expectedValueBefore.toFixed(2)} → {expectedValueAfter.toFixed(2)}
+        {expectedValueBefore} → {expectedValueAfter}
       </td>
       <td>{formatTimeShort(createdTime)}</td>
     </tr>

@@ -153,6 +153,7 @@ import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
+import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -289,6 +290,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   createanswer: createAnswerDpm,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
+  'unique-bet-group-count': getUniqueBetGroupCount,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

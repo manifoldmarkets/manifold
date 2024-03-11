@@ -189,6 +189,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'unique-bet-group-count': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { count: number },
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+  },
   // deprecated. use /bets?username= instead
   'user/:username/bets': {
     method: 'GET',

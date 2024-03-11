@@ -43,6 +43,11 @@ export async function getContractParams(
   const isMulti = contract.mechanism === 'cpmm-multi-1'
   const isBinaryDpm =
     contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
+  const isNumber = contract.outcomeType === 'NUMBER'
+  const numberContractBetCount = async () =>
+    unauthedApi('unique-bet-group-count', {
+      contractId: contract.id,
+    }).then((res) => res.count)
 
   const [
     canAccessContract,
@@ -61,14 +66,18 @@ export async function getContractParams(
     totalViews,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
-    hasMechanism ? getTotalBetCount(contract.id, db) : 0,
+    hasMechanism
+      ? isNumber
+        ? numberContractBetCount()
+        : getTotalBetCount(contract.id, db)
+      : 0,
     hasMechanism
       ? getBets(db, {
           contractId: contract.id,
           limit: 100,
           order: 'desc',
           filterAntes: true,
-          filterRedemptions: true,
+          filterRedemptions: !isNumber, // Necessary to calculate expected value
         })
       : ([] as Bet[]),
     hasMechanism

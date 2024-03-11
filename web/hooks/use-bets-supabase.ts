@@ -1,14 +1,9 @@
 import { Bet, BetFilter } from 'common/bet'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from 'web/hooks/use-event'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import {
-  convertBet,
-  getBetRows,
-  getBets,
-  getTotalBetCount,
-} from 'common/supabase/bets'
+import { convertBet, getBetRows, getBets } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
@@ -99,16 +94,4 @@ export function useBets(options?: BetFilter) {
   }, [options])
 
   return bets
-}
-
-export function useBetCount(contractId: string) {
-  const [betCount, setBetCount] = useState<number>(0)
-
-  useEffect(() => {
-    if (contractId) {
-      getTotalBetCount(contractId, db).then((result) => setBetCount(result))
-    }
-  }, [contractId])
-
-  return betCount
 }

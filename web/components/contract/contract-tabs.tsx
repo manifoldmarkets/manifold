@@ -8,7 +8,11 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { CPMMBinaryContract, Contract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  Contract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -39,6 +43,7 @@ import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
+import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -463,6 +468,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   setReplyToBet?: (bet: Bet) => void
 }) {
   const { contract, setReplyToBet, totalBets } = props
+  const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -479,12 +485,24 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
+  const isMultiNumber = outcomeType === 'NUMBER'
+  const betsByBetGroupId = isMultiNumber
+    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+    : {}
+  const groupedBets = Object.values(betsByBetGroupId)
+
   const items = [
-    ...bets.map((bet) => ({
-      type: 'bet' as const,
-      id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
-      bet,
-    })),
+    ...(isMultiNumber
+      ? groupedBets.map((bets) => ({
+          type: 'betGroup' as const,
+          id: 'bets-tab-' + bets[0].betGroupId,
+          bets,
+        }))
+      : bets.map((bet) => ({
+          type: 'bet' as const,
+          id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
+          bet,
+        }))),
     ...visibleLps.map((lp) => ({
       type: 'liquidity' as const,
       id: lp.id,
@@ -515,6 +533,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       ? -item.bet.createdTime
       : item.type === 'liquidity'
       ? -item.lp.createdTime
+      : item.type === 'betGroup'
+      ? -item.bets[0].createdTime
       : undefined
   ).slice(start, end)
 
@@ -533,6 +553,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                 key={item.id}
                 contract={contract}
                 bet={item.bet}
+              />
+            ) : item.type === 'betGroup' ? (
+              <MultiNumericBetGroup
+                key={item.id}
+                contract={contract as CPMMNumericContract}
+                bets={item.bets}
               />
             ) : (
               <FeedLiquidity key={item.id} liquidity={item.lp} />

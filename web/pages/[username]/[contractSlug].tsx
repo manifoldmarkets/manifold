@@ -15,7 +15,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { first, mergeWith } from 'lodash'
+import { first, mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -214,11 +214,12 @@ export function ContractPageContent(props: ContractParams) {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(historyData.bets)?.createdTime
+  const isNumber = contract.outcomeType === 'NUMBER'
 
   const { rows, loadNewer } = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
     order: 'asc',
   })
 
@@ -229,9 +230,16 @@ export function ContractPageContent(props: ContractParams) {
 
   const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
+  const totalBets =
+    props.totalBets +
+    (isNumber
+      ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
+      : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => [...historyData.bets, ...newBetsWithoutRedemptions],
+    () => [
+      ...historyData.bets,
+      ...(isNumber ? newBets : newBetsWithoutRedemptions),
+    ],
     [historyData.bets, newBets]
   )
 
