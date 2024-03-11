@@ -42,7 +42,7 @@ export async function mergeGroups(
     (row) => row.contract_id
   )
 
-  // if (contracts.length > 7) {
+  // if (contracts.length > 10) {
   //   throw new Error(
   //     `found ${contracts.length} contracts in group ${from}. are you sure?`
   //   )
@@ -101,7 +101,7 @@ export async function mergeGroups(
   await pg.none('delete from groups where id = $1', [from])
 }
 
-async function updateGroupLinksOnContracts(
+export async function updateGroupLinksOnContracts(
   pg: SupabaseDirectClient,
   firestore: any,
   contractIds: string[]
