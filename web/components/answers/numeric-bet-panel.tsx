@@ -506,7 +506,7 @@ export const SellButton = (props: {
   const sharesSum = sumBy(userBets, (bet) =>
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
-  if (sharesSum === 0) return null
+  if (floatingEqual(sharesSum, 0)) return null
   return (
     <Col>
       {open && (
