@@ -50,7 +50,9 @@ export const MultiNumericRangeSection = (props: {
   )
   const [showBuckets, _] = useState(true)
   const bucketsToShow = 2
-  const showAllBuckets = numBuckets <= bucketsToShow * 2
+  const [showAllBuckets, setShowAllBuckets] = useState(
+    numBuckets <= bucketsToShow * 2
+  )
   return (
     <Col>
       <Col className="mb-2 items-start">
@@ -97,7 +99,7 @@ export const MultiNumericRangeSection = (props: {
             </label>
             {!showBucketInput ? (
               <IconButton
-                onClick={() => setShowBucketInput(!showBucketInput)}
+                onClick={() => setShowBucketInput(true)}
                 size="2xs"
                 className="text-ink-500"
               >
@@ -129,7 +131,14 @@ export const MultiNumericRangeSection = (props: {
                 ))}
               {!showAllBuckets && (
                 <>
-                  {buckets.length > 4 && <span>...</span>}
+                  {buckets.length > 4 && (
+                    <span
+                      className="cursor-pointer hover:underline "
+                      onClick={() => setShowAllBuckets(true)}
+                    >
+                      ...
+                    </span>
+                  )}
                   {buckets.slice(-bucketsToShow).map((a, i) => (
                     <span key={a[0]}>
                       {a[0]}-{a[1]}

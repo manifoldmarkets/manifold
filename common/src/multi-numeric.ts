@@ -20,8 +20,11 @@ export const getNumericBucketSize = (
   buckets: number
 ) => (max - min) / buckets
 
-export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
-  Math.max(0, Math.ceil(-Math.log10(getNumericBucketSize(min, max, buckets))))
+const getDecimalPlaces = (min: number, max: number, buckets: number) =>
+  Math.max(
+    0,
+    Math.ceil(Math.abs(Math.log10(getNumericBucketSize(min, max, buckets))))
+  )
 
 export const getMultiNumericAnswerBucketRanges = (
   min: number,
