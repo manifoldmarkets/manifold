@@ -124,7 +124,11 @@ export async function updateGroupLinksOnContracts(
 
     bulkWriter.update(contractRef, {
       groupSlugs: groups.map((g) => g.slug),
-      groupLinks: groups,
+      groupLinks: groups.map((g) => ({
+        groupId: g.group_id,
+        slug: g.slug,
+        name: g.name,
+      })),
     })
   }
 
