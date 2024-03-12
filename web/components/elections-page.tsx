@@ -175,7 +175,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
         rawSenateStateContracts={rawSenateStateContracts}
         rawGovernorStateContracts={rawGovernorStateContracts}
       />
-      <Col className="gap-6 sm:hidden sm:gap-8">
+      {/* <Col className="gap-6 sm:hidden sm:gap-8">
         <PoliticsCard
           contract={democraticElectability as MultiContract}
           viewType="CANDIDATE"
@@ -188,8 +188,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
           customTitle={'Who would win if they were the Republican nominee?'}
           excludeAnswers={['Donald Trump']}
         />
-      </Col>
-      <Col className="hidden gap-6 sm:flex sm:gap-8">
+      </Col> */}
+      {/* <Col className="hidden gap-6 sm:flex sm:gap-8">
         <Col className="gap-2">
           <Row className="items-center gap-2">
             <div className="bg-ink-600 flex h-[1px] grow flex-row" />
@@ -217,7 +217,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             />
           </Row>
         </Col>
-      </Col>
+      </Col> */}
 
       <ConditionalMarkets rawPolicyContracts={rawPolicyContracts} />
     </Col>
