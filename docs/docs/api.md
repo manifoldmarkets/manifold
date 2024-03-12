@@ -1140,6 +1140,10 @@ Parameters:
 
 - `contractId`: The ID of the market to unresolve.
 
+### ```GET /request-loan```
+
+Collects the authenticated user's daily loan, available every 24 hours. Requires Auth.
+
 ## Changelog
 
 - 2024-02-01: Add Manifold Love endpoints `/get-lovers`, `/get-lover-answers?userId=[user_id]`, `/get-compatibility-questions`
