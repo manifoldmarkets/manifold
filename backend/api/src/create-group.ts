@@ -1,9 +1,8 @@
 import {
   Group,
-  MAX_ABOUT_LENGTH,
-  MAX_GROUP_NAME_LENGTH,
+  GroupAboutSchema,
+  GroupNameSchema,
   MAX_ID_LENGTH,
-  PrivacyStatusType,
 } from 'common/group'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
@@ -13,22 +12,23 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
-import { contentSchema } from 'common/api/zod-types'
 
 const bodySchema = z
   .object({
-    name: z.string().min(2).max(MAX_GROUP_NAME_LENGTH),
+    name: GroupNameSchema,
     memberIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)),
-    about: contentSchema.or(z.string().min(1).max(MAX_ABOUT_LENGTH)).optional(),
-    privacyStatus: z.string().min(1).optional(),
+    about: GroupAboutSchema.optional(),
+    privacyStatus: z.enum(['public', 'curated']),
   })
   .strict()
 
 export const creategroup = authEndpoint(async (req, auth) => {
-  const { name, about, memberIds, privacyStatus } = validate(
-    bodySchema,
-    req.body
-  )
+  const {
+    name,
+    about = '',
+    memberIds,
+    privacyStatus,
+  } = validate(bodySchema, req.body)
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
@@ -60,11 +60,11 @@ export const creategroup = authEndpoint(async (req, auth) => {
     creatorId: creator.id,
     slug,
     name,
-    about: about ?? '',
+    about,
     createdTime: Date.now(),
     totalMembers: memberIds.length,
     postIds: [],
-    privacyStatus: privacyStatus as PrivacyStatusType,
+    privacyStatus,
     importanceScore: 0,
   })
 

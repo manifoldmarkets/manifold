@@ -3,14 +3,13 @@ import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId } from 'common/envs/constants'
-import { contentSchema } from 'common/api/zod-types'
-import { MAX_ABOUT_LENGTH, MAX_GROUP_NAME_LENGTH } from 'common/group'
+import { GroupAboutSchema, GroupNameSchema } from 'common/group'
 
 const schema = z
   .object({
     id: z.string(),
-    about: contentSchema.or(z.string().max(MAX_ABOUT_LENGTH)).optional(),
-    name: z.string().min(2).max(MAX_GROUP_NAME_LENGTH).optional(),
+    about: GroupAboutSchema.optional(),
+    name: GroupNameSchema.optional(),
     bannerUrl: z.string().optional(),
   })
   .strict()
