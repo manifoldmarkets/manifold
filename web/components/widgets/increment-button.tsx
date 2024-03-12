@@ -4,11 +4,13 @@ import { Col } from '../layout/col'
 export const IncrementButton = (props: {
   amount: number
   onIncrement: () => void
+  className?: string
 }) => {
-  const { amount, onIncrement } = props
+  const { amount, onIncrement, className } = props
   return (
     <button
       className={clsx(
+        className,
         'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex  w-12 flex-row items-center justify-center'
       )}
       onClick={onIncrement}
@@ -21,26 +23,27 @@ export const IncrementButton = (props: {
 export const IncrementDecrementButton = (props: {
   onIncrement: () => void
   onDecrement: () => void
+  className?: string
 }) => {
-  const { onIncrement, onDecrement } = props
+  const { onIncrement, onDecrement, className } = props
 
   return (
-    <Col>
+    <Col className={className}>
       <button
         className={clsx(
-          'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex h-7 w-12 flex-row items-center justify-center'
+          'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex h-[24px] w-12 flex-row items-center justify-center'
         )}
         onClick={onIncrement}
       >
-        <div className="pointer-events-none text-xs">+</div>
+        <div className="pointer-events-none">+</div>
       </button>
       <button
         className={clsx(
-          'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex h-7 w-12 flex-row items-center justify-center'
+          'text-ink-500 active:bg-ink-100 active:text-ink-600 hover:text-ink-600 flex h-[22px] w-12 flex-row items-center justify-center'
         )}
         onClick={onDecrement}
       >
-        <div className="pointer-events-none text-xs">-</div>
+        <div className="pointer-events-none">-</div>
       </button>
     </Col>
   )

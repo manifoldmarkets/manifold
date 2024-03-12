@@ -73,7 +73,10 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const defaultBetAmount = 100
+  const [betAmount, setBetAmount] = useState<number | undefined>(
+    defaultBetAmount
+  )
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -95,8 +98,12 @@ export default function LimitOrderPanel(props: {
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
+  const initialProb = isCpmmMulti
+    ? multiProps!.answerToBuy.prob
+    : getProbability(contract)
+
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
-    undefined
+    Math.round(initialProb * 100)
   )
 
   const hasLimitBet = !!limitProbInt && !!betAmount
@@ -187,10 +194,6 @@ export default function LimitOrderPanel(props: {
     })
   }
 
-  const initialProb = isCpmmMulti
-    ? multiProps!.answerToBuy.prob
-    : getProbability(contract)
-
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
@@ -248,81 +251,85 @@ export default function LimitOrderPanel(props: {
           {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
         </Button>
         {addExpiration && (
-          <Row className="mt-4 flex-wrap gap-2">
-            <Input
-              type={'date'}
-              className="dark:date-range-input-white"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                setExpirationDate(e.target.value)
-                if (!expirationHoursMinutes) {
-                  setExpirationHoursMinutes(initTime)
-                }
-              }}
-              min={dayjs().format('YYYY-MM-DD')}
-              max="9999-12-31"
-              disabled={isSubmitting}
-              value={expirationDate}
-            />
-            <Input
-              type={'time'}
-              className="dark:date-range-input-white"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setExpirationHoursMinutes(e.target.value)}
-              disabled={isSubmitting}
-              value={expirationHoursMinutes}
-            />
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num =
-                  dayjs(
-                    `${expirationDate}T${expirationHoursMinutes}`
-                  ).valueOf() + MINUTE_MS
-                const addTime = dayjs(num).format('HH:mm')
-                setExpirationHoursMinutes(addTime)
-              }}
-            >
-              + 1Min
-            </Button>{' '}
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num =
-                  dayjs(
-                    `${expirationDate}T${expirationHoursMinutes}`
-                  ).valueOf() + HOUR_MS
-                const addTime = dayjs(num).format('HH:mm')
-                setExpirationHoursMinutes(addTime)
-              }}
-            >
-              + 1Hr
-            </Button>
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num = dayjs(expirationDate).valueOf() + DAY_MS
-                const addDay = dayjs(num).format('YYYY-MM-DD')
-                setExpirationDate(addDay)
-              }}
-            >
-              + 1D
-            </Button>
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num = dayjs(expirationDate).valueOf() + WEEK_MS
-                const addDay = dayjs(num).format('YYYY-MM-DD')
-                setExpirationDate(addDay)
-              }}
-            >
-              + 1W
-            </Button>
-          </Row>
+          <Col className="gap-2">
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                className="dark:date-range-input-white"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setExpirationDate(e.target.value)
+                  if (!expirationHoursMinutes) {
+                    setExpirationHoursMinutes(initTime)
+                  }
+                }}
+                min={dayjs().format('YYYY-MM-DD')}
+                max="9999-12-31"
+                disabled={isSubmitting}
+                value={expirationDate}
+              />
+              <Input
+                type={'time'}
+                className="dark:date-range-input-white"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setExpirationHoursMinutes(e.target.value)}
+                disabled={isSubmitting}
+                value={expirationHoursMinutes}
+              />
+            </Row>
+            <Row className="gap-2">
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num =
+                    dayjs(
+                      `${expirationDate}T${expirationHoursMinutes}`
+                    ).valueOf() + MINUTE_MS
+                  const addTime = dayjs(num).format('HH:mm')
+                  setExpirationHoursMinutes(addTime)
+                }}
+              >
+                + 1Min
+              </Button>{' '}
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num =
+                    dayjs(
+                      `${expirationDate}T${expirationHoursMinutes}`
+                    ).valueOf() + HOUR_MS
+                  const addTime = dayjs(num).format('HH:mm')
+                  setExpirationHoursMinutes(addTime)
+                }}
+              >
+                + 1Hr
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + DAY_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1D
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + WEEK_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1W
+              </Button>
+            </Row>
+          </Col>
         )}
       </div>
 
