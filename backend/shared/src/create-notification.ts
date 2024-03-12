@@ -1144,6 +1144,11 @@ export const createContractResolvedNotifications = async (
   } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     if (resolutionText === 'MKT' && resolutionValue)
       resolutionText = `${resolutionValue}`
+  } else if (contract.outcomeType === 'NUMBER') {
+    const resolvedAnswers = contract.answers.filter((a) =>
+      Object.keys(resolutionData.resolutions ?? {}).includes(a.id)
+    )
+    resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
   }
 
   const {

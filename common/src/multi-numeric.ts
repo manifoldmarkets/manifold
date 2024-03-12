@@ -62,7 +62,8 @@ export const getMultiNumericAnswerToRange = (originalAnswerText: string) => {
   const regex = /[-+]?\d+(\.\d+)?/g
   const matches = answerText.match(regex)
   if (!matches || matches.length !== 2) {
-    throw new Error('Invalid range format')
+    console.error('Invalid numeric answer text', answerText)
+    return [0, 0]
   }
   const dashCount = answerText.split('-').length - 1
   const min =
@@ -106,16 +107,13 @@ export function formatExpectedValue(
   value: number,
   contract: CPMMNumericContract
 ) {
-  // There are a few NaN values on dev
-  if (isNaN(value)) return 'N/A'
+  const { answers, min, max } = contract
+  // There are a few NaN & undefined values on dev
+  if (isNaN(value) || !min || !max) return 'N/A'
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: getDecimalPlaces(
-      contract.min,
-      contract.max,
-      contract.answers.length
-    ),
+    maximumFractionDigits: getDecimalPlaces(min, max, answers.length),
   })
   return formatter.format(value).replace('$', '')
 }
