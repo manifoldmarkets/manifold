@@ -13,6 +13,7 @@ import {
   LightningBoltIcon,
   LoginIcon,
   TemplateIcon,
+  ScaleIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
@@ -143,7 +144,12 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      { 
+        name: 'Guidelines', 
+        href: 'https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21', 
+        icon: ScaleIcon, 
+      },
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
@@ -157,7 +163,12 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
+    { 
+      name: 'Guidelines', 
+      href: 'https://manifoldmarkets.notion.site/Community-Guidelines-2b986d33f0c646478d4921667c272f21', 
+      icon: ScaleIcon, 
+    },
   )
 }
 
