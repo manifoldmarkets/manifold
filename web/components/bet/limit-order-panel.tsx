@@ -26,7 +26,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { OrderBookButton } from './order-book'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
@@ -211,10 +210,6 @@ export default function LimitOrderPanel(props: {
   )
   const returnPercent = formatPercent(currentReturn)
 
-  const unfilledBetsMatchingAnswer = unfilledBets.filter(
-    (b) => b.answerId === multiProps?.answerToBuy?.id
-  )
-
   return (
     <>
       <Col className="relative my-2 w-full gap-3">
@@ -228,14 +223,12 @@ export default function LimitOrderPanel(props: {
             onRangeError={setInputError}
             disabled={isSubmitting}
           />
-
-          <OrderBookButton
-            limitBets={unfilledBetsMatchingAnswer}
-            contract={contract}
-          />
         </Row>
       </Col>
 
+      <Row className={'text-ink-700 my-2 items-center space-x-3'}>
+        Bet amount
+      </Row>
       <BuyAmountInput
         amount={betAmount}
         onChange={onBetChange}

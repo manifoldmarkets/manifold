@@ -29,7 +29,6 @@ import {
 } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
-import { Title } from '../widgets/title'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
@@ -261,20 +260,6 @@ export function OrderBookButton(props: {
   const { limitBets, contract, label } = props
   const [open, setOpen] = useState(false)
 
-  const yesBets = sortBy(
-    limitBets.filter((bet) => bet.outcome === 'YES'),
-    (bet) => -1 * bet.limitProb,
-    (bet) => bet.createdTime
-  )
-  const noBets = sortBy(
-    limitBets.filter((bet) => bet.outcome === 'NO'),
-    (bet) => bet.limitProb,
-    (bet) => bet.createdTime
-  )
-
-  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-
   return (
     <>
       <Button
@@ -290,76 +275,110 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="bg-canvas-0 text-ink-800 rounded p-4 py-6">
-          <Title className="flex items-center">
-            Order book{' '}
-            <InfoTooltip
-              text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
-              className="ml-1"
-            />
-          </Title>
-
-          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
-          {!isCPMMMulti && !isPseudoNumeric && (
-            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
-              {(w, h) => (
-                <DepthChart
-                  contract={contract as any}
-                  yesBets={yesBets}
-                  noBets={noBets}
-                  width={w}
-                  height={h}
-                />
-              )}
-            </SizedContainer>
-          )}
-          {isCPMMMulti ? (
-            contract.answers.map((answer) => {
-              const answerYesBets = yesBets.filter(
-                (bet) => bet.answerId === answer.id
-              )
-              const answerNoBets = noBets.filter(
-                (bet) => bet.answerId === answer.id
-              )
-              if (answerYesBets.length === 0 && answerNoBets.length === 0) {
-                return null
-              }
-              return (
-                <Col key={answer.id} className="gap-2">
-                  {answer.text}
-                  <Row className="mt-2 items-start justify-around gap-2">
-                    <OrderTable
-                      limitBets={answerYesBets}
-                      contract={contract}
-                      side="YES"
-                    />
-                    <OrderTable
-                      limitBets={answerNoBets}
-                      contract={contract}
-                      side="NO"
-                    />
-                  </Row>
-                </Col>
-              )
-            })
-          ) : (
-            <Row className="mt-2 items-start justify-around gap-2">
-              <OrderTable
-                limitBets={yesBets}
-                contract={contract}
-                isYou={false}
-                side="YES"
-              />
-              <OrderTable
-                limitBets={noBets}
-                contract={contract}
-                isYou={false}
-                side="NO"
-              />
-            </Row>
-          )}
-        </Col>
+        <OrderBookPanel limitBets={limitBets} contract={contract} />
       </Modal>
     </>
+  )
+}
+
+export function OrderBookPanel(props: {
+  limitBets: LimitBet[]
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+}) {
+  const { limitBets, contract } = props
+
+  const yesBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'YES'),
+    (bet) => -1 * bet.limitProb,
+    (bet) => bet.createdTime
+  )
+  const noBets = sortBy(
+    limitBets.filter((bet) => bet.outcome === 'NO'),
+    (bet) => bet.limitProb,
+    (bet) => bet.createdTime
+  )
+
+  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+
+  if (limitBets.length === 0) return <></>
+
+  return (
+    <Col className="text-ink-800 my-2 rounded-lg bg-indigo-200/10 p-4">
+      <Subtitle className="!my-0">
+        Order book{' '}
+        <InfoTooltip
+          text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
+          className="ml-1"
+        />
+      </Subtitle>
+
+      {!isCPMMMulti && !isPseudoNumeric && limitBets.length > 0 && (
+        <>
+          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
+          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+            {(w, h) => (
+              <DepthChart
+                contract={contract as any}
+                yesBets={yesBets}
+                noBets={noBets}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        </>
+      )}
+      {isCPMMMulti ? (
+        contract.answers.map((answer) => {
+          const answerYesBets = yesBets.filter(
+            (bet) => bet.answerId === answer.id
+          )
+          const answerNoBets = noBets.filter(
+            (bet) => bet.answerId === answer.id
+          )
+          if (answerYesBets.length === 0 && answerNoBets.length === 0) {
+            return null
+          }
+          return (
+            <Col key={answer.id} className="gap-2">
+              {answer.text}
+              <Row className="mt-2 items-start justify-around gap-2">
+                <OrderTable
+                  limitBets={answerYesBets}
+                  contract={contract}
+                  side="YES"
+                />
+                <OrderTable
+                  limitBets={answerNoBets}
+                  contract={contract}
+                  side="NO"
+                />
+              </Row>
+            </Col>
+          )
+        })
+      ) : (
+        <Row className="mt-2 items-start justify-around gap-2">
+          <OrderTable
+            limitBets={yesBets}
+            contract={contract}
+            isYou={false}
+            side="YES"
+          />
+          <OrderTable
+            limitBets={noBets}
+            contract={contract}
+            isYou={false}
+            side="NO"
+          />
+        </Row>
+      )}
+    </Col>
   )
 }

@@ -30,7 +30,7 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { YourOrders } from './order-book'
+import { OrderBookPanel, YourOrders } from './order-book'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { YesNoSelector } from './yes-no-selector'
 import { isAndroid, isIOS } from 'web/lib/util/device'
@@ -615,16 +615,24 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <>
           <YourOrders
-            className="mt-2 rounded-lg bg-indigo-400/10 py-2"
+            className="mt-2 rounded-lg bg-indigo-200/10 py-4"
             contract={contract}
             bets={unfilledBetsMatchingAnswer}
           />
           {/* Stonks don't allow limit orders but users may have them from before the conversion */}
           {isStonk && unfilledBets.length > 0 && (
             <YourOrders
-              className="mt-2 rounded-lg bg-indigo-400/10 px-4 py-2"
+              className="mt-2 rounded-lg bg-indigo-200/10 px-4 py-4"
               contract={contract}
               bets={unfilledBets as LimitBet[]}
+            />
+          )}
+          {advancedTraderMode && (
+            <OrderBookPanel
+              contract={contract}
+              limitBets={unfilledBets.filter(
+                (b) => b.answerId === multiProps?.answerToBuy?.id
+              )}
             />
           )}
         </>
