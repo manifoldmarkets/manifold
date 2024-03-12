@@ -20,13 +20,9 @@ export function ConditionalMarketVisual(props: {
 }) {
   const { policyContracts, className } = props
 
-  const { shortName: joeShortName, photo: joePhoto } =
-    CANDIDATE_DATA['Joe Biden'] ?? {}
-  const { shortName: trumpShortName, photo: trumpPhoto } =
-    CANDIDATE_DATA['Donald Trump'] ?? {}
   return (
     <Col className={className}>
-      <div className="mb-2 whitespace-nowrap font-semibold sm:text-lg">
+      <div className="mb-2 whitespace-nowrap  font-semibold sm:text-lg">
         Conditional Markets
       </div>
       {policyContracts.map((policy) => (

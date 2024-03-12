@@ -111,7 +111,7 @@ export function PoliticsCard(props: {
   }
   if (viewType == 'CANDIDATE') {
     return (
-      <Col className={'group w-full flex-col gap-1.5 px-2 sm:px-0'}>
+      <Col className={'group w-full flex-col gap-1.5 '}>
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
           className={clsx(
