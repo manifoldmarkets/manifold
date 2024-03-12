@@ -29,10 +29,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     republicanVPContract,
-    democraticVPContract,
-    democraticElectability,
-    republicanElectability,
-    newHampshireContract,
+    // democraticVPContract,
+    // democraticElectability,
+    // republicanElectability,
     trendingDashboard,
     partyGraphData,
   } = props
@@ -41,10 +40,9 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !electionPartyContract ||
     !electionCandidateContract ||
     !republicanCandidateContract ||
-    !democratCandidateContract ||
-    !newHampshireContract ||
-    !democraticElectability ||
-    !republicanElectability
+    !democratCandidateContract
+    //  || !democraticElectability ||
+    // !republicanElectability
   ) {
     return <Custom404 />
   }
@@ -131,23 +129,24 @@ export function USElectionsPage(props: ElectionsPageProps) {
 
       {trending}
 
+      <PoliticsCard
+        customTitle="Republican vice presidential nomination"
+        contract={republicanVPContract as MultiContract}
+        viewType="CANDIDATE"
+      />
+
       <Col className="gap-6 sm:hidden sm:gap-8">
         <PoliticsCard
           contract={democratCandidateContract as MultiContract}
           viewType="CANDIDATE"
         />
-        <PoliticsCard
+        {/* <PoliticsCard
           customTitle="Democratic vice presidential nomination"
           contract={democraticVPContract as MultiContract}
           viewType="CANDIDATE"
-        />
+        /> */}
         <PoliticsCard
           contract={republicanCandidateContract as MultiContract}
-          viewType="CANDIDATE"
-        />
-        <PoliticsCard
-          customTitle="Republican vice presidential nomination"
-          contract={republicanVPContract as MultiContract}
           viewType="CANDIDATE"
         />
       </Col>
@@ -176,7 +175,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
             />
           </Row>
         </Col>
-        <Col className="gap-2">
+        {/* <Col className="gap-2">
           <Row className="items-center gap-2">
             <div className="bg-ink-600 flex h-[1px] grow flex-row" />
             <div className="text-ink-600">Vice Presidential Nomination</div>
@@ -198,7 +197,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
               viewType="SMALL CANDIDATE"
             />
           </Row>
-        </Col>
+        </Col> */}
       </Col>
       <HomepageMap
         rawPresidencyStateContracts={rawPresidencyStateContracts}
