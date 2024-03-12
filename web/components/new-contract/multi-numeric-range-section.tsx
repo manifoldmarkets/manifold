@@ -3,7 +3,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { useEffect, useState } from 'react'
-import { getMultiNumericAnswerBucketRanges } from 'common/multi-numeric'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
 import { IconButton } from 'web/components/buttons/button'
@@ -33,20 +33,34 @@ export const MultiNumericRangeSection = (props: {
     max,
     paramsKey,
   } = props
+
   useEffect(() => {
     if (max === undefined || min === undefined) {
       setBuckets(undefined)
       return
     }
-    const ranges = getMultiNumericAnswerBucketRanges(min, max, numBuckets)
+    if (min > max) return
+    const ranges = getMultiNumericAnswerBucketRangeNames(min, max, numBuckets)
     setBuckets(ranges)
-  }, [max, min, numBuckets])
+    const absRange = Math.abs(max - min)
+    if (absRange < MULTI_NUMERIC_BUCKETS_MAX && absRange > 2) {
+      setNumBuckets(Math.floor(absRange))
+    } else {
+      setNumBuckets(MULTI_NUMERIC_BUCKETS_MAX)
+    }
+  }, [max, min])
+
+  useEffect(() => {
+    if (max === undefined || min === undefined) return
+    const ranges = getMultiNumericAnswerBucketRangeNames(min, max, numBuckets)
+    setBuckets(ranges)
+  }, [numBuckets])
 
   const [showBucketInput, setShowBucketInput] = useState(
     numBuckets < 2 || numBuckets > MULTI_NUMERIC_BUCKETS_MAX
   )
 
-  const [buckets, setBuckets] = usePersistentLocalState<number[][] | undefined>(
+  const [buckets, setBuckets] = usePersistentLocalState<string[] | undefined>(
     undefined,
     'new-buckets' + paramsKey
   )
@@ -123,14 +137,17 @@ export const MultiNumericRangeSection = (props: {
           </Row>
           <Row className={'ml-1 flex-wrap items-center gap-2'}>
             {buckets
-              .slice(0, showAllBuckets ? numBuckets : bucketsToShow)
+              .slice(
+                0,
+                showAllBuckets || numBuckets <= 4 ? numBuckets : bucketsToShow
+              )
               .map((a, i) => (
-                <span className={'whitespace-nowrap'} key={a[0] + a[1]}>
-                  {a[0]}-{a[1]}
+                <span className={'whitespace-nowrap'} key={a}>
+                  {a}
                   {i === 0 ? ', ' : ''}
                 </span>
               ))}
-            {!showAllBuckets && (
+            {!showAllBuckets && numBuckets > 4 && (
               <>
                 {buckets.length > 4 && (
                   <span
@@ -141,8 +158,8 @@ export const MultiNumericRangeSection = (props: {
                   </span>
                 )}
                 {buckets.slice(-bucketsToShow).map((a, i) => (
-                  <span className={'whitespace-nowrap'} key={a[0] + a[1]}>
-                    {a[0]}-{a[1]}
+                  <span className={'whitespace-nowrap'} key={a}>
+                    {a}
                     {bucketsToShow === i + 1 ? '' : ', '}
                   </span>
                 ))}

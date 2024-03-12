@@ -1,19 +1,17 @@
 import { CPMMNumericContract } from 'common/contract'
 import { filterDefined } from 'common/util/array'
-import { sum } from 'lodash'
+import { mean, sum } from 'lodash'
 import {
   getAnswerProbability,
   getInitialAnswerProbability,
 } from 'common/calculate'
 
 export const getMultiNumericAnswerMidpoints = (
-  min: number,
-  max: number,
-  buckets: number
+  contract: CPMMNumericContract
 ) => {
-  const ranges = getMultiNumericAnswerBucketRanges(min, max, buckets)
-  return ranges.map(([min, max]) => (max + min) / 2)
+  return contract.answers.map((a) => mean(getMultiNumericAnswerToRange(a.text)))
 }
+
 export const getNumericBucketSize = (
   min: number,
   max: number,
@@ -21,10 +19,12 @@ export const getNumericBucketSize = (
 ) => (max - min) / buckets
 
 export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
-  Math.max(
-    0,
-    Math.ceil(Math.abs(Math.log10(getNumericBucketSize(min, max, buckets))))
-  )
+  getNumericBucketSize(min, max, buckets) > 10 / buckets
+    ? 0
+    : Math.max(
+        0,
+        Math.ceil(Math.abs(Math.log10(getNumericBucketSize(min, max, buckets))))
+      )
 
 export const getMultiNumericAnswerBucketRanges = (
   min: number,
@@ -91,11 +91,10 @@ export function getExpectedValue(
         : getAnswerProbability(contract, a.id)
     )
   )
-  const answerValues = getMultiNumericAnswerMidpoints(
-    contract.min,
-    contract.max,
-    contract.answers.length
+  const answerValues = answers.map((a) =>
+    mean(getMultiNumericAnswerToRange(a.text))
   )
+
   return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
 
@@ -109,7 +108,14 @@ export function formatExpectedValue(
 ) {
   // There are a few NaN values on dev
   if (isNaN(value)) return 'N/A'
-  return value.toFixed(
-    getDecimalPlaces(contract.min, contract.max, contract.answers.length)
-  )
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: getDecimalPlaces(
+      contract.min,
+      contract.max,
+      contract.answers.length
+    ),
+  })
+  return formatter.format(value).replace('$', '')
 }

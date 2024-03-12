@@ -374,11 +374,7 @@ export const groupMultiNumericBets = (
     isApi: nonRedemptionBets.some((b) => b.isApi),
   }
   const getExpectedValueAtProbs = (probs: number[]) => {
-    const answerValues = getMultiNumericAnswerMidpoints(
-      contract.min,
-      contract.max,
-      contract.answers.length
-    )
+    const answerValues = getMultiNumericAnswerMidpoints(contract)
     return sum(probs.map((p, i) => p * answerValues[i]))
   }
   const betProbAfters = contract.answers.map(

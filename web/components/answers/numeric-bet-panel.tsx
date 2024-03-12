@@ -30,9 +30,7 @@ import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
   formatExpectedValue,
-  getDecimalPlaces,
   getExpectedValue,
-  getMultiNumericAnswerBucketRanges,
   getMultiNumericAnswerToRange,
   getNumericBucketSize,
 } from 'common/multi-numeric'
@@ -67,11 +65,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     contract.id
   )
   const aboutRightBuckets = (amountGiven: number) => {
-    const buckets = getMultiNumericAnswerBucketRanges(
-      minimum,
-      maximum,
-      answers.length
-    )
+    const buckets = answers.map((a) => getMultiNumericAnswerToRange(a.text))
     const containingBucket = find(buckets, (bucket) => {
       const [start, end] = bucket
       return amountGiven >= start && amountGiven <= end
@@ -130,10 +124,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
       )
       .finally(() => setIsSubmitting(false))
   }
-  const roundToEpsilon = (num: number) =>
-    Number(
-      num.toFixed(getDecimalPlaces(minimum, maximum, contract.answers.length))
-    )
+  const roundToEpsilon = (num: number) => Number(num.toFixed(2))
 
   const onChangeLimit = (newAmount: number) => {
     const realAmount = roundToEpsilon(
@@ -157,9 +148,10 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     ])
   }
   useEffect(() => {
-    setExpectedValue(getExpectedValue(contract))
+    const newExpectedValue = getExpectedValue(contract)
+    setExpectedValue(newExpectedValue)
     if (mode === 'about right') {
-      setRange(aboutRightBuckets(expectedValue))
+      setRange(aboutRightBuckets(newExpectedValue))
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()
