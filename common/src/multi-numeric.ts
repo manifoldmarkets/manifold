@@ -1,6 +1,6 @@
 import { CPMMNumericContract } from 'common/contract'
 import { filterDefined } from 'common/util/array'
-import { mean, sum } from 'lodash'
+import { find, findLast, mean, sum } from 'lodash'
 import {
   getAnswerProbability,
   getInitialAnswerProbability,
@@ -116,4 +116,44 @@ export function formatExpectedValue(
     maximumFractionDigits: getDecimalPlaces(min, max, answers.length),
   })
   return formatter.format(value).replace('$', '')
+}
+
+export const getRangeContainingValue = (
+  value: number,
+  answerTexts: string[],
+  min: number,
+  max: number
+) => {
+  const buckets = answerTexts.map((a) => getMultiNumericAnswerToRange(a))
+  const containingBucket = find(buckets, (bucket) => {
+    const [start, end] = bucket
+    return value >= start && value <= end
+  })
+
+  if (containingBucket) return containingBucket as [number, number]
+
+  const bucketBelow = findLast(buckets, (bucket) => {
+    const [, end] = bucket
+    return value > end
+  })
+  const bucketAbove = find(buckets, (bucket) => {
+    const [start] = bucket
+    return value < start
+  })
+
+  return [bucketBelow?.[0] ?? min, bucketAbove?.[1] ?? max] as [number, number]
+}
+
+export const getRangeContainingValues = (
+  values: number[],
+  answerTexts: string[],
+  min: number,
+  max: number
+) => {
+  const ranges = values.map((amount) =>
+    getRangeContainingValue(amount, answerTexts, min, max)
+  )
+  const overallMin = Math.min(...ranges.map((r) => r[0]))
+  const overallMax = Math.max(...ranges.map((r) => r[1]))
+  return [overallMin, overallMax] as [number, number]
 }

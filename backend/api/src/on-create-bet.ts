@@ -186,7 +186,16 @@ export const onCreateBets = async (
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
         const eventId = origianlBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
-        await giveUniqueBettorAndLiquidityBonus(contract, eventId, bettor, bet)
+        const usersNonRedemptionBets = bets.filter(
+          (b) => b.userId === bettor.id && !b.isRedemption
+        )
+        await giveUniqueBettorAndLiquidityBonus(
+          contract,
+          eventId,
+          bettor,
+          bet,
+          usersNonRedemptionBets
+        )
 
         await Promise.all([
           bet.amount >= 0 &&
@@ -444,7 +453,8 @@ const giveUniqueBettorAndLiquidityBonus = async (
   contract: Contract,
   eventId: string,
   bettor: User,
-  bet: Bet
+  bet: Bet,
+  usersNonRedemptionBets?: Bet[]
 ) => {
   const { answerId, isRedemption, isApi } = bet
   const pg = createSupabaseDirectClient()
@@ -480,30 +490,16 @@ const giveUniqueBettorAndLiquidityBonus = async (
   )
     return
 
-  const previousBet = answerId
-    ? await pg.oneOrNone(
-        `select bet_id from contract_bets
+  const previousBet = await pg.oneOrNone(
+    `select bet_id from contract_bets
         where contract_id = $1
-          and data->>'answerId' = $2
+          and ($2 is null or answer_id = $2)
           and user_id = $3
           and created_time < $4
           and is_redemption = false
         limit 1`,
-        [
-          contract.id,
-          answerId,
-          bettor.id,
-          new Date(bet.createdTime - 1).toISOString(),
-        ]
-      )
-    : await pg.oneOrNone(
-        `select bet_id from contract_bets
-        where contract_id = $1
-          and user_id = $2
-          and created_time < $3
-        limit 1`,
-        [contract.id, bettor.id, new Date(bet.createdTime).toISOString()]
-      )
+    [contract.id, answerId, bettor.id, new Date(bet.createdTime).toISOString()]
+  )
   // Check previous bet.
   if (previousBet) return
 
@@ -578,9 +574,6 @@ const giveUniqueBettorAndLiquidityBonus = async (
       `Bonus txn for user: ${contract.creatorId} completed:`,
       uniqueBonusResult.txn?.id
     )
-    const overallUniqueBettorIds = answerId
-      ? await getUniqueBettorIds(contract.id, pg)
-      : uniqueBettorIds
 
     await createUniqueBettorBonusNotification(
       creatorId,
@@ -588,9 +581,10 @@ const giveUniqueBettorAndLiquidityBonus = async (
       uniqueBonusResult.txn.id,
       contract,
       uniqueBonusResult.txn.amount,
-      overallUniqueBettorIds,
+      uniqueBettorIds,
       eventId + '-unique-bettor-bonus',
       bet,
+      usersNonRedemptionBets,
       uniqueBonusResult.txn?.data?.isPartner
     )
   }

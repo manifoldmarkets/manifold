@@ -49,17 +49,20 @@ export function combineAndSumIncomeNotifications(
     notifications,
     (n) => n.sourceType
   )
+  const titleForNotification = (notification: Notification) => {
+    const outcomeType = notification.data?.outcomeType
+    return (
+      (notification.sourceTitle ?? notification.sourceContractTitle) +
+      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
+      notification.data?.isPartner
+    )
+  }
+
   for (const sourceType in groupedNotificationsBySourceType) {
     // Source title splits by contracts, groups, betting streak bonus
     const groupedNotificationsBySourceTitle = groupBy(
       groupedNotificationsBySourceType[sourceType],
-      (notification) => {
-        return (
-          (notification.sourceTitle ?? notification.sourceContractTitle) +
-          (notification.data?.answerText ?? '') +
-          notification.data?.isPartner
-        )
-      }
+      (notification) => titleForNotification(notification)
     )
     for (const sourceTitle in groupedNotificationsBySourceTitle) {
       const notificationsForSourceTitle =
@@ -70,7 +73,8 @@ export function combineAndSumIncomeNotifications(
         sum += parseFloat(notification.sourceText ?? '0')
       })
 
-      const { bet, ...otherData } = notificationsForSourceTitle[0]?.data ?? {}
+      const { bet: _, ...otherData } =
+        notificationsForSourceTitle[0]?.data ?? {}
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
@@ -141,7 +145,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         <PrimaryNotificationLink
           text={
             (sourceText ? `${numNewTraders} new traders` : 'new traders') +
-            (answerText ? ` (${answerText})` : '')
+            (answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : '')
           }
         />{' '}
         <QuestionOrGroupLink notification={notification} />
@@ -536,7 +540,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
       props.uniqueBettorData.max !== undefined) ||
-    outcomeType !== 'PSEUDO_NUMERIC'
+    (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'NUMBER')
   const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
     <Row className={'line-clamp-1 gap-1'}>

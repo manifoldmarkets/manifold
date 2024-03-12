@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { find, findLast, first, groupBy, sumBy } from 'lodash'
+import { find, first, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
@@ -29,6 +29,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
+  getRangeContainingValue,
   formatExpectedValue,
   getExpectedValue,
   getMultiNumericAnswerToRange,
@@ -64,29 +65,6 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
   )
-  const aboutRightBuckets = (amountGiven: number) => {
-    const buckets = answers.map((a) => getMultiNumericAnswerToRange(a.text))
-    const containingBucket = find(buckets, (bucket) => {
-      const [start, end] = bucket
-      return amountGiven >= start && amountGiven <= end
-    })
-
-    if (containingBucket) return containingBucket as [number, number]
-
-    const bucketBelow = findLast(buckets, (bucket) => {
-      const [, end] = bucket
-      return amountGiven > end
-    })
-    const bucketAbove = find(buckets, (bucket) => {
-      const [start] = bucket
-      return amountGiven < start
-    })
-
-    return [bucketBelow?.[0] ?? minimum, bucketAbove?.[1] ?? maximum] as [
-      number,
-      number
-    ]
-  }
 
   const shouldIncludeAnswer = (a: Answer) => {
     const answerRange = getMultiNumericAnswerToRange(a.text)
@@ -151,7 +129,14 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     const newExpectedValue = getExpectedValue(contract)
     setExpectedValue(newExpectedValue)
     if (mode === 'about right') {
-      setRange(aboutRightBuckets(newExpectedValue))
+      setRange(
+        getRangeContainingValue(
+          newExpectedValue,
+          answers.map((a) => a.text),
+          minimum,
+          maximum
+        )
+      )
     }
     if (!isIOS() && !isAndroid()) {
       focusAmountInput()

@@ -86,7 +86,7 @@ export const getUniqueBettorIdsForAnswer = async (
     `select distinct user_id
       from contract_bets
       where contract_id = $1
-      and data->>'answerId' = $2
+      and answer_id = $2
       and is_redemption = false`,
     [contractId, answerId]
   )

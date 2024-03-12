@@ -226,7 +226,8 @@ export function BetOutcomeLabel(props: {
   }
   if (
     contractOutcomeType === 'FREE_RESPONSE' ||
-    contractOutcomeType === 'MULTIPLE_CHOICE'
+    contractOutcomeType === 'MULTIPLE_CHOICE' ||
+    contractOutcomeType === 'NUMBER'
   ) {
     return (
       <span className={clsx('text-primary-700')}>

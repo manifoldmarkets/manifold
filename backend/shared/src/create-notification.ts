@@ -78,6 +78,10 @@ import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getCommentSafe } from './supabase/contract_comments'
 import { convertUser } from 'common/supabase/users'
 import { convertBet } from 'common/supabase/bets'
+import {
+  getRangeContainingValues,
+  getMultiNumericAnswerToMidpoint,
+} from 'common/multi-numeric'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -926,6 +930,7 @@ export const createUniqueBettorBonusNotification = async (
   uniqueBettorIds: string[],
   idempotencyKey: string,
   bet: Bet,
+  bets: Bet[] | undefined,
   isPartner: boolean | undefined
 ) => {
   const privateUser = await getPrivateUser(creatorId)
@@ -946,6 +951,19 @@ export const createUniqueBettorBonusNotification = async (
             isLogScale: contract.isLogScale,
           }
         : {}
+    const allBetOnAnswerIds = (bets ?? []).map((b) => b.answerId)
+    const range =
+      outcomeType === 'NUMBER'
+        ? getRangeContainingValues(
+            contract.answers
+              .filter((a) => allBetOnAnswerIds.includes(a.id))
+              .map((a) => a.text)
+              .map(getMultiNumericAnswerToMidpoint),
+            contract.answers.map((a) => a.text),
+            contract.min,
+            contract.max
+          )
+        : undefined
 
     const notification: Notification = {
       id: idempotencyKey,
@@ -974,6 +992,8 @@ export const createUniqueBettorBonusNotification = async (
             ? (contract.answers as Answer[]).find(
                 (a) => a.id === bet.outcome || a.id === bet.answerId
               )?.text
+            : outcomeType === 'NUMBER' && range
+            ? `${range[0]}-${range[1]}`
             : undefined,
         outcomeType,
         ...pseudoNumericData,
@@ -1004,23 +1024,23 @@ export const createUniqueBettorBonusNotification = async (
     convertUser
   )
 
-  const bets = await pg.map<Bet>(
-    `select * from contract_bets where contract_id = $1`,
-    [contract.id, txnId],
+  const unseenBets = await pg.map<Bet>(
+    `select * from contract_bets where contract_id = $1
+            and user_id in ($2:list)`,
+    [contract.id, lastBettorIds],
     convertBet
   )
 
-  const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
+  const bettorsToTheirBets = groupBy(unseenBets, (bet) => bet.userId)
 
   // Don't send if creator has seen their market since the 1st bet was placed
   const creatorHasSeenMarketSinceBet = await hasUserSeenMarket(
     contract.id,
     privateUser.id,
-    minBy(Object.values(bettorsToTheirBets).flat(), 'createdTime')
-      ?.createdTime ?? contract.createdTime,
+    minBy(unseenBets, 'createdTime')?.createdTime ?? contract.createdTime,
     pg
   )
-  if (creatorHasSeenMarketSinceBet || amount === 0) return
+  if (creatorHasSeenMarketSinceBet) return
 
   await sendNewUniqueBettorsEmail(
     'unique_bettors_on_your_contract',
