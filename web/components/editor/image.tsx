@@ -30,7 +30,11 @@ function ExpandingImage(props: {
       onClick={() => setExpanded((expanded) => !expanded)}
       className={clsx(
         'cursor-pointer object-contain',
-        expanded ? 'min-h-[128px]' : size === 'md' ? 'h-[400px]' : 'h-[128px]'
+        expanded
+          ? 'min-h-[128px]'
+          : size === 'md'
+          ? 'max-h-[400px]'
+          : 'h-[128px]'
       )}
       height={expanded ? undefined : height}
     />
