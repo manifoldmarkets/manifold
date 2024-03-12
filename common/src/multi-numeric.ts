@@ -57,8 +57,17 @@ export const getMultiNumericAnswerBucketRangeNames = (
   return ranges.map(([min, max]) => `${min}-${max}`)
 }
 
-export const getMultiNumericAnswerToRange = (answerText: string) => {
-  const [min, max] = answerText.split('-').map(parseFloat)
+export const getMultiNumericAnswerToRange = (originalAnswerText: string) => {
+  const answerText = originalAnswerText.trim()
+  const regex = /[-+]?\d+(\.\d+)?/g
+  const matches = answerText.match(regex)
+  if (!matches || matches.length !== 2) {
+    throw new Error('Invalid range format')
+  }
+
+  const min = parseFloat(matches[0])
+  const max = parseFloat(matches[1])
+
   return [min, max]
 }
 
