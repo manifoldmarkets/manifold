@@ -42,7 +42,7 @@ export async function mergeGroups(
     (row) => row.contract_id
   )
 
-  // if (contracts.length > 10) {
+  // if (contracts.length > 100) {
   //   throw new Error(
   //     `found ${contracts.length} contracts in group ${from}. are you sure?`
   //   )
@@ -66,7 +66,7 @@ export async function mergeGroups(
     await updateGroupLinksOnContracts(pg, firestore, contracts)
 
     console.log('recalculating group embedding')
-    upsertGroupEmbedding(pg, to)
+    await upsertGroupEmbedding(pg, to)
   } else {
     console.log('no contracts to re-tag')
   }
