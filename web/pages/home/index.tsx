@@ -119,7 +119,7 @@ export function HomeContent(props: {
   )
 
   return (
-    <Col className="w-full max-w-3xl items-center self-center pb-4 sm:px-2">
+    <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
       {user && remaining > 0 && (
         <Row className="text-md mb-2 items-center justify-between gap-2 self-center rounded-md border-2 border-indigo-500 p-2">
           <span>
