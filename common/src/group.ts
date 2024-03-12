@@ -39,7 +39,8 @@ export type GroupLink = {
   slug: string
   name: string
   groupId: string
-  createdTime: number
+  /** @deprecated - may not exist */
+  createdTime?: number
   /** @deprecated */
   userId?: string
 }
