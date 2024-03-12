@@ -228,6 +228,8 @@ function getSearchContractWhereSQL(args: {
       ? ''
       : contractType === 'MULTIPLE_CHOICE'
       ? `outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE'`
+      : contractType === 'PSEUDO_NUMERIC'
+      ? `outcome_type = 'PSEUDO_NUMERIC' OR outcome_type = 'NUMBER'`
       : `outcome_type = '${contractType}'`
 
   const stonkFilter =
