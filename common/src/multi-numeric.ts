@@ -64,9 +64,11 @@ export const getMultiNumericAnswerToRange = (originalAnswerText: string) => {
   if (!matches || matches.length !== 2) {
     throw new Error('Invalid range format')
   }
-
-  const min = parseFloat(matches[0])
-  const max = parseFloat(matches[1])
+  const dashCount = answerText.split('-').length - 1
+  const min =
+    dashCount === 1 ? Math.abs(parseFloat(matches[0])) : parseFloat(matches[0])
+  const max =
+    dashCount === 1 ? Math.abs(parseFloat(matches[1])) : parseFloat(matches[1])
 
   return [min, max]
 }
