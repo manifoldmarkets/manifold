@@ -31,18 +31,22 @@ export function DeleteTopicModal(props: {
     >
       <Title>Delete {name}?</Title>
       <p className="mb-2">
-        Deleting a topic is permanent. All members will be removed and no one
-        will be able to find this topic.
+        Deleting a topic is permanent. All admins and followers will be removed
+        and no one will be able to find this topic anywhere.
       </p>
       {privacyStatus === 'public' && (
         <p className="mb-2">
           Topics should only be deleted if they are low quality or duplicate.
-          Ask #moderators channel on discord if you aren't sure.
+          Ask @moderators on discord if you aren't sure.
         </p>
       )}
+      <p className="mb-2">
+        To delete, first untag all questions tagged with this topic, then type "
+        {name}" below to confirm.
+      </p>
 
       <Input
-        placeholder="Type the name of this group to confirm"
+        placeholder="The name of this group"
         className="mb-2 mt-2 w-full"
         value={confirm}
         onChange={(e) => setConfirm(e.target.value)}
