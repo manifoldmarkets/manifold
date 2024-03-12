@@ -56,8 +56,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
 
   const trending =
     trendingDashboard.state == 'not found' ? null : (
-      <Col>
-        <Row className="mb-2 items-center gap-1 font-semibold sm:text-lg">
+      <Col className="-mb-6">
+        <Row className="items-center gap-1 font-semibold sm:text-lg">
           <div className="relative">
             <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
             <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
