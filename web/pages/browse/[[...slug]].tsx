@@ -40,6 +40,7 @@ import { Title } from 'web/components/widgets/title'
 import { Content } from 'web/components/widgets/editor'
 import Image from 'next/image'
 import LoadingUserRows from 'web/components/loading-user-rows'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 
@@ -294,7 +295,7 @@ export function GroupPageContent(props: {
                             </Col>
                           ),
                         },
-                        currentTopic.about && {
+                        {
                           title: 'About',
                           content: (
                             <Col className="w-full">
@@ -309,11 +310,24 @@ export function GroupPageContent(props: {
                                   />
                                 </div>
                               )}
-                              <Content
-                                size="lg"
-                                className="p-4 sm:p-6"
-                                content={currentTopic.about}
-                              />
+                              <div className="text-ink-500 mb-4 mt-2 text-sm">
+                                {currentTopic.privacyStatus} group created
+                                <RelativeTimestamp
+                                  time={currentTopic.createdTime}
+                                  className="!text-ink-500"
+                                />
+                                {currentTopic.postIds?.length
+                                  ? ` • ${currentTopic.postIds.length} posts`
+                                  : undefined}
+                              </div>
+
+                              {currentTopic.about && (
+                                <Content
+                                  size="lg"
+                                  className="p-4 sm:p-6"
+                                  content={currentTopic.about}
+                                />
+                              )}
                             </Col>
                           ),
                         },
