@@ -1,4 +1,4 @@
-import { LockClosedIcon } from '@heroicons/react/solid'
+import { LockClosedIcon, BookmarkIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -24,6 +24,7 @@ import {
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { useReadLocalContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -273,6 +274,7 @@ function ContractQuestion(props: {
   hideAvatar?: boolean
 }) {
   const { contract, className, hideAvatar } = props
+  const contractMetrics = useReadLocalContractMetrics(contract.id)
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (
@@ -288,6 +290,9 @@ function ContractQuestion(props: {
       )}
       <div>
         <VisibilityIcon contract={contract} />
+        {contractMetrics && (
+          <BookmarkIcon className="text-primary-400 mr-1 inline h-5 w-5" />
+        )}
         {contract.question}
       </div>
     </Row>

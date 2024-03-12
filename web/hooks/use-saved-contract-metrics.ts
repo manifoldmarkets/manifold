@@ -63,3 +63,11 @@ const tryToGetDifferentMetricsThanSaved = (
     setSavedMetrics({ ...savedMetrics, ...metric })
   } else if (retries > 0) queryAndSet(retries - 1)
 }
+
+export const useReadLocalContractMetrics = (contractId: string) => {
+  const [savedMetrics] = usePersistentLocalState<ContractMetric | undefined>(
+    undefined,
+    `contract-metrics-${contractId}`
+  )
+  return savedMetrics
+}
