@@ -69,10 +69,20 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     slug && !NON_GROUP_SLUGS.includes(slug)
       ? await getGroupFromSlug(slug)
       : null
+
   if (!topic || topic.privacyStatus === 'private') {
     return {
       props: {
         slug: slug ?? null,
+      },
+    }
+  }
+
+  if (slug != topic.slug) {
+    return {
+      redirect: {
+        destination: `/browse/${topic.slug}`,
+        permanent: true,
       },
     }
   }

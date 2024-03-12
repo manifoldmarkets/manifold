@@ -171,5 +171,17 @@ export async function getGroupFromSlug(groupSlug: string) {
   if (data && data.length > 0) {
     return convertGroup(data[0])
   }
+
+  // we append 8 hex characters to slugs that collide with existing groups
+  // and some of those groups got deleted, so we redirect to the main "big" group
+  if (/-\w{12}$/.test(groupSlug)) {
+    const baseSlug = groupSlug.replace(/-\w{12}$/, '')
+
+    const { data } = await run(db.from('groups').select().eq('slug', baseSlug))
+    if (data && data.length > 0) {
+      return convertGroup(data[0])
+    }
+  }
+
   return null
 }
