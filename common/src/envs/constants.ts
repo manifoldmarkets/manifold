@@ -357,10 +357,6 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
 ]
 
-export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
-  (slug) => ['uk', 'uk-politics'].includes(slug)
-)
-
 export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
   // politics, 2024-presidential-election, magaland, donald-trump
   'us-politics',
