@@ -24,7 +24,7 @@ import {
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { useReadLocalContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -274,7 +274,7 @@ function ContractQuestion(props: {
   hideAvatar?: boolean
 }) {
   const { contract, className, hideAvatar } = props
-  const contractMetrics = useReadLocalContractMetrics(contract.id)
+  const hasBetOnContract = useHasBetOnContract(contract.id)
   return (
     <Row className={clsx('gap-2 sm:gap-4', className)}>
       {!hideAvatar && (
@@ -290,7 +290,7 @@ function ContractQuestion(props: {
       )}
       <div>
         <VisibilityIcon contract={contract} />
-        {contractMetrics && (
+        {hasBetOnContract && (
           <BookmarkIcon className="text-primary-400 mr-1 inline h-5 w-5" />
         )}
         {contract.question}
