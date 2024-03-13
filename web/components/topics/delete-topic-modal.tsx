@@ -59,7 +59,7 @@ export function DeleteTopicModal(props: {
             .then(() => {
               setLoading(false)
               toast.success('Topic deleted')
-              router.push('/browse')
+              router.replace('/browse')
             })
             .catch((e) => {
               setLoading(false)
