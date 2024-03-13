@@ -1,4 +1,4 @@
-import { isModId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { run } from 'common/supabase/utils'
 import { log } from 'shared/log'
 import {
@@ -36,7 +36,7 @@ export const deleteGroup = async (
 
   const id = group.id
 
-  if (!isModId(auth.uid)) {
+  if (!isModId(auth.uid) && !isAdminId(auth.uid)) {
     const requester = await pg.oneOrNone(
       'select role from group_members where group_id = $1 and member_id = $2',
       [id, auth.uid]
