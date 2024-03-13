@@ -1,10 +1,18 @@
-import { createSupabaseClient } from 'shared/supabase/init'
-import { APIError } from './helpers/endpoint'
+import { isModId } from 'common/envs/constants'
 import { run } from 'common/supabase/utils'
 import { log } from 'shared/log'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { APIError, type AuthedUser } from './helpers/endpoint'
 
-export const deleteGroup = async (props: { id: string } | { slug: string }) => {
+export const deleteGroup = async (
+  props: { id: string } | { slug: string },
+  auth: AuthedUser
+) => {
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
   const q = db.from('groups').select('id')
   if ('id' in props) {
@@ -21,12 +29,23 @@ export const deleteGroup = async (props: { id: string } | { slug: string }) => {
 
   const id = groups[0].id
 
-  // check if any contracts tagged with this
-  const { count: contractCount } = await run(
-    db
-      .from('contract_groups')
-      .select('*', { head: true, count: 'exact' })
-      .eq('groupId', id)
+  if (!isModId(auth.uid)) {
+    const requester = await pg.oneOrNone(
+      'select role from group_members where group_id = $1 and member_id = $2',
+      [id, auth.uid]
+    )
+
+    if (requester?.role !== 'admin') {
+      throw new APIError(403, 'You do not have permission to delete this group')
+    }
+  }
+
+  // fail if there are contracts tagged with this group
+  // we could just untag contracts like in scripts/deleteGroup.ts
+  // but I don't trust the mods. I'm forcing them to manually untag or retag contracts to make them reckon with the responsibility of what deleting a group means.
+  const { count: contractCount } = await pg.one(
+    `select count(*) from group_contracts where group_id = $1`,
+    [id]
   )
 
   if (contractCount > 0) {
@@ -36,8 +55,10 @@ export const deleteGroup = async (props: { id: string } | { slug: string }) => {
     )
   }
 
-  log('removing group members')
-  await db.from('group_members').delete().eq('group_id', id)
-  log('deleting group ', id)
-  await db.from('groups').delete().eq('id', id)
+  await pg.tx(async (tx) => {
+    log('removing group members')
+    await tx.none('delete from group_members where group_id = $1', [id])
+    log('deleting group ', id)
+    await tx.none('delete from groups where id = $1', [id])
+  })
 }
