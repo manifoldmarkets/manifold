@@ -1,4 +1,4 @@
-import { LockClosedIcon, BookmarkIcon } from '@heroicons/react/solid'
+import { LockClosedIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -288,11 +288,8 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <div>
+      <div className={hasBetOnContract ? 'text-primary-800' : ''}>
         <VisibilityIcon contract={contract} />
-        {hasBetOnContract && (
-          <BookmarkIcon className="text-primary-400 mr-1 inline h-5 w-5" />
-        )}
         {contract.question}
       </div>
     </Row>

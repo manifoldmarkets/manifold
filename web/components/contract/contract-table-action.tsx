@@ -18,6 +18,7 @@ import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
+import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -34,6 +35,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
+  const hasBetOnContract = useHasBetOnContract(contract.id)
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
@@ -44,7 +46,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
       <>
         <Button
           size="2xs"
-          color="indigo-outline"
+          color={hasBetOnContract ? 'indigo' : 'indigo-outline'}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()

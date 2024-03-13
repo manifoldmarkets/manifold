@@ -3,6 +3,8 @@ import { useEffect } from 'react'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
 
+const promiseCache: Record<string, Promise<any> | undefined> = {}
+
 export const useGetter = <P, R>(
   key: string,
   props: P | undefined,
@@ -10,14 +12,23 @@ export const useGetter = <P, R>(
 ) => {
   const propsString = JSON.stringify(props)
 
+  const fullKey = `getter-${key}-${propsString}`
   const [data, setData] = usePersistentInMemoryState<R | undefined>(
     undefined,
-    `getter-${key}-${propsString}`
+    fullKey
   )
 
   const refresh = useEvent(async () => {
     if (props === undefined) return
-    const data = await getter(props)
+    let data: any
+    if (promiseCache[fullKey]) {
+      data = await promiseCache[fullKey]
+    } else {
+      const promise = getter(props)
+      promiseCache[fullKey] = promise
+      data = await promise
+      promiseCache[fullKey] = undefined
+    }
     setData(data)
   })
 
