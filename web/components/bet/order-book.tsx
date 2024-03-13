@@ -318,22 +318,27 @@ export function OrderBookPanel(props: {
         />
       </Subtitle>
 
-      {!isCPMMMulti && !isPseudoNumeric && limitBets.length > 0 && (
-        <>
-          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
-          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
-            {(w, h) => (
-              <DepthChart
-                contract={contract as any}
-                yesBets={yesBets}
-                noBets={noBets}
-                width={w}
-                height={h}
-              />
-            )}
-          </SizedContainer>
-        </>
-      )}
+      {!isCPMMMulti &&
+        !isPseudoNumeric &&
+        yesBets.length >= 2 &&
+        noBets.length >= 2 && (
+          <>
+            <h2 className="mb-1 text-center text-sm">
+              Cumulative shares vs probability
+            </h2>
+            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+              {(w, h) => (
+                <DepthChart
+                  contract={contract as any}
+                  yesBets={yesBets}
+                  noBets={noBets}
+                  width={w}
+                  height={h}
+                />
+              )}
+            </SizedContainer>
+          </>
+        )}
       {isCPMMMulti ? (
         contract.answers.map((answer) => {
           const answerYesBets = yesBets.filter(

@@ -137,9 +137,12 @@ function Elections(props: ElectionsPageProps) {
 
   const setShallowSlugInRouter = (slug: string) => {
     if (slug === TOP_SLUG) {
-      router.replace(`/politics`, undefined, {
-        shallow: true,
-      })
+      if (router.asPath.split('?')[0] !== '/politics') {
+        // don't override query string
+        router.replace(`/politics`, undefined, {
+          shallow: true,
+        })
+      }
     } else {
       router.replace(`/politics/${slug}`, undefined, {
         shallow: true,
