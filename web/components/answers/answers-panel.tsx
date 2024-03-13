@@ -2,6 +2,7 @@ import {
   ArrowRightIcon,
   ChevronDownIcon,
   PencilIcon,
+  PlusCircleIcon,
   PresentationChartLineIcon,
   ScaleIcon,
   SearchIcon,
@@ -38,10 +39,7 @@ import { floatingEqual } from 'common/util/math'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
-import {
-  CreateAnswerPanel,
-  SearchCreateAnswerPanel,
-} from './create-answer-panel'
+import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { useEffect, useMemo, useState } from 'react'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/firebase/api'
 import { Modal } from 'web/components/layout/modal'
@@ -231,23 +229,12 @@ export function AnswersPanel(props: {
               <SearchIcon className="h-4 w-4" /> Search
             </Row>
           )}
-          {isAdvancedTrader && (
-            <Row className="items-center gap-2">
-              <input
-                id="limitOrderChart"
-                type="checkbox"
-                className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
-                checked={shouldShowLimitOrderChart}
-                onChange={() =>
-                  setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
-                }
-              />
-              <label
-                htmlFor="limitOrderChart"
-                className="text-ink-500 text-sm font-medium"
-              >
-                Show limit orders
-              </label>
+          {!isSearchOpen && (
+            <Row
+              onClick={toggleSearch}
+              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+            >
+              <PlusCircleIcon className="h-4 w-4" /> Add answer
             </Row>
           )}
         </Row>
@@ -308,15 +295,26 @@ export function AnswersPanel(props: {
                 Show {moreCount} more {moreCount === 1 ? 'answer' : 'answers'}
               </Button>
             ))}
-
-          {(moreCount === 0 || showAll) && !isSearchOpen && (
-            <CreateAnswerPanel
-              contract={contract}
-              addAnswersMode={addAnswersMode}
-              placeholder="Add answer"
-            />
-          )}
         </Col>
+      )}
+      {isAdvancedTrader && (
+        <Row className="mt-2 items-center gap-2 self-end">
+          <input
+            id="limitOrderChart"
+            type="checkbox"
+            className="border-ink-500 bg-canvas-0 dark:border-ink-500 text-ink-500 focus:ring-ink-500 h-4 w-4 rounded"
+            checked={shouldShowLimitOrderChart}
+            onChange={() =>
+              setShouldShowLimitOrderChart(!shouldShowLimitOrderChart)
+            }
+          />
+          <label
+            htmlFor="limitOrderChart"
+            className="text-ink-500 text-sm font-medium"
+          >
+            Show limit orders
+          </label>
+        </Row>
       )}
     </Col>
   )

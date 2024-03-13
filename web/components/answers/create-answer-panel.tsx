@@ -79,25 +79,23 @@ export function CreateAnswerCpmmPanel(props: {
       <Row className="justify-between">
         {children}
 
-        {text && (
-          <Row className="gap-1">
-            <Button
-              size="2xs"
-              color="gray"
-              onClick={() => (setText(''), close?.())}
-            >
-              Clear
-            </Button>
-            <Button
-              size="2xs"
-              loading={isSubmitting}
-              disabled={!canSubmit}
-              onClick={withTracking(submitAnswer, 'submit answer')}
-            >
-              Add answer ({formatMoney(ANSWER_COST)})
-            </Button>
-          </Row>
-        )}
+        <Row className="gap-1">
+          <Button
+            size="2xs"
+            color="gray"
+            onClick={() => (setText(''), close?.())}
+          >
+            Clear
+          </Button>
+          <Button
+            size="2xs"
+            loading={isSubmitting}
+            disabled={!canSubmit}
+            onClick={withTracking(submitAnswer, 'submit answer')}
+          >
+            Add answer ({formatMoney(ANSWER_COST)})
+          </Button>
+        </Row>
       </Row>
     </Col>
   )
@@ -281,7 +279,7 @@ export function SearchCreateAnswerPanel(props: {
         text={text}
         setText={setText}
         close={() => setIsSearchOpen?.(false)}
-        placeholder="Search"
+        placeholder="Search or add answer"
         autoFocus
       >
         {children}
@@ -310,50 +308,5 @@ export function SearchCreateAnswerPanel(props: {
       />
       {children}
     </>
-  )
-}
-
-export function CreateAnswerPanel(props: {
-  contract: MultiContract
-  addAnswersMode: add_answers_mode | undefined
-  placeholder?: string
-}) {
-  const { contract, addAnswersMode, placeholder } = props
-
-  const user = useUser()
-  const privateUser = usePrivateUser()
-  const unresolvedAnswers = contract.answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
-  const shouldAnswersSumToOne =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.shouldAnswersSumToOne
-      : true
-
-  const [text, setText] = useState('')
-
-  if (
-    !(
-      user &&
-      !user.isBannedFromPosting &&
-      (addAnswersMode === 'ANYONE' ||
-        (addAnswersMode === 'ONLY_CREATOR' &&
-          user.id === contract.creatorId)) &&
-      tradingAllowed(contract) &&
-      !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
-      contract.outcomeType !== 'NUMBER' &&
-      contract.mechanism === 'cpmm-multi-1'
-    )
-  )
-    return <></>
-
-  return (
-    <CreateAnswerCpmmPanel
-      contract={contract}
-      text={text}
-      setText={setText}
-      placeholder={placeholder}
-    />
   )
 }
