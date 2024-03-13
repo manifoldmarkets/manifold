@@ -24,7 +24,7 @@ import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { isAdminId } from 'common/envs/constants'
+import { isModId } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
 
@@ -163,12 +163,12 @@ export function useGroupRole(
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
-  const isManifoldAdmin = isAdminId(user?.id ?? '_')
+  const isMod = isModId(user?.id ?? '_')
   useEffect(() => {
     if (user && groupId) setTranslatedMemberRole(groupId, setUserRole, user)
   }, [user, groupId])
 
-  return isManifoldAdmin ? 'admin' : userRole
+  return isMod ? 'admin' : userRole
 }
 
 export function useRealtimeGroupMemberIds(groupId: string) {

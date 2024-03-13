@@ -2,8 +2,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupAboutSchema, GroupNameSchema } from 'common/group'
+import { log } from 'shared/log'
 
 const schema = z
   .object({
@@ -18,13 +19,15 @@ export const updategroup = authEndpoint(async (req, auth) => {
   const data = validate(schema, req.body)
   const db = createSupabaseDirectClient()
 
-  const requester = await db.oneOrNone(
-    'select role from group_members where group_id = $1 and member_id = $2',
-    [data.id, auth.uid]
-  )
+  if (!isModId(auth.uid) && !isAdminId(auth.uid)) {
+    const requester = await db.oneOrNone(
+      'select role from group_members where group_id = $1 and member_id = $2',
+      [data.id, auth.uid]
+    )
 
-  if (requester?.role !== 'admin' && !isAdminId(auth.uid)) {
-    throw new APIError(403, 'You do not have permission to update this group')
+    if (requester?.role !== 'admin') {
+      throw new APIError(403, 'You do not have permission to update this group')
+    }
   }
 
   if (data.name) {
@@ -37,6 +40,10 @@ export const updategroup = authEndpoint(async (req, auth) => {
     }
   }
 
+  log(
+    `update group initiated by ${auth.uid}: `,
+    Object.entries(data).flat().join(' ')
+  )
   await updateData(db, 'groups', 'id', data)
   return { status: 'success' }
 })
