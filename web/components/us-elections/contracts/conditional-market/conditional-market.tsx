@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { CPMMBinaryContract, contractPath } from 'common/contract'
-import { PolicyContractType } from 'common/politics/policy-data'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -13,6 +12,7 @@ import { useUser } from 'web/hooks/use-user'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { track } from '@amplitude/analytics-browser'
+import { PolicyContractType } from 'web/public/data/policy-data'
 
 export function ConditionalMarketVisual(props: {
   policyContracts: PolicyContractType[]
