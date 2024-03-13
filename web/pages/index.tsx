@@ -138,7 +138,7 @@ export default function LandingPage(props: {
                   size="xs"
                   className="hidden whitespace-nowrap lg:flex"
                 >
-                  Markets
+                  Browse
                 </Button>
               </Link>
               <Link href="/politics" className="hidden lg:flex">

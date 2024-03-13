@@ -6,26 +6,29 @@ import React from 'react'
 import { Row } from './layout/row'
 import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
+import { track } from 'web/lib/service/analytics'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
+  const handleSectionClick = (sectionTitle: string) => {
+    track('explainer section click', { sectionTitle })
+  }
   return (
-    <div className={className}>
-      <Col className="mx-auto max-w-[60ch]">
-        <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
-        <WhyManifold />
-        <WhatIsAPM />
-        <WhatIsMana />
-      </Col>
-    </div>
+    <Col className={clsx(' max-w-[60ch]', className)}>
+      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
+      <WhyManifold onClick={handleSectionClick} />
+      <WhatIsAPM onClick={handleSectionClick} />
+      <WhatIsMana onClick={handleSectionClick} />
+    </Col>
   )
 }
 
 export const ExpandSection = (props: {
   title: React.ReactNode
   children: React.ReactNode
+  onClick?: () => void
 }) => {
-  const { title, children } = props
+  const { title, children, onClick } = props
 
   return (
     <Card className="mb-4">
@@ -36,6 +39,7 @@ export const ExpandSection = (props: {
             <ChevronDoubleDownIcon
               className="h-full w-full transition group-open:-rotate-180"
               aria-hidden
+              onClick={onClick}
             />
           </span>
         </summary>
@@ -45,84 +49,100 @@ export const ExpandSection = (props: {
   )
 }
 
-export const WhatIsAPM = () => (
+const WhatIsAPM = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
   <ExpandSection
     title={
       <Row className="items-start">
         <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        How are the probabilities generated?
+        What are the odds?
       </Row>
     }
+    onClick={() => onClick('What are the odds?')}
   >
     <div className="pb-2">
-      We use prediction markets, which function differently from polls and
-      models.
+      The odds are the chance that the event happens. We use prediction markets
+      that produce probabilities, and function differently from polls,
+      sportsbooks, and other mechanisms.
     </div>
     <div className="pb-2">
-      Users buy Yes or No shares to change the odds of an answer. The odds are
-      reflected in the market price changing how much Yes and No cost. Buying
-      pressure on each side causes the market to converge to a price that
-      accurately forecasts the future.
+      Users can buy yes or no shares to change the probability and get a payout
+      if correct. Demand for a yes or no share drives the price of that share
+      higher. After around 10 traders, markets converge to accurately predict
+      the future.
     </div>
-    It’s like combining the accuracy of sports betting and the stock market and
-    using it to answer questions.
+    It’s like combining the accuracy of sports betting and the stock market to
+    answer real-world questions.
   </ExpandSection>
 )
 
-export const WhatIsMana = () => (
+const WhatIsMana = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
   <ExpandSection
     title={
       <>
-        <FaHandHoldingUsd className="mr-2" /> How do I bet?
+        <FaHandHoldingUsd className="mr-2" /> Why should I bet?
       </>
     }
+    onClick={() => onClick('Why should I bet?')}
   >
     <div className="pb-2">
-      All users start with free mana (Ṁ), the play-money used to bet on
-      Manifold.
+      Betting on questions provides decision-makers with accurate predictions of
+      the future. Add your wisdom to the crowds to help yourself and others make
+      smarter, more informed decisions.
     </div>
     <div className="pb-2">
-      You can use this to place bets. Earn more mana by selling a bet early for
-      a higher price than you bought or wait for it to conclude and win.
+      We give all new users some free mana (Ṁ), the play-money used to bet on
+      Manifold. Earn more mana by being right!
     </div>
-    Mana can’t be redeemed for cash and is not crypto.
+    Mana can’t be redeemed for cash except to charities. And it's NOT crypto.
   </ExpandSection>
 )
 
-export const WhyManifold = () => (
+const WhyManifold = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
   <ExpandSection
     title={
       <>
-        <TbTargetArrow className="mr-2" /> Are Manifold's forecasts accurate?
+        <TbTargetArrow className="mr-2" /> Are our forecasts accurate?
       </>
     }
+    onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      Manifold has built a reputable track record and has {''}
+      Manifold is{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
         href="https://manifold.markets/calibration"
       >
-        exceptionally good calibration
+        very well calibrated
       </a>
-      .
+      , with forecasts on average within <strong>4 percentage points</strong> of
+      the true probability.
     </div>
     <div className="pb-2">
-      We outperformed all real-money prediction markets and were in line with
-      Nate Silver’s FiveThirtyEight’s performance when
+      Even with 1000s of markets on Manifold, we still outperform real-money
+      platforms. For example, in the{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
         href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
       >
-        {''} forecasting the 2022 US midterm elections
+        2022 US midterm elections
       </a>
-      .
+      , we outperformed all real-money prediction markets and were in line with
+      FiveThirtyEight’s performance.
     </div>
-    <div>
-      Our biggest advantage is being able to apply this accuracy to a wider
-      range of questions with real-time odds that instantly react to the news!
-    </div>
+    <div></div>
   </ExpandSection>
 )
