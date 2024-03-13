@@ -3,7 +3,6 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
-import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -14,10 +13,22 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
+import { useRouter } from 'next/router'
+import { useUser } from 'web/hooks/use-user'
+import { isAdminId } from 'common/envs/constants'
+import { firebaseLogout } from 'web/lib/firebase/users'
 
 export default function TestUser() {
-  useRedirectIfSignedIn()
-
+  const router = useRouter()
+  const user = useUser()
+  useEffect(() => {
+    if (!user) return
+    if (isAdminId(user.id)) {
+      firebaseLogout()
+    } else {
+      router.push('/home')
+    }
+  }, [user])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [createUserKey, setCreateUserKey] = usePersistentLocalState(
