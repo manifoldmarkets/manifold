@@ -6,7 +6,7 @@ import {
 } from 'web/components/dashboard/dashboard-page'
 import { Page } from 'web/components/layout/page'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { NewsDashboardPageProps } from 'common/politics/elections-data'
+import { NewsDashboardPageProps } from 'web/public/data/elections-data'
 
 export async function getStaticProps(ctx: { params: { slug: string } }) {
   const { slug } = ctx.params

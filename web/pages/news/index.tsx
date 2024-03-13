@@ -7,7 +7,7 @@ import { Page } from 'web/components/layout/page'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { omit } from 'lodash'
-import { NewsDashboardPageProps } from 'common/politics/elections-data'
+import { NewsDashboardPageProps } from 'web/public/data/elections-data'
 
 // copied wholesale from /news/[slug].tsx TODO: refactor?
 

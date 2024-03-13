@@ -1,5 +1,4 @@
 import { MultiContract } from 'common/contract'
-import { ElectionsPageProps } from 'common/politics/elections-data'
 import { Col } from 'web/components/layout/col'
 import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
 import { useUser } from 'web/hooks/use-user'
@@ -15,6 +14,7 @@ import { referralQuery } from 'common/util/share'
 import { SizedContainer } from './sized-container'
 import clsx from 'clsx'
 import { ChoiceMiniGraph } from './us-elections/contracts/choice-mini-graph'
+import { ElectionsPageProps } from 'web/public/data/elections-data'
 
 export function USElectionsPage(props: ElectionsPageProps) {
   const user = useUser()

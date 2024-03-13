@@ -1,6 +1,6 @@
-import { PolicyContractType } from 'common/politics/policy-data'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { ConditionalMarketVisual } from './conditional-market'
+import { PolicyContractType } from 'web/public/data/policy-data'
 
 export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]

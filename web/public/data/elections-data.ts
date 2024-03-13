@@ -1,17 +1,21 @@
 import { Bet } from 'common/bet'
-import { MultiSerializedPoints, SerializedPoint } from 'common/chart'
-import { Contract } from 'common/contract'
+import {
+  MultiPoints,
+  MultiSerializedPoints,
+  SerializedPoint,
+} from 'common/chart'
+import { CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Headline } from 'common/news'
+import { Dashboard } from 'common/dashboard'
+import { PolicyContractType } from './policy-data'
 
 export interface StateElectionMarket {
   slug: string
   state: string
   additionalSlugs?: string[]
 }
-export const ELECTION_DASHBOARD_TITLE = '2024 Election Forecast'
-export const ELECTION_DASHBOARD_DESCRIPTION =
-  'Live market odds for the US presidential election'
 
 export const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
@@ -232,15 +236,22 @@ export type MapContractsDictionary = {
 export type ElectionsPageProps = {
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
-  electionPartyContract: Contract | null
+  rawGovernorStateContracts: MapContractsDictionary
+  rawPolicyContracts: PolicyContractType[]
+  electionPartyContract: CPMMMultiContract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
   democratCandidateContract: Contract | null
   newHampshireContract: Contract | null
   republicanVPContract: Contract | null
   democraticVPContract: Contract | null
+  republicanElectability: Contract | null
+  democraticElectability: Contract | null
   linkPreviews: LinkPreviews
-  partyChartParams?: ChartParams
+  newsDashboards: NewsDashboardPageProps[]
+  headlines: Headline[]
+  trendingDashboard: NewsDashboardPageProps
+  partyGraphData: { partyPoints: MultiPoints; afterTime: number }
 }
 
 export type ChartParams = {
@@ -250,3 +261,15 @@ export type ChartParams = {
   }
   chartAnnotations: ChartAnnotation[]
 }
+
+export type SuccesNewsDashboardPageProps = {
+  state: 'success'
+  initialDashboard: Dashboard
+  previews: LinkPreviews
+  initialContracts: Contract[]
+  headlines: Headline[]
+  slug: string
+}
+export type NewsDashboardPageProps =
+  | SuccesNewsDashboardPageProps
+  | { state: 'not found' }
