@@ -46,7 +46,7 @@ export function TopicSelectorDialog(props: {
 
   const selectTopic = (groupId: string) => {
     if (selectedTopics.includes(groupId)) {
-      if (user) unfollowTopic(groupId, user.id)
+      if (user) unfollowTopic(groupId, user.id).catch((e) => console.error(e))
       setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
     } else {
       setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
@@ -81,12 +81,12 @@ export function TopicSelectorDialog(props: {
   const pillButton = (
     topicWithEmoji: string,
     topicName: string,
-    groupId: string
+    groupIds: string[]
   ) => (
     <PillButton
       key={topicName}
-      selected={selectedTopics.includes(groupId)}
-      onSelect={() => selectTopic(groupId)}
+      selected={groupIds.every((g) => selectedTopics.includes(g))}
+      onSelect={() => groupIds.map((g) => selectTopic(g))}
     >
       {topicWithEmoji}
     </PillButton>
@@ -114,7 +114,7 @@ export function TopicSelectorDialog(props: {
           <Row className={'flex-wrap gap-1 '}>
             {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
-                {pillButton(group.name, removeEmojis(group.name), group.id)}
+                {pillButton(group.name, removeEmojis(group.name), [group.id])}
               </div>
             ))}
           </Row>
@@ -126,8 +126,8 @@ export function TopicSelectorDialog(props: {
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
               {getSubtopics(topic)
                 .filter(([_, __, groupId]) => !!groupId)
-                .map(([subtopicWithEmoji, subtopic, groupId]) => {
-                  return pillButton(subtopicWithEmoji, subtopic, groupId)
+                .map(([subtopicWithEmoji, subtopic, groupIds]) => {
+                  return pillButton(subtopicWithEmoji, subtopic, groupIds)
                 })}
             </Row>
           </div>

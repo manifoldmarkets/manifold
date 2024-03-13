@@ -382,38 +382,6 @@ export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
   'new-years-resolutions-2024',
 ]
 
-export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
-  'new-years-resolutions-2024',
-  'metamarkets',
-  'magaland',
-  'metaforecasting',
-  'nonpredictive-profits',
-  'nonpredictive',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
-  'fun',
-  'unranked',
-  'bugs',
-  'rationalussy',
-  'personal',
-  'world-default',
-  'shortterm-markets',
-  'global-macro',
-  'video-games',
-  'politics-default', // should follow US Politics instead
-  '2024-us-presidential-election', // same
-  'elon-musk', // listed as Elon Musk
-  'elon-musk-14d9d9498c7e',
-  'crypto-prices', // same as crypto,
-  'technical-ai-timelines', // same as ai
-  'presidential-politics', // same as politics
-  'unsubsidized',
-  'death-markets',
-  PROD_MANIFOLD_LOVE_GROUP_SLUG,
-  'destiny',
-  'donald-trump-adb8f1bbf890',
-]
-
 export const EXTERNAL_REDIRECTS = ['/umami']
 
 export const DISCORD_INVITE_LINK = 'https://discord.com/invite/eHQBNBqXuh'

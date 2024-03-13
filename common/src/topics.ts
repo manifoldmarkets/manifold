@@ -1,81 +1,162 @@
-type TopicInfo = { name: string; groupId: string }
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+
+type TopicInfo = { name: string; groupIds: string[] }
 
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
-    { name: '🇺🇸 US Politics', groupId: 'AjxQR8JMpNyDqtiqoA96' },
-    { name: '🇬🇧 UK Politics', groupId: 'aavkiDd6uZggfL3geuV2' },
-    { name: '👴 Trump', groupId: 'cEzcLXuitr6o4VPI01Q1' },
-    { name: '👴🏼 Biden', groupId: 'pYwsGvORZFlcq7QrkI6n' },
+    { name: '🇺🇸 US Politics', groupIds: ['AjxQR8JMpNyDqtiqoA96'] },
+    { name: '🇬🇧 UK Politics', groupIds: ['aavkiDd6uZggfL3geuV2'] },
+    {
+      name: '🌍 Geopolitics',
+      groupIds: ['2wNGnksxJzypXZtiTLNL'],
+    },
   ],
-  '💻 Technology': [
-    { name: '💻 Technology', groupId: 'IlzY3moWwOcpsVZXCVej' },
-    { name: '🤖 AI', groupId: 'yEWvvwFFIqzf8JklMewp' },
-    { name: '🪙 Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
-    { name: '🌌 Space', groupId: 'SmJk6RHToaLxLk0I1ZSC' },
-    { name: '🪸 Climate', groupId: '97oNExy8iFftY2EgdkLw' },
-    { name: '☢️ Nuclear', groupId: '27a193db-f997-4533-86a6-386d9a915045' },
-    { name: '🧬 Biotech', groupId: 'zx0Pik5lD4jydGPxbLjB' },
-    { name: '☤ Health', groupId: 'JpUqUqRn9sSWxrk0Sq35' },
-    { name: '👨‍💻 Programming', groupId: 'PZJMbrLekgJBy7OOBKGT' },
-    { name: '🧪 Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
-    { name: '🧮 Math', groupId: 'S1tbcVt1t5Bd9O5mVCx1' },
-    { name: '🌐 Internet', groupId: 'raDuDKuBOp5D9l7301XV' },
-    { name: '🐦 Twitter/X', groupId: 'Y8DDxYXrqOlQFv5AsilH' },
+  '💻 Technology & Science': [
+    {
+      name: '💻 Technology & Science',
+      groupIds: [
+        'IlzY3moWwOcpsVZXCVej', // Technology,
+        'yEWvvwFFIqzf8JklMewp', // AI
+        'SmJk6RHToaLxLk0I1ZSC', // Space
+        '97oNExy8iFftY2EgdkLw', // Climate
+        '27a193db-f997-4533-86a6-386d9a915045', // Nuclear
+        'zx0Pik5lD4jydGPxbLjB', // Biotech
+        'JpUqUqRn9sSWxrk0Sq35', // Health
+        'XMhZ5LbQoLMZiOpQJRnj', // Science
+        '49148d79-ce4e-4856-962c-3f90256abeab', // Engineering
+        'rraS2YIDaAckq3bR5lfQ', // Energy
+      ],
+    },
+    {
+      name: '👨‍💻 Programming',
+      groupIds: [
+        // Programming, Software, Math
+        'PZJMbrLekgJBy7OOBKGT',
+        'GWdXBr6Y3UmboIMUxv6w',
+        'S1tbcVt1t5Bd9O5mVCx1',
+      ],
+    },
   ],
-  '💼 Business': [
-    { name: '💵 Finance', groupId: 'CgB83AAMkkOHSrTnzani' },
-    { name: '💰 Economics', groupId: 'p88Ycq6yFd5ECKqq9PFO' },
-    { name: '📈 Stocks', groupId: 'QDQfgsFiQrNNlZhsRGf5' },
-    { name: '🪙 Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
-    { name: '🚀 Startups', groupId: '19c319ca-033c-474f-b417-5f07efe88ec0' },
-    { name: '🚘 Elon Musk', groupId: '9OR5MrEu1F01FhmBRcre' },
+  '💼 Business & Finance': [
+    {
+      // Finance and startups
+      name: '💵 Finance',
+      groupIds: [
+        'CgB83AAMkkOHSrTnzani',
+        '19c319ca-033c-474f-b417-5f07efe88ec0',
+      ],
+    },
+    { name: '💰 Economics', groupIds: ['p88Ycq6yFd5ECKqq9PFO'] },
+    {
+      name: '📈 Stocks',
+      groupIds: ['QDQfgsFiQrNNlZhsRGf5'],
+    },
+    { name: '🪙 Crypto', groupIds: ['YuJw0M1xvUHrpiRRuKso'] },
   ],
   '🏟️ Sports': [
-    // { name: '🏅 Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
-    { name: '🏈 NFL', groupId: 'TNQwmbE5p6dnKx2e6Qlp' },
-    { name: '🏀 Basketball', groupId: 'NjkFkdkvRvBHoeMDQ5NB' },
-    { name: '⚽ Soccer', groupId: 'ypd6vR44ZzJyN9xykx6e' },
-    { name: '♟️ Chess', groupId: 'ED7Cu6lVPshJkZ7FYePW' },
-    { name: '🏎️ F1', groupId: 'ZdXq6X0Q8kZtA0Iyty7Q' },
-    { name: '🎾 Tennis', groupId: '1mvN9vIVIopcWiAsXhzp' },
-    { name: '🚲 Cycling', groupId: '2yisxJryUq9V5sG7P6Gy' },
-    { name: '⚾ Baseball', groupId: '786nRQzgVyUnuUtaLTGW' },
-    { name: '🏏 Cricket', groupId: 'LcPYoqxSRdeQMms4lR3g' },
+    { name: '🏈 NFL', groupIds: ['TNQwmbE5p6dnKx2e6Qlp'] },
+    { name: '🏈 College Football', groupIds: ['ky1VPTuxrLXMnHyajZFp'] },
+    { name: '🏀 Basketball', groupIds: ['NjkFkdkvRvBHoeMDQ5NB'] },
+    { name: '⚽ Soccer', groupIds: ['ypd6vR44ZzJyN9xykx6e'] },
+    { name: '♟️ Chess', groupIds: ['ED7Cu6lVPshJkZ7FYePW'] },
+    { name: '🏎️ F1', groupIds: ['ZdXq6X0Q8kZtA0Iyty7Q'] },
+    { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
+    { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
+    { name: '⚾ Baseball', groupIds: ['786nRQzgVyUnuUtaLTGW'] },
+    { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
-  '🍿 Media': [
-    { name: '🍿 Movies', groupId: 'KSeNIu7AWgiBBM5FqVuB' },
-    { name: '🎮 Gaming', groupId: '5FaFmmaNNFTSA5r0vTAi' },
-    { name: '📺 TV Shows', groupId: '8isZHbaQMsoFz30XuZTo' },
-    { name: '🎵 Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
-    { name: '💅 Celebrities', groupId: '4QIcUOfCSSha0JZHAg9X' },
-    { name: '🎨 Culture', groupId: 'eJZecx6r22G2NriYYXcC' },
+  '🍿 Media & Culture': [
+    // Movies, TV Shows, Music, Celebrities, Culture
+    {
+      name: '🍿 Media & Culture',
+      groupIds: [
+        'KSeNIu7AWgiBBM5FqVuB',
+        '8isZHbaQMsoFz30XuZTo',
+        'Xuc2UY8gGfjQqFXwxq5d',
+        '4QIcUOfCSSha0JZHAg9X',
+        'eJZecx6r22G2NriYYXcC',
+        'EUSEngFk1dGGBfaMeAmh',
+      ],
+    },
+    { name: '🎮 Gaming', groupIds: ['5FaFmmaNNFTSA5r0vTAi'] },
+    {
+      name: '🎮️ Destiny.gg',
+      groupIds: ['W2ES30fRo6CCbPNwMTTj'],
+    },
     {
       name: '🏴‍☠️ One Piece',
-      groupId: 'uJSql24HUqpEpVU0FrjI',
+      groupIds: ['uJSql24HUqpEpVU0FrjI'],
     },
   ],
-  '🌍 World': [
-    { name: '🇪🇺 Europe', groupId: 'ue52QI4BQgJgAJJNjLHr' },
-    { name: '🇨🇳 China', groupId: 'oWTzfoeemQGkSoPFn2T7' },
-    { name: '🇮🇳 India', groupId: 'Y2J00UcVhr3wKq2lAOAy' },
+  '🌍 Global': [
+    // Europe, China, India, Russia, Latam, Middle East, Africa, Asia
+    {
+      name: '🌍 World',
+      groupIds: [
+        'ue52QI4BQgJgAJJNjLHr',
+        'oWTzfoeemQGkSoPFn2T7',
+        'Y2J00UcVhr3wKq2lAOAy',
+        'xg8wCPeM9JP6gD0igBrA',
+        'dFsZaGwyohGDVkJi1C3E',
+        '5mzNYaPKc4qXC5J0npKe',
+        'bPTxMZhUYsIUXsWT969d',
+        'DX94A1LQmpckcVdz5Hb3',
+      ],
+    },
     {
       name: '🇮🇱🇵🇸 Israel & Hamas',
-      groupId: 'cea99c1c-afb9-49b2-adfa-9be739adce10',
+      groupIds: ['cea99c1c-afb9-49b2-adfa-9be739adce10'],
     },
-    { name: '🇷🇺 Russia', groupId: 'TIpf6j0hLpifpXN93FxE' },
-    { name: '🇷🇺🇺🇦 Russia & Ukraine', groupId: 'OxcXOuxXvwsXtC0Dx5sr' },
-    { name: '🌎 Latin America', groupId: 'DX94A1LQmpckcVdz5Hb3' },
-    { name: '🌍 Middle East', groupId: 'xg8wCPeM9JP6gD0igBrA' },
-    { name: '🌍 Africa', groupId: 'dFsZaGwyohGDVkJi1C3E' },
-    { name: '🌏 Asia', groupId: 'bPTxMZhUYsIUXsWT969d' },
-    { name: '🗺️ World', groupId: '5mzNYaPKc4qXC5J0npKe' },
+    { name: '🇷🇺🇺🇦 Russia & Ukraine', groupIds: ['OxcXOuxXvwsXtC0Dx5sr'] },
   ],
-  '🪂 Lifestyle': [
-    { name: '💪 Personal Development', groupId: 'izQp87CKagOVJp9Olm1p' },
-    { name: '❤️‍🔥 Sex and love', groupId: '3syjPCC7PxE5KurTiTT3' },
-    { name: '🏳️‍🌈 LGBTQIA+', groupId: 'cLtLfm3NSrhXU6lV6Cuy' },
-  ],
+  '🪂 NSFW': [{ name: '❤️‍🔥 Sex and love', groupIds: ['3syjPCC7PxE5KurTiTT3'] }],
 }
+
+export const TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW = [
+  '👴 Trump',
+  '👴🏼 Joe Biden',
+  '🍿 Entertainment and Pop Culture',
+  'Bitcoin maxi',
+  'Bitcoin',
+  '2024',
+  'CoolFold',
+  '🏟️ Sports',
+  '💪 Personal Goals',
+  '🌐 Internet',
+  '⚽ 🏈 Football',
+]
+
+export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
+  'new-years-resolutions-2024',
+  'metamarkets',
+  'magaland',
+  'metaforecasting',
+  'nonpredictive-profits',
+  'nonpredictive',
+  '-sircryptomind-crypto-stock',
+  'selfresolving',
+  'fun',
+  'unranked',
+  'bugs',
+  'rationalussy',
+  'personal',
+  'world-default',
+  'shortterm-markets',
+  'global-macro',
+  'video-games',
+  'politics-default', // should follow US Politics instead
+  '2024-us-presidential-election', // same
+  'elon-musk', // listed as Elon Musk
+  'elon-musk-14d9d9498c7e',
+  'crypto-prices', // same as crypto,
+  'technical-ai-timelines', // same as ai
+  'presidential-politics', // same as politics
+  'unsubsidized',
+  'death-markets',
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
+  'destiny',
+  'donald-trump-adb8f1bbf890',
+]
 
 export const removeEmojis = (input: string) =>
   // eslint-disable-next-line no-control-regex
@@ -84,7 +165,7 @@ export const removeEmojis = (input: string) =>
 export const getSubtopics = (topic: string) =>
   TOPICS_TO_SUBTOPICS[topic].map(
     (subtopic) =>
-      [subtopic.name, removeEmojis(subtopic.name), subtopic.groupId] as const
+      [subtopic.name, removeEmojis(subtopic.name), subtopic.groupIds] as const
   )
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))

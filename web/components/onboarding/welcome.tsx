@@ -20,12 +20,13 @@ import { Row } from '../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { Group } from 'common/group'
 import {
   ALL_TOPICS,
   getSubtopics,
+  GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
   removeEmojis,
+  TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { orderBy, uniqBy } from 'lodash'
@@ -87,7 +88,7 @@ export default function Welcome() {
     const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
       .map((topic) => getSubtopics(topic))
       .flat()
-      .map(([_, __, groupId]) => groupId)
+      .flatMap(([_, __, groupIds]) => groupIds)
     const [userInterestedTopicsRes, trendingTopicsRes] = await Promise.all([
       run(
         db.rpc('get_groups_and_scores_from_user_seen_markets', {
@@ -107,7 +108,9 @@ export default function Welcome() {
           .not(
             'name',
             'in',
-            `(${ALL_TOPICS.map((t) => removeEmojis(t)).join(',')})`
+            `(${ALL_TOPICS.map((t) => removeEmojis(t))
+              .concat(TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW)
+              .join(',')})`
           )
           .filter('slug', 'not.ilike', '%manifold%')
           .filter('slug', 'not.ilike', '%sccsq%')

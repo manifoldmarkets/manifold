@@ -26,7 +26,6 @@ import { Row } from '../../layout/row'
 import { TopicSelectorDialog } from './topic-selector-dialog'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/envs/constants'
 import { Group } from 'common/group'
 import {
   ALL_TOPICS,
@@ -41,6 +40,7 @@ import { Input } from '../../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
+import { GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW } from 'common/topics'
 
 export default function Welcome() {
   const user = useUser()
