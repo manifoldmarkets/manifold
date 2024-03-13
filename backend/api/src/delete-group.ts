@@ -14,7 +14,7 @@ export const deleteGroup = async (
   const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  const q = db.from('groups').select('id')
+  const q = db.from('groups').select()
   if ('id' in props) {
     q.eq('id', props.id)
   } else {
@@ -27,7 +27,14 @@ export const deleteGroup = async (
     throw new APIError(404, 'Group not found')
   }
 
-  const id = groups[0].id
+  const group = groups[0]
+
+  log(
+    `delete group ${group.name} ${group.slug} initiated by ${auth.uid}`,
+    group
+  )
+
+  const id = group.id
 
   if (!isModId(auth.uid)) {
     const requester = await pg.oneOrNone(
