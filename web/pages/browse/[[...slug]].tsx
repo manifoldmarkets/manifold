@@ -164,12 +164,21 @@ export function GroupPageContent(props: {
   const queryParams = new URLSearchParams(
     otherQueryParams as Record<string, string>
   )
-  const setTopicSlug = (slug: string) => {
+  const setTopicSlugMobile = (slug: string) => {
     const queryStr = queryParams.toString()
     const q = queryStr ? `?${queryStr}` : ''
 
     router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
   }
+
+  const setTopicSlugClearQuery = (slug: string) => {
+    queryParams.delete('q')
+    queryParams.delete('t')
+    const queryStr = queryParams.toString()
+    const q = queryStr ? `?${queryStr}` : ''
+    router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
+  }
+
   const topicsByImportance = combineGroupsByImportance(
     trendingTopics ?? [],
     userTrendingTopics ?? []
@@ -235,7 +244,7 @@ export function GroupPageContent(props: {
             currentTopic={currentTopic}
             topicSlug={topicSlug}
             user={user}
-            setTopicSlug={setTopicSlug}
+            setTopicSlug={setTopicSlugClearQuery}
             ref={ref}
           />
           <BrowseTopicPills
@@ -243,7 +252,7 @@ export function GroupPageContent(props: {
             topics={topics}
             currentTopicSlug={topicSlug}
             setTopicSlug={(slug) =>
-              setTopicSlug(slug === topicSlug ? '' : slug)
+              setTopicSlugMobile(slug === topicSlug ? '' : slug)
             }
           />
           <div className="flex md:contents">
@@ -341,7 +350,7 @@ export function GroupPageContent(props: {
                 key={'groups' + topics.length}
                 topics={q && topicResults?.length ? topicResults : topics}
                 currentTopicSlug={topicSlug}
-                setCurrentTopicSlug={setTopicSlug}
+                setCurrentTopicSlug={setTopicSlugClearQuery}
                 privateUser={privateUser}
                 user={user}
                 show={showTopicsSidebar}
