@@ -11,7 +11,10 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { BetSlider } from '../bet/bet-slider'
-import { IncrementButton } from './increment-button'
+import {
+  IncrementButton,
+  IncrementDecrementAmountButton,
+} from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 export function AmountInput(
@@ -205,12 +208,15 @@ export function BuyAmountInput(props: {
     else onChange(newAmount)
   }
 
+  const isAdvancedTrader = useIsAdvancedTrader()
+  const advancedIncrementValues = hasLotsOfMana ? [10, 50, 250] : [1, 10, 50]
+  const defaultIncrementValues = hasLotsOfMana ? [10, 100] : [1, 10]
+
   const incrementValues =
     quickButtonValues === 'large'
       ? [100, 500]
-      : quickButtonValues ?? (hasLotsOfMana ? [10, 100, 1000] : [10, 100])
-
-  const isAdvancedTrader = useIsAdvancedTrader()
+      : quickButtonValues ??
+        (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
 
   return (
     <>
@@ -219,7 +225,7 @@ export function BuyAmountInput(props: {
           className={className}
           inputClassName={clsx(
             'w-full !text-xl',
-            // isAdvancedTrader ? '!h-[72px]' : '!h-[54px]',
+            isAdvancedTrader && '!h-[72px]',
             !disableQuickButtons &&
               (hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
@@ -234,13 +240,21 @@ export function BuyAmountInput(props: {
           quickAddMoreButton={
             disableQuickButtons ? undefined : (
               <Row className="divide-ink-300 border-ink-300 divide-x border-l text-sm">
-                {incrementValues.map((increment) => (
-                  <IncrementButton
-                    key={increment}
-                    amount={increment}
-                    onIncrement={() => incrementBy(increment)}
-                  />
-                ))}
+                {incrementValues.map((increment) =>
+                  isAdvancedTrader ? (
+                    <IncrementDecrementAmountButton
+                      key={increment}
+                      amount={increment}
+                      incrementBy={incrementBy}
+                    />
+                  ) : (
+                    <IncrementButton
+                      key={increment}
+                      amount={increment}
+                      onIncrement={() => incrementBy(increment)}
+                    />
+                  )
+                )}
               </Row>
             )
           }
