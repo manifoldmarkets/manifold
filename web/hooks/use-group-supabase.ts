@@ -24,7 +24,7 @@ import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { isModId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
 
@@ -163,9 +163,9 @@ export function useGroupRole(
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
-  const isMod = isModId(user?.id ?? '_')
+  const isMod = !user ? false : isModId(user.id) || isAdminId(user.id)
   useEffect(() => {
-    if (user && groupId) setTranslatedMemberRole(groupId, setUserRole, user)
+    getTranslatedMemberRole(groupId, user).then(setUserRole)
   }, [user, groupId])
 
   return isMod ? 'admin' : userRole
@@ -252,28 +252,22 @@ export function useRealtimeGroupMembers(
   return { admins, moderators, members, loadMore }
 }
 
-export async function setTranslatedMemberRole(
+export async function getTranslatedMemberRole(
   groupId: string | undefined,
-  setRole: (role: GroupRole | null) => void,
   user: User | null | undefined
 ) {
   if (user && groupId) {
-    getMemberRole(user, groupId)
-      .then((result) => {
-        if (result.data.length > 0) {
-          if (!result.data[0].role) {
-            setRole('member')
-          } else {
-            setRole(result.data[0].role as GroupRole)
-          }
-        } else {
-          setRole(null)
-        }
-      })
-      .catch((e) => console.log(e))
-  } else {
-    setRole(null)
+    try {
+      const { data } = await getMemberRole(user, groupId)
+      if (data.length == 0) {
+        return null
+      }
+      return (data[0]?.role ?? 'member') as GroupRole
+    } catch (e) {
+      console.error(e)
+    }
   }
+  return null
 }
 
 export function useGroupFromSlug(groupSlug: string) {
