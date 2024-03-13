@@ -15,14 +15,21 @@ import {
   type DpmAnswer,
   type MultiSort,
   OTHER_TOOLTIP_TEXT,
+  getMaximumAnswers,
 } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
-import { MultiContract, contractPath, Contract, SORTS } from 'common/contract'
+import {
+  MultiContract,
+  contractPath,
+  Contract,
+  SORTS,
+  tradingAllowed,
+} from 'common/contract'
 import Link from 'next/link'
 import { Button, IconButton, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
@@ -193,11 +200,27 @@ export function AnswersPanel(props: {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
 
+  const privateUser = usePrivateUser()
+  const unresolvedAnswers = contract.answers.filter((a) =>
+    'resolution' in a ? !a.resolution : true
+  )
+  const canAddAnswer = Boolean(
+    user &&
+      !user.isBannedFromPosting &&
+      (addAnswersMode === 'ANYONE' ||
+        (addAnswersMode === 'ONLY_CREATOR' &&
+          user.id === contract.creatorId)) &&
+      tradingAllowed(contract) &&
+      !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
+      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
+      contract.outcomeType !== 'NUMBER'
+  )
+
   return (
     <Col>
       <SearchCreateAnswerPanel
         contract={contract}
-        addAnswersMode={addAnswersMode}
+        canAddAnswer={canAddAnswer}
         text={query}
         setText={setQuery}
         isSearchOpen={isSearchOpen}
@@ -229,7 +252,7 @@ export function AnswersPanel(props: {
               <SearchIcon className="h-4 w-4" /> Search
             </Row>
           )}
-          {!isSearchOpen && (
+          {!isSearchOpen && canAddAnswer && (
             <Row
               onClick={toggleSearch}
               className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"

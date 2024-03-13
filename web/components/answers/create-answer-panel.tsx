@@ -4,8 +4,6 @@ import {
   CPMMMultiContract,
   FreeResponseContract,
   MultiContract,
-  add_answers_mode,
-  tradingAllowed,
 } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
@@ -17,14 +15,14 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
-import { MAX_ANSWER_LENGTH, getMaximumAnswers } from 'common/answer'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -234,7 +232,7 @@ function CreateAnswerDpmPanel(props: {
 
 export function SearchCreateAnswerPanel(props: {
   contract: MultiContract
-  addAnswersMode: add_answers_mode | undefined
+  canAddAnswer: boolean
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
@@ -243,7 +241,7 @@ export function SearchCreateAnswerPanel(props: {
 }) {
   const {
     contract,
-    addAnswersMode,
+    canAddAnswer,
     text,
     setText,
     children,
@@ -251,28 +249,9 @@ export function SearchCreateAnswerPanel(props: {
     setIsSearchOpen,
   } = props
 
-  const user = useUser()
-  const privateUser = usePrivateUser()
-  const unresolvedAnswers = contract.answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
-  const shouldAnswersSumToOne =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.shouldAnswersSumToOne
-      : true
-
   if (!isSearchOpen) return <>{children}</>
 
-  if (
-    user &&
-    !user.isBannedFromPosting &&
-    (addAnswersMode === 'ANYONE' ||
-      (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
-    tradingAllowed(contract) &&
-    !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-    unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
-    contract.outcomeType !== 'NUMBER'
-  ) {
+  if (canAddAnswer && contract.outcomeType !== 'NUMBER') {
     return contract.mechanism === 'cpmm-multi-1' ? (
       <CreateAnswerCpmmPanel
         contract={contract}
