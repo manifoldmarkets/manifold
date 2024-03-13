@@ -14,7 +14,7 @@ export function BetButton(props: {
   feedId?: number
   className?: string
 }) {
-  const { contract, user, className } = props
+  const { contract, user, className, feedId } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
@@ -28,7 +28,7 @@ export function BetButton(props: {
       firebaseLogin()
       return
     }
-    track('bet intent', { location: 'feed card', outcome })
+    track('bet intent', { location: 'feed card', outcome, feedId })
     setDialogueThatIsOpen(outcome)
   }
 
@@ -74,6 +74,7 @@ export function BetButton(props: {
               }
               location={'feed card'}
               inModal={true}
+              trackingInformation={feedId ? { feedId } : undefined}
             />
           </Col>
         </Modal>

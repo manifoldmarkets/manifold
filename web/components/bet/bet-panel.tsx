@@ -69,6 +69,9 @@ export function BuyPanel(props: {
   replyToCommentId?: string
   alwaysShowOutcomeSwitcher?: boolean
   onCancel?: () => void
+  trackingInformation?: {
+    feedId: number
+  }
 }) {
   const {
     contract,
@@ -81,6 +84,7 @@ export function BuyPanel(props: {
     inModal,
     replyToCommentId,
     alwaysShowOutcomeSwitcher,
+    trackingInformation,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -214,6 +218,7 @@ export function BuyPanel(props: {
       outcome,
       isLimitOrder: false,
       answerId: multiProps?.answerToBuy.id,
+      ...trackingInformation,
     })
   }
 
