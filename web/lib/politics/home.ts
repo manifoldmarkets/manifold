@@ -1,22 +1,22 @@
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
+import { getContractFromSlug } from 'common/supabase/contracts'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
   ElectionsPageProps,
   MapContractsDictionary,
   NH_LINK,
+  StateElectionMarket,
   presidency2024,
-} from 'common/politics/elections-data'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
-import { StateElectionMarket } from 'web/public/data/elections-data'
+} from 'web/public/data/elections-data'
 import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
 import { api } from 'web/lib/firebase/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import { PolicyContractType, PolicyData } from 'common/politics/policy-data'
 import { getBetPoints } from 'common/supabase/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { unserializeMultiPoints } from 'common/chart'
+import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()

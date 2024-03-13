@@ -2,7 +2,7 @@ import {
   ElectionsPageProps,
   NewsDashboardPageProps,
   SuccesNewsDashboardPageProps,
-} from 'common/politics/elections-data'
+} from 'web/public/data/elections-data'
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'

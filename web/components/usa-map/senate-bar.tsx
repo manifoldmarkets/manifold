@@ -5,10 +5,10 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MapContractsDictionary } from 'common/politics/elections-data'
 import { currentSenate } from 'web/public/data/senate-state-data'
 import { partition } from 'lodash'
 import { sortByDemocraticDiff } from './electoral-college-visual'
+import { MapContractsDictionary } from 'web/public/data/elections-data'
 
 export function SenateBar(props: {
   mapContractsDictionary: MapContractsDictionary

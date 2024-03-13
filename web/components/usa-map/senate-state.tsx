@@ -1,5 +1,4 @@
 import { Contract } from 'common/contract'
-import { currentSenate } from 'common/politics/senate-state-data'
 import {
   ChooseStateButton,
   StateContractCard,
@@ -12,6 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { StateProps } from './presidential-state'
+import { currentSenate } from 'web/public/data/senate-state-data'
 
 export function SenateState(props: StateProps) {
   const {

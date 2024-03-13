@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { MapContractsDictionary } from 'common/politics/elections-data'
 import { Congress } from 'web/public/custom-components/congress'
 import { WhiteHouse } from 'web/public/custom-components/whiteHouse'
 import { ReactNode, useState } from 'react'
@@ -22,6 +21,7 @@ import { SenateCurrentOrContract, SenateState } from './senate-state'
 import { SenateBar } from './senate-bar'
 import { Governor } from 'web/public/custom-components/governor'
 import { GovernorState } from './governor-state'
+import { MapContractsDictionary } from 'web/public/data/elections-data'
 
 type MapMode = 'presidency' | 'senate' | 'governor'
 

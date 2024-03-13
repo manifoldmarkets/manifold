@@ -2,13 +2,13 @@
 // MIT License
 
 import clsx from 'clsx'
-import { MapContractsDictionary } from 'common/politics/elections-data'
 import { MouseEvent } from 'react'
 import { Col } from 'web/components/layout/col'
 import { StateProps } from './presidential-state'
 import { DEM_DARK_HEX, REP_DARK_HEX } from './state-election-map'
 import { DATA } from './usa-map-data'
 import { DEFAULT_STATE_FILL } from './usa-state'
+import { MapContractsDictionary } from 'web/public/data/elections-data'
 
 export const SELECTED_OUTLINE_COLOR = '#00f7ff'
 export const HIGHLIGHTED_OUTLINE_COLOR = '#00f7ffb3'
