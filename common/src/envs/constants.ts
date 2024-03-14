@@ -321,6 +321,9 @@ export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
+// Note: these are only de-emphasized in 2 important places:
+// - The signed-out landing page
+// - The very first feed items generated for new users
 export const DEEMPHASIZED_GROUP_SLUGS = [
   'fun',
   'selfresolving',
@@ -349,8 +352,6 @@ export const DEEMPHASIZED_GROUP_SLUGS = [
   'personal-goals',
   'personal',
   'rationalussy',
-  'uk',
-  'uk-politics',
   'crystal-ballin',
   ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
   ...DESTINY_GROUP_SLUGS,
