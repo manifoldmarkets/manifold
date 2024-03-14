@@ -225,7 +225,7 @@ const BrowseSection = (props: {
   const userTrendingTopics = useUserTrendingTopics(user, 25)
 
   return (
-    <Col className={clsx('max-w-full', className)}>
+    <Col className={clsx('w-full max-w-full', className)}>
       <BrowseTopicPills
         className={'relative w-full py-1 pl-1'}
         topics={userTrendingTopics ?? []}

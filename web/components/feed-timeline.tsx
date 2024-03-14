@@ -66,7 +66,7 @@ export function FeedTimeline(props: {
     return () => setLastSeen(Date.now())
   }, [pageVisible, topIsVisible, isAuthed])
 
-  if (!savedFeedItems) return <LoadingIndicator />
+  if (!savedFeedItems) return <LoadingIndicator className={className} />
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
