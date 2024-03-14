@@ -81,7 +81,7 @@ export function SwingStateContract(props: {
         Swing States
         <Row className="gap-4">
           <Row className="w-24 justify-start">Democratic</Row>
-          <Row className="w-24 justify-end">Republican</Row>
+          <Row className="w-24 justify-end pr-4">Republican</Row>
         </Row>
       </Row>
       {Object.entries(sortedSwingContractsDictionary).map(
@@ -125,8 +125,8 @@ function SwingStateRow(props: {
   return (
     <Row
       className={clsx(
-        index == 0 && 'border-t',
         'border-ink-300 group h-[74px] justify-between border-b transition-colors sm:h-10',
+        index == 0 && 'border-t',
         targetState == state
           ? 'bg-canvas-50'
           : hoveredState == state
@@ -143,9 +143,9 @@ function SwingStateRow(props: {
         router.push(contractUrl)
       }}
     >
-      <Row className="items-center gap-2">
+      <Row className="group-hover:text-primary-700 items-center gap-2 transition-all group-hover:underline">
         <div
-          className="group-hover:text-primary-700 h-full w-6 transition-colors group-hover:underline"
+          className=" h-full w-6 transition-colors"
           style={{
             background: probToColor(contract),
           }}
@@ -164,7 +164,7 @@ function SwingStateRow(props: {
             answer={repAnswer}
             contract={contract}
             label="REP"
-            className="border-ink-200 justify-end border-r"
+            className="border-ink-200 justify-end sm:pr-4"
           />
         </div>
       )}
@@ -190,12 +190,6 @@ function SwingStatePercent(props: {
     </Row>
   )
 }
-
-// function SwingStateTableRow(props:{
-//   column1: ReactNode,
-//   column2: ReactNode,
-//   column3: ReactNode,
-// })
 
 export function extractStateFromPresidentContract(
   sentence: string
