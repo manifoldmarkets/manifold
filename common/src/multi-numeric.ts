@@ -109,7 +109,8 @@ export function formatExpectedValue(
 ) {
   const { answers, min, max } = contract
   // There are a few NaN & undefined values on dev
-  if (isNaN(value) || min === undefined || max === undefined) return 'N/A'
+  if (isNaN(value) || min === undefined || max === undefined || max === min)
+    return 'N/A'
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
