@@ -419,8 +419,10 @@ export const OpenProb = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   noNewIcon?: boolean
+  size?: 'sm' | 'md'
+  className?: string
 }) => {
-  const { contract, answer, noNewIcon } = props
+  const { contract, answer, noNewIcon, size = 'md', className } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
   const cutoffTime = Date.now() - 6 * HOUR_MS
   const isNew =
@@ -428,7 +430,11 @@ export const OpenProb = (props: {
   return (
     <Row className={'items-center'}>
       <span
-        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
+        className={clsx(
+          'whitespace-nowrap font-bold',
+          size == 'sm' ? 'min-w-[36px]' : 'min-w-[2.5rem]  text-lg ',
+          className
+        )}
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
       </span>

@@ -19,6 +19,7 @@ export interface StateElectionMarket {
 
 export const NH_LINK =
   'https://www.cnn.com/2024/01/09/politics/cnn-new-hampshire-poll/index.html'
+
 export const presidency2024: StateElectionMarket[] = [
   {
     state: 'AL',
@@ -228,6 +229,8 @@ export const presidency2024: StateElectionMarket[] = [
     slug: 'which-party-will-win-the-us-preside-686f75d3998e',
   },
 ]
+
+export const swingStates = ['WI', 'MI', 'PA', 'NV', 'AZ', 'GA']
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null

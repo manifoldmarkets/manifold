@@ -9,18 +9,21 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
 
 export function ElectoralCollegeVisual(props: {
-  mapContractsDictionary: MapContractsDictionary
+  sortedContractsDictionary: MapContractsDictionary
   handleClick: (newTargetState: string | undefined) => void
   onMouseEnter: (hoverState: string) => void
   onMouseLeave: () => void
   targetState: string | null | undefined
   hoveredState: string | null | undefined
 }) {
-  const sortedContractsDictionary = sortByDemocraticDiff(
-    props.mapContractsDictionary
-  )
-  const { handleClick, onMouseEnter, onMouseLeave, targetState, hoveredState } =
-    props
+  const {
+    handleClick,
+    onMouseEnter,
+    onMouseLeave,
+    targetState,
+    hoveredState,
+    sortedContractsDictionary,
+  } = props
 
   const isMobile = useIsMobile()
   return (
