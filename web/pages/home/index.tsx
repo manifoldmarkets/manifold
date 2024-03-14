@@ -202,7 +202,7 @@ const BrowseSection = (props: {
   const { privateUser, user, className } = props
 
   const [topicSlug, setTopicSlug] = usePersistentInMemoryState(
-    '',
+    'for-you',
     'home-browse'
   )
   const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
