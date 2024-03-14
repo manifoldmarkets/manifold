@@ -25,7 +25,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
@@ -35,9 +35,6 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { Button } from '../buttons/button'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
@@ -332,25 +329,23 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   return (
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
-      {user && (
-        <ContractCommentInput
-          replyTo={replyTo}
-          replyToUserInfo={
-            replyTo && 'userUsername' in replyTo
-              ? {
-                  username: replyTo.userUsername,
-                  id: replyTo.userId,
-                }
-              : undefined
-          }
-          className="mb-4 mr-px mt-px"
-          contract={contract}
-          clearReply={clearReply}
-          trackingLocation={'contract page'}
-          onSubmit={loadNewer}
-          commentTypes={['comment', 'repost']}
-        />
-      )}
+      <ContractCommentInput
+        replyTo={replyTo}
+        replyToUserInfo={
+          replyTo && 'userUsername' in replyTo
+            ? {
+                username: replyTo.userUsername,
+                id: replyTo.userId,
+              }
+            : undefined
+        }
+        className="mb-4 mr-px mt-px"
+        contract={contract}
+        clearReply={clearReply}
+        trackingLocation={'contract page'}
+        onSubmit={loadNewer}
+        commentTypes={['comment', 'repost']}
+      />
 
       {comments.length > 0 && (
         <SortRow
@@ -418,20 +413,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="pointer-events-none absolute bottom-0 h-[75vh]"
         />
       </div>
-
-      {!user && (
-        <Button
-          onClick={withTracking(
-            firebaseLogin,
-            'sign up to comment button click'
-          )}
-          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
-          size="lg"
-          color="gradient"
-        >
-          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
-        </Button>
-      )}
     </Col>
   )
 })
