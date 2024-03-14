@@ -5,7 +5,7 @@ import {
   CopyLinkRow,
 } from 'web/components/buttons/copy-link-button'
 import { Page } from 'web/components/layout/page'
-import { Rating, StarRating } from 'web/components/reviews/stars'
+import { type Rating, StarRating } from 'web/components/reviews/stars'
 import { ColorSection } from 'web/components/styles/colors'
 import { AlertBox } from 'web/components/widgets/alert-box'
 import { AmountInput } from 'web/components/widgets/amount-input'
