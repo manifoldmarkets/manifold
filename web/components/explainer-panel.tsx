@@ -7,6 +7,8 @@ import { Row } from './layout/row'
 import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
@@ -16,9 +18,10 @@ export const ExplainerPanel = (props: { className?: string }) => {
   return (
     <Col className={clsx(' max-w-[60ch]', className)}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
-      <WhyManifold onClick={handleSectionClick} />
-      <WhatIsAPM onClick={handleSectionClick} />
-      <WhatIsMana onClick={handleSectionClick} />
+      <Accuracy onClick={handleSectionClick} />
+      <WhatAreOdds onClick={handleSectionClick} />
+      <WhyShouldI onClick={handleSectionClick} />
+      <PlayMoney onClick={handleSectionClick} />
     </Col>
   )
 }
@@ -49,7 +52,7 @@ export const ExpandSection = (props: {
   )
 }
 
-const WhatIsAPM = ({
+const WhatAreOdds = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
@@ -63,23 +66,16 @@ const WhatIsAPM = ({
     }
     onClick={() => onClick('What are the odds?')}
   >
+    <div className="pb-2">The odds are the chance that the event happens.</div>
     <div className="pb-2">
-      The odds are the chance that the event happens. We use prediction markets
-      that produce probabilities, and function differently from polls,
-      sportsbooks, and other mechanisms.
+      The odds are set by traders who have insight into the question weighted
+      proportional to their confidence (bet size) and how correct they've been
+      in the past (balance).
     </div>
-    <div className="pb-2">
-      Users can buy yes or no shares to change the probability and get a payout
-      if correct. Demand for a yes or no share drives the price of that share
-      higher. After around 10 traders, markets converge to accurately predict
-      the future.
-    </div>
-    It’s like combining the accuracy of sports betting and the stock market to
-    answer real-world questions.
   </ExpandSection>
 )
 
-const WhatIsMana = ({
+const WhyShouldI = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
@@ -94,22 +90,40 @@ const WhatIsMana = ({
   >
     <div className="pb-2">
       Betting on questions provides decision-makers with accurate predictions of
-      the future. Add your wisdom to the crowds to help yourself and others make
-      smarter, more informed decisions.
+      the future.
     </div>
     <div className="pb-2">
-      We give all new users some free mana (Ṁ), the play-money used to bet on
-      Manifold. Earn more mana by being right!
+      It’s like combining the accuracy of sports betting and the stock market to
+      answer important, real-world questions.
     </div>
-    Mana can’t be redeemed for cash except to charities. And it's NOT crypto.
   </ExpandSection>
 )
-
-const WhyManifold = ({
+const PlayMoney = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
 }) => (
+  <ExpandSection
+    title={
+      <>
+        <ManaCircleIcon className="mr-2 h-4 w-4" />
+        Why use play money?
+      </>
+    }
+    onClick={() => onClick('Why play money?')}
+  >
+    <div className="pb-2">
+      Our play money, ({ENV_CONFIG.moneyMoniker}) is free to get started with
+      and produces better forecasts.
+    </div>
+    <div className="pb-2">
+      It's just one click to sign up and start forecasting. Plus, you can cash
+      out your winnings to charity!
+    </div>
+  </ExpandSection>
+)
+
+const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   <ExpandSection
     title={
       <>
@@ -131,8 +145,8 @@ const WhyManifold = ({
       the true probability.
     </div>
     <div className="pb-2">
-      Even with 1000s of markets on Manifold, we still outperform real-money
-      platforms. For example, in the{' '}
+      By using play money and the combined wisdom of thousands of users, we
+      outperform real-money platforms. For example, in the{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"

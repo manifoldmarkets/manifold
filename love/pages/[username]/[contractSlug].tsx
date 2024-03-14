@@ -69,6 +69,7 @@ import { TbDroplet } from 'react-icons/tb'
 import { getStaticProps as getStaticWebProps } from 'web/pages/[username]/[contractSlug]'
 import { LovePage } from 'love/components/love-page'
 import { useReview } from 'web/hooks/use-review'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -257,8 +258,7 @@ export function ContractPageContent(props: ContractParams) {
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
-    user === null ||
-    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
+    user === null || (user && user.createdTime > Date.now() - 3 * DAY_MS)
 
   return (
     <>

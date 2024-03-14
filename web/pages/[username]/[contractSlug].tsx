@@ -83,6 +83,7 @@ import { parseJsonContentToText } from 'common/util/parse'
 import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -312,8 +313,7 @@ export function ContractPageContent(props: ContractParams) {
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
-    user === null ||
-    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
+    user === null || (user && user.createdTime > Date.now() - 3 * DAY_MS)
 
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)
