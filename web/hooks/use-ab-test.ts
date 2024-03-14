@@ -27,7 +27,7 @@ export const useABTest = <T>(
     if (!AB_TEST_CACHE[testName]) {
       AB_TEST_CACHE[testName] = true
 
-      track(testName, { ...trackingProperties, variant })
+      track(testName, { ...trackingProperties, variant: randomVariant })
     }
   }, [testName, trackingProperties, variants])
 
