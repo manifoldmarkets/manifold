@@ -1,5 +1,4 @@
 import { LockClosedIcon } from '@heroicons/react/solid'
-import { CurrencyDollarIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -27,6 +26,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
+import { ManaCircleIcon } from '../icons/mana-circle-icon'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -294,7 +294,7 @@ function ContractQuestion(props: {
         <VisibilityIcon contract={contract} />
         {hasBetOnContract && (
           <Tooltip text="You traded on this question">
-            <CurrencyDollarIcon className="text-primary-600 mb-[1px] mr-1 inline h-5 w-5" />
+            <ManaCircleIcon className="text-primary-600 mb-[1px] mr-1 inline h-5 w-5" />
           </Tooltip>
         )}
         {contract.question}

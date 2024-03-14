@@ -1,7 +1,6 @@
 import {
   CashIcon,
   ChatAlt2Icon,
-  CurrencyDollarIcon,
   PencilIcon,
   ScaleIcon,
   PresentationChartLineIcon,
@@ -91,6 +90,7 @@ import { Button } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 
 export const getStaticProps = async (props: {
   params: {
@@ -447,7 +447,7 @@ function UserProfile(props: {
               (!!user.lastBetTime || hasBetBalanceChanges) && {
                 title: 'Trades',
                 prerender: true,
-                stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
+                stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
                 content: (
                   <>
                     <Spacer h={4} />
