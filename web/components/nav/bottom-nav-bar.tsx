@@ -48,20 +48,20 @@ function getNavigation(user: User) {
       href: '/browse/for-you',
       icon: BiSearchAlt2,
     },
+    // {
+    //   name: 'Politics',
+    //   href: '/politics',
+    //   icon: GiCapitol,
+    //   prefetch: false,
+    // },
     {
-      name: 'Politics',
-      href: '/politics',
-      icon: GiCapitol,
-      prefetch: false,
+      name: 'Profile',
+      href: `/${user.username}`,
     },
     {
       name: 'Notifs',
       href: `/notifications`,
       icon: NotificationsIcon,
-    },
-    {
-      name: 'Profile',
-      href: `/${user.username}`,
     },
   ]
 }

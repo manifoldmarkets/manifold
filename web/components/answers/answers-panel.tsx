@@ -71,6 +71,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { searchInAny } from 'common/util/parse'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { XIcon } from '@heroicons/react/solid'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -197,7 +198,10 @@ export function AnswersPanel(props: {
     })
   }
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = usePersistentInMemoryState(
+    false,
+    `answers-panel-search-open-${contract.id}`
+  )
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
 
   const privateUser = usePrivateUser()

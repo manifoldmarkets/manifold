@@ -113,9 +113,8 @@ export default function Welcome() {
               .join(',')})`
           )
           .filter('slug', 'not.ilike', '%manifold%')
-          .filter('slug', 'not.ilike', '%sccsq%')
           .order('importance_score', { ascending: false })
-          .limit(15)
+          .limit(10)
       ),
     ])
     const userInterestedTopics = orderBy(

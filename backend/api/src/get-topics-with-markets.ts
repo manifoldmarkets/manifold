@@ -4,6 +4,7 @@ import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { getMemberTopics } from 'shared/supabase/groups'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
+import { SLUGS_TO_EXCLUDE_FROM_NEW_USER_HOME_SECTION } from 'common/topics'
 
 const CONTRACTS_PER_TOPIC = 5
 export const getGroupsWithTopContracts: APIHandler<
@@ -28,12 +29,17 @@ export const getGroupsWithTopContracts: APIHandler<
         where c.visibility = 'public'
           and c.deleted = false
           and c.group_slugs @> array[gs.slug]
+          and not c.group_slugs && $2
         order by c.importance_score desc
-        limit $2
+        limit $3
       ) as c
       order by gs.slug, c.importance_score desc
       `,
-      [auth.uid, CONTRACTS_PER_TOPIC * 4],
+      [
+        auth.uid,
+        SLUGS_TO_EXCLUDE_FROM_NEW_USER_HOME_SECTION,
+        CONTRACTS_PER_TOPIC * 4,
+      ],
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     getMemberTopics(auth.uid, pg),

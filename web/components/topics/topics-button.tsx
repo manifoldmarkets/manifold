@@ -196,6 +196,7 @@ export const unfollowTopicInternal = async (
     })
   track('leave group', { slug: group.slug })
 }
+
 export const TopicOptionsButton = (props: {
   group: Group
   yourGroupIds: string[] | undefined
@@ -203,12 +204,7 @@ export const TopicOptionsButton = (props: {
   className?: string
 }) => {
   const { group, className, yourGroupIds, user } = props
-  const [isMember, setIsMember] = useState(
-    yourGroupIds ? yourGroupIds.includes(group.id) : false
-  )
-  useEffect(() => {
-    if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
-  }, [yourGroupIds?.length])
+  const isMember = yourGroupIds ? yourGroupIds.includes(group.id) : false
 
   return (
     <span className={className}>
@@ -217,9 +213,7 @@ export const TopicOptionsButton = (props: {
         user={user}
         isMember={isMember}
         unfollow={() => {
-          unfollowTopicInternal(user, group).then(() => {
-            setIsMember(false)
-          })
+          unfollowTopicInternal(user, group)
         }}
       />
     </span>

@@ -158,6 +158,16 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'donald-trump-adb8f1bbf890',
 ]
 
+export const SLUGS_TO_EXCLUDE_FROM_NEW_USER_HOME_SECTION = [
+  'death-markets',
+  'rationalussy',
+  'personal',
+  'manifold-6748e065087e',
+  'manifold-features-25bad7c7792e',
+  'manifold-drama',
+  'personal-goals',
+]
+
 export const removeEmojis = (input: string) =>
   // eslint-disable-next-line no-control-regex
   input.replace(/[^\x00-\x7F]/g, '').trim()

@@ -49,8 +49,8 @@ export const FeedRepost = memo(function (props: {
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 group rounded-lg py-2 ',
-        hoveringChildContract ? '' : 'hover:ring-[1px]'
+        'bg-canvas-0 ring- ring-primary-200 group rounded-lg py-2',
+        hoveringChildContract ? '' : 'hover:ring-1'
       )}
     >
       <ClickFrame
@@ -141,7 +141,7 @@ export const FeedRepost = memo(function (props: {
                 contract={contract}
                 trackingPostfix="feed"
                 item={item}
-                className="border-ink-200 max-w-full border-[.1rem] pb-2 "
+                className="ring-ink-100 dark:ring-ink-300 hover:ring-primary-200 dark:hover:ring-primary-200 max-w-full pb-2 ring-1 "
                 hideBottomRow={true}
                 size={'xs'}
                 hideReason={true}

@@ -1,22 +1,33 @@
 import { Col } from './layout/col'
 import { ExpandSection } from './explainer-panel'
+import { track } from 'web/lib/service/analytics'
 
 export const TrustPanel = (props: { className?: string }) => {
   const { className } = props
+  const handleSectionClick = (sectionTitle: string) => {
+    track('trust calibration section click', { sectionTitle })
+  }
   return (
     <div className={className}>
       <Col className="mx-auto">
-        <WhyNotAlternatives />
-        <PlayMoneyVsRealMoney />
-        <ManipulationAndHype />
-        <LowTraders />
+        <WhyNotAlternatives onClick={handleSectionClick} />
+        <PlayMoneyVsRealMoney onClick={handleSectionClick} />
+        <ManipulationAndHype onClick={handleSectionClick} />
+        <LowTraders onClick={handleSectionClick} />
       </Col>
     </div>
   )
 }
 
-export const ManipulationAndHype = () => (
-  <ExpandSection title="🤑 Are markets resistant to manipulation and hype?">
+export const ManipulationAndHype = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    onClick={() => onClick('Are markets resistant to manipulation and hype?')}
+    title="🤑 Are markets resistant to manipulation and hype?"
+  >
     <div>
       As the market prices moves further from the true probability, the odd's
       pricing becomes better for traders to correct it in the right direction.
@@ -52,8 +63,15 @@ export const ManipulationAndHype = () => (
   </ExpandSection>
 )
 
-export const PlayMoneyVsRealMoney = () => (
-  <ExpandSection title="💸 How does play-money compare to real money?">
+export const PlayMoneyVsRealMoney = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    onClick={() => onClick('How does play-money compare to real money?')}
+    title="💸 How does play-money compare to real money?"
+  >
     <div className="pb-2">
       The paper, {''}
       <a
@@ -83,8 +101,17 @@ export const PlayMoneyVsRealMoney = () => (
   </ExpandSection>
 )
 
-export const LowTraders = () => (
-  <ExpandSection title="🌱 Do markets with few traders and low liquidity work?">
+export const LowTraders = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    onClick={() =>
+      onClick('Do markets with few traders and low liquidity work?')
+    }
+    title="🌱 Do markets with few traders and low liquidity work?"
+  >
     <div className="pb-2">
       Yes! And very reliably! The paper{' '}
       <a
@@ -120,8 +147,15 @@ export const LowTraders = () => (
   </ExpandSection>
 )
 
-export const WhyNotAlternatives = () => (
-  <ExpandSection title="📊 Why are markets better than polls or experts?">
+export const WhyNotAlternatives = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    onClick={() => onClick('Why are markets better than polls or experts?')}
+    title="📊 Why are markets better than polls or experts?"
+  >
     <div className="pb-2">
       One paper about {''}
       <a

@@ -24,11 +24,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { isIOS } from 'web/lib/util/device'
-import {
-  WhatIsAPM,
-  WhatIsMana,
-  WhyManifold,
-} from 'web/components/explainer-panel'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
 
 export default function AboutPage() {
@@ -73,11 +69,7 @@ export default function AboutPage() {
         ></iframe>
 
         <Col className="mt-8 w-full">
-          <WhatIsAPM />
-
-          <WhatIsMana />
-
-          <WhyManifold />
+          <ExplainerPanel className={'max-w-full'} />
         </Col>
 
         <MobileAppsQRCodeDialog
