@@ -41,6 +41,7 @@ import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { User } from 'common/user'
 import { YourTopicsSection } from 'web/components/topics/your-topics'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export async function getStaticProps() {
   try {
@@ -66,6 +67,7 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveScroll('home')
 
   const { headlines } = props
+  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
   const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
   const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
 
@@ -82,11 +84,16 @@ export default function Home(props: { headlines: Headline[] }) {
           headlines={headlines}
           currentSlug={'home'}
         />
-        {!user ? (
+        {!user || !variant ? (
           <LoadingIndicator />
-        ) : !createdRecently ? (
+        ) : !createdRecently || variant === 'browse' ? (
           isClient ? (
-            <HomeContent user={user} privateUser={privateUser} />
+            <HomeContent
+              key={(user?.shouldShowWelcome ?? false).toString()}
+              user={user}
+              privateUser={privateUser}
+              variant={variant}
+            />
           ) : null
         ) : !memberTopicsWithContracts ? (
           <LoadingIndicator />
@@ -95,7 +102,13 @@ export default function Home(props: { headlines: Headline[] }) {
             <WelcomeTopicSections
               memberTopicsWithContracts={memberTopicsWithContracts}
             />
-            {isClient && <HomeContent user={user} privateUser={privateUser} />}
+            {isClient && (
+              <HomeContent
+                user={user}
+                privateUser={privateUser}
+                variant={variant}
+              />
+            )}
           </>
         )}
       </Page>
@@ -106,15 +119,18 @@ export default function Home(props: { headlines: Headline[] }) {
 export function HomeContent(props: {
   user: User | undefined | null
   privateUser: PrivateUser | undefined | null
+  variant: 'welcome topics' | 'browse'
 }) {
-  const { user, privateUser } = props
+  const { user, privateUser, variant } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
   )
 
+  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
-    0,
+    createdRecently && variant === 'browse' ? 1 : 0,
     `tabs-home`
   )
 

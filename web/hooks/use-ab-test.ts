@@ -6,7 +6,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 
 const AB_TEST_CACHE: { [testName: string]: boolean } = {}
 
-export const useABTest = <T>(
+export const useABTest = <T extends string>(
   testName: string,
   variants: T[],
   trackingProperties?: any
