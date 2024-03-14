@@ -152,9 +152,7 @@ export function FeedContractCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'relative rounded-xl',
-        'cursor-pointer ',
-        'hover:ring-[1px]',
+        'ring-primary-200 relative cursor-pointer rounded-xl hover:ring-1',
         'flex w-full flex-col gap-0.5 px-4',
         size === 'sm'
           ? 'bg-canvas-50'
