@@ -270,14 +270,9 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: `
-    case
-      when resolution is null
-      then importance_score::numeric
-      else (data->>'uniqueBettorCount')::numeric
-    end`,
+    sql: `importance_score::numeric desc, (data->>'uniqueBettorCount')::integer`,
     sortCallback: (c: Contract) =>
-      c.isResolved ? c.uniqueBettorCount : c.importanceScore,
+      c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
     order: 'DESC',
   },
   'daily-score': {
