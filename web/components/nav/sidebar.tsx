@@ -164,6 +164,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 // No sidebar when signed out
 const getMobileNav = (toggleModal: () => void) => {
   return buildArray<NavItem>(
+    {
+      name: 'US Politics',
+      href: '/politics',
+      icon: GiCapitol,
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
