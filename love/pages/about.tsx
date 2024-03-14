@@ -6,7 +6,7 @@ import { Spacer } from 'web/components/layout/spacer'
 import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { WhatIsAPM, WhatIsMana } from 'web/components/explainer-panel'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
 import { TbBrandDiscord, TbBrandGithub, TbBrandTwitter } from 'react-icons/tb'
 import { LovePage } from 'love/components/love-page'
@@ -33,9 +33,7 @@ export default function AboutPage() {
         </div>
 
         <Col className="w-full max-w-[60ch]">
-          <WhatIsAPM />
-
-          <WhatIsMana />
+          <ExplainerPanel className={'max-w-full'} />
         </Col>
 
         <div className="my-2 text-lg font-semibold">How does it work?</div>
