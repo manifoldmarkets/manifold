@@ -63,7 +63,7 @@ export const onCreateMarket = async (
   if (!embedding) await generateContractEmbeddings(contract, pg)
   const isNonPredictive = isContractNonPredictive(contract)
   if (isNonPredictive) {
-    const unranked = await addGroupToContract(
+    await addGroupToContract(
       contract,
       {
         id: UNRANKED_GROUP_ID,
@@ -72,8 +72,7 @@ export const onCreateMarket = async (
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
-    log('Added contract to unranked group', unranked)
-    const unsubsidized = await addGroupToContract(
+    await addGroupToContract(
       contract,
       {
         id: UNSUBSIDIZED_GROUP_ID,
@@ -82,7 +81,7 @@ export const onCreateMarket = async (
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
-    log('Added contract to unsubsidized group', unsubsidized)
+    log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
     await addContractToFeed(
