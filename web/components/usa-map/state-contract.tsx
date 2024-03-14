@@ -1,4 +1,4 @@
-import { CPMMMultiContract, Contract } from 'common/contract'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { StateContractCard } from '../us-elections/contracts/state-contract-card'
 import {
   MapContractsDictionary,
@@ -11,6 +11,7 @@ import { getAnswerProbability } from 'common/calculate'
 import { MultiBettor, OpenProb } from '../answers/answer-components'
 import { Answer } from 'common/answer'
 import clsx from 'clsx'
+import { useRouter } from 'next/router'
 
 export function StateContract(props: {
   targetContract: Contract | null
@@ -112,9 +113,12 @@ function SwingStateRow(props: {
 }) {
   const { state, contract, index, hoveredState, setHoveredState, targetState } =
     props
+  const router = useRouter()
   if (!contract) {
     return <></>
   }
+
+  const contractUrl = contractPath(contract)
   const demAnswer = contract.answers.find((a) => a.text === 'Democratic Party')
 
   const repAnswer = contract.answers.find((a) => a.text === 'Republican Party')
@@ -122,7 +126,7 @@ function SwingStateRow(props: {
     <Row
       className={clsx(
         index == 0 && 'border-t',
-        'border-ink-300 h-[74px] justify-between border-b transition-colors sm:h-10',
+        'border-ink-300 group h-[74px] justify-between border-b transition-colors sm:h-10',
         targetState == state
           ? 'bg-canvas-50'
           : hoveredState == state
@@ -135,10 +139,13 @@ function SwingStateRow(props: {
       onMouseLeave={() => {
         setHoveredState(undefined)
       }}
+      onClick={() => {
+        router.push(contractUrl)
+      }}
     >
       <Row className="items-center gap-2">
         <div
-          className="h-full w-6"
+          className="group-hover:text-primary-700 h-full w-6 transition-colors group-hover:underline"
           style={{
             background: probToColor(contract),
           }}
