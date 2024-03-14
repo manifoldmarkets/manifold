@@ -51,7 +51,7 @@ export function BinaryMultiAnswersPanel(props: {
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   return (
     <>
-      <Row className="mx-[2px] mt-1 hidden justify-between gap-2 sm:inline-flex">
+      <Row className="mx-[2px] mt-1 hidden justify-between gap-2 sm:flex">
         {answers.map((answer) => (
           <BetButton
             size={size}
