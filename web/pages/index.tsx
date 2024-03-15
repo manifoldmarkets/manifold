@@ -19,7 +19,7 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { getContract } from 'web/lib/supabase/contracts'
@@ -29,8 +29,6 @@ import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { removeEmojis } from 'common/topics'
 import { filterDefined } from 'common/util/array'
-
-const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -49,7 +47,10 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const prezContract = await getContract('ikSUiiNS8MwAI75RwEJf')
 
   const filteredContracts = contracts.filter(
-    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+    (c) =>
+      !c.groupSlugs?.some((slug) =>
+        HIDE_FROM_NEW_USER_SLUGS.includes(slug as any)
+      )
   )
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>

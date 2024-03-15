@@ -13,7 +13,7 @@ import {
   unitVectorCosineDistance,
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
-import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
@@ -374,7 +374,7 @@ export const getImportantContractsForNewUsers = async (
 ): Promise<string[]> => {
   let contractIds: string[] = []
   let threshold = 0.5
-  const ignoreSlugs = DEEMPHASIZED_GROUP_SLUGS.filter(
+  const ignoreSlugs = HIDE_FROM_NEW_USER_SLUGS.filter(
     (s) => !groupSlugs?.includes(s)
   )
   while (contractIds.length < targetCount && threshold > 0.2) {

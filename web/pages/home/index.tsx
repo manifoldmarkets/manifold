@@ -25,7 +25,7 @@ import { DAY_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import {
   PrivateUser,
   freeQuestionRemaining,
@@ -254,8 +254,8 @@ const BrowseSection = (props: {
           excludeGroupSlugs: buildArray(
             privateUser?.blockedGroupSlugs,
             shouldFilterDestiny &&
-              !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
-              DESTINY_GROUP_SLUGS
+              DESTINY_GROUP_SLUG != topicSlug &&
+              DESTINY_GROUP_SLUG
           ),
           excludeUserIds: privateUser?.blockedUserIds,
         }}

@@ -300,87 +300,56 @@ export const APPLE_APP_URL =
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
-export const BLOCKED_BY_DEFAULT_GROUP_SLUGS = ['nsfw']
-
-export const DESTINY_GROUP_SLUGS = [
-  'destinygg',
-  'destinygg-stocks',
-  'eto',
-  'mumbowl-stonks',
-]
+export const DESTINY_GROUP_SLUG = 'destinygg'
 export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
+
+export const RATING_GROUP_SLUGS = ['nonpredictive', 'unsubsidized']
+
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
-  'manifold-features',
   'manifold-6748e065087e',
-  'destinygg',
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'nonpredictive',
-  'unsubsidized',
+  ...RATING_GROUP_SLUGS,
+  DESTINY_GROUP_SLUG,
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
-// Note: these are only de-emphasized in 2 important places:
-// - The signed-out landing page
-// - The very first feed items generated for new users
-export const DEEMPHASIZED_GROUP_SLUGS = [
+// - Hide markets from signed-out landing page
+// - Hide from onboarding topic selector
+// - De-emphasize markets in the very first feed items generated for new users
+export const HIDE_FROM_NEW_USER_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
   'trading-bots',
   'gambling',
   'free-money',
+  'mana',
   'whale-watching',
   'spam',
   'test',
   'no-resolution',
   'eto',
   'friend-stocks',
-  'austin-less-wrong-2023-predictions',
-  'fantasy-football-stock-exchange',
   'ancient-markets',
   'jokes',
-  'olivia',
   'planecrash',
   'glowfic',
   'all-stonks',
-  'destinygg',
   'the-market',
   'nonpredictive-profits',
-  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
-  'crystal-ballin',
-  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
-  ...DESTINY_GROUP_SLUGS,
-  ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
-]
-
-export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
-  // politics, 2024-presidential-election, magaland, donald-trump
-  'us-politics',
-  'republican-party',
-  '2024-republican-primaries',
-  'presidential-politics',
-  // lk-99
-  'superconductivity',
-  // ai
-  'openai',
-  'technical-ai-timelines',
-  // crypto-speculation
-  'crypto-prices',
-  // musk-mania
-  'elon-musk',
-  // ignore all manifold groups
-  'manifold-user-retention',
+  'nsfw',
   'manifold-6748e065087e',
-  'manifold-leagues',
-  'manifold-features-25bad7c7792e',
-  'manifold-users',
-  // generally not helpful for browsing
+  'bugs',
   'new-years-resolutions-2024',
+  'metamarkets',
+  'metaforecasting',
+  'death-markets',
+  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

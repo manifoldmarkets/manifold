@@ -1,4 +1,7 @@
-import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import {
+  HIDE_FROM_NEW_USER_SLUGS,
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
+} from 'common/envs/constants'
 
 type TopicInfo = { name: string; groupIds: string[] }
 
@@ -127,35 +130,19 @@ export const TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW = [
 ]
 
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
-  'new-years-resolutions-2024',
-  'metamarkets',
   'magaland',
-  'metaforecasting',
-  'nonpredictive-profits',
-  'nonpredictive',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
-  'fun',
-  'unranked',
-  'bugs',
-  'rationalussy',
-  'personal',
   'world-default',
   'shortterm-markets',
   'global-macro',
   'video-games',
   'politics-default', // should follow US Politics instead
   '2024-us-presidential-election', // same
-  'elon-musk', // listed as Elon Musk
   'elon-musk-14d9d9498c7e',
   'crypto-prices', // same as crypto,
   'technical-ai-timelines', // same as ai
-  'presidential-politics', // same as politics
-  'unsubsidized',
-  'death-markets',
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
-  'destiny',
   'donald-trump-adb8f1bbf890',
+  ...HIDE_FROM_NEW_USER_SLUGS,
 ]
 
 export const SLUGS_TO_EXCLUDE_FROM_NEW_USER_HOME_SECTION = [

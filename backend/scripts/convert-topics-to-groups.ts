@@ -7,7 +7,7 @@ import { getUser } from 'shared/utils'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { first, uniq } from 'lodash'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { TOPICS_TO_GROUP_ID } from 'common/topics'
 
 async function main() {
@@ -54,7 +54,7 @@ async function main() {
             and contracts.creator_id != 'PzOAq29wOnWw401h613wyQPvbZF2'
           ;
       `,
-      [topic, TOPICS_TO_GROUP_ID[topic], DEEMPHASIZED_GROUP_SLUGS],
+      [topic, TOPICS_TO_GROUP_ID[topic], HIDE_FROM_NEW_USER_SLUGS],
       (row: { contract_id: string }) => {
         contractIdsToAddToGroup.push(row.contract_id)
       }

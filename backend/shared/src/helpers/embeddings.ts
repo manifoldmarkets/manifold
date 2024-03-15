@@ -4,7 +4,7 @@ import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { log } from 'shared/utils'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 
 function magnitude(vector: number[]): number {
   const vectorSum = sum(vector.map((val) => val * val))
@@ -51,7 +51,7 @@ export async function getDefaultEmbedding(
           ) as top_contracts on top_contracts.id = contract_embeddings.contract_id
         ) as subquery
     `,
-    [DEEMPHASIZED_GROUP_SLUGS]
+    [HIDE_FROM_NEW_USER_SLUGS]
   )
   return normalize(JSON.parse(avg.average_embedding) as number[])
 }

@@ -6,11 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
-import {
-  BLOCKED_BY_DEFAULT_GROUP_SLUGS,
-  DESTINY_GROUP_SLUGS,
-  HOUSE_BOT_USERNAME,
-} from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
@@ -215,9 +211,8 @@ export function GroupPageContent(props: {
         excludeGroupSlugs: buildArray(
           privateUser?.blockedGroupSlugs,
           shouldFilterDestiny &&
-            !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
-            DESTINY_GROUP_SLUGS,
-          !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
+            DESTINY_GROUP_SLUG != topicSlug &&
+            DESTINY_GROUP_SLUG
         ),
         excludeUserIds: privateUser?.blockedUserIds,
       }}
