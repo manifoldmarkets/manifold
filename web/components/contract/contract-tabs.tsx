@@ -88,7 +88,7 @@ export function ContractTabs(props: {
 
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
-    maybePluralize('Position', totalPositions)
+    maybePluralize('Holder', totalPositions)
 
   return (
     <ControlledTabs
