@@ -1,6 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { run, SupabaseClient } from 'common/supabase/utils'
 
 export type User = {
