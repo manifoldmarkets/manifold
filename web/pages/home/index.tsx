@@ -24,7 +24,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
 import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
 import {
   PrivateUser,
@@ -137,18 +137,26 @@ export function HomeContent(props: {
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
       {user && remaining > 0 && (
-        <Row className="text-md mb-2 items-center justify-between gap-2 self-center rounded-md border-2 border-indigo-500 p-2">
-          <span>
-            🎉 You've got{' '}
-            <span className="font-semibold">{remaining} free questions</span>!
-            Use them before they expire in{' '}
-            {shortenedFromNow(
-              user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-            )}
-            .
-          </span>
-          <CreateQuestionButton className={'max-w-[10rem]'} />
-        </Row>
+        <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
+          <Row className="flex-1 flex-wrap gap-x-1">
+            <span>
+              🎉 You've got{' '}
+              <span className="font-semibold">{remaining} free questions</span>!
+            </span>
+            <span>
+              (Expires in{' '}
+              {simpleFromNow(
+                user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+              )}
+              .)
+            </span>
+          </Row>
+          <CreateQuestionButton
+            className={'flex-1'}
+            color="indigo-outline"
+            size="xs"
+          />
+        </Col>
       )}
 
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">

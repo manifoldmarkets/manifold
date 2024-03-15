@@ -126,7 +126,7 @@ export function UserContractsList(props: {
             </div>
             {creator.id === user?.id && (
               <Row className={'mt-8 justify-center'}>
-                <CreateQuestionButton className={'max-w-[15rem]'} />
+                <CreateQuestionButton className={'max-w-[15rem] w-full'} />
               </Row>
             )}
           </>
