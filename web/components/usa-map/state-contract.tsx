@@ -76,11 +76,11 @@ export function SwingStateContract(props: {
 
   return (
     <Col className=" w-full">
-      <Row className="text-ink-500 mb-1 hidden justify-between text-sm sm:flex">
+      <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
         Swing States
         <Row className="gap-4">
-          <Row className="w-24 justify-start">Democratic</Row>
-          <Row className="w-24 justify-end pr-4">Republican</Row>
+          <Row className="w-28 justify-start">Democratic</Row>
+          <Row className="w-20 justify-start">Republican</Row>
         </Row>
       </Row>
       {Object.entries(sortedSwingContractsDictionary).map(
@@ -163,7 +163,7 @@ function SwingStateRow(props: {
             answer={repAnswer}
             contract={contract}
             label="REP"
-            className="border-ink-200 justify-end sm:pr-4"
+            className="justify-end"
           />
         </div>
       )}
