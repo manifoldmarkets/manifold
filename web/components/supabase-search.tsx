@@ -17,13 +17,10 @@ import generateFilterDropdownItems, {
 import { Input } from './widgets/input'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
-import {
-  useGroupFromSlug,
-} from 'web/hooks/use-group-supabase'
+import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
-
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
