@@ -73,6 +73,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { XIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -728,7 +729,7 @@ export function Answer(props: {
           <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
           <Tooltip text={formatTime(answer.createdTime)}>
             <div className="text-ink-600">
-              #{1 + ('index' in answer ? answer.index : answer.number)}
+              {shortenedFromNow(answer.createdTime)}
             </div>
           </Tooltip>
           <Row className={'w-full justify-end gap-2'}>
