@@ -8,6 +8,7 @@ import {
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import {
   PARTNER_QUARTER_START_DATE,
+  PARTNER_RETAINED_REFERRAL_BONUS,
   PARTNER_UNIQUE_TRADER_BONUS,
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
@@ -24,6 +25,10 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  const quarterStartStr = PARTNER_QUARTER_START_DATE.toISOString()
+  const quarterEndStr = getPartnerQuarterEndDate(
+    PARTNER_QUARTER_START_DATE
+  ).toISOString()
   const quarterStart = PARTNER_QUARTER_START_DATE.getTime()
   const quarterEnd = getPartnerQuarterEndDate(
     PARTNER_QUARTER_START_DATE
@@ -88,10 +93,10 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     (t) => (t.outcome_type === 'MULTIPLE_CHOICE' ? t.total : 0)
   )
 
-  const referrals = await pg.oneOrNone<{
-    num_referred: number
+  const referrals = await pg.manyOrNone<{
+    id: number
   }>(
-    `select count(*) as num_referred
+    `select id
   from users
   where
     data->>'referredByUserId' = $1
@@ -101,16 +106,42 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     [userId, quarterStart, quarterEnd]
   )
 
-  const numReferrals = referrals?.num_referred ?? 0
+  const numReferrals = referrals.length
+
+  const daysRetained = 5
+  const referralsWhoRetained = await pg.map<string>(
+    `
+with bet_days AS (
+  SELECT user_id, DATE(contract_bets.created_time) AS bet_day
+  FROM contract_bets
+  where contract_bets.user_id = any($1)
+  and contract_bets.created_time > $2
+  and contract_bets.created_time < $3
+  GROUP BY user_id, DATE(contract_bets.created_time)
+),
+user_bet_days AS (
+  SELECT user_id, COUNT(bet_day) AS total_bet_days
+  FROM bet_days
+  GROUP BY user_id
+)
+select user_id from user_bet_days where total_bet_days >= $4
+`,
+    [referrals.map((r) => r.id), quarterStartStr, quarterEndStr, daysRetained],
+    (row) => row.user_id
+  )
+  const numReferralsWhoRetained = referralsWhoRetained.length
 
   const numBinaryBettorsNumber = Number(numBinaryBettors) || 0
   const numMultiChoiceBettorsNumber = Number(numMultiChoiceBettors) || 0
   const numReferralsNumber = Number(numReferrals) || 0
+  const retainedReferralsIncome =
+    numReferralsWhoRetained * PARTNER_RETAINED_REFERRAL_BONUS
 
   const totalTraderIncome =
     numBinaryBettorsNumber * PARTNER_UNIQUE_TRADER_BONUS +
     numMultiChoiceBettorsNumber * PARTNER_UNIQUE_TRADER_BONUS_MULTI
-  const dollarsEarned = totalTraderIncome + numReferralsNumber
+  const dollarsEarned =
+    totalTraderIncome + numReferralsNumber + retainedReferralsIncome
 
   return {
     status: 'success',
@@ -118,7 +149,9 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
     numContractsCreated,
     numUniqueBettors,
     numReferrals,
+    numReferralsWhoRetained,
     totalTraderIncome,
+    totalReferralIncome: numReferralsNumber + retainedReferralsIncome,
     dollarsEarned,
   }
 }

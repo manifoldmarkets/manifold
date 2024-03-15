@@ -956,7 +956,9 @@ export const API = (_apiTypeCheck = {
       numContractsCreated: number
       numUniqueBettors: number
       numReferrals: number
+      numReferralsWhoRetained: number
       totalTraderIncome: number
+      totalReferralIncome: number
       dollarsEarned: number
     },
   },

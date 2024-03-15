@@ -8,3 +8,5 @@ export const getPartnerQuarterEndDate = (startDate: Date) => {
   endDate.setMonth(startDate.getMonth() + 3)
   return endDate
 }
+
+export const PARTNER_RETAINED_REFERRAL_BONUS = 10
