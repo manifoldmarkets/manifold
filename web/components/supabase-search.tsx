@@ -1,5 +1,5 @@
 'use client'
-import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
@@ -19,19 +19,15 @@ import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import {
   useGroupFromSlug,
-  useRealtimeMemberGroupIds,
 } from 'web/hooks/use-group-supabase'
 import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
-import { useUser } from 'web/hooks/use-user'
 
-import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
 import { Button, IconButton } from 'web/components/buttons/button'
-import Link from 'next/link'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
@@ -48,7 +44,6 @@ import { LiteUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from './widgets/avatar'
-import { MultipleAvatarIcons } from './notifications/notification-types'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
