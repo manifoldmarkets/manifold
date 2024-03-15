@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { CPMMBinaryContract, contractPath } from 'common/contract'
+import { CPMMBinaryContract, Contract, contractPath } from 'common/contract'
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
@@ -14,26 +14,78 @@ import { Button } from 'web/components/buttons/button'
 import { track } from '@amplitude/analytics-browser'
 import { PolicyContractType } from 'web/public/data/policy-data'
 
-export function ConditionalMarketVisual(props: {
-  policyContracts: PolicyContractType[]
+export function Policy(props: {
+  policy: PolicyContractType
   className?: string
+  isFirst: boolean
+  isLast: boolean
 }) {
-  const { policyContracts, className } = props
+  const { policy, className, isFirst, isLast } = props
+  const { bidenContract, trumpContract, title } = policy
+  if (!bidenContract || !trumpContract) {
+    return <></>
+  }
 
+  const bidenPath = contractPath(bidenContract)
+  const trumpPath = contractPath(trumpContract)
   return (
-    <Col className={className}>
-      <div className="mb-2 whitespace-nowrap  font-semibold sm:text-lg">
-        Conditional Markets
-      </div>
-      {policyContracts.map((policy) => (
-        <MobilePolicy key={policy.title} policy={policy} />
-      ))}
-    </Col>
+    <Row
+      className={clsx(
+        ' border-ink-300 h-full w-full justify-between',
+        isFirst && 'border-t',
+        className
+      )}
+    >
+      <Row className="border-ink-300 grow items-center border-b">{title}</Row>
+      <Row className="items-center">
+        <ConditionalPercent
+          path={bidenPath}
+          contract={bidenContract}
+          className=" bg-azure-300 dark:bg-azure-900 justify-start px-4 py-2"
+          isLast={isLast}
+        />
+        <ConditionalPercent
+          path={trumpPath}
+          contract={trumpContract}
+          className="bg-sienna-300 dark:bg-sienna-900 justify-end px-4 py-2"
+          isLast={isLast}
+        />
+      </Row>
+    </Row>
   )
 }
 
-function MobilePolicy(props: { policy: PolicyContractType }) {
-  const { policy } = props
+function ConditionalPercent(props: {
+  path: string
+  contract: Contract
+  className?: string
+  isLast: boolean
+}) {
+  const { path, contract, className, isLast } = props
+  return (
+    <Link
+      href={path}
+      className={clsx(
+        'text-ink-700 group flex h-full flex-row items-center gap-2 border-b',
+        isLast ? 'border-ink-300' : 'border-ink-100',
+        className
+      )}
+    >
+      <ContractStatusLabel
+        contract={contract}
+        className="group-hover:text-primary-700 w-10 font-semibold transition-colors"
+      />
+
+      <BinaryBetButton contract={contract as CPMMBinaryContract} />
+    </Link>
+  )
+}
+
+export function MobilePolicy(props: {
+  policy: PolicyContractType
+  className?: string
+}) {
+  const { policy, className } = props
   const { bidenContract, trumpContract, title } = policy
   if (!bidenContract || !trumpContract) {
     return <></>
@@ -47,7 +99,7 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
   const bidenPath = contractPath(bidenContract)
   const trumpPath = contractPath(trumpContract)
   return (
-    <Col className="bg-canvas-0 mb-2 rounded-lg px-4 py-2">
+    <Col className={clsx('bg-canvas-0 mb-2 rounded-lg px-4 py-2', className)}>
       <div className="font-semibold">{title}</div>
       <MobilePolicyRow
         key={policy.title}
