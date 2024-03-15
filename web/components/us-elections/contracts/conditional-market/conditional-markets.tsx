@@ -3,8 +3,6 @@ import { Row } from 'web/components/layout/row'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { PolicyContractType } from 'web/public/data/policy-data'
 import { MobilePolicy, Policy } from './conditional-market'
-import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
-import Image from 'next/image'
 
 export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
