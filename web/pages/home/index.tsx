@@ -89,7 +89,6 @@ export default function Home(props: { headlines: Headline[] }) {
         ) : !createdRecently || variant === 'browse' ? (
           isClient ? (
             <HomeContent
-              key={(user?.shouldShowWelcome ?? false).toString()}
               user={user}
               privateUser={privateUser}
               variant={variant}
@@ -197,11 +196,13 @@ export function HomeContent(props: {
           privateUser={privateUser}
         />
       )}
-      <BrowseSection
-        className={clsx(activeIndex !== 1 && 'hidden')}
-        privateUser={privateUser}
-        user={user}
-      />
+      {user && !user.shouldShowWelcome && (
+        <BrowseSection
+          className={clsx(activeIndex !== 1 && 'hidden')}
+          privateUser={privateUser}
+          user={user}
+        />
+      )}
       {user && activeIndex === 2 && (
         <YourTopicsSection className="w-full" user={user} />
       )}
