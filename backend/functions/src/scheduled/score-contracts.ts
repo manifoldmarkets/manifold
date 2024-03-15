@@ -12,7 +12,11 @@ import {
 import { isProd } from 'shared/utils'
 
 export const importanceScoreScheduler = functions
-  .runWith({ secrets, memory: isProd() ? '1GB' : '256MB' })
+  .runWith({
+    secrets,
+    memory: isProd() ? '1GB' : '256MB',
+    timeoutSeconds: IMPORTANCE_MINUTE_INTERVAL * 60,
+  })
   .pubsub.schedule(`every ${IMPORTANCE_MINUTE_INTERVAL} minutes`)
   .onRun(async () => {
     const db = createSupabaseClient()
