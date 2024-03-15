@@ -21,7 +21,6 @@ jobs:
       working-directory: ./common
     - name: Run lint
       run: yarn lint
-      working-directory: ./common
     - name: Run unit tests
       run: yarn test
       working-directory: ./common
