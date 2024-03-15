@@ -17,8 +17,9 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { SEO } from 'web/components/SEO'
+import dayjs from 'dayjs'
 
+import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
@@ -91,6 +92,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export const getStaticProps = async (props: {
   params: {
@@ -198,13 +200,17 @@ function UserProfile(props: {
     averageRating,
     totalPortfolioPoints,
     weeklyPortfolioData,
-    balanceChanges,
   } = props
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
 
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
+  })
+  const balanceChanges = newBalanceChanges ?? props.balanceChanges
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
   )
