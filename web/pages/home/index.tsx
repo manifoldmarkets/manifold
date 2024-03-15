@@ -126,8 +126,14 @@ export function HomeContent(props: {
     user?.freeQuestionsCreated,
     user?.createdTime
   )
-
   const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+
+  const freeQuestionsVariant = useABTest('free questions display', [
+    'show',
+    'hide-for-an-hour',
+  ])
+  const freeQuestionsEnabled =
+    freeQuestionsVariant === 'show' || !createdRecently
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     createdRecently && variant === 'browse' ? 1 : 0,
@@ -136,7 +142,7 @@ export function HomeContent(props: {
 
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
-      {user && remaining > 0 && (
+      {user && freeQuestionsEnabled && remaining > 0 && (
         <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
           <Row className="flex-1 flex-wrap gap-x-1">
             <span>
