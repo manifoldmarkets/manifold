@@ -284,7 +284,12 @@ export const PARTNER_USER_IDS: string[] = [
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
-  'uglwf3YKOZNGjjEXKc5HampOFRE2', // David
+  '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
+  'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
+  'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
+  'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
+  'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
+  'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
