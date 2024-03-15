@@ -21,7 +21,7 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
 import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
@@ -125,17 +125,17 @@ export function HomeContent(props: {
     user?.freeQuestionsCreated,
     user?.createdTime
   )
-  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const createdInLastHour = (user?.createdTime ?? 0) > Date.now() - HOUR_MS
 
   const freeQuestionsVariant = useABTest('free questions display', [
     'show',
     'hide-for-an-hour',
   ])
   const freeQuestionsEnabled =
-    freeQuestionsVariant === 'show' || !createdRecently
+    freeQuestionsVariant === 'show' || !createdInLastHour
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
-    createdRecently && variant === 'browse' ? 1 : 0,
+    createdInLastHour && variant === 'browse' ? 1 : 0,
     `tabs-home`
   )
 
