@@ -69,13 +69,15 @@ export function NewContractPanel(props: {
       <CreateStepTracker outcomeType={outcomeType} setState={setState} />
       <Col className={clsx('px-6 py-2')}>
         {state == 'choosing contract' && (
-          <ChoosingContractForm
-            outcomeType={outcomeType}
-            setOutcomeType={setOutcomeType}
-            setState={setState}
-          />
+          <>
+            <ChoosingContractForm
+              outcomeType={outcomeType}
+              setOutcomeType={setOutcomeType}
+              setState={setState}
+            />
+            {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}
+          </>
         )}
-        {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}
         {state == 'filling contract params' && outcomeType && (
           <ContractParamsForm
             outcomeType={outcomeType}
