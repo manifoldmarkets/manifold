@@ -101,7 +101,6 @@ export const BOT_USERNAMES = [
   'ms_test',
   'arb',
   'Turbot',
-  'MiraBot',
   'MetaculusBot',
   'burkebot',
   'Botflux',
