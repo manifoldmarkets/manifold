@@ -7,6 +7,7 @@ import {
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { revalidateContractStaticProps } from 'shared/utils'
 
 export const addOrRemoveGroupFromContract: APIHandler<
   'market/:contractId/group'
@@ -65,4 +66,6 @@ export const addOrRemoveGroupFromContract: APIHandler<
   } else {
     await addGroupToContract(contract, group, auth.uid)
   }
+
+  await revalidateContractStaticProps(contract)
 }
