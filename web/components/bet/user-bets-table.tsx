@@ -563,7 +563,10 @@ function BetsTable(props: {
                       >
                         {contract.question}
                       </Link>
-                      <UserHovercard userId={contract.creatorId}>
+                      <UserHovercard
+                        className="self-start"
+                        userId={contract.creatorId}
+                      >
                         <UserLink
                           className={'text-ink-600 w-fit text-sm'}
                           user={{
