@@ -386,26 +386,25 @@ export function SupabaseSearch(props: {
             selected={searchType === 'Users'}
             onSelect={() => setSearchType('Users')}
             className={clsx(
-              'flex items-center justify-center',
+              'flex items-center justify-center gap-2',
               query && userResults?.length ? '!py-1' : 'min-w-[100px]'
             )}
           >
-            {!query || !userResults
-              ? 'Users'
-              : !userResults.length
-              ? '0 users'
-              : userResults
-                  .slice(0, 5)
-                  .map((u) => (
-                    <Avatar
-                      key={u.id}
-                      username={u.username}
-                      avatarUrl={u.avatarUrl}
-                      size="xs"
-                      className="-my-0.5 -mr-1 last:mr-0"
-                      noLink
-                    />
-                  ))}
+            {!userResults?.length && '0 '}
+            Users
+            {userResults &&
+              userResults
+                .slice(0, 3)
+                .map((u) => (
+                  <Avatar
+                    key={u.id}
+                    username={u.username}
+                    avatarUrl={u.avatarUrl}
+                    size="xs"
+                    className="-my-0.5 -mr-1 last:mr-0"
+                    noLink
+                  />
+                ))}
           </PillButton>
         </div>
       ) : (
