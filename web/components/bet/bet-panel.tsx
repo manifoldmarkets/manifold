@@ -638,6 +638,7 @@ export function BuyPanel(props: {
               limitBets={unfilledBets.filter(
                 (b) => b.answerId === multiProps?.answerToBuy?.id
               )}
+              answer={multiProps?.answerToBuy}
             />
           )}
         </>
