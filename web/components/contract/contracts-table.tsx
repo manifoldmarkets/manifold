@@ -294,7 +294,7 @@ function ContractQuestion(props: {
         <VisibilityIcon contract={contract} />
         {hasBetOnContract && (
           <Tooltip text="You traded on this question">
-            <ManaCircleIcon className="text-primary-600 mb-[1px] mr-1 inline h-5 w-5" />
+            <ManaCircleIcon className="text-primary-600 mb-[2px] mr-1 inline h-4 w-4" />
           </Tooltip>
         )}
         {contract.question}
