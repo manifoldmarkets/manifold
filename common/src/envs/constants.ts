@@ -290,6 +290,7 @@ export const PARTNER_USER_IDS: string[] = [
   'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
   'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
   'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
+  'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
