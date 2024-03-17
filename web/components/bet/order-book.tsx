@@ -258,9 +258,10 @@ export function OrderBookButton(props: {
     | StonkContract
     | CPMMMultiContract
     | MultiContract
+  answer?: Answer
   label?: React.ReactNode
 }) {
-  const { limitBets, contract, label } = props
+  const { limitBets, contract, answer, label } = props
   const [open, setOpen] = useState(false)
 
   return (
@@ -278,7 +279,14 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <OrderBookPanel limitBets={limitBets} contract={contract} />
+        <Col className="bg-canvas-0">
+          <OrderBookPanel
+            limitBets={limitBets}
+            contract={contract}
+            answer={answer}
+            expanded
+          />
+        </Col>
       </Modal>
     </>
   )
@@ -293,8 +301,9 @@ export function OrderBookPanel(props: {
     | CPMMMultiContract
     | MultiContract
   answer?: Answer
+  expanded?: boolean
 }) {
-  const { limitBets, contract, answer } = props
+  const { limitBets, contract, expanded, answer } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -315,7 +324,7 @@ export function OrderBookPanel(props: {
   const moreOrdersCountNo = Math.max(0, noBets.length - maxShownNotExpanded)
   const moreOrdersCount = moreOrdersCountYes + moreOrdersCountNo
   const [isExpanded, setIsExpanded] = usePersistentInMemoryState(
-    false,
+    expanded ?? false,
     `${contract.id}-orderbook-expanded`
   )
 

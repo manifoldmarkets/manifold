@@ -752,11 +752,10 @@ export function Answer(props: {
               <OrderBookButton
                 limitBets={unfilledBets}
                 contract={contract}
+                answer={answer as Answer}
                 label={
                   <Tooltip
-                    text={`Limit order volume: ${formatMoney(
-                      limitOrderVolume
-                    )}`}
+                    text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
                     placement="top"
                     noTap
                     className="flex flex-row gap-1"
