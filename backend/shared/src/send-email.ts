@@ -1,5 +1,6 @@
 import * as mailgun from 'mailgun-js'
 import { tryOrLogError } from 'shared/helpers/try-or-log-error'
+import { log } from './log'
 
 const initMailgun = () => {
   const apiKey = process.env.MAILGUN_KEY as string
@@ -24,7 +25,7 @@ export const sendTextEmail = async (
   const mg = initMailgun().messages()
   const result = await tryOrLogError(mg.send(data))
   if (result != null) {
-    console.log('Sent text email', to, subject)
+    log('Sent text email', to, subject)
   }
   return result
 }
@@ -49,7 +50,7 @@ export const sendTemplateEmail = async (
   const mg = initMailgun().messages()
   const result = await tryOrLogError(mg.send(data))
   if (result != null) {
-    console.log('Sent template email', templateId, to, subject)
+    log('Sent template email', templateId, to, subject)
   }
   return result
 }

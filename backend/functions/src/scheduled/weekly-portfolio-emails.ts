@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import {
-  getAllPrivateUsersNotSent,
+  getPrivateUsersNotSent,
   getPrivateUser,
   getUser,
   getValues,
@@ -64,21 +64,20 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
       // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
       // ])
-      await getAllPrivateUsersNotSent(
+      await getPrivateUsersNotSent(
         'weeklyPortfolioUpdateEmailSent',
-        'profit_loss_updates'
+        'profit_loss_updates',
+        // Send emails in batches
+        USERS_TO_EMAIL
       )
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
-  const privateUsersToSendEmailsTo = privateUsers
-    .filter((user) => {
-      return isProd()
-        ? !user.notificationPreferences.opt_out_all.includes('email') &&
-            user.email
-        : user.notificationPreferences.profit_loss_updates.includes('email')
-    })
-    // Send emails in batches
-    .slice(0, USERS_TO_EMAIL)
+  const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
+    return isProd()
+      ? !user.notificationPreferences.opt_out_all.includes('email') &&
+          user.email
+      : user.notificationPreferences.profit_loss_updates.includes('email')
+  })
 
   if (privateUsersToSendEmailsTo.length === 0) {
     log('No users to send trending markets emails to')
@@ -91,8 +90,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'users'
   )
 
+  // Note from James: We are marking `privateUsers` (not `privateUsersToSendEmailsTo`) as sent,
+  // so that we don't keep querying them above.
   await Promise.all(
-    privateUsersToSendEmailsTo.map(async (privateUser) => {
+    privateUsers.map(async (privateUser) => {
       await firestore.collection('private-users').doc(privateUser.id).update({
         weeklyPortfolioUpdateEmailSent: true,
       })
