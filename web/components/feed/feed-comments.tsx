@@ -302,7 +302,7 @@ export const FeedComment = memo(function FeedComment(props: {
               )}
             />
           )}
-          <UserHovercard userId={userId} className="z-10">
+          <UserHovercard userId={userId} className="z-10 self-start">
             <Avatar
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
