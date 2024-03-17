@@ -25,7 +25,7 @@ export const sendTextEmail = async (
   const mg = initMailgun().messages()
   const result = await tryOrLogError(mg.send(data))
   if (result != null) {
-    log('Sent text email', to, subject)
+    log(`Sent text email to ${to} with subject ${subject}`)
   }
   return result
 }
@@ -50,7 +50,7 @@ export const sendTemplateEmail = async (
   const mg = initMailgun().messages()
   const result = await tryOrLogError(mg.send(data))
   if (result != null) {
-    log('Sent template email', templateId, to, subject)
+    log(`Sent template email ${templateId} to ${to} with subject ${subject}`)
   }
   return result
 }
