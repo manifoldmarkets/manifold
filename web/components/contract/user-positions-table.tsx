@@ -462,7 +462,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
-                      invested={formatMoney(position.data.invested)}
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
@@ -502,7 +502,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
-                      invested={formatMoney(position.data.invested)}
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
@@ -528,7 +528,7 @@ const PositionRow = memo(function PositionRow(props: {
   followedUsers: string[] | undefined
   colorClassName: string
 }) {
-  const { position, colorClassName, currentUser, followedUsers, numberToShow } =
+  const { position, colorClassName, currentUser, followedUsers, numberToShow, invested } =
     props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
