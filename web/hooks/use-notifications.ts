@@ -16,7 +16,7 @@ import {
   getNotifications,
   getUnseenNotifications,
 } from 'common/supabase/notifications'
-import { safeLocalStorage } from 'web/lib/util/local'
+import { newInMemoryStore, safeLocalStorage } from 'web/lib/util/local'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
@@ -28,6 +28,7 @@ export type NotificationGroup = {
 }
 
 const NOTIFICATIONS_KEY = 'notifications_1'
+const notificationsStore = newInMemoryStore()
 
 function useNotifications(
   userId: string,
@@ -37,7 +38,7 @@ function useNotifications(
   const { rows } = usePersistentSubscription(
     NOTIFICATIONS_KEY,
     'user_notifications',
-    safeLocalStorage,
+    notificationsStore,
     { k: 'user_id', v: userId },
     () => getNotifications(db, userId, count)
   )
