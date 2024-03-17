@@ -83,6 +83,7 @@ export default function Home(props: { headlines: Headline[] }) {
           endpoint={'news'}
           headlines={headlines}
           currentSlug={'home'}
+          hideEmoji
         />
         {!user || !variant ? (
           <LoadingIndicator />
