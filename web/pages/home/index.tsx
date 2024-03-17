@@ -126,13 +126,7 @@ export function HomeContent(props: {
     user?.createdTime
   )
   const createdInLastHour = (user?.createdTime ?? 0) > Date.now() - HOUR_MS
-
-  const freeQuestionsVariant = useABTest('free questions display', [
-    'show',
-    'hide-for-an-hour',
-  ])
-  const freeQuestionsEnabled =
-    freeQuestionsVariant === 'show' || !createdInLastHour
+  const freeQuestionsEnabled = !createdInLastHour
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     createdInLastHour && variant === 'browse' ? 1 : 0,
