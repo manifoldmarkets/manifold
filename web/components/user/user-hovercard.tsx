@@ -29,8 +29,10 @@ export function UserHovercard({
   if (!isClient) return null
   return (
     <HoverCard.Root openDelay={150}>
+      {/* Use "asChild" and wrap children in a button to prevent nested links.
+          Use inline-flex for the same layout as a link tag. */}
       <HoverCard.Trigger className={className} asChild>
-        <button>{children}</button>
+        <button className="inline-flex">{children}</button>
       </HoverCard.Trigger>
 
       <HoverCard.Portal>
