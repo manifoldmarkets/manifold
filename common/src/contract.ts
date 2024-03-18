@@ -125,6 +125,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   dailyScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   freshnessScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  conversionScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 

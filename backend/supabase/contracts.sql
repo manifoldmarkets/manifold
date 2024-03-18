@@ -16,6 +16,7 @@ create table if not exists
                   popularity_score numeric,
                   importance_score numeric,
                   freshness_score numeric default 0,
+                  conversion_score numeric default 0,
                   data jsonb not null,
                   question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
                   question_nostop_fts tsvector generated always as (
