@@ -7,7 +7,7 @@ export const conversionScoreScheduler = functions
   .runWith({
     secrets,
     memory: '128MB',
-    timeoutSeconds: 600,
+    timeoutSeconds: 540,
   })
   .pubsub.schedule('0 3 * * *')
   .timeZone('America/Los_Angeles')
