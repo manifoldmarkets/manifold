@@ -24,7 +24,7 @@ import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
-import { Button, IconButton } from 'web/components/buttons/button'
+import { IconButton } from 'web/components/buttons/button'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
@@ -289,8 +289,20 @@ export function SupabaseSearch(props: {
 
   const emptyContractsState =
     props.emptyState ??
-    (query ? (
-      <NoResults currentFilter={filter} updateParams={onChange} />
+    (filter !== 'all' || contractType !== 'ALL' ? (
+      <span className="text-ink-700 mx-2 my-6 text-center">
+        No results found under this filter.{' '}
+        <button
+          className="text-indigo-500 hover:underline focus:underline"
+          onClick={() =>
+            onChange({ [FILTER_KEY]: 'all', [CONTRACT_TYPE_KEY]: 'ALL' })
+          }
+        >
+          Clear filter
+        </button>
+      </span>
+    ) : query ? (
+      <NoResults />
     ) : (
       <Col className="text-ink-700 mx-2 my-6 text-center">
         No questions yet.
@@ -432,12 +444,11 @@ export function SupabaseSearch(props: {
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') &&
-              !topicSlug && (
+              (filter !== 'all' || contractType !== 'ALL') && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
-                    className="text-primary-500 hover:underline"
+                    className="text-primary-500 hover:underline focus:underline"
                     onClick={() =>
                       onChange({
                         [FILTER_KEY]: 'all',
@@ -447,7 +458,6 @@ export function SupabaseSearch(props: {
                   >
                     Clear filter
                   </button>
-                  ?
                 </div>
               )}
           </>
@@ -466,11 +476,7 @@ export function SupabaseSearch(props: {
   )
 }
 
-const NoResults = (props: {
-  currentFilter: string
-  updateParams: (params: Partial<SearchParams>) => void
-}) => {
-  const { currentFilter, updateParams } = props
+const NoResults = () => {
   const [message] = useState(
     sample([
       'no questions found x.x',
@@ -488,20 +494,6 @@ const NoResults = (props: {
   return (
     <span className="text-ink-700 mx-2 my-6 text-center">
       {capitalize(message)}
-      {currentFilter !== 'all' ? (
-        <>
-          . Try using the
-          <Button
-            onClick={() => updateParams({ f: 'all' })}
-            color={'indigo-outline'}
-            className={'mx-1'}
-            size={'2xs'}
-          >
-            Any status
-          </Button>
-          filter.
-        </>
-      ) : null}
     </span>
   )
 }
