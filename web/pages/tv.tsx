@@ -1,9 +1,9 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { mapKeys, partition } from 'lodash'
 
 import { Contract, tradingAllowed } from 'common/contract'
-import { run } from 'common/supabase/utils'
 import { SEO } from 'web/components/SEO'
 import { SignedInBinaryMobileBetting } from 'web/components/bet/bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -14,10 +14,10 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
 import { setTV } from 'web/lib/firebase/api'
-import { getContract } from 'web/lib/supabase/contracts'
+import { getContracts } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -26,59 +26,120 @@ import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
 import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Subtitle } from 'web/components/widgets/subtitle'
+import { Avatar } from 'web/components/widgets/avatar'
 
 export async function getStaticProps() {
-  const result = await run(db.from('tv_schedule').select('*').limit(1))
+  const { data } = await db.from('tv_schedule').select('*')
 
-  const {
-    source,
-    stream_id: streamId,
-    contract_id: contractId,
-  } = result.data[0]
+  const schedule = (data ?? []).filter(
+    (s) => +new Date(s.end_time ?? 0) > Date.now()
+  )
 
-  const contract = await getContract(contractId)
+  const contractIds = schedule.map((s) => s.contract_id)
+  const contracts = await getContracts(contractIds)
 
   return {
     props: {
-      source,
-      streamId,
-      contract,
+      contracts,
+      schedule,
     },
   }
 }
 
+function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
+  const { stream, contract } = props
+  return (
+    <Row key={stream.id} className="items-center gap-2">
+      <Col>
+        <Avatar
+          size="2xs"
+          avatarUrl={contract?.creatorAvatarUrl}
+          username={contract?.creatorUsername}
+          noLink
+        />
+      </Col>
+      <Col className="font-semibold">FOMC committee</Col>
+      <Col>{formatTimeRange(stream.start_time, stream.end_time)}</Col>
+      {/* <Col>{c.question}</Col> */}
+    </Row>
+  )
+}
+
 export default function TVPage(props: {
-  source: string
-  streamId: string
-  contract: Contract
+  schedule: ScheduleItem[]
+  contracts: Contract[]
 }) {
-  const [streamId, setStreamId] = useState(props.streamId)
-  const [contractId, setContractId] = useState(props.contract.id)
+  const [schedule, setSchedule] = useState(props.schedule)
+
+  const contractsList =
+    useContracts(
+      schedule.map((s) => s.contract_id),
+      undefined
+    ) ?? props.contracts
+  const contracts = mapKeys(contractsList, 'id')
 
   const tvSchedule = useSubscription('tv_schedule')
 
   useEffect(() => {
-    if (!tvSchedule.rows) return
-    const { stream_id, contract_id } = tvSchedule.rows[0]
-    setStreamId(stream_id)
-    setContractId(contract_id)
+    if (!tvSchedule.rows || !tvSchedule.rows.length) return
+    setSchedule(tvSchedule.rows as any as ScheduleItem[])
   }, [tvSchedule])
+
+  const stream = getActiveStream(schedule)
+  const contract = contracts[stream?.contract_id ?? '']
 
   const user = useUser()
   const isAdmin = useAdmin()
 
-  const contract =
-    useFirebasePublicContract('public', contractId) ?? props.contract
+  const isMobile = useIsMobile(1280) //xl
+  const [showSettings, setShowSettings] = useState(false)
+
+  const [featured, userCreated] = partition(schedule, (s) => s.is_featured)
+
+  if (!contract)
+    return (
+      <Page trackPageView="tv page">
+        <SEO
+          title="Manifold TV"
+          description="Bet on live video streams with Manifold TV"
+        />
+        <Title>Manifold TV</Title>
+
+        {featured.length > 0 && (
+          <>
+            <Subtitle>Featured events</Subtitle>
+            {featured
+              .map((s) => [s, contracts[s.contract_id]] as const)
+              .map(([s, c]) => (
+                <ScheduleRow key={s.id} stream={s} contract={c} />
+              ))}
+          </>
+        )}
+
+        <Subtitle>User-created events</Subtitle>
+        {userCreated
+          .map((s) => [s, contracts[s.contract_id]] as const)
+          .map(([s, c]) => (
+            <ScheduleRow key={s.id} stream={s} contract={c} />
+          ))}
+        {userCreated.length === 0 && (
+          <div className="italic">No events scheduled</div>
+        )}
+
+        <Row className="mt-2">
+          <Button color="indigo-outline" onClick={() => setShowSettings(true)}>
+            Schedule event
+          </Button>
+          <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
+        </Row>
+      </Page>
+    )
 
   const isBinary = contract.outcomeType === 'BINARY'
   const isMulti =
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
     contract.mechanism === 'cpmm-multi-1'
-  const [showSettings, setShowSettings] = useState(false)
-
-  const isMobile = useIsMobile(1280) //xl
-
-  if (!contract) return <div>Loading...</div>
 
   const betPanel = (
     <>
@@ -100,7 +161,11 @@ export default function TVPage(props: {
       <Row className="w-full items-start">
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
-            src={'https://www.youtube.com/embed/' + streamId + '?autoplay=1'}
+            src={
+              'https://www.youtube.com/embed/' +
+              stream?.stream_id +
+              '?autoplay=1'
+            }
             title="Manifold Live video"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -157,12 +222,57 @@ export default function TVPage(props: {
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
             </Row>
-            <PublicChat channelId={'tv'} />
+            <PublicChat channelId={`tv-${stream?.stream_id ?? 'default'}`} />
           </Col>
         </Col>
       </Row>
     </Page>
   )
+}
+
+interface ScheduleItem {
+  id: number
+  source: string
+  stream_id: string
+  contract_id: string
+  start_time: string
+  end_time: string
+  is_featured: string
+}
+
+const getActiveStream = (schedule: ScheduleItem[]) => {
+  const featured = schedule.filter((s) => s.is_featured)
+
+  const now = new Date().toISOString()
+  const activeNow = featured.find((s) => s.start_time < now && s.end_time > now)
+  if (activeNow) return activeNow
+
+  const soonest = featured
+    .concat()
+    .sort((a, b) => +new Date(a.start_time) - +new Date(b.start_time))
+  if (
+    soonest.length > 0 &&
+    Date.now() - +new Date(soonest[0].start_time) < 3600
+  )
+    return soonest[0]
+
+  const justEnded = featured
+    .concat()
+    .sort((a, b) => +new Date(a.end_time) - +new Date(b.end_time))
+  if (soonest.length > 0 && Date.now() - +new Date(soonest[0].end_time) < 3600)
+    return justEnded[0]
+
+  return undefined
+}
+
+const formatTimeRange = (start: string, end: string) => {
+  const s = new Date(start)
+  const e = new Date(end)
+
+  const endDate =
+    e.getDate() === s.getDate() ? '' : `${e.getMonth()}/${e.getDate()} `
+
+  return `${s.getMonth()}/${s.getDate()} ${s.getHours()}:${s.getMinutes()} - ${endDate}${e.getHours()}:${s.getMinutes()}`
 }
 
 export function TVSettingsModal(props: {
