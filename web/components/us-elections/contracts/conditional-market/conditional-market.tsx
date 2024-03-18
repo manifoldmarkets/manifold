@@ -7,7 +7,7 @@ import {
 } from 'common/contract'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
