@@ -46,12 +46,12 @@ create
 or replace function get_daily_claimed_boosts (user_id text) returns table (total numeric) as $$
 with daily_totals as (
     select
-        SUM((t.amount) as total
+        SUM(t.amount) as total
     from txns t
-    where t.fs_updated_time > now() - interval '1 day'
+    where t.created_time > now() - interval '1 day'
       and t.category = 'MARKET_BOOST_REDEEM'
       and t.to_id = user_id
-    group by date_trunc('day', t.fs_updated_time)
+    group by date_trunc('day', t.created_time)
 )
 select total from daily_totals
 order by total desc;
