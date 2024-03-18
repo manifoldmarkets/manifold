@@ -219,9 +219,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   creatorId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
-  serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   randomGroupCoefficient = 0,
+  similarInterestsToContractCallback?: () => Promise<{ [key: string]: number }>,
   trendingContractType?: 'old' | 'new'
 ): Promise<{
   [userId: string]: {
@@ -250,18 +250,14 @@ export const getUserToReasonsInterestedInContractAndUser = async (
       users: () => getContractGroupMemberIds(contractId, pg),
     },
     similar_interest_vector_to_contract: {
-      usersToDistances: () =>
-        serverSideCalculation
-          ? getUsersWithSimilarInterestVectorsToContractServerSide(
-              contractId,
-              pg,
-              INTEREST_DISTANCE_THRESHOLDS[dataType]
-            )
-          : getUsersWithSimilarInterestVectorsToContract(
-              contractId,
-              pg,
-              INTEREST_DISTANCE_THRESHOLDS[dataType]
-            ),
+      usersToDistances:
+        similarInterestsToContractCallback ??
+        (() =>
+          getUsersWithSimilarInterestVectorsToContract(
+            contractId,
+            pg,
+            INTEREST_DISTANCE_THRESHOLDS[dataType]
+          )),
     },
   }
 

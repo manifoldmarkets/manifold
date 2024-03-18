@@ -1,12 +1,12 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { SupabaseClient, tsToMillis } from 'common/supabase/utils'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import {
-  insertMarketMovementContractToUsersFeeds,
-  insertTrendingContractToUsersFeeds,
-} from 'shared/create-feed'
+import { bulkInsertDataToUserFeed } from 'shared/create-feed'
 import {
   computeContractScores,
   getContractTraders,
@@ -18,8 +18,18 @@ import {
 } from 'shared/supabase/vectors'
 import { Dictionary, pickBy } from 'lodash'
 import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
-import { DEFAULT_FEED_USER_ID } from 'common/feed'
+import {
+  CONTRACT_FEED_REASON_TYPES,
+  DEFAULT_FEED_USER_ID,
+  FEED_DATA_TYPES,
+  INTEREST_DISTANCE_THRESHOLDS,
+} from 'common/feed'
 import { convertContract } from 'common/supabase/contracts'
+import { Contract, CPMMContract } from 'common/contract'
+import {
+  getUsersWithSimilarInterestVectorsToContractServerSide,
+  getUserToReasonsInterestedInContractAndUser,
+} from 'shared/supabase/contracts'
 
 export const MINUTE_INTERVAL = 60
 let lastLoadedTime = 0
@@ -230,4 +240,132 @@ export const filterUserEmbeddings = (
       Math.random() <= 1 / ((24 * 60) / MINUTE_INTERVAL)
     )
   })
+}
+
+const insertMarketMovementContractToUsersFeeds = async (
+  contract: CPMMContract
+) => {
+  await addContractToFeedIfNotDuplicative(
+    contract,
+    [
+      'follow_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+      'contract_in_group_you_are_in',
+    ],
+    'contract_probability_changed',
+    [],
+    Date.now() - 1.5 * DAY_MS,
+    {
+      currentProb: contract.prob,
+      previousProb: contract.prob - contract.probChanges.day,
+    }
+  )
+}
+
+const insertTrendingContractToUsersFeeds = async (
+  contract: Contract,
+  unseenNewerThanTime: number,
+  data: Record<string, any>,
+  trendingContractType: 'old' | 'new'
+) => {
+  await addContractToFeedIfNotDuplicative(
+    contract,
+    [
+      'follow_contract',
+      'liked_contract',
+      'similar_interest_vector_to_contract',
+      'contract_in_group_you_are_in',
+    ],
+    'trending_contract',
+    [contract.creatorId],
+    unseenNewerThanTime,
+    data,
+    trendingContractType
+  )
+}
+
+const addContractToFeedIfNotDuplicative = async (
+  contract: Contract,
+  reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
+  dataType: FEED_DATA_TYPES,
+  userIdsToExclude: string[],
+  unseenNewerThanTime: number,
+  data?: Record<string, any>,
+  trendingContractType?: 'old' | 'new'
+) => {
+  const pg = createSupabaseDirectClient()
+  const usersToReasonsInterestedInContract =
+    await getUserToReasonsInterestedInContractAndUser(
+      contract,
+      contract.creatorId,
+      pg,
+      reasonsToInclude,
+      dataType,
+      undefined,
+      () =>
+        getUsersWithSimilarInterestVectorsToContractServerSide(
+          contract.id,
+          pg,
+          INTEREST_DISTANCE_THRESHOLDS[dataType]
+        ),
+      trendingContractType
+    )
+
+  const ignoreUserIds = await userIdsToIgnore(
+    contract.id,
+    Object.keys(usersToReasonsInterestedInContract),
+    unseenNewerThanTime,
+    [dataType, 'new_contract', 'new_subsidy'],
+    pg
+  )
+
+  await bulkInsertDataToUserFeed(
+    usersToReasonsInterestedInContract,
+    contract.createdTime,
+    dataType,
+    userIdsToExclude.concat(ignoreUserIds),
+    {
+      contractId: contract.id,
+      creatorId: contract.creatorId,
+      data,
+    },
+    pg
+  )
+}
+
+const userIdsToIgnore = async (
+  contractId: string,
+  userIds: string[],
+  seenTime: number,
+  dataTypes: FEED_DATA_TYPES[],
+  pg: SupabaseDirectClient
+) => {
+  const userIdsWithSeenMarkets = await pg.map(
+    `select distinct user_id
+            from user_contract_views
+            where contract_id = $1 and
+                user_id = ANY($2) and
+                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
+                `,
+    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    (row: { user_id: string }) => row.user_id
+  )
+  const userIdsWithFeedRows = await pg.map(
+    `select distinct user_id
+            from user_feed
+            where contract_id = $1 and
+                user_id = ANY($2) and
+                greatest(created_time, seen_time) > $3 and
+                data_type = ANY($4)
+                `,
+    [
+      contractId,
+      userIds.filter((id) => !userIdsWithSeenMarkets.includes(id)),
+      new Date(seenTime).toISOString(),
+      dataTypes,
+    ],
+    (row: { user_id: string }) => row.user_id
+  )
+  return userIdsWithFeedRows.concat(userIdsWithSeenMarkets)
 }
