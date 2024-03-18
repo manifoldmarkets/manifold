@@ -9,12 +9,12 @@ import { PrivateUser } from 'common/user'
 import { getForYouMarkets } from 'shared/supabase/search-contracts'
 
 // Run every minute on Monday for 2 hours starting at 12pm PT.
-// Should scale until 2000 * 120 = 240k users
-const EMAILS_PER_BATCH = 2000
+// Should scale until 1000 * 180 = 180k users
+const EMAILS_PER_BATCH = 1000
 
 export const weeklyMarketsEmails = functions
   .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
-  .pubsub.schedule('* 12-13 * * 1')
+  .pubsub.schedule('* 12-14 * * 1')
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
     const privateUsers = await getPrivateUsersNotSent(
