@@ -51,6 +51,7 @@ export function SelectMarkets(props: {
         }}
         headerClassName={'!bg-canvas-0'}
         contractsOnly
+        defaultFilter="all"
       />
       <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 justify-end px-8 py-2">
         {!loading && (
