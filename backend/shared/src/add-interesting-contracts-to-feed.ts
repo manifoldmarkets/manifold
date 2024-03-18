@@ -17,7 +17,10 @@ import {
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
 import { Dictionary, pickBy } from 'lodash'
-import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
+import {
+  getMostlyActiveUserIds,
+  getWhenToIgnoreUsersTime,
+} from 'shared/supabase/users'
 import {
   CONTRACT_FEED_REASON_TYPES,
   DEFAULT_FEED_USER_ID,
@@ -33,16 +36,20 @@ import {
 
 export const MINUTE_INTERVAL = 60
 let lastLoadedTime = 0
-
 export async function addInterestingContractsToFeed(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
   reloadAllEmbeddings: boolean,
-  readOnly = false
+  reloadSinceTime?: number
 ) {
   log(`Starting feed population. Loading user embeddings to store...`)
-  if (Object.keys(userInterestEmbeddings).length === 0 || reloadAllEmbeddings)
-    await loadUserEmbeddingsToStore(pg)
+  if (Object.keys(userInterestEmbeddings).length === 0 || reloadAllEmbeddings) {
+    await loadUserEmbeddingsToStore(pg, reloadSinceTime)
+  }
+  const mostlyActiveUserIds = await getMostlyActiveUserIds(
+    pg,
+    randomNumberThreshold(MINUTE_INTERVAL)
+  )
   log(`Loaded users. Querying candidate contracts...`)
   // We could query for contracts that've had large changes in prob in the past hour
   const contracts = await pg.map(
@@ -97,7 +104,7 @@ export async function addInterestingContractsToFeed(
       )
 
     // This is a newly trending contract, and should be at the top of most users' feeds
-    if (todayScore > 10 && todayScore / thisWeekScore > 0.5 && !readOnly) {
+    if (todayScore > 10 && todayScore / thisWeekScore > 0.5) {
       log('Inserting specifically today trending contract', {
         contractId: contract.id,
         todayScore,
@@ -112,11 +119,12 @@ export async function addInterestingContractsToFeed(
           thisWeekScore,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'new'
+        'new',
+        mostlyActiveUserIds
       )
     } else if (
-      !readOnly &&
-      (hourAgoTradersByContract[contract.id] ?? 0) >= (1 - importanceScore) * 15
+      (hourAgoTradersByContract[contract.id] ?? 0) >=
+      (1 - importanceScore) * 15
     ) {
       log('Inserting generally trending, recently popular contract', {
         contractId: contract.id,
@@ -132,7 +140,8 @@ export async function addInterestingContractsToFeed(
           tradersInPastHour: hourAgoTradersByContract[contract.id] ?? 0,
           importanceScore: parseFloat(importanceScore.toPrecision(2)),
         },
-        'old'
+        'old',
+        mostlyActiveUserIds
       )
     }
 
@@ -146,7 +155,10 @@ export async function addInterestingContractsToFeed(
         todayScore,
         importanceScore,
       })
-      if (!readOnly) await insertMarketMovementContractToUsersFeeds(contract)
+      await insertMarketMovementContractToUsersFeeds(
+        contract,
+        mostlyActiveUserIds
+      )
     }
   }
   log('Done adding trending contracts to feed')
@@ -223,6 +235,9 @@ const loadUserEmbeddingsToStore = async (
   }
 }
 
+// We update inactive users' feeds once per 5 days
+const randomNumberThreshold = (minuteInterval: number) =>
+  1 / (120 * (60 / minuteInterval))
 export const filterUserEmbeddings = (
   userEmbeddings: Dictionary<UserEmbeddingDetails>,
   longAgo: number
@@ -236,14 +251,14 @@ export const filterUserEmbeddings = (
       (lastBetTime !== null && lastBetTime >= longAgo) ||
       (lastBetTime === null && createdTime >= longAgo) ||
       lastSeenTime >= longAgo ||
-      // Let's update inactive users' feeds once per day
-      Math.random() <= 1 / ((24 * 60) / MINUTE_INTERVAL)
+      Math.random() <= randomNumberThreshold(MINUTE_INTERVAL)
     )
   })
 }
 
 const insertMarketMovementContractToUsersFeeds = async (
-  contract: CPMMContract
+  contract: CPMMContract,
+  mostlyActiveUserIds: string[]
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -259,7 +274,9 @@ const insertMarketMovementContractToUsersFeeds = async (
     {
       currentProb: contract.prob,
       previousProb: contract.prob - contract.probChanges.day,
-    }
+    },
+    undefined,
+    mostlyActiveUserIds
   )
 }
 
@@ -267,7 +284,8 @@ const insertTrendingContractToUsersFeeds = async (
   contract: Contract,
   unseenNewerThanTime: number,
   data: Record<string, any>,
-  trendingContractType: 'old' | 'new'
+  trendingContractType: 'old' | 'new',
+  mostlyActiveUserIds: string[]
 ) => {
   await addContractToFeedIfNotDuplicative(
     contract,
@@ -281,7 +299,8 @@ const insertTrendingContractToUsersFeeds = async (
     [contract.creatorId],
     unseenNewerThanTime,
     data,
-    trendingContractType
+    trendingContractType,
+    mostlyActiveUserIds
   )
 }
 
@@ -291,8 +310,9 @@ const addContractToFeedIfNotDuplicative = async (
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
   unseenNewerThanTime: number,
-  data?: Record<string, any>,
-  trendingContractType?: 'old' | 'new'
+  data: Record<string, any>,
+  trendingContractType: 'old' | 'new' | undefined,
+  mostlyActiveUserIds: string[]
 ) => {
   const pg = createSupabaseDirectClient()
   const usersToReasonsInterestedInContract =
@@ -324,7 +344,13 @@ const addContractToFeedIfNotDuplicative = async (
     usersToReasonsInterestedInContract,
     contract.createdTime,
     dataType,
-    userIdsToExclude.concat(ignoreUserIds),
+    userIdsToExclude
+      .concat(ignoreUserIds)
+      .concat(
+        Object.keys(usersToReasonsInterestedInContract).filter(
+          (id) => !mostlyActiveUserIds.includes(id)
+        )
+      ),
     {
       contractId: contract.id,
       creatorId: contract.creatorId,
