@@ -219,9 +219,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   creatorId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
-  serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   randomGroupCoefficient = 0,
+  similarInterestsToContractCallback?: () => Promise<{ [key: string]: number }>,
   trendingContractType?: 'old' | 'new'
 ): Promise<{
   [userId: string]: {
@@ -233,34 +233,31 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_FEED_REASON_TYPES]: {
-      users?: Promise<string[]>
-      usersToDistances?: Promise<{ [key: string]: number }>
+      users?: () => Promise<string[]>
+      usersToDistances?: () => Promise<{ [key: string]: number }>
     }
   } = {
     follow_contract: {
-      users: getContractFollowerIds(contractId, pg),
+      users: () => getContractFollowerIds(contractId, pg),
     },
     liked_contract: {
-      users: getContractLikerIds(contractId, pg),
+      users: () => getContractLikerIds(contractId, pg),
     },
     follow_user: {
-      users: getUserFollowerIds(creatorId, pg),
+      users: () => getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, pg),
+      users: () => getContractGroupMemberIds(contractId, pg),
     },
     similar_interest_vector_to_contract: {
-      usersToDistances: serverSideCalculation
-        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+      usersToDistances:
+        similarInterestsToContractCallback ??
+        (() =>
+          getUsersWithSimilarInterestVectorsToContract(
             contractId,
             pg,
             INTEREST_DISTANCE_THRESHOLDS[dataType]
-          )
-        : getUsersWithSimilarInterestVectorsToContract(
-            contractId,
-            pg,
-            INTEREST_DISTANCE_THRESHOLDS[dataType]
-          ),
+          )),
     },
   }
 
@@ -270,13 +267,13 @@ export const getUserToReasonsInterestedInContractAndUser = async (
         return []
 
       if (usersToDistances) {
-        const userToScoreMap = await usersToDistances
+        const userToScoreMap = await usersToDistances()
         return Object.entries(userToScoreMap).map(
           ([userId, interestDistance]) => [userId, reason, interestDistance]
         )
       }
 
-      const userIds = await (users ?? Promise.resolve([]))
+      const userIds = await (users?.() ?? [])
       return userIds.map((userId) => [userId, reason, 0])
     }
   ) as Promise<[string, CONTRACT_FEED_REASON_TYPES, number][]>[]
