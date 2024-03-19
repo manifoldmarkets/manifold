@@ -83,6 +83,7 @@ export const resolveMarketHelper = async (
       collectedFees,
       resolverId: resolver.id,
       subsidyPool: 0,
+      lastUpdatedTime: newCloseTime,
     })
   let updateAnswerAttrs: Partial<Answer> | undefined
 

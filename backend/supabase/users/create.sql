@@ -6,7 +6,9 @@ create table if not exists
     name text not null,
     created_time timestamptz,
     username text not null,
-    name_username_vector tsvector generated always as (to_tsvector('english', name || ' ' || username)) stored
+    name_username_vector tsvector generated always as (to_tsvector('english', name || ' ' || username)) stored,
+    balance numeric not null default 0,
+    total_deposits numeric not null default 0,
   );
 
 alter table users

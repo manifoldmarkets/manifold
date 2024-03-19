@@ -1,8 +1,11 @@
-create or replace function users_populate_cols () returns trigger language plpgsql as $$ begin
+create
+or replace function users_populate_cols () returns trigger language plpgsql as $$ begin
     if new.data is not null then
       new.name := (new.data)->>'name';
       new.username := (new.data)->>'username';
       new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
+      new.balance := ((new.data)->'balance')::numeric;
+      new.total_deposits := ((new.data)->'totalDeposits')::numeric;
     end if;
     return new;
 end $$;

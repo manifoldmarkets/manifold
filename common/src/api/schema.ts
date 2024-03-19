@@ -307,6 +307,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   // deprecated. remove after a few days
   'update-market': {
@@ -314,6 +315,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   'market/:contractId/close': {
     method: 'POST',
@@ -381,6 +383,7 @@ export const API = (_apiTypeCheck = {
         remove: z.boolean().default(false),
       })
       .strict(),
+    returns: {} as { success: true },
   },
   'market/:contractId/answer': {
     method: 'POST',

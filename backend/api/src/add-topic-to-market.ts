@@ -1,4 +1,7 @@
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { convertContract } from 'common/supabase/contracts'
 import {
@@ -8,6 +11,9 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { revalidateContractStaticProps } from 'shared/utils'
+import { DAY_MS } from 'common/util/time'
+import { addContractToFeed } from 'shared/create-feed'
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 
 export const addOrRemoveTopicFromContract: APIHandler<
   'market/:contractId/group'
@@ -27,7 +33,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
 
   const contractQuery = await db
     .from('contracts')
-    .select()
+    .select('data, importance_score')
     .eq('id', contractId)
     .single()
 
@@ -67,5 +73,30 @@ export const addOrRemoveTopicFromContract: APIHandler<
     await addGroupToContract(contract, group, auth.uid)
   }
 
-  await revalidateContractStaticProps(contract)
+  const continuation = async () => {
+    await revalidateContractStaticProps(contract)
+
+    // Adding a contract to a group is ~similar~ to creating a new contract in that group
+    if (
+      !remove &&
+      contract.createdTime > Date.now() - 2 * DAY_MS &&
+      contract.visibility === 'public'
+    ) {
+      await addContractToFeed(
+        contract,
+        ['contract_in_group_you_are_in'],
+        'new_contract',
+        [contract.creatorId],
+        {
+          idempotencyKey: contract.id + '_new_contract',
+        }
+      )
+    }
+    await upsertGroupEmbedding(createSupabaseDirectClient(), groupId)
+  }
+
+  return {
+    result: { success: true },
+    continue: continuation,
+  }
 }
