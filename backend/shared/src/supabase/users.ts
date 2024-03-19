@@ -143,7 +143,8 @@ export const getWhenToIgnoreUsersTime = () => {
 
 export const getMostlyActiveUserIds = async (
   pg: SupabaseDirectClient,
-  randomNumberThreshold?: number
+  randomNumberThreshold?: number,
+  userIds?: string[]
 ) => {
   const longAgo = getWhenToIgnoreUsersTime()
   return await pg.map(
@@ -162,8 +163,9 @@ export const getMostlyActiveUserIds = async (
          (ucv.max_created_time >= $2) or
          ($3 is null or (random() <=  $3))
          ) 
+        and ($4 is null or id = any($4))
        `,
-    [longAgo, new Date(longAgo).toISOString(), randomNumberThreshold],
+    [longAgo, new Date(longAgo).toISOString(), randomNumberThreshold, userIds],
     (r: { id: string }) => r.id
   )
 }

@@ -14,6 +14,7 @@ import {
 } from 'common/feed'
 import { log } from 'shared/utils'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
+import { getMostlyActiveUserIds } from 'shared/supabase/users'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -113,11 +114,20 @@ export const repostContractToFeed = async (
       Object.keys(usersToReasonsInterestedInContract).length
     } users`
   )
+  const mostlyActiveUserIds = await getMostlyActiveUserIds(
+    pg,
+    0.05, // 5% of inactive users get these contracts to their feed
+    Object.keys(usersToReasonsInterestedInContract)
+  )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     comment.createdTime,
     'repost',
-    userIdsToExclude,
+    userIdsToExclude.concat(
+      Object.keys(usersToReasonsInterestedInContract).filter(
+        (id) => !mostlyActiveUserIds.includes(id)
+      )
+    ),
     {
       contractId: contract.id,
       commentId: comment.id,
@@ -128,7 +138,6 @@ export const repostContractToFeed = async (
     pg
   )
 }
-
 export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
@@ -150,11 +159,20 @@ export const addContractToFeed = async (
       dataType,
       contract.isRanked === false || contract.isSubsidized === false ? 0 : 0.2
     )
+  const mostlyActiveUserIds = await getMostlyActiveUserIds(
+    pg,
+    0.05, // 5% of inactive users get these contracts to their feed
+    Object.keys(usersToReasonsInterestedInContract)
+  )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     contract.createdTime,
     dataType,
-    userIdsToExclude,
+    userIdsToExclude.concat(
+      Object.keys(usersToReasonsInterestedInContract).filter(
+        (id) => !mostlyActiveUserIds.includes(id)
+      )
+    ),
     {
       contractId: contract.id,
       creatorId: contract.creatorId,
