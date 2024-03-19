@@ -9,7 +9,7 @@ import {
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { revalidateContractStaticProps } from 'shared/utils'
 
-export const addOrRemoveGroupFromContract: APIHandler<
+export const addOrRemoveTopicFromContract: APIHandler<
   'market/:contractId/group'
 > = async (props, auth) => {
   const { contractId, groupId, remove } = props

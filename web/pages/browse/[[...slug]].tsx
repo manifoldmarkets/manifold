@@ -217,6 +217,9 @@ export function GroupPageContent(props: {
       headerClassName={'pt-0 px-2 mt-2 bg-canvas-0 md:bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
+      defaultFilter={
+        !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+      }
     />
   )
 

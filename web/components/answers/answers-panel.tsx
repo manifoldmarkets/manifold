@@ -251,20 +251,20 @@ export function AnswersPanel(props: {
             </Button>
           )}
           {!isSearchOpen && (
-            <Row
+            <button
               onClick={toggleSearch}
-              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
             >
               <SearchIcon className="h-4 w-4" /> Search
-            </Row>
+            </button>
           )}
           {!isSearchOpen && canAddAnswer && (
-            <Row
+            <button
               onClick={toggleSearch}
-              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
             >
               <PlusCircleIcon className="h-4 w-4" /> Add answer
-            </Row>
+            </button>
           )}
         </Row>
       </SearchCreateAnswerPanel>
