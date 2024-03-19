@@ -564,7 +564,7 @@ const PositionRow = memo(function PositionRow(props: {
       </UserHovercard>
       <Col>
         <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>{numberToShow}</span>
-        <span className={clsx('text-ink-500 text-right text-xs shrink-0')}>Spent {invested}</span>
+        <span className={clsx('hidden sm:flex text-ink-500 text-right text-xs shrink-0')}>Spent {invested}</span>
       </Col>
     </Row>
   )
