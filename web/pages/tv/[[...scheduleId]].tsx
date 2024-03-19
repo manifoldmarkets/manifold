@@ -29,11 +29,20 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Avatar } from 'web/components/widgets/avatar'
 
-export async function getStaticProps() {
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export async function getStaticProps(props: {
+  params: { scheduleId: string[] }
+}) {
+  const scheduleId = props.params.scheduleId?.[0] ?? null
+  console.log('scheduleId', scheduleId)
   const { data } = await db.from('tv_schedule').select('*')
 
   const schedule = (data ?? []).filter(
-    (s) => +new Date(s.end_time ?? 0) > Date.now()
+    (s) =>
+      +new Date(s.end_time ?? 0) > Date.now() || s.id.toString() === scheduleId
   )
 
   const contractIds = schedule.map((s) => s.contract_id)
@@ -43,31 +52,15 @@ export async function getStaticProps() {
     props: {
       contracts,
       schedule,
+      scheduleId,
     },
   }
-}
-
-function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
-  const { stream, contract } = props
-  return (
-    <Row key={stream.id} className="items-center gap-2">
-      <Col>
-        <Avatar
-          size="2xs"
-          avatarUrl={contract?.creatorAvatarUrl}
-          username={contract?.creatorUsername}
-          noLink
-        />
-      </Col>
-      <Col className="font-semibold">{stream.title}</Col>
-      <Col>{formatTimeRange(stream.start_time, stream.end_time)}</Col>
-    </Row>
-  )
 }
 
 export default function TVPage(props: {
   schedule: ScheduleItem[]
   contracts: Contract[]
+  scheduleId: string | null
 }) {
   const [schedule, setSchedule] = useState(props.schedule)
 
@@ -85,7 +78,8 @@ export default function TVPage(props: {
     setSchedule(tvSchedule.rows as any as ScheduleItem[])
   }, [tvSchedule])
 
-  const stream = getActiveStream(schedule)
+  const stream = getActiveStream(schedule, props.scheduleId)
+  console.log('stream', stream)
   const contract = contracts[stream?.contract_id ?? '']
 
   const user = useUser()
@@ -96,6 +90,18 @@ export default function TVPage(props: {
 
   const [featured, userCreated] = partition(schedule, (s) => s.is_featured)
 
+  if (!contract && !!props.scheduleId) {
+    return (
+      <Page trackPageView="tv page">
+        <SEO
+          title="Manifold TV"
+          description="Bet on live video streams with Manifold TV"
+        />
+        <Title>Manifold TV</Title>
+        <div className="italic">Cannot find scheduled event</div>
+      </Page>
+    )
+  }
   if (!contract)
     return (
       <Page trackPageView="tv page">
@@ -195,7 +201,10 @@ export default function TVPage(props: {
                   {
                     title: 'Chat',
                     content: (
-                      <PublicChat channelId={channelId} className="bg-canvas-50" />
+                      <PublicChat
+                        channelId={channelId}
+                        className="bg-canvas-50"
+                      />
                     ),
                   },
                 ]}
@@ -242,7 +251,12 @@ interface ScheduleItem {
   is_featured: string
 }
 
-const getActiveStream = (schedule: ScheduleItem[]) => {
+const getActiveStream = (
+  schedule: ScheduleItem[],
+  scheduleId: string | null
+) => {
+  if (scheduleId) return schedule.find((s) => s.id.toString() === scheduleId)
+
   const featured = schedule.filter((s) => s.is_featured)
 
   const now = new Date().toISOString()
@@ -265,6 +279,28 @@ const getActiveStream = (schedule: ScheduleItem[]) => {
     return justEnded[0]
 
   return undefined
+}
+
+function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
+  const { stream, contract } = props
+  return (
+    <Link
+      href={`/tv/${stream.id}`}
+      key={stream.id}
+      className="flex items-center gap-2 hover:underline"
+    >
+      <Col>
+        <Avatar
+          size="2xs"
+          avatarUrl={contract?.creatorAvatarUrl}
+          username={contract?.creatorUsername}
+          noLink
+        />
+      </Col>
+      <Col className="font-semibold">{stream.title}</Col>
+      <Col>{formatTimeRange(stream.start_time, stream.end_time)}</Col>
+    </Link>
+  )
 }
 
 const formatTimeRange = (start: string, end: string) => {
