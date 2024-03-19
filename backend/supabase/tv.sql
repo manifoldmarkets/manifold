@@ -8,7 +8,8 @@ create table if not exists
     source text not null,
     start_time timestamptz not null,
     end_time timestamptz not null,
-    is_featured boolean default false,
+    title text not null,
+    is_featured boolean default false
   );
 
 alter publication supabase_realtime add table tv_schedule;

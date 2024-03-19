@@ -59,9 +59,8 @@ function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
           noLink
         />
       </Col>
-      <Col className="font-semibold">FOMC committee</Col>
+      <Col className="font-semibold">{stream.title}</Col>
       <Col>{formatTimeRange(stream.start_time, stream.end_time)}</Col>
-      {/* <Col>{c.question}</Col> */}
     </Row>
   )
 }
@@ -152,6 +151,8 @@ export default function TVPage(props: {
     </>
   )
 
+  const channelId = `tv-${stream?.stream_id ?? 'default'}`
+
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO
@@ -194,7 +195,7 @@ export default function TVPage(props: {
                   {
                     title: 'Chat',
                     content: (
-                      <PublicChat channelId={'tv'} className="bg-canvas-50" />
+                      <PublicChat channelId={channelId} className="bg-canvas-50" />
                     ),
                   },
                 ]}
@@ -222,7 +223,7 @@ export default function TVPage(props: {
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
             </Row>
-            <PublicChat channelId={`tv-${stream?.stream_id ?? 'default'}`} />
+            <PublicChat channelId={channelId} />
           </Col>
         </Col>
       </Row>
@@ -233,6 +234,7 @@ export default function TVPage(props: {
 interface ScheduleItem {
   id: number
   source: string
+  title: string
   stream_id: string
   contract_id: string
   start_time: string
