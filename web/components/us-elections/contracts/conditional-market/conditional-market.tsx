@@ -21,6 +21,8 @@ import { PolicyContractType } from 'web/public/data/policy-data'
 import { getDisplayProbability } from 'common/calculate'
 import { GoTriangleUp } from 'react-icons/go'
 import { getPercent } from 'common/util/format'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import Router from 'next/router'
 
 export function Policy(props: {
   policy: PolicyContractType
@@ -80,12 +82,14 @@ function ConditionalPercent(props: {
 }) {
   const { path, contract, className, isLargerPercent = false } = props
   return (
-    <Link
-      href={path}
+    <ClickFrame
       className={clsx(
-        'text-ink-700 group flex h-full w-[120px] flex-row items-center gap-2',
-        className
+        className,
+        'text-ink-700 group flex h-full w-[120px] flex-row items-center gap-2'
       )}
+      onClick={(e) => {
+        Router.push(path)
+      }}
     >
       <Row>
         {isLargerPercent ? (
@@ -102,7 +106,7 @@ function ConditionalPercent(props: {
         />
       </Row>
       <BinaryBetButton contract={contract as CPMMBinaryContract} />
-    </Link>
+    </ClickFrame>
   )
 }
 
