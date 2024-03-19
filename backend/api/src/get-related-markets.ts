@@ -17,8 +17,8 @@ export const getrelatedmarketscache: APIHandler<
   return getRelatedMarkets(contractId, limit, limitTopics)
 }
 type cacheType = {
-  marketsFromEmbeddings: Contract[]
-  marketsByTopicSlug: Record<string, Contract[]>
+  marketIdsFromEmbeddings: string[]
+  marketIdsByTopicSlug: Record<string, string[]>
   lastUpdated: number
 }
 const cachedRelatedMarkets = new Map<string, cacheType>()
@@ -29,7 +29,7 @@ const getRelatedMarkets = async (
   contractId: string,
   limit: number,
   limitTopics: number
-): Promise<Omit<cacheType, 'lastUpdated'>> => {
+) => {
   log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(contractId)
@@ -104,8 +104,13 @@ const getRelatedMarkets = async (
   log('returning topic slugs', { slugs: Object.keys(marketsByTopicSlug) })
   log('topics to importance scores', { topics })
   cachedRelatedMarkets.set(contractId, {
-    marketsFromEmbeddings,
-    marketsByTopicSlug,
+    marketIdsFromEmbeddings: marketsFromEmbeddings.map((c) => c.id),
+    marketIdsByTopicSlug: Object.fromEntries(
+      Object.entries(marketsByTopicSlug).map(([slug, contracts]) => [
+        slug,
+        contracts.map((c) => c.id),
+      ])
+    ),
     lastUpdated: Date.now(),
   })
 
@@ -122,26 +127,20 @@ const refreshedRelatedMarkets = async (
 ) => {
   log('returning cached related markets', { contractId })
   const refreshedContracts = await getContractsDirect(
-    cachedResults.marketsFromEmbeddings
-      .map((c) => c.id)
-      .concat(
-        Object.values(cachedResults.marketsByTopicSlug)
-          .flat()
-          .map((c) => c.id)
-      ),
+    cachedResults.marketIdsFromEmbeddings.concat(
+      Object.values(cachedResults.marketIdsByTopicSlug).flat()
+    ),
     pg
   )
   return {
     marketsFromEmbeddings: refreshedContracts.filter((c) =>
-      cachedResults.marketsFromEmbeddings.map((c) => c.id).includes(c.id)
+      cachedResults.marketIdsFromEmbeddings.includes(c.id)
     ),
     marketsByTopicSlug: Object.fromEntries(
-      Object.entries(cachedResults.marketsByTopicSlug).map(
-        ([slug, contracts]) => [
+      Object.entries(cachedResults.marketIdsByTopicSlug).map(
+        ([slug, contractIds]) => [
           slug,
-          refreshedContracts.filter((c) =>
-            contracts.map((c) => c.id).includes(c.id)
-          ),
+          refreshedContracts.filter((c) => contractIds.includes(c.id)),
         ]
       )
     ),
