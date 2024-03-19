@@ -1,9 +1,14 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
 import { log } from 'shared/log'
+import { getContractsDirect } from 'shared/supabase/contracts'
+import { HOUR_MS } from 'common/util/time'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
@@ -11,14 +16,26 @@ export const getrelatedmarketscache: APIHandler<
   const { contractId, limit, limitTopics } = body
   return getRelatedMarkets(contractId, limit, limitTopics)
 }
+type cacheType = {
+  marketsFromEmbeddings: Contract[]
+  marketsByTopicSlug: Record<string, Contract[]>
+  lastUpdated: number
+}
+const cachedRelatedMarkets = new Map<string, cacheType>()
 
+// We cache the state of the contracts every 5 minutes via the cache header,
+// and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
 const getRelatedMarkets = async (
   contractId: string,
   limit: number,
   limitTopics: number
-) => {
+): Promise<Omit<cacheType, 'lastUpdated'>> => {
   log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
+  const cachedResults = cachedRelatedMarkets.get(contractId)
+  if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
+    return refreshedRelatedMarkets(contractId, cachedResults, pg)
+  }
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
       `
@@ -86,8 +103,47 @@ const getRelatedMarkets = async (
   }
   log('returning topic slugs', { slugs: Object.keys(marketsByTopicSlug) })
   log('topics to importance scores', { topics })
+  cachedRelatedMarkets.set(contractId, {
+    marketsFromEmbeddings,
+    marketsByTopicSlug,
+    lastUpdated: Date.now(),
+  })
+
   return {
     marketsFromEmbeddings,
     marketsByTopicSlug,
+  }
+}
+
+const refreshedRelatedMarkets = async (
+  contractId: string,
+  cachedResults: cacheType,
+  pg: SupabaseDirectClient
+) => {
+  log('returning cached related markets', { contractId })
+  const refreshedContracts = await getContractsDirect(
+    cachedResults.marketsFromEmbeddings
+      .map((c) => c.id)
+      .concat(
+        Object.values(cachedResults.marketsByTopicSlug)
+          .flat()
+          .map((c) => c.id)
+      ),
+    pg
+  )
+  return {
+    marketsFromEmbeddings: refreshedContracts.filter((c) =>
+      cachedResults.marketsFromEmbeddings.map((c) => c.id).includes(c.id)
+    ),
+    marketsByTopicSlug: Object.fromEntries(
+      Object.entries(cachedResults.marketsByTopicSlug).map(
+        ([slug, contracts]) => [
+          slug,
+          refreshedContracts.filter((c) =>
+            contracts.map((c) => c.id).includes(c.id)
+          ),
+        ]
+      )
+    ),
   }
 }
