@@ -291,7 +291,7 @@ function ContractQuestion(props: {
         </UserHovercard>
       )}
       <div>
-        <VisibilityIcon contract={contract} />
+        <VisibilityIcon contract={contract} className="mr-1" />
         {hasBetOnContract && (
           <Tooltip text="You traded on this question">
             <ManaCircleIcon className="text-primary-600 mb-[2px] mr-1 inline h-4 w-4" />
@@ -310,7 +310,7 @@ export function VisibilityIcon(props: {
 }) {
   const { contract, isLarge, className } = props
   const iconClassName = clsx(
-    isLarge ? 'h-6 w-w' : 'h-4 w-4',
+    isLarge ? 'h-6 w-6' : 'h-4 w-4',
     'inline',
     className
   )
@@ -318,7 +318,8 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'private')
     return <LockClosedIcon className={iconClassName} />
 
-  if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
+  if (contract.visibility === 'unlisted')
+    return <IoUnlink className={iconClassName} />
 
   return <></>
 }
