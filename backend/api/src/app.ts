@@ -114,7 +114,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
-import { addOrRemoveGroupFromContract } from './update-tag'
+import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
@@ -223,7 +223,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
-  'market/:contractId/group': addOrRemoveGroupFromContract,
+  'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
