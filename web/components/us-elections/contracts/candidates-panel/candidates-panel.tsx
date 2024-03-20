@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { sortBy, sumBy } from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { useChartAnswers } from '../../../charts/contract/choice'
@@ -16,7 +16,6 @@ import { Carousel } from 'web/components/widgets/carousel'
 import { Row } from 'web/components/layout/row'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy } from 'lodash'
-import { floatingEqual } from 'common/util/math'
 
 // just the bars
 export function CandidatePanel(props: {

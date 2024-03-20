@@ -14,7 +14,6 @@ import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { User } from 'common/user'
-import { getContractBetMetrics } from 'common/calculate'
 import { UserCandidatePosition } from './candidates-user-position'
 
 export function removeTextInParentheses(input: string): string {
