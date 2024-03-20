@@ -12,7 +12,7 @@ import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
-import { UserCandidatePosition } from './candidates-user-position'
+import { UserPosition } from './candidates-user-position'
 
 export const SmallCandidateBar = (props: {
   color: string // 6 digit hex
@@ -74,12 +74,12 @@ export const SmallCandidateBar = (props: {
             <Col className="gap-1">
               {shortName ?? answer.text}
               {!resolution && hasBets && isCpmm && user && (
-                <UserCandidatePosition
+                <UserPosition
                   contract={contract as CPMMMultiContract}
                   answer={answer as Answer}
                   userBets={userBets}
                   user={user}
-                  className="text-ink-700 dark:text-ink-800 text-xs"
+                  className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
                   greenArrowClassName="text-teal-600 dark:text-teal-300"
                   redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
                 />
