@@ -180,7 +180,7 @@ export const placeBetMain = async (
       log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
       const betGroupId =
         mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-          ? crypto.randomBytes(16).toString('hex')
+          ? crypto.randomBytes(12).toString('hex')
           : undefined
       return processNewBetResult(
         newBetResult,
@@ -199,15 +199,22 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, fullBets, allOrdersToCancel, betId, contract, makers, user } =
-    result
-
+  const {
+    newBet,
+    fullBets,
+    allOrdersToCancel,
+    betId,
+    contract,
+    makers,
+    user,
+    betGroupId,
+  } = result
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
   return {
-    result: { ...newBet, betId },
+    result: { ...newBet, betId, betGroupId },
     continue: continuation,
   }
 }
@@ -452,7 +459,6 @@ export const processNewBetResult = (
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
   }
-
   return {
     newBet,
     betId: betDoc.id,
@@ -462,6 +468,7 @@ export const processNewBetResult = (
     fullBets,
     user,
     fullBet,
+    betGroupId,
   }
 }
 

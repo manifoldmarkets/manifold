@@ -14,7 +14,7 @@ import {
 import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { DEBUG_FEED_CARDS } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -24,8 +24,6 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { CardReason } from 'web/components/feed/card-reason'
-import { FeedDropdown } from 'web/components/feed/card-dropdown'
 import { BetButton } from 'web/components/bet/feed-bet-button'
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
@@ -37,11 +35,9 @@ export function WhichPartyCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  item?: FeedTimelineItem
   className?: string
   /** whether this card is small, like in card grids.*/
   small?: boolean
-  hide?: () => void
   showGraph?: boolean
   hideBottomRow?: boolean
   customTitle?: string
@@ -50,13 +46,8 @@ export function WhichPartyCard(props: {
   const {
     promotedData,
     trackingPostfix,
-    item,
     className,
-    children,
-    small,
-    hide,
     showGraph,
-    hideBottomRow,
     customTitle,
     titleSize,
   } = props
@@ -66,15 +57,7 @@ export function WhichPartyCard(props: {
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
 
-  const {
-    closeTime,
-    creatorId,
-    creatorName,
-    creatorUsername,
-    creatorAvatarUrl,
-    outcomeType,
-    mechanism,
-  } = contract
+  const { closeTime, outcomeType, mechanism } = contract
 
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
@@ -91,7 +74,6 @@ export function WhichPartyCard(props: {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          feedId: item?.id,
           isPromoted: !!promotedData,
         } as ContractCardView)
       setVisible(true)
@@ -116,17 +98,13 @@ export function WhichPartyCard(props: {
     }
   }, [adId])
 
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
-  )
+  const { startTime, ignore } = getMarketMovementInfo(contract)
 
   const trackClick = () =>
     track(('click market card ' + trackingPostfix).trim(), {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
-      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
@@ -147,31 +125,6 @@ export function WhichPartyCard(props: {
       ref={ref}
     >
       <Col className={'w-full flex-col gap-1.5 '}>
-        <Row className="w-full justify-between">
-          {hide && (
-            <Row className="gap-2">
-              {promotedData && canAdPay && (
-                <div className="text-ink-400 w-12 text-sm">
-                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-                </div>
-              )}
-              <CardReason
-                item={item}
-                contract={contract}
-                probChange={probChange}
-                since={startTime}
-              />
-              <FeedDropdown
-                contract={contract}
-                item={item}
-                interesting={true}
-                toggleInteresting={hide}
-                importanceScore={props.contract.importanceScore}
-              />
-            </Row>
-          )}
-        </Row>
-
         <div
           className={clsx(
             'flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4'
@@ -197,12 +150,7 @@ export function WhichPartyCard(props: {
               />
             )}
             {isBinaryCpmm && !isClosed && (
-              <BetButton
-                feedId={item?.id}
-                contract={contract}
-                user={user}
-                className="h-min"
-              />
+              <BetButton contract={contract} user={user} className="h-min" />
             )}
           </Row>
         </div>

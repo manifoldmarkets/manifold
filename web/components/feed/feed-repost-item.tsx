@@ -25,6 +25,8 @@ import { ClickFrame } from 'web/components/widgets/click-frame'
 import { CardReason } from 'web/components/feed/card-reason'
 import { FeedDropdown } from 'web/components/feed/card-dropdown'
 import { UserHovercard } from '../user/user-hovercard'
+import { track } from 'web/lib/service/analytics'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const FeedRepost = memo(function (props: {
   contract: Contract
@@ -45,6 +47,17 @@ export const FeedRepost = memo(function (props: {
   const showTopLevelRow =
     (dataType === 'repost' && !commenterIsBettor && bet) ||
     !creatorRepostedTheirComment
+  const trackClick = () =>
+    track(
+      'click market card feed',
+      removeUndefinedProps({
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+        feedItem: item,
+        commentId: comment.id,
+      })
+    )
 
   return (
     <Col
@@ -55,6 +68,7 @@ export const FeedRepost = memo(function (props: {
     >
       <ClickFrame
         onClick={() => {
+          trackClick()
           router.push(`${contractPath(contract)}#${comment.id}`)
         }}
       >

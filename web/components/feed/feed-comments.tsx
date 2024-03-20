@@ -905,6 +905,8 @@ export function ContractCommentInput(props: {
           : replyToUserInfo
           ? 'user'
           : undefined,
+        commentId: comment.id,
+        contractId: contract.id,
       })
     }
   )

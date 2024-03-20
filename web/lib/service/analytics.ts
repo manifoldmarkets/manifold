@@ -10,6 +10,7 @@ import { api, completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
@@ -40,6 +41,7 @@ export async function track(name: string, properties?: EventIds & EventData) {
     if (ENV !== 'PROD') {
       console.log(name, userId, allProperties)
       await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
+      return
     }
     await Promise.all([
       amplitude.track(name, removeUndefinedProps(allProperties)).promise,
@@ -116,6 +118,15 @@ function insertUserEvent(
   commentId?: string | null,
   adId?: string | null
 ) {
+  console.log(
+    'insertUserEvent',
+    name,
+    data,
+    userId,
+    contractId,
+    commentId,
+    adId
+  )
   if ((name === 'view market' || name === 'view market card') && contractId) {
     const kind = !!data?.isPromoted
       ? 'promoted'
@@ -126,6 +137,43 @@ function insertUserEvent(
       return api('record-contract-view', { contractId, kind })
     } else {
       return api('record-contract-view', { userId, contractId, kind })
+    }
+  } else if (
+    (name === 'click market card feed' ||
+      name === 'bet' ||
+      name === 'comment' ||
+      name === 'repost') &&
+    contractId
+  ) {
+    const feedItem = data?.feedItem as FeedTimelineItem | undefined
+    const isCardClick = name === 'click market card feed'
+    const kind =
+      name === 'comment'
+        ? 'page comment'
+        : name === 'repost'
+        ? 'page repost'
+        : !!data?.isPromoted && isCardClick
+        ? 'promoted click'
+        : isCardClick
+        ? 'card click'
+        : data?.location === 'feed card' ||
+          data?.location === 'feed' ||
+          !!feedItem
+        ? 'card bet'
+        : 'page bet'
+    if (userId !== null) {
+      return api(
+        'record-contract-interaction',
+        removeUndefinedProps({
+          contractId,
+          commentId: commentId ?? feedItem?.commentId ?? undefined,
+          kind,
+          feedType: feedItem?.dataType,
+          feedReasons: feedItem?.reasons,
+          betGroupId: data?.betGroupId as string,
+          betId: data?.betId as string,
+        })
+      )
     }
   }
   return run(

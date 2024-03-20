@@ -46,6 +46,7 @@ import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -138,13 +139,17 @@ export function FeedContractCard(props: {
   )
 
   const trackClick = () =>
-    track(('click market card ' + trackingPostfix).trim(), {
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      slug: contract.slug,
-      feedId: item?.id,
-      isPromoted: !!promotedData,
-    })
+    track(
+      ('click market card ' + trackingPostfix).trim(),
+      removeUndefinedProps({
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+        isPromoted: !!promotedData,
+        feedItem: item,
+        commentId: item?.commentId,
+      })
+    )
 
   const nonTextDescription = !JSONEmpty(contract.description)
 
@@ -243,7 +248,7 @@ export function FeedContractCard(props: {
             )}
             {isBinaryCpmm && !isClosed && (
               <BetButton
-                feedId={item?.id}
+                feedItem={item}
                 contract={contract}
                 user={user}
                 className="h-min"
@@ -263,7 +268,11 @@ export function FeedContractCard(props: {
           <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-          <SimpleAnswerBars contract={contract} maxAnswers={4} />
+          <SimpleAnswerBars
+            contract={contract}
+            maxAnswers={4}
+            feedItem={item}
+          />
         )}
 
         {isBinaryMc &&
@@ -272,6 +281,7 @@ export function FeedContractCard(props: {
             <BinaryMultiAnswersPanel
               contract={contract}
               answers={contract.answers}
+              feedItem={item}
             />
           )}
 

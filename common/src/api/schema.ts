@@ -976,6 +976,28 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as { status: 'success' },
   },
+  'record-contract-interaction': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      kind: z.enum([
+        'page bet',
+        'page comment',
+        'page repost',
+        'card bet',
+        'card click',
+        'promoted click',
+      ]),
+      commentId: z.string().optional(),
+      feedReasons: z.array(z.string()).optional(),
+      feedType: z.string().optional(),
+      betGroupId: z.string().optional(),
+      betId: z.string().optional(),
+    }),
+    returns: {} as { status: 'success' },
+  },
   'get-dashboard-from-slug': {
     method: 'POST',
     visibility: 'public',

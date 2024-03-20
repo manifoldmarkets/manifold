@@ -106,7 +106,7 @@ export const placeMultiBetMain = async (
       )
     })()
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-    const betGroupId = crypto.randomBytes(16).toString('hex')
+    const betGroupId = crypto.randomBytes(12).toString('hex')
     return newBetResults.map((newBetResult) =>
       processNewBetResult(
         newBetResult,
@@ -139,6 +139,7 @@ export const placeMultiBetMain = async (
     result: results.map((result) => ({
       ...result.newBet,
       betId: result.betId,
+      betGroupId: result.betGroupId,
     })),
     continue: continuation,
   }
