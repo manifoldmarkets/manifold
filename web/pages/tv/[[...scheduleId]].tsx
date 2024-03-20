@@ -1,6 +1,8 @@
 import clsx from 'clsx'
+import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Router from 'next/router'
 import { mapKeys, partition } from 'lodash'
 
 import { Contract, tradingAllowed } from 'common/contract'
@@ -16,7 +18,7 @@ import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useContracts } from 'web/hooks/use-contract-supabase'
 import { useUser } from 'web/hooks/use-user'
-import { setTV } from 'web/lib/firebase/api'
+import { deleteTV, setTV } from 'web/lib/firebase/api'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
@@ -28,6 +30,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Avatar } from 'web/components/widgets/avatar'
+import { removeUndefinedProps } from 'common/util/object'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -79,14 +82,15 @@ export default function TVPage(props: {
   }, [tvSchedule])
 
   const stream = getActiveStream(schedule, props.scheduleId)
-  console.log('stream', stream)
   const contract = contracts[stream?.contract_id ?? '']
 
   const user = useUser()
   const isAdmin = useAdmin()
 
   const isMobile = useIsMobile(1280) //xl
-  const [showSettings, setShowSettings] = useState(false)
+  const [showSettings, setShowSettings] = useState<false | 'edit' | 'new'>(
+    false
+  )
 
   const [featured, userCreated] = partition(schedule, (s) => s.is_featured)
 
@@ -111,6 +115,8 @@ export default function TVPage(props: {
         />
         <Title>Manifold TV</Title>
 
+        <div>Bet on your favorite streams!</div>
+
         {featured.length > 0 && (
           <>
             <Subtitle>Featured events</Subtitle>
@@ -133,10 +139,13 @@ export default function TVPage(props: {
         )}
 
         <Row className="mt-2">
-          <Button color="indigo-outline" onClick={() => setShowSettings(true)}>
+          <Button color="indigo-outline" onClick={() => setShowSettings('new')}>
             Schedule event
           </Button>
-          <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
+          <ScheduleTVModal
+            open={!!showSettings}
+            setOpen={() => setShowSettings(false)}
+          />
         </Row>
       </Page>
     )
@@ -214,17 +223,29 @@ export default function TVPage(props: {
             )}
           </Col>
 
-          {isAdmin && (
-            <Row className="m-4">
+          <Row className="m-4 gap-4">
+            {(user?.id === stream?.creator_id || isAdmin) && (
               <Button
                 color="indigo-outline"
-                onClick={() => setShowSettings(true)}
+                onClick={() => setShowSettings('edit')}
               >
-                Set Stream
+                Modify event
               </Button>
-              <TVSettingsModal open={showSettings} setOpen={setShowSettings} />
-            </Row>
-          )}
+            )}
+            <Button
+              color="indigo-outline"
+              onClick={() => setShowSettings('new')}
+            >
+              New event
+            </Button>
+            <ScheduleTVModal
+              open={!!showSettings}
+              setOpen={() => setShowSettings(false)}
+              stream={showSettings === 'edit' ? stream : undefined}
+              slug={showSettings === 'edit' ? contract.slug : undefined}
+              key={showSettings || 0}
+            />
+          </Row>
         </Col>
 
         <Col className="ml-4 hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
@@ -242,6 +263,7 @@ export default function TVPage(props: {
 
 interface ScheduleItem {
   id: number
+  creator_id: string
   source: string
   title: string
   stream_id: string
@@ -304,29 +326,89 @@ function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
 }
 
 const formatTimeRange = (start: string, end: string) => {
-  const s = new Date(start)
-  const e = new Date(end)
+  const s = dayjs(start)
+  const e = dayjs(end)
 
-  const endDate =
-    e.getDate() === s.getDate() ? '' : `${e.getMonth()}/${e.getDate()} `
+  const endDate = e.isSame(s, 'day') ? '' : `${e.format('M/D')} `
 
-  return `${s.getMonth()}/${s.getDate()} ${s.getHours()}:${s.getMinutes()} - ${endDate}${e.getHours()}:${s.getMinutes()}`
+  return `${s.format('M/D H:mm')} - ${endDate}${e.format('H:mm')}`
 }
 
-export function TVSettingsModal(props: {
+export function ScheduleTVModal(props: {
   open: boolean
   setOpen(open: boolean): void
+  stream?: ScheduleItem
+  slug?: string
 }) {
-  const { open, setOpen } = props
+  const { open, setOpen, stream } = props
 
-  const [streamId, setStreamId] = useState('')
-  const [slug, setSlug] = useState('')
+  const [streamId, setStreamId] = useState(stream?.stream_id ?? '')
+  const [slug, setSlug] = useState(props.slug ?? '')
+  const [title, setTitle] = useState(stream?.title ?? '')
+
+  const defaultStart = stream
+    ? dayjs(stream.start_time).format('YYYY-MM-DD HH:mm')
+    : dayjs().format('YYYY-MM-DD HH:mm')
+  const [startTime, setStartTime] = useState(defaultStart)
+
+  const defaultEnd = stream
+    ? dayjs(stream.end_time).format('YYYY-MM-DD HH:mm')
+    : ''
+  const [endTime, setEndTime] = useState(defaultEnd)
+
+  const [error, setError] = useState('')
 
   const save = async () => {
-    if (!streamId || !slug) return
+    if (!streamId || !slug || !title || !startTime || !endTime) {
+      setError('Please fill in all the required fields')
+      return
+    }
 
-    await setTV({ streamId: streamId, slug: slug, source: 'youtube' })
+    // Validate the YouTube Stream ID
+    if (streamId.length !== 11) {
+      setError(
+        'Invalid YouTube Stream ID. It should be exactly 11 characters long.'
+      )
+      return
+    }
+
+    const start = dayjs(startTime)
+    const end = dayjs(endTime)
+
+    if (!start.isValid() || !end.isValid()) {
+      setError('Invalid start or end time format.')
+      return
+    }
+
+    if (end.isBefore(start)) {
+      setError('End time should be after the start time.')
+      return
+    }
+
     setOpen(false)
+
+    await setTV(
+      removeUndefinedProps({
+        id: stream?.id.toString(),
+        streamId: streamId,
+        slug: slug,
+        title,
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        source: 'youtube',
+      })
+    )
+    // TODO: redirect to new id
+    // if (!stream) {
+    //   Router.push(`/tv/${newId}`)
+    // }
+  }
+
+  const deleteStream = async () => {
+    if (stream) {
+      setOpen(false)
+      await deleteTV(stream.id.toString())
+    }
   }
 
   return (
@@ -337,26 +419,70 @@ export function TVSettingsModal(props: {
       size="sm"
     >
       <Col className="bg-canvas-0 gap-2.5  rounded p-4 pb-8 sm:gap-4">
-        <Title className="!mb-2">TV settings</Title>
+        <Title className="!mb-2">
+          {stream ? 'Modify' : 'Schedule'} TV event
+        </Title>
+
+        <Row className="items-center justify-between">
+          <div>Event name</div>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Row>
 
         <Row className="items-center justify-between">
           <div>YouTube Stream ID</div>
           <Input
             value={streamId}
             onChange={(e) => setStreamId(e.target.value)}
+            maxLength={11}
           />
         </Row>
+
         <Row className="items-center justify-between">
           <div>Market slug</div>
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
         </Row>
 
+        <Row className="items-center justify-between">
+          <div>Start</div>
+          <Input
+            type={'datetime-local'}
+            className="dark:date-range-input-white"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setStartTime(e.target.value)}
+            value={startTime}
+            step={undefined}
+          />
+        </Row>
+
+        <Row className="items-center justify-between">
+          <div>End</div>
+          <Input
+            type={'datetime-local'}
+            className="dark:date-range-input-white"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => setEndTime(e.target.value)}
+            value={endTime}
+            step={undefined}
+          />
+        </Row>
+
+        {error && (
+          <Row className="text-error mt-4">
+            <div>{error}</div>
+          </Row>
+        )}
+
         <Row className="gap-4">
           <Button color="indigo" size="xl" onClick={save}>
-            Save
+            {stream ? 'Save' : 'Schedule'}
           </Button>
           <Button color="gray-outline" size="lg" onClick={() => setOpen(false)}>
             Cancel
+          </Button>
+        </Row>
+        <Row>
+          <Button size="xs" color="red-outline" onClick={deleteStream}>
+            Delete event
           </Button>
         </Row>
       </Col>
