@@ -133,6 +133,7 @@ export const CandidateBar = (props: {
           answer={answer as Answer}
           userBets={userBets}
           user={user}
+          className="bg-ink-700/80 hover:bg-ink-700 hover:dark:bg-ink-200 dark:bg-ink-200/80 transition-opacity' absolute bottom-0 left-0 right-0 z-20 flex flex-row gap-1.5 whitespace-nowrap px-2 py-1 text-xs text-white"
         />
       )}
     </ClickFrame>
