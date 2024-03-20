@@ -290,6 +290,15 @@ export const PARTNER_USER_IDS: string[] = [
   'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
   'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
   'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
+  'foOeshHZOET3yMvRTMPINpnb8Bj2', // PunishedFurry
+  'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
+  'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
+  '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', //Stralor
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //Bayesian
+  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', //AndrewG
+  'EJQOCF3MfLTFYbhiKncrNefQDBz1', //chrisjbillington
+  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', //KevinBurke
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
