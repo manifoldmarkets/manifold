@@ -16,7 +16,7 @@ import {
   getNotifications,
   getUnseenNotifications,
 } from 'common/supabase/notifications'
-import { newInMemoryStore, safeLocalStorage } from 'web/lib/util/local'
+import { newInMemoryStore } from 'web/lib/util/local'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
@@ -61,7 +61,7 @@ function useUnseenNotifications(
 
   useEffect(() => {
     if (status === 'live' && rows != null) {
-      const json = safeLocalStorage?.getItem(NOTIFICATIONS_KEY)
+      const json = notificationsStore.getItem(NOTIFICATIONS_KEY)
       const existing = json != null ? JSON.parse(json) : []
       const newNotifications =
         rows?.filter(
@@ -71,7 +71,7 @@ function useUnseenNotifications(
                 n2.notification_id === n.notification_id
             )
         ) ?? []
-      safeLocalStorage?.setItem(
+      notificationsStore.setItem(
         NOTIFICATIONS_KEY,
         JSON.stringify([...newNotifications, ...existing])
       )

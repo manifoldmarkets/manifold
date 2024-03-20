@@ -174,8 +174,12 @@ export const useFeedTimeline = (
     }
     // TODO: hide feed rows that are too old?
     const newFeedRows = data.map((d) => {
+      const dataType = d.data_type as FEED_DATA_TYPES
       const createdTimeAdjusted =
-        1 - dayjs().diff(dayjs(d.created_time), 'day') / 10
+        0.98 **
+        (dayjs().diff(dayjs(d.created_time), 'day') *
+          (dataType === 'contract_probability_changed' ? 1.2 : 1))
+
       d.relevance_score =
         (d.relevance_score ||
           BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]) *
@@ -255,12 +259,9 @@ export const useFeedTimeline = (
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>
       d.contract_id &&
       // Types to ignore if seen recently:
-      [
-        'new_subsidy',
-        'trending_contract',
-        'user_position_changed',
-        'new_contract',
-      ].includes(d.data_type) &&
+      ['new_subsidy', 'trending_contract', 'new_contract'].includes(
+        d.data_type
+      ) &&
       recentlySeenContractCards?.includes(d.contract_id)
 
     const recentlySeenFeedContractIds = uniq(
@@ -454,7 +455,6 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
 
   const soloDataTypes: FEED_DATA_TYPES[] = [
     'contract_probability_changed',
-    'user_position_changed',
     'repost',
   ]
 

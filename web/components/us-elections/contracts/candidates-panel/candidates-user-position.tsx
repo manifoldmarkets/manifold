@@ -16,8 +16,18 @@ export function UserCandidatePosition(props: {
   answer: Answer
   user: User
   className?: string
+  greenArrowClassName?: string
+  redArrowClassName?: string
 }) {
-  const { contract, user, userBets, answer, className } = props
+  const {
+    contract,
+    user,
+    userBets,
+    answer,
+    className,
+    greenArrowClassName,
+    redArrowClassName,
+  } = props
 
   const { invested, totalShares } = getContractBetMetrics(contract, userBets)
 
@@ -36,10 +46,7 @@ export function UserCandidatePosition(props: {
 
   return (
     <button
-      className={clsx(
-        className,
-        'bg-ink-700/80 hover:bg-ink-700 hover:dark:bg-ink-200 dark:bg-ink-200/80 absolute bottom-0 left-0 right-0 z-20 flex flex-row gap-1.5 whitespace-nowrap px-2 py-1 text-xs text-white transition-opacity'
-      )}
+      className={clsx(className)}
       onClick={(e) => {
         e.stopPropagation()
         if (
@@ -52,9 +59,19 @@ export function UserCandidatePosition(props: {
     >
       <Row className="mx-auto items-center gap-1">
         {betUp ? (
-          <FaArrowUp className="h-3 w-3 text-teal-400 dark:text-teal-600" />
+          <FaArrowUp
+            className={clsx(
+              'h-3 w-3 text-teal-400 dark:text-teal-600',
+              greenArrowClassName
+            )}
+          />
         ) : (
-          <FaArrowDown className="text-scarlet-400 dark:text-scarlet-600 h-3 w-3" />
+          <FaArrowDown
+            className={clsx(
+              'text-scarlet-400 dark:text-scarlet-600 h-3 w-3',
+              redArrowClassName
+            )}
+          />
         )}
         You bet {betUp ? 'up' : 'down'}
       </Row>
