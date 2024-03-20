@@ -257,6 +257,7 @@ export const VERIFIED_USERNAMES = [
   'BillyMcRascal',
   'kyootbot',
   'MaximLott',
+  'liron'
 ]
 
 export const BLESSED_BANNED_USER_IDS = [
