@@ -13,7 +13,6 @@ import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sumBy } from 'lodash'
 import Link from 'next/link'
-import { ReactNode } from 'react'
 import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
@@ -26,7 +25,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerPosition,
   AnswerStatus,
-  CreatorAndAnswerLabel,
   MultiBettor,
 } from './answer-components'
 import { SHOW_LIMIT_ORDER_CHARTS_KEY } from './answers-panel'
