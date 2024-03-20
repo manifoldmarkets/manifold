@@ -56,17 +56,17 @@ export function Policy(props: {
       )}
     >
       <Row className="border-ink-300 w-full items-center">{title}</Row>
-      <Row className="items-center gap-2">
+      <Row className="items-center">
         <ConditionalPercent
           path={bidenPath}
           contract={bidenContract}
-          className="  border-azure-700 items-center justify-center border-x py-2"
+          className="bg-azure-500/20 items-center justify-center py-2"
           isLargerPercent={bidenProbability > trumpProbability}
         />
         <ConditionalPercent
           path={trumpPath}
           contract={trumpContract}
-          className="border-sienna-700 justify-end border-x px-4 py-2"
+          className="bg-sienna-500/20 justify-end  px-4 py-2"
           isLargerPercent={trumpProbability > bidenProbability}
         />
       </Row>
@@ -93,7 +93,7 @@ function ConditionalPercent(props: {
     >
       <Row>
         {isLargerPercent ? (
-          <GoTriangleUp className="text-ink-300 my-auto h-4 w-4" />
+          <GoTriangleUp className="text-ink-400 dark:text-ink-500 my-auto h-4 w-4" />
         ) : (
           <div className="h-4 w-4" />
         )}

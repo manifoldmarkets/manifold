@@ -43,8 +43,8 @@ export function ConditionalMarkets(props: {
           <Col className="my-auto whitespace-nowrap text-lg font-semibold">
             What will happen if...
           </Col>
-          <Row className="hidden gap-2 text-xs sm:flex">
-            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
+          <Row className="hidden text-xs sm:flex">
+            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
               <Image
                 src={joePhoto}
                 alt={joeShortName}
@@ -54,7 +54,7 @@ export function ConditionalMarkets(props: {
               />
               Biden wins
             </Row>
-            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-t-lg text-white">
+            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
               <Image
                 src={trumpPhoto}
                 alt={trumpShortName}
@@ -66,7 +66,7 @@ export function ConditionalMarkets(props: {
             </Row>
           </Row>
         </Row>
-        <div className="sm:bg-canvas-0 rounded-lg sm:pl-4">
+        <div className="sm:bg-canvas-0 rounded-l-lg sm:pl-4">
           {policyContracts.map((policy, index) => (
             <>
               <MobilePolicy
@@ -85,9 +85,9 @@ export function ConditionalMarkets(props: {
           ))}
         </div>
         <Row className=" w-full justify-end text-xs ">
-          <Row className="hidden gap-2 sm:flex">
-            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-b-lg text-white" />
-            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-b-lg text-white" />
+          <Row className="hidden  sm:flex">
+            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-bl-lg text-white" />
+            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-br-lg text-white" />
           </Row>
         </Row>
       </Col>
