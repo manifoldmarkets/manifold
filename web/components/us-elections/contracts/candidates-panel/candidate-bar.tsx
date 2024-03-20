@@ -14,7 +14,7 @@ import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { User } from 'common/user'
-import { UserCandidatePosition } from './candidates-user-position'
+import { UserPosition } from './candidates-user-position'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
@@ -128,12 +128,12 @@ export const CandidateBar = (props: {
         )}
       </Col>
       {!resolution && hasBets && isCpmm && user && (
-        <UserCandidatePosition
+        <UserPosition
           contract={contract as CPMMMultiContract}
           answer={answer as Answer}
           userBets={userBets}
           user={user}
-          className="bg-ink-700/80 hover:bg-ink-700 hover:dark:bg-ink-200 dark:bg-ink-200/80 transition-opacity' absolute bottom-0 left-0 right-0 z-20 flex flex-row gap-1.5 whitespace-nowrap px-2 py-1 text-xs text-white"
+          className="bg-ink-700/80 hover:bg-ink-700 hover:dark:bg-ink-200 dark:bg-ink-200/80 absolute bottom-0 left-0 right-0 z-20 flex flex-row gap-1.5 whitespace-nowrap px-2 py-1 text-xs text-white transition-opacity"
         />
       )}
     </ClickFrame>
