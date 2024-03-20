@@ -118,15 +118,6 @@ function insertUserEvent(
   commentId?: string | null,
   adId?: string | null
 ) {
-  console.log(
-    'insertUserEvent',
-    name,
-    data,
-    userId,
-    contractId,
-    commentId,
-    adId
-  )
   if ((name === 'view market' || name === 'view market card') && contractId) {
     const kind = !!data?.isPromoted
       ? 'promoted'
