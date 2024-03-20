@@ -22,11 +22,7 @@ import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import {
-  AnswerPosition,
-  AnswerStatus,
-  MultiBettor,
-} from './answer-components'
+import { AnswerPosition, AnswerStatus, MultiBettor } from './answer-components'
 import { SHOW_LIMIT_ORDER_CHARTS_KEY } from './answers-panel'
 import { Linkify } from '../widgets/linkify'
 

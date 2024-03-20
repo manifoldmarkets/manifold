@@ -17,6 +17,7 @@ import { ClickFrame } from 'web/components/widgets/click-frame'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { track } from 'web/lib/service/analytics'
 import { DATA, StateDataType } from '../../usa-map/usa-map-data'
+import { PartyPanel } from './party-panel/party-panel'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {
@@ -94,11 +95,7 @@ export function StateContractCard(props: {
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <SimpleAnswerBars
-          contract={contract as MultiContract}
-          maxAnswers={4}
-          barColor={props.barColor}
-        />
+        <PartyPanel contract={contract as MultiContract} maxAnswers={2} />
       </div>
     </ClickFrame>
   )
