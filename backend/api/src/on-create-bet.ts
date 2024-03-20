@@ -245,7 +245,7 @@ export const onCreateBets = async (
         SELECT COUNT(bet_day) AS total_bet_days
         FROM bet_days`,
         [originalBettor.id, new Date(originalBettor.createdTime).toISOString()],
-        (row) => +row.total_bet_days
+        (row) => Number(row.total_bet_days)
       )
 
       // Track unique days bet for users who have bet up to 10 days in the last 30 days.
