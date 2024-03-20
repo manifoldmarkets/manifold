@@ -42,6 +42,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { User } from 'common/user'
 import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { useABTest } from 'web/hooks/use-ab-test'
+import { NewUserGoals } from 'web/components/home/new-user-goals'
 
 export async function getStaticProps() {
   try {
@@ -134,30 +135,40 @@ export function HomeContent(props: {
     `tabs-home`
   )
 
+  const hasAgedOutOfNewUserGoals =
+    (user?.createdTime ?? 0) + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS < Date.now()
+  const newUserGoalsVariant = useABTest('new user goals', [
+    'enabled',
+    'disabled',
+  ])
+  const newUserGoalsEnabled =
+    !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
+
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
-      {user && freeQuestionsEnabled && remaining > 0 && (
-        <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
-          <Row className="flex-1 flex-wrap gap-x-1">
-            <span>
-              🎉 You've got{' '}
-              <span className="font-semibold">{remaining} free questions</span>!
-            </span>
-            <span>
-              (Expires in{' '}
-              {simpleFromNow(
-                user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-              )}
-              .)
-            </span>
-          </Row>
-          <CreateQuestionButton
-            className={'flex-1'}
-            color="indigo-outline"
-            size="xs"
-          />
-        </Col>
-      )}
+      {user &&
+        !newUserGoalsEnabled &&
+        freeQuestionsEnabled &&
+        remaining > 0 && (
+          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
+            <Row className="flex-1 flex-wrap gap-x-1">
+              <span>🎉 You've got {remaining} free questions!</span>
+              <span>
+                Expires in{' '}
+                {simpleFromNow(
+                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                )}
+              </span>
+            </Row>
+            <CreateQuestionButton
+              className={'flex-1'}
+              color="indigo-outline"
+              size="xs"
+            />
+          </Col>
+        )}
+
+      {user && newUserGoalsEnabled && <NewUserGoals user={user} />}
 
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
         <ControlledTabs
