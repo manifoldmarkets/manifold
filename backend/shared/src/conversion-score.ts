@@ -6,7 +6,10 @@ export async function calculateConversionScore() {
   log('Loading contract data...')
   let offset = 0
   let contractIds = await pg.map(
-    `select id from contracts limit 1000 offset $1`,
+    `select id from contracts
+          where resolution_time is null
+          and visibility = 'public'
+          limit 1000 offset $1`,
     [offset],
     (c) => c.id
   )

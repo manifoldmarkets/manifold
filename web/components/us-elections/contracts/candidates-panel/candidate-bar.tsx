@@ -10,6 +10,11 @@ import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Col } from '../../../layout/col'
 import { Row } from '../../../layout/row'
 import { formatPercentShort, getPercent } from 'common/util/format'
+import { Bet } from 'common/bet'
+import { sumBy } from 'lodash'
+import { floatingEqual } from 'common/util/math'
+import { User } from 'common/user'
+import { UserCandidatePosition } from './candidates-user-position'
 
 export function removeTextInParentheses(input: string): string {
   return input.replace(/\s*\([^)]*\)/g, '')
@@ -25,6 +30,8 @@ export const CandidateBar = (props: {
   answer: Answer
   selected?: boolean
   contract: MultiContract
+  userBets?: Bet[]
+  user?: User | null
 }) => {
   const {
     color,
@@ -36,6 +43,8 @@ export const CandidateBar = (props: {
     answer,
     selected,
     contract,
+    userBets,
+    user,
   } = props
 
   const candidatefullName = removeTextInParentheses(answer.text)
@@ -43,88 +52,90 @@ export const CandidateBar = (props: {
   const { shortName, photo } = CANDIDATE_DATA[candidatefullName] ?? {}
   const router = useRouter()
 
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
+  const { resolution } = contract
+
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
   return (
-    <>
-      {/* <Link
-        href={contractPath(contract)}
-        onPointerOver={onHover && (() => onHover(true))}
-        onPointerLeave={onHover && (() => onHover(false))}
-        className={clsx(
-          ' bg-canvas-0 relative h-40 w-[112px] justify-between overflow-hidden rounded transition-all',
-          className
+    <ClickFrame
+      onClick={() => {
+        router.push(contractPath(contract))
+      }}
+      // onPointerOver={onHover && (() => onHover(true))}
+      // onPointerLeave={onHover && (() => onHover(false))}
+      className={clsx(
+        ' bg-canvas-0 relative h-[164px] w-[112px] justify-between overflow-hidden rounded transition-all',
+        className
+      )}
+    >
+      <div className={clsx(' transition-all')}>
+        {/* bar outline if resolved */}
+        {!!resolvedProb && !hideBar && (
+          <div
+            className={clsx(
+              'absolute bottom-0 w-full ring-1 ring-orange-500 sm:ring-2',
+              resolvedProb > prob ? 'bg-orange-100 dark:bg-orange-900' : 'z-10'
+            )}
+            style={{
+              height: `${resolvedProb * 100}%`,
+            }}
+          />
         )}
-      > */}
-      <ClickFrame
-        onClick={() => {
-          router.push(contractPath(contract))
-        }}
-        // onPointerOver={onHover && (() => onHover(true))}
-        // onPointerLeave={onHover && (() => onHover(false))}
-        className={clsx(
-          ' bg-canvas-0 relative h-[164px] w-[112px] justify-between overflow-hidden rounded transition-all',
-          className
-        )}
-      >
-        <div className={clsx(' transition-all')}>
-          {/* bar outline if resolved */}
-          {!!resolvedProb && !hideBar && (
+        {/* main bar */}
+        {!hideBar && (
+          <Col className="absolute h-full w-full justify-end">
             <div
-              className={clsx(
-                'absolute bottom-0 w-full ring-1 ring-orange-500 sm:ring-2',
-                resolvedProb > prob
-                  ? 'bg-orange-100 dark:bg-orange-900'
-                  : 'z-10'
-              )}
+              className="w-full dark:brightness-75"
               style={{
-                height: `${resolvedProb * 100}%`,
+                height: `max(1px, ${prob * 100}%)`,
+                background: color,
               }}
             />
-          )}
-          {/* main bar */}
-          {!hideBar && (
-            <Col className="absolute h-full w-full justify-end">
-              <div
-                className="w-full dark:brightness-75"
-                style={{
-                  height: `max(1px, ${prob * 100}%)`,
-                  background: color,
-                }}
-              />
-            </Col>
-          )}
-        </div>
-        <Col className="absolute inset-0">
-          <Col className="mt-1 px-2">
-            <div className="sm:text-md w-full text-sm">
-              {shortName ?? answer.text}
-            </div>
-            <Row className="w-full items-center justify-between">
-              <OpenProb contract={contract} answer={answer} />
-              <MultiBettor
-                contract={contract as CPMMMultiContract}
-                answer={answer as Answer}
-              />
-            </Row>
-            <PercentChangeToday
-              probChange={answer.probChanges.day}
-              className="-mt-1 whitespace-nowrap text-xs"
-            />
           </Col>
-          {!photo ? (
-            <IoIosPerson className="text-ink-600 -mb-4 h-[112px] w-[112px]" />
-          ) : (
-            <Image
-              src={photo}
-              alt={candidatefullName}
-              width={112}
-              height={112}
-              className="mx-auto object-fill"
+        )}
+      </div>
+      <Col className="absolute inset-0">
+        <Col className="mt-1 px-2">
+          <div className="sm:text-md w-full text-sm">
+            {shortName ?? answer.text}
+          </div>
+          <Row className="w-full items-center justify-between">
+            <OpenProb contract={contract} answer={answer} />
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
             />
-          )}
+          </Row>
+          <PercentChangeToday
+            probChange={answer.probChanges.day}
+            className="-mt-1 whitespace-nowrap text-xs"
+          />
         </Col>
-      </ClickFrame>
-      {/* </Link> */}
-    </>
+        {!photo ? (
+          <IoIosPerson className="text-ink-600 -mb-4 h-[112px] w-[112px]" />
+        ) : (
+          <Image
+            src={photo}
+            alt={candidatefullName}
+            width={112}
+            height={112}
+            className="mx-auto object-fill"
+          />
+        )}
+      </Col>
+      {!resolution && hasBets && isCpmm && user && (
+        <UserCandidatePosition
+          contract={contract as CPMMMultiContract}
+          answer={answer as Answer}
+          userBets={userBets}
+          user={user}
+        />
+      )}
+    </ClickFrame>
   )
 }
 
