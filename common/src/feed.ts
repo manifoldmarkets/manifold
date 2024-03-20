@@ -46,7 +46,7 @@ export const BASE_FEED_REASON_TYPE_SCORES: {
   liked_contract: 0.2,
   contract_in_group_you_are_in: 0.3,
   similar_interest_vector_to_contract: 0, // score calculated using interest distance
-  follow_user: 0.4,
+  follow_user: 0.45,
   similar_interest_vector_to_news_vector: 0.1,
 }
 
