@@ -27,6 +27,7 @@ import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
 import { SmallAnswerBars } from '../answers/small-answer'
+import { BinaryBetButton } from '../us-elections/contracts/conditional-market/conditional-market'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -161,11 +162,11 @@ export function HorizontalDashboardCard(props: {
               />
             )}
             {isBinaryCpmm && !isClosed && (
-              <BetButton
-                feedId={item?.id}
+              <BinaryBetButton
+                // feedId={item?.id}
                 contract={contract}
-                user={user}
-                className="h-min"
+                // user={user}
+                // className="h-min"
               />
             )}
           </Row>
@@ -182,7 +183,7 @@ export function HorizontalDashboardCard(props: {
           <PollPanel contract={contract} maxOptions={4} />
         )}
         {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-          <SmallAnswerBars contract={contract} maxAnswers={4} />
+          <SmallAnswerBars contract={contract} maxAnswers={3} />
         )}
 
         {isBinaryMc &&

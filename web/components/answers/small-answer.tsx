@@ -30,6 +30,7 @@ import {
   MultiBettor,
 } from './answer-components'
 import { SHOW_LIMIT_ORDER_CHARTS_KEY } from './answers-panel'
+import { Linkify } from '../widgets/linkify'
 
 // just the bars
 export function SmallAnswerBars(props: {
@@ -69,7 +70,7 @@ export function SmallAnswerBars(props: {
   })
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className="mx-[2px] gap-1.5">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -134,7 +135,6 @@ export function SmallAnswer(props: {
   const prob = getAnswerProbability(contract, answer.id)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
-  const isOther = 'isOther' in answer && answer.isOther
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -150,7 +150,6 @@ export function SmallAnswer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
   const isClient = useIsClient()
 
-  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={'w-full'}>
       <SmallAnswerBar
@@ -159,37 +158,8 @@ export function SmallAnswer(props: {
         resolvedProb={resolvedProb}
         className={clsx('cursor-pointer')}
         barColor={barColor}
-        label={
-          <Row className={'items-center gap-1'}>
-            {isOther ? (
-              <span className={textColorClass}>
-                Other{' '}
-                <InfoTooltip
-                  className="!text-ink-600 dark:!text-ink-700"
-                  text={OTHER_TOOLTIP_TEXT}
-                />
-              </span>
-            ) : (
-              <CreatorAndAnswerLabel
-                text={answer.text}
-                createdTime={answer.createdTime}
-                className={clsx(
-                  'items-center text-sm !leading-none sm:text-base',
-                  textColorClass
-                )}
-              />
-            )}
-          </Row>
-        }
-        end={
-          <Row className={'items-center gap-1'}>
-            <AnswerStatus contract={contract} answer={answer} noNewIcon />
-            <MultiBettor
-              contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
-            />
-          </Row>
-        }
+        contract={contract}
+        answer={answer}
       />
       {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition
@@ -207,60 +177,86 @@ export const SmallAnswerBar = (props: {
   color: string // 6 digit hex
   prob: number // 0 - 1
   resolvedProb?: number // 0 - 1
-  label: ReactNode
-  end: ReactNode
   className?: string
   hideBar?: boolean
   renderBackgroundLayer?: React.ReactNode
   barColor?: string
+  contract: MultiContract
+  answer: Answer | DpmAnswer
 }) => {
   const {
     color,
     prob,
     resolvedProb,
-    label,
-    end,
     className,
     hideBar,
     renderBackgroundLayer,
+    contract,
+    answer,
   } = props
 
+  const isOther = 'isOther' in answer && answer.isOther
+  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={clsx('relative isolate h-full w-full', className)}>
-      <Row className="my-auto h-full items-center justify-between gap-2 px-3 py-2 leading-none">
-        <div className="grow-x">{label}</div>
-        {end}
-      </Row>
-      <div
-        className={clsx(
-          'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
-          hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
+      <Row className="w-full items-center justify-between px-2 py-0.5">
+        {isOther ? (
+          <span className={clsx(textColorClass, 'text-sm')}>
+            Other{' '}
+            <InfoTooltip
+              className="!text-ink-600 dark:!text-ink-700"
+              text={OTHER_TOOLTIP_TEXT}
+              size="sm"
+            />
+          </span>
+        ) : (
+          <Linkify
+            text={answer.text}
+            className="[&_a]:text-primary-800 text-sm"
+          />
         )}
-      >
-        {/* bar outline if resolved */}
-        {!!resolvedProb && !hideBar && (
+        <Row>
           <div
             className={clsx(
-              'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
-              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : 'z-10'
+              'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
+              hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
             )}
-            style={{
-              width: `${resolvedProb * 100}%`,
-            }}
-          />
-        )}
-        {/* main bar */}
-        {!hideBar && (
-          <div
-            className="isolate h-full rounded dark:brightness-75"
-            style={{
-              width: `max(8px, ${prob * 100}%)`,
-              background: color,
-            }}
-          />
-        )}
-        {renderBackgroundLayer}
-      </div>
+          >
+            {/* bar outline if resolved */}
+            {!!resolvedProb && !hideBar && (
+              <div
+                className={clsx(
+                  'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
+                  resolvedProb > prob
+                    ? 'bg-purple-100 dark:bg-purple-900'
+                    : 'z-10'
+                )}
+                style={{
+                  width: `${resolvedProb * 100}%`,
+                }}
+              />
+            )}
+            {/* main bar */}
+            {!hideBar && (
+              <div
+                className="isolate h-full rounded dark:brightness-75"
+                style={{
+                  width: `max(8px, ${prob * 100}%)`,
+                  background: color,
+                }}
+              />
+            )}
+            {renderBackgroundLayer}
+          </div>
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} noNewIcon />
+            <MultiBettor
+              contract={contract as CPMMMultiContract}
+              answer={answer as Answer}
+            />
+          </Row>
+        </Row>
+      </Row>
     </Col>
   )
 }

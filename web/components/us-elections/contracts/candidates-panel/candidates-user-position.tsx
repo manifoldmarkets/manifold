@@ -10,7 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { sumBy } from 'lodash'
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa'
 
-export function UserCandidatePosition(props: {
+export function UserPosition(props: {
   contract: CPMMMultiContract
   userBets: Bet[]
   answer: Answer
