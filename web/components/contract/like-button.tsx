@@ -18,10 +18,12 @@ import { UserLink } from '../widgets/user-link'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button, SizeType } from 'web/components/buttons/button'
 import toast from 'react-hot-toast'
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { useUsersById } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
 import { UserHovercard } from '../user/user-hovercard'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { removeUndefinedProps } from 'common/util/object'
 
 const LIKES_SHOWN = 3
 
@@ -36,6 +38,7 @@ export const LikeButton = memo(function LikeButton(props: {
   placement?: 'top' | 'bottom'
   size?: SizeType
   disabled?: boolean
+  feedItem?: FeedTimelineItem
 }) {
   const {
     user,
@@ -46,6 +49,7 @@ export const LikeButton = memo(function LikeButton(props: {
     className,
     trackingLocation,
     placement = 'bottom',
+    feedItem,
     size,
   } = props
   const likes = useLikesOnContent(contentType, contentId)
@@ -68,10 +72,22 @@ export const LikeButton = memo(function LikeButton(props: {
     if (shouldLike) {
       await like(contentId, contentType)
 
-      track('like', {
-        itemId: contentId,
-        location: trackingLocation,
-      })
+      track(
+        'like',
+        removeUndefinedProps({
+          itemId: contentId,
+          location: trackingLocation,
+          contractId:
+            feedItem?.contractId ?? contentType === 'contract'
+              ? contentId
+              : undefined,
+          commentId:
+            feedItem?.commentId ?? contentType === 'comment'
+              ? contentId
+              : undefined,
+          feedItem,
+        })
+      )
     } else {
       await unLike(contentId, contentType)
     }

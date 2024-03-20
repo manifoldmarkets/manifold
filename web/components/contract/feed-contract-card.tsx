@@ -328,6 +328,7 @@ export function FeedContractCard(props: {
               contract={contract}
               user={user}
               underline={!!children}
+              feedItem={item}
             />
             {children}
           </Col>
@@ -350,8 +351,9 @@ const BottomActionRow = (props: {
   contract: Contract
   user: User | null | undefined
   underline?: boolean
+  feedItem?: FeedTimelineItem
 }) => {
-  const { contract, user, underline } = props
+  const { contract, feedItem, user, underline } = props
   const { question } = contract
 
   return (
@@ -414,6 +416,7 @@ const BottomActionRow = (props: {
           size={'2xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
+          feedItem={feedItem}
         />
       </BottomRowButtonWrapper>
     </Row>
