@@ -60,13 +60,13 @@ export function Policy(props: {
         <ConditionalPercent
           path={bidenPath}
           contract={bidenContract}
-          className="bg-azure-500/20 items-center justify-center py-2"
+          className="bg-azure-500/20 dark:bg-azure-500/10 items-center justify-center py-2"
           isLargerPercent={bidenProbability > trumpProbability}
         />
         <ConditionalPercent
           path={trumpPath}
           contract={trumpContract}
-          className="bg-sienna-500/20 justify-end  px-4 py-2"
+          className="bg-sienna-500/20 dark:bg-sienna-500/10 justify-end  px-4 py-2"
           isLargerPercent={trumpProbability > bidenProbability}
         />
       </Row>
