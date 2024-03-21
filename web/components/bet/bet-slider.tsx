@@ -38,9 +38,7 @@ export const BetSlider = (props: {
 
   const sliderIndex = amountToSliderIndex(amount ?? 0)
   const tenIndex = sliderAmounts.findIndex((a) => a === 10)
-  const tenAmountDistance = (100 * tenIndex) / maxSliderIndex
   const hundredIndex = sliderAmounts.findIndex((a) => a === 100)
-  const hundredAmountDistance = (100 * hundredIndex) / maxSliderIndex
 
   return (
     <Slider
@@ -53,15 +51,15 @@ export const BetSlider = (props: {
           label: formatMoney(sliderAmounts[0]),
         },
         {
-          value: tenAmountDistance,
+          value: tenIndex,
           label: formatMoney(sliderAmounts[tenIndex]),
         },
         !smallManaAmounts && {
-          value: hundredAmountDistance,
+          value: hundredIndex,
           label: formatMoney(sliderAmounts[hundredIndex]),
         },
         {
-          value: 100,
+          value: maxSliderIndex,
           label: formatMoney(sliderAmounts[maxSliderIndex]),
         }
       )}
