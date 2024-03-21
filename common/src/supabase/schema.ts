@@ -429,6 +429,7 @@ export type Database = {
       contracts: {
         Row: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
@@ -457,6 +458,7 @@ export type Database = {
         }
         Insert: {
           close_time?: string | null
+          conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
           data: Json
@@ -485,6 +487,7 @@ export type Database = {
         }
         Update: {
           close_time?: string | null
+          conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
           data?: Json
@@ -546,32 +549,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'dashboard_groups_dashboard_id_fkey'
-            columns: ['dashboard_id']
+            foreignKeyName: "dashboard_groups_dashboard_id_fkey"
+            columns: ["dashboard_id"]
             isOneToOne: false
-            referencedRelation: 'dashboards'
-            referencedColumns: ['id']
+            referencedRelation: "dashboards"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -623,32 +626,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
+            foreignKeyName: "dashboards_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -712,25 +715,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
-            columns: ['group_id']
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
-            columns: ['group_id']
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
-            columns: ['group_id']
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -752,25 +755,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: true
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: true
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: true
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -810,25 +813,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_invites_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_invites_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_invites_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -853,25 +856,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -981,7 +984,7 @@ export type Database = {
           division: number
           mana_earned: number
           mana_earned_breakdown: Json
-          'Primary Key': string
+          "Primary Key": string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -992,7 +995,7 @@ export type Database = {
           division: number
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
+          "Primary Key"?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -1003,7 +1006,7 @@ export type Database = {
           division?: number
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
+          "Primary Key"?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -1472,53 +1475,53 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'contracts'
-            referencedColumns: ['id']
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "contracts_rbac"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
+            referencedRelation: "contracts_view"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
+            referencedRelation: "listed_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
+            referencedRelation: "public_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
+            referencedRelation: "public_open_contracts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
+            foreignKeyName: "market_ads_market_id_fkey"
+            columns: ["market_id"]
             isOneToOne: false
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
+            referencedRelation: "trending_contracts"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1630,25 +1633,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups'
-            referencedColumns: ['id']
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
             isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -1946,60 +1949,60 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
+            foreignKeyName: "reports_content_owner_id_fkey"
+            columns: ["content_owner_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "reports_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -2374,7 +2377,7 @@ export type Database = {
           idempotency_key: string | null
           is_copied: boolean
           post_id: number | null
-          reasons: string[]
+          reasons: string[] | null
           relevance_score: number | null
           seen_duration: number | null
           seen_time: string | null
@@ -2393,7 +2396,7 @@ export type Database = {
           idempotency_key?: string | null
           is_copied?: boolean
           post_id?: number | null
-          reasons: string[]
+          reasons?: string[] | null
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
@@ -2412,7 +2415,7 @@ export type Database = {
           idempotency_key?: string | null
           is_copied?: boolean
           post_id?: number | null
-          reasons?: string[]
+          reasons?: string[] | null
           relevance_score?: number | null
           seen_duration?: number | null
           seen_time?: string | null
@@ -2663,32 +2666,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
+            referencedRelation: "user_groups"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
+            referencedRelation: "user_referrals_profit"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
+            foreignKeyName: "weekly_update_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -3490,6 +3493,7 @@ export type Database = {
         }
         Returns: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
@@ -3561,7 +3565,7 @@ export type Database = {
       }
       get_compatibility_questions_with_answer_count: {
         Args: Record<PropertyKey, never>
-        Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
+        Returns: Database["public"]["CompositeTypes"]["love_question_with_count_type"][]
       }
       get_contract_metrics_for_contract: {
         Args: {
@@ -3694,7 +3698,7 @@ export type Database = {
         Args: {
           table_id: string
         }
-        Returns: Database['public']['CompositeTypes']['table_spec']
+        Returns: Database["public"]["CompositeTypes"]["table_spec"]
       }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>
@@ -3720,7 +3724,7 @@ export type Database = {
       }
       get_fr_questions_with_answer_count: {
         Args: Record<PropertyKey, never>
-        Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
+        Returns: Database["public"]["CompositeTypes"]["love_question_with_count_type"][]
       }
       get_group_contracts: {
         Args: {
@@ -3734,13 +3738,13 @@ export type Database = {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
+        Returns: Database["public"]["CompositeTypes"]["group_with_score_and_bet_flag"][]
       }
       get_groups_from_user_seen_markets: {
         Args: {
           uid: string
         }
-        Returns: Database['public']['CompositeTypes']['group_with_bet_flag'][]
+        Returns: Database["public"]["CompositeTypes"]["group_with_bet_flag"][]
       }
       get_last_week_long_link: {
         Args: {
@@ -3752,7 +3756,7 @@ export type Database = {
         Args: {
           p_question_id: number
         }
-        Returns: Database['public']['CompositeTypes']['other_lover_answers_type'][]
+        Returns: Database["public"]["CompositeTypes"]["other_lover_answers_type"][]
       }
       get_market_ads: {
         Args: {
@@ -3803,6 +3807,7 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
@@ -4129,31 +4134,31 @@ export type Database = {
       }
       gtrgm_compress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_decompress: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_in: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
       gtrgm_options: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: undefined
       }
       gtrgm_out: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -4166,7 +4171,7 @@ export type Database = {
       }
       hnswhandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -4215,7 +4220,7 @@ export type Database = {
       }
       ivfflathandler: {
         Args: {
-          '': unknown
+          "": unknown
         }
         Returns: unknown
       }
@@ -4442,7 +4447,7 @@ export type Database = {
       }
       set_limit: {
         Args: {
-          '': number
+          "": number
         }
         Returns: number
       }
@@ -4452,7 +4457,7 @@ export type Database = {
       }
       show_trgm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
@@ -4486,7 +4491,7 @@ export type Database = {
       }
       to_jsonb: {
         Args: {
-          '': Json
+          "": Json
         }
         Returns: Json
       }
@@ -4567,37 +4572,37 @@ export type Database = {
       }
       vector_avg: {
         Args: {
-          '': number[]
+          "": number[]
         }
         Returns: string
       }
       vector_dims: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_norm: {
         Args: {
-          '': string
+          "": string
         }
         Returns: number
       }
       vector_out: {
         Args: {
-          '': string
+          "": string
         }
         Returns: unknown
       }
       vector_send: {
         Args: {
-          '': string
+          "": string
         }
         Returns: string
       }
       vector_typmod_in: {
         Args: {
-          '': unknown[]
+          "": unknown[]
         }
         Returns: number
       }
@@ -4657,23 +4662,23 @@ export type Database = {
 
 export type Tables<
   PublicTableNameOrOptions extends
-    | keyof (Database['public']['Tables'] & Database['public']['Views'])
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-        Database[PublicTableNameOrOptions['schema']]['Views'])
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions['schema']]['Tables'] &
-      Database[PublicTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (Database['public']['Tables'] &
-      Database['public']['Views'])
-  ? (Database['public']['Tables'] &
-      Database['public']['Views'])[PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+      Database["public"]["Views"])
+  ? (Database["public"]["Tables"] &
+      Database["public"]["Views"])[PublicTableNameOrOptions] extends {
       Row: infer R
     }
     ? R
@@ -4682,19 +4687,19 @@ export type Tables<
 
 export type TablesInsert<
   PublicTableNameOrOptions extends
-    | keyof Database['public']['Tables']
+    | keyof Database["public"]["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof Database['public']['Tables']
-  ? Database['public']['Tables'][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
       Insert: infer I
     }
     ? I
@@ -4703,19 +4708,19 @@ export type TablesInsert<
 
 export type TablesUpdate<
   PublicTableNameOrOptions extends
-    | keyof Database['public']['Tables']
+    | keyof Database["public"]["Tables"]
     | { schema: keyof Database },
   TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions['schema']]['Tables']
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never
 > = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof Database['public']['Tables']
-  ? Database['public']['Tables'][PublicTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
       Update: infer U
     }
     ? U
@@ -4724,13 +4729,13 @@ export type TablesUpdate<
 
 export type Enums<
   PublicEnumNameOrOptions extends
-    | keyof Database['public']['Enums']
+    | keyof Database["public"]["Enums"]
     | { schema: keyof Database },
   EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions['schema']]['Enums']
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never
 > = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : PublicEnumNameOrOptions extends keyof Database['public']['Enums']
-  ? Database['public']['Enums'][PublicEnumNameOrOptions]
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+  ? Database["public"]["Enums"][PublicEnumNameOrOptions]
   : never
