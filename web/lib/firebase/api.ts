@@ -184,8 +184,8 @@ export function setTV(params: {
   }>
 }
 
-export function deleteTV( id: string ) {
-  return call(getApiUrl('deletetv'), 'POST', {id}) as Promise<{
+export function deleteTV(id: string) {
+  return call(getApiUrl('deletetv'), 'POST', { id }) as Promise<{
     status: 'success'
   }>
 }

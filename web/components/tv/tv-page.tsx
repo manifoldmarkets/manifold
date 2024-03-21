@@ -5,11 +5,7 @@ import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useContracts } from 'web/hooks/use-contract-supabase'
-import {
-  ScheduleItem,
-  getActiveStream,
-  useTVSchedule,
-} from './tv-schedule'
+import { ScheduleItem, getActiveStream, useTVSchedule } from './tv-schedule'
 import { TVDisplay } from './tv-display'
 import { TVSchedulePage } from './tv-schedule-page'
 
