@@ -33,7 +33,7 @@ import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
 import clsx from 'clsx'
 
-export type DashboardEndpoints = 'news' | 'politics'
+export type DashboardEndpoints = 'news' | 'politics' | 'ai'
 
 export function DashboardPage(props: {
   initialDashboard: Dashboard

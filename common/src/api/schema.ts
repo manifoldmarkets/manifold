@@ -611,7 +611,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: [] as Headline[],
-    props: z.object({}),
+    props: z.object({
+      slug: z.enum(['politics', 'ai', 'news']).optional(),
+    }),
   },
   'politics-headlines': {
     method: 'GET',
@@ -628,7 +630,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         dashboardIds: z.array(z.string()),
-        isPolitics: z.boolean().optional(),
+        endpoint: z.enum(['politics', 'ai', 'news']),
       })
       .strict(),
   },

@@ -4,9 +4,12 @@ import { fetchLinkPreviews } from 'common/link-preview'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { capitalize, omit } from 'lodash'
-import { TOP_SLUG } from 'web/pages/politics/[[...slug]]'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
-export const getDashboardProps = async (slug: string, isPolitics?: boolean) => {
+export const getDashboardProps = async (
+  slug: string,
+  endpointProps?: { slug: DashboardEndpoints; topSlug: string }
+) => {
   const dashboard = await api('get-dashboard-from-slug', {
     dashboardSlug: slug,
   })
@@ -28,14 +31,15 @@ export const getDashboardProps = async (slug: string, isPolitics?: boolean) => {
   )
 
   const headlines = await api(
-    isPolitics ? 'politics-headlines' : 'headlines',
-    {}
+    'headlines',
+    removeUndefinedProps({ slug: endpointProps?.slug })
   )
-  if (isPolitics) {
+  if (endpointProps?.topSlug) {
+    const topSlug = endpointProps.topSlug
     headlines.unshift({
-      id: TOP_SLUG,
+      id: topSlug,
       slug: '',
-      title: capitalize(TOP_SLUG),
+      title: capitalize(topSlug),
     })
   }
   return {

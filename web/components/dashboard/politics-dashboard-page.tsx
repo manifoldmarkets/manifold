@@ -32,8 +32,7 @@ import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
 import clsx from 'clsx'
-
-export type DashboardEndpoints = 'news' | 'politics'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
 export function PoliticsDashboardPage(props: {
   initialDashboard: Dashboard

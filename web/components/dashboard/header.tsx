@@ -31,10 +31,7 @@ export function HeadlineTabs(props: {
         ))}
         {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton
-            isPolitics={endpoint === 'politics'}
-            defaultDashboards={headlines}
-          />
+          <EditNewsButton endpoint={endpoint} defaultDashboards={headlines} />
         )}
       </Carousel>
     </div>

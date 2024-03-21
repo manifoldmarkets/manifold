@@ -13,8 +13,17 @@ create table if not exists
     creator_name text not null,
     creator_avatar_url text not null,
     importance_score numeric not null default 0,
-    politics_importance_score numeric not null default 0
+    politics_importance_score numeric not null default 0,
+    ai_importance_score numeric not null default 0
   );
 
 alter table dashboards
 add column title_fts tsvector generated always as (to_tsvector('english', title)) stored;
+
+create unique index idx_dashboard_slug on dashboards (slug);
+
+alter table dashboards enable row level security;
+
+create policy "Enable read access for admin" on public.dashboards for
+    select
+    to service_role using (true);
