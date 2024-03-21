@@ -14,6 +14,7 @@ import { Subtitle } from 'web/components/widgets/subtitle'
 import { Avatar } from 'web/components/widgets/avatar'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { ScheduleItem } from './tv-schedule'
+import { useUser } from 'web/hooks/use-user'
 
 export function TVSchedulePage(props: {
   schedule: ScheduleItem[]
@@ -23,6 +24,7 @@ export function TVSchedulePage(props: {
   const [featured, userCreated] = partition(schedule, (s) => s.is_featured)
 
   const [showSettings, setShowSettings] = useState(false)
+  const user = useUser()
 
   return (
     <Page trackPageView="tv page" className="p-4">
@@ -55,15 +57,17 @@ export function TVSchedulePage(props: {
         <div className="italic">No events scheduled</div>
       )}
 
-      <Row className="mt-8">
-        <Button color="indigo-outline" onClick={() => setShowSettings(true)}>
-          Schedule event
-        </Button>
-        <ScheduleTVModal
-          open={showSettings}
-          setOpen={() => setShowSettings(false)}
-        />
-      </Row>
+      {user && (
+        <Row className="mt-8">
+          <Button color="indigo-outline" onClick={() => setShowSettings(true)}>
+            Schedule event
+          </Button>
+          <ScheduleTVModal
+            open={showSettings}
+            setOpen={() => setShowSettings(false)}
+          />
+        </Row>
+      )}
     </Page>
   )
 }
