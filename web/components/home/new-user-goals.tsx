@@ -52,7 +52,11 @@ export const NewUserGoals = (props: { user: User }) => {
         value={10 - remainingViewBonuses}
         goal={10}
         description="questions visited"
-      />
+      >
+        <div className="text-ink-600 text-lg">
+          Earn {formatMoney(100)} per question visited
+        </div>
+      </ProgressDisplay>
     )
   }
 
@@ -92,7 +96,10 @@ export const NewUserGoals = (props: { user: User }) => {
         description={
           <>
             mana earned{' '}
-            <InfoTooltip text="hi" tooltipParams={{ placement: 'bottom' }} />
+            <InfoTooltip
+              text="Earn mana from betting, creating questions, and referring users."
+              tooltipParams={{ placement: 'bottom' }}
+            />
           </>
         }
       >
@@ -156,19 +163,19 @@ const ProgressDisplay = (props: {
   } = props
   return (
     <Col
-      className={clsx('gap-2 rounded-md bg-indigo-100 px-4 py-3', className)}
+      className={clsx('gap-3 rounded-md bg-indigo-100 px-4 py-3', className)}
     >
+      <Row className="items-center gap-2 text-xl">
+        <GoGoal className="text-2xl text-indigo-800" />
+        {label}
+      </Row>
       <Row className="items-center justify-between gap-4">
-        <div className="flex-shrink-0">
-          <span className="font-semibold">
+        <div className="flex-shrink-0 text-lg">
+          <span className="">
             {format(value)} of {format(goal)}
           </span>{' '}
           {description}
         </div>
-        <Row className="items-center gap-2">
-          <GoGoal className="text-indigo-800" />
-          {label}
-        </Row>
       </Row>
       <ProgressBar className="mb-1" value={value / goal} max={1} />
       {children}
