@@ -116,17 +116,19 @@ export function ScheduleTVModal(props: {
         </Row>
 
         <Row className="items-center justify-between">
-          <div>YouTube Stream ID</div>
+          <div>YouTube stream</div>
           <Input
             value={streamId}
-            onChange={(e) => setStreamId(e.target.value)}
-            maxLength={11}
+            onChange={(e) => setStreamId(processYoutubeUrl(e.target.value))}
           />
         </Row>
 
         <Row className="items-center justify-between">
           <div>Market slug</div>
-          <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
+          <Input
+            value={slug}
+            onChange={(e) => setSlug(processMarketUrl(e.target.value))}
+          />
         </Row>
 
         <Row className="items-center justify-between gap-2">
@@ -185,4 +187,18 @@ export function ScheduleTVModal(props: {
       </Col>
     </Modal>
   )
+}
+
+const processYoutubeUrl = (url: string) => {
+  const match = url.match(
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/(?:watch\?v=)?(.+)/
+  )
+  if (match) {
+    return match[1]
+  }
+  return url.substring(0, 11)
+}
+
+const processMarketUrl = (url: string) => {
+  return url.split('?')[0].split('/').pop()
 }
