@@ -54,7 +54,9 @@ export function TVDisplay(props: {
 
   const streamSrc =
     stream?.source === 'twitch'
-      ? `https://player.twitch.tv/?channel=${stream.stream_id}&parent=${DOMAIN&&'localhost'}&autoplay=true`
+      ? `https://player.twitch.tv/?channel=${stream.stream_id}&parent=${
+          DOMAIN /*&&'localhost'*/
+        }&autoplay=true`
       : 'https://www.youtube.com/embed/' + stream?.stream_id + '?autoplay=1'
 
   return (
@@ -73,7 +75,7 @@ export function TVDisplay(props: {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"
-         />
+          />
 
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
