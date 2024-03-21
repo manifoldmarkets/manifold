@@ -114,7 +114,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
-import { addOrRemoveGroupFromContract } from './update-tag'
+import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
@@ -155,6 +155,7 @@ import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
+import { recordContractInteraction } from 'api/record-contract-interaction'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -223,7 +224,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
-  'market/:contractId/group': addOrRemoveGroupFromContract,
+  'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
@@ -294,6 +295,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
+  'record-contract-interaction': recordContractInteraction,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

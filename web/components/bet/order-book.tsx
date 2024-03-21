@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
@@ -34,6 +35,8 @@ import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 import { api } from 'web/lib/firebase/api'
 import { UserHovercard } from '../user/user-hovercard'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Answer } from 'common/answer'
 
 export function YourOrders(props: {
   contract:
@@ -255,9 +258,10 @@ export function OrderBookButton(props: {
     | StonkContract
     | CPMMMultiContract
     | MultiContract
+  answer?: Answer
   label?: React.ReactNode
 }) {
-  const { limitBets, contract, label } = props
+  const { limitBets, contract, answer, label } = props
   const [open, setOpen] = useState(false)
 
   return (
@@ -275,7 +279,14 @@ export function OrderBookButton(props: {
       </Button>
 
       <Modal open={open} setOpen={setOpen} size="md">
-        <OrderBookPanel limitBets={limitBets} contract={contract} />
+        <Col className="bg-canvas-0">
+          <OrderBookPanel
+            limitBets={limitBets}
+            contract={contract}
+            answer={answer}
+            expanded
+          />
+        </Col>
       </Modal>
     </>
   )
@@ -289,8 +300,10 @@ export function OrderBookPanel(props: {
     | StonkContract
     | CPMMMultiContract
     | MultiContract
+  answer?: Answer
+  expanded?: boolean
 }) {
-  const { limitBets, contract } = props
+  const { limitBets, contract, expanded, answer } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -306,10 +319,19 @@ export function OrderBookPanel(props: {
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
+  const maxShownNotExpanded = 3
+  const moreOrdersCountYes = Math.max(0, yesBets.length - maxShownNotExpanded)
+  const moreOrdersCountNo = Math.max(0, noBets.length - maxShownNotExpanded)
+  const moreOrdersCount = moreOrdersCountYes + moreOrdersCountNo
+  const [isExpanded, setIsExpanded] = usePersistentInMemoryState(
+    expanded ?? false,
+    `${contract.id}-orderbook-expanded`
+  )
+
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 rounded-lg bg-indigo-200/10 p-4">
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
       <Subtitle className="!my-0">
         Order book{' '}
         <InfoTooltip
@@ -318,71 +340,62 @@ export function OrderBookPanel(props: {
         />
       </Subtitle>
 
-      {!isCPMMMulti &&
-        !isPseudoNumeric &&
-        yesBets.length >= 2 &&
-        noBets.length >= 2 && (
-          <>
-            <h2 className="mb-1 text-center text-sm">
-              Cumulative shares vs probability
-            </h2>
-            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
-              {(w, h) => (
-                <DepthChart
-                  contract={contract as any}
-                  yesBets={yesBets}
-                  noBets={noBets}
-                  width={w}
-                  height={h}
-                />
-              )}
-            </SizedContainer>
-          </>
-        )}
-      {isCPMMMulti ? (
-        contract.answers.map((answer) => {
-          const answerYesBets = yesBets.filter(
-            (bet) => bet.answerId === answer.id
-          )
-          const answerNoBets = noBets.filter(
-            (bet) => bet.answerId === answer.id
-          )
-          if (answerYesBets.length === 0 && answerNoBets.length === 0) {
-            return null
+      {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
+        <>
+          <h2 className="text-center text-sm">
+            Cumulative shares vs probability
+          </h2>
+          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+            {(w, h) => (
+              <DepthChart
+                contract={contract as any}
+                answer={answer}
+                yesBets={yesBets}
+                noBets={noBets}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        </>
+      )}
+
+      {isCPMMMulti && answer && <div>{answer.text}</div>}
+
+      <Row className="items-start justify-around gap-2">
+        <OrderTable
+          limitBets={
+            isExpanded ? yesBets : yesBets.slice(0, maxShownNotExpanded)
           }
-          return (
-            <Col key={answer.id} className="gap-2">
-              {answer.text}
-              <Row className="mt-2 items-start justify-around gap-2">
-                <OrderTable
-                  limitBets={answerYesBets}
-                  contract={contract}
-                  side="YES"
-                />
-                <OrderTable
-                  limitBets={answerNoBets}
-                  contract={contract}
-                  side="NO"
-                />
-              </Row>
-            </Col>
-          )
-        })
-      ) : (
-        <Row className="mt-2 items-start justify-around gap-2">
-          <OrderTable
-            limitBets={yesBets}
-            contract={contract}
-            isYou={false}
-            side="YES"
-          />
-          <OrderTable
-            limitBets={noBets}
-            contract={contract}
-            isYou={false}
-            side="NO"
-          />
-        </Row>
+          contract={contract}
+          isYou={false}
+          side="YES"
+        />
+        <OrderTable
+          limitBets={isExpanded ? noBets : noBets.slice(0, maxShownNotExpanded)}
+          contract={contract}
+          isYou={false}
+          side="NO"
+        />
+      </Row>
+
+      {moreOrdersCount > 0 && (
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setIsExpanded((b) => !b)}
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer orders`}
+            </>
+          ) : (
+            <>
+              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+              {`Show ${moreOrdersCount} more orders`}
+            </>
+          )}
+        </Button>
       )}
     </Col>
   )

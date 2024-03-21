@@ -19,7 +19,7 @@ import { usePrivateUser } from 'web/hooks/use-user'
 import { useEvent } from 'web/hooks/use-event'
 import { createPortfolio } from 'web/lib/firebase/api'
 import { usePortfolios } from 'web/hooks/use-portfolios'
-import { Portfolio } from 'common/portfolio'
+import type { Portfolio } from 'common/portfolio'
 
 export default function Portfolio() {
   return (

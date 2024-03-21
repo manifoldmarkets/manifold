@@ -9,6 +9,7 @@ import { FaExternalLinkAlt } from 'react-icons/fa'
 import { Row } from 'web/components/layout/row'
 import { BackButton } from 'web/components/contract/back-button'
 import { useEffect, useState } from 'react'
+import LoadingUserRows from 'web/components/loading-user-rows'
 
 const PartnerLeaderboard = () => {
   const [partnerStats, setPartnerStats] = useState<
@@ -65,66 +66,71 @@ const PartnerLeaderboard = () => {
 
         <div className="text-ink-700 mb-3">Period Feb 26 - May 26</div>
 
-        <div className="overflow-x-auto">
-          <table className="whitespace-no-wrap w-full table-auto text-left">
-            <thead className=" bg-ink-50 text-primary-700 text-xs font-semibold uppercase tracking-wide">
-              <tr>
-                <th className="py-3 pl-8">Partner</th>
-                <th className="py-3 pr-4 text-center">Income (USD)</th>
-                <th className="px-4 py-3 text-center">Traders</th>
-                <th className="px-4 py-3 text-center">Referrals</th>
-                <th className="px-4 py-3 text-center">New Markets</th>
-              </tr>
-            </thead>
-            <tbody className="divide-ink-100 divide-y text-sm">
-              {sortedPartnerStats.map((partnerStats, index) => {
-                const {
-                  username,
-                  numContractsCreated,
-                  numUniqueBettors,
-                  numReferrals,
-                  dollarsEarned,
-                } = partnerStats
+        {partnerStats.length === 0 && <LoadingUserRows />}
+        {partnerStats.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="whitespace-no-wrap w-full table-auto text-left">
+              <thead className=" bg-ink-50 text-primary-700 text-xs font-semibold uppercase tracking-wide">
+                <tr>
+                  <th className="py-3 pl-8">Partner</th>
+                  <th className="py-3 pr-4 text-center">Income (USD)</th>
+                  <th className="px-4 py-3 text-center">Traders</th>
+                  <th className="px-4 py-3 text-center">Referrals</th>
+                  <th className="px-4 py-3 text-center">New Markets</th>
+                </tr>
+              </thead>
+              <tbody className="divide-ink-100 divide-y text-sm">
+                {sortedPartnerStats.map((partnerStats, index) => {
+                  const {
+                    username,
+                    numContractsCreated,
+                    numUniqueBettors,
+                    numReferrals,
+                    dollarsEarned,
+                  } = partnerStats
 
-                return (
-                  <tr key={index} className="bg-canvas-0">
-                    <td className="py-3 pl-8">
-                      <a
-                        className="hover:text-primary-500 hover:underline"
-                        href={`/${username}/partner`}
-                      >
-                        {username}
-                      </a>
-                    </td>
-                    <td className="py-3 pr-4 text-center">
-                      ${dollarsEarned.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {numUniqueBettors}
-                    </td>
-                    <td className="px-4 py-3 text-center">{numReferrals}</td>
-                    <td className="px-4 py-3 text-center">
-                      {numContractsCreated}
-                    </td>
-                  </tr>
-                )
-              })}
-              <tr className="bg-ink-50 text-primary-700 font-semibold">
-                <td className="py-3 pl-8">
-                  Total ({sortedPartnerStats.length})
-                </td>
-                <td className="py-3 pr-4 text-center">
-                  ${totalDollarsEarned.toFixed(2)}
-                </td>
-                <td className="px-4 py-3 text-center">{totalUniqueBettors}</td>
-                <td className="px-4 py-3 text-center">{totalReferrals}</td>
-                <td className="px-4 py-3 text-center">
-                  {totalContractsCreated}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                  return (
+                    <tr key={index} className="bg-canvas-0">
+                      <td className="py-3 pl-8">
+                        <a
+                          className="hover:text-primary-500 hover:underline"
+                          href={`/${username}/partner`}
+                        >
+                          {username}
+                        </a>
+                      </td>
+                      <td className="py-3 pr-4 text-center">
+                        ${dollarsEarned.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {numUniqueBettors}
+                      </td>
+                      <td className="px-4 py-3 text-center">{numReferrals}</td>
+                      <td className="px-4 py-3 text-center">
+                        {numContractsCreated}
+                      </td>
+                    </tr>
+                  )
+                })}
+                <tr className="bg-ink-50 text-primary-700 font-semibold">
+                  <td className="py-3 pl-8">
+                    Total ({sortedPartnerStats.length})
+                  </td>
+                  <td className="py-3 pr-4 text-center">
+                    ${totalDollarsEarned.toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {totalUniqueBettors}
+                  </td>
+                  <td className="px-4 py-3 text-center">{totalReferrals}</td>
+                  <td className="px-4 py-3 text-center">
+                    {totalContractsCreated}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
       </Col>
     </Page>
   )

@@ -1,8 +1,13 @@
 import clsx from 'clsx'
-import { CPMMBinaryContract, contractPath } from 'common/contract'
+import {
+  BinaryContract,
+  CPMMBinaryContract,
+  Contract,
+  contractPath,
+} from 'common/contract'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { useState } from 'react'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -13,27 +18,103 @@ import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { track } from '@amplitude/analytics-browser'
 import { PolicyContractType } from 'web/public/data/policy-data'
+import { getDisplayProbability } from 'common/calculate'
+import { GoTriangleUp } from 'react-icons/go'
+import { getPercent } from 'common/util/format'
+import { ClickFrame } from 'web/components/widgets/click-frame'
+import Router from 'next/router'
 
-export function ConditionalMarketVisual(props: {
-  policyContracts: PolicyContractType[]
+export function Policy(props: {
+  policy: PolicyContractType
   className?: string
+  isFirst: boolean
+  isLast: boolean
 }) {
-  const { policyContracts, className } = props
+  const { policy, className, isFirst, isLast } = props
+  const { bidenContract, trumpContract, title } = policy
+  if (!bidenContract || !trumpContract) {
+    return <></>
+  }
+
+  const bidenPath = contractPath(bidenContract)
+  const trumpPath = contractPath(trumpContract)
+
+  const bidenProbability = getPercent(
+    getDisplayProbability(bidenContract as BinaryContract)
+  ).toFixed(0)
+
+  const trumpProbability = getPercent(
+    getDisplayProbability(trumpContract as BinaryContract)
+  ).toFixed(0)
 
   return (
-    <Col className={className}>
-      <div className="mb-2 whitespace-nowrap  font-semibold sm:text-lg">
-        Conditional Markets
-      </div>
-      {policyContracts.map((policy) => (
-        <MobilePolicy key={policy.title} policy={policy} />
-      ))}
-    </Col>
+    <Row
+      className={clsx(
+        ' border-ink-300 w-full justify-between',
+        !isLast && 'border-b',
+        className
+      )}
+    >
+      <Row className="border-ink-300 w-full items-center">{title}</Row>
+      <Row className="items-center">
+        <ConditionalPercent
+          path={bidenPath}
+          contract={bidenContract}
+          className="bg-azure-500/20 dark:bg-azure-500/10 items-center justify-center py-2"
+          isLargerPercent={bidenProbability > trumpProbability}
+        />
+        <ConditionalPercent
+          path={trumpPath}
+          contract={trumpContract}
+          className="bg-sienna-500/20 dark:bg-sienna-500/10 justify-end  px-4 py-2"
+          isLargerPercent={trumpProbability > bidenProbability}
+        />
+      </Row>
+    </Row>
   )
 }
 
-function MobilePolicy(props: { policy: PolicyContractType }) {
-  const { policy } = props
+function ConditionalPercent(props: {
+  path: string
+  contract: Contract
+  className?: string
+  isLargerPercent?: boolean
+}) {
+  const { path, contract, className, isLargerPercent = false } = props
+  return (
+    <ClickFrame
+      className={clsx(
+        className,
+        'text-ink-700 group flex h-full w-[120px] flex-row items-center gap-2'
+      )}
+      onClick={(e) => {
+        Router.push(path)
+      }}
+    >
+      <Row>
+        {isLargerPercent ? (
+          <GoTriangleUp className="text-ink-400 dark:text-ink-500 my-auto h-4 w-4" />
+        ) : (
+          <div className="h-4 w-4" />
+        )}
+        <ContractStatusLabel
+          contract={contract}
+          className={clsx(
+            isLargerPercent && 'font-bold',
+            'group-hover:text-primary-700 w-10 transition-colors'
+          )}
+        />
+      </Row>
+      <BinaryBetButton contract={contract as CPMMBinaryContract} />
+    </ClickFrame>
+  )
+}
+
+export function MobilePolicy(props: {
+  policy: PolicyContractType
+  className?: string
+}) {
+  const { policy, className } = props
   const { bidenContract, trumpContract, title } = policy
   if (!bidenContract || !trumpContract) {
     return <></>
@@ -46,13 +127,22 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
 
   const bidenPath = contractPath(bidenContract)
   const trumpPath = contractPath(trumpContract)
+
+  const bidenProbability = getPercent(
+    getDisplayProbability(bidenContract as BinaryContract)
+  ).toFixed(0)
+
+  const trumpProbability = getPercent(
+    getDisplayProbability(trumpContract as BinaryContract)
+  ).toFixed(0)
+
   return (
-    <Col className="bg-canvas-0 mb-2 rounded-lg px-4 py-2">
+    <Col className={clsx('bg-canvas-0 mb-2 rounded-lg px-4 py-2', className)}>
       <div className="font-semibold">{title}</div>
-      <MobilePolicyRow
-        key={policy.title}
-        className={'border-ink-300 border-b-[0.5px]'}
-        titleContent={
+      <Row
+        className={clsx('border-ink-300 gap-0.5 border-b-[0.5px]', className)}
+      >
+        <div className="grow">
           <Link
             href={bidenPath}
             className="hover:text-primary-700  text-ink-700 hover:underline"
@@ -65,26 +155,22 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
                 height={40}
                 className="h-10 w-10 object-fill"
               />
-              <div className="py-2">If Biden wins</div>
+              <div className="py-2">Biden wins</div>
             </Row>
           </Link>
-        }
-        sideContent1={
-          <ContractStatusLabel
-            contract={bidenContract}
-            className="h-full w-10 font-semibold"
-          />
-        }
-        sideContent2={
-          <BinaryBetButton contract={bidenContract as CPMMBinaryContract} />
-        }
-      />
-      <MobilePolicyRow
-        key={policy.title}
-        titleContent={
+        </div>
+        <ConditionalPercent
+          path={bidenPath}
+          contract={bidenContract}
+          className="  items-center justify-center py-2"
+          isLargerPercent={bidenProbability > trumpProbability}
+        />
+      </Row>
+      <Row className={clsx(' gap-0.5', className)}>
+        <div className="grow">
           <Link
-            href={trumpPath}
-            className="hover:text-primary-700 text-ink-700 py-2 hover:underline"
+            href={bidenPath}
+            className="hover:text-primary-700  text-ink-700 hover:underline"
           >
             <Row className="gap-2">
               <Image
@@ -94,41 +180,18 @@ function MobilePolicy(props: { policy: PolicyContractType }) {
                 height={40}
                 className="h-10 w-10 object-fill"
               />
-              <div className="py-2">If Trump wins</div>
+              <div className="py-2">Trump wins</div>
             </Row>
           </Link>
-        }
-        sideContent1={
-          <ContractStatusLabel
-            contract={trumpContract}
-            className="my-auto h-full w-10 font-semibold"
-          />
-        }
-        sideContent2={
-          <BinaryBetButton contract={trumpContract as CPMMBinaryContract} />
-        }
-      />
+        </div>
+        <ConditionalPercent
+          path={trumpPath}
+          contract={trumpContract}
+          className="  items-center justify-center py-2"
+          isLargerPercent={trumpProbability > bidenProbability}
+        />
+      </Row>
     </Col>
-  )
-}
-
-export function MobilePolicyRow(props: {
-  titleContent: ReactNode
-  sideContent1: ReactNode
-  sideContent2: ReactNode
-  className?: string
-}) {
-  const { titleContent, sideContent1, sideContent2, className } = props
-  return (
-    <Row className={clsx('gap-0.5', className)}>
-      <div className="grow">{titleContent}</div>
-      <div className="h-full w-12 shrink-0 items-center py-2">
-        {sideContent1}
-      </div>
-      <div className=" h-full w-12 shrink-0 items-center py-2">
-        {sideContent2}
-      </div>
-    </Row>
   )
 }
 

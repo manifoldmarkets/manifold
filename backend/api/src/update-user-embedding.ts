@@ -11,24 +11,22 @@ export const updateUserEmbedding: APIHandler<'update-user-embedding'> = async (
   _,
   auth
 ) => {
+  const pg = createSupabaseDirectClient()
+  await updateUserInterestEmbedding(pg, auth.uid)
+  const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
+  const contractIds = await getImportantContractsForNewUsers(
+    100,
+    pg,
+    groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
+  )
+  await generateNewUserFeedFromContracts(
+    auth.uid,
+    pg,
+    ALL_FEED_USER_ID,
+    contractIds,
+    1
+  )
   return {
-    result: { success: true },
-    continue: async () => {
-      const pg = createSupabaseDirectClient()
-      await updateUserInterestEmbedding(pg, auth.uid)
-      const groupSlugs = await getMemberGroupSlugs(auth.uid, pg)
-      const contractIds = await getImportantContractsForNewUsers(
-        100,
-        pg,
-        groupSlugs.filter((slug) => slug !== PROD_MANIFOLD_LOVE_GROUP_SLUG)
-      )
-      await generateNewUserFeedFromContracts(
-        auth.uid,
-        pg,
-        ALL_FEED_USER_ID,
-        contractIds,
-        1
-      )
-    },
+    success: true,
   }
 }

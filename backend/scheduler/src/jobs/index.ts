@@ -9,6 +9,7 @@ import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
+import { calculateConversionScore } from 'shared/conversion-score'
 
 export function createJobs() {
   return [
@@ -61,6 +62,11 @@ export function createJobs() {
       'update-stats',
       '0 20 * * * *', // on the 20th minute of every hour
       updateStatsCore
+    ),
+    createJob(
+      'calculate-conversion-scores',
+      '0 0 3 * * *', // 3am daily
+      calculateConversionScore
     ),
   ]
 }

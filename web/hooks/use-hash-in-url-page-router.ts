@@ -8,7 +8,6 @@ export const useHashInUrlPageRouter = (prefix: string) => {
   useEffect(() => {
     if (router.isReady) {
       const parts = router.asPath.split('#')
-      console.log('hash', parts)
       if (parts.length > 1 && parts[1] != null) {
         const id = parts[1].replaceAll(prefix, '')
         setHash(id)

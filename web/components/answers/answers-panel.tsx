@@ -72,6 +72,9 @@ import { searchInAny } from 'common/util/parse'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { XIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { formatTime } from 'web/lib/util/time'
+import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -249,20 +252,20 @@ export function AnswersPanel(props: {
             </Button>
           )}
           {!isSearchOpen && (
-            <Row
+            <button
               onClick={toggleSearch}
-              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
             >
               <SearchIcon className="h-4 w-4" /> Search
-            </Row>
+            </button>
           )}
           {!isSearchOpen && canAddAnswer && (
-            <Row
+            <button
               onClick={toggleSearch}
-              className="text-ink-500 cursor-pointer items-center gap-0.5 text-sm font-medium"
+              className="text-ink-500 hover:text-ink-300 flex items-center gap-0.5 text-sm font-medium"
             >
               <PlusCircleIcon className="h-4 w-4" /> Add answer
-            </Row>
+            </button>
           )}
         </Row>
       </SearchCreateAnswerPanel>
@@ -496,8 +499,9 @@ export function SimpleAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
   barColor?: string
+  feedItem?: FeedTimelineItem
 }) {
-  const { contract, maxAnswers = Infinity, barColor } = props
+  const { contract, maxAnswers = Infinity, barColor, feedItem } = props
   const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -548,6 +552,7 @@ export function SimpleAnswerBars(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
+              feedItem={feedItem}
             />
           ))}
           {moreCount > 0 && (
@@ -581,6 +586,7 @@ export function Answer(props: {
   expanded?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
+  feedItem?: FeedTimelineItem
 }) {
   const {
     answer,
@@ -595,6 +601,7 @@ export function Answer(props: {
     expanded,
     user,
     barColor,
+    feedItem,
     shouldShowLimitOrderChart,
   } = props
 
@@ -681,6 +688,7 @@ export function Answer(props: {
               contract={contract}
               answer={answer}
               fillColor={barColor}
+              feedItem={feedItem}
             />
             {onClick && (
               <IconButton
@@ -723,8 +731,13 @@ export function Answer(props: {
       )}
 
       {expanded && (
-        <Row className={'mx-0.5 mb-1 mt-2 items-center'}>
-          <AnswerAvatar answer={answer} isMobile={isMobile} />
+        <Row className={'mx-0.5 mb-1 mt-2 items-center gap-2'}>
+          <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
+          <Tooltip text={formatTime(answer.createdTime)}>
+            <div className="text-ink-600">
+              {shortenedFromNow(answer.createdTime)}
+            </div>
+          </Tooltip>
           <Row className={'w-full justify-end gap-2'}>
             {canEdit && (
               <Button
@@ -745,11 +758,10 @@ export function Answer(props: {
               <OrderBookButton
                 limitBets={unfilledBets}
                 contract={contract}
+                answer={answer as Answer}
                 label={
                   <Tooltip
-                    text={`Limit order volume: ${formatMoney(
-                      limitOrderVolume
-                    )}`}
+                    text={`Limit orders: ${formatMoney(limitOrderVolume)}`}
                     placement="top"
                     noTap
                     className="flex flex-row gap-1"

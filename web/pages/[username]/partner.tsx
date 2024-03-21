@@ -135,15 +135,21 @@ const PartnerDashboard = (props: {
   user: User
 }) => {
   const { data, user } = props
-  const { numUniqueBettors, numReferrals, totalTraderIncome, dollarsEarned } =
-    data
+  const {
+    numUniqueBettors,
+    numReferrals,
+    numReferralsWhoRetained,
+    totalTraderIncome,
+    totalReferralIncome,
+    dollarsEarned,
+  } = data
   const isAdmin = useAdmin()
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
   const segments = [
     { label: 'Traders', value: totalTraderIncome, color: '#995cd6' },
-    { label: 'Referrals', value: numReferrals, color: '#5cd65c' },
+    { label: 'Referrals', value: totalReferralIncome, color: '#5cd65c' },
     //{ label: 'Other', value: , color: '#d65c99'},
   ]
 
@@ -160,6 +166,10 @@ const PartnerDashboard = (props: {
           <Row className="gap-1.5">
             <div className="text-ink-700 ">Referrals</div>
             <div className="font-semibold">{numReferrals}</div>
+          </Row>
+          <Row className="gap-1.5">
+            <div className="text-ink-700 ">Retained referrals</div>
+            <div className="font-semibold">{numReferralsWhoRetained}</div>
           </Row>
           <Link
             href={`/partner-leaderboard`}

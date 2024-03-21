@@ -6,7 +6,7 @@ import { useEffectCheckEquality } from './use-effect-check-equality'
 
 const AB_TEST_CACHE: { [testName: string]: boolean } = {}
 
-export const useABTest = <T>(
+export const useABTest = <T extends string>(
   testName: string,
   variants: T[],
   trackingProperties?: any
@@ -27,7 +27,7 @@ export const useABTest = <T>(
     if (!AB_TEST_CACHE[testName]) {
       AB_TEST_CACHE[testName] = true
 
-      track(testName, { ...trackingProperties, variant })
+      track(testName, { ...trackingProperties, variant: randomVariant })
     }
   }, [testName, trackingProperties, variants])
 

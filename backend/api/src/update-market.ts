@@ -1,5 +1,11 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { log, getContractSupabase } from 'shared/utils'
+import {
+  log,
+  getContractSupabase,
+  revalidateContractStaticProps,
+  getUser,
+  processPaginated,
+} from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
@@ -8,6 +14,8 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
+import { Contract } from 'common/contract'
+import { createCommentOrUpdatedContractNotification } from 'shared/create-notification'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -83,6 +91,66 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       ])
     )
   }
+
+  const continuation = async () => {
+    log(`Revalidating contract ${contract.id}.`)
+    await revalidateContractStaticProps(contract)
+
+    log(`Updating lastUpdatedTime for contract ${contract.id}.`)
+    await firestore.collection('contracts').doc(contract.id).update({
+      lastUpdatedTime: Date.now(),
+    })
+
+    if (closeTime !== undefined) {
+      await handleUpdatedCloseTime(contract, closeTime, auth.uid)
+    }
+
+    //TODO: Now that we don't have private contracts, do we really need to update visibilities?
+    if (visibility) {
+      await updateContractSubcollectionsVisibility(contract.id, visibility)
+    }
+  }
+
+  return {
+    result: { success: true },
+    continue: continuation,
+  }
 }
 
 const firestore = admin.firestore()
+
+async function handleUpdatedCloseTime(
+  previousContract: Contract,
+  newCloseTime: number,
+  updaterId: string
+) {
+  const contractUpdater = await getUser(updaterId)
+  if (!contractUpdater) throw new Error('Could not find contract updater')
+  const sourceText = newCloseTime.toString()
+
+  await createCommentOrUpdatedContractNotification(
+    previousContract.id,
+    'contract',
+    'updated',
+    contractUpdater,
+    sourceText,
+    previousContract
+  )
+}
+
+async function updateContractSubcollectionsVisibility(
+  contractId: string,
+  newVisibility: 'public' | 'unlisted'
+) {
+  const contractRef = firestore.collection('contracts').doc(contractId)
+  const batchSize = 500
+
+  // Update bets' visibility
+  const betsRef = contractRef.collection('bets')
+  await processPaginated(betsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+    return Promise.all(updatePromises)
+  })
+}

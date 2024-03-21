@@ -3,7 +3,10 @@
 import * as functions from 'firebase-functions'
 import { setQuestScoreValueOnUsers } from 'common/supabase/set-scores'
 import { QUEST_SCORE_IDS } from 'common/quest'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { chunk } from 'lodash'
 import { secrets } from 'common/secrets'
 const DAILY_QUEST_SCORE_IDS = ['currentBettingStreak', 'sharesToday']
@@ -33,14 +36,12 @@ export const resetDailyQuestStats = functions
   })
 
 export const resetWeeklyQuestStatsInternal = async () => {
-  const db = createSupabaseClient()
-  const usersQuery = await db.from('users').select('id')
-  if (usersQuery.error) {
-    throw new Error(usersQuery.error.message)
-  }
-  const userIds = usersQuery.data.map((u) => u.id)
+  const pg = createSupabaseDirectClient()
+  // Use direct connection to load more than 50k rows.
+  const userIds = await pg.map<string>('select id from users', [], (r) => r.id)
   console.log(`Resetting quest stats for ${userIds.length} users`)
 
+  const db = createSupabaseClient()
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {
@@ -54,14 +55,12 @@ export const resetWeeklyQuestStatsInternal = async () => {
   )
 }
 export const resetDailyQuestStatsInternal = async () => {
-  const db = createSupabaseClient()
-  const usersQuery = await db.from('users').select('id')
-  if (usersQuery.error) {
-    throw new Error(usersQuery.error.message)
-  }
-  const userIds = usersQuery.data.map((u) => u.id)
+  const pg = createSupabaseDirectClient()
+  // Use direct connection to load more than 50k rows.
+  const userIds = await pg.map<string>('select id from users', [], (r) => r.id)
   console.log(`Resetting quest stats for ${userIds.length} users`)
 
+  const db = createSupabaseClient()
   const chunks = chunk(userIds, 1000)
   await Promise.all(
     chunks.map(async (chunk) => {

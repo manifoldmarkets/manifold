@@ -43,6 +43,7 @@ import { track } from 'web/lib/service/analytics'
 import { UserHovercard } from '../user/user-hovercard'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -282,8 +283,9 @@ export const YesNoBetButtons = (props: {
   answer: Answer
   contract: CPMMMultiContract
   fillColor?: string
+  feedItem?: FeedTimelineItem
 }) => {
-  const { answer, contract, fillColor } = props
+  const { answer, contract, feedItem, fillColor } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   const user = useUser()
@@ -297,6 +299,7 @@ export const YesNoBetButtons = (props: {
       >
         <AnswerCpmmBetPanel
           answer={answer}
+          feedItem={feedItem}
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
@@ -419,8 +422,10 @@ export const OpenProb = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
   noNewIcon?: boolean
+  size?: 'sm' | 'md'
+  className?: string
 }) => {
-  const { contract, answer, noNewIcon } = props
+  const { contract, answer, noNewIcon, size = 'md', className } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
   const cutoffTime = Date.now() - 6 * HOUR_MS
   const isNew =
@@ -428,7 +433,11 @@ export const OpenProb = (props: {
   return (
     <Row className={'items-center'}>
       <span
-        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
+        className={clsx(
+          'whitespace-nowrap font-bold',
+          size == 'sm' ? 'min-w-[36px]' : 'min-w-[2.5rem]  text-lg ',
+          className
+        )}
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
       </span>
@@ -509,9 +518,10 @@ export const AnswerStatus = (props: {
 export const BetButtons = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  feedItem?: FeedTimelineItem
   fillColor?: string
 }) => {
-  const { contract, answer, fillColor } = props
+  const { contract, answer, fillColor, feedItem } = props
   const isDpm = contract.mechanism === 'dpm-2'
 
   const isOpen = tradingAllowed(
@@ -524,6 +534,7 @@ export const BetButtons = (props: {
 
   return (
     <YesNoBetButtons
+      feedItem={feedItem}
       answer={answer as Answer}
       contract={contract as CPMMMultiContract}
       fillColor={fillColor}

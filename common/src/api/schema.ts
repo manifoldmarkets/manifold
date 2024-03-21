@@ -307,6 +307,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   // deprecated. remove after a few days
   'update-market': {
@@ -314,6 +315,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   'market/:contractId/close': {
     method: 'POST',
@@ -381,6 +383,7 @@ export const API = (_apiTypeCheck = {
         remove: z.boolean().default(false),
       })
       .strict(),
+    returns: {} as { success: true },
   },
   'market/:contractId/answer': {
     method: 'POST',
@@ -956,7 +959,9 @@ export const API = (_apiTypeCheck = {
       numContractsCreated: number
       numUniqueBettors: number
       numReferrals: number
+      numReferralsWhoRetained: number
       totalTraderIncome: number
+      totalReferralIncome: number
       dollarsEarned: number
     },
   },
@@ -968,6 +973,30 @@ export const API = (_apiTypeCheck = {
       userId: z.string().optional(),
       contractId: z.string(),
       kind: z.enum(['page', 'card', 'promoted']),
+    }),
+    returns: {} as { status: 'success' },
+  },
+  'record-contract-interaction': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      kind: z.enum([
+        'page bet',
+        'page comment',
+        'page repost',
+        'page like',
+        'card bet',
+        'card click',
+        'promoted click',
+        'card like',
+      ]),
+      commentId: z.string().optional(),
+      feedReasons: z.array(z.string()).optional(),
+      feedType: z.string().optional(),
+      betGroupId: z.string().optional(),
+      betId: z.string().optional(),
     }),
     returns: {} as { status: 'success' },
   },

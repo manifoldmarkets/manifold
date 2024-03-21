@@ -13,7 +13,7 @@ import {
   unitVectorCosineDistance,
   userInterestEmbeddings,
 } from 'shared/supabase/vectors'
-import { DEEMPHASIZED_GROUP_SLUGS, isAdminId } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS, isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
@@ -219,9 +219,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   creatorId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
-  serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   randomGroupCoefficient = 0,
+  similarInterestsToContractCallback?: () => Promise<{ [key: string]: number }>,
   trendingContractType?: 'old' | 'new'
 ): Promise<{
   [userId: string]: {
@@ -233,34 +233,31 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_FEED_REASON_TYPES]: {
-      users?: Promise<string[]>
-      usersToDistances?: Promise<{ [key: string]: number }>
+      users?: () => Promise<string[]>
+      usersToDistances?: () => Promise<{ [key: string]: number }>
     }
   } = {
     follow_contract: {
-      users: getContractFollowerIds(contractId, pg),
+      users: () => getContractFollowerIds(contractId, pg),
     },
     liked_contract: {
-      users: getContractLikerIds(contractId, pg),
+      users: () => getContractLikerIds(contractId, pg),
     },
     follow_user: {
-      users: getUserFollowerIds(creatorId, pg),
+      users: () => getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, pg),
+      users: () => getContractGroupMemberIds(contractId, pg),
     },
     similar_interest_vector_to_contract: {
-      usersToDistances: serverSideCalculation
-        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+      usersToDistances:
+        similarInterestsToContractCallback ??
+        (() =>
+          getUsersWithSimilarInterestVectorsToContract(
             contractId,
             pg,
             INTEREST_DISTANCE_THRESHOLDS[dataType]
-          )
-        : getUsersWithSimilarInterestVectorsToContract(
-            contractId,
-            pg,
-            INTEREST_DISTANCE_THRESHOLDS[dataType]
-          ),
+          )),
     },
   }
 
@@ -270,13 +267,13 @@ export const getUserToReasonsInterestedInContractAndUser = async (
         return []
 
       if (usersToDistances) {
-        const userToScoreMap = await usersToDistances
+        const userToScoreMap = await usersToDistances()
         return Object.entries(userToScoreMap).map(
           ([userId, interestDistance]) => [userId, reason, interestDistance]
         )
       }
 
-      const userIds = await (users ?? Promise.resolve([]))
+      const userIds = await (users?.() ?? [])
       return userIds.map((userId) => [userId, reason, 0])
     }
   ) as Promise<[string, CONTRACT_FEED_REASON_TYPES, number][]>[]
@@ -315,10 +312,10 @@ export const getUserToReasonsInterestedInContractAndUser = async (
 }
 
 export const isContractNonPredictive = (contract: Contract) => {
-  const questionIncludesDailyCoinflip = contract.question
-    .trim()
-    .toLowerCase()
-    .includes('daily coinflip')
+  const questionIncludesDailyCoinflip =
+    (contract.question.trim().toLowerCase().includes('coin') &&
+      contract.question.trim().toLowerCase().includes('flip')) ||
+    contract.question.trim().toLowerCase().includes('Daily 4 sided dice roll')
   const createdByManifoldLove = contract.creatorUsername === 'ManifoldLove'
   return questionIncludesDailyCoinflip || createdByManifoldLove
 }
@@ -374,7 +371,7 @@ export const getImportantContractsForNewUsers = async (
 ): Promise<string[]> => {
   let contractIds: string[] = []
   let threshold = 0.5
-  const ignoreSlugs = DEEMPHASIZED_GROUP_SLUGS.filter(
+  const ignoreSlugs = HIDE_FROM_NEW_USER_SLUGS.filter(
     (s) => !groupSlugs?.includes(s)
   )
   while (contractIds.length < targetCount && threshold > 0.2) {

@@ -25,6 +25,8 @@ import {
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
+import { Tooltip } from '../widgets/tooltip'
+import { ManaCircleIcon } from '../icons/mana-circle-icon'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -288,8 +290,13 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <div className={hasBetOnContract ? 'text-primary-800' : ''}>
-        <VisibilityIcon contract={contract} />
+      <div>
+        <VisibilityIcon contract={contract} className="mr-1" />
+        {hasBetOnContract && (
+          <Tooltip text="You traded on this question">
+            <ManaCircleIcon className="text-primary-600 mb-[2px] mr-1 inline h-4 w-4" />
+          </Tooltip>
+        )}
         {contract.question}
       </div>
     </Row>
@@ -303,7 +310,7 @@ export function VisibilityIcon(props: {
 }) {
   const { contract, isLarge, className } = props
   const iconClassName = clsx(
-    isLarge ? 'h-6 w-w' : 'h-4 w-4',
+    isLarge ? 'h-6 w-6' : 'h-4 w-4',
     'inline',
     className
   )
@@ -311,7 +318,8 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'private')
     return <LockClosedIcon className={iconClassName} />
 
-  if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
+  if (contract.visibility === 'unlisted')
+    return <IoUnlink className={iconClassName} />
 
   return <></>
 }

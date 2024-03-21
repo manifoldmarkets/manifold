@@ -1,5 +1,5 @@
 'use client'
-import { ArrowLeftIcon, ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
@@ -17,21 +17,14 @@ import generateFilterDropdownItems, {
 import { Input } from './widgets/input'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
-import {
-  useGroupFromSlug,
-  useRealtimeMemberGroupIds,
-} from 'web/hooks/use-group-supabase'
+import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
-import { useUser } from 'web/hooks/use-user'
-
-import { FollowOrUnfolowTopicButton } from 'web/components/topics/topics-button'
 
 import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
-import { Button, IconButton } from 'web/components/buttons/button'
-import Link from 'next/link'
+import { IconButton } from 'web/components/buttons/button'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { UserResults } from './search/user-results'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
@@ -47,6 +40,7 @@ import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { LiteUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { Avatar } from './widgets/avatar'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -124,7 +118,7 @@ const CONTRACT_TYPES = [
 ] as const
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
-type SearchType = 'Topics' | 'Users' | 'Questions' | undefined
+type SearchType = 'Users' | 'Questions' | undefined
 
 export type SearchParams = {
   [QUERY_KEY]: string
@@ -208,7 +202,6 @@ export function SupabaseSearch(props: {
     hideContractFilters,
     menuButton,
     rowBelowFilters,
-    topics: topicResults,
     setTopics: setTopicResults,
     topicSlug = '',
     contractsOnly,
@@ -226,9 +219,6 @@ export function SupabaseSearch(props: {
     useUrlParams,
     persistPrefix,
   })
-  const user = useUser()
-  // const followingUsers = useFollowedUsersOnLoad(user?.id)
-  const followingTopics = useRealtimeMemberGroupIds(user?.id)
 
   const query = searchParams[QUERY_KEY]
   const searchType = searchParams[SEARCH_TYPE_KEY]
@@ -249,7 +239,6 @@ export function SupabaseSearch(props: {
     if (isWholePage) window.scrollTo(0, 0)
   }
 
-  const pillOptions: SearchType[] = ['Questions', 'Users', 'Topics']
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
   const setSearchType = (t: SearchType) => onChange({ [SEARCH_TYPE_KEY]: t })
 
@@ -300,8 +289,20 @@ export function SupabaseSearch(props: {
 
   const emptyContractsState =
     props.emptyState ??
-    (query ? (
-      <NoResults currentFilter={filter} updateParams={onChange} />
+    (filter !== 'all' || contractType !== 'ALL' ? (
+      <span className="text-ink-700 mx-2 my-6 text-center">
+        No results found under this filter.{' '}
+        <button
+          className="text-indigo-500 hover:underline focus:underline"
+          onClick={() =>
+            onChange({ [FILTER_KEY]: 'all', [CONTRACT_TYPE_KEY]: 'ALL' })
+          }
+        >
+          Clear filter
+        </button>
+      </span>
+    ) : query ? (
+      <NoResults />
     ) : (
       <Col className="text-ink-700 mx-2 my-6 text-center">
         No questions yet.
@@ -335,8 +336,6 @@ export function SupabaseSearch(props: {
                   placeholder={
                     searchType === 'Users'
                       ? 'Search users'
-                      : searchType === 'Topics'
-                      ? 'Search topics'
                       : searchType === 'Questions' ||
                         (topicSlug && topicSlug !== 'for-you')
                       ? 'Search questions'
@@ -379,50 +378,47 @@ export function SupabaseSearch(props: {
         )}
       </Col>
       {showSearchTypes ? (
-        <Row className={'bg-canvas-0 md:bg-canvas-50 gap-1 pb-1'}>
-          <Button
-            size={'sm'}
-            color={'gray-white'}
-            className={'ml-1 rounded-full sm:hidden'}
-            onClick={() => {
-              onChange({ [SEARCH_TYPE_KEY]: undefined, [QUERY_KEY]: '' })
-            }}
+        <div className={'bg-canvas-0 md:bg-canvas-50 flex gap-1 px-1 pb-1'}>
+          <PillButton
+            className="min-w-[120px]"
+            selected={searchType === 'Questions' || !searchType}
+            onSelect={() => setSearchType('Questions')}
           >
-            <ArrowLeftIcon className={'h-4 w-4'} />
-          </Button>
-          {pillOptions.map((option) => {
-            const numHits =
-              (option === 'Questions'
-                ? contracts?.length
-                : option === 'Users'
-                ? userResults?.length
-                : topicResults?.length) ?? 0
+            {!query || !contracts?.length
+              ? ''
+              : contracts.length >= 100
+              ? '100+ '
+              : shouldLoadMore && !loading
+              ? `${contracts.length}+ `
+              : `${contracts.length} `}
+            Questions
+          </PillButton>
 
-            const hitsTitle =
-              numHits <= 0
-                ? ''
-                : numHits >= 100
-                ? '100+ '
-                : option === 'Questions' && shouldLoadMore && !loading
-                ? `${numHits}+ `
-                : `${numHits} `
-            return (
-              <PillButton
-                className={clsx(
-                  option === 'Questions' ? 'min-w-[120px]' : 'min-w-[100px]'
-                )}
-                key={option}
-                selected={
-                  searchType === option ||
-                  (option === 'Questions' && !searchType)
-                }
-                onSelect={() => setSearchType(option)}
-              >
-                {hitsTitle + option}
-              </PillButton>
-            )
-          })}
-        </Row>
+          <PillButton
+            selected={searchType === 'Users'}
+            onSelect={() => setSearchType('Users')}
+            className={clsx(
+              'flex items-center justify-center gap-2',
+              query && userResults?.length ? '!py-1' : 'min-w-[100px]'
+            )}
+          >
+            {!userResults?.length && '0 '}
+            Users
+            {userResults &&
+              userResults
+                .slice(0, 3)
+                .map((u) => (
+                  <Avatar
+                    key={u.id}
+                    username={u.username}
+                    avatarUrl={u.avatarUrl}
+                    size="xs"
+                    className="-my-0.5 -mr-1 last:mr-0"
+                    noLink
+                  />
+                ))}
+          </PillButton>
+        </div>
       ) : (
         rowBelowFilters
       )}
@@ -448,12 +444,11 @@ export function SupabaseSearch(props: {
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
             {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') &&
-              !topicSlug && (
+              (filter !== 'all' || contractType !== 'ALL') && (
                 <div className="text-ink-500 mx-2 my-8 text-center">
                   No more results under this filter.{' '}
                   <button
-                    className="text-primary-500 hover:underline"
+                    className="text-primary-500 hover:underline focus:underline"
                     onClick={() =>
                       onChange({
                         [FILTER_KEY]: 'all',
@@ -463,7 +458,6 @@ export function SupabaseSearch(props: {
                   >
                     Clear filter
                   </button>
-                  ?
                 </div>
               )}
           </>
@@ -477,68 +471,12 @@ export function SupabaseSearch(props: {
           <UserResults users={userResults ?? []} />
           // TODO: load more users when scroll to end
         )
-      ) : searchType === 'Topics' ? (
-        topicResults && topicResults.length === 0 ? (
-          <Col className="text-ink-700 mx-2 my-6 text-center">
-            No topics found.
-            {/*  Create a new topic! */}
-          </Col>
-        ) : (
-          <TopicResults
-            topics={topicResults ?? []}
-            yourTopicIds={followingTopics ?? []}
-          />
-        )
       ) : null}
     </Col>
   )
 }
 
-const TopicResults = (props: {
-  topics: LiteGroup[]
-  yourTopicIds: string[]
-}) => {
-  const { topics, yourTopicIds } = props
-  const me = useUser()
-
-  return (
-    <Col className={'mt-1 w-full gap-1'}>
-      {topics.map((group) => (
-        <Link key={group.id} href={`/browse/${group.slug}`}>
-          <Row className={'hover:bg-primary-100 min-h-[4rem] p-1 pl-2 pt-2.5'}>
-            <Col className={'w-full'}>
-              <span className="line-clamp-1 sm:text-lg">{group.name}</span>
-              <Row className={'text-ink-500 line-clamp-2 gap-1 text-sm'}>
-                {group.totalMembers > 1 && (
-                  <span>{group.totalMembers} followers</span>
-                )}
-                {group.privacyStatus !== 'public' && (
-                  <>
-                    &middot;
-                    <span>{group.privacyStatus}</span>
-                  </>
-                )}
-              </Row>
-            </Col>
-            <div>
-              <FollowOrUnfolowTopicButton
-                group={group}
-                user={me}
-                isMember={yourTopicIds.includes(group.id)}
-              />
-            </div>
-          </Row>
-        </Link>
-      ))}
-    </Col>
-  )
-}
-
-const NoResults = (props: {
-  currentFilter: string
-  updateParams: (params: Partial<SearchParams>) => void
-}) => {
-  const { currentFilter, updateParams } = props
+const NoResults = () => {
   const [message] = useState(
     sample([
       'no questions found x.x',
@@ -556,20 +494,6 @@ const NoResults = (props: {
   return (
     <span className="text-ink-700 mx-2 my-6 text-center">
       {capitalize(message)}
-      {currentFilter !== 'all' ? (
-        <>
-          . Try using the
-          <Button
-            onClick={() => updateParams({ f: 'all' })}
-            color={'indigo-outline'}
-            className={'mx-1'}
-            size={'2xs'}
-          >
-            Any status
-          </Button>
-          filter.
-        </>
-      ) : null}
     </span>
   )
 }

@@ -1,11 +1,9 @@
 import clsx from 'clsx'
-import dayjs from 'dayjs'
 
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser, usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { getCutoff } from 'web/lib/util/time'
@@ -24,7 +22,13 @@ export const PortfolioSummary = (props: {
   weeklyPortfolioData: PortfolioSnapshot[]
   className?: string
 }) => {
-  const { user, totalPortfolioPoints, weeklyPortfolioData, className } = props
+  const {
+    user,
+    totalPortfolioPoints,
+    weeklyPortfolioData,
+    balanceChanges,
+    className,
+  } = props
   const router = useRouter()
   const pathName = usePathname()
   const currentUser = useUser()
@@ -34,12 +38,6 @@ export const PortfolioSummary = (props: {
   const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
-
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(7, 'day').valueOf(),
-  })
-  const balanceChanges = newBalanceChanges ?? props.balanceChanges
 
   return (
     <Col className={clsx(className, 'gap-4')}>

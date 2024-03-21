@@ -1,4 +1,4 @@
-import { Group } from 'common/group'
+import { LiteGroup } from 'common/group'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
@@ -10,7 +10,7 @@ import { useRouter } from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export const BrowseTopicPills = (props: {
-  topics: Group[]
+  topics: LiteGroup[]
   setTopicSlug: (slug: string) => void
   currentTopicSlug: string | undefined
   className?: string

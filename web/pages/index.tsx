@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
 
@@ -19,18 +19,16 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
 import { getContract } from 'web/lib/supabase/contracts'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { Typewriter } from 'web/components/home/typewriter'
-import { filterDefined } from 'common/util/array'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { removeEmojis } from 'common/topics'
-
-const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
+import { filterDefined } from 'common/util/array'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
@@ -48,15 +46,18 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   const prezContract = await getContract('ikSUiiNS8MwAI75RwEJf')
 
-  const filteredContracts = filterDefined([prezContract, ...contracts]).filter(
-    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+  const filteredContracts = contracts.filter(
+    (c) =>
+      !c.groupSlugs?.some((slug) =>
+        HIDE_FROM_NEW_USER_SLUGS.includes(slug as any)
+      )
   )
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
     some(contract.groupSlugs ?? [], (slug) => groupSlugsSet.includes(slug))
 
-  const addedGroupSlugs: string[] = []
-  const uniqueContracts: Contract[] = []
+  const addedGroupSlugs: string[] = ['us-politics']
+  const uniqueContracts: Contract[] = filterDefined([prezContract])
   filteredContracts.forEach((contract) => {
     if (!hasCommonGroupSlug(contract, addedGroupSlugs)) {
       uniqueContracts.push(contract)
@@ -109,7 +110,9 @@ export default function LandingPage(props: {
 
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>()
   const [isModalOpen, setIsModalOpen] = useState(false)
-
+  const contracts = selectedTopicSlug
+    ? topicSlugToContracts[selectedTopicSlug] ?? []
+    : trendingContracts
   const abTestVariant = useABTest('signed out home page variations v0', [
     'know the future',
     'real-world impact',
@@ -305,16 +308,14 @@ export default function LandingPage(props: {
             ))}
           </Carousel>
         </Col>
-
-        <ContractsSection
-          contracts={
-            selectedTopicSlug
-              ? topicSlugToContracts[selectedTopicSlug] ?? []
-              : trendingContracts
-          }
-          className="w-full self-center"
-        />
-
+        <Col className={clsx('w-full max-w-3xl gap-4 self-center')}>
+          {contracts.map((contract) => (
+            <FeedContractCard
+              key={contract.id + selectedTopicSlug}
+              contract={contract}
+            />
+          ))}
+        </Col>
         <TestimonialsPanel />
 
         <AboutPrivacyTerms />
@@ -322,17 +323,3 @@ export default function LandingPage(props: {
     </Page>
   )
 }
-
-const ContractsSection = memo(function ContractsSection(props: {
-  contracts: Contract[]
-  className?: string
-}) {
-  const { contracts, className } = props
-  return (
-    <Col className={clsx('max-w-3xl gap-4', className)}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
-  )
-})

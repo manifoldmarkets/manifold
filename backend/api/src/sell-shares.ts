@@ -190,7 +190,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     ) {
       throw new APIError(403, 'Sale too large for current liquidity pool.')
     }
-    const betGroupId = crypto.randomBytes(16).toString('hex')
+    const betGroupId = crypto.randomBytes(12).toString('hex')
 
     const allOrdersToCancel = []
     const fullBets = []

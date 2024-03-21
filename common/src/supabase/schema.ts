@@ -2584,30 +2584,36 @@ export type Database = {
       }
       users: {
         Row: {
+          balance: number
           created_time: string | null
           data: Json
           fs_updated_time: string
           id: string
           name: string
           name_username_vector: unknown | null
+          total_deposits: number
           username: string
         }
         Insert: {
+          balance?: number
           created_time?: string | null
           data: Json
           fs_updated_time: string
           id: string
           name: string
           name_username_vector?: unknown | null
+          total_deposits?: number
           username: string
         }
         Update: {
+          balance?: number
           created_time?: string | null
           data?: Json
           fs_updated_time?: string
           id?: string
           name?: string
           name_username_vector?: unknown | null
+          total_deposits?: number
           username?: string
         }
         Relationships: []

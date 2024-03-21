@@ -32,52 +32,40 @@ export function getForYouSQL(
   const whereClause = renderSql(
     getSearchContractWhereSQL({ filter, contractType, uid, hideStonks: true })
   )
-
   return `with 
-  user_interest AS (SELECT interest_embedding 
-                       FROM user_embeddings
-                       WHERE user_id = '${uid}'
-                       LIMIT 1),
 user_disinterests AS (
-  SELECT contract_id
-  FROM user_disinterests
-  WHERE user_id = '${uid}'
+   SELECT contract_id
+   FROM user_disinterests
+   WHERE user_id = '${uid}'
 ),
-
-user_follows AS (SELECT follow_id
-                      FROM user_follows
-                      WHERE user_id = '${uid}'),
-
+user_follows AS (
+   SELECT follow_id
+   FROM user_follows
+   WHERE user_id = '${uid}'),
 groups AS (
-  SELECT group_id
-  FROM group_members
-  WHERE member_id = '${uid}'
+   SELECT group_id
+   FROM group_members
+   WHERE member_id = '${uid}'
 )
-
-select data, contract_id,
-      importance_score
-           * (
-              0.4
-                + (CASE WHEN  EXISTS (
-                    SELECT 1
-                    FROM group_contracts
-                    join groups on group_contracts.group_id = groups.group_id
-                    WHERE group_contracts.contract_id = contracts.id
-                  ) THEN 
-                        0.59 
-                        + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
-                      ELSE 
-                        (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)  
-                        + 5 * ((1 - (contract_embeddings.embedding <=> user_interest.interest_embedding)) - 0.8)
-                      END)
-           )
-           AS modified_importance_score
-from user_interest,
-     contracts
-         join contract_embeddings ON contracts.id = contract_embeddings.contract_id
+select data,
+importance_score * (
+  0.4
+  + (CASE WHEN  EXISTS (
+      SELECT 1
+      FROM group_contracts
+      join groups on group_contracts.group_id = groups.group_id
+      WHERE group_contracts.contract_id = contracts.id
+    ) THEN 
+      0.59 
+      + (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.01 ELSE 0 END) 
+      ELSE 
+      (CASE WHEN user_follows.follow_id IS NOT NULL THEN 0.1 ELSE 0 END)  
+      END)
+) AS modified_importance_score
+from contracts
         LEFT JOIN user_follows ON contracts.creator_id = user_follows.follow_id
     ${whereClause}
-  and importance_score > ${offset === 0 ? 0.5 : 0.25}
+  and importance_score > 0.25
   AND NOT EXISTS (
     SELECT 1
     FROM user_disinterests
@@ -270,14 +258,9 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: `
-    case
-      when resolution is null
-      then importance_score::numeric
-      else (data->>'uniqueBettorCount')::numeric
-    end`,
+    sql: `importance_score::numeric desc, (data->>'uniqueBettorCount')::integer`,
     sortCallback: (c: Contract) =>
-      c.isResolved ? c.uniqueBettorCount : c.importanceScore,
+      c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
     order: 'DESC',
   },
   'daily-score': {

@@ -1,12 +1,11 @@
 import CharacterCount from '@tiptap/extension-character-count'
 import { Link } from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
+import type { Content, JSONContent } from '@tiptap/react'
 import {
-  Content,
   Editor,
   EditorContent,
   Extensions,
-  JSONContent,
   mergeAttributes,
   useEditor,
 } from '@tiptap/react'

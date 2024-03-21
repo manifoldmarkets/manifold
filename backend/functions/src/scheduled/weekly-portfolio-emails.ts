@@ -3,10 +3,9 @@ import * as admin from 'firebase-admin'
 
 import { CPMMBinaryContract, CPMMContract } from 'common/contract'
 import {
-  getAllPrivateUsersNotSent,
+  getPrivateUsersNotSent,
   getPrivateUser,
   getUser,
-  getValues,
   isProd,
   log,
 } from 'shared/utils'
@@ -20,7 +19,6 @@ import {
   sendWeeklyPortfolioUpdateEmail,
 } from 'shared/emails'
 import { contractUrl } from 'shared/utils'
-import { Txn } from 'common/txn'
 import {
   getUsersRecentBetContractIds,
   getUsersContractMetricsOrderedByProfit,
@@ -64,21 +62,20 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
       // await getPrivateUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
       // await getPrivateUser('tlmGNz9kjXc2EteizMORes4qvWl2'),
       // ])
-      await getAllPrivateUsersNotSent(
+      await getPrivateUsersNotSent(
         'weeklyPortfolioUpdateEmailSent',
-        'profit_loss_updates'
+        'profit_loss_updates',
+        // Send emails in batches
+        USERS_TO_EMAIL
       )
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
   // get all users that haven't unsubscribed from weekly emails
-  const privateUsersToSendEmailsTo = privateUsers
-    .filter((user) => {
-      return isProd()
-        ? !user.notificationPreferences.opt_out_all.includes('email') &&
-            user.email
-        : user.notificationPreferences.profit_loss_updates.includes('email')
-    })
-    // Send emails in batches
-    .slice(0, USERS_TO_EMAIL)
+  const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
+    return isProd()
+      ? !user.notificationPreferences.opt_out_all.includes('email') &&
+          user.email
+      : user.notificationPreferences.profit_loss_updates.includes('email')
+  })
 
   if (privateUsersToSendEmailsTo.length === 0) {
     log('No users to send trending markets emails to')
@@ -91,8 +88,10 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'users'
   )
 
+  // Note from James: We are marking `privateUsers` (not `privateUsersToSendEmailsTo`) as sent,
+  // so that we don't keep querying them above.
   await Promise.all(
-    privateUsersToSendEmailsTo.map(async (privateUser) => {
+    privateUsers.map(async (privateUser) => {
       await firestore.collection('private-users').doc(privateUser.id).update({
         weeklyPortfolioUpdateEmailSent: true,
       })
@@ -114,20 +113,24 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     Date.now() - 7 * DAY_MS
   )
 
-  // Get all txns the users received over the past week
-  const usersToTxnsReceived: { [userId: string]: Txn[] } = {}
+  // Get count unique bettor txns the users received over the past week
+  const usersToUniqueBettorCount: { [userId: string]: number } = {}
   await Promise.all(
     userIds.map(async (id) => {
-      usersToTxnsReceived[id] = await getValues<Txn>(
-        firestore
-          .collection(`txns`)
-          .where('toId', '==', id)
-          .where('createdTime', '>', Date.now() - 7 * DAY_MS)
+      const { count } = await run(
+        db
+          .from('txns')
+          .select('*', { count: 'exact', head: true })
+          .eq('to_id', id)
+          .eq('category', 'UNIQUE_BETTOR_BONUS')
+          .gt('created_time', millisToTs(Date.now() - 7 * DAY_MS))
       )
+
+      usersToUniqueBettorCount[id] = count
     })
   )
 
-  // Get count of likes the users received over the past we
+  // Get count of likes the users received over the past week
   const usersToLikesReceived: { [userId: string]: number } = {}
   await Promise.all(
     userIds.map(async (id) => {
@@ -192,9 +195,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         }`,
         markets_created: marketsCreated.toString(),
         likes_received: usersToLikesReceived[privateUser.id].toString(),
-        unique_bettors: usersToTxnsReceived[privateUser.id]
-          .filter((txn) => txn.category === 'UNIQUE_BETTOR_BONUS')
-          .length.toString(),
+        unique_bettors: usersToUniqueBettorCount[privateUser.id].toString(),
         markets_traded: totalContractsUserBetOnInLastWeek.toString(),
         prediction_streak:
           (user.currentBettingStreak?.toString() ?? '0') + ' days',

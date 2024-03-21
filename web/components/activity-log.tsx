@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { BOT_USERNAMES, DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { BOT_USERNAMES, DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import {
   difference,
@@ -61,7 +61,7 @@ export function ActivityLog(props: {
 
   const blockedGroupSlugs = buildArray(
     privateUser?.blockedGroupSlugs ?? [],
-    shouldBlockDestiny && DESTINY_GROUP_SLUGS
+    shouldBlockDestiny && DESTINY_GROUP_SLUG
   ).filter((t) => !topicSlugs?.includes(t))
   const blockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(

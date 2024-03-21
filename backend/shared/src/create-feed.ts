@@ -5,7 +5,7 @@ import {
 } from 'shared/supabase/init'
 import { Comment } from 'common/comment'
 import { getUserToReasonsInterestedInContractAndUser } from 'shared/supabase/contracts'
-import { Contract, CPMMContract } from 'common/contract'
+import { Contract } from 'common/contract'
 import {
   ALL_FEED_USER_ID,
   CONTRACT_FEED_REASON_TYPES,
@@ -14,7 +14,7 @@ import {
 } from 'common/feed'
 import { log } from 'shared/utils'
 import { convertObjectToSQLRow, Row } from 'common/supabase/utils'
-import { DAY_MS } from 'common/util/time'
+import { getMostlyActiveUserIds } from 'shared/supabase/users'
 
 export const bulkInsertDataToUserFeed = async (
   usersToReasonsInterestedInContract: {
@@ -87,42 +87,6 @@ export const createManualTrendingFeedRow = (
   )
 }
 
-const userIdsToIgnore = async (
-  contractId: string,
-  userIds: string[],
-  seenTime: number,
-  dataTypes: FEED_DATA_TYPES[],
-  pg: SupabaseDirectClient
-) => {
-  const userIdsWithSeenMarkets = await pg.map(
-    `select distinct user_id
-            from user_contract_views
-            where contract_id = $1 and
-                user_id = ANY($2) and
-                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
-                `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
-    (row: { user_id: string }) => row.user_id
-  )
-  const userIdsWithFeedRows = await pg.map(
-    `select distinct user_id
-            from user_feed
-            where contract_id = $1 and
-                user_id = ANY($2) and
-                greatest(created_time, seen_time) > $3 and
-                data_type = ANY($4)
-                `,
-    [
-      contractId,
-      userIds.filter((id) => !userIdsWithSeenMarkets.includes(id)),
-      new Date(seenTime).toISOString(),
-      dataTypes,
-    ],
-    (row: { user_id: string }) => row.user_id
-  )
-  return userIdsWithFeedRows.concat(userIdsWithSeenMarkets)
-}
-
 export const repostContractToFeed = async (
   contract: Contract,
   comment: Comment,
@@ -142,7 +106,6 @@ export const repostContractToFeed = async (
         'follow_contract', // unsure which of these will work besides follow_user
         'contract_in_group_you_are_in',
       ],
-      false,
       'repost',
       0.1
     )
@@ -151,11 +114,20 @@ export const repostContractToFeed = async (
       Object.keys(usersToReasonsInterestedInContract).length
     } users`
   )
+  const mostlyActiveUserIds = await getMostlyActiveUserIds(
+    pg,
+    0.05, // 5% of inactive users get these contracts to their feed
+    Object.keys(usersToReasonsInterestedInContract)
+  )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     comment.createdTime,
     'repost',
-    userIdsToExclude,
+    userIdsToExclude.concat(
+      Object.keys(usersToReasonsInterestedInContract).filter(
+        (id) => !mostlyActiveUserIds.includes(id)
+      )
+    ),
     {
       contractId: contract.id,
       commentId: comment.id,
@@ -166,7 +138,6 @@ export const repostContractToFeed = async (
     pg
   )
 }
-
 export const addContractToFeed = async (
   contract: Contract,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
@@ -185,15 +156,23 @@ export const addContractToFeed = async (
       userIdResponsibleForEvent ?? contract.creatorId,
       pg,
       reasonsToInclude,
-      false,
       dataType,
       contract.isRanked === false || contract.isSubsidized === false ? 0 : 0.2
     )
+  const mostlyActiveUserIds = await getMostlyActiveUserIds(
+    pg,
+    0.05, // 5% of inactive users get these contracts to their feed
+    Object.keys(usersToReasonsInterestedInContract)
+  )
   await bulkInsertDataToUserFeed(
     usersToReasonsInterestedInContract,
     contract.createdTime,
     dataType,
-    userIdsToExclude,
+    userIdsToExclude.concat(
+      Object.keys(usersToReasonsInterestedInContract).filter(
+        (id) => !mostlyActiveUserIds.includes(id)
+      )
+    ),
     {
       contractId: contract.id,
       creatorId: contract.creatorId,
@@ -207,109 +186,3 @@ export const addContractToFeed = async (
     } users`
   )
 }
-
-export const addContractToFeedIfNotDuplicative = async (
-  contract: Contract,
-  reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
-  dataType: FEED_DATA_TYPES,
-  userIdsToExclude: string[],
-  unseenNewerThanTime: number,
-  data?: Record<string, any>,
-  trendingContractType?: 'old' | 'new'
-) => {
-  const pg = createSupabaseDirectClient()
-  const usersToReasonsInterestedInContract =
-    await getUserToReasonsInterestedInContractAndUser(
-      contract,
-      contract.creatorId,
-      pg,
-      reasonsToInclude,
-      true,
-      dataType,
-      undefined,
-      trendingContractType
-    )
-
-  const ignoreUserIds = await userIdsToIgnore(
-    contract.id,
-    Object.keys(usersToReasonsInterestedInContract),
-    unseenNewerThanTime,
-    [dataType, 'new_contract', 'new_subsidy'],
-    pg
-  )
-
-  await bulkInsertDataToUserFeed(
-    usersToReasonsInterestedInContract,
-    contract.createdTime,
-    dataType,
-    userIdsToExclude.concat(ignoreUserIds),
-    {
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      data,
-    },
-    pg
-  )
-}
-
-export const insertMarketMovementContractToUsersFeeds = async (
-  contract: CPMMContract
-) => {
-  await addContractToFeedIfNotDuplicative(
-    contract,
-    [
-      'follow_contract',
-      'liked_contract',
-      'similar_interest_vector_to_contract',
-      'contract_in_group_you_are_in',
-    ],
-    'contract_probability_changed',
-    [],
-    Date.now() - 1.5 * DAY_MS,
-    {
-      currentProb: contract.prob,
-      previousProb: contract.prob - contract.probChanges.day,
-    }
-  )
-}
-export const insertTrendingContractToUsersFeeds = async (
-  contract: Contract,
-  unseenNewerThanTime: number,
-  data: Record<string, any>,
-  trendingContractType: 'old' | 'new'
-) => {
-  await addContractToFeedIfNotDuplicative(
-    contract,
-    [
-      'follow_contract',
-      'liked_contract',
-      'similar_interest_vector_to_contract',
-      'contract_in_group_you_are_in',
-    ],
-    'trending_contract',
-    [contract.creatorId],
-    unseenNewerThanTime,
-    data,
-    trendingContractType
-  )
-}
-
-const deleteRowsFromUserFeed = async (
-  rowIds: number[],
-  pg: SupabaseDirectClient
-) => {
-  if (rowIds.length === 0) return
-  await pg.none(`delete from user_feed where id = any($1)`, [rowIds])
-}
-
-// Currently creating feed items for:
-// - New comments on contracts you follow/liked/viewed/from users you follow
-// - Liked comments from likers you follow/have similar interest vectors to and
-// on contracts that you've similar interest vectors to/groups you're in
-// - New contracts with similar interest vector/from users you follow/you have similar interest vectors to
-// - Contracts with large prob changes
-
-// TODO:
-// Create feed items from:
-// - Large bets by interesting users
-// Remove comment notifications

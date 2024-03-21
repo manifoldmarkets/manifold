@@ -101,7 +101,6 @@ export const BOT_USERNAMES = [
   'ms_test',
   'arb',
   'Turbot',
-  'MiraBot',
   'MetaculusBot',
   'burkebot',
   'Botflux',
@@ -148,6 +147,7 @@ export const BOT_USERNAMES = [
   'JaguarMcBot',
   'AImogus',
   'brake',
+  'brontobot',
 ]
 
 export const MOD_IDS = [
@@ -257,6 +257,7 @@ export const VERIFIED_USERNAMES = [
   'BillyMcRascal',
   'kyootbot',
   'MaximLott',
+  'liron'
 ]
 
 export const BLESSED_BANNED_USER_IDS = [
@@ -284,7 +285,23 @@ export const PARTNER_USER_IDS: string[] = [
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
-  'uglwf3YKOZNGjjEXKc5HampOFRE2', // David
+  '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
+  'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
+  'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
+  'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
+  'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
+  'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
+  'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
+  'foOeshHZOET3yMvRTMPINpnb8Bj2', // PunishedFurry
+  'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
+  'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
+  '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', //Stralor
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //Bayesian
+  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', //AndrewG
+  'EJQOCF3MfLTFYbhiKncrNefQDBz1', //chrisjbillington
+  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', //KevinBurke
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', //mattyb
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -300,86 +317,56 @@ export const APPLE_APP_URL =
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
-export const BLOCKED_BY_DEFAULT_GROUP_SLUGS = ['nsfw']
-
-export const DESTINY_GROUP_SLUGS = [
-  'destinygg',
-  'destinygg-stocks',
-  'eto',
-  'mumbowl-stonks',
-]
+export const DESTINY_GROUP_SLUG = 'destinygg'
 export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
+
+export const RATING_GROUP_SLUGS = ['nonpredictive', 'unsubsidized']
+
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
-  'manifold-features',
   'manifold-6748e065087e',
-  'destinygg',
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'nonpredictive',
-  'unsubsidized',
+  ...RATING_GROUP_SLUGS,
+  DESTINY_GROUP_SLUG,
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
-export const DEEMPHASIZED_GROUP_SLUGS = [
+// - Hide markets from signed-out landing page
+// - Hide from onboarding topic selector
+// - De-emphasize markets in the very first feed items generated for new users
+export const HIDE_FROM_NEW_USER_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
   'trading-bots',
   'gambling',
   'free-money',
+  'mana',
   'whale-watching',
   'spam',
   'test',
   'no-resolution',
   'eto',
   'friend-stocks',
-  'austin-less-wrong-2023-predictions',
-  'fantasy-football-stock-exchange',
   'ancient-markets',
   'jokes',
-  'olivia',
   'planecrash',
   'glowfic',
   'all-stonks',
-  'destinygg',
   'the-market',
   'nonpredictive-profits',
-  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
-  'uk',
-  'uk-politics',
-  'crystal-ballin',
-  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
-  ...DESTINY_GROUP_SLUGS,
-  ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
-]
-
-export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
-  // politics, 2024-presidential-election, magaland, donald-trump
-  'us-politics',
-  'republican-party',
-  '2024-republican-primaries',
-  'presidential-politics',
-  // lk-99
-  'superconductivity',
-  // ai
-  'openai',
-  'technical-ai-timelines',
-  // crypto-speculation
-  'crypto-prices',
-  // musk-mania
-  'elon-musk',
-  // ignore all manifold groups
-  'manifold-user-retention',
+  'nsfw',
   'manifold-6748e065087e',
-  'manifold-leagues',
-  'manifold-features-25bad7c7792e',
-  'manifold-users',
-  // generally not helpful for browsing
+  'bugs',
   'new-years-resolutions-2024',
+  'metamarkets',
+  'metaforecasting',
+  'death-markets',
+  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

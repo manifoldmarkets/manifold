@@ -41,7 +41,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
@@ -303,7 +302,7 @@ export const FeedComment = memo(function FeedComment(props: {
               )}
             />
           )}
-          <UserHovercard userId={userId} className="z-10">
+          <UserHovercard userId={userId} className="z-10 self-start">
             <Avatar
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
@@ -857,8 +856,6 @@ export function ContractCommentInput(props: {
   commentTypes: CommentType[]
   onClearInput?: () => void
 }) {
-  const user = useUser()
-  const privateUser = usePrivateUser()
   const {
     contract,
     replyTo,
@@ -871,16 +868,14 @@ export function ContractCommentInput(props: {
     commentTypes,
     onClearInput,
   } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
 
   const onSubmitComment = useEvent(
     async (editor: Editor, type: CommentType) => {
-      if (!user) {
-        track('sign in to comment')
-        await firebaseLogin()
-        return
-      }
+      if (!user) return
 
       let comment: ContractComment | undefined
       if (type === 'comment') {
@@ -910,6 +905,8 @@ export function ContractCommentInput(props: {
           : replyToUserInfo
           ? 'user'
           : undefined,
+        commentId: comment.id,
+        contractId: contract.id,
       })
     }
   )

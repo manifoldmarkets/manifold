@@ -14,7 +14,6 @@ import { db } from 'web/lib/supabase/db'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
-import { useRouter } from 'next/router'
 import { UserReviews } from '../reviews/user-reviews'
 import { InfoTooltip } from '../widgets/info-tooltip'
 
@@ -40,11 +39,12 @@ export function UserContractsList(props: {
   }, [creator.id, allTime])
 
   const user = useUser()
-  const router = useRouter()
+  // reset the key to force a re-render when the filter changes
+  const [key, setKey] = useState(0)
+  const [filter, setFilter] = useState<'all' | 'closed'>('all')
   const seeClosed = () => {
-    router.push({ query: { ...router.query, f: 'closed' } }, undefined, {
-      shallow: false,
-    })
+    setFilter('closed')
+    setKey((k) => k + 1)
   }
 
   return (
@@ -112,21 +112,21 @@ export function UserContractsList(props: {
         />
       </Row>
       <SupabaseSearch
-        defaultFilter="all"
+        key={key}
+        defaultFilter={filter}
         defaultSort="newest"
         additionalFilter={{
           creatorId: creator.id,
         }}
         persistPrefix={`user-contracts-list-${creator.id}`}
-        useUrlParams
         emptyState={
           <>
             <div className="text-ink-700 mx-2 mt-3 text-center">
               No questions found
             </div>
             {creator.id === user?.id && (
-              <Row className={'mt-8 justify-center'}>
-                <CreateQuestionButton className={'max-w-[15rem]'} />
+              <Row className={'mt-6 justify-center'}>
+                <CreateQuestionButton className={'w-full max-w-[15rem]'} />
               </Row>
             )}
           </>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { updatePrivateUser, getPrivateUser } from 'web/lib/firebase/users'
+import { Input } from '../widgets/input'
 
 type EditablePaymentInfoProps = {
   userId: string
@@ -39,7 +40,7 @@ export const EditablePaymentInfo = ({ userId }: EditablePaymentInfoProps) => {
 
   return isEditing ? (
     <div className="flex items-center gap-2">
-      <input
+      <Input
         className="grow"
         type="text"
         maxLength={60}

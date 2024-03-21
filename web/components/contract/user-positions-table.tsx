@@ -369,15 +369,15 @@ const BinaryUserPositionsTable = memo(
             />
           ) : isBinary ? (
             <>
-              <YesLabel /> payouts
+              <YesLabel />
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> positions
+              <BuyLabel />
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> positions
+              <HigherLabel />
             </>
           ) : (
             <></>
@@ -394,15 +394,15 @@ const BinaryUserPositionsTable = memo(
             />
           ) : isBinary ? (
             <>
-              <NoLabel /> payouts
+              <NoLabel />
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> positions
+              <ShortLabel />
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> positions
+              <LowerLabel />
             </>
           ) : (
             <></>
@@ -428,11 +428,14 @@ const BinaryUserPositionsTable = memo(
           ) : (
             <Row className={'gap-1'}>
               <Col className={'w-1/2'}>
-                <Row className={'text-ink-500 justify-end p-2'}>
+                <Row className={'justify-between p-2'}>
                   {sortBy === 'profit' ? (
-                    <span className={'text-ink-500'}>Profit</span>
+                    <span>Profit</span>
                   ) : (
                     <span>{getPositionsTitle('YES')}</span>
+                  )}
+                  {sortBy === 'shares' && (
+                    <span className="text-ink-600">Max payout</span>
                   )}
                 </Row>
                 {visibleLeftPositions.map((position) => {
@@ -464,11 +467,14 @@ const BinaryUserPositionsTable = memo(
                 })}
               </Col>
               <Col className={'w-1/2'}>
-                <Row className={'text-ink-500 justify-end p-2'}>
+                <Row className={'justify-between p-2'}>
                   {sortBy === 'profit' ? (
-                    <span className={'text-ink-500'}>Loss</span>
+                    <span>Loss</span>
                   ) : (
                     <span>{getPositionsTitle('NO')}</span>
+                  )}
+                  {sortBy === 'shares' && (
+                    <span className="text-ink-600">Max payout</span>
                   )}
                 </Row>
                 {visibleRightPositions.map((position) => {

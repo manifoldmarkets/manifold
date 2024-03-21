@@ -125,6 +125,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   dailyScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   freshnessScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  conversionScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 
@@ -451,7 +453,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
 export const MULTI_NUMERIC_BUCKETS_MAX = 10
-export const MULTI_NUMERIC_CREATION_ENABLED = true
+export const MULTI_NUMERIC_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const

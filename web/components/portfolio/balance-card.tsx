@@ -109,27 +109,29 @@ export const BalanceChangeTable = (props: {
 }) => {
   const { user, simple } = props
   const [query, setQuery] = useState('')
-  const balanceChanges = props.balanceChanges.filter((change) => {
-    const { type, contract } = change
-    const contractQuestion = contract?.question ?? ''
-    const changeType = type
-    const userName = 'user' in change ? change.user?.name ?? '' : ''
-    const userUsername = 'user' in change ? change.user?.username ?? '' : ''
-    const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
-    const betText = 'bet' in change ? betChangeToText(change) : ''
-    return (
-      contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
-      changeType.toLowerCase().includes(query.toLowerCase()) ||
-      txnTypeToDescription(changeType)
-        .toLowerCase()
-        .includes(query.toLowerCase()) ||
-      answerText.toLowerCase().includes(query.toLowerCase()) ||
-      (txnTitle(change) ?? '').toLowerCase().includes(query.toLowerCase()) ||
-      userName.toLowerCase().includes(query.toLowerCase()) ||
-      userUsername.toLowerCase().includes(query.toLowerCase()) ||
-      betText.toLowerCase().includes(query.toLowerCase())
-    )
-  })
+  const balanceChanges = props.balanceChanges
+    .filter((change) => {
+      const { type, contract } = change
+      const contractQuestion = contract?.question ?? ''
+      const changeType = type
+      const userName = 'user' in change ? change.user?.name ?? '' : ''
+      const userUsername = 'user' in change ? change.user?.username ?? '' : ''
+      const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
+      const betText = 'bet' in change ? betChangeToText(change) : ''
+      return (
+        contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
+        changeType.toLowerCase().includes(query.toLowerCase()) ||
+        txnTypeToDescription(changeType)
+          .toLowerCase()
+          .includes(query.toLowerCase()) ||
+        answerText.toLowerCase().includes(query.toLowerCase()) ||
+        (txnTitle(change) ?? '').toLowerCase().includes(query.toLowerCase()) ||
+        userName.toLowerCase().includes(query.toLowerCase()) ||
+        userUsername.toLowerCase().includes(query.toLowerCase()) ||
+        betText.toLowerCase().includes(query.toLowerCase())
+      )
+    })
+    .slice(0, 1000)
   return (
     <Col className={' w-full justify-center'}>
       <Input
@@ -144,6 +146,7 @@ export const BalanceChangeTable = (props: {
           balanceChanges={balanceChanges}
           user={user}
           simple={simple}
+          hideBalance={!!query}
         />
       </Col>
     </Col>
@@ -154,8 +157,9 @@ function RenderBalanceChanges(props: {
   user: User
   avatarSize: 'sm' | 'md'
   simple?: boolean
+  hideBalance?: boolean
 }) {
-  const { balanceChanges, user, avatarSize, simple } = props
+  const { balanceChanges, user, avatarSize, simple, hideBalance } = props
   let currBalance = user.balance
   const balanceRunningTotals = [
     currBalance,
@@ -185,6 +189,7 @@ function RenderBalanceChanges(props: {
               balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
               simple={simple}
+              hideBalance={hideBalance}
             />
           )
         } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
@@ -196,6 +201,7 @@ function RenderBalanceChanges(props: {
               avatarlUrl={user.avatarUrl}
               avatarSize={avatarSize}
               simple={simple}
+              hideBalance={hideBalance}
             />
           )
         }
@@ -264,8 +270,9 @@ const BetBalanceChangeRow = (props: {
   balance: number
   avatarSize: 'sm' | 'md'
   simple?: boolean
+  hideBalance?: boolean
 }) => {
-  const { change, balance, avatarSize, simple } = props
+  const { change, balance, avatarSize, simple, hideBalance } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
@@ -344,7 +351,12 @@ const BetBalanceChangeRow = (props: {
         </Row>
         {!simple && (
           <Row className={'text-ink-600'}>
-            {formatMoney(balance)} {'·'} {customFormatTime(change.createdTime)}
+            {!hideBalance && (
+              <>
+                {formatMoney(balance)} {'·'}
+              </>
+            )}{' '}
+            {customFormatTime(change.createdTime)}
           </Row>
         )}
       </Col>
@@ -365,8 +377,9 @@ const TxnBalanceChangeRow = (props: {
   avatarlUrl: string
   avatarSize: 'sm' | 'md'
   simple?: boolean
+  hideBalance?: boolean
 }) => {
-  const { change, balance, avatarSize, avatarlUrl, simple } = props
+  const { change, balance, avatarSize, avatarlUrl, simple, hideBalance } = props
   const { contract, amount, type, user: changeUser } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
@@ -464,7 +477,12 @@ const TxnBalanceChangeRow = (props: {
         <div className={'text-ink-600'}>{txnTypeToDescription(type)}</div>
         {!simple && (
           <Row className={'text-ink-600'}>
-            {formatMoney(balance)} {'·'} {customFormatTime(change.createdTime)}
+            {!hideBalance && (
+              <>
+                {formatMoney(balance)} {'·'}
+              </>
+            )}{' '}
+            {customFormatTime(change.createdTime)}
           </Row>
         )}
       </Col>

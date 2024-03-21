@@ -8,12 +8,16 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { ElectoralCollegeVisual } from './electoral-college-visual'
 import {
-  EmptyStateContract,
+  ElectoralCollegeVisual,
+  sortByDemocraticDiff,
+} from './electoral-college-visual'
+import {
+  SwingStateContract,
   StateContract,
   extractBeforeGovernorsRace,
   extractStateFromPresidentContract,
+  EmptyStateContract,
 } from './state-contract'
 import { USAMap } from './usa-map'
 import { PresidentialState } from './presidential-state'
@@ -21,7 +25,10 @@ import { SenateCurrentOrContract, SenateState } from './senate-state'
 import { SenateBar } from './senate-bar'
 import { Governor } from 'web/public/custom-components/governor'
 import { GovernorState } from './governor-state'
-import { MapContractsDictionary } from 'web/public/data/elections-data'
+import {
+  MapContractsDictionary,
+  swingStates,
+} from 'web/public/data/elections-data'
 
 type MapMode = 'presidency' | 'senate' | 'governor'
 
@@ -44,6 +51,10 @@ export function HomepageMap(props: {
     return acc
   }, {} as MapContractsDictionary)
 
+  const sortedPresidencyContractsDictionary = sortByDemocraticDiff(
+    presidencyContractsDictionary
+  )
+
   const senateContractsDictionary = Object.keys(rawSenateStateContracts).reduce(
     (acc, key) => {
       // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -64,7 +75,7 @@ export function HomepageMap(props: {
   const [mode, setMode] = useState<MapMode>('presidency')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
-    'GA'
+    undefined
   )
 
   const [hoveredState, setHoveredState] = useState<string | undefined | null>(
@@ -96,7 +107,7 @@ export function HomepageMap(props: {
             Which party will win the US Presidency?
           </div>
           <ElectoralCollegeVisual
-            mapContractsDictionary={presidencyContractsDictionary}
+            sortedContractsDictionary={sortedPresidencyContractsDictionary}
             handleClick={handleClick}
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
@@ -113,7 +124,8 @@ export function HomepageMap(props: {
             hoveredState={hoveredState}
             CustomStateComponent={PresidentialState}
           />
-          {!!hoveredState || !!targetState ? (
+          {(!!hoveredState || !!targetState) &&
+          !swingStates.includes(hoveredState ?? targetState!) ? (
             <StateContract
               targetContract={
                 presidencyContractsDictionary[
@@ -125,7 +137,15 @@ export function HomepageMap(props: {
               customTitleFunction={extractStateFromPresidentContract}
             />
           ) : (
-            <EmptyStateContract />
+            <SwingStateContract
+              hoveredState={hoveredState}
+              setHoveredState={setHoveredState}
+              targetState={targetState}
+              setTargetState={setTargetState}
+              sortedPresidencyContractsDictionary={
+                sortedPresidencyContractsDictionary
+              }
+            />
           )}
         </>
       ) : mode === 'governor' ? (

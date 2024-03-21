@@ -15,6 +15,8 @@ import { Col } from '../../../layout/col'
 import { SmallCandidateBar } from './small-candidate-bar'
 import { getCandidateColor } from './candidates-panel'
 import { removeTextInParentheses } from './candidate-bar'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { groupBy } from 'lodash'
 
 // just the bars
 export function SmallCandidatePanel(props: {
@@ -73,6 +75,9 @@ export function SmallCandidatePanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+
   return (
     <Col className="mx-[2px] gap-2">
       {showNoAnswers ? (
@@ -86,6 +91,7 @@ export function SmallCandidatePanel(props: {
               contract={contract}
               color={getCandidateColor(answer.text)}
               user={user}
+              userBets={userBetsByAnswer[answer.id]}
             />
           ))}
           {moreCount > 0 && (
@@ -143,6 +149,8 @@ function SmallCandidateAnswer(props: {
         answer={answer}
         selected={selected}
         contract={contract}
+        userBets={userBets}
+        user={user}
       />
     </Col>
   )

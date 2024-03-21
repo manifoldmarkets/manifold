@@ -6,11 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { removeEmojis } from 'common/topics'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { buildArray } from 'common/util/array'
-import {
-  BLOCKED_BY_DEFAULT_GROUP_SLUGS,
-  DESTINY_GROUP_SLUGS,
-  HOUSE_BOT_USERNAME,
-} from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { SupabaseSearch } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRouter } from 'next/router'
@@ -146,7 +142,6 @@ export function GroupPageContent(props: {
   const { q } = router.query
   // Allow users to browse without keyboard popping up on mobile.
   const autoFocus = !isMobile && !q
-  const [showTopicsSidebar, setShowTopicsSidebar] = useState<boolean>(false)
   const privateUser = usePrivateUser()
 
   useSaveReferral(user)
@@ -164,12 +159,6 @@ export function GroupPageContent(props: {
   const queryParams = new URLSearchParams(
     otherQueryParams as Record<string, string>
   )
-  const setTopicSlugMobile = (slug: string) => {
-    const queryStr = queryParams.toString()
-    const q = queryStr ? `?${queryStr}` : ''
-
-    router.push(`/browse/${slug}${q}`, undefined, { shallow: true })
-  }
 
   const setTopicSlugClearQuery = (slug: string) => {
     queryParams.delete('q')
@@ -196,12 +185,14 @@ export function GroupPageContent(props: {
     if (newTopic) setTopicsFromRouter((topics) => [...topics, topicFromRouter])
   }, [topicFromRouter])
 
-  const topics = buildArray(topicsFromRouter, topicsByImportance)
+  const allTopics = buildArray(topicsFromRouter, topicsByImportance)
   const [topicResults, setTopicResults] = usePersistentInMemoryState<
     LiteGroup[] | undefined
   >(undefined, `search-topic-results`)
 
-  const currentTopic = topics.find((t) => t.slug === topicSlug)
+  const shownTopics = q && topicResults?.length ? topicResults : allTopics
+
+  const currentTopic = allTopics.find((t) => t.slug === topicSlug)
   const { ref, headerStuck } = useHeaderIsStuck()
   const staticTopicIsCurrent =
     staticTopicParams?.topic.slug === currentTopic?.slug
@@ -215,9 +206,8 @@ export function GroupPageContent(props: {
         excludeGroupSlugs: buildArray(
           privateUser?.blockedGroupSlugs,
           shouldFilterDestiny &&
-            !DESTINY_GROUP_SLUGS.includes(topicSlug ?? '') &&
-            DESTINY_GROUP_SLUGS,
-          !user && BLOCKED_BY_DEFAULT_GROUP_SLUGS
+            DESTINY_GROUP_SLUG != topicSlug &&
+            DESTINY_GROUP_SLUG
         ),
         excludeUserIds: privateUser?.blockedUserIds,
       }}
@@ -225,9 +215,11 @@ export function GroupPageContent(props: {
       isWholePage
       showTopicTag={headerStuck}
       headerClassName={'pt-0 px-2 mt-2 bg-canvas-0 md:bg-canvas-50'}
-      topics={topicResults}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
+      defaultFilter={
+        !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+      }
     />
   )
 
@@ -249,10 +241,10 @@ export function GroupPageContent(props: {
           />
           <BrowseTopicPills
             className={'relative w-full py-1 pl-1 md:hidden'}
-            topics={topics}
+            topics={shownTopics}
             currentTopicSlug={topicSlug}
             setTopicSlug={(slug) =>
-              setTopicSlugMobile(slug === topicSlug ? '' : slug)
+              setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
             }
           />
           <div className="flex md:contents">
@@ -345,19 +337,15 @@ export function GroupPageContent(props: {
                 />
               )}
             </Col>
-            {!isMobile && (
-              <TopicsList
-                key={'groups' + topics.length}
-                topics={q && topicResults?.length ? topicResults : topics}
-                currentTopicSlug={topicSlug}
-                setCurrentTopicSlug={setTopicSlugClearQuery}
-                privateUser={privateUser}
-                user={user}
-                show={showTopicsSidebar}
-                setShow={setShowTopicsSidebar}
-                className={clsx('col-span-2 w-[12rem] md:w-full xl:col-span-3')}
-              />
-            )}
+
+            <TopicsList
+              topics={shownTopics}
+              currentTopicSlug={topicSlug}
+              setCurrentTopicSlug={setTopicSlugClearQuery}
+              className={clsx(
+                'col-span-2 hidden w-full md:block xl:col-span-3'
+              )}
+            />
           </div>
         </div>
       </Page>

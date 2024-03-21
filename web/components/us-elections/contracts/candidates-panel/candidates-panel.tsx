@@ -5,7 +5,7 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { sortBy, sumBy } from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { useChartAnswers } from '../../../charts/contract/choice'
@@ -14,6 +14,8 @@ import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Row } from 'web/components/layout/row'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { groupBy } from 'lodash'
 
 // just the bars
 export function CandidatePanel(props: {
@@ -74,6 +76,9 @@ export function CandidatePanel(props: {
 
   const shownAnswersLength = displayedAnswers.length
 
+  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+
   return (
     <Col className="mx-[2px]">
       {showNoAnswers ? (
@@ -93,6 +98,7 @@ export function CandidatePanel(props: {
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
+                userBets={userBetsByAnswer[answer.id]}
               />
             ))}
             {moreCount > 0 && (
@@ -126,6 +132,7 @@ export function CandidatePanel(props: {
                 contract={contract}
                 color={getCandidateColor(removeTextInParentheses(answer.text))}
                 user={user}
+                userBets={userBetsByAnswer[answer.id]}
               />
             ))}
             {moreCount > 0 && (
@@ -178,10 +185,6 @@ function CandidateAnswer(props: {
       : resolution === answer.id
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
-
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
   return (
     <Col className={'w-full'}>
       <CandidateBar
@@ -196,6 +199,8 @@ function CandidateAnswer(props: {
         answer={answer}
         selected={selected}
         contract={contract}
+        userBets={userBets}
+        user={user}
       />
       {/* {!resolution && hasBets && isCpmm && user && (
         <AnswerPosition

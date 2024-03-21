@@ -6,7 +6,7 @@ import { Group } from 'common/group'
 import { convertGroup } from 'common/supabase/groups'
 import { useMemberGroupIdsOnLoad } from 'web/hooks/use-group-supabase'
 import { User } from 'common/user'
-import { LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST } from 'common/envs/constants'
+import { RATING_GROUP_SLUGS } from 'common/envs/constants'
 
 export function useTrendingTopics(limit: number, persistKey?: string) {
   const [results, setResults] = usePersistentLocalState<Group[] | undefined>(
@@ -19,11 +19,7 @@ export function useTrendingTopics(limit: number, persistKey?: string) {
       db
         .from('groups')
         .select()
-        .not(
-          'slug',
-          'in',
-          `(${LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST.join(',')})`
-        )
+        .not('slug', 'in', `(${RATING_GROUP_SLUGS.join(',')})`)
         .order('importance_score', { ascending: false })
         .limit(limit)
     )
