@@ -69,6 +69,7 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
+import { joinContractChannel } from 'shared/supabase/channel'
 
 const firestore = admin.firestore()
 
@@ -79,6 +80,15 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
+  joinContractChannel(contract.id).then(async (channel) => {
+    await channel.send({
+      type: 'broadcast',
+      event: 'bet',
+      payload: normalBets.length === 1 ? normalBets[0] : normalBets,
+    })
+    await channel.unsubscribe()
+  })
+
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
     const userIds = uniq([

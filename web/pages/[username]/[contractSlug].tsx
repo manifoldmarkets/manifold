@@ -15,7 +15,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { first, mergeWith, uniqBy } from 'lodash'
+import { first, mergeWith, uniqBy, debounce } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -84,6 +84,7 @@ import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-sig
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
+import { useContractBetChannel } from 'web/lib/supabase/realtime/use-channel'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -224,10 +225,17 @@ export function ContractPageContent(props: ContractParams) {
     order: 'asc',
   })
 
-  // TODO: now that contract volume updates are debounced, we may want to just poll on a timer
-  useEffect(() => {
-    loadNewer()
-  }, [contract.volume])
+  // Subscribe to 'bet' events broadcast on this contract channel.
+  useContractBetChannel(
+    contract.id,
+    debounce(
+      (_bet) => {
+        loadNewer()
+      },
+      500,
+      { leading: true, trailing: true }
+    )
+  )
 
   const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
