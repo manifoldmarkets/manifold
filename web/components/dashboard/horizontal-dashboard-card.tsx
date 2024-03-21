@@ -14,9 +14,8 @@ import {
 } from 'web/components/contract/contracts-table'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { DEBUG_FEED_CARDS } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
@@ -34,7 +33,6 @@ export function HorizontalDashboardCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  item?: FeedTimelineItem
   className?: string
   /** whether this card is small, like in card grids.*/
   size?: 'md' | 'sm' | 'xs'
@@ -47,12 +45,10 @@ export function HorizontalDashboardCard(props: {
   const {
     promotedData,
     trackingPostfix,
-    item,
     className,
     showGraph,
     size = 'md',
   } = props
-  const user = useUser()
 
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
@@ -74,7 +70,6 @@ export function HorizontalDashboardCard(props: {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          feedId: item?.id,
           isPromoted: !!promotedData,
         } as ContractCardView)
       setVisible(true)
@@ -99,17 +94,13 @@ export function HorizontalDashboardCard(props: {
     }
   }, [adId])
 
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
-  )
+  const { startTime, ignore } = getMarketMovementInfo(contract)
 
   const trackClick = () =>
     track(('click market card ' + trackingPostfix).trim(), {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
-      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
@@ -161,12 +152,7 @@ export function HorizontalDashboardCard(props: {
               />
             )}
             {isBinaryCpmm && !isClosed && (
-              <BinaryBetButton
-                // feedId={item?.id}
-                contract={contract}
-                // user={user}
-                // className="h-min"
-              />
+              <BinaryBetButton contract={contract} />
             )}
           </Row>
         </div>

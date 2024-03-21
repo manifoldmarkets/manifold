@@ -4,7 +4,6 @@ import Router from 'next/router'
 import { useState } from 'react'
 
 import { Contract, MultiContract, contractPath } from 'common/contract'
-import { SimpleAnswerBars } from '../../answers/answers-panel'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import {

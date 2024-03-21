@@ -74,6 +74,7 @@ import { XIcon } from '@heroicons/react/solid'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -498,8 +499,9 @@ export function SimpleAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
   barColor?: string
+  feedItem?: FeedTimelineItem
 }) {
-  const { contract, maxAnswers = Infinity, barColor } = props
+  const { contract, maxAnswers = Infinity, barColor, feedItem } = props
   const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -550,6 +552,7 @@ export function SimpleAnswerBars(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
+              feedItem={feedItem}
             />
           ))}
           {moreCount > 0 && (
@@ -583,6 +586,7 @@ export function Answer(props: {
   expanded?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
+  feedItem?: FeedTimelineItem
 }) {
   const {
     answer,
@@ -597,6 +601,7 @@ export function Answer(props: {
     expanded,
     user,
     barColor,
+    feedItem,
     shouldShowLimitOrderChart,
   } = props
 
@@ -683,6 +688,7 @@ export function Answer(props: {
               contract={contract}
               answer={answer}
               fillColor={barColor}
+              feedItem={feedItem}
             />
             {onClick && (
               <IconButton

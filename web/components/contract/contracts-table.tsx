@@ -1,4 +1,4 @@
-import { LockClosedIcon } from '@heroicons/react/solid'
+import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { Contract, contractPath } from 'common/contract'
@@ -6,7 +6,6 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
-import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { getTextColor } from './text-color'
@@ -319,7 +318,7 @@ export function VisibilityIcon(props: {
     return <LockClosedIcon className={iconClassName} />
 
   if (contract.visibility === 'unlisted')
-    return <IoUnlink className={iconClassName} />
+    return <EyeOffIcon className={iconClassName} />
 
   return <></>
 }

@@ -155,6 +155,7 @@ import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
+import { recordContractInteraction } from 'api/record-contract-interaction'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -294,6 +295,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
+  'record-contract-interaction': recordContractInteraction,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

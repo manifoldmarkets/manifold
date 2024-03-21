@@ -67,19 +67,22 @@ import {
   addHouseSubsidyToAnswer,
 } from 'shared/helpers/add-house-subsidy'
 import { debounce } from 'api/helpers/debounce'
+import { MONTH_MS } from 'common/util/time'
+import { track } from 'shared/analytics'
+
 const firestore = admin.firestore()
 
 export const onCreateBets = async (
   normalBets: NormalizedBet[],
   contract: Contract,
-  origianlBettor: User,
+  originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
     const userIds = uniq([
-      origianlBettor.id,
+      originalBettor.id,
       ...(makers?.map((maker) => maker.bet.userId) ?? []),
     ])
     await Promise.all(
@@ -92,7 +95,7 @@ export const onCreateBets = async (
     await Promise.all(
       ordersToCancel.map((order) => {
         createLimitBetCanceledNotification(
-          origianlBettor,
+          originalBettor,
           order.userId,
           order,
           makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
@@ -103,8 +106,8 @@ export const onCreateBets = async (
   }
 
   const betUsers = await getUsers(uniq(normalBets.map((bet) => bet.userId)))
-  if (!betUsers.find((u) => u.id == origianlBettor.id))
-    betUsers.push(origianlBettor)
+  if (!betUsers.find((u) => u.id == originalBettor.id))
+    betUsers.push(originalBettor)
 
   const pg = createSupabaseDirectClient()
   const bets = normalBets.map((bet) => {
@@ -184,7 +187,7 @@ export const onCreateBets = async (
         !bettor.lastBetTime &&
           !bettor.referredByUserId &&
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
-        const eventId = origianlBettor.id + '-' + bet.id
+        const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
         const usersNonRedemptionBets = bets.filter(
           (b) => b.userId === bettor.id && !b.isRedemption
@@ -213,6 +216,47 @@ export const onCreateBets = async (
         ])
       })
   )
+
+  // New users in last month.
+  if (originalBettor.createdTime > Date.now() - MONTH_MS) {
+    const bet = normalBets[0]
+
+    const otherBetToday = await pg.oneOrNone(
+      `select bet_id from contract_bets
+        where user_id = $1
+          and DATE(created_time) = DATE($2)
+          and bet_id != $3
+          limit 1`,
+      [
+        originalBettor.id,
+        new Date(normalBets[0].createdTime).toISOString(),
+        bet.id,
+      ]
+    )
+    if (!otherBetToday) {
+      const numBetDays = await pg.one<number>(
+        `with bet_days AS (
+          SELECT DATE(contract_bets.created_time) AS bet_day
+          FROM contract_bets
+          where contract_bets.user_id = $1
+          and contract_bets.created_time > $2
+          GROUP BY DATE(contract_bets.created_time)
+        )
+        SELECT COUNT(bet_day) AS total_bet_days
+        FROM bet_days`,
+        [originalBettor.id, new Date(originalBettor.createdTime).toISOString()],
+        (row) => Number(row.total_bet_days)
+      )
+
+      // Track unique days bet for users who have bet up to 10 days in the last 30 days.
+      if (numBetDays <= 10) {
+        console.log('Tracking unique days bet', numBetDays)
+        await track(originalBettor.id, 'new user days bet', {
+          numDays: numBetDays,
+        })
+      }
+    }
+  }
 }
 
 const debouncedContractUpdates = (contract: Contract) => {

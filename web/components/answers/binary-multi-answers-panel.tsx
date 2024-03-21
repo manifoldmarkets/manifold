@@ -21,13 +21,15 @@ import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Answer as AnswerComponent } from './answers-panel'
 import { BuyPanel } from 'web/components/bet/bet-panel'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   answers: Answer[]
   size?: SizeType
+  feedItem?: FeedTimelineItem
 }) {
-  const { contract, answers, size } = props
+  const { feedItem, contract, answers, size } = props
   if (contract.isResolved) {
     return (
       <>
@@ -43,6 +45,7 @@ export function BinaryMultiAnswersPanel(props: {
                 ? '#4e46dc'
                 : '#e9a23b'
             }
+            feedItem={feedItem}
           />
         ))}
       </>

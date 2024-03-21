@@ -64,6 +64,7 @@ export const FeedRelatedContractsGroup = (props: {
           <Col className="px-2 pt-3">
             {contract && (
               <FeedContractCard
+                trackingPostfix={'feed related contract'}
                 item={item}
                 className={'shadow-none drop-shadow-none'}
                 contract={contract}

@@ -45,6 +45,7 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 export type MultiBetProps = {
@@ -69,9 +70,7 @@ export function BuyPanel(props: {
   replyToCommentId?: string
   alwaysShowOutcomeSwitcher?: boolean
   onCancel?: () => void
-  trackingInformation?: {
-    feedId: number
-  }
+  feedItem?: FeedTimelineItem
 }) {
   const {
     contract,
@@ -84,7 +83,7 @@ export function BuyPanel(props: {
     inModal,
     replyToCommentId,
     alwaysShowOutcomeSwitcher,
-    trackingInformation,
+    feedItem,
   } = props
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -174,7 +173,7 @@ export function BuyPanel(props: {
     setError(undefined)
     setIsSubmitting(true)
 
-    api(
+    const bet = await api(
       'bet',
       removeUndefinedProps({
         outcome,
@@ -194,6 +193,7 @@ export function BuyPanel(props: {
             icon: <CheckIcon className={'h-5 w-5 text-teal-500'} />,
           })
         }
+        return r
       })
       .catch((e) => {
         if (e instanceof APIError) {
@@ -207,19 +207,25 @@ export function BuyPanel(props: {
           setError('Error placing bet')
         }
         setIsSubmitting(false)
+        return undefined
       })
 
-    track('bet', {
-      location,
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      amount: betAmount,
-      outcome,
-      isLimitOrder: false,
-      answerId: multiProps?.answerToBuy.id,
-      ...trackingInformation,
-    })
+    track(
+      'bet',
+      removeUndefinedProps({
+        location,
+        outcomeType: contract.outcomeType,
+        slug: contract.slug,
+        contractId: contract.id,
+        amount: betAmount,
+        betGroupId: bet?.betGroupId,
+        betId: bet?.betId,
+        outcome,
+        isLimitOrder: false,
+        answerId: multiProps?.answerToBuy.id,
+        feedItem,
+      })
+    )
   }
 
   const betDisabled =

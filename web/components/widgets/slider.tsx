@@ -28,8 +28,8 @@ export function Slider(props: {
   const {
     amount,
     onChange,
-    min,
-    max,
+    min = 0,
+    max = 100,
     step,
     marks,
     className,
@@ -60,7 +60,7 @@ export function Slider(props: {
           {marks?.map(({ value, label }) => (
             <div
               className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${value}%` }}
+              style={{ left: `${(value / (max - min)) * 100}%` }}
               key={value}
             >
               <div
