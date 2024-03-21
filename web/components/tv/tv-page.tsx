@@ -1,0 +1,58 @@
+import { useEffect, useState } from 'react'
+import { mapKeys } from 'lodash'
+
+import { Contract } from 'common/contract'
+import { SEO } from 'web/components/SEO'
+import { Page } from 'web/components/layout/page'
+import { Title } from 'web/components/widgets/title'
+import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { ScheduleItem, filterSchedule, getActiveStream } from './tv-schedule'
+import { TVDisplay } from './tv-display'
+import { TVSchedulePage } from './tv-schedule-page'
+
+export function TVPage(props: {
+  schedule: ScheduleItem[]
+  contracts: Contract[]
+  scheduleId: string | null
+}) {
+  const [schedule, setSchedule] = useState(props.schedule)
+
+  const contractsList = props.contracts.concat(
+    useContracts(
+      schedule.map((s) => s.contract_id),
+      undefined
+    )
+  )
+  const contracts = mapKeys(contractsList, 'id')
+
+  const tvSchedule = useSubscription('tv_schedule')
+
+  useEffect(() => {
+    if (!tvSchedule.rows || !tvSchedule.rows.length) return
+
+    const newSchedule = filterSchedule(tvSchedule.rows as any, props.scheduleId)
+    setSchedule(newSchedule)
+  }, [tvSchedule.rows])
+
+  const stream = getActiveStream(schedule, props.scheduleId)
+  const contract = contracts[stream?.contract_id ?? '']
+
+  if (!contract && props.scheduleId && props.scheduleId !== 'schedule') {
+    return (
+      <Page trackPageView="tv page">
+        <SEO
+          title="Manifold TV"
+          description="Bet on live video streams with Manifold TV"
+        />
+        <Title>Manifold TV</Title>
+        <div className="italic">Cannot find scheduled event</div>
+      </Page>
+    )
+  }
+  
+  if (!contract || props.scheduleId === 'schedule')
+    return <TVSchedulePage schedule={schedule} contracts={contracts} />
+
+  return <TVDisplay contract={contract} stream={stream} />
+}
