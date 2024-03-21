@@ -31,22 +31,29 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Avatar } from 'web/components/widgets/avatar'
 import { removeUndefinedProps } from 'common/util/object'
+import ShortToggle from 'web/components/widgets/short-toggle'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
+}
+
+const filterSchedule = (
+  schedule: ScheduleItem[] | null,
+  scheduleId: string | null
+) => {
+  return (schedule ?? []).filter(
+    (s) =>
+      dayjs(s.end_time ?? '').isAfter(dayjs()) || s.id.toString() === scheduleId
+  )
 }
 
 export async function getStaticProps(props: {
   params: { scheduleId: string[] }
 }) {
   const scheduleId = props.params.scheduleId?.[0] ?? null
-  console.log('scheduleId', scheduleId)
-  const { data } = await db.from('tv_schedule').select('*')
 
-  const schedule = (data ?? []).filter(
-    (s) =>
-      +new Date(s.end_time ?? 0) > Date.now() || s.id.toString() === scheduleId
-  )
+  const { data } = await db.from('tv_schedule').select('*')
+  const schedule = filterSchedule(data as ScheduleItem[] | null, scheduleId)
 
   const contractIds = schedule.map((s) => s.contract_id)
   const contracts = await getContracts(contractIds)
@@ -67,19 +74,22 @@ export default function TVPage(props: {
 }) {
   const [schedule, setSchedule] = useState(props.schedule)
 
-  const contractsList =
+  const contractsList = props.contracts.concat(
     useContracts(
       schedule.map((s) => s.contract_id),
       undefined
-    ) ?? props.contracts
+    )
+  )
   const contracts = mapKeys(contractsList, 'id')
 
   const tvSchedule = useSubscription('tv_schedule')
 
   useEffect(() => {
     if (!tvSchedule.rows || !tvSchedule.rows.length) return
-    setSchedule(tvSchedule.rows as any as ScheduleItem[])
-  }, [tvSchedule])
+
+    const newSchedule = filterSchedule(tvSchedule.rows as any, props.scheduleId)
+    setSchedule(newSchedule)
+  }, [tvSchedule.rows])
 
   const stream = getActiveStream(schedule, props.scheduleId)
   const contract = contracts[stream?.contract_id ?? '']
@@ -94,7 +104,7 @@ export default function TVPage(props: {
 
   const [featured, userCreated] = partition(schedule, (s) => s.is_featured)
 
-  if (!contract && !!props.scheduleId) {
+  if (!contract && props.scheduleId && props.scheduleId !== 'schedule') {
     return (
       <Page trackPageView="tv page">
         <SEO
@@ -106,7 +116,7 @@ export default function TVPage(props: {
       </Page>
     )
   }
-  if (!contract)
+  if (!contract || props.scheduleId === 'schedule')
     return (
       <Page trackPageView="tv page">
         <SEO
@@ -166,7 +176,7 @@ export default function TVPage(props: {
     </>
   )
 
-  const channelId = `tv-${stream?.stream_id ?? 'default'}`
+  const channelId = `tv-${stream?.id ?? 'default'}`
 
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
@@ -212,6 +222,7 @@ export default function TVPage(props: {
                     content: (
                       <PublicChat
                         channelId={channelId}
+                        key={channelId}
                         className="bg-canvas-50"
                       />
                     ),
@@ -234,9 +245,9 @@ export default function TVPage(props: {
             )}
             <Button
               color="indigo-outline"
-              onClick={() => setShowSettings('new')}
+              onClick={() => Router.push('/tv/schedule')}
             >
-              New event
+              See schedule
             </Button>
             <ScheduleTVModal
               open={!!showSettings}
@@ -253,7 +264,7 @@ export default function TVPage(props: {
             <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
               Live chat
             </Row>
-            <PublicChat channelId={channelId} />
+            <PublicChat channelId={channelId} key={channelId} />
           </Col>
         </Col>
       </Row>
@@ -270,7 +281,7 @@ interface ScheduleItem {
   contract_id: string
   start_time: string
   end_time: string
-  is_featured: string
+  is_featured: boolean
 }
 
 const getActiveStream = (
@@ -345,6 +356,7 @@ export function ScheduleTVModal(props: {
   const [streamId, setStreamId] = useState(stream?.stream_id ?? '')
   const [slug, setSlug] = useState(props.slug ?? '')
   const [title, setTitle] = useState(stream?.title ?? '')
+  const [isFeatured, setIsFeatured] = useState(stream?.is_featured ?? false)
 
   const defaultStart = stream
     ? dayjs(stream.start_time).format('YYYY-MM-DD HH:mm')
@@ -396,12 +408,13 @@ export function ScheduleTVModal(props: {
         startTime: start.toISOString(),
         endTime: end.toISOString(),
         source: 'youtube',
+        isFeatured,
       })
     )
-    // TODO: redirect to new id
-    // if (!stream) {
-    //   Router.push(`/tv/${newId}`)
-    // }
+
+    if (!stream) {
+      Router.push(`/tv/schedule`)
+    }
   }
 
   const deleteStream = async () => {
@@ -410,6 +423,10 @@ export function ScheduleTVModal(props: {
       await deleteTV(stream.id.toString())
     }
   }
+
+  const isAdmin = useAdmin()
+  const user = useUser()
+  const isCreatorOrAdmin = stream?.creator_id === user?.id || isAdmin
 
   return (
     <Modal
@@ -442,7 +459,7 @@ export function ScheduleTVModal(props: {
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
         </Row>
 
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between gap-2">
           <div>Start</div>
           <Input
             type={'datetime-local'}
@@ -466,6 +483,13 @@ export function ScheduleTVModal(props: {
           />
         </Row>
 
+        {isAdmin && (
+          <Row className="items-center justify-between">
+            <div>Featured</div>
+            <ShortToggle on={isFeatured} setOn={(on) => setIsFeatured(on)} />
+          </Row>
+        )}
+
         {error && (
           <Row className="text-error mt-4">
             <div>{error}</div>
@@ -476,14 +500,11 @@ export function ScheduleTVModal(props: {
           <Button color="indigo" size="xl" onClick={save}>
             {stream ? 'Save' : 'Schedule'}
           </Button>
-          <Button color="gray-outline" size="lg" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-        </Row>
-        <Row>
-          <Button size="xs" color="red-outline" onClick={deleteStream}>
-            Delete event
-          </Button>
+          {stream && isCreatorOrAdmin && (
+            <Button size="xs" color="red-outline" onClick={deleteStream}>
+              Delete event
+            </Button>
+          )}
         </Row>
       </Col>
     </Modal>

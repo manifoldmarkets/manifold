@@ -15,6 +15,7 @@ const schema = z.object({
   title: z.string(),
   startTime: z.string(),
   endTime: z.string(),
+  isFeatured: z.boolean(),
 })
 
 export const settv = authEndpoint(async (req, auth) => {
@@ -22,9 +23,8 @@ export const settv = authEndpoint(async (req, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  const isMod = isAdminId(auth.uid) || isModId(auth.uid)
-
   const { id, slug, streamId, source, title, startTime, endTime } = tvSettings
+  const isFeatured = isAdminId(auth.uid) && tvSettings.isFeatured
   const processedStreamId = streamId.trim().substring(0, 11)
 
   const db = createSupabaseClient()
@@ -32,15 +32,33 @@ export const settv = authEndpoint(async (req, auth) => {
 
   if (id) {
     await pg.none(
-      'UPDATE tv_schedule SET contract_id = $1, stream_id = $2, source = $3, title = $4, start_time = $5, end_time = $6 WHERE id = $7',
-      [contractId, processedStreamId, source, title, startTime, endTime, id]
+      'UPDATE tv_schedule SET contract_id = $1, stream_id = $2, source = $3, title = $4, start_time = $5, end_time = $6, is_featured = $7 WHERE id = $8',
+      [
+        contractId,
+        processedStreamId,
+        source,
+        title,
+        startTime,
+        endTime,
+        isFeatured,
+        id,
+      ]
     )
     return { status: 'success' }
   }
 
   await pg.none(
-    'INSERT INTO tv_schedule (creator_id, contract_id, stream_id, source, title, start_time, end_time) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [auth.uid, contractId, processedStreamId, source, title, startTime, endTime]
+    'INSERT INTO tv_schedule (creator_id, contract_id, stream_id, source, title, start_time, end_time, is_featured) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+    [
+      auth.uid,
+      contractId,
+      processedStreamId,
+      source,
+      title,
+      startTime,
+      endTime,
+      isFeatured,
+    ]
   )
 
   return { status: 'success' }
@@ -52,8 +70,17 @@ const deleteSchema = z.object({
 
 export const deletetv = authEndpoint(async (req, auth) => {
   const { id } = validate(deleteSchema, req.body)
+  const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
-  await pg.none('delete from tv_schedule where id = $1', [id])
+
+  if (isAdminId(userId)) {
+    await pg.none('delete from tv_schedule where id = $1', [id])
+  } else {
+    await pg.none('delete from tv_schedule where id = $1 and creator_id = $2', [
+      id,
+      userId,
+    ])
+  }
   return { status: 'success' }
 })
