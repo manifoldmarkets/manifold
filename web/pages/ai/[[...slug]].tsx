@@ -134,7 +134,7 @@ function MultiDashboard(props: MultiDashboardProps) {
     <Page trackPageView="ai multi dashboard">
       <SEO
         title="Manifold Artificial Intelligence Forecasts"
-        description="Live prediction market odds on the Artificial Intelligence takeover"
+        description="Live prediction market odds on all things AI"
         image="/ai.png"
       />
       <MultiDashboardHeadlineTabs
@@ -144,14 +144,13 @@ function MultiDashboard(props: MultiDashboardProps) {
         endpoint={ENDPOINT}
         topSlug={TOP_SLUG}
       />
-      <div
-        className="absolute top-1"
-        ref={headlineSlugsToRefs.current[TOP_SLUG]}
-      />
 
       <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
         <Col className={'gap-2'}>
-          <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
+          <div
+            ref={headlineSlugsToRefs.current[TOP_SLUG]}
+            className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl"
+          >
             Manifold Artificial Intelligence Forecasts
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}/${ENDPOINT}${

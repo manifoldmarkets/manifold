@@ -30,16 +30,24 @@ export const useMultiDashboard = (
       slug: '',
       height: 0,
     }
-    Object.entries(headlineSlugsToRefs.current).forEach(([slug, divRef]) => {
+    const entries = Object.entries(headlineSlugsToRefs.current)
+    let i = 0
+    while (i < entries.length) {
+      const [slug, divRef] = entries[i]
       if (!divRef.current) return
-      const divTop = divRef.current.getBoundingClientRect().top
-      if (divTop < window.innerHeight && divTop > lastSlugPosition.height) {
+      const divBottom = divRef.current.getBoundingClientRect().bottom
+      if (
+        divBottom < window.innerHeight &&
+        divBottom > lastSlugPosition.height
+      ) {
         lastSlugPosition = {
           slug,
-          height: divTop,
+          height: divBottom,
         }
+        break
       }
-    })
+      i++
+    }
     if (lastSlugPosition.slug !== '' && lastSlugPosition.slug !== currentSlug) {
       setCurrentSlug(lastSlugPosition.slug)
       setShallowSlugInRouter(lastSlugPosition.slug)
