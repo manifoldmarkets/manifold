@@ -24,6 +24,7 @@ export async function getStaticProps(props: {
       schedule,
       scheduleId,
     },
+    revalidate: 60,
   }
 }
 
