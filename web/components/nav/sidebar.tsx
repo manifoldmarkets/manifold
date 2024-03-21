@@ -36,6 +36,7 @@ import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { useState } from 'react'
 import { GiCapitol } from 'react-icons/gi'
+import { PiTelevisionSimple } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
@@ -131,11 +132,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         href: '/politics',
         icon: GiCapitol,
       },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: PiTelevisionSimple,
-      // },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: PiTelevisionSimple,
+      },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -173,10 +174,10 @@ const getMobileNav = (toggleModal: () => void) => {
       icon: GiCapitol,
     },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
+    { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
+    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
     { name: 'Live', href: '/live', icon: LightningBoltIcon },
-    // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
