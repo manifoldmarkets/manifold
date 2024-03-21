@@ -43,7 +43,9 @@ const filterSchedule = (
 ) => {
   return (schedule ?? []).filter(
     (s) =>
-      dayjs(s.end_time ?? '').isAfter(dayjs()) || s.id.toString() === scheduleId
+      dayjs(s.end_time ?? '')
+        .add(1, 'hour')
+        .isAfter(dayjs()) || s.id.toString() === scheduleId
   )
 }
 
@@ -53,7 +55,7 @@ export async function getStaticProps(props: {
   const scheduleId = props.params.scheduleId?.[0] ?? null
 
   const { data } = await db.from('tv_schedule').select('*')
-  const schedule = filterSchedule(data as ScheduleItem[] | null, scheduleId)
+  const schedule = filterSchedule(data as ScheduleItem[] | null, scheduleId, 1)
 
   const contractIds = schedule.map((s) => s.contract_id)
   const contracts = await getContracts(contractIds)
@@ -118,14 +120,14 @@ export default function TVPage(props: {
   }
   if (!contract || props.scheduleId === 'schedule')
     return (
-      <Page trackPageView="tv page">
+      <Page trackPageView="tv page" className='p-4'>
         <SEO
           title="Manifold TV"
           description="Bet on live video streams with Manifold TV"
         />
         <Title>Manifold TV</Title>
 
-        <div>Bet on your favorite streams!</div>
+        <div>Bet on live video streams with your friends!</div>
 
         {featured.length > 0 && (
           <>
@@ -148,7 +150,7 @@ export default function TVPage(props: {
           <div className="italic">No events scheduled</div>
         )}
 
-        <Row className="mt-2">
+        <Row className="mt-8">
           <Button color="indigo-outline" onClick={() => setShowSettings('new')}>
             Schedule event
           </Button>
@@ -292,23 +294,25 @@ const getActiveStream = (
 
   const featured = schedule.filter((s) => s.is_featured)
 
-  const now = new Date().toISOString()
-  const activeNow = featured.find((s) => s.start_time < now && s.end_time > now)
+  const now = dayjs()
+  const activeNow = featured.find(
+    (s) => dayjs(s.start_time).isBefore(now) && dayjs(s.end_time).isAfter(now)
+  )
   if (activeNow) return activeNow
 
   const soonest = featured
-    .concat()
-    .sort((a, b) => +new Date(a.start_time) - +new Date(b.start_time))
-  if (
-    soonest.length > 0 &&
-    Date.now() - +new Date(soonest[0].start_time) < 3600
-  )
+    .slice()
+    .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)))
+  if (soonest.length > 0 && dayjs(soonest[0].start_time).diff(now, 'hour') < 1)
     return soonest[0]
 
   const justEnded = featured
-    .concat()
-    .sort((a, b) => +new Date(a.end_time) - +new Date(b.end_time))
-  if (soonest.length > 0 && Date.now() - +new Date(soonest[0].end_time) < 3600)
+    .slice()
+    .sort((a, b) => dayjs(a.end_time).diff(dayjs(b.end_time)))
+  if (
+    justEnded.length > 0 &&
+    dayjs(justEnded[0].end_time).diff(now, 'hour') < 1
+  )
     return justEnded[0]
 
   return undefined
