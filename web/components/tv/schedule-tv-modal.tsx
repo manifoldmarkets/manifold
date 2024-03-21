@@ -119,12 +119,12 @@ export function ScheduleTVModal(props: {
           {stream ? 'Modify' : 'Schedule'} TV event
         </Title>
 
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between gap-2">
           <div>Event name</div>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
         </Row>
 
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between gap-2">
           <div>YouTube / Twitch</div>
           <Input
             value={streamId}
@@ -142,7 +142,7 @@ export function ScheduleTVModal(props: {
           />
         </Row>
 
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between gap-2">
           <div>Market link</div>
           <Input
             value={slug}
@@ -162,7 +162,7 @@ export function ScheduleTVModal(props: {
           />
         </Row>
 
-        <Row className="items-center justify-between">
+        <Row className="items-center justify-between gap-2">
           <div>End</div>
           <Input
             type={'datetime-local'}
@@ -175,7 +175,7 @@ export function ScheduleTVModal(props: {
         </Row>
 
         {isAdmin && (
-          <Row className="items-center justify-between">
+          <Row className="items-center justify-between gap-2">
             <div>Featured</div>
             <ShortToggle on={isFeatured} setOn={(on) => setIsFeatured(on)} />
           </Row>
