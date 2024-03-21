@@ -124,38 +124,24 @@ export function HorizontalDashboardCard(props: {
       }}
       ref={ref}
     >
-      <Col
-        className={clsx(
-          'w-full flex-col pt-2',
-          size === 'xs' ? '' : 'gap-1.5 '
-        )}
-      >
-        <div
-          className={clsx(
-            'flex flex-col sm:flex-row sm:justify-between sm:gap-4',
-            size === 'xs' ? '' : 'gap-1'
-          )}
+      <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Link
+          className="group-hover:text-primary-700 grow items-start transition-colors group-hover:underline sm:text-lg"
+          href={path}
+          onClick={trackClick}
         >
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Link
-            className="group-hover:text-primary-700 grow items-start transition-colors group-hover:underline sm:text-lg"
-            href={path}
-            onClick={trackClick}
-          >
-            <VisibilityIcon contract={contract} /> {contract.question}
-          </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-            {isBinaryCpmm && !isClosed && (
-              <BinaryBetButton contract={contract} />
-            )}
-          </Row>
-        </div>
+          <VisibilityIcon contract={contract} /> {contract.question}
+        </Link>
+        <Row className="w-full items-center justify-end gap-3 whitespace-nowrap">
+          {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+            />
+          )}
+          {isBinaryCpmm && !isClosed && <BinaryBetButton contract={contract} />}
+        </Row>
       </Col>
 
       <div
