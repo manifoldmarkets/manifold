@@ -31,8 +31,6 @@ export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
-  headerClassName?: string
-  hideHeader?: boolean
   columns?: ColumnFormat[]
   hideAvatar?: boolean
 }) {
@@ -40,8 +38,6 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    headerClassName,
-    hideHeader,
     columns = [traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
@@ -50,32 +46,6 @@ export function ContractsTable(props: {
 
   return (
     <Col className="w-full">
-      {!hideHeader && (
-        <Row
-          className={clsx(
-            'text-ink-500 sticky top-0 z-10 w-full justify-end px-2 py-1 text-sm font-semibold sm:justify-between',
-            headerClassName
-          )}
-        >
-          <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
-            Question
-          </div>
-          <Row>
-            {columns.map(({ header }) => (
-              <div
-                key={header}
-                className={clsx(
-                  'text-left',
-                  header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
-                )}
-              >
-                {header}
-              </div>
-            ))}
-          </Row>
-        </Row>
-      )}
-
       {contracts.map((contract) => (
         <ContractRow
           key={contract.id}

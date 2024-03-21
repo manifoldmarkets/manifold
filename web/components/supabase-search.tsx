@@ -439,7 +439,6 @@ export function SupabaseSearch(props: {
                 probColumn,
                 !hideActions && actionColumn,
               ])}
-              hideHeader
             />
             <LoadMoreUntilNotVisible loadMore={queryContracts} />
             {shouldLoadMore && <LoadingResults />}
