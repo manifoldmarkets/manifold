@@ -133,7 +133,7 @@ export function ScheduleTVModal(props: {
         </Row>
 
         <Row className="items-center justify-between">
-          <div>Market slug</div>
+          <div>Market link</div>
           <Input
             value={slug}
             onChange={(e) => setSlug(processMarketUrl(e.target.value))}
