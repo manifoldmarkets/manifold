@@ -167,7 +167,7 @@ export function HorizontalDashboardCard(props: {
           {isBinaryCpmm && (showGraph || !ignore) && (
             <FeedBinaryChart
               contract={contract}
-              className="mb-8"
+              className="mb-8 mt-2"
               startDate={startTime ? startTime : contract.createdTime}
             />
           )}
