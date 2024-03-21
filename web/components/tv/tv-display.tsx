@@ -54,7 +54,7 @@ export function TVDisplay(props: {
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO
-        title="Manifold TV"
+        title={`${stream?.title} on Manifold TV`}
         description="Bet on live video streams with Manifold TV"
       />
       <Row className="w-full items-start">
