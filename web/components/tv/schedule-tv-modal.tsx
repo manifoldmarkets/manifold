@@ -14,6 +14,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ScheduleItem } from './tv-schedule'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function ScheduleTVModal(props: {
   open: boolean
@@ -39,6 +40,7 @@ export function ScheduleTVModal(props: {
   const [endTime, setEndTime] = useState(defaultEnd)
 
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const save = async () => {
     if (!streamId || !slug || !title || !startTime || !endTime) {
@@ -67,7 +69,8 @@ export function ScheduleTVModal(props: {
       return
     }
 
-    setOpen(false)
+    setError('')
+    setIsSubmitting(true)
 
     await setTV(
       removeUndefinedProps({
@@ -81,10 +84,16 @@ export function ScheduleTVModal(props: {
         isFeatured,
       })
     )
-
-    if (!stream) {
-      Router.push(`/tv/schedule`)
-    }
+      .then(() => {
+        setOpen(false)
+        if (!stream) Router.push(`/tv/schedule`)
+      })
+      .catch((e) => {
+        setError(e.message)
+      })
+      .finally(() => {
+        setIsSubmitting(false)
+      })
   }
 
   const deleteStream = async () => {
@@ -169,9 +178,26 @@ export function ScheduleTVModal(props: {
         )}
 
         <Row className="gap-4">
-          <Button color="indigo" size="xl" onClick={save}>
-            {stream ? 'Save' : 'Schedule'}
+          <Button
+            color="indigo"
+            size="xl"
+            onClick={save}
+            disabled={isSubmitting}
+          >
+            {!isSubmitting ? (
+              stream ? (
+                'Save'
+              ) : (
+                'Schedule'
+              )
+            ) : (
+              <Row className="items-center">
+                <LoadingIndicator className="text-canvas-0 mr-2" size="md" />{' '}
+                Saving...
+              </Row>
+            )}
           </Button>
+
           {stream && isCreatorOrAdmin && (
             <Button
               size="xs"
@@ -179,6 +205,7 @@ export function ScheduleTVModal(props: {
               onClick={() =>
                 confirm('Are you want to delete this event?') && deleteStream()
               }
+              disabled={isSubmitting}
             >
               Delete event
             </Button>
@@ -200,5 +227,5 @@ const processYoutubeUrl = (url: string) => {
 }
 
 const processMarketUrl = (url: string) => {
-  return url.split('?')[0].split('/').pop()
+  return url.split('?')[0].split('/').pop() ?? ''
 }

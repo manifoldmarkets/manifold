@@ -1,11 +1,11 @@
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { authEndpoint, validate } from './helpers/endpoint'
 import { z } from 'zod'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 
 const schema = z.object({
   id: z.string().optional(),
@@ -24,6 +24,7 @@ export const settv = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
 
   const { id, slug, streamId, source, title, startTime, endTime } = tvSettings
+  
   const isFeatured = isAdminId(auth.uid) && tvSettings.isFeatured
   const processedStreamId = streamId.trim().substring(0, 11)
 
