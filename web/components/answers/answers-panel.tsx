@@ -93,6 +93,7 @@ export function AnswersPanel(props: {
   onAnswerClick: (answer: Answer | DpmAnswer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
+  defaultAddAnswer?: boolean
 }) {
   const {
     contract,
@@ -106,6 +107,7 @@ export function AnswersPanel(props: {
     setQuery,
     showSetDefaultSort,
     setDefaultAnswerIdsToGraph,
+    defaultAddAnswer,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
@@ -202,7 +204,7 @@ export function AnswersPanel(props: {
   }
 
   const [isSearchOpen, setIsSearchOpen] = usePersistentInMemoryState(
-    false,
+    defaultAddAnswer ?? false,
     `answers-panel-search-open-${contract.id}`
   )
   const toggleSearch = () => setIsSearchOpen(!isSearchOpen)

@@ -112,6 +112,7 @@ export function MultiBetDialog(props: {
                 setQuery={setQuery}
                 onAnswerHover={() => null}
                 onAnswerClick={() => null}
+                defaultAddAnswer={contract.addAnswersMode === 'ANYONE'}
               />
             )}
           </>
