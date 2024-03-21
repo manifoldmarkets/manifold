@@ -1,4 +1,6 @@
 import dayjs from 'dayjs'
+import { useEffect, useState } from 'react'
+import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 
 export interface ScheduleItem {
   id: number
@@ -22,6 +24,33 @@ export const filterSchedule = (
         .add(1, 'hour')
         .isAfter(dayjs()) || s.id.toString() === scheduleId
   )
+}
+
+export const useTVSchedule = (
+  defaultSchedule: ScheduleItem[] = [],
+  defaultScheduleId: string | null = null
+) => {
+  const [schedule, setSchedule] = useState(defaultSchedule)
+
+  const tvSchedule = useSubscription('tv_schedule')
+
+  useEffect(() => {
+    if (!tvSchedule.rows || !tvSchedule.rows.length) return
+
+    const newSchedule = filterSchedule(
+      tvSchedule.rows as any,
+      defaultScheduleId
+    )
+    setSchedule(newSchedule)
+  }, [tvSchedule.rows])
+
+  return schedule
+}
+
+export const useTVisActive = () => {
+  const schedule = useTVSchedule()
+  const activeStream = getActiveStream(schedule, null)
+  return activeStream !== undefined
 }
 
 export const getActiveStream = (

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { mapKeys } from 'lodash'
 
 import { Contract } from 'common/contract'
@@ -6,8 +5,11 @@ import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { useContracts } from 'web/hooks/use-contract-supabase'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { ScheduleItem, filterSchedule, getActiveStream } from './tv-schedule'
+import {
+  ScheduleItem,
+  getActiveStream,
+  useTVSchedule,
+} from './tv-schedule'
 import { TVDisplay } from './tv-display'
 import { TVSchedulePage } from './tv-schedule-page'
 
@@ -16,7 +18,7 @@ export function TVPage(props: {
   contracts: Contract[]
   scheduleId: string | null
 }) {
-  const [schedule, setSchedule] = useState(props.schedule)
+  const schedule = useTVSchedule(props.schedule, props.scheduleId)
 
   const contractsList = props.contracts.concat(
     useContracts(
@@ -25,15 +27,6 @@ export function TVPage(props: {
     )
   )
   const contracts = mapKeys(contractsList, 'id')
-
-  const tvSchedule = useSubscription('tv_schedule')
-
-  useEffect(() => {
-    if (!tvSchedule.rows || !tvSchedule.rows.length) return
-
-    const newSchedule = filterSchedule(tvSchedule.rows as any, props.scheduleId)
-    setSchedule(newSchedule)
-  }, [tvSchedule.rows])
 
   const stream = getActiveStream(schedule, props.scheduleId)
   const contract = contracts[stream?.contract_id ?? '']
@@ -50,7 +43,7 @@ export function TVPage(props: {
       </Page>
     )
   }
-  
+
   if (!contract || props.scheduleId === 'schedule')
     return <TVSchedulePage schedule={schedule} contracts={contracts} />
 
