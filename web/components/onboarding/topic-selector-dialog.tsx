@@ -19,6 +19,7 @@ export function TopicSelectorDialog(props: {
   userInterestedTopics: Group[]
   userBetInTopics: Group[]
   onClose?: () => void
+  setFeedKey?: (key: string) => void
 }) {
   const {
     skippable,
@@ -26,6 +27,7 @@ export function TopicSelectorDialog(props: {
     trendingTopics,
     userBetInTopics,
     onClose,
+    setFeedKey,
   } = props
 
   const user = useUser()
@@ -61,7 +63,12 @@ export function TopicSelectorDialog(props: {
 
     if (user && !skipUpdate) {
       // Don't await as this takes a long time.
-      api('update-user-embedding', {})
+      api('update-user-embedding', {}).then(() => {
+        if (setFeedKey) {
+          console.log('setting feed key to regenerate home feed')
+          setFeedKey('feed-after-updating-user-with-topics')
+        }
+      })
     }
 
     if (user) await updateUser(user.id, { shouldShowWelcome: false })

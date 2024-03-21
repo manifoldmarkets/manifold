@@ -37,7 +37,9 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 
-export default function Welcome() {
+export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
+  const { setFeedKey } = props
+
   const user = useUser()
   const authed = useIsAuthorized()
   const isTwitch = useIsTwitch(user)
@@ -191,6 +193,7 @@ export default function Welcome() {
         trendingTopics={trendingTopics}
         userInterestedTopics={userInterestedTopics}
         userBetInTopics={userBetInTopics}
+        setFeedKey={setFeedKey}
         onClose={() => {
           track('welcome screen: complete')
           setOpen(false)

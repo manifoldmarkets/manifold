@@ -67,10 +67,12 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
+  const [feedKey, setFeedKey] = usePersistentInMemoryState('feed', 'feed-key')
+
   const { headlines } = props
   return (
     <>
-      <Welcome />
+      <Welcome setFeedKey={setFeedKey} />
       <Page
         trackPageView={'home'}
         trackPageProps={{ kind: 'desktop' }}
@@ -85,7 +87,11 @@ export default function Home(props: { headlines: Headline[] }) {
         {!user ? (
           <LoadingIndicator />
         ) : isClient ? (
-          <HomeContent user={user} privateUser={privateUser} />
+          <HomeContent
+            user={user}
+            privateUser={privateUser}
+            feedKey={feedKey}
+          />
         ) : null}
       </Page>
     </>
@@ -95,8 +101,9 @@ export default function Home(props: { headlines: Headline[] }) {
 export function HomeContent(props: {
   user: User | undefined | null
   privateUser: PrivateUser | undefined | null
+  feedKey: string
 }) {
-  const { user, privateUser } = props
+  const { user, privateUser, feedKey } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
@@ -190,6 +197,8 @@ export function HomeContent(props: {
 
       {privateUser && (
         <FeedTimeline
+          key={feedKey}
+          feedKey={feedKey}
           className={clsx(activeIndex !== 0 && 'hidden', 'sm:px-2')}
           user={user}
           privateUser={privateUser}
