@@ -383,7 +383,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     supabaseTimestamp: item.created_time,
     reasonDescription: getExplanation(
       item.data_type as FEED_DATA_TYPES,
-      item.reasons[0] as FEED_REASON_TYPES
+      item.reasons?.[0] as FEED_REASON_TYPES
     ),
   })
 
