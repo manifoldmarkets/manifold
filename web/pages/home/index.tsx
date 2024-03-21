@@ -68,10 +68,6 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveScroll('home')
 
   const { headlines } = props
-  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
-  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
-  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
-
   return (
     <>
       <Welcome />
@@ -86,32 +82,11 @@ export default function Home(props: { headlines: Headline[] }) {
           currentSlug={'home'}
           hideEmoji
         />
-        {!user || !variant ? (
+        {!user ? (
           <LoadingIndicator />
-        ) : !createdRecently || variant === 'browse' ? (
-          isClient ? (
-            <HomeContent
-              user={user}
-              privateUser={privateUser}
-              variant={variant}
-            />
-          ) : null
-        ) : !memberTopicsWithContracts ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <WelcomeTopicSections
-              memberTopicsWithContracts={memberTopicsWithContracts}
-            />
-            {isClient && (
-              <HomeContent
-                user={user}
-                privateUser={privateUser}
-                variant={variant}
-              />
-            )}
-          </>
-        )}
+        ) : isClient ? (
+          <HomeContent user={user} privateUser={privateUser} />
+        ) : null}
       </Page>
     </>
   )
@@ -120,15 +95,19 @@ export default function Home(props: { headlines: Headline[] }) {
 export function HomeContent(props: {
   user: User | undefined | null
   privateUser: PrivateUser | undefined | null
-  variant: 'welcome topics' | 'browse'
 }) {
-  const { user, privateUser, variant } = props
+  const { user, privateUser } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
   )
   const createdInLastHour = (user?.createdTime ?? 0) > Date.now() - HOUR_MS
   const freeQuestionsEnabled = !createdInLastHour
+
+  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
+  const createdToday = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const welcomeTopicsEnabled = variant === 'welcome topics' && createdToday
+  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
     createdInLastHour && variant === 'browse' ? 1 : 0,
@@ -144,6 +123,9 @@ export function HomeContent(props: {
   const newUserGoalsEnabled =
     !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
 
+  if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
+    return <LoadingIndicator />
+  }
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
       {user &&
@@ -168,7 +150,18 @@ export function HomeContent(props: {
           </Col>
         )}
 
-      {user && newUserGoalsEnabled && <NewUserGoals user={user} />}
+      {user && newUserGoalsEnabled && (
+        <>
+          <NewUserGoals user={user} />
+          <div className="mt-4" />
+        </>
+      )}
+
+      {welcomeTopicsEnabled && memberTopicsWithContracts && (
+        <WelcomeTopicSections
+          memberTopicsWithContracts={memberTopicsWithContracts}
+        />
+      )}
 
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
         <ControlledTabs
