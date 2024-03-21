@@ -107,9 +107,7 @@ export function HorizontalDashboardCard(props: {
   return (
     <ClickFrame
       className={clsx(
-        'group relative rounded-xl',
-        'cursor-pointer ',
-        'flex w-full flex-col gap-0.5 px-4',
+        'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4',
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
@@ -124,80 +122,67 @@ export function HorizontalDashboardCard(props: {
       }}
       ref={ref}
     >
-      <Col
-        className={clsx(
-          'w-full flex-col pt-2',
-          size === 'xs' ? '' : 'gap-1.5 '
-        )}
-      >
+      <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
+        {/* Title is link to contract for open in new tab and a11y */}
+        <Link
+          className="group-hover:text-primary-700 grow items-start transition-colors group-hover:underline sm:text-lg"
+          href={path}
+          onClick={trackClick}
+        >
+          <VisibilityIcon contract={contract} /> {contract.question}
+        </Link>
+      </Col>
+      <Col>
+        <Row className="w-full items-center justify-end gap-3 whitespace-nowrap">
+          {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+            />
+          )}
+          {isBinaryCpmm && !isClosed && <BinaryBetButton contract={contract} />}
+        </Row>
         <div
           className={clsx(
-            'flex flex-col sm:flex-row sm:justify-between sm:gap-4',
-            size === 'xs' ? '' : 'gap-1'
+            'w-full overflow-hidden',
+            size === 'xs' ? 'pt-0.5' : 'pt-2'
           )}
         >
-          {/* Title is link to contract for open in new tab and a11y */}
-          <Link
-            className="group-hover:text-primary-700 grow items-start transition-colors group-hover:underline sm:text-lg"
-            href={path}
-            onClick={trackClick}
-          >
-            <VisibilityIcon contract={contract} /> {contract.question}
-          </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-            {isBinaryCpmm && !isClosed && (
-              <BinaryBetButton contract={contract} />
-            )}
-          </Row>
-        </div>
-      </Col>
-
-      <div
-        className={clsx(
-          'w-full overflow-hidden',
-          size === 'xs' ? 'pt-0.5' : 'pt-2'
-        )}
-      >
-        {contract.outcomeType === 'POLL' && (
-          <PollPanel contract={contract} maxOptions={4} />
-        )}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-          <SmallAnswerBars contract={contract} maxAnswers={3} />
-        )}
-
-        {isBinaryMc &&
-          contract.mechanism === 'cpmm-multi-1' &&
-          contract.outcomeType !== 'NUMBER' && (
-            <BinaryMultiAnswersPanel
-              contract={contract}
-              answers={contract.answers}
-            />
+          {contract.outcomeType === 'POLL' && (
+            <PollPanel contract={contract} maxOptions={4} />
+          )}
+          {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
+            <SmallAnswerBars contract={contract} maxAnswers={3} />
           )}
 
-        {isBinaryCpmm && (showGraph || !ignore) && (
-          <FeedBinaryChart
-            contract={contract}
-            className="my-4"
-            startDate={startTime ? startTime : contract.createdTime}
-          />
-        )}
-        {promotedData && canAdPay && (
-          <Col className={clsx('w-full items-center')}>
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-              className={'z-10 my-2 whitespace-nowrap'}
+          {isBinaryMc &&
+            contract.mechanism === 'cpmm-multi-1' &&
+            contract.outcomeType !== 'NUMBER' && (
+              <BinaryMultiAnswersPanel
+                contract={contract}
+                answers={contract.answers}
+              />
+            )}
+
+          {isBinaryCpmm && (showGraph || !ignore) && (
+            <FeedBinaryChart
+              contract={contract}
+              className="mb-8 mt-2"
+              startDate={startTime ? startTime : contract.createdTime}
             />
-          </Col>
-        )}
-      </div>
+          )}
+          {promotedData && canAdPay && (
+            <Col className={clsx('w-full items-center')}>
+              <ClaimButton
+                {...promotedData}
+                onClaim={() => Router.push(path)}
+                disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
+                className={'z-10 my-2 whitespace-nowrap'}
+              />
+            </Col>
+          )}
+        </div>
+      </Col>
     </ClickFrame>
   )
 }

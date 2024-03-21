@@ -89,7 +89,7 @@ export function HorizontalDashboard(props: {
               previews={previews}
               contracts={contracts}
               className={clsx(
-                ' mb-8 min-w-[320px] shadow-xl shadow-indigo-500/20'
+                ' mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20'
               )}
             />
           ))}
@@ -107,7 +107,7 @@ export function HorizontalDashboard(props: {
             previews={previews}
             contracts={contracts}
             className={clsx(
-              'mb-8 min-w-[320px] shadow-xl shadow-indigo-500/20'
+              'mb-8 min-w-[332px] shadow-xl shadow-indigo-500/20'
             )}
           />
         ))}
