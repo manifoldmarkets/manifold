@@ -501,7 +501,13 @@ export function ScheduleTVModal(props: {
             {stream ? 'Save' : 'Schedule'}
           </Button>
           {stream && isCreatorOrAdmin && (
-            <Button size="xs" color="red-outline" onClick={deleteStream}>
+            <Button
+              size="xs"
+              color="red-outline"
+              onClick={() =>
+                confirm('Are you want to delete this event?') && deleteStream()
+              }
+            >
               Delete event
             </Button>
           )}
