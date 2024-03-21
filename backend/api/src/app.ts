@@ -146,7 +146,7 @@ import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
 import { placeMultiBet } from 'api/place-multi-bet'
-import { settv } from './set-tv'
+import { deletetv, settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
@@ -383,6 +383,7 @@ app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 
 app.post('/settv', ...apiRoute(settv))
+app.post('/deletetv', ...apiRoute(deletetv))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
