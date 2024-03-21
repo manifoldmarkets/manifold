@@ -213,23 +213,24 @@ export function PoliticsDashboardPage(props: {
             </Button>
           </Row>
         ) : (
-          <UserHovercard userId={dashboard.creatorId} className="mb-8">
-            <Row className="items-center gap-2">
-              <Avatar
-                username={dashboard.creatorUsername}
-                avatarUrl={dashboard.creatorAvatarUrl}
-                size="xs"
-              />
-              <UserLink
-                user={{
-                  id: dashboard.creatorId,
-                  name: dashboard.creatorName,
-                  username: dashboard.creatorUsername,
-                }}
-                className="text-ink-700"
-              />
-            </Row>
-          </UserHovercard>
+          <></>
+          // <UserHovercard userId={dashboard.creatorId} className="mb-8">
+          //   <Row className="items-center gap-2">
+          //     <Avatar
+          //       username={dashboard.creatorUsername}
+          //       avatarUrl={dashboard.creatorAvatarUrl}
+          //       size="xs"
+          //     />
+          //     <UserLink
+          //       user={{
+          //         id: dashboard.creatorId,
+          //         name: dashboard.creatorName,
+          //         username: dashboard.creatorUsername,
+          //       }}
+          //       className="text-ink-700"
+          //     />
+          //   </Row>
+          // </UserHovercard>
         )}
         {editMode && (
           <div className="mb-4">

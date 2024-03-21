@@ -77,7 +77,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
     )
 
   return (
-    <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
+    <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
       <Col>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
           Manifold 2024 Election Forecast
