@@ -25,6 +25,7 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
 
   const pg = createSupabaseDirectClient()
 
+  const manifoldStartStr = new Date('2021-12-01').toISOString()
   const quarterStartStr = PARTNER_QUARTER_START_DATE.toISOString()
   const quarterEndStr = getPartnerQuarterEndDate(
     PARTNER_QUARTER_START_DATE
@@ -50,35 +51,53 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   const thisQuarterContractTraders = await getCreatorTradersByContract(
     pg,
     userId,
-    quarterStart,
-    quarterEnd
+    quarterStartStr,
+    quarterEndStr
   )
   const contractIds = uniq(thisQuarterContractTraders.map((t) => t.contract_id))
   const previousContractTraders = await getCreatorTradersByContract(
     pg,
     userId,
-    0,
-    quarterStart,
+    manifoldStartStr,
+    quarterStartStr,
     contractIds
   )
   const previousContractTradersObj = Object.fromEntries(
     previousContractTraders.map((t) => [t.contract_id, t])
   )
+  const totalContractTraders = await getCreatorTradersByContract(
+    pg,
+    userId,
+    manifoldStartStr,
+    quarterEndStr,
+    contractIds
+  )
 
-  const totalContractTraders = thisQuarterContractTraders.map((t) => ({
-    ...t,
-    total: t.total + (previousContractTradersObj[t.contract_id]?.total ?? 0),
-  }))
+  const newContractTraders = totalContractTraders
+    .map((t) => {
+      const previous = previousContractTradersObj[t.contract_id]
+      return {
+        ...t,
+        total: t.total - (previous?.total ?? 0),
+      }
+    })
+    .filter((t) => t.total > 0)
+  const newContractTradersObj = Object.fromEntries(
+    newContractTraders.map((t) => [t.contract_id, t])
+  )
 
   const contractIdsMeetingThreshold = new Set(
     totalContractTraders
-      .filter((traders) => traders.total >= PARTNER_UNIQUE_TRADER_THRESHOLD)
+      .filter(
+        (traders) =>
+          traders.total >= PARTNER_UNIQUE_TRADER_THRESHOLD &&
+          newContractTradersObj[traders.contract_id]?.total
+      )
       .map((t) => t.contract_id)
   )
-  const thisQuarterContractTradersMeetingThreshold =
-    thisQuarterContractTraders.filter((t) =>
-      contractIdsMeetingThreshold.has(t.contract_id)
-    )
+  const thisQuarterContractTradersMeetingThreshold = newContractTraders.filter(
+    (t) => contractIdsMeetingThreshold.has(t.contract_id)
+  )
 
   const numUniqueBettors: number = sumBy(
     thisQuarterContractTradersMeetingThreshold,
@@ -159,8 +178,8 @@ select user_id from user_bet_days where total_bet_days >= $4
 const getCreatorTradersByContract = async (
   pg: SupabaseDirectClient,
   creatorId: string,
-  since: number,
-  before: number,
+  since: string,
+  before: string,
   contractIds?: string[]
 ) => {
   return await pg.manyOrNone<{
@@ -173,7 +192,7 @@ const getCreatorTradersByContract = async (
         from contract_bets
         where created_time >= $2
         and created_time < $3
-        and $4 is null or contract_id = any($4)
+        and ($4 is null or contract_id = any($4))
         and is_redemption = false
         and (is_api is null or is_api = false)
         and amount != 0
@@ -183,19 +202,12 @@ const getCreatorTradersByContract = async (
       from contracts as c
       join contract_traders as ct on c.id = ct.contract_id
       where c.creator_id = $1
-      and (c.resolution_time is null or c.resolution_time > $2)
       and c.visibility = 'public'
       and (c.data->>'isSubsidized' is null or c.data->>'isSubsidized' = 'true')
       group by c.id, outcome_type`,
-    [
-      creatorId,
-      new Date(since ?? 0).toISOString(),
-      new Date(before).toISOString(),
-      contractIds ?? null,
-    ]
+    [creatorId, since, before, contractIds ?? null]
   )
 }
-
 const getNumContractsCreated = async (
   pg: SupabaseDirectClient,
   creatorId: string,
