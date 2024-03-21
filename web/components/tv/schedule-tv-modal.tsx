@@ -28,6 +28,7 @@ export function ScheduleTVModal(props: {
   const [slug, setSlug] = useState(props.slug ?? '')
   const [title, setTitle] = useState(stream?.title ?? '')
   const [isFeatured, setIsFeatured] = useState(stream?.is_featured ?? false)
+  const [source, setSource] = useState(stream?.source ?? 'youtube')
 
   const defaultStart = stream
     ? dayjs(stream.start_time).format('YYYY-MM-DD HH:mm')
@@ -48,8 +49,7 @@ export function ScheduleTVModal(props: {
       return
     }
 
-    // Validate the YouTube Stream ID
-    if (streamId.length !== 11) {
+    if (source === 'youtube' && streamId.length !== 11) {
       setError(
         'Invalid YouTube Stream ID. It should be exactly 11 characters long.'
       )
@@ -80,7 +80,7 @@ export function ScheduleTVModal(props: {
         title,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
-        source: 'youtube',
+        source,
         isFeatured,
       })
     )
@@ -125,10 +125,20 @@ export function ScheduleTVModal(props: {
         </Row>
 
         <Row className="items-center justify-between">
-          <div>YouTube stream</div>
+          <div>YouTube / Twitch</div>
           <Input
             value={streamId}
-            onChange={(e) => setStreamId(processYoutubeUrl(e.target.value))}
+            onChange={(e) => {
+              const text = e.target.value
+              const processed = processYoutubeUrl(text)
+              if (processed.length === 11 && !text.includes('twitch')) {
+                setStreamId(processed)
+                setSource('youtube')
+              } else {
+                setStreamId(processUrl(text))
+                setSource('twitch')
+              }
+            }}
           />
         </Row>
 
@@ -136,7 +146,7 @@ export function ScheduleTVModal(props: {
           <div>Market link</div>
           <Input
             value={slug}
-            onChange={(e) => setSlug(processMarketUrl(e.target.value))}
+            onChange={(e) => setSlug(processUrl(e.target.value))}
           />
         </Row>
 
@@ -223,9 +233,9 @@ const processYoutubeUrl = (url: string) => {
   if (match) {
     return match[1]
   }
-  return url.substring(0, 11)
+  return url
 }
 
-const processMarketUrl = (url: string) => {
+const processUrl = (url: string) => {
   return url.split('?')[0].split('/').pop() ?? ''
 }

@@ -10,8 +10,8 @@ import { isAdminId } from 'common/envs/constants'
 const schema = z.object({
   id: z.string().optional(),
   slug: z.string(),
-  streamId: z.string().length(11),
-  source: z.string(),
+  streamId: z.string(),
+  source: z.union([z.literal('youtube'), z.literal('twitch')]),
   title: z.string(),
   startTime: z.string(),
   endTime: z.string(),
@@ -24,9 +24,8 @@ export const settv = authEndpoint(async (req, auth) => {
   const pg = createSupabaseDirectClient()
 
   const { id, slug, streamId, source, title, startTime, endTime } = tvSettings
-  
+
   const isFeatured = isAdminId(auth.uid) && tvSettings.isFeatured
-  const processedStreamId = streamId.trim().substring(0, 11)
 
   const db = createSupabaseClient()
   const contractId = await getContractIdFromSlug(db, slug)
@@ -34,16 +33,7 @@ export const settv = authEndpoint(async (req, auth) => {
   if (id) {
     await pg.none(
       'UPDATE tv_schedule SET contract_id = $1, stream_id = $2, source = $3, title = $4, start_time = $5, end_time = $6, is_featured = $7 WHERE id = $8',
-      [
-        contractId,
-        processedStreamId,
-        source,
-        title,
-        startTime,
-        endTime,
-        isFeatured,
-        id,
-      ]
+      [contractId, streamId, source, title, startTime, endTime, isFeatured, id]
     )
     return { status: 'success' }
   }
@@ -53,7 +43,7 @@ export const settv = authEndpoint(async (req, auth) => {
     [
       auth.uid,
       contractId,
-      processedStreamId,
+      streamId,
       source,
       title,
       startTime,

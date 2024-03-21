@@ -20,6 +20,7 @@ import { Tabs } from 'web/components/layout/tabs'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
+import { DOMAIN } from 'common/envs/constants'
 
 export function TVDisplay(props: {
   contract: Contract
@@ -51,25 +52,28 @@ export function TVDisplay(props: {
 
   const channelId = `tv-${stream?.id ?? 'default'}`
 
+  const streamSrc =
+    stream?.source === 'twitch'
+      ? `https://player.twitch.tv/?channel=${stream.stream_id}&parent=${DOMAIN&&'localhost'}&autoplay=true`
+      : 'https://www.youtube.com/embed/' + stream?.stream_id + '?autoplay=1'
+
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
       <SEO
         title={`${stream?.title} on Manifold TV`}
-        description="Bet on live video streams with Manifold TV"
+        description={`Watch the stream and bet on ${contract.question}`}
+        url={`/tv/${stream?.id}`}
+        image={contract.coverImageUrl}
       />
       <Row className="w-full items-start">
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
           <iframe
-            src={
-              'https://www.youtube.com/embed/' +
-              stream?.stream_id +
-              '?autoplay=1'
-            }
+            src={streamSrc}
             title="Manifold Live video"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"
-          ></iframe>
+         />
 
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
