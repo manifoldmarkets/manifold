@@ -6,7 +6,6 @@ import { partition } from 'lodash'
 import { Contract } from 'common/contract'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
-import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
@@ -15,6 +14,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { ScheduleItem } from './tv-schedule'
 import { useUser } from 'web/hooks/use-user'
+import { BsCircleFill } from 'react-icons/bs'
 
 export function TVSchedulePage(props: {
   schedule: ScheduleItem[]
@@ -39,6 +39,7 @@ export function TVSchedulePage(props: {
       {featured.length > 0 && (
         <>
           <Subtitle>Featured events</Subtitle>
+
           {featured
             .map((s) => [s, contracts[s.contract_id]] as const)
             .map(([s, c]) => (
@@ -74,23 +75,27 @@ export function TVSchedulePage(props: {
 
 function ScheduleRow(props: { stream: ScheduleItem; contract: Contract }) {
   const { stream, contract } = props
+  const happeningNow =
+    dayjs().isAfter(stream.start_time) && dayjs().isBefore(stream.end_time)
+
   return (
-    <Link
-      href={`/tv/${stream.id}`}
-      key={stream.id}
-      className="flex items-center gap-2 hover:underline"
-    >
-      <Col>
+    <div className="mb-4 flex flex-col items-start gap-1">
+      <Link
+        href={`/tv/${stream.id}`}
+        key={stream.id}
+        className="flex items-center gap-2 hover:underline"
+      >
         <Avatar
           size="2xs"
           avatarUrl={contract?.creatorAvatarUrl}
           username={contract?.creatorUsername}
           noLink
         />
-      </Col>
-      <Col className="font-semibold">{stream.title}</Col>
-      <Col>{formatTimeRange(stream.start_time, stream.end_time)}</Col>
-    </Link>
+        <span className="font-semibold">{stream.title}</span>
+        {happeningNow && <BsCircleFill className=" text-red-500" />}
+      </Link>
+      <span>{formatTimeRange(stream.start_time, stream.end_time)}</span>
+    </div>
   )
 }
 
@@ -100,5 +105,10 @@ const formatTimeRange = (start: string, end: string) => {
 
   const endDate = e.isSame(s, 'day') ? '' : `${e.format('M/D')} `
 
-  return `${s.format('M/D H:mm')} - ${endDate}${e.format('H:mm')}`
+  return (
+    <Row>
+      {s.format('M/D H:mm')} - {endDate}
+      {e.format('H:mm')}
+    </Row>
+  )
 }
