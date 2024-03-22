@@ -121,6 +121,12 @@ const uploadAndSetCoverImage = async (
 ) => {
   const dalleImage = await generateImage(question)
   if (!dalleImage) return
+  // first save the url to the contract
+  const snapshot = await firestore.collection('contracts').doc(contractId).get()
+  await snapshot.ref.update({ coverImageUrl: dalleImage })
+  console.log('generated dalle image: ' + dalleImage)
+
+  // try to upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
   const coverImageUrl = await uploadToStorage(
     dalleImage,
     creatorUsername
@@ -129,7 +135,7 @@ const uploadAndSetCoverImage = async (
     return null
   })
   if (!coverImageUrl) return
-  const snapshot = await firestore.collection('contracts').doc(contractId).get()
+
   await snapshot.ref.update({ coverImageUrl })
 }
 
@@ -149,23 +155,24 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
 
   const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
 
-  const stream = file.createWriteStream({
-    metadata: {
-      contentType: 'image/jpg',
-      predefinedAcl: 'publicRead',
-    },
+  return new Promise<string>((resolve, reject) => {
+    const stream = file.createWriteStream({
+      metadata: {
+        contentType: 'image/jpg',
+        predefinedAcl: 'publicRead',
+      },
+    })
+
+    stream.on('error', (err) => {
+      reject(err)
+    })
+
+    stream.on('finish', () => {
+      console.log('Image upload completed')
+      const url = file.publicUrl()
+      resolve(url.replace(/%2F/g, '/'))
+    })
+
+    stream.end(buffer)
   })
-
-  stream.on('error', (err) => {
-    console.error(err)
-  })
-
-  stream.on('finish', () => {
-    console.log('Image upload completed')
-  })
-
-  stream.end(buffer)
-
-  const url = file.publicUrl()
-  return url.replace('%2F', '/') // prevent weird escaping
 }
