@@ -139,7 +139,7 @@ export function HomeContent(props: {
         !newUserGoalsEnabled &&
         freeQuestionsEnabled &&
         remaining > 0 && (
-          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
+          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
             <Row className="flex-1 flex-wrap gap-x-1">
               <span>🎉 You've got {remaining} free questions!</span>
               <span>
