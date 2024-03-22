@@ -3,7 +3,6 @@ import {
   getDoc,
   getUsers,
   revalidateContractStaticProps,
-  revalidateStaticProps,
   getBettingStreakResetTimeBeforeNow,
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
@@ -384,11 +383,6 @@ const updateUserContractMetrics = async (
   )
 
   await bulkUpdateContractMetrics(metrics.flat())
-  await Promise.all(
-    uniqBy(metrics.flat(), 'userUsername').map(async (metric) =>
-      revalidateStaticProps(`/${metric.userUsername}`)
-    )
-  )
 }
 
 const handleBetReplyToComment = async (

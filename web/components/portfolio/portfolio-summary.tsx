@@ -5,8 +5,6 @@ import { User } from 'common/user'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { useUser, usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
-import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
-import { getCutoff } from 'web/lib/util/time'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -14,21 +12,14 @@ import { SupabaseSearch } from '../supabase-search'
 import { BalanceCard } from './balance-card'
 import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 
 export const PortfolioSummary = (props: {
   user: User
   balanceChanges: AnyBalanceChangeType[]
-  totalPortfolioPoints: number
-  weeklyPortfolioData: PortfolioSnapshot[]
   className?: string
 }) => {
-  const {
-    user,
-    totalPortfolioPoints,
-    weeklyPortfolioData,
-    balanceChanges,
-    className,
-  } = props
+  const { user, balanceChanges, className } = props
   const router = useRouter()
   const pathName = usePathname()
   const currentUser = useUser()
@@ -38,6 +29,10 @@ export const PortfolioSummary = (props: {
   const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
+  const isCreatedInLastWeek =
+    user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
+
+  const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
   return (
     <Col className={clsx(className, 'gap-4')}>
@@ -59,22 +54,19 @@ export const PortfolioSummary = (props: {
         />
       </Row>
 
-      {totalPortfolioPoints > 1 && (
-        <Col className={'px-1 md:pr-8'}>
-          <PortfolioValueSection
-            userId={user.id}
-            onlyShowProfit={true}
-            defaultTimePeriod={
-              currentUser?.id === user.id ? 'weekly' : 'monthly'
-            }
-            preloadPoints={{ [getCutoff('weekly')]: weeklyPortfolioData }}
-            lastUpdatedTime={user.metricsLastUpdated}
-            isCurrentUser={currentUser?.id === user.id}
-            hideAddFundsButton={true}
-            size="sm"
-          />
-        </Col>
-      )}
+      <PortfolioValueSection
+        userId={user.id}
+        defaultTimePeriod={
+          isCreatedInLastWeek
+            ? 'allTime'
+            : currentUser?.id === user.id
+            ? 'weekly'
+            : 'monthly'
+        }
+        lastUpdatedTime={user.metricsLastUpdated}
+        isCurrentUser={isCurrentUser}
+        hideAddFundsButton
+      />
 
       {isCurrentUser && (
         <Col className="mb-6 mt-2 gap-2">
