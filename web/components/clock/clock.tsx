@@ -5,6 +5,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Display } from './display'
 import clsx from 'clsx'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 dayjs.extend(duration)
 
@@ -36,7 +37,7 @@ export const getTimeUntil = (year: number) => {
 export const Clock = (props: { year: number }) => {
   const { year } = props
   const [timeUntil, setTimeUntil] = useState(getTimeUntil(year))
-
+  const isClient = useIsClient()
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeUntil(getTimeUntil(year))
@@ -75,34 +76,23 @@ export const Clock = (props: { year: number }) => {
         <TimeUnit unit={'minutes'} value={timeUntil.minutes.toString()} />
         {colon}
         {/* We want to show the -- for the changing seconds */}
-        <TimeUnit unit={'seconds'} value={timeUntil.seconds} />
+        <TimeUnit
+          unit={'seconds'}
+          value={isClient ? timeUntil.seconds : null}
+        />
       </Row>
     </Row>
   )
 }
-const TimeUnit = (props: { value: number | string; unit: string }) => {
+const TimeUnit = (props: { value: number | string | null; unit: string }) => {
   const { value, unit } = props
   return (
     <Col className={'items-center'}>
       <div className={'sm:hidden'}>
-        <Display
-          color={'red'}
-          height={30}
-          skew={false}
-          count={2}
-          backgroundColor={'transparent'}
-          value={value}
-        />
+        <Display height={30} value={value} />
       </div>
       <div className={'hidden sm:block'}>
-        <Display
-          color={'red'}
-          height={60}
-          skew={false}
-          count={2}
-          backgroundColor={'transparent'}
-          value={value}
-        />
+        <Display height={60} value={value} />
       </div>
       <span className={'text-xs font-bold sm:text-sm'}>{unit}</span>
     </Col>

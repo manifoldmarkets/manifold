@@ -4,12 +4,12 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 
 type DisplayType = {
-  count: number
+  count?: number
   height: number
-  value: any
-  color: string
+  value: string | number | null
+  color?: string
   backgroundColor?: string
-  skew: boolean
+  skew?: boolean
 }
 
 export const Display = ({
@@ -20,7 +20,23 @@ export const Display = ({
   backgroundColor,
   skew = false,
 }: DisplayType) => {
-  const [digits, setDigits] = useState([])
+  const calculateDigits = () => {
+    let newDigits = value ? value.toString().split('') : null
+
+    if (!value || count < value.toString().length) {
+      newDigits = null
+    }
+
+    if (value && count > value.toString().length) {
+      for (let i = 0; i < count - value.toString().length; i++) {
+        newDigits?.unshift('0')
+      }
+    }
+    return newDigits
+  }
+  const [digits, setDigits] = useState<null | string[]>(
+    calculateDigits() ?? ['-', '-']
+  )
 
   const style = {
     height: 'fit-content',
@@ -35,18 +51,7 @@ export const Display = ({
   } as React.CSSProperties
 
   useEffect(() => {
-    let newDigits = value && value.toString().split('')
-
-    if (!value || count < value.toString().length) {
-      newDigits = null
-    }
-
-    if (value && count > value.toString().length) {
-      for (let i = 0; i < count - value.toString().length; i++) {
-        newDigits.unshift('0')
-      }
-    }
-    setDigits(newDigits)
+    setDigits(calculateDigits())
   }, [count, value])
 
   return (
