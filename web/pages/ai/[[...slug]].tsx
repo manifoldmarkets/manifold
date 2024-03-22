@@ -25,9 +25,13 @@ import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboa
 import { getContract } from 'web/lib/supabase/contracts'
 import { CPMMNumericContract } from 'common/contract'
 import { getExpectedValue } from 'common/multi-numeric'
-import { Clock } from 'web/components/ai/clock'
+import { Clock } from 'web/components/clock/clock'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
+import Link from 'next/link'
+import clsx from 'clsx'
+import { linkClass } from 'web/components/widgets/site-link'
+import { useAnswersCpmm } from 'web/hooks/use-answers'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -127,8 +131,14 @@ function MultiDashboard(props: MultiDashboardProps) {
       'public',
       props.whenAgi.id
     ) as CPMMNumericContract) ?? props.whenAgi
+  const answers = useAnswersCpmm(whenAgi.id)
+  if (answers) whenAgi.answers = answers
+
   const user = useUser()
   const expectedValueAGI = getExpectedValue(whenAgi)
+  const eventYear = Math.floor(expectedValueAGI)
+  const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
+  const expectedYear = new Date(eventYear, eventMonth, 1)
 
   return (
     <Page trackPageView="ai multi dashboard">
@@ -151,7 +161,7 @@ function MultiDashboard(props: MultiDashboardProps) {
             ref={headlineSlugsToRefs.current[TOP_SLUG]}
             className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl"
           >
-            Manifold Artificial Intelligence Forecasts
+            Manifold AI Forecasts
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}/${ENDPOINT}${
                 user?.username ? referralQuery(user.username) : ''
@@ -166,9 +176,16 @@ function MultiDashboard(props: MultiDashboardProps) {
           </div>
         </Col>
 
-        <Col className={'my-4 w-full gap-4'}>
-          <span className={'text-primary-700 mb-4 text-xl'}>
-            Artificial General Intelligence countdown
+        <Col className={'my-4 w-full justify-center'}>
+          <Link
+            href={'/ian/when-agi'}
+            className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
+          >
+            Countdown to AGI
+          </Link>
+          <span className={'mb-4'}>
+            The market expects we achieve artificial general intelligence by{' '}
+            {expectedYear.getFullYear()}... What do you think?
           </span>
           <Row className={'w-full justify-center'}>
             <Col className={'w-fit  gap-4'}>
