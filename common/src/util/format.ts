@@ -20,6 +20,11 @@ export function formatMoney(amount: number) {
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
 }
 
+export function formatMoneyShort(amount: number) {
+  const newAmount = getMoneyNumber(amount)
+  return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
+}
+
 export function formatMoneyUSD(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)

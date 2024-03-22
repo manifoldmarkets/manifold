@@ -31,8 +31,11 @@ export const traderColumn = {
 export const probColumn = {
   header: 'Stat',
   content: (contract: Contract) => (
-    <div className="font-semibold ">
-      <ContractStatusLabel contract={contract} />
+    <div className="font-semibold">
+      <ContractStatusLabel
+        contract={contract}
+        className="block w-[3ch] text-right"
+      />
     </div>
   ),
 }
