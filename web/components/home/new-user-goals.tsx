@@ -163,10 +163,13 @@ const ProgressDisplay = (props: {
   } = props
   return (
     <Col
-      className={clsx('gap-3 rounded-md bg-indigo-100 px-4 py-3', className)}
+      className={clsx(
+        'gap-3 rounded-md bg-indigo-100 px-4 py-3 dark:bg-indigo-900',
+        className
+      )}
     >
       <Row className="items-center gap-2 text-xl">
-        <GoGoal className="text-2xl text-indigo-800" />
+        <GoGoal className="text-2xl text-indigo-800 dark:text-indigo-300" />
         {label}
       </Row>
       <Row className="items-center justify-between gap-4">
