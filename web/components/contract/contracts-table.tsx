@@ -293,10 +293,10 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
               {ans.text}
             </div>
             <div className="flex justify-end sm:w-fit">
-              <span className="w-16 opacity-70">
+              <div className="hidden w-16 opacity-70 sm:block">
                 {/* TODO: num traders instead? */}
                 {formatMoneyShort(ans.totalLiquidity)}
-              </span>
+              </div>
               <div className="w-16">
                 <div
                   className={
