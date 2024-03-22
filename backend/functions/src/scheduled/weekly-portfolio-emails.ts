@@ -47,7 +47,7 @@ export const weeklyPortfolioUpdateEmails = functions
     timeoutSeconds: 540,
   })
   // every minute on Friday for two hours at 12pm PT (UTC -07:00)
-  .pubsub.schedule('* 19-20 * * 5')
+  .pubsub.schedule('* 19-24 * * 5')
   .timeZone('Etc/UTC')
   .onRun(async () => {
     await sendPortfolioUpdateEmailsToAllUsers()
@@ -69,6 +69,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         USERS_TO_EMAIL
       )
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+
   // get all users that haven't unsubscribed from weekly emails
   const privateUsersToSendEmailsTo = privateUsers.filter((user) => {
     return isProd()
@@ -76,6 +77,16 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
           user.email
       : user.notificationPreferences.profit_loss_updates.includes('email')
   })
+
+  // Note from James: We are marking `privateUsers` (not `privateUsersToSendEmailsTo`) as sent,
+  // so that we don't keep querying them above.
+  await Promise.all(
+    privateUsers.map(async (privateUser) => {
+      await firestore.collection('private-users').doc(privateUser.id).update({
+        weeklyPortfolioUpdateEmailSent: true,
+      })
+    })
+  )
 
   if (privateUsersToSendEmailsTo.length === 0) {
     log('No users to send trending markets emails to')
@@ -88,15 +99,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     'users'
   )
 
-  // Note from James: We are marking `privateUsers` (not `privateUsersToSendEmailsTo`) as sent,
-  // so that we don't keep querying them above.
-  await Promise.all(
-    privateUsers.map(async (privateUser) => {
-      await firestore.collection('private-users').doc(privateUser.id).update({
-        weeklyPortfolioUpdateEmailSent: true,
-      })
-    })
-  )
   const db = createSupabaseClient()
 
   const userIds = privateUsersToSendEmailsTo.map((user) => user.id)
@@ -215,8 +217,9 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         filterDefined(
           weeklyMoverContracts.map((contract) => {
             const cpmmContract = contract as CPMMContract
-            const marketProbAWeekAgo =
-              cpmmContract.prob - cpmmContract.probChanges.week
+            const marketProbAWeekAgo = cpmmContract.probChanges
+              ? cpmmContract.prob - cpmmContract.probChanges.week
+              : 0
 
             const cm = usersToContractMetrics[user.id].filter(
               (cm) => cm.contractId === contract.id
@@ -273,7 +276,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         WEEKLY_MOVERS_TO_SEND
       )
       sent++
-      log(`emails sent: ${sent}/${USERS_TO_EMAIL}`)
+      log(`emails sent: ${sent}/${privateUsersToSendEmailsTo.length}`)
     })
   )
 }
