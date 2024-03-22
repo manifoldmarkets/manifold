@@ -25,7 +25,7 @@ const Segment = ({ active, color, size, id, skew }: SegmentType) => {
 
   const innerStyle = {
     backgroundColor: color,
-    filter: active ? 'opacity(1) grayscale(0)' : 'opacity(0.3) grayscale(0.7)',
+    filter: active ? 'opacity(1) grayscale(0)' : 'opacity(0.2) grayscale(0.8)',
     color: color,
     clipPath: ss.clipPath,
     WebkitClipPath: ss.clipPath,
