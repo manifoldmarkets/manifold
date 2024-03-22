@@ -1,10 +1,10 @@
 import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { Contract, contractPath } from 'common/contract'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatPercentShort } from 'common/util/format'
+import { formatMoneyShort, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from 'web/lib/util/formatNumber'
@@ -26,13 +26,13 @@ import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
+import { getAnswerColor } from '../charts/contract/choice'
+import { sortAnswers } from 'common/answer'
 
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
-  headerClassName?: string
-  hideHeader?: boolean
   columns?: ColumnFormat[]
   hideAvatar?: boolean
 }) {
@@ -40,8 +40,6 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    headerClassName,
-    hideHeader,
     columns = [traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
@@ -50,32 +48,6 @@ export function ContractsTable(props: {
 
   return (
     <Col className="w-full">
-      {!hideHeader && (
-        <Row
-          className={clsx(
-            'text-ink-500 sticky top-0 z-10 w-full justify-end px-2 py-1 text-sm font-semibold sm:justify-between',
-            headerClassName
-          )}
-        >
-          <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
-            Question
-          </div>
-          <Row>
-            {columns.map(({ header }) => (
-              <div
-                key={header}
-                className={clsx(
-                  'text-left',
-                  header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
-                )}
-              >
-                {header}
-              </div>
-            ))}
-          </Row>
-        </Row>
-      )}
-
       {contracts.map((contract) => (
         <ContractRow
           key={contract.id}
@@ -117,7 +89,7 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'flex w-full p-2 outline-none transition-colors sm:rounded-md',
+        'flex w-full flex-col p-2 outline-none transition-colors sm:rounded-md',
         highlighted
           ? 'bg-primary-100'
           : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100',
@@ -136,7 +108,7 @@ function ContractRow(props: {
               key={contract.id + column.header}
               className={clsx(
                 faded && 'text-ink-500',
-                column.header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
+                column.header == 'Action' ? 'w-12' : 'w-16'
               )}
             >
               {column.content(contract)}
@@ -144,6 +116,10 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
+      {contract.outcomeType == 'MULTIPLE_CHOICE' &&
+        contract.mechanism == 'cpmm-multi-1' && (
+          <ContractAnswers contract={contract} />
+        )}
     </Link>
   )
 }
@@ -299,6 +275,45 @@ function ContractQuestion(props: {
         {contract.question}
       </div>
     </Row>
+  )
+}
+
+function ContractAnswers(props: { contract: CPMMMultiContract }) {
+  const { contract } = props
+
+  const answerTexts = contract.answers.map((a) => a.text) // for color
+
+  return (
+    <Col className="w-full">
+      {sortAnswers(contract, contract.answers)
+        .slice(0, 3)
+        .map((ans) => (
+          <Row key={ans.id} className="justify-between gap-1">
+            <div className="line-clamp-1 pl-8 font-light sm:w-[calc(100%-12rem)] sm:pl-10 sm:text-right">
+              {ans.text}
+            </div>
+            <div className="flex justify-end sm:w-fit">
+              <span className="w-16 opacity-70">
+                {/* TODO: num traders instead? */}
+                {formatMoneyShort(ans.totalLiquidity)}
+              </span>
+              <div className="w-16">
+                <div
+                  className={
+                    'w-[3ch] text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
+                  }
+                  style={{
+                    color: getAnswerColor(ans, answerTexts),
+                  }}
+                >
+                  {formatPercentShort(ans.prob)}
+                </div>
+              </div>
+              <div className="w-12"></div> {/* TODO: bet button */}
+            </div>
+          </Row>
+        ))}
+    </Col>
   )
 }
 

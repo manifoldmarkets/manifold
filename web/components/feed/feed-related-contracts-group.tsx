@@ -77,7 +77,6 @@ export const FeedRelatedContractsGroup = (props: {
               contracts={contracts
                 .slice(0, contractsToShow)
                 .filter((c) => c.id !== contract?.id)}
-              hideHeader={true}
             />
             {contracts.length > SHOW_CONTRACTS_DEFAULT && (
               <Row className={'mr-1 justify-end'}>

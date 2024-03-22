@@ -22,6 +22,12 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
+import { getContract } from 'web/lib/supabase/contracts'
+import { CPMMNumericContract } from 'common/contract'
+import { getExpectedValue } from 'common/multi-numeric'
+import { Clock } from 'web/components/ai/clock'
+import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -67,13 +73,15 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     slug: TOP_SLUG,
     title: capitalize(TOP_SLUG),
   })
+  const whenAgi = (await getContract('IDlvsMfiACctiYH89xY8'))!
+
   return {
     props: {
       newsDashboards,
       headlines,
       trendingDashboard,
+      whenAgi,
     } as MultiDashboardProps,
-
     revalidate,
   }
 }
@@ -81,6 +89,7 @@ type MultiDashboardProps = {
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]
   trendingDashboard: NewsDashboardPageProps
+  whenAgi: CPMMNumericContract
 }
 export default function MultiOrSingleDashboardPage(
   props: MultiDashboardProps | NewsDashboardPageProps
@@ -113,13 +122,19 @@ function MultiDashboard(props: MultiDashboardProps) {
     ENDPOINT,
     TOP_SLUG
   )
+  const whenAgi =
+    (useFirebasePublicContract(
+      'public',
+      props.whenAgi.id
+    ) as CPMMNumericContract) ?? props.whenAgi
   const user = useUser()
+  const expectedValueAGI = getExpectedValue(whenAgi)
 
   return (
     <Page trackPageView="ai multi dashboard">
       <SEO
         title="Manifold Artificial Intelligence Forecasts"
-        description="Live prediction market odds on the Artificial Intelligence takeover"
+        description="Live prediction market odds on all things AI"
         image="/ai.png"
       />
       <MultiDashboardHeadlineTabs
@@ -129,14 +144,13 @@ function MultiDashboard(props: MultiDashboardProps) {
         endpoint={ENDPOINT}
         topSlug={TOP_SLUG}
       />
-      <div
-        className="absolute top-1"
-        ref={headlineSlugsToRefs.current[TOP_SLUG]}
-      />
 
       <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
         <Col className={'gap-2'}>
-          <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
+          <div
+            ref={headlineSlugsToRefs.current[TOP_SLUG]}
+            className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl"
+          >
             Manifold Artificial Intelligence Forecasts
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}/${ENDPOINT}${
@@ -147,10 +161,31 @@ function MultiDashboard(props: MultiDashboardProps) {
               className="hidden sm:inline"
             />
           </div>
-          <div className="text-canvas-500 text-md my-2 flex font-normal">
-            Live prediction market odds on the Artificial Intelligence takeover
+          <div className="text-canvas-500 text-md -mb-4 mt-2 flex font-normal">
+            Live prediction market odds on all things AI
           </div>
         </Col>
+
+        <Col className={'my-4 w-full gap-4'}>
+          <span className={'text-primary-700 mb-4 text-xl'}>
+            Artificial General Intelligence countdown
+          </span>
+          <Row className={'w-full justify-center'}>
+            <Col className={'w-fit  gap-4'}>
+              <Clock year={expectedValueAGI} />
+              <NumericBetPanel
+                disableShowDistribution={true}
+                contract={whenAgi}
+                labels={{
+                  lower: 'sooner',
+                  higher: 'later',
+                  about: 'about right',
+                }}
+              />
+            </Col>
+          </Row>
+        </Col>
+
         <Col className="px-1">
           <Row className="items-center gap-1 font-semibold sm:text-lg">
             <div className="relative">
