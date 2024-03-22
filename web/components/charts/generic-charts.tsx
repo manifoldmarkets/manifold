@@ -291,23 +291,51 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
           answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
         }
       >
-        {sortedLines.map(({ id, points, color }) => (
-          <g key={id}>
+        {sortedLines.map(
+          ({ id, points, color }) =>
+            (!hoveringId || hoveringId !== id) && (
+              <g key={id}>
+                <LinePath
+                  data={points}
+                  px={px}
+                  py={py}
+                  curve={curve}
+                  className={clsx(
+                    ' stroke-canvas-0 transition-[stroke-width]',
+                    hoveringId && hoveringId !== id
+                      ? 'stroke-[0px] opacity-50'
+                      : 'stroke-[4px]'
+                  )}
+                />
+                <LinePath
+                  data={points}
+                  px={px}
+                  py={py}
+                  curve={curve}
+                  className={clsx(
+                    ' transition-[stroke-width]',
+                    hoveringId && hoveringId !== id
+                      ? 'stroke-1 opacity-50'
+                      : 'stroke-2'
+                  )}
+                  stroke={color}
+                />
+              </g>
+            )
+        )}
+        {/* show hovering line on top */}
+        {hoveringId && hoveringId in data && (
+          <g key={`${hoveringId}-front`}>
             <LinePath
-              data={points}
+              data={data[hoveringId].points}
               px={px}
               py={py}
               curve={curve}
-              className={clsx(
-                'transition-[stroke-width]',
-                hoveringId && hoveringId !== id
-                  ? 'stroke-1 opacity-50'
-                  : 'stroke-2'
-              )}
-              stroke={color}
+              className={clsx(' transition-[stroke-width]', 'stroke-2')}
+              stroke={data[hoveringId].color}
             />
           </g>
-        ))}
+        )}
         {/* hover effect put last so it shows on top */}
         {hoveringId && hoveringId in data && (
           <AreaPath
