@@ -68,7 +68,8 @@ export function ScheduleTVModal(props: {
       return
     }
 
-    if (!stream) { // restrictions only for new events
+    if (!stream) {
+      // restrictions only for new events
       if (start.isBefore(dayjs().subtract(1, 'hour'))) {
         setError('Start time should not be in the past.')
         return
