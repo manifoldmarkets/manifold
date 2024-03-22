@@ -28,8 +28,9 @@ export function BinaryMultiAnswersPanel(props: {
   answers: Answer[]
   size?: SizeType
   feedItem?: FeedTimelineItem
+  className?: string
 }) {
-  const { feedItem, contract, answers, size } = props
+  const { feedItem, contract, answers, size, className } = props
   if (contract.isResolved) {
     return (
       <>

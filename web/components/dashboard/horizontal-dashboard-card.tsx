@@ -152,7 +152,11 @@ export function HorizontalDashboardCard(props: {
             <PollPanel contract={contract} maxOptions={4} />
           )}
           {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
-            <SmallAnswerBars contract={contract} maxAnswers={3} />
+            <SmallAnswerBars
+              contract={contract}
+              maxAnswers={3}
+              className="mb-4"
+            />
           )}
 
           {isBinaryMc &&

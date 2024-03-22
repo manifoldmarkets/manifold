@@ -31,8 +31,9 @@ export function SmallAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
   barColor?: string
+  className?: string
 }) {
-  const { contract, maxAnswers = Infinity, barColor } = props
+  const { contract, maxAnswers = Infinity, barColor, className } = props
   const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -64,7 +65,7 @@ export function SmallAnswerBars(props: {
   })
 
   return (
-    <Col className="mx-[2px] gap-1.5">
+    <Col className={clsx('mx-[2px] gap-1.5', className)}>
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
