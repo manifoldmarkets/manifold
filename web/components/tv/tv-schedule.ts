@@ -18,12 +18,14 @@ export const filterSchedule = (
   schedule: ScheduleItem[] | null,
   scheduleId: string | null
 ) => {
-  return (schedule ?? []).filter(
-    (s) =>
-      dayjs(s.end_time ?? '')
-        .add(1, 'hour')
-        .isAfter(dayjs()) || s.id.toString() === scheduleId
-  )
+  return (schedule ?? [])
+    .filter(
+      (s) =>
+        dayjs(s.end_time ?? '')
+          .add(1, 'hour')
+          .isAfter(dayjs()) || s.id.toString() === scheduleId
+    )
+    .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)))
 }
 
 export const useTVSchedule = (
