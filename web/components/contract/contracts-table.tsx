@@ -26,7 +26,6 @@ import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
-import { getAnswerColor } from '../charts/contract/choice'
 import { sortAnswers } from 'common/answer'
 
 export function ContractsTable(props: {
@@ -281,32 +280,26 @@ function ContractQuestion(props: {
 function ContractAnswers(props: { contract: CPMMMultiContract }) {
   const { contract } = props
 
-  const answerTexts = contract.answers.map((a) => a.text) // for color
-
   return (
     <Col className="w-full">
       {sortAnswers(contract, contract.answers)
         .slice(0, 3)
         .map((ans) => (
-          <Row key={ans.id} className="gap-3 pl-8 sm:pl-10">
+          <Row key={ans.id} className="text-ink-700 gap-3 pl-8 sm:pl-10">
             <div
               className={
-                'w-8 text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
+                'w-8 flex-shrink-0 text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
               }
-              style={{
-                color: getAnswerColor(ans, answerTexts),
-              }}
             >
               {formatPercentShort(ans.prob)}
             </div>
-            <div className="line-clamp-1 font-light">{ans.text}</div>
+            <div className="line-clamp-1">{ans.text}</div>
           </Row>
           //   <div className="flex justify-end sm:w-fit">
           //     <div className="hidden w-16 opacity-70 sm:block">
           //       {/* TODO: num traders instead? */}
           //       {formatMoneyShort(ans.totalLiquidity)}
           //     </div>
-          //     {/* TODO: bet button */}
           //   </div>
         ))}
     </Col>
