@@ -1,7 +1,7 @@
 import { createRef, useEffect, useRef, useState } from 'react'
 import { keyBy, mapValues } from 'lodash'
 import { useEvent } from 'web/hooks/use-event'
-import router from 'next/router'
+import { useRouter } from 'next/router'
 import { Headline } from 'common/news'
 
 export const useMultiDashboard = (
@@ -11,10 +11,19 @@ export const useMultiDashboard = (
 ) => {
   const [currentSlug, setCurrentSlug] = useState<string>('')
   const [ignoreScroll, setIgnoreScroll] = useState(false)
-
+  const router = useRouter()
+  const wasReady = useRef(router.isReady)
   const headlineSlugsToRefs = useRef(
     mapValues(keyBy(headlines, 'slug'), () => createRef<HTMLDivElement>())
   )
+  useEffect(() => {
+    if (wasReady.current) return
+    const query = router.query as { section: string }
+    if (query.section) {
+      onClick(query.section)
+      wasReady.current = true
+    }
+  }, [router.isReady])
 
   useEffect(() => {
     window.addEventListener('scroll', checkScrollPositionToHighlightSlug)
@@ -67,14 +76,17 @@ export const useMultiDashboard = (
 
   const setShallowSlugInRouter = (slug: string) => {
     if (slug === topSlug) {
-      if (router.asPath.split('?')[0] !== `/${endpoint}`) {
+      if (
+        router.asPath.includes('?section') ||
+        router.asPath.split('?')[0] !== `/${endpoint}`
+      ) {
         // don't override query string
         router.replace(`/${endpoint}`, undefined, {
           shallow: true,
         })
       }
     } else {
-      router.replace(`/${endpoint}/${slug}`, undefined, {
+      router.replace(`/${endpoint}?section=${slug}`, undefined, {
         shallow: true,
       })
     }
