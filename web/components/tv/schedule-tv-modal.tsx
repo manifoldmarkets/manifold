@@ -63,10 +63,20 @@ export function ScheduleTVModal(props: {
       setError('Invalid start or end time format.')
       return
     }
-
     if (end.isBefore(start)) {
       setError('End time should be after the start time.')
       return
+    }
+
+    if (!stream) { // restrictions only for new events
+      if (start.isBefore(dayjs().subtract(1, 'hour'))) {
+        setError('Start time should not be in the past.')
+        return
+      }
+      if (end.isAfter(dayjs().add(2, 'month'))) {
+        setError('End time should not be more than 2 months in the future.')
+        return
+      }
     }
 
     setError('')
