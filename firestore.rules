@@ -17,7 +17,7 @@ service cloud.firestore {
         'ingawei@gmail.com',
         'marshall@pol.rs',
         'politics@manifold.markets',
-        
+        'ai@manifold.markets'
       ]
     }
 
