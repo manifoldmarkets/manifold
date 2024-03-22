@@ -62,10 +62,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
             }
           }}
         >
-          {contract.mechanism === 'cpmm-multi-1' &&
-          contract.addAnswersMode === 'ANYONE'
-            ? 'Answer'
-            : 'Bet'}
+          Bet
         </Button>
         {openMC && (
           <MultiBetDialog

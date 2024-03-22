@@ -4,7 +4,7 @@ import { getDisplayProbability } from 'common/calculate'
 import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatMoneyShort, formatPercentShort } from 'common/util/format'
+import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from 'web/lib/util/formatNumber'
@@ -288,30 +288,26 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
       {sortAnswers(contract, contract.answers)
         .slice(0, 3)
         .map((ans) => (
-          <Row key={ans.id} className="justify-between gap-1">
-            <div className="line-clamp-1 pl-8 font-light sm:w-[calc(100%-12rem)] sm:pl-10 sm:text-right">
-              {ans.text}
+          <Row key={ans.id} className="gap-3 pl-8 sm:pl-10">
+            <div
+              className={
+                'w-8 text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
+              }
+              style={{
+                color: getAnswerColor(ans, answerTexts),
+              }}
+            >
+              {formatPercentShort(ans.prob)}
             </div>
-            <div className="flex justify-end sm:w-fit">
-              <div className="hidden w-16 opacity-70 sm:block">
-                {/* TODO: num traders instead? */}
-                {formatMoneyShort(ans.totalLiquidity)}
-              </div>
-              <div className="w-16">
-                <div
-                  className={
-                    'w-[3ch] text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
-                  }
-                  style={{
-                    color: getAnswerColor(ans, answerTexts),
-                  }}
-                >
-                  {formatPercentShort(ans.prob)}
-                </div>
-              </div>
-              <div className="w-12"></div> {/* TODO: bet button */}
-            </div>
+            <div className="line-clamp-1 font-light">{ans.text}</div>
           </Row>
+          //   <div className="flex justify-end sm:w-fit">
+          //     <div className="hidden w-16 opacity-70 sm:block">
+          //       {/* TODO: num traders instead? */}
+          //       {formatMoneyShort(ans.totalLiquidity)}
+          //     </div>
+          //     {/* TODO: bet button */}
+          //   </div>
         ))}
     </Col>
   )
