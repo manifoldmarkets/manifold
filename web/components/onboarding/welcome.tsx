@@ -360,10 +360,12 @@ function ThankYouPage() {
       <div className="mb-4 ">
         We've sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> to
-        help you get started.
+        help you get started. Get up to {formatMoney(1000)} by browsing more
+        questions.
       </div>
       <div className="">
-        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash.
+        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash, but
+        can be purchased at a rate of Ṁ100 : $1.
       </div>
     </>
   )
