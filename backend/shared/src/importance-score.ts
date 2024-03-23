@@ -79,7 +79,7 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, popularityScore, dailyScore, freshnessScore } =
+    const { importanceScore, dailyScore, freshnessScore } =
       computeContractScores(
         now,
         contract,
@@ -94,12 +94,10 @@ export async function calculateImportanceScore(
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       contract.importanceScore !== importanceScore ||
-      contract.popularityScore !== popularityScore ||
       contract.dailyScore !== dailyScore ||
       contract.freshnessScore !== freshnessScore
     ) {
       contract.importanceScore = importanceScore
-      contract.popularityScore = popularityScore
       contract.dailyScore = dailyScore
       contract.freshnessScore = freshnessScore
       contractsWithUpdates.push(contract)
@@ -155,7 +153,6 @@ export async function calculateImportanceScore(
         id: contract.id,
         data: `${JSON.stringify(contract)}::jsonb`,
         importance_score: contract.importanceScore,
-        popularity_score: contract.popularityScore,
         freshness_score: contract.freshnessScore,
       }))
     )
@@ -227,8 +224,6 @@ export const computeContractScores = (
 ) => {
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
-  const thisWeekScoreWeight = thisWeekScore / 10
-  const popularityScore = todayScore + thisWeekScoreWeight
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
   const { createdTime, closeTime, isResolved, outcomeType } = contract
@@ -342,7 +337,6 @@ export const computeContractScores = (
   return {
     todayScore,
     thisWeekScore,
-    popularityScore: popularityScore >= 1 ? popularityScore : 0,
     freshnessScore,
     dailyScore,
     importanceScore,

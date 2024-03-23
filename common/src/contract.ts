@@ -28,7 +28,6 @@ supabase status: columns exist for
   resolutionTime?: timestamp (from millis)
   resolution?: text
   resolutionProbability?: numeric
-  popularityScore: numeric
   importanceScore: numeric
 
 any changes to the type of these columns in firestore will require modifying
@@ -117,8 +116,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   /** @deprecated */
   groupLinks?: GroupLink[]
 
-  /** @deprecated - not deprecated, only updated in supabase though*/
-  popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   importanceScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
