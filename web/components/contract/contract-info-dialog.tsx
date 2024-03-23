@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
-import { Contract, contractPool, isBinaryMulti } from 'common/contract'
+import { Contract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
   firestoreConsolePath,

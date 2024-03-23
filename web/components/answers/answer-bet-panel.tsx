@@ -31,10 +31,8 @@ import {
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
-import { Subtitle } from '../widgets/subtitle'
 import { BuyPanel } from '../bet/bet-panel'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { getAnswerColor } from '../charts/contract/choice'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer

@@ -1,7 +1,6 @@
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Button, SizeType } from 'web/components/buttons/button'
-import { Row } from 'web/components/layout/row'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
