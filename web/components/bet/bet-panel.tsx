@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon } from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
