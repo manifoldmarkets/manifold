@@ -121,9 +121,14 @@ export const InvestmentValueCard = memo(function (props: {
             </Button>
           </Row>
         )}
-        <div className={'absolute right-1 top-1'}>
+        <Col className={'absolute right-1 top-1 gap-1'}>
           <DailyLoan user={user} />
-        </div>
+          {latestPortfolio && latestPortfolio.loanTotal > 0 && (
+            <div className="text-ink-600 text-sm">
+              {formatMoney(latestPortfolio.loanTotal ?? 0)} loaned
+            </div>
+          )}
+        </Col>
 
         {open && (
           <DailyProfitModal
