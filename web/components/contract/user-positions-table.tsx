@@ -528,8 +528,14 @@ const PositionRow = memo(function PositionRow(props: {
   followedUsers: string[] | undefined
   colorClassName: string
 }) {
-  const { position, colorClassName, currentUser, followedUsers, numberToShow, invested } =
-    props
+  const {
+    position,
+    colorClassName,
+    currentUser,
+    followedUsers,
+    numberToShow,
+    invested,
+  } = props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
 
@@ -563,8 +569,16 @@ const PositionRow = memo(function PositionRow(props: {
         </Row>
       </UserHovercard>
       <Col>
-        <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>{numberToShow}</span>
-        <span className={clsx('hidden sm:flex text-ink-500 text-right text-xs shrink-0')}>Spent {invested}</span>
+        <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
+          {numberToShow}
+        </span>
+        <span
+          className={clsx(
+            'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
+          )}
+        >
+          Spent {invested}
+        </span>
       </Col>
     </Row>
   )
