@@ -4,19 +4,21 @@ import {
   DEFAULT_CONVERSION_SCORE_DENOMINATOR,
   DEFAULT_CONVERSION_SCORE_NUMERATOR,
 } from 'common/new-contract'
+import { chunk } from 'lodash'
 
 export async function calculateConversionScore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  let offset = 0
   const contractsQuery = `select id from contracts
       where resolution_time is null
-      and close_time > now()
-      and visibility = 'public'
-      limit 1000 offset $1`
-  let contractIds = await pg.map(contractsQuery, [offset], (c) => c.id)
-  while (contractIds.length > 0) {
-    log(`Updating conversions for ${contractIds.length} contracts...`)
+      and (close_time > now() or close_time is null)`
+  const contractIds = await pg.map(contractsQuery, [], (c) => c.id)
+  const chunks = chunk(contractIds, 1000)
+  log(
+    `Processing ${contractIds.length} contracts in ${chunks.length} chunks...`
+  )
+  let processed = 0
+  for (const chunk of chunks) {
     await pg
       .none(
         `
@@ -50,12 +52,19 @@ export async function calculateConversionScore() {
          )
         update contracts c
         set conversion_score = (
-          select power(
+          select 
+            case when 
+                -- If our data is sus, return default conversion score
+              (coalesce(pe.uniques,0) > coalesce(pv.uniques,0) or
+              coalesce(ce.uniques,0) > coalesce(cv.uniques,0))
+              then $2 * 1.0 / $3
+            else
+              power(
              (($2+coalesce(ce.uniques, 0) * 1.0) / (coalesce(nullif(cv.uniques,0),ce.uniques,0)+$3))
                  *
              (($2+coalesce(pe.uniques, 0) * 1.0) / (coalesce(nullif(pv.uniques,0), pe.uniques,0)+$3)),
              1.0 / 2
-           )
+           ) end
           from contracts c2
              left join card_viewers cv on c2.id = cv.contract_id
              left join card_enjoyers ce on c2.id = ce.contract_id
@@ -66,7 +75,7 @@ export async function calculateConversionScore() {
         where c.id = any ($1)
         `,
         [
-          contractIds,
+          chunk,
           DEFAULT_CONVERSION_SCORE_NUMERATOR,
           DEFAULT_CONVERSION_SCORE_DENOMINATOR,
         ]
@@ -75,10 +84,8 @@ export async function calculateConversionScore() {
         log('Error on set conversion scores', e)
         return null
       })
-    log(`Finished processing ${offset + contractIds.length} contracts.`)
-
-    offset += contractIds.length
-    contractIds = await pg.map(contractsQuery, [offset], (c) => c.id)
+    processed += chunk.length
+    log(`Finished processing ${processed} contracts.`)
   }
   log('Done.')
 }
