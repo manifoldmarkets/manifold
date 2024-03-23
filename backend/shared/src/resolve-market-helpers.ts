@@ -98,6 +98,7 @@ export const resolveMarketHelper = async (
       outcome === 'YES'
     const marketCancelled = unresolvedContract.answers
       .every((a) => a.resolution === 'CANCEL')
+    const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
     if (
       allAnswersResolved &&
       outcomeType !== 'NUMBER' &&
@@ -106,7 +107,7 @@ export const resolveMarketHelper = async (
     )
       updatedContractAttrs = {
         ...updatedContractAttrs,
-        resolution: marketCancelled ? 'CANCEL' : 'MKT',
+        resolution: finalResolution,
       }
     else updatedContractAttrs = undefined
 
