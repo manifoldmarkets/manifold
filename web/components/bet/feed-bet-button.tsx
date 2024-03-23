@@ -67,7 +67,6 @@ export function BetButton(props: {
             <div className="mb-4 mt-0 text-xl">{contract.question}</div>
             <BuyPanel
               contract={contract}
-              user={user}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
               onBuySuccess={() =>
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)

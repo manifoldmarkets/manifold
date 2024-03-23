@@ -429,7 +429,6 @@ const BetButton = (props: {
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
         />
       </Modal>
       {showSell && user && (

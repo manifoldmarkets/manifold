@@ -7,7 +7,6 @@ import {
   CPMMNumericContract,
   isBinaryMulti,
 } from 'common/contract'
-import { useUser } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BinaryOutcomes, BuyPanel } from './bet-panel'
@@ -30,7 +29,6 @@ export function BetDialog(props: {
   trackingLocation: string
 }) {
   const { contract, initialOutcome, open, setOpen, trackingLocation } = props
-  const user = useUser()
   const { question } = contract
 
   return (
@@ -46,7 +44,6 @@ export function BetDialog(props: {
         <Subtitle className="!mb-4 !mt-0 !text-xl">{question}</Subtitle>
         <BuyPanel
           contract={contract}
-          user={user}
           initialOutcome={initialOutcome ?? 'YES'}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}

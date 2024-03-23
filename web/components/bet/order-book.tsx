@@ -60,7 +60,7 @@ export function YourOrders(props: {
   if (yourBets.length === 0) return null
 
   return (
-    <Col className={clsx(className, 'gap-2 overflow-x-scroll')}>
+    <Col className={clsx(className, 'gap-2 overflow-x-auto')}>
       <Row className="items-center justify-between">
         <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
       </Row>

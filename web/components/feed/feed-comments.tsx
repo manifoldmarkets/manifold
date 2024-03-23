@@ -793,7 +793,6 @@ function CommentActions(props: {
             </span>
             <BuyPanel
               contract={contract as any}
-              user={user}
               initialOutcome={outcome}
               onBuySuccess={() => setTimeout(() => setShowBetModal(false), 500)}
               location={'comment on contract'}

@@ -222,7 +222,6 @@ export const BinaryBetButton = (props: { contract: CPMMBinaryContract }) => {
         </Link>
         <BuyPanel
           contract={contract}
-          user={user}
           initialOutcome={outcome}
           onBuySuccess={() => setTimeout(closePanel, 500)}
           location={'contract page answer'}

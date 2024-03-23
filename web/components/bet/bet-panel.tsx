@@ -46,13 +46,16 @@ import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { useUser } from 'web/hooks/use-user'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
+
 export type MultiBetProps = {
   answers: Answer[]
   answerToBuy: Answer
   answerText?: string
 }
+
 export function BuyPanel(props: {
   contract:
     | CPMMBinaryContract
@@ -61,76 +64,30 @@ export function BuyPanel(props: {
     | CPMMMultiContract
     | CPMMNumericContract
   multiProps?: MultiBetProps
-  user: User | null | undefined
   inModal: boolean
   onBuySuccess?: () => void
-  singularView?: 'YES' | 'NO' | 'LIMIT'
   initialOutcome?: BinaryOutcomes
   location?: string
   replyToCommentId?: string
   alwaysShowOutcomeSwitcher?: boolean
   feedItem?: FeedTimelineItem
+  children?: React.ReactNode
 }) {
   const {
     contract,
-    multiProps,
-    user,
-    onBuySuccess,
-    singularView,
     initialOutcome,
     location = 'bet panel',
     inModal,
-    replyToCommentId,
     alwaysShowOutcomeSwitcher,
-    feedItem,
+    children,
   } = props
-
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
-  if (isCpmmMulti && !multiProps) {
-    throw new Error('multiProps must be defined for cpmm-multi-1')
-  }
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
+
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
-  const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
-
-  const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
-    (b) => b.answerId === multiProps?.answerToBuy?.id
-  )
-  const unfilledBets =
-    isCpmmMulti && !shouldAnswersSumToOne
-      ? // Always filter to answer for non-sum-to-one cpmm multi
-        unfilledBetsMatchingAnswer
-      : allUnfilledBets
-
-  const isBinaryMC = isBinaryMulti(contract)
-  const binaryMCOutcomeLabel =
-    isBinaryMC && multiProps
-      ? multiProps.answerText ?? multiProps.answerToBuy.text
-      : undefined
-  const initialBetAmount = 10
-  const [betAmount, setBetAmount] = useState<number | undefined>(
-    initialBetAmount
-  )
-  const [error, setError] = useState<string | undefined>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const [inputRef, focusAmountInput] = useFocus()
 
   const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
-
-  const isAdvancedTrader = useIsAdvancedTrader()
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
-
-  const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
-
-  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
-    setBetType(type)
-  }
 
   useEffect(() => {
     if (initialOutcome) {
@@ -148,10 +105,136 @@ export function BuyPanel(props: {
       setOutcome(choice)
       setIsPanelBodyVisible(true)
     }
-    if (!isIOS() && !isAndroid()) {
-      focusAmountInput()
-    }
   }
+
+  return (
+    <Col>
+      {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
+        <Row className={clsx('mb-2 w-full items-center gap-2')}>
+          <YesNoSelector
+            className="flex-1"
+            btnClassName="flex-1 px-2 sm:px-6"
+            selected={outcome}
+            highlight
+            onSelect={(choice) => {
+              onOutcomeChoice(choice)
+            }}
+            yesLabel={
+              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+            }
+            noLabel={
+              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+            }
+          />
+        </Row>
+      )}
+      {isPanelBodyVisible && (
+        <BuyPanelBody
+          {...props}
+          panelClassName={
+            outcome === 'NO'
+              ? 'bg-scarlet-50'
+              : outcome === 'YES'
+              ? 'bg-teal-50'
+              : ''
+          }
+          outcome={outcome}
+          onClose={
+            inModal || alwaysShowOutcomeSwitcher
+              ? undefined
+              : () => {
+                  setIsPanelBodyVisible(false)
+                  if (initialOutcome == undefined) {
+                    setOutcome(undefined)
+                  }
+                }
+          }
+        >
+          {children}
+        </BuyPanelBody>
+      )}
+    </Col>
+  )
+}
+
+export const BuyPanelBody = (props: {
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | CPMMNumericContract
+  multiProps?: MultiBetProps
+  onBuySuccess?: () => void
+  outcome?: BinaryOutcomes
+  location?: string
+  onClose?: () => void
+  replyToCommentId?: string
+  feedItem?: FeedTimelineItem
+  panelClassName?: string
+  children?: React.ReactNode
+}) => {
+  const {
+    contract,
+    multiProps,
+    onBuySuccess,
+    outcome,
+    location = 'bet panel',
+    onClose,
+    replyToCommentId,
+    feedItem,
+    panelClassName,
+    children,
+  } = props
+
+  const user = useUser()
+
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(contract.id)
+
+  const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
+    (b) => b.answerId === multiProps?.answerToBuy?.id
+  )
+
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCOutcomeLabel =
+    isBinaryMC && multiProps
+      ? multiProps.answerText ?? multiProps.answerToBuy.text
+      : undefined
+  const initialBetAmount = 10
+  const [betAmount, setBetAmount] = useState<number | undefined>(
+    initialBetAmount
+  )
+
+  const [error, setError] = useState<string | undefined>()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const [inputRef, focusAmountInput] = useFocus()
+
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  if (isCpmmMulti && !multiProps) {
+    throw new Error('multiProps must be defined for cpmm-multi-1')
+  }
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
+
+  const unfilledBets =
+    isCpmmMulti && !shouldAnswersSumToOne
+      ? // Always filter to answer for non-sum-to-one cpmm multi
+        unfilledBetsMatchingAnswer
+      : allUnfilledBets
+
+  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isStonk = contract.outcomeType === 'STONK'
+
+  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
+    setBetType(type)
+  }
+
+  const isAdvancedTrader = useIsAdvancedTrader()
+  const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
+
+  const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
 
   useEffect(() => {
     if (user) {
@@ -159,11 +242,14 @@ export function BuyPanel(props: {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!isIOS() && !isAndroid()) {
+      focusAmountInput()
+    }
+  }, [])
+
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
-    if (!outcome) {
-      setOutcome('YES')
-    }
   }
 
   async function submitBet() {
@@ -226,7 +312,6 @@ export function BuyPanel(props: {
       })
     )
   }
-
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
@@ -306,350 +391,301 @@ export function BuyPanel(props: {
     : undefined
 
   return (
-    <Col>
-      {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
-        <Row
-          className={clsx(
-            'mb-2 w-full items-center gap-2',
-            singularView ? 'hidden' : ''
-          )}
-        >
-          <YesNoSelector
-            className="flex-1"
-            btnClassName="flex-1 px-2 sm:px-6"
-            selected={outcome}
-            highlight
-            onSelect={(choice) => {
-              onOutcomeChoice(choice)
-            }}
-            yesLabel={
-              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
-            }
-            noLabel={
-              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-            }
-          />
-        </Row>
-      )}
-      {isPanelBodyVisible && (
-        <Col
-          className={clsx(
-            !singularView
-              ? outcome === 'NO'
-                ? 'bg-scarlet-50'
-                : outcome === 'YES'
-                ? 'bg-teal-50'
-                : 'hidden'
-              : '',
-            'relative rounded-xl',
-            singularView ? '' : ' px-4 py-2'
-          )}
-        >
-          {isAdvancedTrader && !isStonk && (
-            <Row className="mb-2 items-center space-x-3">
-              <div className="text-ink-700">Bet type</div>
-              <ChoicesToggleGroup
-                currentChoice={betType}
-                choicesMap={{
-                  Market: 'Market',
-                  Limit: 'Limit',
-                }}
-                setChoice={(val) => {
-                  if (val === 'Market' || val === 'Limit') {
-                    handleBetTypeChange(val)
-                  }
-                }}
-              />
-            </Row>
-          )}
-          {!inModal && (
-            <Button
-              color="gray-white"
-              className="absolute right-1 top-1"
-              onClick={() => {
-                setIsPanelBodyVisible(false)
-                if (initialOutcome == undefined) {
-                  setOutcome(undefined)
-                }
-                setBetAmount(initialBetAmount)
+    <>
+      <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
+        {children}
+        {isAdvancedTrader && !isStonk && (
+          <Row className="mb-2 items-center space-x-3">
+            <div className="text-ink-700">Bet type</div>
+            <ChoicesToggleGroup
+              currentChoice={betType}
+              choicesMap={{
+                Market: 'Market',
+                Limit: 'Limit',
               }}
-            >
-              <XIcon className="h-5 w-5" />
-            </Button>
-          )}
-          {betType === 'Market' ? (
-            <>
-              <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
-                Bet amount
-              </Row>
+              setChoice={(val) => {
+                if (val === 'Market' || val === 'Limit') {
+                  handleBetTypeChange(val)
+                }
+              }}
+            />
+          </Row>
+        )}
+        {onClose && (
+          <Button
+            color="gray-white"
+            className="absolute right-1 top-1"
+            onClick={onClose}
+          >
+            <XIcon className="h-5 w-5" />
+          </Button>
+        )}
+        {betType === 'Market' ? (
+          <>
+            <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
+              Bet amount
+            </Row>
 
-              <Row
-                className={clsx(
-                  'flex-wrap gap-x-8 gap-y-4',
-                  isAdvancedTrader ? 'items-center' : 'items-end',
-                  isAdvancedTrader ? 'mb-5' : 'mb-3'
-                )}
-              >
-                <BuyAmountInput
-                  amount={betAmount}
-                  onChange={onBetChange}
-                  error={error}
-                  setError={setError}
-                  disabled={isSubmitting}
-                  inputRef={inputRef}
-                  binaryOutcome={isBinaryMC ? undefined : outcome}
-                  showSlider={isAdvancedTrader}
-                />
-
-                {isAdvancedTrader && (
-                  <Col className="gap-3">
-                    <div className="flex-grow">
-                      <span className="text-ink-700 mr-2 whitespace-nowrap">
-                        {isPseudoNumeric
-                          ? 'Estimated value'
-                          : isStonk
-                          ? 'New stock price'
-                          : 'New probability'}
-                      </span>
-                      <span className="text-lg font-semibold">
-                        {getFormattedMappedValue(
-                          contract,
-                          probStayedSame ? probBefore : probAfter
-                        )}
-                      </span>
-                      {!probStayedSame && !isPseudoNumeric && (
-                        <span className={clsx('ml-1', 'text-ink-700')}>
-                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
-                          {getFormattedMappedValue(
-                            contract,
-                            Math.abs(probAfter - probBefore)
-                          )}
-                        </span>
-                      )}
-                    </div>
-                    <Row className="min-w-[128px] items-baseline">
-                      <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
-                        {isPseudoNumeric || isStonk ? (
-                          'Shares'
-                        ) : (
-                          <>Max payout</>
-                        )}
-                      </div>
-                      <span className="mr-1 whitespace-nowrap text-lg">
-                        {isStonk
-                          ? getStonkDisplayShares(contract, currentPayout, 2)
-                          : isPseudoNumeric
-                          ? Math.floor(currentPayout)
-                          : formatMoney(currentPayout)}
-                      </span>
-                      <span className="text-green-500 ">
-                        {isStonk || isPseudoNumeric
-                          ? ''
-                          : ' +' + currentReturnPercent}
-                      </span>
-                    </Row>
-                  </Col>
-                )}
-              </Row>
-            </>
-          ) : (
-            <>
-              <LimitOrderPanel
-                contract={contract}
-                multiProps={multiProps}
-                user={user}
-                unfilledBets={unfilledBets}
-                balanceByUserId={balanceByUserId}
-                outcome={outcome}
-              />
-            </>
-          )}
-
-          {betType !== 'Limit' && (
-            <Col className="gap-2">
-              {user ? (
-                <WarningConfirmationButton
-                  marketType="binary"
-                  amount={betAmount}
-                  warning={warning}
-                  userOptedOutOfWarning={user.optOutBetWarnings}
-                  onSubmit={submitBet}
-                  ButtonClassName="flex-grow"
-                  actionLabelClassName={'line-clamp-1'}
-                  isSubmitting={isSubmitting}
-                  disabled={betDisabled}
-                  size="xl"
-                  color={
-                    isBinaryMC && outcome === 'YES'
-                      ? 'indigo'
-                      : isBinaryMC && outcome === 'NO'
-                      ? 'amber'
-                      : outcome === 'NO'
-                      ? 'red'
-                      : 'green'
-                  }
-                  actionLabel={
-                    betDisabled
-                      ? `Select ${formatOutcomeLabel(
-                          contract,
-                          'YES'
-                        )} or ${formatOutcomeLabel(contract, 'NO')}`
-                      : `Bet ${
-                          binaryMCOutcomeLabel ?? outcome
-                        } to win ${formatMoney(currentPayout)}`
-                  }
-                  inModal={inModal}
-                />
-              ) : (
-                <Button
-                  color={outcome === 'NO' ? 'red' : 'green'}
-                  size="xl"
-                  onClick={withTracking(firebaseLogin, 'login from bet panel')}
-                  className="flex-grow"
-                >
-                  Sign up to predict
-                </Button>
+            <Row
+              className={clsx(
+                'flex-wrap gap-x-8 gap-y-4',
+                isAdvancedTrader ? 'items-center' : 'items-end',
+                isAdvancedTrader ? 'mb-5' : 'mb-3'
               )}
-            </Col>
-          )}
-
-          {user ? (
-            <Row className="mt-3 items-start justify-between">
-              <div className="flex-grow">
-                <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
-                  Your balance{' '}
-                  <span className="text-ink-700 font-semibold">
-                    {formatMoney(user.balance)}
-                  </span>
-                </span>
-              </div>
+            >
+              <BuyAmountInput
+                amount={betAmount}
+                onChange={onBetChange}
+                error={error}
+                setError={setError}
+                disabled={isSubmitting}
+                inputRef={inputRef}
+                binaryOutcome={isBinaryMC ? undefined : outcome}
+                showSlider={isAdvancedTrader}
+              />
 
               {isAdvancedTrader && (
-                <div>
-                  <button
-                    className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                    onClick={() => {
-                      const tradingMode = !advancedTraderMode
-                      setAdvancedTraderMode(tradingMode)
-                      if (!tradingMode) {
-                        setBetType('Market')
-                      }
-                      updateUser(user.id, { isAdvancedTrader: tradingMode })
-                    }}
-                  >
-                    <span className="hover:underline">
-                      {advancedTraderMode ? 'Default' : 'Advanced'}
+                <Col className="gap-3">
+                  <div className="flex-grow">
+                    <span className="text-ink-700 mr-2 whitespace-nowrap">
+                      {isPseudoNumeric
+                        ? 'Estimated value'
+                        : isStonk
+                        ? 'New stock price'
+                        : 'New probability'}
                     </span>
-                    <ChevronDownIcon className="ml-1 h-3 w-3" />
-                  </button>
-                </div>
+                    <span className="text-lg font-semibold">
+                      {getFormattedMappedValue(
+                        contract,
+                        probStayedSame ? probBefore : probAfter
+                      )}
+                    </span>
+                    {!probStayedSame && !isPseudoNumeric && (
+                      <span className={clsx('ml-1', 'text-ink-700')}>
+                        {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                        {getFormattedMappedValue(
+                          contract,
+                          Math.abs(probAfter - probBefore)
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <Row className="min-w-[128px] items-baseline">
+                    <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                      {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
+                    </div>
+                    <span className="mr-1 whitespace-nowrap text-lg">
+                      {isStonk
+                        ? getStonkDisplayShares(contract, currentPayout, 2)
+                        : isPseudoNumeric
+                        ? Math.floor(currentPayout)
+                        : formatMoney(currentPayout)}
+                    </span>
+                    <span className="text-green-500 ">
+                      {isStonk || isPseudoNumeric
+                        ? ''
+                        : ' +' + currentReturnPercent}
+                    </span>
+                  </Row>
+                </Col>
               )}
             </Row>
-          ) : null}
+          </>
+        ) : (
+          <>
+            <LimitOrderPanel
+              contract={contract}
+              multiProps={multiProps}
+              user={user}
+              unfilledBets={unfilledBets}
+              balanceByUserId={balanceByUserId}
+              outcome={outcome}
+            />
+          </>
+        )}
 
-          {!isAdvancedTrader && (
-            <Row className=" items-start justify-between">
-              <div className=" flex-grow">
-                <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
-                  {isPseudoNumeric
-                    ? 'Estimated value'
-                    : isStonk
-                    ? 'New stock price'
-                    : 'New probability'}
+        {betType !== 'Limit' && (
+          <Col className="gap-2">
+            {user ? (
+              <WarningConfirmationButton
+                marketType="binary"
+                amount={betAmount}
+                warning={warning}
+                userOptedOutOfWarning={user.optOutBetWarnings}
+                onSubmit={submitBet}
+                ButtonClassName="flex-grow"
+                actionLabelClassName={'line-clamp-1'}
+                isSubmitting={isSubmitting}
+                disabled={betDisabled}
+                size="xl"
+                color={
+                  isBinaryMC && outcome === 'YES'
+                    ? 'indigo'
+                    : isBinaryMC && outcome === 'NO'
+                    ? 'amber'
+                    : outcome === 'NO'
+                    ? 'red'
+                    : 'green'
+                }
+                actionLabel={
+                  betDisabled
+                    ? `Select ${formatOutcomeLabel(
+                        contract,
+                        'YES'
+                      )} or ${formatOutcomeLabel(contract, 'NO')}`
+                    : `Bet ${
+                        binaryMCOutcomeLabel ?? outcome
+                      } to win ${formatMoney(currentPayout)}`
+                }
+                inModal={!!onClose}
+              />
+            ) : (
+              <Button
+                color={outcome === 'NO' ? 'red' : 'green'}
+                size="xl"
+                onClick={withTracking(firebaseLogin, 'login from bet panel')}
+                className="flex-grow"
+              >
+                Sign up to predict
+              </Button>
+            )}
+          </Col>
+        )}
+
+        {user ? (
+          <Row className="mt-3 items-start justify-between">
+            <div className="flex-grow">
+              <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
+                Your balance{' '}
+                <span className="text-ink-700 font-semibold">
+                  {formatMoney(user.balance)}
                 </span>
+              </span>
+            </div>
 
-                <span className="text-sm font-semibold">
+            {isAdvancedTrader && (
+              <div>
+                <button
+                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                  onClick={() => {
+                    const tradingMode = !advancedTraderMode
+                    setAdvancedTraderMode(tradingMode)
+                    if (!tradingMode) {
+                      setBetType('Market')
+                    }
+                    updateUser(user.id, { isAdvancedTrader: tradingMode })
+                  }}
+                >
+                  <span className="hover:underline">
+                    {advancedTraderMode ? 'Default' : 'Advanced'}
+                  </span>
+                  <ChevronDownIcon className="ml-1 h-3 w-3" />
+                </button>
+              </div>
+            )}
+          </Row>
+        ) : null}
+
+        {!isAdvancedTrader && (
+          <Row className=" items-start justify-between">
+            <div className=" flex-grow">
+              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+                {isPseudoNumeric
+                  ? 'Estimated value'
+                  : isStonk
+                  ? 'New stock price'
+                  : 'New probability'}
+              </span>
+
+              <span className="text-sm font-semibold">
+                {getFormattedMappedValue(
+                  contract,
+                  probStayedSame ? probBefore : probAfter
+                )}
+              </span>
+              {!probStayedSame && !isPseudoNumeric && (
+                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                  {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
-                    probStayedSame ? probBefore : probAfter
+                    Math.abs(probAfter - probBefore)
                   )}
                 </span>
-                {!probStayedSame && !isPseudoNumeric && (
-                  <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                    {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
-                    {getFormattedMappedValue(
-                      contract,
-                      Math.abs(probAfter - probBefore)
-                    )}
+              )}
+
+              {!isPseudoNumeric && !isStonk && !isBinaryMC && (
+                <InfoTooltip
+                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                    contract,
+                    probBefore
+                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                  className="text-ink-600 ml-1 mt-0.5"
+                  size="sm"
+                />
+              )}
+
+              {isBinaryMC && (
+                <InfoTooltip
+                  text={`Your bet will move the probability from ${getFormattedMappedValue(
+                    contract,
+                    probBefore
+                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                  className="text-ink-600 ml-1 mt-0.5"
+                  size="sm"
+                />
+              )}
+            </div>
+
+            {user && (
+              <div>
+                <button
+                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                  onClick={() => {
+                    const tradingMode = !advancedTraderMode
+                    setAdvancedTraderMode(tradingMode)
+                    if (!tradingMode) {
+                      setBetType('Market')
+                    }
+                    updateUser(user.id, { isAdvancedTrader: tradingMode })
+                  }}
+                >
+                  <span className="hover:underline">
+                    {advancedTraderMode ? 'Default' : 'Advanced'}
                   </span>
-                )}
-
-                {!isPseudoNumeric && !isStonk && !isBinaryMC && (
-                  <InfoTooltip
-                    text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
-                      contract,
-                      probBefore
-                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                    className="text-ink-600 ml-1 mt-0.5"
-                    size="sm"
-                  />
-                )}
-
-                {isBinaryMC && (
-                  <InfoTooltip
-                    text={`Your bet will move the probability from ${getFormattedMappedValue(
-                      contract,
-                      probBefore
-                    )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                    className="text-ink-600 ml-1 mt-0.5"
-                    size="sm"
-                  />
-                )}
+                  <ChevronDownIcon className="ml-1 h-3 w-3" />
+                </button>
               </div>
+            )}
+          </Row>
+        )}
+      </Col>
 
-              {user && (
-                <div>
-                  <button
-                    className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                    onClick={() => {
-                      const tradingMode = !advancedTraderMode
-                      setAdvancedTraderMode(tradingMode)
-                      if (!tradingMode) {
-                        setBetType('Market')
-                      }
-                      updateUser(user.id, { isAdvancedTrader: tradingMode })
-                    }}
-                  >
-                    <span className="hover:underline">
-                      {advancedTraderMode ? 'Default' : 'Advanced'}
-                    </span>
-                    <ChevronDownIcon className="ml-1 h-3 w-3" />
-                  </button>
-                </div>
-              )}
-            </Row>
-          )}
-        </Col>
+      <YourOrders
+        className="mt-2 rounded-lg bg-indigo-200/10 py-4"
+        contract={contract}
+        bets={unfilledBetsMatchingAnswer}
+      />
+      {/* Stonks don't allow limit orders but users may have them from before the conversion */}
+      {isStonk && unfilledBets.length > 0 && (
+        <YourOrders
+          className="mt-2 rounded-lg bg-indigo-200/10 px-4 py-4"
+          contract={contract}
+          bets={unfilledBets as LimitBet[]}
+        />
       )}
-      {isPanelBodyVisible && (
-        <>
-          <YourOrders
-            className="mt-2 rounded-lg bg-indigo-200/10 py-4"
-            contract={contract}
-            bets={unfilledBetsMatchingAnswer}
-          />
-          {/* Stonks don't allow limit orders but users may have them from before the conversion */}
-          {isStonk && unfilledBets.length > 0 && (
-            <YourOrders
-              className="mt-2 rounded-lg bg-indigo-200/10 px-4 py-4"
-              contract={contract}
-              bets={unfilledBets as LimitBet[]}
-            />
+      {advancedTraderMode && (
+        <OrderBookPanel
+          contract={contract}
+          limitBets={unfilledBets.filter(
+            (b) => b.answerId === multiProps?.answerToBuy?.id
           )}
-          {advancedTraderMode && (
-            <OrderBookPanel
-              contract={contract}
-              limitBets={unfilledBets.filter(
-                (b) => b.answerId === multiProps?.answerToBuy?.id
-              )}
-              answer={multiProps?.answerToBuy}
-            />
-          )}
-        </>
+          answer={multiProps?.answerToBuy}
+        />
       )}
-    </Col>
+    </>
   )
 }
+
 export const QuickBetAmountsRow = (props: {
   onAmountChange: (amount: number) => void
   betAmount: number | undefined

@@ -245,21 +245,17 @@ export const MultiBettor = (props: {
   const { answer, contract } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
-  const user = useUser()
-
   return (
     <>
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-        className={MODAL_CLASS}
       >
         <AnswerCpmmBetPanel
           answer={answer}
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
           alwaysShowOutcomeSwitcher
         />
       </Modal>
@@ -288,14 +284,11 @@ export const YesNoBetButtons = (props: {
   const { answer, contract, feedItem, fillColor } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
-  const user = useUser()
-
   return (
     <>
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-        className={MODAL_CLASS}
       >
         <AnswerCpmmBetPanel
           answer={answer}
@@ -303,7 +296,6 @@ export const YesNoBetButtons = (props: {
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
         />
       </Modal>
 

@@ -45,7 +45,6 @@ import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
-import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
 type Points = HistoryPoint<any>[]
 
@@ -293,11 +292,6 @@ function ContractSmolView(props: {
                       {showQRCode && <FloatingQRCode shareUrl={shareUrl} />}
                     </div>
                   )}
-                  <BinaryMultiAnswersPanel
-                    size={'xs'}
-                    contract={contract}
-                    answers={contract.answers}
-                  />
                 </div>
               ) : isMulti ? (
                 <div className="flex h-full flex-col justify-center">
