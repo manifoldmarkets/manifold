@@ -184,34 +184,20 @@ const getCurrentProbs = async (pg: SupabaseDirectClient) => {
   )
 }
 
+// Does not get answers that have had no bets since the given time.
+// You must use the current pool probs for those instead.
 const getBetProbsAt = async (pg: SupabaseDirectClient, when: number) => {
   return Object.fromEntries(
     await pg.map(
-      `with probs_before as (
-        select distinct on (contract_id, answer_id)
-          contract_id, answer_id, prob_after as prob
+      `select distinct on (contract_id, answer_id)
+          contract_id, answer_id, prob_before
         from contract_bets
         where created_time < millis_to_ts($1)
-        order by contract_id, answer_id, created_time desc
-      ), probs_after as (
-        select distinct on (contract_id, answer_id)
-          contract_id, answer_id, prob_before as prob
-        from contract_bets
-        where created_time >= millis_to_ts($1)
-        order by contract_id, answer_id, created_time
-      )
-      select
-        coalesce(pa.contract_id, pb.contract_id) as contract_id,
-        coalesce(pa.answer_id, pb.answer_id) as answer_id,
-        coalesce(pa.prob, pb.prob) as prob
-      from probs_after as pa
-      full outer join probs_before as pb
-        on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
-      `,
+        order by contract_id, answer_id, created_time asc`,
       [when],
       (r) => [
         `${r.contract_id} ${r.answer_id ?? '_'}`,
-        parseFloat(r.prob as string),
+        parseFloat(r.prob_before as string),
       ]
     )
   )
