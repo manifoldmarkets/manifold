@@ -462,6 +462,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
@@ -501,6 +502,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
@@ -521,11 +523,12 @@ const BinaryUserPositionsTable = memo(
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
   numberToShow: string
+  invested: string
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
   colorClassName: string
 }) {
-  const { position, colorClassName, currentUser, followedUsers, numberToShow } =
+  const { position, colorClassName, currentUser, followedUsers, numberToShow, invested } =
     props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
@@ -559,7 +562,10 @@ const PositionRow = memo(function PositionRow(props: {
           )}
         </Row>
       </UserHovercard>
-      <span className={clsx(colorClassName, 'shrink-0')}>{numberToShow}</span>
+      <Col>
+        <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>{numberToShow}</span>
+        <span className={clsx('hidden sm:flex text-ink-500 text-right text-xs shrink-0')}>Spent {invested}</span>
+      </Col>
     </Row>
   )
 })
