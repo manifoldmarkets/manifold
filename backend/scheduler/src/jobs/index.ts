@@ -32,7 +32,7 @@ export function createJobs() {
     ),
     createJob(
       'calculate-conversion-scores',
-      '0 */30 * * * *', // every 30 minutes - (on the 15th minute of every hour)
+      '0 5 * * * *', // on the 5th minute of every hour
       calculateConversionScore
     ),
     createJob(
