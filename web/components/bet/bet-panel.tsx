@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { sumBy } from 'lodash'
 import toast from 'react-hot-toast'
 import { CheckIcon } from '@heroicons/react/solid'
-import { ChevronDownIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 
 import {
   CPMMBinaryContract,
@@ -361,6 +361,21 @@ export function BuyPanel(props: {
                 }}
               />
             </Row>
+          )}
+          {!inModal && (
+            <Button
+              color="gray-white"
+              className="absolute right-1 top-1"
+              onClick={() => {
+                setIsPanelBodyVisible(false)
+                if (initialOutcome == undefined) {
+                  setOutcome(undefined)
+                }
+                setBetAmount(initialBetAmount)
+              }}
+            >
+              <XIcon className="h-5 w-5" />
+            </Button>
           )}
           {betType === 'Market' ? (
             <>
