@@ -23,7 +23,6 @@ import { Lover } from 'common/love/lover'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
-import { LiquidityProvision } from 'common/liquidity-provision'
 import { LiteUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
@@ -383,7 +382,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as LiquidityProvision,
+    returns: {} as Txn,
     props: z
       .object({
         contractId: z.string(),

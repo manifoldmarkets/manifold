@@ -2,12 +2,7 @@ import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
-
 import { Answer, DpmAnswer } from 'common/answer'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import {
@@ -524,13 +519,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const end = start + ITEMS_PER_PAGE
 
   const lps = useLiquidity(contract.id) ?? []
-  const visibleLps = lps.filter(
-    (l) =>
-      !l.isAnte &&
-      l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.amount > 0
-  )
+  const visibleLps = lps.filter((l) => !l.data.isAnte && l.fromType === 'USER')
   const isMultiNumber = outcomeType === 'NUMBER'
   const betsByBetGroupId = isMultiNumber
     ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)

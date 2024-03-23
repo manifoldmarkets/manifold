@@ -17,11 +17,13 @@ import { isAdminId } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
-import { getCpmmInitialLiquidity } from 'common/antes'
+import { getCpmmInitialLiquidityTxn } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
+import { addHouseSubsidyToAnswer } from 'shared/helpers/add-house-subsidy'
+import { runTxn } from 'shared/txn/run-txn'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -167,18 +169,15 @@ export const createAnswerCpmmMain = async (
         transaction.update(contractDoc, {
           totalLiquidity: FieldValue.increment(ANSWER_COST),
         })
-        const liquidityDoc = firestore
-          .collection(`contracts/${contract.id}/liquidity`)
-          .doc()
-        const lp = getCpmmInitialLiquidity(
+
+        const lp = getCpmmInitialLiquidityTxn(
           user.id,
           contract,
-          liquidityDoc.id,
           ANSWER_COST,
-          createdTime,
           newAnswer.id
         )
-        transaction.create(liquidityDoc, lp)
+
+        await runTxn(transaction, lp)
       }
 
       return { newAnswerId: newAnswer.id, contract, user }
