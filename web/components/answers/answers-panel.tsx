@@ -392,19 +392,23 @@ export const EditAnswerModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-50 gap-2 rounded-md p-4'}>
-        <Row className={'mb-4 justify-between gap-1'}>
-          <span className={'line-clamp-2 text-xl text-indigo-700'}>
-            Edit {answer.text}
-          </span>
-          <IconButton
-            size={'sm'}
-            disabled={isSubmitting}
-            onClick={() => setOpen(false)}
+        <span className={'font-semibold'}>Title</span>
+        <Row className={'gap-1'}>
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="w-full"
+          />
+          <Button
+            size={'xs'}
+            color={'indigo'}
+            loading={isSubmitting}
+            onClick={editAnswer}
           >
-            <XIcon className="h-5 w-5" />
-          </IconButton>
+            Save
+          </Button>
         </Row>
-        <span className={'font-semibold'}>Edit bar color</span>
+        <span className={'font-semibold'}>Color</span>
         <CustomizeableDropdown
           menuWidth="200px"
           buttonClass={clsx(buttonClass('sm', 'gray-outline'), 'h-full')}
@@ -433,22 +437,7 @@ export const EditAnswerModal = (props: {
             />
           )}
         />
-        <span className={'font-semibold'}>Edit title</span>
-        <Row className={'gap-1'}>
-          <Input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full"
-          />
-          <Button
-            size={'xs'}
-            color={'indigo'}
-            loading={isSubmitting}
-            onClick={editAnswer}
-          >
-            Save
-          </Button>
-        </Row>
+
         {(isModId(user.id) ||
           isAdminId(user.id) ||
           contract.creatorId === user.id) &&
@@ -632,14 +621,7 @@ export function Answer(props: {
     () => sumBy(unfilledBets, (bet) => bet.orderAmount - bet.amount),
     [unfilledBets]
   )
-  const canEdit =
-    user &&
-    'isOther' in answer &&
-    !answer.isOther &&
-    (isAdminId(user.id) ||
-      isModId(user.id) ||
-      user.id === contract.creatorId ||
-      user.id === answer.userId)
+  const canEdit = canEditAnswer(answer, contract, user)
 
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
@@ -796,6 +778,22 @@ export function Answer(props: {
         />
       )}
     </Col>
+  )
+}
+
+export function canEditAnswer(
+  answer: Answer | DpmAnswer,
+  contract: MultiContract,
+  user?: User | undefined | null
+) {
+  return (
+    user &&
+    'isOther' in answer &&
+    !answer.isOther &&
+    (isAdminId(user.id) ||
+      isModId(user.id) ||
+      user.id === contract.creatorId ||
+      user.id === answer.userId)
   )
 }
 

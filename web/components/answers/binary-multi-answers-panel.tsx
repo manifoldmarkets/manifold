@@ -5,10 +5,16 @@ import { Row } from 'web/components/layout/row'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { Answer as AnswerComponent } from './answers-panel'
+import {
+  Answer as AnswerComponent,
+  EditAnswerModal,
+  canEditAnswer,
+} from './answers-panel'
 import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
-import { VERSUS_COLORS } from '../charts/contract/choice'
+import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
+import { useUser } from 'web/hooks/use-user'
+import { PencilIcon } from '@heroicons/react/solid'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -104,6 +110,11 @@ function BinaryMultiChoiceBetPanel(props: {
 }) {
   const { answer, contract, closePanel, outcome } = props
 
+  const [editing, setEditing] = useState(false)
+  const color = getVersusColor(answer)
+  const user = useUser()
+  const canEdit = canEditAnswer(answer, contract, user)
+
   return (
     <BuyPanelBody
       contract={contract}
@@ -118,9 +129,29 @@ function BinaryMultiChoiceBetPanel(props: {
       location={'contract page answer'}
       panelClassName="!bg-canvas-50 gap-2"
     >
-      <Row className="justify-between">
-        <span className={'text-2xl'}>{answer.text}</span>
-      </Row>
+      <div className={'group mr-6 text-2xl'}>
+        {answer.text}
+        {canEdit && user && (
+          <>
+            <Button
+              color="gray-white"
+              className="visible group-hover:visible sm:invisible"
+              size="xs"
+              onClick={() => setEditing(true)}
+            >
+              <PencilIcon className="text-primary-700 h-4 w-4" />
+            </Button>
+            <EditAnswerModal
+              open={editing}
+              setOpen={setEditing}
+              contract={contract}
+              answer={answer}
+              color={color}
+              user={user}
+            />
+          </>
+        )}
+      </div>
     </BuyPanelBody>
   )
 }

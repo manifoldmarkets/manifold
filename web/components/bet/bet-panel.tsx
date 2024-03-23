@@ -47,6 +47,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useUser } from 'web/hooks/use-user'
+import { getVersusColors } from '../charts/contract/choice'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -197,6 +198,10 @@ export const BuyPanelBody = (props: {
   )
 
   const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCColors = isBinaryMC
+    ? getVersusColors((contract as any).answers)
+    : undefined
+
   const binaryMCOutcomeLabel =
     isBinaryMC && multiProps
       ? multiProps.answerText ?? multiProps.answerToBuy.text
@@ -513,19 +518,14 @@ export const BuyPanelBody = (props: {
                 warning={warning}
                 userOptedOutOfWarning={user.optOutBetWarnings}
                 onSubmit={submitBet}
-                ButtonClassName="flex-grow"
+                ButtonClassName={clsx('flex-grow')}
                 actionLabelClassName={'line-clamp-1'}
                 isSubmitting={isSubmitting}
                 disabled={betDisabled}
                 size="xl"
                 color={
-                  isBinaryMC && outcome === 'YES'
-                    ? 'indigo'
-                    : isBinaryMC && outcome === 'NO'
-                    ? 'amber'
-                    : outcome === 'NO'
-                    ? 'red'
-                    : 'green'
+                  binaryMCColors?.[outcome == 'YES' ? 0 : 1] ??
+                  (outcome === 'NO' ? 'red' : 'green')
                 }
                 actionLabel={
                   betDisabled

@@ -20,7 +20,7 @@ import {
   BinaryContractChart,
   MultiBinaryChart,
 } from '../charts/contract/binary'
-import { ChoiceContractChart } from '../charts/contract/choice'
+import { ChoiceContractChart, getVersusColor } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
@@ -809,13 +809,7 @@ const BinaryChoiceOverview = (props: {
     <>
       {!contract.isResolved && (
         <Row className={clsx('justify-start gap-1 text-xl')}>
-          <span
-            className={clsx(
-              mainAnswer.id === leadingAnswer.id
-                ? 'text-indigo-600'
-                : 'text-amber-500'
-            )}
-          >
+          <span style={{ color: getVersusColor(leadingAnswer) }}>
             {leadingAnswer.text}
           </span>
           <span>{formatPercent(leadingAnswer.prob)}</span>

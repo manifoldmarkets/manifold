@@ -1,7 +1,7 @@
 import { Ref, useEffect, useState } from 'react'
 import clsx from 'clsx'
 
-import { Button, ColorType, SizeType } from './button'
+import { Button, SizeType } from './button'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { AlertBox } from '../widgets/alert-box'
@@ -15,7 +15,7 @@ export function WarningConfirmationButton(props: {
   isSubmitting: boolean
   actionLabelClassName?: string
   ButtonClassName?: string
-  color: ColorType
+  color: string
   size: SizeType
   actionLabel: string
   userOptedOutOfWarning: boolean | undefined
@@ -60,6 +60,12 @@ export function WarningConfirmationButton(props: {
     ? 'Enter an amount'
     : actionLabel
 
+  const realColor = warning
+    ? 'yellow'
+    : color == 'indigo' || color == 'green' || color == 'red'
+    ? color
+    : 'none'
+
   return (
     <>
       {warning && !userOptedOutOfWarning && (
@@ -72,9 +78,10 @@ export function WarningConfirmationButton(props: {
         size={size}
         disabled={isSubmitting || disabled}
         onClick={onSubmit}
-        color={color}
+        color={realColor}
         ref={betButtonRef as Ref<HTMLButtonElement>}
-        className={clsx(ButtonClassName)}
+        className={clsx(ButtonClassName, 'disabled:bg-ink-200 text-white')}
+        style={{ backgroundColor: realColor === 'none' ? color : undefined }}
       >
         <span className={clsx(actionLabelClassName)}>{buttonText}</span>
       </Button>
