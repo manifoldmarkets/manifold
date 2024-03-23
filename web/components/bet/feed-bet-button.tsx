@@ -69,7 +69,6 @@ export function BetButton(props: {
               contract={contract}
               user={user}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
-              onCancel={() => setDialogueThatIsOpen(undefined)}
               onBuySuccess={() =>
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)
               }
