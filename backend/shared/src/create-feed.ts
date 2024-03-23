@@ -107,7 +107,7 @@ export const repostContractToFeed = async (
         'contract_in_group_you_are_in',
       ],
       'repost',
-      0.1
+      0.025
     )
   log(
     `Reposting contract ${contract.id} to ${

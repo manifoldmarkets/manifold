@@ -229,7 +229,7 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     relevanceScore: number
   }
 }> => {
-  const { id: contractId, importanceScore } = contract
+  const { id: contractId, importanceScore, conversionScore } = contract
 
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_FEED_REASON_TYPES]: {
@@ -287,11 +287,18 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     (acc, values, userId) => {
       const interestDistance = sum(values.map(([, , score]) => score))
       const reasons = values.map(([, reason]) => reason)
+      const probChange =
+        contract.mechanism === 'cpmm-1' &&
+        dataType === 'contract_probability_changed'
+          ? contract.probChanges.day
+          : 0
       const score = getRelevanceScore(
         dataType,
         reasons,
         importanceScore,
+        conversionScore,
         interestDistance,
+        probChange,
         trendingContractType,
         randomGroupCoefficient
       )

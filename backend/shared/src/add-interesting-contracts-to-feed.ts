@@ -35,6 +35,7 @@ import {
 } from 'shared/supabase/contracts'
 
 export const MINUTE_INTERVAL = 60
+
 let lastLoadedTime = 0
 export async function addInterestingContractsToFeed(
   db: SupabaseClient,
@@ -53,7 +54,7 @@ export async function addInterestingContractsToFeed(
   log(`Loaded users. Querying candidate contracts...`)
   // We could query for contracts that've had large changes in prob in the past hour
   const contracts = await pg.map(
-    `select data, importance_score from contracts
+    `select data, importance_score, conversion_score from contracts
             where importance_score >= 0.31
             order by importance_score desc
             `,
@@ -235,9 +236,6 @@ const loadUserEmbeddingsToStore = async (
   }
 }
 
-// We update inactive users' feeds once per 5 days
-const randomNumberThreshold = (minuteInterval: number) =>
-  1 / (120 * (60 / minuteInterval))
 export const filterUserEmbeddings = (
   userEmbeddings: Dictionary<UserEmbeddingDetails>,
   longAgo: number
@@ -395,3 +393,7 @@ const userIdsToIgnore = async (
   )
   return userIdsWithFeedRows.concat(userIdsWithSeenMarkets)
 }
+
+// We update inactive users' feeds once per 5 days
+export const randomNumberThreshold = (minuteInterval: number) =>
+  1 / (120 * (60 / minuteInterval))

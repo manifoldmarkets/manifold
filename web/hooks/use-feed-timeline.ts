@@ -17,12 +17,7 @@ import {
   uniq,
   uniqBy,
 } from 'lodash'
-import {
-  BASE_FEED_DATA_TYPE_SCORES,
-  FEED_DATA_TYPES,
-  FEED_REASON_TYPES,
-  getExplanation,
-} from 'common/feed'
+import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
@@ -180,10 +175,7 @@ export const useFeedTimeline = (
         (dayjs().diff(dayjs(d.created_time), 'day') *
           (dataType === 'contract_probability_changed' ? 1.2 : 1))
 
-      d.relevance_score =
-        (d.relevance_score ||
-          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]) *
-        createdTimeAdjusted
+      d.relevance_score = (d.relevance_score ?? 1) * createdTimeAdjusted
       return d
     })
     const {
@@ -219,7 +211,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
-        .select('data, importance_score')
+        .select('data, importance_score, conversion_score')
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)

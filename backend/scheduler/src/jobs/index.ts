@@ -10,6 +10,7 @@ import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
+import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 
 export function createJobs() {
   return [
@@ -38,6 +39,11 @@ export function createJobs() {
       'update-group-metrics',
       '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
       updateGroupMetricsCore
+    ),
+    createJob(
+      'add-converting-feed-contracts',
+      '0 0 12 * * *', // 12pm daily
+      addConvertingContractsToFeed
     ),
     createJob(
       'onboarding-notification',

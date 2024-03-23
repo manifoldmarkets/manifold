@@ -10,6 +10,7 @@ export type FEED_DATA_TYPES =
   | 'contract_probability_changed'
   | 'trending_contract'
   | 'new_subsidy'
+  | 'high_conversion'
 
 // TODO: add 'shared_contract'
 export type CONTRACT_FEED_REASON_TYPES =
@@ -32,10 +33,11 @@ export const NEW_USER_FEED_DATA_TYPES: FEED_DATA_TYPES[] = [
 
 export const BASE_FEED_DATA_TYPE_SCORES: { [key in FEED_DATA_TYPES]: number } =
   {
+    high_conversion: 0.35,
     new_contract: 0.25,
     repost: 0.3,
     new_subsidy: 0.1,
-    contract_probability_changed: 0.25, // todo: multiply by magnitude of prob change
+    contract_probability_changed: 0.25,
     trending_contract: 0.2,
   }
 
@@ -46,7 +48,7 @@ export const BASE_FEED_REASON_TYPE_SCORES: {
   liked_contract: 0.2,
   contract_in_group_you_are_in: 0.3,
   similar_interest_vector_to_contract: 0, // score calculated using interest distance
-  follow_user: 0.45,
+  follow_user: 0.4,
   similar_interest_vector_to_news_vector: 0.1,
 }
 
@@ -54,7 +56,9 @@ export const getRelevanceScore = (
   feedDataType: FEED_DATA_TYPES,
   reasons: FEED_REASON_TYPES[],
   importanceScore: number,
+  conversionScore: number,
   interestDistance: number,
+  probChange: number,
   trendingContractType?: 'old' | 'new',
   randomGroupCoefficient = 0
 ): number => {
@@ -67,7 +71,9 @@ export const getRelevanceScore = (
   return (
     dataTypeScore +
     reasonsScore +
+    Math.abs(probChange) * 0.25 +
     importanceScore * 0.3 +
+    conversionScore * 0.1 +
     (1 - interestDistance) * 0.15 +
     (reasons.includes('contract_in_group_you_are_in')
       ? Math.random() * randomGroupCoefficient
@@ -81,12 +87,20 @@ export const INTEREST_DISTANCE_THRESHOLDS: Record<FEED_DATA_TYPES, number> = {
   new_contract: 0.125,
   new_subsidy: 0.15,
   repost: 0.125,
+  high_conversion: 0.125,
 }
 
 export const FeedExplanationDictionary: Record<
   FEED_DATA_TYPES,
   Partial<Record<FEED_REASON_TYPES, string>>
 > = {
+  high_conversion: {
+    follow_user: 'High conversion question by a creator you follow',
+    contract_in_group_you_are_in:
+      'High conversion question in a group you are in',
+    similar_interest_vector_to_contract:
+      'High conversion question you may be interested in',
+  },
   new_contract: {
     contract_in_group_you_are_in: 'New question in a group you are in',
     similar_interest_vector_to_contract:
