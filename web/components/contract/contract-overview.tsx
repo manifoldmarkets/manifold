@@ -16,7 +16,10 @@ import {
   CPMMNumericContract,
 } from 'common/contract'
 import { NumericContractChart } from '../charts/contract/numeric'
-import { BinaryContractChart } from '../charts/contract/binary'
+import {
+  BinaryContractChart,
+  MultiBinaryChart,
+} from '../charts/contract/binary'
 import { ChoiceContractChart } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
@@ -798,6 +801,7 @@ const BinaryChoiceOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
+
   const mainAnswer = getMainBinaryMCAnswer(contract)!
   const betPoints = mainAnswer ? props.points[mainAnswer.id] : []
   const leadingAnswer = orderBy(answers, 'prob', 'desc')[0]
@@ -849,18 +853,13 @@ const BinaryChoiceOverview = (props: {
           )}
         >
           {(w, h) => (
-            <BinaryContractChart
+            <MultiBinaryChart
               showZoomer={showZoomer}
               zoomParams={zoomParams}
               width={w}
               height={h}
               betPoints={betPoints}
               contract={contract}
-              pointerMode={pointerMode}
-              setHoveredAnnotation={setHoveredAnnotation}
-              hoveredAnnotation={hoveredAnnotation}
-              chartAnnotations={chartAnnotations}
-              graphColor={'#4e46dc'}
             />
           )}
         </SizedContainer>

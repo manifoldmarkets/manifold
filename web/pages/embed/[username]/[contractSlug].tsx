@@ -16,7 +16,10 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { BinaryContractChart } from 'web/components/charts/contract/binary'
+import {
+  BinaryContractChart,
+  MultiBinaryChart,
+} from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
@@ -166,7 +169,7 @@ const ContractChart = (props: {
       )
     case 'MULTIPLE_CHOICE':
       return isBinaryMulti(contract) ? (
-        <BinaryContractChart
+        <MultiBinaryChart
           {...rest}
           contract={contract as CPMMMultiContract}
           betPoints={points}
