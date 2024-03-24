@@ -156,6 +156,7 @@ import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
 import { recordContractInteraction } from 'api/record-contract-interaction'
+import { getUserPortfolio } from './get-user-portfolio'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -296,6 +297,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
   'record-contract-interaction': recordContractInteraction,
+  'get-user-portfolio': getUserPortfolio,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

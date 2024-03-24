@@ -1033,6 +1033,20 @@ export const API = (_apiTypeCheck = {
       groups: Group[]
     },
   },
+  'get-user-portfolio': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as {
+      status: 'success'
+      loanTotal: number
+      investment: number
+      balance: number
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

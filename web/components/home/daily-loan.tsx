@@ -22,8 +22,12 @@ import { Col } from 'web/components/layout/col'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
-export function DailyLoan(props: { user: User; showChest?: boolean }) {
-  const { user, showChest } = props
+export function DailyLoan(props: {
+  user: User
+  refreshPortfolio?: () => void
+  showChest?: boolean
+}) {
+  const { user, showChest, refreshPortfolio } = props
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [loaning, setLoaning] = useState(false)
@@ -33,7 +37,7 @@ export function DailyLoan(props: { user: User; showChest?: boolean }) {
   )
   const { receivedLoanToday: receivedTxnLoan, checkTxns } =
     useHasReceivedLoanToday(user)
-  const notEligibleForLoan = user.nextLoanCached < 1
+  const notEligibleForLoan = false //user.nextLoanCached < 1
   const receivedLoanToday = receivedTxnLoan || justReceivedLoan
 
   const getLoan = async () => {
@@ -59,6 +63,8 @@ export function DailyLoan(props: { user: User; showChest?: boolean }) {
     track('request loan', {
       amount: res?.payout,
     })
+
+    refreshPortfolio && refreshPortfolio()
   }
 
   useEffect(() => {

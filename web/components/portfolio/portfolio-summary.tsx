@@ -13,6 +13,7 @@ import { BalanceCard } from './balance-card'
 import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export const PortfolioSummary = (props: {
   user: User
@@ -34,6 +35,10 @@ export const PortfolioSummary = (props: {
 
   const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
+  const { data: portfolioData, refresh: refreshPortfolio } = useAPIGetter('get-user-portfolio', {
+    userId: user.id,
+  })
+
   return (
     <Col className={clsx(className, 'gap-4')}>
       <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
@@ -51,6 +56,8 @@ export const PortfolioSummary = (props: {
           user={user}
           className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
           weeklyPortfolioData={weeklyPortfolioData}
+          loanTotal={portfolioData?.loanTotal}
+          refreshPortfolio={refreshPortfolio}
         />
       </Row>
 

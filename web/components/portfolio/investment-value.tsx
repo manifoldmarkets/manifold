@@ -30,8 +30,10 @@ export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
   weeklyPortfolioData: PortfolioSnapshot[]
+  loanTotal: number | undefined
+  refreshPortfolio: () => void
 }) {
-  const { user, className, weeklyPortfolioData } = props
+  const { user, className, weeklyPortfolioData, loanTotal, refreshPortfolio } = props
   const latestPortfolio = last(weeklyPortfolioData)
   const dayAgoPortfolio = minBy(
     weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
@@ -122,10 +124,10 @@ export const InvestmentValueCard = memo(function (props: {
           </Row>
         )}
         <Col className={'absolute right-1 top-1 gap-1'}>
-          <DailyLoan user={user} />
-          {latestPortfolio && latestPortfolio.loanTotal > 0 && (
+          <DailyLoan user={user} refreshPortfolio={refreshPortfolio} />
+          {!!loanTotal && (
             <div className="text-ink-600 text-sm">
-              {formatMoney(latestPortfolio.loanTotal ?? 0)} loaned
+              {formatMoney(loanTotal)} loaned
             </div>
           )}
         </Col>
