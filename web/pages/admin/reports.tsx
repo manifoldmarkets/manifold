@@ -40,8 +40,8 @@ export async function getStaticProps() {
 export default function Reports(props: { reports: LiteReport[] }) {
   const reportsByContent = Object.values(groupBy(props.reports, 'contentId'))
 
-   const isAdmin = useAdmin()
-   if (!isAdmin) return <></>
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">
