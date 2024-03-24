@@ -33,7 +33,8 @@ export const InvestmentValueCard = memo(function (props: {
   loanTotal: number | undefined
   refreshPortfolio: () => void
 }) {
-  const { user, className, weeklyPortfolioData, loanTotal, refreshPortfolio } = props
+  const { user, className, weeklyPortfolioData, loanTotal, refreshPortfolio } =
+    props
   const latestPortfolio = last(weeklyPortfolioData)
   const dayAgoPortfolio = minBy(
     weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),

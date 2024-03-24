@@ -35,9 +35,12 @@ export const PortfolioSummary = (props: {
 
   const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
-  const { data: portfolioData, refresh: refreshPortfolio } = useAPIGetter('get-user-portfolio', {
-    userId: user.id,
-  })
+  const { data: portfolioData, refresh: refreshPortfolio } = useAPIGetter(
+    'get-user-portfolio',
+    {
+      userId: user.id,
+    }
+  )
 
   return (
     <Col className={clsx(className, 'gap-4')}>
