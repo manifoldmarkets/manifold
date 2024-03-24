@@ -27,6 +27,7 @@ import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
+import { Fragment } from 'react'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -281,28 +282,22 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
   const { contract } = props
 
   return (
-    <Col className="w-full">
+    <div
+      className="text-ink-700 grid grid-cols-[auto_minmax(0,_1fr)] self-start pl-8 sm:pl-10"
+      style={{ gridTemplateColumns: 'auto min-content' }}
+    >
       {sortAnswers(contract, contract.answers)
         .slice(0, 3)
         .map((ans) => (
-          <Row key={ans.id} className="text-ink-700 gap-3 pl-8 sm:pl-10">
-            <div
-              className={
-                'w-8 flex-shrink-0 text-right font-bold brightness-90 saturate-150 dark:brightness-100 dark:saturate-100'
-              }
-            >
+          <Fragment key={ans.id}>
+            <div className="line-clamp-1 pr-3">{ans.text}</div>
+            <div className={'mr-3 w-8 flex-shrink-0 text-right font-semibold'}>
               {formatPercentShort(ans.prob)}
             </div>
-            <div className="line-clamp-1">{ans.text}</div>
-          </Row>
-          //   <div className="flex justify-end sm:w-fit">
-          //     <div className="hidden w-16 opacity-70 sm:block">
-          //       {/* TODO: num traders instead? */}
-          //       {formatMoneyShort(ans.totalLiquidity)}
-          //     </div>
-          //   </div>
+            {/* TODO: add number of traders? */}
+          </Fragment>
         ))}
-    </Col>
+    </div>
   )
 }
 
