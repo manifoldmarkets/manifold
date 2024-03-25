@@ -19,15 +19,56 @@ import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
+import { PollPanel } from '../poll/poll-panel'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
   return (
     <Row className="h-min flex-wrap gap-2 align-top">
+      <VoteButton contract={contract} />
       <BetButton contract={contract} />
       <ResolveButton contract={contract} />
     </Row>
   )
+}
+
+const VoteButton = (props: { contract: Contract }) => {
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+
+  if (props.contract.outcomeType === 'POLL') {
+    return (
+      <>
+        <Button
+          size="2xs"
+          color="gray-outline"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!user) {
+              firebaseLogin()
+              return
+            }
+            setOpen(true)
+          }}
+        >
+          Vote
+        </Button>
+        {open && (
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            size="md"
+            className={MODAL_CLASS}
+          >
+            <PollPanel contract={props.contract} />
+          </Modal>
+        )}
+      </>
+    )
+  }
+
+  return <></>
 }
 
 export function BetButton(props: { contract: Contract; user?: User | null }) {
