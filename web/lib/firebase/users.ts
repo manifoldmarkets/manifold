@@ -7,7 +7,12 @@ import {
 } from 'common/user'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
-import { GoogleAuthProvider, getAuth, signInWithPopup } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  OAuthProvider,
+  getAuth,
+  signInWithPopup,
+} from 'firebase/auth'
 import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
@@ -149,6 +154,20 @@ export async function firebaseLogin() {
   return signInWithPopup(auth, provider).then(async (result) => {
     return result
   })
+}
+
+export async function loginWithApple() {
+  const provider = new OAuthProvider('apple.com')
+  provider.addScope('email')
+  provider.addScope('name')
+
+  return signInWithPopup(auth, provider)
+    .then((result) => {
+      return result
+    })
+    .catch((error) => {
+      console.error(error)
+    })
 }
 
 export async function firebaseLogout() {
