@@ -64,7 +64,10 @@ export function DailyLoan(props: {
       amount: res?.payout,
     })
 
-    refreshPortfolio && refreshPortfolio()
+    if (refreshPortfolio) {
+      // Wait for replication...
+      setTimeout(refreshPortfolio, 1000)
+    }
   }
 
   useEffect(() => {
@@ -140,7 +143,7 @@ export function DailyLoan(props: {
             ? 'Daily loans'
             : 'Collect a loan on your bets'
         }
-        placement={'bottom'}
+        placement={'top'}
       >
         Get loan
       </Tooltip>
