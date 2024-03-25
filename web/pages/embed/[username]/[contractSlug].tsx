@@ -16,7 +16,10 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { BinaryContractChart } from 'web/components/charts/contract/binary'
+import {
+  BinaryContractChart,
+  MultiBinaryChart,
+} from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
@@ -42,7 +45,6 @@ import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
-import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 
 type Points = HistoryPoint<any>[]
 
@@ -166,7 +168,7 @@ const ContractChart = (props: {
       )
     case 'MULTIPLE_CHOICE':
       return isBinaryMulti(contract) ? (
-        <BinaryContractChart
+        <MultiBinaryChart
           {...rest}
           contract={contract as CPMMMultiContract}
           betPoints={points}
@@ -290,11 +292,6 @@ function ContractSmolView(props: {
                       {showQRCode && <FloatingQRCode shareUrl={shareUrl} />}
                     </div>
                   )}
-                  <BinaryMultiAnswersPanel
-                    size={'xs'}
-                    contract={contract}
-                    answers={contract.answers}
-                  />
                 </div>
               ) : isMulti ? (
                 <div className="flex h-full flex-col justify-center">

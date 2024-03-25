@@ -6,7 +6,6 @@ export const ProgressBar = (props: {
   value: number
   max: number
   className?: string
-  showPercentage?: boolean
 }) => {
   const { value, max, className } = props
   const percentage = (value / max) * 100

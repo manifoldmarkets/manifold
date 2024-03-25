@@ -60,7 +60,7 @@ export const senate2024: StateElectionMarket[] = [
   },
   {
     state: 'MT',
-    slug: 'which-party-will-win-the-us-senate-5df03a1dbdaa',
+    slug: 'which-party-will-win-the-us-senate-1487b7135606',
   },
   {
     state: 'ND',

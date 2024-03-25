@@ -33,7 +33,7 @@ export const usePortfolioHistory = (
       }))
     })
   }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
-  return portfolioHistories[cutoff]
+  return portfolioHistories[cutoff] as PortfolioSnapshot[] | undefined
 }
 
 export const useCurrentPortfolio = (userId: string | null | undefined) => {

@@ -1,12 +1,11 @@
-import { LockClosedIcon } from '@heroicons/react/solid'
+import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { Contract, contractPath } from 'common/contract'
+import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
-import { IoUnlink } from 'react-icons/io5'
 import { useUser } from 'web/hooks/use-user'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 import { getTextColor } from './text-color'
@@ -27,13 +26,13 @@ import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
+import { sortAnswers } from 'common/answer'
+import { Fragment } from 'react'
 
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
   highlightContractIds?: string[]
-  headerClassName?: string
-  hideHeader?: boolean
   columns?: ColumnFormat[]
   hideAvatar?: boolean
 }) {
@@ -41,8 +40,6 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    headerClassName,
-    hideHeader,
     columns = [traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
@@ -51,32 +48,6 @@ export function ContractsTable(props: {
 
   return (
     <Col className="w-full">
-      {!hideHeader && (
-        <Row
-          className={clsx(
-            'text-ink-500 sticky top-0 z-10 w-full justify-end px-2 py-1 text-sm font-semibold sm:justify-between',
-            headerClassName
-          )}
-        >
-          <div className={' invisible w-[calc(100%-12rem)] sm:visible'}>
-            Question
-          </div>
-          <Row>
-            {columns.map(({ header }) => (
-              <div
-                key={header}
-                className={clsx(
-                  'text-left',
-                  header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
-                )}
-              >
-                {header}
-              </div>
-            ))}
-          </Row>
-        </Row>
-      )}
-
       {contracts.map((contract) => (
         <ContractRow
           key={contract.id}
@@ -118,7 +89,7 @@ function ContractRow(props: {
         e.preventDefault()
       }}
       className={clsx(
-        'flex w-full p-2 outline-none transition-colors sm:rounded-md',
+        'flex w-full flex-col p-2 outline-none transition-colors sm:rounded-md',
         highlighted
           ? 'bg-primary-100'
           : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100',
@@ -137,7 +108,7 @@ function ContractRow(props: {
               key={contract.id + column.header}
               className={clsx(
                 faded && 'text-ink-500',
-                column.header == 'Action' ? 'w-[3rem]' : 'w-[4rem]'
+                column.header == 'Action' ? 'w-12' : 'w-16'
               )}
             >
               {column.content(contract)}
@@ -145,6 +116,10 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
+      {contract.outcomeType == 'MULTIPLE_CHOICE' &&
+        contract.mechanism == 'cpmm-multi-1' && (
+          <ContractAnswers contract={contract} />
+        )}
     </Link>
   )
 }
@@ -291,15 +266,38 @@ function ContractQuestion(props: {
         </UserHovercard>
       )}
       <div>
-        <VisibilityIcon contract={contract} />
+        <VisibilityIcon contract={contract} className="mr-1" />
         {hasBetOnContract && (
           <Tooltip text="You traded on this question">
-            <ManaCircleIcon className="text-primary-600 mb-[1px] mr-1 inline h-5 w-5" />
+            <ManaCircleIcon className="text-primary-600 mb-[2px] mr-1 inline h-4 w-4" />
           </Tooltip>
         )}
         {contract.question}
       </div>
     </Row>
+  )
+}
+
+function ContractAnswers(props: { contract: CPMMMultiContract }) {
+  const { contract } = props
+
+  return (
+    <div
+      className="text-ink-700 grid grid-cols-[auto_minmax(0,_1fr)] self-start pl-8 sm:pl-10"
+      style={{ gridTemplateColumns: 'auto min-content' }}
+    >
+      {sortAnswers(contract, contract.answers)
+        .slice(0, 3)
+        .map((ans) => (
+          <Fragment key={ans.id}>
+            <div className="line-clamp-1 pr-3">{ans.text}</div>
+            <div className={'mr-3 w-8 flex-shrink-0 text-right font-semibold'}>
+              {formatPercentShort(ans.prob)}
+            </div>
+            {/* TODO: add number of traders? */}
+          </Fragment>
+        ))}
+    </div>
   )
 }
 
@@ -310,7 +308,7 @@ export function VisibilityIcon(props: {
 }) {
   const { contract, isLarge, className } = props
   const iconClassName = clsx(
-    isLarge ? 'h-6 w-w' : 'h-4 w-4',
+    isLarge ? 'h-6 w-6' : 'h-4 w-4',
     'inline',
     className
   )
@@ -318,7 +316,8 @@ export function VisibilityIcon(props: {
   if (contract.visibility === 'private')
     return <LockClosedIcon className={iconClassName} />
 
-  if (contract.visibility === 'unlisted') <IoUnlink className={iconClassName} />
+  if (contract.visibility === 'unlisted')
+    return <EyeOffIcon className={iconClassName} />
 
   return <></>
 }

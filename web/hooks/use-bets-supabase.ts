@@ -1,5 +1,4 @@
 import { Bet, BetFilter } from 'common/bet'
-import { useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from 'web/hooks/use-event'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -8,6 +7,7 @@ import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { maxBy } from 'lodash'
 import { tsToMillis } from 'common/supabase/utils'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -87,7 +87,10 @@ export function betShouldBeFiltered(bet: Bet, options?: BetFilter) {
 }
 
 export function useBets(options?: BetFilter) {
-  const [bets, setBets] = useState<Bet[] | undefined>()
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `use-bets-${JSON.stringify(options)}`
+  )
 
   useEffectCheckEquality(() => {
     getBets(db, options).then((result) => setBets(result))

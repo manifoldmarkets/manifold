@@ -175,8 +175,17 @@ export function setTV(params: {
   streamId: string
   slug: string
   source: string
+  title: string
+  startTime: string
+  endTime: string
 }) {
   return call(getApiUrl('settv'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}
+
+export function deleteTV(id: string) {
+  return call(getApiUrl('deletetv'), 'POST', { id }) as Promise<{
     status: 'success'
   }>
 }

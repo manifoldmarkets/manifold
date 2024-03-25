@@ -20,16 +20,17 @@ import { PrivateUser, User } from 'common/user'
 export function FeedTimeline(props: {
   privateUser: PrivateUser
   user: User | undefined | null
+  feedKey?: string
   className?: string
 }) {
-  const { privateUser, user, className } = props
+  const { privateUser, user, feedKey = '', className } = props
   const {
     boosts,
     checkForNewer,
     addTimelineItems,
     savedFeedItems,
     loadMoreOlder,
-  } = useFeedTimeline(user, privateUser, 'feed-timeline')
+  } = useFeedTimeline(user, privateUser, `feed-timeline-${feedKey}`)
   const pageVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),
@@ -124,9 +125,18 @@ export function FeedTimeline(props: {
 
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
-          We're fresh out of cards!
-          <Link href="/browse?s=newest&f=open" className="text-primary-700">
+          <div>Congratulations!</div>
+          <div>You've reached the end of the feed.</div>
+          <div>You are free.</div>
+          <br />
+          <Link
+            href="/browse?s=newest&f=open"
+            className="text-primary-700 hover:underline"
+          >
             Browse new questions
+          </Link>
+          <Link href="/create" className="text-primary-700 hover:underline">
+            Create a question
           </Link>
         </div>
       )}

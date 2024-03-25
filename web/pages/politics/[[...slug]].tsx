@@ -6,36 +6,34 @@ import {
 import { getElectionsPageProps } from 'web/lib/politics/home'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import type { Headline } from 'common/news'
 import { useUser } from 'web/hooks/use-user'
-import { Carousel } from 'web/components/widgets/carousel'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { EditNewsButton } from 'web/components/news/edit-news-button'
-import { track } from 'web/lib/service/analytics'
-import clsx from 'clsx'
-import router from 'next/router'
-import { capitalize, first, keyBy, mapValues } from 'lodash'
-import { createRef, useEffect, useRef, useState } from 'react'
+import { capitalize, first } from 'lodash'
 import { Col } from 'web/components/layout/col'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { USElectionsPage } from 'web/components/elections-page'
 import Custom404 from 'web/pages/404'
 import NewsPage from 'web/pages/news/[slug]'
-import { useEvent } from 'web/hooks/use-event'
 import { PoliticsDashboardPage } from 'web/components/dashboard/politics-dashboard-page'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useMultiDashboard } from 'web/hooks/use-multi-dashboard'
+import { MultiDashboardHeadlineTabs } from 'web/components/dashboard/multi-dashboard-header'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 const revalidate = 60
+const ENDPOINT = 'politics'
+const TOP_SLUG = 'home'
 export async function getStaticProps(props: { params: { slug: string[] } }) {
   const slug = first(props.params.slug)
   if (slug) {
     try {
-      const props = await getDashboardProps(slug, true)
+      const props = await getDashboardProps(slug, {
+        topSlug: TOP_SLUG,
+        slug: ENDPOINT,
+      })
       return {
         props,
         revalidate,
@@ -74,82 +72,23 @@ export default function ElectionsOrDashboardPage(
   }
   // Politics dashboard
   if ('initialDashboard' in props) {
-    return <NewsPage {...props} endpoint={'politics'} />
+    return <NewsPage {...props} endpoint={ENDPOINT} />
   }
   // Elections home page
   return <Elections {...props} />
 }
 
-export const TOP_SLUG = 'home'
+// Note: I previously saw INSUFFICIENT_RESOURCES errors when trying to render all the dashboards
 const MAX_DASHBOARDS = 8
 
 function Elections(props: ElectionsPageProps) {
-  const [currentSlug, setCurrentSlug] = useState<string>('')
-  const [ignoreScroll, setIgnoreScroll] = useState(false)
-  // TODO: Lots of INSUFFICIENT_RESOURCES errors when trying to render all newsDashboards
   const newsDashboards = props.newsDashboards.slice(0, MAX_DASHBOARDS)
   const headlines = props.headlines.slice(0, MAX_DASHBOARDS)
-
-  const headlineSlugsToRefs = useRef(
-    mapValues(keyBy(headlines, 'slug'), () => createRef<HTMLDivElement>())
+  const { currentSlug, headlineSlugsToRefs, onClick } = useMultiDashboard(
+    headlines,
+    ENDPOINT,
+    TOP_SLUG
   )
-
-  useEffect(() => {
-    window.addEventListener('scroll', checkScrollPositionToHighlightSlug)
-    checkScrollPositionToHighlightSlug()
-    return () => {
-      window.removeEventListener('scroll', checkScrollPositionToHighlightSlug)
-    }
-  }, [])
-
-  const checkScrollPositionToHighlightSlug = useEvent(() => {
-    if (ignoreScroll) return
-    let lastSlugPosition = {
-      slug: '',
-      height: 0,
-    }
-    Object.entries(headlineSlugsToRefs.current).forEach(([slug, divRef]) => {
-      if (!divRef.current) return
-      const divTop = divRef.current.getBoundingClientRect().top
-      if (divTop < window.innerHeight && divTop > lastSlugPosition.height) {
-        lastSlugPosition = {
-          slug,
-          height: divTop,
-        }
-      }
-    })
-    if (lastSlugPosition.slug !== '' && lastSlugPosition.slug !== currentSlug) {
-      setCurrentSlug(lastSlugPosition.slug)
-      setShallowSlugInRouter(lastSlugPosition.slug)
-    }
-  })
-
-  const onClick = (slug: string) => {
-    setIgnoreScroll(true)
-    setShallowSlugInRouter(slug)
-    setCurrentSlug(slug)
-    headlineSlugsToRefs.current[slug].current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
-    setTimeout(() => setIgnoreScroll(false), 1000)
-  }
-
-  const setShallowSlugInRouter = (slug: string) => {
-    if (slug === TOP_SLUG) {
-      if (router.asPath.split('?')[0] !== '/politics') {
-        // don't override query string
-        router.replace(`/politics`, undefined, {
-          shallow: true,
-        })
-      }
-    } else {
-      router.replace(`/politics/${slug}`, undefined, {
-        shallow: true,
-      })
-    }
-  }
-
   return (
     <Page trackPageView="us elections page 2024">
       <SEO
@@ -158,10 +97,12 @@ function Elections(props: ElectionsPageProps) {
         image="/election-map24.png"
       />
 
-      <HeadlineTabs
+      <MultiDashboardHeadlineTabs
         headlines={headlines}
         currentSlug={currentSlug}
         onClick={onClick}
+        endpoint={ENDPOINT}
+        topSlug={TOP_SLUG}
       />
       <div
         className="absolute top-1"
@@ -181,66 +122,12 @@ function Elections(props: ElectionsPageProps) {
               {...(dashboard as SuccesNewsDashboardPageProps)}
               editByDefault={false}
               embeddedInParent={true}
-              endpoint={'politics'}
+              endpoint={ENDPOINT}
               className="!max-w-none"
             />
           </Col>
         )
       )}
     </Page>
-  )
-}
-
-function HeadlineTabs(props: {
-  headlines: Headline[]
-  currentSlug: string
-  onClick: (slug: string) => void
-}) {
-  const { headlines, currentSlug, onClick } = props
-  const user = useUser()
-
-  return (
-    <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
-      <Carousel labelsParentClassName="gap-px">
-        {headlines.map(({ id, slug, title }) => (
-          <Tab
-            key={id}
-            label={title}
-            onClick={() => onClick(slug)}
-            active={slug === currentSlug}
-          />
-        ))}
-        {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton
-            defaultDashboards={headlines.filter(
-              (headline) => headline.id !== TOP_SLUG
-            )}
-            isPolitics={true}
-          />
-        )}
-      </Carousel>
-    </div>
-  )
-}
-
-const Tab = (props: {
-  onClick: () => void
-  label: string
-  active?: boolean
-}) => {
-  const { onClick, label, active } = props
-  return (
-    <span
-      onClick={() => {
-        track('politics news tabs', { tab: label })
-        onClick()
-      }}
-      className={clsx(
-        'text-ink-600 hover:bg-primary-100 hover:text-primary-700 focus-visible:bg-primary-100 focus-visible:text-primary-700 max-w-[40ch] cursor-pointer text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold outline-none',
-        active && 'bg-primary-200 text-primary-900'
-      )}
-    >
-      {label}
-    </span>
   )
 }

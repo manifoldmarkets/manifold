@@ -302,7 +302,7 @@ export const FeedComment = memo(function FeedComment(props: {
               )}
             />
           )}
-          <UserHovercard userId={userId} className="z-10">
+          <UserHovercard userId={userId} className="z-10 self-start">
             <Avatar
               username={userUsername}
               size={isParent ? 'sm' : '2xs'}
@@ -793,7 +793,6 @@ function CommentActions(props: {
             </span>
             <BuyPanel
               contract={contract as any}
-              user={user}
               initialOutcome={outcome}
               onBuySuccess={() => setTimeout(() => setShowBetModal(false), 500)}
               location={'comment on contract'}
@@ -905,6 +904,8 @@ export function ContractCommentInput(props: {
           : replyToUserInfo
           ? 'user'
           : undefined,
+        commentId: comment.id,
+        contractId: contract.id,
       })
     }
   )

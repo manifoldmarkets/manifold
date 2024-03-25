@@ -128,6 +128,7 @@ export function getNewContract(props: {
     popularityScore: 0,
     importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     freshnessScore: 0,
+    conversionScore: DEFAULT_CONVERSION_SCORE,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
@@ -388,3 +389,8 @@ const getPollProps = (answers: string[]) => {
   }
   return system
 }
+
+export const DEFAULT_CONVERSION_SCORE_NUMERATOR = 2
+export const DEFAULT_CONVERSION_SCORE_DENOMINATOR = 6
+const DEFAULT_CONVERSION_SCORE =
+  DEFAULT_CONVERSION_SCORE_NUMERATOR / DEFAULT_CONVERSION_SCORE_DENOMINATOR

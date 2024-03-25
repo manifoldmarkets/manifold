@@ -125,6 +125,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   dailyScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   freshnessScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  conversionScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 
@@ -422,8 +424,8 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.outcomeType !== 'NUMBER' &&
   contract.answers.length === 2 &&
   contract.addAnswersMode === 'DISABLED' &&
-  contract.shouldAnswersSumToOne &&
-  contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+  contract.shouldAnswersSumToOne
+// contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
 
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'

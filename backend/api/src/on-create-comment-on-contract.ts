@@ -15,7 +15,6 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import * as crypto from 'crypto'
 
 const firestore = admin.firestore()
 
@@ -140,7 +139,6 @@ export const handleCommentNotifications = async (
     'comment',
     'created',
     commentCreator,
-    crypto.randomUUID(),
     richTextToString(comment.content),
     contract,
     {

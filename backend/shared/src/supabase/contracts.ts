@@ -219,9 +219,9 @@ export const getUserToReasonsInterestedInContractAndUser = async (
   creatorId: string,
   pg: SupabaseDirectClient,
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
-  serverSideCalculation: boolean,
   dataType: FEED_DATA_TYPES,
   randomGroupCoefficient = 0,
+  similarInterestsToContractCallback?: () => Promise<{ [key: string]: number }>,
   trendingContractType?: 'old' | 'new'
 ): Promise<{
   [userId: string]: {
@@ -229,38 +229,35 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     relevanceScore: number
   }
 }> => {
-  const { id: contractId, importanceScore } = contract
+  const { id: contractId, importanceScore, conversionScore } = contract
 
   const reasonsToRelevantUserIdsFunctions: {
     [key in CONTRACT_FEED_REASON_TYPES]: {
-      users?: Promise<string[]>
-      usersToDistances?: Promise<{ [key: string]: number }>
+      users?: () => Promise<string[]>
+      usersToDistances?: () => Promise<{ [key: string]: number }>
     }
   } = {
     follow_contract: {
-      users: getContractFollowerIds(contractId, pg),
+      users: () => getContractFollowerIds(contractId, pg),
     },
     liked_contract: {
-      users: getContractLikerIds(contractId, pg),
+      users: () => getContractLikerIds(contractId, pg),
     },
     follow_user: {
-      users: getUserFollowerIds(creatorId, pg),
+      users: () => getUserFollowerIds(creatorId, pg),
     },
     contract_in_group_you_are_in: {
-      users: getContractGroupMemberIds(contractId, pg),
+      users: () => getContractGroupMemberIds(contractId, pg),
     },
     similar_interest_vector_to_contract: {
-      usersToDistances: serverSideCalculation
-        ? getUsersWithSimilarInterestVectorsToContractServerSide(
+      usersToDistances:
+        similarInterestsToContractCallback ??
+        (() =>
+          getUsersWithSimilarInterestVectorsToContract(
             contractId,
             pg,
             INTEREST_DISTANCE_THRESHOLDS[dataType]
-          )
-        : getUsersWithSimilarInterestVectorsToContract(
-            contractId,
-            pg,
-            INTEREST_DISTANCE_THRESHOLDS[dataType]
-          ),
+          )),
     },
   }
 
@@ -270,13 +267,13 @@ export const getUserToReasonsInterestedInContractAndUser = async (
         return []
 
       if (usersToDistances) {
-        const userToScoreMap = await usersToDistances
+        const userToScoreMap = await usersToDistances()
         return Object.entries(userToScoreMap).map(
           ([userId, interestDistance]) => [userId, reason, interestDistance]
         )
       }
 
-      const userIds = await (users ?? Promise.resolve([]))
+      const userIds = await (users?.() ?? [])
       return userIds.map((userId) => [userId, reason, 0])
     }
   ) as Promise<[string, CONTRACT_FEED_REASON_TYPES, number][]>[]
@@ -290,11 +287,18 @@ export const getUserToReasonsInterestedInContractAndUser = async (
     (acc, values, userId) => {
       const interestDistance = sum(values.map(([, , score]) => score))
       const reasons = values.map(([, reason]) => reason)
+      const probChange =
+        contract.mechanism === 'cpmm-1' &&
+        dataType === 'contract_probability_changed'
+          ? contract.probChanges.day
+          : 0
       const score = getRelevanceScore(
         dataType,
         reasons,
         importanceScore,
+        conversionScore,
         interestDistance,
+        probChange,
         trendingContractType,
         randomGroupCoefficient
       )

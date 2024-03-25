@@ -78,13 +78,15 @@ export function CreateAnswerCpmmPanel(props: {
         {children}
 
         <Row className="gap-1">
-          <Button
-            size="2xs"
-            color="gray"
-            onClick={() => (setText(''), close?.())}
-          >
-            Clear
-          </Button>
+          {text && (
+            <Button
+              size="2xs"
+              color="gray"
+              onClick={() => (setText(''), close?.())}
+            >
+              Clear
+            </Button>
+          )}
           <Button
             size="2xs"
             loading={isSubmitting}

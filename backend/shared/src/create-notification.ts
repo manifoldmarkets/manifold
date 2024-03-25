@@ -189,7 +189,6 @@ export const createCommentOrUpdatedContractNotification = async (
   sourceType: 'comment' | 'contract',
   sourceUpdateType: 'created' | 'updated',
   sourceUser: User,
-  idempotencyKey: string,
   sourceText: string,
   sourceContract: Contract,
   miscData?: {
@@ -219,7 +218,7 @@ export const createCommentOrUpdatedContractNotification = async (
     reason: NotificationReason
   ) => {
     const notification: Notification = {
-      id: idempotencyKey,
+      id: crypto.randomUUID(),
       userId,
       reason,
       createdTime: Date.now(),

@@ -34,6 +34,8 @@ import { track } from '@amplitude/analytics-browser'
 import { APIError } from 'common/api/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/firebase/api'
+import clsx from 'clsx'
+import { getVersusColors } from '../charts/contract/choice'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -61,6 +63,10 @@ export default function LimitOrderPanel(props: {
     onBuySuccess,
   } = props
   const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCColors = isBinaryMC
+    ? getVersusColors((contract as any).answers)
+    : undefined
+
   const binaryMCOutcome =
     isBinaryMC && multiProps
       ? multiProps.answerText === multiProps.answerToBuy.text
@@ -379,17 +385,12 @@ export default function LimitOrderPanel(props: {
             <Button
               size="xl"
               disabled={betDisabled || inputError}
-              color={
-                binaryMCOutcome === 'YES'
-                  ? 'indigo'
-                  : binaryMCOutcome === 'NO'
-                  ? 'amber'
-                  : outcome === 'YES'
-                  ? 'green'
-                  : 'red'
-              }
+              color={isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red'}
               loading={isSubmitting}
-              className="flex-1"
+              className={clsx('flex-1 text-white')}
+              style={{
+                backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+              }}
               onClick={submitBet}
             >
               {isSubmitting

@@ -3,9 +3,7 @@ import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import Link from 'next/link'
 import { Col } from 'web/components/layout/col'
-
 import { contractPath } from 'common/contract'
-import { User } from 'common/user'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
@@ -17,11 +15,10 @@ import { useState } from 'react'
 export function MatchBetButton(props: {
   contract: CPMMMultiContract
   answer: Answer
-  user: User
   modalHeader?: React.ReactNode
   singleBetButton?: boolean
 }) {
-  const { contract, answer, user, modalHeader, singleBetButton } = props
+  const { contract, answer, modalHeader, singleBetButton } = props
   const [open, setOpen] = useState(false)
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
@@ -87,7 +84,6 @@ export function MatchBetButton(props: {
           <BuyPanel
             contract={contract}
             multiProps={{ answers: contract.answers, answerToBuy: answer }}
-            user={user}
             initialOutcome={outcome ?? 'YES'}
             onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
             location={'love profile'}

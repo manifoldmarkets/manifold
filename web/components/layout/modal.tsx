@@ -1,4 +1,5 @@
 import { Dialog, Transition } from '@headlessui/react'
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Fragment, ReactNode, useEffect, useRef } from 'react'
 
@@ -14,7 +15,6 @@ export function Modal(props: {
   setOpen?: (open: boolean) => void
   size?: 'sm' | 'md' | 'lg' | 'xl'
   position?: 'center' | 'top' | 'bottom'
-  noAutoFocus?: boolean
   className?: string
   onClose?: () => void
 }) {
@@ -25,7 +25,6 @@ export function Modal(props: {
     setOpen,
     size = 'md',
     className,
-    noAutoFocus = true, // This is annoying in every case I've seen, so default to true
     onClose,
   } = props
 
@@ -88,19 +87,29 @@ export function Modal(props: {
                 positionClass
               )}
             >
-              <Dialog.Panel
+              <div
                 className={clsx(
-                  'w-full transform transition-all sm:mx-6 sm:my-8',
+                  'relative w-full transform transition-all sm:mx-6 sm:my-8',
                   sizeClass,
                   className
                 )}
               >
-                {/* Hack to capture focus b/c headlessui dialog always focuses first element
-                    and we don't want it to.
-                */}
-                {noAutoFocus && <div tabIndex={0} />}
-                {children}
-              </Dialog.Panel>
+                <div className="sr-only" tabIndex={0}>
+                  focus trap
+                </div>
+                <Dialog.Panel>{children}</Dialog.Panel>
+                <button
+                  onClick={() => setOpen?.(false)}
+                  className={clsx(
+                    'text-ink-700 bottom-50 hover:text-primary-400 focus:text-primary-400 absolute -top-4 right-4 -translate-y-full cursor-pointer outline-none sm:right-0',
+                    position === 'top' &&
+                      'sm:-bottom-4 sm:top-auto sm:translate-y-full'
+                  )}
+                >
+                  <XIcon className="h-8 w-8" />
+                  <div className="sr-only">Close</div>
+                </button>
+              </div>
             </div>
           </div>
         </Transition.Child>

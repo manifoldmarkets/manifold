@@ -144,7 +144,7 @@ function BetsModalContent(props: {
     <UncontrolledTabs
       tabs={[
         {
-          title: 'Positions',
+          title: 'Holders',
           content: (
             <UserPositionsTable
               contract={contract as CPMMBinaryContract}

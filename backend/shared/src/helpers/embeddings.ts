@@ -3,7 +3,7 @@ import { ITask } from 'pg-promise'
 import { chunk, mean, sum, zip } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { log } from 'shared/utils'
-import { getWhenToIgnoreUsersTime } from 'shared/supabase/users'
+import { getMostlyActiveUserIds } from 'shared/supabase/users'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 
 function magnitude(vector: number[]): number {
@@ -279,24 +279,8 @@ async function computeUserDisinterestEmbedding(
 export async function updateViewsAndViewersEmbeddings(
   pg: SupabaseDirectClient
 ) {
-  const longAgo = getWhenToIgnoreUsersTime()
   const userToEmbeddingMap: { [userId: string]: number[] | null } = {}
-  const viewerIds = await pg.map(
-    `select id
-            from users
-            join (
-             select ucv.user_id, max(
-               greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)
-             ) as max_created_time
-             from user_contract_views ucv
-             group by ucv.user_id
-         ) as ucv on id = ucv.user_id
-     where ((data->'lastBetTime')::bigint is not null and (data->'lastBetTime')::bigint >= $1)
-        or ((data->'lastBetTime')::bigint is null and (data->'createdTime')::bigint >= $1)
-        or (ucv.max_created_time >= millis_to_ts($1))`,
-    [longAgo],
-    (r: { id: string }) => r.id
-  )
+  const viewerIds = await getMostlyActiveUserIds(pg)
   log('Found', viewerIds.length, 'viewers to update')
 
   await pg.map(

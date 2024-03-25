@@ -7,14 +7,15 @@ import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { CPMMBinaryContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract
   user: User | null | undefined
-  feedId?: number
+  feedItem?: FeedTimelineItem
   className?: string
 }) {
-  const { contract, user, className, feedId } = props
+  const { contract, user, className, feedItem } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
@@ -28,7 +29,7 @@ export function BetButton(props: {
       firebaseLogin()
       return
     }
-    track('bet intent', { location: 'feed card', outcome, feedId })
+    track('bet intent', { location: 'feed card', outcome })
     setDialogueThatIsOpen(outcome)
   }
 
@@ -66,15 +67,13 @@ export function BetButton(props: {
             <div className="mb-4 mt-0 text-xl">{contract.question}</div>
             <BuyPanel
               contract={contract}
-              user={user}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
-              onCancel={() => setDialogueThatIsOpen(undefined)}
               onBuySuccess={() =>
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)
               }
               location={'feed card'}
               inModal={true}
-              trackingInformation={feedId ? { feedId } : undefined}
+              feedItem={feedItem}
             />
           </Col>
         </Modal>

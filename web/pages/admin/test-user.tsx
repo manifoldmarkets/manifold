@@ -10,13 +10,14 @@ import {
 } from 'firebase/auth'
 import { randomString } from 'common/util/random'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { getCookie } from 'web/lib/util/cookie'
+import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { isAdminId } from 'common/envs/constants'
 import { firebaseLogout } from 'web/lib/firebase/users'
+
+const KEY = 'TEST_CREATE_USER_KEY'
 
 export default function TestUser() {
   const router = useRouter()
@@ -31,16 +32,12 @@ export default function TestUser() {
   }, [user])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [createUserKey, setCreateUserKey] = usePersistentLocalState(
-    '',
-    'TEST_CREATE_USER_KEY'
-  )
+  const [createUserKey, setCreateUserKey] = useState('')
 
   useEffect(() => {
     setEmail('manifoldTestNewUser+' + randomString() + '@gmail.com')
     setPassword(randomString())
-    const key = 'TEST_CREATE_USER_KEY'
-    const cookie = getCookie(key)
+    const cookie = getCookie(KEY)
     if (cookie) setCreateUserKey(cookie.replace(/"/g, ''))
   }, [])
 
@@ -48,7 +45,9 @@ export default function TestUser() {
   const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
+    if (!createUserKey) return
     setSubmitting(true)
+    setCookie(KEY, createUserKey)
     const auth = getAuth()
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {

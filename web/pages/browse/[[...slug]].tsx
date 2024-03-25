@@ -217,6 +217,9 @@ export function GroupPageContent(props: {
       headerClassName={'pt-0 px-2 mt-2 bg-canvas-0 md:bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
+      defaultFilter={
+        !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+      }
     />
   )
 
@@ -309,11 +312,14 @@ export function GroupPageContent(props: {
                                 </div>
                               )}
                               <div className="text-ink-500 mb-4 mt-2 text-sm">
-                                {currentTopic.privacyStatus} group created
+                                {currentTopic.privacyStatus} topic created
+                                {currentTopic.creatorId === user?.id &&
+                                  ' by you'}
                                 <RelativeTimestamp
                                   time={currentTopic.createdTime}
                                   className="!text-ink-500"
-                                />
+                                />{' '}
+                                • {currentTopic.totalMembers ?? 0} followers
                                 {currentTopic.postIds?.length
                                   ? ` • ${currentTopic.postIds.length} posts`
                                   : undefined}

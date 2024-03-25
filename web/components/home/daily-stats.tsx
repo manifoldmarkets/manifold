@@ -17,10 +17,10 @@ export function DailyStats(props: {
   if (!user) return <></>
   return (
     <Row className={clsx('z-30 items-center justify-end gap-1', className)}>
+      <QuestsOrStreak user={user} />
+      <DailyLeagueStat user={user} />
       {!isMobile && <DailyLoan user={user} showChest={true} />}
       {/*{!isMobile && <DailyProfit user={user} />}*/}
-      <DailyLeagueStat user={user} />
-      <QuestsOrStreak user={user} />
     </Row>
   )
 }

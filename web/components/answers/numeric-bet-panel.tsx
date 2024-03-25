@@ -11,7 +11,7 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { find, first, groupBy, sumBy } from 'lodash'
+import { capitalize, find, first, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import clsx from 'clsx'
@@ -44,8 +44,24 @@ import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 import { getContractBetMetrics } from 'common/calculate'
 
-export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
-  const { contract } = props
+export const NumericBetPanel = (props: {
+  contract: CPMMNumericContract
+  disableShowDistribution?: boolean
+  labels?: {
+    lower: string
+    about: string
+    higher: string
+  }
+}) => {
+  const {
+    contract,
+    labels = {
+      lower: 'Lower',
+      about: 'About right',
+      higher: 'Higher',
+    },
+    disableShowDistribution,
+  } = props
   const { answers, min: minimum, max: maximum } = contract
   const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
@@ -184,9 +200,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
   const formattedAmount = formatExpectedValue(expectedValue, contract)
   const betLabel =
     mode === 'less than'
-      ? 'Lower than ' + formattedAmount
+      ? `${capitalize(labels.lower)} than ` + formattedAmount
       : mode === 'more than'
-      ? formattedAmount + ' or higher'
+      ? formattedAmount + ` or ${labels.higher}`
       : `${range[0]} - ${range[1]}`
   const modeColor =
     mode === 'less than'
@@ -212,7 +228,9 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
     <Col className={'gap-2'}>
       {showDistribution && (
         <Col className={'gap-2'}>
-          <div className={`grid gap-y-3 ${gridClasses[itemCount]}`}>
+          <div
+            className={`grid gap-y-3 ${gridClasses[Math.min(itemCount, 10)]}`}
+          >
             {answers.map((a) => (
               <Col
                 key={a.id}
@@ -280,7 +298,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
             onClick={() => setMode('less than')}
             className={'grow'}
           >
-            Lower
+            {capitalize(labels.lower)}
           </Button>
           <Button
             color={'blue'}
@@ -288,7 +306,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
             className={'grow'}
             onClick={() => setMode('about right')}
           >
-            About right
+            {capitalize(labels.about)}
           </Button>
           <Button
             color={'green'}
@@ -296,7 +314,7 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
             className={'grow'}
             onClick={() => setMode('more than')}
           >
-            Higher
+            {capitalize(labels.higher)}
           </Button>
         </Row>
       ) : (
@@ -313,16 +331,18 @@ export const NumericBetPanel = (props: { contract: CPMMNumericContract }) => {
           <Row className={'justify-between'}>
             <span className={'ml-1 text-xl'}>{betLabel}</span>
             <Row className={'items-center'}>
-              <Button
-                color={'gray-white'}
-                size={'2xs'}
-                onClick={() => {
-                  setShowDistribution(!showDistribution)
-                }}
-                className={'whitespace-nowrap'}
-              >
-                {showDistribution ? 'Hide ' : 'Show '} distribution
-              </Button>
+              {!disableShowDistribution && (
+                <Button
+                  color={'gray-white'}
+                  size={'2xs'}
+                  onClick={() => {
+                    setShowDistribution(!showDistribution)
+                  }}
+                  className={'whitespace-nowrap'}
+                >
+                  {showDistribution ? 'Hide ' : 'Show '} distribution
+                </Button>
+              )}
               <IconButton
                 className={'w-12'}
                 onClick={() => {
@@ -409,7 +429,6 @@ const BetButton = (props: {
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
         />
       </Modal>
       {showSell && user && (

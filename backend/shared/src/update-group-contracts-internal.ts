@@ -42,6 +42,7 @@ export async function addGroupToContract(
           slug: group.slug,
           name: group.name,
         }),
+        lastUpdatedTime: Date.now(),
       })
 
     if (group.id === UNRANKED_GROUP_ID) {
@@ -94,6 +95,7 @@ export async function removeGroupFromContract(
     .update({
       groupSlugs: admin.firestore.FieldValue.arrayRemove(group.slug),
       groupLinks: newLinks,
+      lastUpdatedTime: Date.now(),
     })
 
   if (group.id === UNRANKED_GROUP_ID) {

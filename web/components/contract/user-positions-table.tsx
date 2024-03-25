@@ -369,15 +369,15 @@ const BinaryUserPositionsTable = memo(
             />
           ) : isBinary ? (
             <>
-              <YesLabel /> payouts
+              <YesLabel />
             </>
           ) : isStonk ? (
             <>
-              <BuyLabel /> positions
+              <BuyLabel />
             </>
           ) : isPseudoNumeric ? (
             <>
-              <HigherLabel /> positions
+              <HigherLabel />
             </>
           ) : (
             <></>
@@ -394,15 +394,15 @@ const BinaryUserPositionsTable = memo(
             />
           ) : isBinary ? (
             <>
-              <NoLabel /> payouts
+              <NoLabel />
             </>
           ) : isStonk ? (
             <>
-              <ShortLabel /> positions
+              <ShortLabel />
             </>
           ) : isPseudoNumeric ? (
             <>
-              <LowerLabel /> positions
+              <LowerLabel />
             </>
           ) : (
             <></>
@@ -428,11 +428,14 @@ const BinaryUserPositionsTable = memo(
           ) : (
             <Row className={'gap-1'}>
               <Col className={'w-1/2'}>
-                <Row className={'text-ink-500 justify-end p-2'}>
+                <Row className={'justify-between p-2'}>
                   {sortBy === 'profit' ? (
-                    <span className={'text-ink-500'}>Profit</span>
+                    <span>Profit</span>
                   ) : (
                     <span>{getPositionsTitle('YES')}</span>
+                  )}
+                  {sortBy === 'shares' && (
+                    <span className="text-ink-600">Max payout</span>
                   )}
                 </Row>
                 {visibleLeftPositions.map((position) => {
@@ -459,16 +462,20 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
               </Col>
               <Col className={'w-1/2'}>
-                <Row className={'text-ink-500 justify-end p-2'}>
+                <Row className={'justify-between p-2'}>
                   {sortBy === 'profit' ? (
-                    <span className={'text-ink-500'}>Loss</span>
+                    <span>Loss</span>
                   ) : (
                     <span>{getPositionsTitle('NO')}</span>
+                  )}
+                  {sortBy === 'shares' && (
+                    <span className="text-ink-600">Max payout</span>
                   )}
                 </Row>
                 {visibleRightPositions.map((position) => {
@@ -495,6 +502,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
+                      invested={formatMoney(position.invested)}
                     />
                   )
                 })}
@@ -515,12 +523,19 @@ const BinaryUserPositionsTable = memo(
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
   numberToShow: string
+  invested: string
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
   colorClassName: string
 }) {
-  const { position, colorClassName, currentUser, followedUsers, numberToShow } =
-    props
+  const {
+    position,
+    colorClassName,
+    currentUser,
+    followedUsers,
+    numberToShow,
+    invested,
+  } = props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
 
@@ -553,7 +568,18 @@ const PositionRow = memo(function PositionRow(props: {
           )}
         </Row>
       </UserHovercard>
-      <span className={clsx(colorClassName, 'shrink-0')}>{numberToShow}</span>
+      <Col>
+        <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
+          {numberToShow}
+        </span>
+        <span
+          className={clsx(
+            'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
+          )}
+        >
+          Spent {invested}
+        </span>
+      </Col>
     </Row>
   )
 })

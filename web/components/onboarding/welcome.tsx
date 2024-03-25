@@ -37,7 +37,9 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 
-export default function Welcome() {
+export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
+  const { setFeedKey } = props
+
   const user = useUser()
   const authed = useIsAuthorized()
   const isTwitch = useIsTwitch(user)
@@ -191,6 +193,7 @@ export default function Welcome() {
         trendingTopics={trendingTopics}
         userInterestedTopics={userInterestedTopics}
         userBetInTopics={userBetInTopics}
+        setFeedKey={setFeedKey}
         onClose={() => {
           track('welcome screen: complete')
           setOpen(false)
@@ -357,10 +360,12 @@ function ThankYouPage() {
       <div className="mb-4 ">
         We've sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> to
-        help you get started.
+        help you get started. Get up to {formatMoney(1000)} by browsing more
+        questions.
       </div>
       <div className="">
-        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash.
+        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash, but
+        can be purchased at a rate of Ṁ100 : $1.
       </div>
     </>
   )

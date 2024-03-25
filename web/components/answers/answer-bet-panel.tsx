@@ -31,9 +31,8 @@ import {
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
-import { Subtitle } from '../widgets/subtitle'
 import { BuyPanel } from '../bet/bet-panel'
-import { User } from 'common/user'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer
@@ -227,38 +226,39 @@ export function AnswerCpmmBetPanel(props: {
   contract: CPMMMultiContract | CPMMNumericContract
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
-  me: User | null | undefined
   alwaysShowOutcomeSwitcher?: boolean
+  feedItem?: FeedTimelineItem
 }) {
   const {
     answer,
     contract,
     closePanel,
     outcome,
-    me,
+    feedItem,
     alwaysShowOutcomeSwitcher,
   } = props
+
   return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <Subtitle className="!mt-0">{answer.text}</Subtitle>
-        <div className="text-xl">{formatPercent(answer.prob)}</div>
-      </Row>
+    <Col className="rounded-2xl backdrop-blur-sm">
       <BuyPanel
         contract={contract}
         multiProps={{
           answers: contract.answers,
           answerToBuy: answer as Answer,
         }}
-        user={me}
         initialOutcome={outcome}
-        onCancel={closePanel}
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
+        feedItem={feedItem}
         inModal={true}
         alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
-      />
+      >
+        <Row className="text-ink-900 mb-6 justify-between text-lg">
+          <h1>{answer.text}</h1>
+          <div className="font-semibold">{formatPercent(answer.prob)}</div>
+        </Row>
+      </BuyPanel>
     </Col>
   )
 }

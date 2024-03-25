@@ -7,13 +7,15 @@ import { Carousel } from 'web/components/widgets/carousel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
+import { removeEmojis } from 'common/util/string'
 
 export function HeadlineTabs(props: {
   headlines: Headline[]
   currentSlug: string
   endpoint: DashboardEndpoints
+  hideEmoji?: boolean
 }) {
-  const { headlines, endpoint, currentSlug } = props
+  const { headlines, endpoint, currentSlug, hideEmoji } = props
   const user = useUser()
 
   return (
@@ -22,17 +24,14 @@ export function HeadlineTabs(props: {
         {headlines.map(({ id, slug, title }) => (
           <Tab
             key={id}
-            label={title}
+            label={hideEmoji ? removeEmojis(title) : title}
             href={`/${endpoint}/${slug}`}
             active={slug === currentSlug}
           />
         ))}
         {user && <Tab label="More" href="/dashboard" />}
         {user && (isAdminId(user.id) || isModId(user.id)) && (
-          <EditNewsButton
-            isPolitics={endpoint === 'politics'}
-            defaultDashboards={headlines}
-          />
+          <EditNewsButton endpoint={endpoint} defaultDashboards={headlines} />
         )}
       </Carousel>
     </div>

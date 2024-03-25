@@ -40,7 +40,6 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
@@ -77,15 +76,7 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
-import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
-import {
-  AnyBalanceChangeType,
-  BET_BALANCE_CHANGE_TYPES,
-} from 'common/balance-change'
-import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
-import { DAY_MS } from 'common/util/time'
-import { api } from 'web/lib/firebase/api'
-import { getCutoff } from 'web/lib/util/time'
+import { BET_BALANCE_CHANGE_TYPES } from 'common/balance-change'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-card'
 import { Button } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -93,6 +84,7 @@ import { buildArray } from 'common/util/array'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 
 export const getStaticProps = async (props: {
   params: {
@@ -106,23 +98,6 @@ export const getStaticProps = async (props: {
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
 
-  const { count: portfolioPoints } = user
-    ? await db
-        .from('user_portfolio_history')
-        .select('*', { head: true, count: 'exact' })
-        .eq('user_id', user.id)
-    : { count: 0 }
-  const weeklyPortfolioData = user
-    ? await getPortfolioHistory(user.id, getCutoff('weekly'), db)
-    : []
-  const oneWeekBalanceChanges = user
-    ? await api('get-balance-changes', {
-        userId: user.id,
-        after: Date.now() - DAY_MS * 7,
-      })
-    : []
-  const balanceChanges = oneWeekBalanceChanges.slice(0, 200)
-
   return {
     props: removeUndefinedProps({
       user,
@@ -131,9 +106,6 @@ export const getStaticProps = async (props: {
       reviewCount: count,
       averageRating: averageRating,
       shouldIgnoreUser,
-      totalPortfolioPoints: portfolioPoints ?? 0,
-      weeklyPortfolioData,
-      balanceChanges,
     }),
     revalidate: 60,
   }
@@ -150,9 +122,6 @@ export default function UserPage(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
-  totalPortfolioPoints: number
-  weeklyPortfolioData: PortfolioSnapshot[]
-  balanceChanges: AnyBalanceChangeType[]
 }) {
   const isAdmin = useAdmin()
   const { user, ...profileProps } = props
@@ -189,18 +158,8 @@ function UserProfile(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
-  totalPortfolioPoints: number
-  weeklyPortfolioData: PortfolioSnapshot[]
-  balanceChanges: AnyBalanceChangeType[]
 }) {
-  const {
-    rating,
-    shouldIgnoreUser,
-    reviewCount,
-    averageRating,
-    totalPortfolioPoints,
-    weeklyPortfolioData,
-  } = props
+  const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
   const user = useUserById(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
@@ -210,7 +169,7 @@ function UserProfile(props: {
     userId: user.id,
     after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
   })
-  const balanceChanges = newBalanceChanges ?? props.balanceChanges
+  const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) =>
     BET_BALANCE_CHANGE_TYPES.includes(b.type)
   )
@@ -445,8 +404,6 @@ function UserProfile(props: {
                     className="mt-4"
                     user={user}
                     balanceChanges={balanceChanges}
-                    totalPortfolioPoints={totalPortfolioPoints}
-                    weeklyPortfolioData={weeklyPortfolioData}
                   />
                 ),
               },
@@ -456,17 +413,21 @@ function UserProfile(props: {
                 stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
                 content: (
                   <>
-                    <Spacer h={4} />
-                    <PortfolioValueSection
-                      userId={user.id}
-                      defaultTimePeriod={
-                        currentUser?.id === user.id ? 'weekly' : 'monthly'
-                      }
-                      lastUpdatedTime={user.metricsLastUpdated}
-                      isCurrentUser={isCurrentUser}
-                      hideAddFundsButton
-                    />
-                    <Spacer h={4} />
+                    <Spacer h={2} />
+                    {!isCurrentUser && (
+                      <>
+                        <PortfolioValueSection
+                          userId={user.id}
+                          defaultTimePeriod={
+                            currentUser?.id === user.id ? 'weekly' : 'monthly'
+                          }
+                          lastUpdatedTime={user.metricsLastUpdated}
+                          isCurrentUser={isCurrentUser}
+                          hideAddFundsButton
+                        />
+                        <Spacer h={4} />
+                      </>
+                    )}
                     <UserBetsTable user={user} />
                   </>
                 ),

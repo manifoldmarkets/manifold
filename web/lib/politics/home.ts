@@ -1,4 +1,4 @@
-import { CPMMMultiContract, Contract } from 'common/contract'
+import { Contract, CPMMMultiContract } from 'common/contract'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
@@ -6,8 +6,8 @@ import {
   ElectionsPageProps,
   MapContractsDictionary,
   NH_LINK,
-  StateElectionMarket,
   presidency2024,
+  StateElectionMarket,
 } from 'web/public/data/elections-data'
 import { governors2024 } from 'web/public/data/governors-data'
 import { senate2024 } from 'web/public/data/senate-state-data'
@@ -31,7 +31,7 @@ export async function getElectionsPageProps() {
     getStateContracts(getContract, presidency2024),
     getStateContracts(getContract, senate2024),
     getStateContracts(getContract, governors2024),
-    api('politics-headlines', {}),
+    api('headlines', { slug: 'politics' }),
   ])
 
   const policyContracts = await getPolicyContracts(getContract)
@@ -126,13 +126,10 @@ async function getStateContracts(
   const mapContractsArray = await Promise.all(mapContractsPromises)
 
   // Convert array to dictionary
-  const mapContractsDictionary: MapContractsDictionary =
-    mapContractsArray.reduce((acc, mapContract) => {
-      acc[mapContract.state] = mapContract.contract
-      return acc
-    }, {} as MapContractsDictionary)
-
-  return mapContractsDictionary
+  return mapContractsArray.reduce((acc, mapContract) => {
+    acc[mapContract.state] = mapContract.contract
+    return acc
+  }, {} as MapContractsDictionary)
 }
 
 async function getPolicyContracts(
@@ -148,7 +145,5 @@ async function getPolicyContracts(
     }
   })
 
-  const mapContractsArray = await Promise.all(mapContractsPromises)
-
-  return mapContractsArray
+  return await Promise.all(mapContractsPromises)
 }

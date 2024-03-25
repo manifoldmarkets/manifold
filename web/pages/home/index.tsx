@@ -21,7 +21,7 @@ import { HeadlineTabs } from 'web/components/dashboard/header'
 import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
 import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
@@ -42,6 +42,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { User } from 'common/user'
 import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { useABTest } from 'web/hooks/use-ab-test'
+import { NewUserGoals } from 'web/components/home/new-user-goals'
 
 export async function getStaticProps() {
   try {
@@ -66,14 +67,12 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const { headlines } = props
-  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
-  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
-  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const [feedKey, setFeedKey] = usePersistentInMemoryState('feed', 'feed-key')
 
+  const { headlines } = props
   return (
     <>
-      <Welcome />
+      <Welcome setFeedKey={setFeedKey} />
       <Page
         trackPageView={'home'}
         trackPageProps={{ kind: 'desktop' }}
@@ -83,33 +82,17 @@ export default function Home(props: { headlines: Headline[] }) {
           endpoint={'news'}
           headlines={headlines}
           currentSlug={'home'}
+          hideEmoji
         />
-        {!user || !variant ? (
+        {!user ? (
           <LoadingIndicator />
-        ) : !createdRecently || variant === 'browse' ? (
-          isClient ? (
-            <HomeContent
-              user={user}
-              privateUser={privateUser}
-              variant={variant}
-            />
-          ) : null
-        ) : !memberTopicsWithContracts ? (
-          <LoadingIndicator />
-        ) : (
-          <>
-            <WelcomeTopicSections
-              memberTopicsWithContracts={memberTopicsWithContracts}
-            />
-            {isClient && (
-              <HomeContent
-                user={user}
-                privateUser={privateUser}
-                variant={variant}
-              />
-            )}
-          </>
-        )}
+        ) : isClient ? (
+          <HomeContent
+            user={user}
+            privateUser={privateUser}
+            feedKey={feedKey}
+          />
+        ) : null}
       </Page>
     </>
   )
@@ -118,50 +101,73 @@ export default function Home(props: { headlines: Headline[] }) {
 export function HomeContent(props: {
   user: User | undefined | null
   privateUser: PrivateUser | undefined | null
-  variant: 'welcome topics' | 'browse'
+  feedKey: string
 }) {
-  const { user, privateUser, variant } = props
+  const { user, privateUser, feedKey } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
   )
-  const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const createdInLastHour = (user?.createdTime ?? 0) > Date.now() - HOUR_MS
+  const freeQuestionsEnabled = !createdInLastHour
 
-  const freeQuestionsVariant = useABTest('free questions display', [
-    'show',
-    'hide-for-an-hour',
-  ])
-  const freeQuestionsEnabled =
-    freeQuestionsVariant === 'show' || !createdRecently
+  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
+  const createdToday = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const welcomeTopicsEnabled = variant === 'welcome topics' && createdToday
+  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
-    createdRecently && variant === 'browse' ? 1 : 0,
+    createdInLastHour && variant === 'browse' ? 1 : 0,
     `tabs-home`
   )
 
+  const hasAgedOutOfNewUserGoals =
+    (user?.createdTime ?? 0) + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS < Date.now()
+  const newUserGoalsVariant = useABTest('new user goals', [
+    'enabled',
+    'disabled',
+  ])
+  const newUserGoalsEnabled =
+    !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
+
+  if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
+    return <LoadingIndicator />
+  }
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
-      {user && freeQuestionsEnabled && remaining > 0 && (
-        <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 sm:flex-row sm:items-center">
-          <Row className="flex-1 flex-wrap gap-x-1">
-            <span>
-              🎉 You've got{' '}
-              <span className="font-semibold">{remaining} free questions</span>!
-            </span>
-            <span>
-              (Expires in{' '}
-              {simpleFromNow(
-                user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-              )}
-              .)
-            </span>
-          </Row>
-          <CreateQuestionButton
-            className={'flex-1'}
-            color="indigo-outline"
-            size="xs"
-          />
-        </Col>
+      {user &&
+        !newUserGoalsEnabled &&
+        freeQuestionsEnabled &&
+        remaining > 0 && (
+          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
+            <Row className="flex-1 flex-wrap gap-x-1">
+              <span>🎉 You've got {remaining} free questions!</span>
+              <span>
+                Expires in{' '}
+                {simpleFromNow(
+                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+                )}
+              </span>
+            </Row>
+            <CreateQuestionButton
+              className={'flex-1'}
+              color="indigo-outline"
+              size="xs"
+            />
+          </Col>
+        )}
+
+      {user && newUserGoalsEnabled && (
+        <>
+          <NewUserGoals user={user} />
+          <div className="mt-4" />
+        </>
+      )}
+
+      {welcomeTopicsEnabled && memberTopicsWithContracts && (
+        <WelcomeTopicSections
+          memberTopicsWithContracts={memberTopicsWithContracts}
+        />
       )}
 
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
@@ -191,6 +197,8 @@ export function HomeContent(props: {
 
       {privateUser && (
         <FeedTimeline
+          key={feedKey}
+          feedKey={feedKey}
           className={clsx(activeIndex !== 0 && 'hidden', 'sm:px-2')}
           user={user}
           privateUser={privateUser}

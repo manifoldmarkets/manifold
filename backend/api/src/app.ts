@@ -114,7 +114,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
-import { addOrRemoveGroupFromContract } from './update-tag'
+import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
@@ -146,7 +146,7 @@ import { createYourLoveMarket } from './love/create-your-love-market'
 import { getLoveMarket } from './love/get-love-market'
 import { getLoveMarkets } from './love/get-love-markets'
 import { placeMultiBet } from 'api/place-multi-bet'
-import { settv } from './set-tv'
+import { deletetv, settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
@@ -155,6 +155,8 @@ import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
+import { recordContractInteraction } from 'api/record-contract-interaction'
+import { getUserPortfolio } from './get-user-portfolio'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -223,7 +225,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
-  'market/:contractId/group': addOrRemoveGroupFromContract,
+  'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
@@ -294,6 +296,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
+  'record-contract-interaction': recordContractInteraction,
+  'get-user-portfolio': getUserPortfolio,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -381,6 +385,7 @@ app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
 
 app.post('/settv', ...apiRoute(settv))
+app.post('/deletetv', ...apiRoute(deletetv))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))

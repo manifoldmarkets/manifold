@@ -1,196 +1,156 @@
-import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import {
-  CPMMMultiContract,
-  getMainBinaryMCAnswer,
-  MultiContract,
-} from 'common/contract'
-import { Button, ColorType, SizeType } from 'web/components/buttons/button'
-import { Row } from 'web/components/layout/row'
-import { useUser } from 'web/hooks/use-user'
-import { Col } from '../layout/col'
-
+import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { Button, SizeType } from 'web/components/buttons/button'
 import { useState } from 'react'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { MultiSeller } from 'web/components/answers/answer-components'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { groupBy, sumBy } from 'lodash'
-import { floatingEqual } from 'common/util/math'
-import { Answer as AnswerComponent } from './answers-panel'
-import { BuyPanel } from 'web/components/bet/bet-panel'
+import {
+  Answer as AnswerComponent,
+  EditAnswerModal,
+  canEditAnswer,
+} from './answers-panel'
+import { BuyPanelBody } from 'web/components/bet/bet-panel'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
+import { useUser } from 'web/hooks/use-user'
+import { PencilIcon } from '@heroicons/react/solid'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   answers: Answer[]
-  size?: SizeType
+  feedItem?: FeedTimelineItem
 }) {
-  const { contract, answers, size } = props
+  const { feedItem, contract, answers } = props
+
+  const [colorLeft, colorRight] = answers.map(
+    (a, i) => a.color ?? VERSUS_COLORS[i]
+  )
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+
   if (contract.isResolved) {
     return (
       <>
-        {answers.map((answer) => (
+        {answers.map((answer, i) => (
           <AnswerComponent
             shouldShowLimitOrderChart={false}
             key={answer.id}
             user={null}
             answer={answer}
             contract={contract as MultiContract}
-            color={
-              answer.id === getMainBinaryMCAnswer(contract)!.id
-                ? '#4e46dc'
-                : '#e9a23b'
-            }
+            color={i === 0 ? colorLeft : colorRight}
+            feedItem={feedItem}
           />
         ))}
       </>
     )
   }
-  const mainAnswer = getMainBinaryMCAnswer(contract)!
+
   return (
     <>
-      <Row className="mx-[2px] mt-1 hidden justify-between gap-2 sm:flex">
-        {answers.map((answer) => (
-          <BetButton
-            size={size}
-            betOnAnswer={mainAnswer}
-            outcome={answer.id === mainAnswer.id ? 'YES' : 'NO'}
-            key={answer.id}
-            contract={contract}
-            answer={answer}
-            color={answer.id === mainAnswer.id ? 'indigo' : 'amber'}
-          />
-        ))}
-      </Row>
-      <Col className="mx-[2px] mt-1 gap-2 sm:hidden">
-        {answers.map((answer) => (
-          <BetButton
-            size={size}
-            betOnAnswer={mainAnswer}
-            outcome={answer.id === mainAnswer.id ? 'YES' : 'NO'}
-            key={answer.id}
-            contract={contract}
-            answer={answer}
-            color={answer.id === mainAnswer.id ? 'indigo' : 'amber'}
-          />
-        ))}
-      </Col>
+      {outcome === undefined ? (
+        <div className="mx-[2px] mt-1 flex flex-col justify-between gap-2 sm:flex-row">
+          {answers.map((answer, i) => (
+            <BetButton
+              outcome={i === 0 ? 'YES' : 'NO'}
+              setOutcome={setOutcome}
+              key={answer.id}
+              answer={answer}
+              color={i === 0 ? colorLeft : colorRight}
+            />
+          ))}
+        </div>
+      ) : (
+        <BinaryMultiChoiceBetPanel
+          answer={outcome === 'YES' ? answers[0] : answers[1]}
+          contract={contract}
+          outcome={outcome}
+          closePanel={() => setOutcome(undefined)}
+        />
+      )}
     </>
   )
 }
 
 const BetButton = (props: {
   answer: Answer
-  betOnAnswer: Answer
-  outcome: 'YES' | 'NO' | undefined
-  contract: CPMMMultiContract
-  color?: ColorType
+  outcome: 'YES' | 'NO'
+  setOutcome: (outcome: 'YES' | 'NO') => void
+  color?: string
   size?: SizeType
 }) => {
-  const { answer, size, contract, betOnAnswer, color } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const { answer, size, outcome, setOutcome, color } = props
 
-  const user = useUser()
-  // This accommodates for bets on the non-main answer, perhaps made through the api
-  const userBets = useUserContractBets(user?.id, contract.id)
-  const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
-  const sharesSum = sumBy(userBetsByAnswer[answer.id], (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const showSell = answer.id !== betOnAnswer.id && !floatingEqual(sharesSum, 0)
   return (
     <>
-      <Modal
-        open={outcome != undefined}
-        setOpen={(open) => setOutcome(open ? props.outcome : undefined)}
-        className={MODAL_CLASS}
-      >
-        <BinaryMultiChoiceBetPanel
-          answer={answer}
-          betOnAnswer={betOnAnswer}
-          contract={contract}
-          outcome={props.outcome}
-          closePanel={() => setOutcome(undefined)}
-          me={user}
-        />
-      </Modal>
-
       <Button
         size={size ?? 'xl'}
-        color={color}
-        className={clsx('flex-1')}
-        onClick={(e) => {
-          e.stopPropagation()
+        color="none"
+        style={{ backgroundColor: color }}
+        className={'flex flex-1 items-center justify-between gap-1 text-white'}
+        onClick={() => {
           track('bet intent', { location: 'answer panel' })
-          setOutcome(props.outcome)
+          setOutcome(outcome)
         }}
       >
-        <Row className={'w-full items-center justify-between '}>
-          <span
-            className={clsx(
-              size === 'xs' ? 'line-clamp-1' : 'line-clamp-2',
-              'text-left'
-            )}
-          >
-            {answer.text}
-          </span>
-          <span className={'text-xl'}>{formatPercent(answer.prob)}</span>
-        </Row>
+        <span className="line-clamp-1 text-left sm:line-clamp-2">
+          {answer.text}
+        </span>
+        <span className={'text-xl'}>{formatPercent(answer.prob)}</span>
       </Button>
-      {showSell && user && (
-        <Row className={'justify-end px-2'}>
-          <MultiSeller
-            answer={answer}
-            contract={contract}
-            userBets={userBetsByAnswer[answer.id]}
-            user={user}
-          />
-        </Row>
-      )}
     </>
   )
 }
 
 function BinaryMultiChoiceBetPanel(props: {
   answer: Answer
-  betOnAnswer: Answer
   contract: CPMMMultiContract
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
-  me: User | null | undefined
 }) {
-  const { answer, betOnAnswer, contract, closePanel, outcome, me } = props
-  return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <span
-          className={clsx(
-            'text-2xl',
-            betOnAnswer.id === answer.id ? 'text-indigo-500' : 'text-amber-600'
-          )}
-        >
-          {answer.text}
-        </span>
-        <div className="text-xl">{formatPercent(answer.prob)}</div>
-      </Row>
+  const { answer, contract, closePanel, outcome } = props
 
-      <BuyPanel
-        contract={contract}
-        multiProps={{
-          answers: contract.answers,
-          answerToBuy: betOnAnswer as Answer,
-          answerText: answer.text,
-        }}
-        user={me}
-        initialOutcome={outcome}
-        singularView={outcome}
-        onBuySuccess={() => setTimeout(closePanel, 500)}
-        location={'contract page answer'}
-        inModal={true}
-        onCancel={closePanel}
-      />
-    </Col>
+  const [editing, setEditing] = useState(false)
+  const color = getVersusColor(answer)
+  const user = useUser()
+  const canEdit = canEditAnswer(answer, contract, user)
+
+  return (
+    <BuyPanelBody
+      contract={contract}
+      multiProps={{
+        answers: contract.answers,
+        answerToBuy: contract.answers[0],
+        answerText: answer.text,
+      }}
+      outcome={outcome}
+      onBuySuccess={() => setTimeout(closePanel, 500)}
+      onClose={closePanel}
+      location={'contract page answer'}
+      panelClassName="!bg-canvas-50 gap-2"
+    >
+      <div className={'group mr-6 text-2xl'}>
+        {answer.text}
+        {canEdit && user && (
+          <>
+            <Button
+              color="gray-white"
+              className="visible group-hover:visible sm:invisible"
+              size="xs"
+              onClick={() => setEditing(true)}
+            >
+              <PencilIcon className="text-primary-700 h-4 w-4" />
+            </Button>
+            <EditAnswerModal
+              open={editing}
+              setOpen={setEditing}
+              contract={contract}
+              answer={answer}
+              color={color}
+              user={user}
+            />
+          </>
+        )}
+      </div>
+    </BuyPanelBody>
   )
 }

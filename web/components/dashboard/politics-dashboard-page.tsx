@@ -22,18 +22,14 @@ import { referralQuery } from 'common/util/share'
 import { FollowDashboardButton } from 'web/components/dashboard/follow-dashboard-button'
 import { Button } from 'web/components/buttons/button'
 import { deleteDashboard, updateDashboard } from 'web/lib/firebase/api'
-import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
 import { AddItemCard } from 'web/components/dashboard/add-dashboard-item'
 import { DashboardContent } from 'web/components/dashboard/dashboard-content'
 import { usePathname, useRouter } from 'next/navigation'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
-import { UserHovercard } from '../user/user-hovercard'
 import clsx from 'clsx'
-
-export type DashboardEndpoints = 'news' | 'politics'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
 export function PoliticsDashboardPage(props: {
   initialDashboard: Dashboard
@@ -214,23 +210,24 @@ export function PoliticsDashboardPage(props: {
             </Button>
           </Row>
         ) : (
-          <UserHovercard userId={dashboard.creatorId} className="mb-8">
-            <Row className="items-center gap-2">
-              <Avatar
-                username={dashboard.creatorUsername}
-                avatarUrl={dashboard.creatorAvatarUrl}
-                size="xs"
-              />
-              <UserLink
-                user={{
-                  id: dashboard.creatorId,
-                  name: dashboard.creatorName,
-                  username: dashboard.creatorUsername,
-                }}
-                className="text-ink-700"
-              />
-            </Row>
-          </UserHovercard>
+          <></>
+          // <UserHovercard userId={dashboard.creatorId} className="mb-8">
+          //   <Row className="items-center gap-2">
+          //     <Avatar
+          //       username={dashboard.creatorUsername}
+          //       avatarUrl={dashboard.creatorAvatarUrl}
+          //       size="xs"
+          //     />
+          //     <UserLink
+          //       user={{
+          //         id: dashboard.creatorId,
+          //         name: dashboard.creatorName,
+          //         username: dashboard.creatorUsername,
+          //       }}
+          //       className="text-ink-700"
+          //     />
+          //   </Row>
+          // </UserHovercard>
         )}
         {editMode && (
           <div className="mb-4">

@@ -14,6 +14,7 @@ import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
+import { useAdmin } from 'web/hooks/use-admin'
 import { getComment } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
@@ -38,6 +39,9 @@ export async function getStaticProps() {
 
 export default function Reports(props: { reports: LiteReport[] }) {
   const reportsByContent = Object.values(groupBy(props.reports, 'contentId'))
+
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">

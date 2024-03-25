@@ -17,12 +17,7 @@ import {
   uniq,
   uniqBy,
 } from 'lodash'
-import {
-  BASE_FEED_DATA_TYPE_SCORES,
-  FEED_DATA_TYPES,
-  FEED_REASON_TYPES,
-  getExplanation,
-} from 'common/feed'
+import { FEED_DATA_TYPES, FEED_REASON_TYPES, getExplanation } from 'common/feed'
 import { isContractBlocked } from 'web/lib/firebase/users'
 import { IGNORE_COMMENT_FEED_CONTENT } from 'web/hooks/use-additional-feed-items'
 import { DAY_MS } from 'common/util/time'
@@ -174,12 +169,13 @@ export const useFeedTimeline = (
     }
     // TODO: hide feed rows that are too old?
     const newFeedRows = data.map((d) => {
+      const dataType = d.data_type as FEED_DATA_TYPES
       const createdTimeAdjusted =
-        1 - dayjs().diff(dayjs(d.created_time), 'day') / 10
-      d.relevance_score =
-        (d.relevance_score ||
-          BASE_FEED_DATA_TYPE_SCORES[d.data_type as FEED_DATA_TYPES]) *
-        createdTimeAdjusted
+        0.98 **
+        (dayjs().diff(dayjs(d.created_time), 'day') *
+          (dataType === 'contract_probability_changed' ? 1.2 : 1))
+
+      d.relevance_score = (d.relevance_score ?? 1) * createdTimeAdjusted
       return d
     })
     const {
@@ -215,7 +211,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
-        .select('data, importance_score')
+        .select('data, importance_score, conversion_score')
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
@@ -255,12 +251,9 @@ export const useFeedTimeline = (
     const feedItemRecentlySeen = (d: Row<'user_feed'>) =>
       d.contract_id &&
       // Types to ignore if seen recently:
-      [
-        'new_subsidy',
-        'trending_contract',
-        'user_position_changed',
-        'new_contract',
-      ].includes(d.data_type) &&
+      ['new_subsidy', 'trending_contract', 'new_contract'].includes(
+        d.data_type
+      ) &&
       recentlySeenContractCards?.includes(d.contract_id)
 
     const recentlySeenFeedContractIds = uniq(
@@ -382,7 +375,7 @@ const getBaseTimelineItem = (item: Row<'user_feed'>) =>
     supabaseTimestamp: item.created_time,
     reasonDescription: getExplanation(
       item.data_type as FEED_DATA_TYPES,
-      item.reasons[0] as FEED_REASON_TYPES
+      item.reasons?.[0] as FEED_REASON_TYPES
     ),
   })
 
@@ -454,7 +447,6 @@ const groupItemsBySimilarQuestions = (items: FeedTimelineItem[]) => {
 
   const soloDataTypes: FEED_DATA_TYPES[] = [
     'contract_probability_changed',
-    'user_position_changed',
     'repost',
   ]
 

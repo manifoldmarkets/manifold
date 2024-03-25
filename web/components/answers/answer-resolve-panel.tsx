@@ -1,7 +1,6 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
@@ -429,13 +428,11 @@ export const IndependentAnswersResolvePanel = (props: {
   const user = useUser()
 
   const { answers, addAnswersMode } = contract
-  const sortedAnswers = [
-    ...sortBy(
-      answers,
-      (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-      (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
-    ),
-  ]
+  const sortedAnswers = sortBy(
+    answers,
+    (a) => (a.resolution ? -a.subsidyPool : -Infinity),
+    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
+  )
 
   return (
     <GradientContainer>

@@ -12,6 +12,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { DAY_MS } from 'common/util/time'
 import { FireIcon } from '@heroicons/react/outline'
 import { UserHovercard } from '../user/user-hovercard'
+import { FaGem } from 'react-icons/fa'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -102,6 +103,14 @@ export function CardReason(props: {
             className="text-ink-400"
           />
         </span>
+      </Row>
+    )
+  }
+  if (item.dataType == 'high_conversion') {
+    return (
+      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
+        <FaGem className="h-3 w-3 text-blue-400" />
+        timeless
       </Row>
     )
   }

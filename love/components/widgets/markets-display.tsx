@@ -194,7 +194,7 @@ const MatchTile = (props: {
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-2 py-2 text-sm">
         <Row className="w-full items-center justify-between gap-2">
           <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
-            <span className="font-semibold text-lg">
+            <span className="text-lg font-semibold">
               {answer.prob <= 0.0205
                 ? '<2%'
                 : formatPercent(answer.resolution === 'YES' ? 1 : answer.prob)}
@@ -215,7 +215,6 @@ const MatchTile = (props: {
             <MatchBetButton
               contract={contract}
               answer={answer}
-              user={user}
               modalHeader={
                 <MatchAvatars
                   profileLover={profileLover}

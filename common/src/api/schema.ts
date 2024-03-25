@@ -307,6 +307,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   // deprecated. remove after a few days
   'update-market': {
@@ -314,6 +315,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: true,
     props: updateMarketProps,
+    returns: {} as { success: true },
   },
   'market/:contractId/close': {
     method: 'POST',
@@ -381,6 +383,7 @@ export const API = (_apiTypeCheck = {
         remove: z.boolean().default(false),
       })
       .strict(),
+    returns: {} as { success: true },
   },
   'market/:contractId/answer': {
     method: 'POST',
@@ -608,7 +611,9 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: [] as Headline[],
-    props: z.object({}),
+    props: z.object({
+      slug: z.enum(['politics', 'ai', 'news']).optional(),
+    }),
   },
   'politics-headlines': {
     method: 'GET',
@@ -625,7 +630,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         dashboardIds: z.array(z.string()),
-        isPolitics: z.boolean().optional(),
+        endpoint: z.enum(['politics', 'ai', 'news']),
       })
       .strict(),
   },
@@ -973,6 +978,30 @@ export const API = (_apiTypeCheck = {
     }),
     returns: {} as { status: 'success' },
   },
+  'record-contract-interaction': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      contractId: z.string(),
+      kind: z.enum([
+        'page bet',
+        'page comment',
+        'page repost',
+        'page like',
+        'card bet',
+        'card click',
+        'promoted click',
+        'card like',
+      ]),
+      commentId: z.string().optional(),
+      feedReasons: z.array(z.string()).optional(),
+      feedType: z.string().optional(),
+      betGroupId: z.string().optional(),
+      betId: z.string().optional(),
+    }),
+    returns: {} as { status: 'success' },
+  },
   'get-dashboard-from-slug': {
     method: 'POST',
     visibility: 'public',
@@ -1002,6 +1031,20 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: 'success'
       groups: Group[]
+    },
+  },
+  'get-user-portfolio': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as {
+      status: 'success'
+      loanTotal: number
+      investment: number
+      balance: number
     },
   },
 } as const)

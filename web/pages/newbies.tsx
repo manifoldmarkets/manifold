@@ -7,8 +7,11 @@ import { db } from 'web/lib/supabase/db'
 export const getStaticProps = async () => {
   try {
     const { data } = await db.rpc('get_noob_questions')
-
-    return { props: { contracts: data }, revalidate: 60 * 60 }
+    const limit = 300
+    return {
+      props: { contracts: (data ?? []).slice(0, limit) },
+      revalidate: 60 * 60,
+    }
   } catch (err) {
     console.error(err)
     return { props: { contracts: [] }, revalidate: 60 }

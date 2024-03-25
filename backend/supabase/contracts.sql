@@ -16,6 +16,7 @@ create table if not exists
                   popularity_score numeric,
                   importance_score numeric,
                   freshness_score numeric default 0,
+                  conversion_score numeric default 0,
                   data jsonb not null,
                   question_fts tsvector generated always as (to_tsvector('english'::regconfig, question)) stored,
                   question_nostop_fts tsvector generated always as (
@@ -57,6 +58,8 @@ create index concurrently if not exists contracts_resolution_time on contracts (
 create index if not exists description_fts on contracts using gin (description_fts);
 
 create index if not exists contracts_importance_score on contracts (importance_score desc);
+
+create index if not exists contracts_conversion_score on contracts (conversion_score desc);
 
 create index if not exists contracts_freshness_score on contracts (freshness_score desc);
 

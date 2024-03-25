@@ -216,7 +216,12 @@ const createSignupBonusNotification = async (
   const { sendToEmail: trendingSendToEmail } =
     getNotificationDestinationsForUser(privateUser, 'trending_markets')
 
-  if (!sendToEmail && !trendingSendToEmail) return
+  if (!sendToEmail && !trendingSendToEmail) {
+    log(
+      `User opted out of onboarding email, onboarding_flow: ${sendToEmail} 'trending_markets:', ${trendingSendToEmail}`
+    )
+    return
+  }
 
   const contractsToSend = await getForYouMarkets(privateUser.id)
 

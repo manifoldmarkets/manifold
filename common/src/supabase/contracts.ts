@@ -122,11 +122,14 @@ export const convertAnswer = (row: Row<'answers'>) =>
 export const convertContract = (c: {
   data: Json
   importance_score: number | null
+  conversion_score?: number | null
 }) =>
   ({
     ...(c.data as Contract),
     // importance_score is only updated in Supabase
     importanceScore: c.importance_score,
+    // conversion_score is only updated in Supabase
+    conversionScore: c.conversion_score,
   } as Contract)
 
 export const followContract = async (
