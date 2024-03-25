@@ -1003,12 +1003,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as { status: 'success' },
   },
   'get-dashboard-from-slug': {
-    method: 'POST',
+    method: 'GET',
     visibility: 'public',
     authed: false,
     props: z.object({
       dashboardSlug: z.string(),
     }),
+    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Dashboard,
   },
   'create-public-chat-message': {
