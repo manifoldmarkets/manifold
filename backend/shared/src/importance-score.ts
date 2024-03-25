@@ -30,17 +30,20 @@ export async function calculateImportanceScore(
   const weekAgo = now - 7 * DAY_MS
 
   const activeContracts = await pg.map(
-    `select data from contracts
+    `select data, conversion_score from contracts
     where last_bet_time > millis_to_ts($1)
     or last_comment_time > millis_to_ts($1)`,
     [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
-    (row) => row.data as Contract
+    (row) =>
+      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts where importance_score > 0.2`,
+    `select data, conversion_score from contracts
+      where importance_score > 0.2`,
     [],
-    (row) => row.data as Contract
+    (row) =>
+      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
   )
 
   const activeContractIds = activeContracts.map((c) => c.id)
@@ -327,13 +330,14 @@ export const computeContractScores = (
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000)
 
-  const importanceScore =
+  const scorePerType =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
       : normalize(rawImportance, 8)
 
+  const importanceScore = scorePerType * (contract.conversionScore + 0.025)
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
   const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
