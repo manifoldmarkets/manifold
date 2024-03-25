@@ -178,7 +178,7 @@ export type replied_users_info = {
   [key: string]: {
     repliedToType: 'comment' | 'answer'
     repliedToAnswerText: string | undefined
-    repliedToId: string | undefined
+    repliedToAnswerId: string | undefined
     bet: Bet | undefined
   }
 }
@@ -296,7 +296,7 @@ export const createCommentOrUpdatedContractNotification = async (
       !receivedNotifications.includes('email') &&
       sourceType === 'comment'
     ) {
-      const { repliedToType, repliedToAnswerText, repliedToId, bet } =
+      const { repliedToType, repliedToAnswerText, repliedToAnswerId, bet } =
         repliedUsersInfo?.[userId] ?? {}
       // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
       await sendNewCommentEmail(
@@ -308,7 +308,7 @@ export const createCommentOrUpdatedContractNotification = async (
         sourceId,
         bet,
         repliedToAnswerText,
-        repliedToType === 'answer' ? repliedToId : undefined
+        repliedToType === 'answer' ? repliedToAnswerId : undefined
       )
       receivedNotifications.push('email')
     }

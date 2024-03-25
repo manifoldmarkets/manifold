@@ -73,8 +73,11 @@ const getReplyInfo = async (
   } else if (comment.replyToCommentId) {
     const comments = await pg.manyOrNone(
       `select comment_id, user_id, data->>'replyToCommentId' as reply_to_id
-      from contract_comments where contract_id = $1`,
-      [contract.id]
+      from contract_comments where contract_id = $1
+        and (coalesce(data->>'replyToCommentId', '') = $2
+            or comment_id = $2)
+      `,
+      [contract.id, comment.replyToCommentId]
     )
     return {
       repliedToAnswer: null,
@@ -115,7 +118,7 @@ export const handleCommentNotifications = async (
       repliedUsers[repliedUserId] = {
         repliedToType,
         repliedToAnswerText: repliedToAnswer?.text,
-        repliedToId: comment.replyToCommentId || repliedToAnswer?.id,
+        repliedToAnswerId: repliedToAnswer?.id,
         bet: bet,
       }
 
@@ -123,10 +126,10 @@ export const handleCommentNotifications = async (
       // The rest of the children in the chain are always comments
       commentsInSameReplyChain.forEach((c) => {
         if (c.user_id !== comment.userId && c.user_id !== repliedUserId) {
-          repliedUsers[c.userId] = {
+          repliedUsers[c.user_id] = {
             repliedToType: 'comment',
             repliedToAnswerText: undefined,
-            repliedToId: c.id,
+            repliedToAnswerId: undefined,
             bet: undefined,
           }
         }
