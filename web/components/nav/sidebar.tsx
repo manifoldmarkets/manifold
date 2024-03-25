@@ -5,7 +5,6 @@ import {
   LogoutIcon,
   MoonIcon,
   SunIcon,
-  SparklesIcon,
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
