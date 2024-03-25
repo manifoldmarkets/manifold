@@ -115,7 +115,7 @@ export default function MultiOrSingleDashboardPage(
 }
 
 // Note: I previously saw INSUFFICIENT_RESOURCES errors when trying to render all the dashboards
-const MAX_DASHBOARDS = 8
+const MAX_DASHBOARDS = 12
 
 function MultiDashboard(props: MultiDashboardProps) {
   const { trendingDashboard } = props
