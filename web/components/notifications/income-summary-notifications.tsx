@@ -535,7 +535,8 @@ function IncomeNotificationLabel(props: {
 }
 
 const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
-  const { bet, outcomeType, answerText } = props.uniqueBettorData
+  const { bet, outcomeType, answerText, totalAmountBet } =
+    props.uniqueBettorData
   const { amount, outcome } = bet
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
@@ -543,8 +544,10 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
     (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'NUMBER')
   const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
-    <Row className={'line-clamp-1 gap-1'}>
-      <span className="text-ink-600">{formatMoney(amount)}</span>{' '}
+    <span className={'line-clamp-1 gap-1'}>
+      <span className="text-ink-600">
+        {formatMoney(totalAmountBet ?? amount)}
+      </span>{' '}
       {showOutcome && `${outcome} `}
       on{' '}
       <BetOutcomeLabel
@@ -557,7 +560,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
           props.uniqueBettorData as any,
           bet.probAfter
         )})`}
-    </Row>
+    </span>
   )
 }
 

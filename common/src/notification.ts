@@ -359,6 +359,7 @@ export type UniqueBettorData = {
   isLogScale?: boolean
   isPartner?: boolean
   totalUniqueBettors?: number
+  totalAmountBet?: number
 }
 
 export type ReviewNotificationData = {

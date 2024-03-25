@@ -32,6 +32,7 @@ import {
   minBy,
   orderBy,
   sum,
+  sumBy,
   uniq,
 } from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
@@ -998,6 +999,7 @@ export const createUniqueBettorBonusNotification = async (
         ...pseudoNumericData,
         isPartner,
         totalUniqueBettors: uniqueBettorIds.length,
+        totalAmountBet: sumBy(bets, 'amount'),
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
