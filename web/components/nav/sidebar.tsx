@@ -57,6 +57,7 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
+
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
@@ -185,24 +186,28 @@ const getMobileNav = (toggleModal: () => void) => {
 
 const bottomNav = (
   loggedIn: boolean,
-  theme: 'light' | 'dark' | 'auto' | 'loading',
+  theme: 'light' | 'dark' | 'auto',
   toggleTheme: () => void,
   router: AppRouterInstance
 ) =>
-  buildArray(
+  buildArray<NavItem>(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name:
-        theme === 'loading' || theme === 'auto'
-          ? 'Auto theme'
-          : capitalize(theme),
-      icon:
-        theme === 'light'
-          ? SunIcon
-          : theme === 'dark'
-          ? MoonIcon
-          : SparklesIcon,
+        theme === null || theme === 'auto' ? 'System theme' : capitalize(theme),
+      icon: ({ className, ...props }) => (
+        <>
+          <MoonIcon
+            className={clsx(className, 'hidden dark:block')}
+            {...props}
+          />
+          <SunIcon
+            className={clsx(className, 'block dark:hidden')}
+            {...props}
+          />
+        </>
+      ),
       onClick: toggleTheme,
     },
     loggedIn && {
