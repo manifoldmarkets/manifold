@@ -125,7 +125,8 @@ export function HomeContent(props: {
     (user?.createdTime ?? 0) + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS < Date.now()
   const newUserGoalsVariant = useABTest('new user goals', [
     'enabled',
-    'disabled',
+    // TODO: Uncomment this after user test.
+    // 'disabled',
   ])
   const newUserGoalsEnabled =
     !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
