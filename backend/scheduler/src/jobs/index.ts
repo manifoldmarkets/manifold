@@ -42,7 +42,7 @@ export function createJobs() {
     ),
     createJob(
       'add-converting-feed-contracts',
-      '0 0 12 * * *', // 12pm daily
+      '0 15 * * * *', // on the 15th minute of every hour
       addConvertingContractsToFeed
     ),
     createJob(

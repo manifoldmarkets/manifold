@@ -330,7 +330,7 @@ const addContractToFeedIfNotDuplicative = async (
       trendingContractType
     )
 
-  const ignoreUserIds = await userIdsToIgnore(
+  const ignoreUserIds = await seenUserIds(
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
     unseenNewerThanTime,
@@ -358,7 +358,7 @@ const addContractToFeedIfNotDuplicative = async (
   )
 }
 
-const userIdsToIgnore = async (
+export const seenUserIds = async (
   contractId: string,
   userIds: string[],
   seenTime: number,
@@ -372,7 +372,7 @@ const userIdsToIgnore = async (
                 user_id = ANY($2) and
                 greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString(), dataTypes],
+    [contractId, userIds, new Date(seenTime).toISOString()],
     (row: { user_id: string }) => row.user_id
   )
   const userIdsWithFeedRows = await pg.map(
@@ -380,13 +380,12 @@ const userIdsToIgnore = async (
             from user_feed
             where contract_id = $1 and
                 user_id = ANY($2) and
-                greatest(created_time, seen_time) > $3 and
-                data_type = ANY($4)
+                created_time > now() - interval '1 day' and
+                data_type = ANY($3)
                 `,
     [
       contractId,
       userIds.filter((id) => !userIdsWithSeenMarkets.includes(id)),
-      new Date(seenTime).toISOString(),
       dataTypes,
     ],
     (row: { user_id: string }) => row.user_id

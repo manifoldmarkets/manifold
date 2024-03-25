@@ -1,7 +1,4 @@
-import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 
 import { convertContract } from 'common/supabase/contracts'
@@ -20,7 +17,10 @@ import {
 import { bulkInsertDataToUserFeed } from 'shared/create-feed'
 import { userInterestEmbeddings } from 'shared/supabase/vectors'
 import { getMostlyActiveUserIds } from 'shared/supabase/users'
-import { randomNumberThreshold } from 'shared/add-interesting-contracts-to-feed'
+import {
+  randomNumberThreshold,
+  seenUserIds,
+} from 'shared/add-interesting-contracts-to-feed'
 
 const MINUTE_INTERVAL = 60
 export async function addConvertingContractsToFeed() {
@@ -41,7 +41,7 @@ export async function addConvertingContractsToFeed() {
             and visibility = 'public'
             and (data->'uniqueBettorCount')::bigint > 10
             order by conversion_score desc
-            limit 50
+            limit 10
             `,
     [],
     convertContract
@@ -116,24 +116,5 @@ const addContractToFeedIfUnseen = async (
       creatorId: contract.creatorId,
     },
     pg
-  )
-}
-
-const seenUserIds = async (
-  contractId: string,
-  userIds: string[],
-  seenTime: number,
-  dataTypes: FEED_DATA_TYPES[],
-  pg: SupabaseDirectClient
-) => {
-  return await pg.map(
-    `select distinct user_id
-            from user_contract_views
-            where contract_id = $1 and
-                user_id = ANY($2) and
-                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
-                `,
-    [contractId, userIds, new Date(seenTime).toISOString()],
-    (row: { user_id: string }) => row.user_id
   )
 }
