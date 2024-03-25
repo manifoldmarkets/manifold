@@ -282,16 +282,13 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
   const { contract } = props
 
   return (
-    <div
-      className="text-ink-700 grid grid-cols-[auto_minmax(0,_1fr)] self-start pl-8 sm:pl-10"
-      style={{ gridTemplateColumns: 'auto min-content' }}
-    >
+    <div className="text-ink-700 grid grid-cols-[auto_3rem] self-end pl-8 sm:grid-cols-[auto_4rem] sm:pl-10 sm:pr-12">
       {sortAnswers(contract, contract.answers)
         .slice(0, 3)
         .map((ans) => (
           <Fragment key={ans.id}>
-            <div className="line-clamp-1 pr-3">{ans.text}</div>
-            <div className={'mr-3 w-8 flex-shrink-0 text-right font-semibold'}>
+            <div className="line-clamp-1 pr-2 sm:pr-5">{ans.text}</div>
+            <div className={'w-[3ch] text-right font-semibold'}>
               {formatPercentShort(ans.prob)}
             </div>
             {/* TODO: add number of traders? */}
