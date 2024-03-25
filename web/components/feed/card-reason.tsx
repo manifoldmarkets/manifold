@@ -55,7 +55,7 @@ export function CardReason(props: {
       <span className="text-ink-400 text-sm">
         <Row className={'items-center gap-1'}>
           <FireIcon className="text-ink-400 h-4 w-4" />
-          popular
+          trending
         </Row>
       </span>
     )
@@ -110,7 +110,7 @@ export function CardReason(props: {
     return (
       <Row className={'text-ink-400 items-center gap-1 text-sm'}>
         <FaGem className="h-3 w-3 text-blue-400" />
-        timeless
+        popular
       </Row>
     )
   }
