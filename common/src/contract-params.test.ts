@@ -207,6 +207,7 @@ describe('getContractParams', () => {
       prob: 0.5,
       probChanges: { day: 0, week: 0, month: 0 },
       initialProbability: 0.5, // Added initialProbability
+      conversionScore: 0, // Added missing conversionScore property
     } as Contract
 
     const result = await getContractParams(
@@ -312,6 +313,7 @@ describe('getContractParams', () => {
       answers: [], // Added answers array
       shouldAnswersSumToOne: true, // Added shouldAnswersSumToOne
       addAnswersMode: 'DISABLED', // Added addAnswersMode
+      conversionScore: 0, // Added missing conversionScore property
     } as CPMMNumericContract
 
     const result = await getContractParams(
@@ -415,6 +417,7 @@ describe('getContractParams', () => {
       answers: [],
       shouldAnswersSumToOne: true,
       addAnswersMode: 'DISABLED',
+      conversionScore: 0, // Added missing conversionScore property
     } as CPMMMultiContract
 
     const result = await getContractParams(
