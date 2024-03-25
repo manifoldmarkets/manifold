@@ -6,18 +6,16 @@ export function DashboardAddContract(props: {
 }) {
   const { addQuestions } = props
   return (
-    <>
-      <SelectMarkets
-        className="grow overflow-y-auto"
-        submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
-        onSubmit={(contracts) => {
-          addQuestions(
-            contracts.map((contract) => {
-              return { type: 'question', slug: contract.slug }
-            })
-          )
-        }}
-      />
-    </>
+    <SelectMarkets
+      className="grow overflow-y-auto"
+      submitLabel={(len) => `Add ${len} question${len !== 1 ? 's' : ''}`}
+      onSubmit={(contracts) => {
+        addQuestions(
+          contracts.map((contract) => {
+            return { type: 'question', slug: contract.slug }
+          })
+        )
+      }}
+    />
   )
 }

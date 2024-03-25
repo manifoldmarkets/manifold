@@ -14,6 +14,7 @@ import { Button } from '../buttons/button'
 import { ControlledTabs } from '../layout/tabs'
 import clsx from 'clsx'
 import { DashboardSetTopics } from './dashboard-set-topics'
+import { Col } from '../layout/col'
 
 export function AddItemCard(props: {
   items: DashboardItem[]
@@ -102,60 +103,59 @@ const AddDashboardModal = (props: {
   const { open, setOpen, tab, setTab, insertItems, topics, setTopics } = props
 
   return (
-    <Modal
-      open={open}
-      setOpen={setOpen}
-      className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}
-      size="lg"
-    >
-      <ControlledTabs
-        activeIndex={tab}
-        onClick={(title, index) => {
-          setTab(index as 0 | 1 | 2 | 3)
-          if (title === 'add text') {
-            insertItems([newTextItem()])
-            setOpen(false)
-          }
-        }}
-        tabs={[
-          {
-            title: 'Add question',
-            content: (
-              <DashboardAddContract
-                addQuestions={(qs) => {
-                  insertItems(qs)
-                  setOpen(false)
-                }}
-              />
-            ),
-          },
-          {
-            title: 'Add link',
-            content: (
-              <DashboardAddLink
-                addLink={(link) => {
-                  insertItems(link ? [link] : [])
-                  setOpen(false)
-                }}
-              />
-            ),
-          },
-          {
-            title: 'Add text',
-            content: null,
-          },
-          {
-            title: 'Edit topics',
-            content: (
-              <DashboardSetTopics
-                topics={topics}
-                setTopics={setTopics}
-                onClose={() => setOpen(false)}
-              />
-            ),
-          },
-        ]}
-      />
+    <Modal open={open} setOpen={setOpen} size="lg">
+      <Col
+        className={clsx(MODAL_CLASS, 'flex h-[70vh] flex-col !items-stretch')}
+      >
+        <ControlledTabs
+          activeIndex={tab}
+          onClick={(title, index) => {
+            setTab(index as 0 | 1 | 2 | 3)
+            if (title === 'add text') {
+              insertItems([newTextItem()])
+              setOpen(false)
+            }
+          }}
+          tabs={[
+            {
+              title: 'Add question',
+              content: (
+                <DashboardAddContract
+                  addQuestions={(qs) => {
+                    insertItems(qs)
+                    setOpen(false)
+                  }}
+                />
+              ),
+            },
+            {
+              title: 'Add link',
+              content: (
+                <DashboardAddLink
+                  addLink={(link) => {
+                    insertItems(link ? [link] : [])
+                    setOpen(false)
+                  }}
+                />
+              ),
+            },
+            {
+              title: 'Add text',
+              content: null,
+            },
+            {
+              title: 'Edit topics',
+              content: (
+                <DashboardSetTopics
+                  topics={topics}
+                  setTopics={setTopics}
+                  onClose={() => setOpen(false)}
+                />
+              ),
+            },
+          ]}
+        />
+      </Col>
     </Modal>
   )
 }
