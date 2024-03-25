@@ -15,7 +15,6 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { buildArray } from 'common/util/array'
-import { capitalize } from 'lodash'
 import { usePathname, useRouter } from 'next/navigation'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -193,8 +192,18 @@ const bottomNav = (
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name:
-        theme === null || theme === 'auto' ? 'System theme' : capitalize(theme),
+      name: theme ?? 'auto',
+      children:
+        theme === 'light' ? (
+          'Light'
+        ) : theme === 'dark' ? (
+          'Dark'
+        ) : (
+          <>
+            <span className="hidden dark:inline">Dark</span>
+            <span className="inline dark:hidden">Light</span> (auto)
+          </>
+        ),
       icon: ({ className, ...props }) => (
         <>
           <MoonIcon
