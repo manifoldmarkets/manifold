@@ -533,8 +533,11 @@ export const BuyPanelBody = (props: {
                         contract,
                         'YES'
                       )} or ${formatOutcomeLabel(contract, 'NO')}`
+                    : isStonk
+                    ? formatOutcomeLabel(contract, outcome)
                     : `Bet ${
-                        binaryMCOutcomeLabel ?? outcome
+                        binaryMCOutcomeLabel ??
+                        formatOutcomeLabel(contract, outcome)
                       } to win ${formatMoney(currentPayout)}`
                 }
                 inModal={!!onClose}

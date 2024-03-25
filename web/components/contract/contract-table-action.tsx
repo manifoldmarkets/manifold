@@ -80,8 +80,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    ((contract.outcomeType === 'BINARY' && contract.mechanism === 'cpmm-1') ||
-      contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
     return (
       <>
