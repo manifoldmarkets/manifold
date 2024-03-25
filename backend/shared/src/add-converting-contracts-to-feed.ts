@@ -39,6 +39,7 @@ export async function addConvertingContractsToFeed() {
             where resolution_time is null
             and close_time > now() + interval '30 minutes'
             and visibility = 'public'
+            and (data->'uniqueBettorCount')::bigint > 10
             order by conversion_score desc
             limit 50
             `,
