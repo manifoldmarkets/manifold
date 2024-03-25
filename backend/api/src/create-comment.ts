@@ -4,18 +4,19 @@ import { ContractComment } from 'common/comment'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { log, getContract, getUserFirebase } from 'shared/utils'
-import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { getContract, getUserFirebase } from 'shared/utils'
+import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
-  SupabaseDirectClient,
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { first } from 'lodash'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
+import { Bet } from 'common/bet'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -77,15 +78,7 @@ export const createCommentOnContractInternal = async (
     ? await pg
         .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
         .then(convertBet)
-    : await getMostRecentCommentableBet(
-        pg,
-        contract.id,
-        creator.id,
-        now,
-        replyToAnswerId
-      )
-
-  const position = await getLargestPosition(pg, contract.id, creator.id)
+    : undefined
 
   const isApi = auth.creds.kind === 'key'
 
@@ -100,7 +93,6 @@ export const createCommentOnContractInternal = async (
     userUsername: creator.username,
     userAvatarUrl: creator.avatarUrl,
 
-    // OnContract fields
     commentType: 'contract',
     contractId: contractId,
     contractSlug: contract.slug,
@@ -109,21 +101,7 @@ export const createCommentOnContractInternal = async (
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
 
-    commentorPositionShares: position?.shares,
-    commentorPositionOutcome: position?.outcome,
-    commentorPositionAnswerId: position?.answer_id,
-    commentorPositionProb:
-      position && contract.mechanism === 'cpmm-1' ? contract.prob : undefined,
-
-    // Response to another user's bet fields
-    betId: bet?.id,
-    betAmount: bet?.amount,
-    betOutcome: bet?.outcome,
-    betAnswerId: bet?.answerId,
-    bettorName: bet?.userName,
-    bettorUsername: bet?.userUsername,
-    betOrderAmount: bet?.orderAmount,
-    betLimitProb: bet?.limitProb,
+    ...denormalizeBet(bet),
     isApi,
     isRepost,
   } as ContractComment)
@@ -153,13 +131,54 @@ export const createCommentOnContractInternal = async (
         })
       }
 
+      const bet = replyToBetId
+        ? undefined
+        : await getMostRecentCommentableBet(
+            pg,
+            contract.id,
+            creator.id,
+            now,
+            replyToAnswerId
+          )
+
+      const position = await getLargestPosition(pg, contract.id, creator.id)
+
+      const updatedComment = removeUndefinedProps({
+        ...comment,
+        commentorPositionShares: position?.shares,
+        commentorPositionOutcome: position?.outcome,
+        commentorPositionAnswerId: position?.answer_id,
+        commentorPositionProb:
+          position && contract.mechanism === 'cpmm-1'
+            ? contract.prob
+            : undefined,
+        ...denormalizeBet(bet),
+      })
+
+      await db
+        .from('contract_comments')
+        .update({ data: updatedComment })
+        .eq('comment_id', comment.id)
+
       await onCreateCommentOnContract({
         contract,
-        comment,
+        comment: updatedComment,
         creator,
         bet,
       })
     },
+  }
+}
+const denormalizeBet = (bet: Bet | undefined) => {
+  return {
+    betAmount: bet?.amount,
+    betOutcome: bet?.outcome,
+    betAnswerId: bet?.answerId,
+    bettorName: bet?.userName,
+    bettorUsername: bet?.userUsername,
+    betOrderAmount: bet?.orderAmount,
+    betLimitProb: bet?.limitProb,
+    betId: bet?.id,
   }
 }
 
