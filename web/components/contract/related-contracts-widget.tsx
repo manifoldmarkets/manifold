@@ -74,7 +74,7 @@ export const SidebarRelatedContractsList = memo(function (props: {
           </Col>
         </Col>
       ))}
-      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>Related questions</h2>
+      <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts
           .filter((c) => !displayedGroupContractIds.includes(c.id))
@@ -160,7 +160,7 @@ export const RelatedContractsGrid = memo(function (props: {
       ref={ref}
       className={clsx(
         className,
-        'bg-canvas-50 -mx-4 mb-2 mt-4 flex-1 px-4 py-2 xl:hidden',
+        'bg-canvas-50 -mx-4 flex-1 px-4 pt-6 xl:hidden',
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
@@ -174,7 +174,7 @@ export const RelatedContractsGrid = memo(function (props: {
           <Masonry
             breakpointCols={{ default: 2, 768: 1 }}
             className={clsx(
-              ' flex w-auto',
+              'flex w-auto',
               'scrollbar-hide snap-x gap-2 overflow-y-auto scroll-smooth',
               'h-full'
             )}
@@ -237,16 +237,14 @@ export const RelatedContractsGrid = memo(function (props: {
         <Button
           color={'gray-white'}
           onClick={() => setShowMore(!showMore)}
-          className="mt-2"
+          className="!rounded-none !py-4"
         >
-          <Row className={'items-center'}>
-            {showMore ? (
-              <ChevronUpIcon className="mr-1 h-4 w-4" />
-            ) : (
-              <ChevronDownIcon className="mr-1 h-4 w-4" />
-            )}
-            {showMore ? 'Show less' : 'Show more'}
-          </Row>
+          {showMore ? (
+            <ChevronUpIcon className="mr-1 h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="mr-1 h-4 w-4" />
+          )}
+          {showMore ? 'Show less' : 'Show more'}
         </Button>
       )}
     </Col>
@@ -402,8 +400,11 @@ const RelatedContractCard = memo(function (props: {
               {Math.round(probChange * 100)}% 1d
             </span>
           )}
-          <ContractStatusLabel contract={contract} className="font-semibold" />
-          <span className={'text-ink-500 text-sm'}>chance</span>
+          <ContractStatusLabel
+            contract={contract}
+            className="font-semibold"
+            chanceLabel
+          />
         </Row>
       </Row>
       {contract.outcomeType === 'BINARY' && probChange !== 0 && (

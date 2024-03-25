@@ -216,25 +216,26 @@ export function ContractStatusLabel(props: {
     }
     case 'BOUNTIED_QUESTION': {
       return (
-        <Col
+        <span
           className={clsx(
-            'whitespace-nowrap text-sm font-bold',
+            className,
             contract.bountyLeft == 0 ? 'text-ink-300' : 'text-teal-600'
           )}
         >
-          <span>
-            {ENV_CONFIG.moneyMoniker}
-            {shortenNumber(contract.bountyLeft ?? 0)}
-          </span>
-          <span
-            className={clsx(
-              'text-xs font-normal',
-              contract.bountyLeft == 0 ? 'text-ink-300' : 'text-ink-600'
-            )}
-          >
-            bounty
-          </span>
-        </Col>
+          {ENV_CONFIG.moneyMoniker}
+          {shortenNumber(contract.bountyLeft ?? 0)}
+          {chanceLabel && (
+            <span
+              className={clsx(
+                'text-sm font-normal',
+                contract.bountyLeft == 0 ? 'text-ink-300' : 'text-ink-500'
+              )}
+            >
+              {' '}
+              bounty
+            </span>
+          )}
+        </span>
       )
     }
     case 'POLL': {
