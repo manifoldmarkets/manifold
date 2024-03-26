@@ -243,7 +243,7 @@ export const getContract = (contractId: string) => {
 export const getContractSupabase = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score from contracts where id = $1
+    `select data, importance_score, conversion_score from contracts where id = $1
             limit 1`,
     [contractId],
     (row) => convertContract(row)
@@ -253,7 +253,7 @@ export const getContractSupabase = async (contractId: string) => {
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score from contracts where slug = $1
+    `select data, importance_score, conversion_score from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)
