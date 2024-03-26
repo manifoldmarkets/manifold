@@ -26,7 +26,6 @@ import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { DAY_MS } from 'common/util/time'
 
 export function useIsGroupMember(groupSlug: string) {
   const [isMember, setIsMember] = usePersistentInMemoryState<
@@ -134,7 +133,8 @@ export function useRealtimeMemberTopics(
   return groups
 }
 export function useNewUserMemberTopicsAndContracts(
-  user: User | null | undefined
+  user: User | null | undefined,
+  enabled: boolean
 ) {
   type TopicWithContracts = {
     topic: Topic
@@ -146,12 +146,12 @@ export function useNewUserMemberTopicsAndContracts(
 
   useEffect(() => {
     if (!groups?.length) setGroups(undefined) // Show loading indicator right after selecting topics
-    const createdRecently = (user?.createdTime ?? 0) > Date.now() - DAY_MS
-    if (createdRecently)
+    if (enabled)
       api('get-groups-with-top-contracts', {}).then((result) => {
         setGroups(result)
       })
-  }, [user?.shouldShowWelcome])
+    else setGroups([])
+  }, [enabled, user?.shouldShowWelcome])
 
   return groups
 }

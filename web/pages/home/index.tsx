@@ -111,13 +111,14 @@ export function HomeContent(props: {
   const createdInLastHour = (user?.createdTime ?? 0) > Date.now() - HOUR_MS
   const freeQuestionsEnabled = !createdInLastHour
 
-  const variant = useABTest('home welcome topics', ['welcome topics', 'browse'])
-  const createdToday = (user?.createdTime ?? 0) > Date.now() - DAY_MS
-  const welcomeTopicsEnabled = variant === 'welcome topics' && createdToday
-  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(user)
+  const welcomeTopicsEnabled = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(
+    user,
+    welcomeTopicsEnabled
+  )
 
   const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
-    createdInLastHour && variant === 'browse' ? 1 : 0,
+    0,
     `tabs-home`
   )
 
@@ -125,8 +126,7 @@ export function HomeContent(props: {
     (user?.createdTime ?? 0) + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS < Date.now()
   const newUserGoalsVariant = useABTest('new user goals', [
     'enabled',
-    // TODO: Uncomment this after user test.
-    // 'disabled',
+    'disabled',
   ])
   const newUserGoalsEnabled =
     !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
@@ -165,13 +165,7 @@ export function HomeContent(props: {
         </>
       )}
 
-      {welcomeTopicsEnabled && memberTopicsWithContracts && (
-        <WelcomeTopicSections
-          memberTopicsWithContracts={memberTopicsWithContracts}
-        />
-      )}
-
-      <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between">
+      <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between px-1">
         <ControlledTabs
           className="mb-1"
           onClick={(_, i) => {
@@ -193,17 +187,24 @@ export function HomeContent(props: {
             }
           )}
         />
-        <DailyStats className="mr-1 sm:mr-2" user={user} />
+        <DailyStats className="sm:mr-1" user={user} />
       </Row>
 
       {privateUser && (
-        <FeedTimeline
-          key={feedKey}
-          feedKey={feedKey}
-          className={clsx(activeIndex !== 0 && 'hidden', 'sm:px-2')}
-          user={user}
-          privateUser={privateUser}
-        />
+        <Col className={clsx(activeIndex !== 0 && 'hidden', 'w-full sm:px-2')}>
+          {welcomeTopicsEnabled && memberTopicsWithContracts && (
+            <WelcomeTopicSections
+              memberTopicsWithContracts={memberTopicsWithContracts}
+            />
+          )}
+
+          <FeedTimeline
+            key={feedKey}
+            feedKey={feedKey}
+            user={user}
+            privateUser={privateUser}
+          />
+        </Col>
       )}
       {user && !user.shouldShowWelcome && (
         <BrowseSection
