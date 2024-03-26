@@ -12,6 +12,7 @@ import { Group } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { updateUser } from 'web/lib/firebase/users'
 import { unfollowTopic } from 'web/lib/supabase/groups'
+import { track } from 'web/lib/service/analytics'
 
 export function TopicSelectorDialog(props: {
   skippable: boolean
@@ -96,7 +97,10 @@ export function TopicSelectorDialog(props: {
     <PillButton
       key={topicName}
       selected={groupIds.every((g) => selectedTopics.includes(g))}
-      onSelect={() => groupIds.map((g) => selectTopic(g))}
+      onSelect={() => {
+        groupIds.map((g) => selectTopic(g))
+        track('onboarding select topic', { name: topicName })
+      }}
     >
       {topicWithEmoji}
     </PillButton>
