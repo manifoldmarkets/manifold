@@ -8,6 +8,7 @@ import { createPrivateUserMessageMain } from 'api/create-private-user-message'
 import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createReferralsProgramNotification } from 'shared/create-notification'
 import { sendWelcomeEmail } from 'shared/emails'
+import { NEW_USER_HERLPER_IDS } from 'common/envs/constants'
 
 export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
   const pg = createSupabaseDirectClient()
@@ -18,9 +19,9 @@ export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
 }
 const createIntroHelpMessage = async (newUser: User) => {
   const pg = createSupabaseDirectClient()
-  // const random = Math.round(Math.random() * NEW_USER_HERLPER_IDS.length)
+  const random = Math.floor(Math.random() * NEW_USER_HERLPER_IDS.length)
   const creator = (await getUser(
-    isProd() ? 'AJwLWoo3xue32XIiAVrL5SyR1WB2' : '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
+    isProd() ? NEW_USER_HERLPER_IDS[random] : '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
   ))!
 
   const { channelId } = await createPrivateUserMessageChannelMain(
