@@ -106,7 +106,7 @@ export function HomeContent(props: {
   )
 
   const hasAgedOutOfNewUserGoals =
-    (user?.createdTime ?? 0) + DAY_MS * 1.5 < Date.now()
+    (user?.createdTime ?? 0) + DAY_MS * 1 < Date.now()
   const newUserGoalsVariant = useABTest('new user goals', [
     'enabled',
     'disabled',
@@ -141,10 +141,11 @@ export function HomeContent(props: {
           </Col>
         )}
 
-      {hasAgedOutOfNewUserGoals && (
-        <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full items-center px-1">
-          <DailyStats className="sm:mr-1" user={user} />
-        </Row>
+      {hasAgedOutOfNewUserGoals && user && (
+        <DailyStats
+          className="bg-canvas-50 sticky top-9 z-50 mb-1 w-full px-2 pb-2 pt-1"
+          user={user}
+        />
       )}
 
       {privateUser && (

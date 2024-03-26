@@ -33,7 +33,7 @@ export const PortfolioSummary = (props: {
   const isCurrentUser = currentUser?.id === user.id
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
-  const isNewUser = user.createdTime > Date.now() - 1.5 * DAY_MS
+  const isNewUser = user.createdTime > Date.now() - DAY_MS
 
   const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
