@@ -26,7 +26,6 @@ import {
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
   removeEmojis,
-  TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { orderBy, uniqBy } from 'lodash'
@@ -107,16 +106,9 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
             'in',
             `(${GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW.join(',')})`
           )
-          .not(
-            'name',
-            'in',
-            `(${ALL_TOPICS.map((t) => removeEmojis(t))
-              .concat(TOPIC_NAMES_TO_HIDE_FROM_WELCOME_FLOW)
-              .join(',')})`
-          )
           .filter('slug', 'not.ilike', '%manifold%')
           .order('importance_score', { ascending: false })
-          .limit(10)
+          .limit(9)
       ),
     ])
     const userInterestedTopics = orderBy(
@@ -142,8 +134,8 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
           ),
           ...trendingTopics,
         ],
-        (g) => removeEmojis(g.name)
-      ).slice(0, 15)
+        (g) => g.id
+      ).slice(0, 9)
     )
     if (userInterestedTopics.some((g) => g.hasBet)) {
       setUserBetInTopics(
