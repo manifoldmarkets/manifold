@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { User } from 'common/user'
 import { MonthlyBetsType } from 'web/hooks/use-wrapped-2023'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { numberWithCommas } from 'web/lib/util/formatNumber'
@@ -12,10 +11,9 @@ export function MonthlyBets(props: {
   goToPrevPage: () => void
   goToNextPage: () => void
   monthlyBets: MonthlyBetsType[] | undefined | null
-  user: User
 }) {
-  const { goToPrevPage, goToNextPage, user, monthlyBets } = props
-  const [animateCircleIn, setAnimateCircleIn] = useState(true)
+  const { goToPrevPage, goToNextPage, monthlyBets } = props
+  const animateCircleIn = true
   const [animateTotalBetIn, setAnimateTotalBetIn] = useState(false)
   const [animateMostMonthBetIn, setAnimateMostMonthBetIn] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)

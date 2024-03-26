@@ -10,6 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { BackButton } from 'web/components/contract/back-button'
 import { useEffect, useState } from 'react'
 import LoadingUserRows from 'web/components/loading-user-rows'
+import Link from 'next/link'
 
 const PartnerLeaderboard = () => {
   const [partnerStats, setPartnerStats] = useState<
@@ -58,10 +59,10 @@ const PartnerLeaderboard = () => {
         <Title className="hidden md:inline-flex">Partner Leaderboard</Title>
 
         <div className="text-primary-500 hover:text-primary-700 text-md mb-2 hover:underline">
-          <a href="/partner-explainer" className="flex items-baseline">
+          <Link href="/partner-explainer" className="flex items-baseline">
             Learn more about the program here!{' '}
             <FaExternalLinkAlt className="ml-1 h-3 w-3" />
-          </a>
+          </Link>
         </div>
 
         <div className="text-ink-700 mb-3">Period Feb 26 - May 26</div>

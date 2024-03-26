@@ -7,7 +7,6 @@ export type StateProps = {
   stateKey: string
   data: StateDataType
   stateContract: Contract | null
-  hideStateTitle?: boolean
   handleClick: (newTargetState: string | undefined) => void
   onMouseEnter: (hoverState: string) => void
   onMouseLeave: () => void
@@ -20,7 +19,6 @@ export function PresidentialState(props: StateProps) {
     stateKey,
     data,
     stateContract,
-    hideStateTitle,
     handleClick,
     onMouseEnter,
     onMouseLeave,
@@ -32,7 +30,6 @@ export function PresidentialState(props: StateProps) {
       <USAState
         key={stateKey}
         stateData={data}
-        hideStateTitle={hideStateTitle}
         state={stateKey}
         fill={probToColor(stateContract)}
         onClickState={() => {
@@ -49,12 +46,5 @@ export function PresidentialState(props: StateProps) {
       />
     )
   }
-  return (
-    <USAState
-      key={stateKey}
-      stateData={data}
-      hideStateTitle={hideStateTitle}
-      state={stateKey}
-    />
-  )
+  return <USAState key={stateKey} stateData={data} state={stateKey} />
 }

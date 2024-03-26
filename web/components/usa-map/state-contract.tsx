@@ -51,14 +51,12 @@ export function SwingStateContract(props: {
   hoveredState: string | undefined | null
   setHoveredState: (state: string | undefined) => void
   targetState: string | undefined | null
-  setTargetState: (state: string | undefined) => void
   sortedPresidencyContractsDictionary: MapContractsDictionary
 }) {
   const {
     hoveredState,
     setHoveredState,
     targetState,
-    setTargetState,
     sortedPresidencyContractsDictionary,
   } = props
 

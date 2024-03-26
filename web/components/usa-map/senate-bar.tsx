@@ -54,7 +54,7 @@ export function SenateBar(props: {
           )
         })}
         {Object.entries(sortedContractsDictionary).map(
-          ([stateKey, contract], index) => {
+          ([stateKey, contract]) => {
             const fill = probToColor(contract) ?? ''
             return (
               <StateBar
@@ -72,7 +72,7 @@ export function SenateBar(props: {
             )
           }
         )}
-        {republicans.map(({ state }, index) => {
+        {republicans.map(({ state }) => {
           return (
             <StateBar
               key={state}

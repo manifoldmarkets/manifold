@@ -21,7 +21,6 @@ export type ClickHandler<
 > = (e: React.MouseEvent<E, MouseEvent>) => R
 
 export const USAMap = (props: {
-  hideStateTitle?: boolean
   mapContractsDictionary: MapContractsDictionary
   handleClick: (newTargetState: string | undefined) => void
   onMouseEnter: (hoverState: string) => void
@@ -31,7 +30,6 @@ export const USAMap = (props: {
   CustomStateComponent: React.ComponentType<StateProps>
 }) => {
   const {
-    hideStateTitle,
     mapContractsDictionary,
     handleClick,
     onMouseEnter,
@@ -154,7 +152,6 @@ export const USAMap = (props: {
                   stateKey={stateKey}
                   data={data}
                   stateContract={stateContract}
-                  hideStateTitle={hideStateTitle}
                   handleClick={handleClick}
                   onMouseEnter={onMouseEnter}
                   onMouseLeave={onMouseLeave}

@@ -8,7 +8,6 @@ import { User } from 'common/user'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
-import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
@@ -36,16 +35,6 @@ export function CandidatePanel(props: {
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
-
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
@@ -67,8 +56,6 @@ export function CandidatePanel(props: {
     .slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
-
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
 
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
@@ -169,12 +156,11 @@ function CandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
   color: string
-  onHover?: (hovering: boolean) => void
   selected?: boolean
   userBets?: Bet[]
   user?: User | null
 }) {
-  const { answer, contract, onHover, selected, color, userBets, user } = props
+  const { answer, contract, selected, color, userBets, user } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -191,13 +177,11 @@ function CandidateAnswer(props: {
         color={color}
         prob={prob}
         resolvedProb={resolvedProb}
-        onHover={onHover}
         className={clsx(
           'cursor-pointer',
           selected && 'ring-primary-600 rounded ring-2'
         )}
         answer={answer}
-        selected={selected}
         contract={contract}
         userBets={userBets}
         user={user}

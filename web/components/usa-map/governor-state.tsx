@@ -7,7 +7,6 @@ export function GovernorState(props: StateProps) {
     stateKey,
     data,
     stateContract,
-    hideStateTitle,
     handleClick,
     onMouseEnter,
     onMouseLeave,
@@ -19,7 +18,6 @@ export function GovernorState(props: StateProps) {
       <USAState
         key={stateKey}
         stateData={data}
-        hideStateTitle={hideStateTitle}
         state={stateKey}
         fill={probToColor(stateContract)}
         onClickState={() => {
@@ -40,7 +38,6 @@ export function GovernorState(props: StateProps) {
     <USAState
       key={stateKey}
       stateData={data}
-      hideStateTitle={hideStateTitle}
       state={stateKey}
       fill={'#76769366'}
     />

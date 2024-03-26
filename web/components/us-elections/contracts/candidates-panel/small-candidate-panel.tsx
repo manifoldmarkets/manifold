@@ -5,12 +5,10 @@ import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
-import { sortBy, sumBy } from 'lodash'
+import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { useChartAnswers } from '../../../charts/contract/choice'
 import { Col } from '../../../layout/col'
 import { SmallCandidateBar } from './small-candidate-bar'
 import { getCandidateColor } from './candidates-panel'
@@ -37,16 +35,6 @@ export function SmallCandidatePanel(props: {
     )
     .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
 
-  const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
-  const showAvatars =
-    addAnswersMode === 'ANYONE' ||
-    answers.some((a) => a.userId !== contract.creatorId)
-
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
@@ -69,8 +57,6 @@ export function SmallCandidatePanel(props: {
 
   const moreCount = answers.length - displayedAnswers.length
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
@@ -89,7 +75,6 @@ export function SmallCandidatePanel(props: {
               key={answer.id}
               answer={answer as Answer}
               contract={contract}
-              color={getCandidateColor(answer.text)}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
             />
@@ -113,13 +98,11 @@ export function SmallCandidatePanel(props: {
 function SmallCandidateAnswer(props: {
   contract: MultiContract
   answer: Answer
-  color: string
-  onHover?: (hovering: boolean) => void
   selected?: boolean
   userBets?: Bet[]
   user?: User | null
 }) {
-  const { answer, contract, onHover, selected, color, userBets, user } = props
+  const { answer, contract, selected, userBets, user } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -131,23 +114,17 @@ function SmallCandidateAnswer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
   return (
     <Col className={'w-full'}>
       <SmallCandidateBar
         color={getCandidateColor(removeTextInParentheses(answer.text))}
         prob={prob}
         resolvedProb={resolvedProb}
-        onHover={onHover}
         className={clsx(
           'cursor-pointer',
           selected && 'ring-primary-600 rounded ring-2'
         )}
         answer={answer}
-        selected={selected}
         contract={contract}
         userBets={userBets}
         user={user}

@@ -161,7 +161,7 @@ export default function Charity(props: {
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
-          {filterCharities.map((charity, i) => (
+          {filterCharities.map((charity) => (
             <CharityCard
               charity={charity}
               raised={totalsByCharity[charity.id]?.total ?? 0}

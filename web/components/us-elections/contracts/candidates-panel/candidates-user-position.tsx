@@ -29,7 +29,7 @@ export function UserPosition(props: {
     redArrowClassName,
   } = props
 
-  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
+  const { totalShares } = getContractBetMetrics(contract, userBets)
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0

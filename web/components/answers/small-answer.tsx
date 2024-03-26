@@ -6,24 +6,19 @@ import {
   type Answer,
   type DpmAnswer,
 } from 'common/answer'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import { floatingEqual } from 'common/util/math'
 import { sumBy } from 'lodash'
 import Link from 'next/link'
-import { useUnfilledBets } from 'web/hooks/use-bets'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { useIsClient } from 'web/hooks/use-is-client'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUser } from 'web/hooks/use-user'
 import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { AnswerPosition, AnswerStatus, MultiBettor } from './answer-components'
-import { SHOW_LIMIT_ORDER_CHARTS_KEY } from './answers-panel'
 import { Linkify } from '../widgets/linkify'
 
 // just the bars
@@ -55,14 +50,6 @@ export function SmallAnswerBars(props: {
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-  const isAdvancedTrader = useIsAdvancedTrader()
-  const [shouldShowLimitOrderChart] = usePersistentLocalState<boolean>(
-    true,
-    SHOW_LIMIT_ORDER_CHARTS_KEY
-  )
-  const unfilledBets = useUnfilledBets(contract.id, {
-    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
-  })
 
   return (
     <Col className={clsx('mx-[2px] gap-1.5', className)}>
@@ -78,12 +65,6 @@ export function SmallAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer, answersArray)}
               barColor={barColor}
-              shouldShowLimitOrderChart={
-                isAdvancedTrader && shouldShowLimitOrderChart
-              }
-              unfilledBets={unfilledBets?.filter(
-                (b) => b.answerId === answer.id
-              )}
             />
           ))}
           {moreCount > 0 && (
@@ -106,26 +87,13 @@ export function SmallAnswerBars(props: {
 export function SmallAnswer(props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
-  unfilledBets?: Array<LimitBet>
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
-  onHover?: (hovering: boolean) => void
   userBets?: Bet[]
   barColor?: string
-  shouldShowLimitOrderChart: boolean
 }) {
-  const {
-    answer,
-    contract,
-    unfilledBets,
-    onHover,
-    color,
-    userBets,
-    user,
-    barColor,
-    shouldShowLimitOrderChart,
-  } = props
+  const { answer, contract, color, userBets, user, barColor } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -143,7 +111,6 @@ export function SmallAnswer(props: {
     bet.outcome === 'YES' ? bet.shares : -bet.shares
   )
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
-  const isClient = useIsClient()
 
   return (
     <Col className={'w-full'}>

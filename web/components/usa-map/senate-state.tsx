@@ -18,7 +18,6 @@ export function SenateState(props: StateProps) {
     stateKey,
     data,
     stateContract,
-    hideStateTitle,
     handleClick,
     onMouseEnter,
     onMouseLeave,
@@ -30,7 +29,6 @@ export function SenateState(props: StateProps) {
       <USAState
         key={stateKey}
         stateData={data}
-        hideStateTitle={hideStateTitle}
         state={stateKey}
         fill={probToColor(stateContract)}
         onClickState={() => {
@@ -51,7 +49,6 @@ export function SenateState(props: StateProps) {
     <USAState
       key={stateKey}
       stateData={data}
-      hideStateTitle={hideStateTitle}
       state={stateKey}
       fill={getSenateFill(stateKey)}
       patternTextColor="#ffff"

@@ -113,7 +113,6 @@ function Wrapped2023Content(props: { user: User; username: string }) {
           monthlyBets={monthlyBets}
           goToPrevPage={goToPrevPage}
           goToNextPage={goToNextPage}
-          user={user}
         />
       ) : (
         <TheEnd

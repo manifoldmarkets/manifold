@@ -1,26 +1,21 @@
-import { memo, useEffect, useMemo, useState } from 'react'
-import { last, minBy, sum } from 'lodash'
-import clsx from 'clsx'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
-import Link from 'next/link'
 import { ArrowUpIcon } from '@heroicons/react/solid'
-
-import { User } from 'common/user'
-import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
+import clsx from 'clsx'
+import { CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { Contract, contractPath, CPMMContract } from 'common/contract'
-import { withTracking } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import { Col } from 'web/components/layout/col'
-import { formatMoney, getMoneyNumber } from 'common/util/format'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { DailyProfitModal } from 'web/components/home/daily-profit'
-import { DailyLoan } from 'web/components/home/daily-loan'
+import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { linkClass } from 'web/components/widgets/site-link'
-import { ChangeIcon } from 'web/components/portfolio/balance-card'
+import { last, minBy, sum } from 'lodash'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { DailyLoan } from 'web/components/home/daily-loan'
+import { DailyProfitModal } from 'web/components/home/daily-profit'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { withTracking } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { getCutoff } from 'web/lib/util/time'
 
@@ -147,59 +142,3 @@ export const InvestmentValueCard = memo(function (props: {
     </Row>
   )
 })
-
-const MetricChangeRow = (props: {
-  change: ContractMetric
-  contract: Contract
-  avatarSize: 'sm' | 'md'
-}) => {
-  const { change, avatarSize, contract } = props
-  const dayProfit = change.from?.day.profit ?? 0
-  const direction = dayProfit > 0 ? 'up' : 'down'
-  if (getMoneyNumber(dayProfit) === 0) return null
-  return (
-    <Row className={'gap-2'}>
-      <Col>
-        <ChangeIcon
-          avatarSize={avatarSize}
-          slug={contractPath(contract)}
-          symbol={
-            <div>
-              {direction === 'up' ? (
-                <FaArrowTrendUp className={'h-5 w-5 '} />
-              ) : (
-                <FaArrowTrendDown className={'h-5 w-5'} />
-              )}
-            </div>
-          }
-          className={
-            direction === 'up'
-              ? 'bg-teal-500'
-              : direction === 'down'
-              ? 'bg-ink-400'
-              : 'bg-blue-400'
-          }
-        />
-      </Col>
-      <Col className={'w-full'}>
-        <Row className={'justify-between'}>
-          <Link
-            href={contractPath(contract)}
-            className={clsx('line-clamp-2', linkClass)}
-          >
-            {contract.question}
-          </Link>
-          <span
-            className={clsx(
-              'inline-flex whitespace-nowrap',
-              dayProfit > 0 ? 'text-teal-700' : 'text-ink-600'
-            )}
-          >
-            {dayProfit > 0 ? '+' : ''}
-            {formatMoney(dayProfit)}
-          </span>
-        </Row>
-      </Col>
-    </Row>
-  )
-}

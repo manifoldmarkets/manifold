@@ -13,7 +13,6 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
-import { useUser } from 'web/hooks/use-user'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
@@ -30,7 +29,7 @@ export function Policy(props: {
   isFirst: boolean
   isLast: boolean
 }) {
-  const { policy, className, isFirst, isLast } = props
+  const { policy, className, isLast } = props
   const { bidenContract, trumpContract, title } = policy
   if (!bidenContract || !trumpContract) {
     return <></>
@@ -87,7 +86,7 @@ function ConditionalPercent(props: {
         className,
         'text-ink-700 group flex h-full w-[120px] flex-row items-center gap-2'
       )}
-      onClick={(e) => {
+      onClick={() => {
         Router.push(path)
       }}
     >
@@ -198,8 +197,6 @@ export function MobilePolicy(props: {
 export const BinaryBetButton = (props: { contract: CPMMBinaryContract }) => {
   const { contract } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
-
-  const user = useUser()
 
   function closePanel() {
     setOutcome(undefined)

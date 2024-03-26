@@ -2,17 +2,12 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import {
-  MonthlyBetsType,
-  ProfitType,
-  useMaxAndMinProfit,
-} from 'web/hooks/use-wrapped-2023'
+import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2023'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
 import { Row } from '../layout/row'
 import { useContract } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
-import { MONTHS } from './GeneralStats'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -20,7 +15,7 @@ export function MaxMinProfit(props: {
   user: User
 }) {
   const { goToPrevPage, goToNextPage, user } = props
-  const [animateIn, setAnimateIn] = useState(true)
+  const animateIn = true
   const [animateIn2, setAnimateIn2] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)
 
@@ -138,61 +133,5 @@ function BettingDirection(props: { profit: ProfitType | null | undefined }) {
         <> </>
       )}
     </>
-  )
-}
-
-const CoinBarChart = (props: { data: MonthlyBetsType[] }) => {
-  const { data } = props
-  const svgWidth = 280
-  const svgHeight = 350
-  const maxCoins = 20 // Maximum number of coins in a stack
-  const coinWidth = 9 // Width of the oval (coin)
-  const coinHeight = 3 // Height of the oval (coin)
-  const spacing = 35 // Horizontal spacing between stacks
-  const rowSpacing = svgHeight / 3 // Vertical spacing between rows
-
-  const maxManaBet = Math.max(...data.map((item) => item.total_amount))
-  const scaleFactor = maxManaBet > 0 ? maxCoins / maxManaBet : 1
-
-  return (
-    <svg width={svgWidth} height={svgHeight}>
-      {data.map((item, index) => {
-        const coinsInStack = Math.round(item.total_amount * scaleFactor)
-        const isTopRow = index < 6 // First 6 months (Jan-Jun) are in the top row
-        const rowIndex = isTopRow ? index : index - 6 // Adjust index for each row
-        const xPosition = (svgWidth / 6) * rowIndex + spacing // X position of each stack
-        const yBasePosition = isTopRow ? rowSpacing : rowSpacing * 2 // Y base position for each row
-
-        return (
-          <g key={index}>
-            {/* Stack of coins */}
-            {Array.from({ length: coinsInStack }).map((_, coinIndex) => {
-              const yPosition = yBasePosition - (coinIndex * coinHeight + 30)
-              return (
-                <ellipse
-                  key={coinIndex}
-                  cx={xPosition}
-                  cy={yPosition}
-                  rx={coinWidth}
-                  ry={coinHeight}
-                  fill="gold" // Change color as needed
-                  stroke="#92400e"
-                  strokeWidth="1"
-                />
-              )
-            })}
-            {/* Month label */}
-            <text
-              x={xPosition - coinWidth}
-              y={yBasePosition}
-              fill="white"
-              fontSize="12"
-            >
-              {MONTHS[index]}
-            </text>
-          </g>
-        )
-      })}
-    </svg>
   )
 }

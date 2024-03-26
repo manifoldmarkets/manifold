@@ -120,10 +120,10 @@ function UserPartnerDashboard(props: { user: User; username: string }) {
         )}
 
         <div className="text-primary-500 hover:text-primary-700 text-md my-4 hover:underline">
-          <a href="/partner-explainer" className="flex items-baseline">
+          <Link href="/partner-explainer" className="flex items-baseline">
             Learn more about the program here!{' '}
             <FaExternalLinkAlt className="ml-1 h-3 w-3" />
-          </a>
+          </Link>
         </div>
       </Col>
     </Page>

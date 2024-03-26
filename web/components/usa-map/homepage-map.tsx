@@ -141,7 +141,6 @@ export function HomepageMap(props: {
               hoveredState={hoveredState}
               setHoveredState={setHoveredState}
               targetState={targetState}
-              setTargetState={setTargetState}
               sortedPresidencyContractsDictionary={
                 sortedPresidencyContractsDictionary
               }

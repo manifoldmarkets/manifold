@@ -20,7 +20,6 @@ export function USAState(props: {
   onClickState?: ClickHandler
   onMouseEnterState?: () => void | undefined
   onMouseLeaveState?: () => void | undefined
-  hideStateTitle?: boolean
   selected?: boolean
   hovered?: boolean
   patternTextColor?: string
@@ -31,7 +30,6 @@ export function USAState(props: {
     onClickState,
     onMouseEnterState,
     onMouseLeaveState,
-    hideStateTitle,
     selected,
     hovered,
     patternTextColor,

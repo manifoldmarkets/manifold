@@ -20,9 +20,7 @@ export const SmallCandidateBar = (props: {
   resolvedProb?: number // 0 - 1
   className?: string
   hideBar?: boolean
-  onHover?: (hovering: boolean) => void
   answer: Answer
-  selected?: boolean
   contract: MultiContract
   userBets?: Bet[]
   user?: User | null
@@ -33,9 +31,7 @@ export const SmallCandidateBar = (props: {
     resolvedProb,
     className,
     hideBar,
-    onHover,
     answer,
-    selected,
     contract,
     userBets,
     user,
