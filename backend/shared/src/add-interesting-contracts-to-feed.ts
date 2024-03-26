@@ -333,9 +333,9 @@ const addContractToFeedIfNotDuplicative = async (
   const ignoreUserIds = await seenUserIds(
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
-    unseenNewerThanTime,
     [dataType, 'new_contract', 'new_subsidy'],
-    pg
+    pg,
+    unseenNewerThanTime
   )
 
   await bulkInsertDataToUserFeed(
@@ -361,18 +361,19 @@ const addContractToFeedIfNotDuplicative = async (
 export const seenUserIds = async (
   contractId: string,
   userIds: string[],
-  seenTime: number,
   dataTypes: FEED_DATA_TYPES[],
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  seenTime?: number
 ) => {
   const userIdsWithSeenMarkets = await pg.map(
     `select distinct user_id
             from user_contract_views
             where contract_id = $1 and
                 user_id = ANY($2) and
-                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > $3
+                ($3 is null or
+                greatest(last_page_view_ts, last_promoted_view_ts, last_card_view_ts) > millis_to_ts($3))
                 `,
-    [contractId, userIds, new Date(seenTime).toISOString()],
+    [contractId, userIds, seenTime],
     (row: { user_id: string }) => row.user_id
   )
   const userIdsWithFeedRows = await pg.map(

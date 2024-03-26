@@ -3,7 +3,6 @@ import { log } from 'shared/utils'
 
 import { convertContract } from 'common/supabase/contracts'
 
-import { DAY_MS } from 'common/util/time'
 import {
   CONTRACT_FEED_REASON_TYPES,
   FEED_DATA_TYPES,
@@ -30,9 +29,6 @@ export async function addConvertingContractsToFeed() {
     pg,
     randomNumberThreshold(MINUTE_INTERVAL)
   )
-  // const mostlyActiveUserIds = filterDefined([
-  //   await getUser('AJwLWoo3xue32XIiAVrL5SyR1WB2'),
-  // ]).map((u) => u.id)
   log(`Loaded users. Querying candidate contracts...`)
   const contracts = await pg.map(
     `select data, importance_score, conversion_score from contracts
@@ -40,13 +36,14 @@ export async function addConvertingContractsToFeed() {
             and close_time > now() + interval '30 minutes'
             and visibility = 'public'
             and (data->'uniqueBettorCount')::bigint > 10
-            and (data->'prob' is null or ((data->'prob')::numeric > 0.04 and (data->'prob')::numeric < 0.96))            limit 10
+            and (data->'prob' is null or ((data->'prob')::numeric > 0.04 and (data->'prob')::numeric < 0.96))
+            order by conversion_score desc
+            limit 10
             `,
     [],
     convertContract
   )
   log(`Found ${contracts.length} contracts to add to feed`)
-  const now = Date.now()
   for (const contract of contracts) {
     await addContractToFeedIfUnseen(
       contract,
@@ -57,7 +54,6 @@ export async function addConvertingContractsToFeed() {
       ],
       'high_conversion',
       [contract.creatorId],
-      now - 14 * DAY_MS,
       mostlyActiveUserIds
     )
   }
@@ -69,7 +65,6 @@ const addContractToFeedIfUnseen = async (
   reasonsToInclude: CONTRACT_FEED_REASON_TYPES[],
   dataType: FEED_DATA_TYPES,
   userIdsToExclude: string[],
-  unseenNewerThanTime: number,
   mostlyActiveUserIds: string[]
 ) => {
   const pg = createSupabaseDirectClient()
@@ -94,7 +89,6 @@ const addContractToFeedIfUnseen = async (
   const ignoreUserIds = await seenUserIds(
     contract.id,
     Object.keys(usersToReasonsInterestedInContract),
-    unseenNewerThanTime,
     [dataType, 'new_contract'],
     pg
   )
