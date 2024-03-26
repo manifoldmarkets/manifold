@@ -146,13 +146,6 @@ const notifyOtherUserInChannelIfInactive = async (
   const otherUserId = first(otherUserIds)
   if (!otherUserId) return
 
-  // We're only sending emails for users who have a lover profile
-  const hasLoverProfile = await pg.oneOrNone(
-    `select 1 from lovers where user_id = $1`,
-    [otherUserId.user_id]
-  )
-  if (!hasLoverProfile) return
-
   const startOfDay = dayjs()
     .tz('America/Los_Angeles')
     .startOf('day')
@@ -178,13 +171,24 @@ const notifyOtherUserInChannelIfInactive = async (
 
   const otherUser = await getUser(otherUserId.user_id)
   if (!otherUser) return
-  await createNewMessageNotification(creator, otherUser, channelId)
+  // We're only sending emails for users who have a lover profile
+  const hasLoverProfile = await pg.oneOrNone(
+    `select 1 from lovers where user_id = $1`,
+    [otherUserId.user_id]
+  )
+  await createNewMessageNotification(
+    creator,
+    otherUser,
+    channelId,
+    hasLoverProfile
+  )
 }
 
 const createNewMessageNotification = async (
   fromUser: User,
   toUser: User,
-  channelId: number
+  channelId: number,
+  otherUserHasLoverProfile: boolean
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -219,7 +223,7 @@ const createNewMessageNotification = async (
       sourceText
     )
   }
-  if (sendToEmail) {
+  if (sendToEmail && otherUserHasLoverProfile) {
     await sendNewMessageEmail(
       reason,
       privateUser,
