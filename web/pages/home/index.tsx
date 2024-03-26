@@ -1,7 +1,6 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'

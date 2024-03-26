@@ -1,4 +1,4 @@
-import { track } from '@amplitude/analytics-browser'
+import { track } from 'web/lib/service/analytics'
 import { PencilIcon } from '@heroicons/react/outline'
 import Router from 'next/router'
 

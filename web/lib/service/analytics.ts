@@ -1,6 +1,6 @@
 import * as Sprig from 'web/lib/service/sprig'
+// eslint-disable-next-line no-restricted-imports
 import * as amplitude from '@amplitude/analytics-browser'
-
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
