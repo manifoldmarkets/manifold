@@ -83,10 +83,6 @@ service cloud.firestore {
       allow read;
     }
 
-    match /{somePath=**}/liquidity/{liquidityId} {
-      allow read;
-    }
-
     match /{somePath=**}/answers/{answerId} {
       allow read;
     }

@@ -5,23 +5,23 @@ import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
+import { AddSubsidyTxn } from 'common/txn'
 
 export function FeedLiquidity(props: {
   className?: string
-  liquidity: LiquidityProvision
+  liquidity: AddSubsidyTxn
 }) {
   const { liquidity } = props
-  const { userId, createdTime } = liquidity
+  const { fromId, createdTime } = liquidity
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId) ?? undefined
+  const bettor = isBeforeJune2022 ? undefined : useUserById(fromId) ?? undefined
 
   const user = useUser()
-  const isSelf = user?.id === userId
+  const isSelf = user?.id === fromId
 
   return (
     <div className="to-primary-300 -ml-2 rounded-full bg-gradient-to-r from-pink-300 via-purple-300 p-2">
@@ -29,7 +29,7 @@ export function FeedLiquidity(props: {
         {isSelf ? (
           <Avatar avatarUrl={user.avatarUrl} username={user.username} />
         ) : bettor ? (
-          <UserHovercard userId={userId}>
+          <UserHovercard userId={fromId}>
             <Avatar avatarUrl={bettor.avatarUrl} username={bettor.username} />
           </UserHovercard>
         ) : (
@@ -48,7 +48,7 @@ export function FeedLiquidity(props: {
 }
 
 function LiquidityStatusText(props: {
-  liquidity: LiquidityProvision
+  liquidity: AddSubsidyTxn
   isSelf: boolean
   bettor?: User
 }) {

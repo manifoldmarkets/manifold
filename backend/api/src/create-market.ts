@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { getCpmmInitialLiquidity } from 'common/antes'
+import { getCpmmInitialLiquidityTxn } from 'common/antes'
 import {
   add_answers_mode,
   Contract,
@@ -577,18 +577,14 @@ async function generateAntes(
     outcomeType === 'MULTIPLE_CHOICE' ||
     outcomeType === 'NUMBER'
   ) {
-    const liquidityDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
-
-    const lp = getCpmmInitialLiquidity(
+    const lp = getCpmmInitialLiquidityTxn(
       providerId,
       contract as CPMMBinaryContract | CPMMMultiContract,
-      liquidityDoc.id,
-      ante,
-      contract.createdTime
+      ante
     )
 
-    await liquidityDoc.set(lp)
+    await firestore.runTransaction(async (transaction) => {
+      runTxn(transaction, lp)
+    })
   }
 }

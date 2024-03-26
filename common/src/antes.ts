@@ -5,10 +5,10 @@ import {
   CPMMMultiContract,
 } from './contract'
 import { User } from './user'
-import { LiquidityProvision } from './liquidity-provision'
 import { noFees } from './fees'
 import { DpmAnswer } from './answer'
 import { removeUndefinedProps } from './util/object'
+import { AddSubsidyTxn } from './txn'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
 export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' // @ManifoldMarkets' id
@@ -18,33 +18,31 @@ type NormalizedBet<T extends Bet = Bet> = Omit<
   'userAvatarUrl' | 'userName' | 'userUsername'
 >
 
-export function getCpmmInitialLiquidity(
+export function getCpmmInitialLiquidityTxn(
   providerId: string,
   contract: CPMMBinaryContract | CPMMMultiContract,
-  anteId: string,
   amount: number,
-  createdTime: number,
   answerId?: string
 ) {
   const { mechanism } = contract
 
-  const pool = mechanism === 'cpmm-1' ? { YES: 0, NO: 0 } : undefined
+  if (mechanism === 'cpmm-1') {
+    throw new Error(' DPM is deprecated by now')
+  }
 
-  const lp: LiquidityProvision = removeUndefinedProps({
-    id: anteId,
-    userId: providerId,
-    contractId: contract.id,
-    isAnte: true,
-    // Unfortunately, createdTime is only properly set for MC answers after this commit.
-    createdTime,
-    // answerId is only properly set for MC answers after this commit AND answers added after the question is created.
-    answerId,
-    amount: amount,
-    liquidity: amount,
-    pool,
-  })
-
-  return lp
+  return {
+    category: 'ADD_SUBSIDY',
+    fromType: 'USER',
+    fromId: providerId,
+    toType: 'CONTRACT',
+    toId: contract.id,
+    amount,
+    token: 'M$',
+    data: removeUndefinedProps({
+      isAnte: true,
+      answerId,
+    }),
+  } as const
 }
 
 export function getMultipleChoiceAntes(

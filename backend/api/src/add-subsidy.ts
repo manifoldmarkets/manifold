@@ -5,6 +5,7 @@ import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
 import { runTxn } from 'shared/txn/run-txn'
+import { type Txn } from 'common/txn'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -35,21 +36,14 @@ export const addLiquidity: APIHandler<
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
-    const newLiquidityProvisionDoc = firestore
-      .collection(`contracts/${contractId}/liquidity`)
-      .doc()
-
     const subsidyAmount = (1 - SUBSIDY_FEE) * amount
 
-    const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
-      getNewLiquidityProvision(
-        user.id,
-        subsidyAmount,
-        contract,
-        newLiquidityProvisionDoc.id
-      )
+    const { newTotalLiquidity, newSubsidyPool } = getNewLiquidityProvision(
+      subsidyAmount,
+      contract
+    )
 
-    await runTxn(transaction, {
+    const { status, message, txn } = await runTxn(transaction, {
       fromId: user.id,
       amount: amount,
       toId: contractId,
@@ -58,6 +52,10 @@ export const addLiquidity: APIHandler<
       token: 'M$',
       fromType: 'USER',
     })
+
+    if (status === 'error' || !txn) {
+      throw new APIError(500, message ?? 'Unknown error')
+    }
 
     transaction.update(contractDoc, {
       subsidyPool: newSubsidyPool,
@@ -70,8 +68,7 @@ export const addLiquidity: APIHandler<
       throw new APIError(500, 'Invalid user balance for ' + user.username)
     }
 
-    transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
-    return newLiquidityProvision
+    return txn as Txn
   })
 }
 

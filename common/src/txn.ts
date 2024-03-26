@@ -392,9 +392,14 @@ type LikePurchase = {
 
 type AddSubsidy = {
   category: 'ADD_SUBSIDY'
-  fromType: 'USER'
+  fromType: 'USER' | 'BANK'
   toType: 'CONTRACT'
   token: 'M$'
+  data: {
+    // TODO: these aren't necessarily up-to-date, we need to backfill fom LiquidtyProvision documents - which aren't up-to-date either
+    isAnte?: boolean
+    answerId?: string
+  }
 }
 
 export type AddSubsidyTxn = Txn & AddSubsidy

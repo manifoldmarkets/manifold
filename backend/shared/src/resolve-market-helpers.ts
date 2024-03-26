@@ -34,6 +34,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
+import { convertTxn } from 'common/supabase/txns'
 
 export type ResolutionParams = {
   outcome: string
@@ -232,13 +233,25 @@ export const getDataAndPayoutInfo = async (
   answerId: string | undefined
 ) => {
   const { id: contractId, creatorId, outcomeType } = unresolvedContract
-  const liquiditiesSnap = await firestore
-    .collection(`contracts/${contractId}/liquidity`)
-    .get()
+  const pg = createSupabaseDirectClient()
 
-  const liquidityDocs = liquiditiesSnap.docs.map(
-    (doc) => doc.data() as LiquidityProvision
+  const liquidityTxns = await pg.map(
+    `select * from txns
+    where category = 'ADD_SUBSIDY'
+    and to_id = $1`,
+    [contractId],
+    convertTxn
   )
+
+  const liquidityDocs: LiquidityProvision[] = liquidityTxns.map((txn) => ({
+    id: txn.id,
+    userId: txn.fromId,
+    contractId,
+    createdTime: txn.createdTime,
+    isAnte: txn.data?.isAnte,
+    answerId: txn.data?.answerId,
+    amount: txn.amount,
+  }))
 
   const liquidities =
     unresolvedContract.mechanism === 'cpmm-multi-1' &&
@@ -255,7 +268,6 @@ export const getDataAndPayoutInfo = async (
   ) {
     // Load bets from supabase as an optimization.
     // This type of multi choice generates a lot of extra bets that have shares = 0.
-    const pg = createSupabaseDirectClient()
     bets = await pg.map(
       `select * from contract_bets
       where contract_id = $1

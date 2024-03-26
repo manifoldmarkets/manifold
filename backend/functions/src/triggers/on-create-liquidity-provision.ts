@@ -1,45 +1,30 @@
-import * as functions from 'firebase-functions'
-import { getContract, getUser, log } from 'shared/utils'
+import { getContract, getUser } from 'shared/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
-import { LiquidityProvision } from 'common/liquidity-provision'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
-import { secrets } from 'common/secrets'
+import { AddSubsidyTxn } from 'common/txn'
 
-export const onCreateLiquidityProvision = functions
-  .runWith({ secrets })
-  .firestore.document('contracts/{contractId}/liquidity/{liquidityId}')
-  .onCreate(async (change, context) => {
-    const liquidity = change.data() as LiquidityProvision
-    const { eventId } = context
+// TODO: add this as continuation of add liquidity instances
 
-    // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
-    if (
-      liquidity.isAnte ||
-      liquidity.userId === HOUSE_LIQUIDITY_PROVIDER_ID ||
-      liquidity.userId === DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-    )
-      return
+export const onCreateLiquidityProvision = async (txn: AddSubsidyTxn) => {
+  // Ignore Manifold Markets liquidity for now - users see a notification for free market liquidity provision
+  if (txn.fromType === 'BANK' || txn.data.isAnte) {
+    return
+  }
 
-    log(`onCreateLiquidityProvision: ${JSON.stringify(liquidity)}`)
+  const contract = await getContract(txn.toId)
+  if (!contract)
+    throw new Error('Could not find contract corresponding with liquidity')
 
-    const contract = await getContract(liquidity.contractId)
-    if (!contract)
-      throw new Error('Could not find contract corresponding with liquidity')
-
-    const liquidityProvider = await getUser(liquidity.userId)
-    if (!liquidityProvider) throw new Error('Could not find liquidity provider')
-    await addUserToContractFollowers(contract.id, liquidityProvider.id)
-    await createFollowOrMarketSubsidizedNotification(
-      contract.id,
-      'liquidity',
-      'created',
-      liquidityProvider,
-      eventId,
-      liquidity.amount.toString(),
-      { contract }
-    )
-  })
+  const liquidityProvider = await getUser(txn.fromId)
+  if (!liquidityProvider) throw new Error('Could not find liquidity provider')
+  await addUserToContractFollowers(contract.id, liquidityProvider.id)
+  await createFollowOrMarketSubsidizedNotification(
+    contract.id,
+    'liquidity',
+    'created',
+    liquidityProvider,
+    txn.id,
+    txn.amount.toString(),
+    { contract }
+  )
+}
