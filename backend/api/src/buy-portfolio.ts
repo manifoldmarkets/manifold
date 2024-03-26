@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPortfolio } from 'common/portfolio'
 import { placeBetMain } from './place-bet'
-import { log } from 'shared/utils'
 
 const schema = z
   .object({

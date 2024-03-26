@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import { getLocalEnv } from 'shared/init-admin'
 import {

@@ -34,7 +34,7 @@ export const starLover: APIHandler<'star-lover'> = async (props, auth) => {
   }
 
   // Insert the new star
-  const { data, error } = await db
+  const { error } = await db
     .from('love_stars')
     .insert({
       creator_id: creatorId,

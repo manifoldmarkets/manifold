@@ -179,7 +179,7 @@ const requestContext: RequestHandler = (req, _res, next) => {
   })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (error, _req, res, next) => {
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
   if (error instanceof APIError) {
     log.info(error)
     if (!res.headersSent) {

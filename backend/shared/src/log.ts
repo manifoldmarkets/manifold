@@ -17,10 +17,10 @@ const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
 const LOG_CONTEXT_STORE = new AsyncLocalStorage<LogDetails>()
 
 // keys to put in front to categorize a log line in the console
-const DISPLAY_CATEGORY_KEYS = ['endpoint', 'job']
+const DISPLAY_CATEGORY_KEYS = ['endpoint', 'job'] as const
 
 // keys to ignore when printing out log details in the console
-const DISPLAY_EXCLUDED_KEYS = ['traceId']
+const DISPLAY_EXCLUDED_KEYS = ['traceId'] as const
 
 export type LogLevel = keyof typeof JS_TO_GCP_LEVELS
 export type LogDetails = Record<string, unknown>
@@ -81,11 +81,10 @@ function writeLog(
       }
       console.log(JSON.stringify(output, replacer))
     } else {
-      const { endpoint, ...otherData } = data
       const category = Object.values(pick(data, DISPLAY_CATEGORY_KEYS)).join()
       const categoryLabel = category ? dim(category) + ' ' : ''
       const details = Object.entries(
-        omit(otherData, [...DISPLAY_CATEGORY_KEYS, ...DISPLAY_EXCLUDED_KEYS])
+        omit(data, [...DISPLAY_CATEGORY_KEYS, ...DISPLAY_EXCLUDED_KEYS])
       ).map(([key, value]) => `\n  ${key}: ${JSON.stringify(value)}`)
       const result = `${dim(ts())} ${categoryLabel}${message}${details}`
       if (level === 'error') {
