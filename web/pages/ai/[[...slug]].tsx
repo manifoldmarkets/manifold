@@ -178,7 +178,7 @@ function MultiDashboard(props: MultiDashboardProps) {
 
         <Col className={'my-4 w-full justify-center'}>
           <Link
-            href={'/ian/when-agi'}
+            href={whenAgi.slug}
             className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
           >
             Countdown to AGI
