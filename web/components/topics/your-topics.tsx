@@ -29,7 +29,7 @@ export const YourTopicsSection = (props: {
 
   const unfollow = async (g: Group) => {
     if (user) {
-      track('leave group', { groupSlug: g.slug })
+      track('leave group', { slug: g.slug })
 
       await toast.promise(unfollowTopic(g.id, user?.id), {
         loading: `Unfollowing ${g.name}...`,
@@ -44,7 +44,7 @@ export const YourTopicsSection = (props: {
     }
   }
   const follow = async (g: Group) => {
-    track('join group', { groupSlug: g.slug })
+    track('join group', { slug: g.slug })
     await toast.promise(followTopic({ groupId: g.id }), {
       loading: `Following ${g.name}...`,
       success: () => {

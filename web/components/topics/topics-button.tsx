@@ -110,23 +110,26 @@ export function FollowOrUnfolowTopicButton(props: {
   }
 
   const unfollow = user
-    ? withTracking(() => {
+    ? () => {
+        track('leave group', { slug: group.slug })
         unfollowTopic(group.id, user.id)
           .then(() => setIsMember(false))
-          .catch(() => {
+          .catch((e) => {
+            console.error(e)
             toast.error('Failed to unfollow category')
           })
-      }, 'leave group')
+      }
     : firebaseLogin
   const follow = user
-    ? withTracking(() => {
+    ? () => {
+        track('join group', { slug: group.slug })
         followTopic({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch((e) => {
             console.error(e)
             toast.error('Failed to follow category')
           })
-      }, 'join group')
+      }
     : firebaseLogin
 
   if (isMember) {
