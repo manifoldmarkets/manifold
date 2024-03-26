@@ -34,6 +34,8 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { changeUserInfo } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 
+const FORCE_SHOW_WELCOME_MODAL = false
+
 export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
 
@@ -44,8 +46,12 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
 
-  const [showSignedOutUser, setShowSignedOutUser] = useState(false)
   const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
+
+  const shouldShowWelcomeModals =
+    FORCE_SHOW_WELCOME_MODAL ||
+    (!isTwitch && user && user.shouldShowWelcome) ||
+    (user && !user.shouldShowWelcome && groupSelectorOpen)
 
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
@@ -67,11 +73,11 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const isLastPage = page === availablePages.length - 1
 
   useEffect(() => {
-    if (user?.shouldShowWelcome) {
+    if (shouldShowWelcomeModals) {
       track('welcome screen: landed', { isTwitch })
       setOpen(true)
     }
-  }, [user?.shouldShowWelcome])
+  }, [shouldShowWelcomeModals])
 
   useEffect(() => {
     if (!authed || !user || !groupSelectorOpen) return
@@ -145,9 +151,9 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   }
 
   useEffect(() => {
-    if (user?.id && user?.shouldShowWelcome && authed)
+    if (user?.id && shouldShowWelcomeModals && authed)
       getTrendingAndUserCategories(user.id)
-  }, [user?.id, authed])
+  }, [user?.id, shouldShowWelcomeModals, authed])
 
   const close = () => {
     setOpen(false)
@@ -155,8 +161,6 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
     setGroupSelectorOpen(true)
     track('welcome screen: group selector')
-
-    if (showSignedOutUser) setShowSignedOutUser(false)
   }
   function increasePage() {
     if (!isLastPage) handleSetPage(page + 1)
@@ -168,11 +172,6 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       handleSetPage(page - 1)
     }
   }
-
-  const shouldShowWelcomeModals =
-    (!isTwitch && user && user.shouldShowWelcome) ||
-    (user && !user.shouldShowWelcome && groupSelectorOpen) ||
-    showSignedOutUser
 
   if (!shouldShowWelcomeModals) return <></>
 
@@ -306,8 +305,8 @@ function WhatIsManifoldPage() {
         )}
       </div>
       <div className="mb-4 text-lg">
-        Manifold is the world's largest prediction market platform. Bet on
-        politics, tech, sports, and more.
+        Bet with play money on politics, tech, sports, and more. Your bets
+        contribute to the wisdom of the crowd.
       </div>
     </>
   )
@@ -319,9 +318,10 @@ function PredictionMarketPage() {
       <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
+      <div className="mt-2 text-lg">Bet on the answer you think is right.</div>
       <div className="mt-2 text-lg">
-        Bet on the answer you think is right. Traders putting their money where
-        their mouth is produces accurate predictions.
+        Research shows wagering currency leads to more accurate predictions than
+        polls.
       </div>
       <Image
         src="/welcome/manifold-example.gif"
@@ -347,15 +347,17 @@ function ThankYouPage() {
       <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
         Start trading
       </div>
-      <div className="mb-4 ">
+      <div className="mb-4 text-lg">
         We've sent you{' '}
         <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> to
-        help you get started. Get up to {formatMoney(1000)} by browsing more
-        questions.
+        help you get started.
+        {/* Get up to {formatMoney(1000)} by browsing more
+        questions. */}
       </div>
-      <div className="">
-        Mana (Ṁ) is Manifold's play money and cannot be redeemed for cash, but
-        can be purchased at a rate of Ṁ100 : $1.
+      <div className="mb-4 text-lg">
+        Mana (Ṁ) is Manifold's play money. It cannot be redeemed for cash, but
+        can be purchased or donated to charity at:
+        <br /> $1 per Ṁ100.
       </div>
     </>
   )
