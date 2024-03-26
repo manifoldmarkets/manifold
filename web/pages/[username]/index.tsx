@@ -7,6 +7,7 @@ import {
   ViewListIcon,
   ChevronUpIcon,
   ChevronDownIcon,
+  TagIcon,
 } from '@heroicons/react/outline'
 import { LuCrown } from 'react-icons/lu'
 import { ChartBarIcon } from '@heroicons/react/solid'
@@ -85,6 +86,7 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
+import { YourTopicsSection } from 'web/components/topics/your-topics'
 
 export const getStaticProps = async (props: {
   params: {
@@ -457,6 +459,12 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
+              },
+              isCurrentUser && {
+                title: 'Topics',
+                prerender: false,
+                stackedTabIcon: <TagIcon className="h-5" />,
+                content: <YourTopicsSection className="w-full" user={user} />,
               },
               {
                 title: 'Balance log',

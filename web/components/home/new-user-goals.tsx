@@ -167,7 +167,7 @@ const ProgressDisplay = (props: {
         </Row>
         {children}
       </Col>
-      <Col className="sticky top-20 z-20 gap-3 rounded-b-md border border-t-0 border-indigo-300 bg-indigo-100 px-4 py-3 shadow-sm dark:border-indigo-700 dark:bg-indigo-900">
+      <Col className="sticky top-8 z-20 gap-3 rounded-b-md border border-t-0 border-indigo-300 bg-indigo-100 px-4 py-3 shadow-sm dark:border-indigo-700 dark:bg-indigo-900">
         <Row className="items-center justify-between gap-4">
           <div className="flex-shrink-0 text-lg">
             <span className="">

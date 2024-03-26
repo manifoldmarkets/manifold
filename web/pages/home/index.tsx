@@ -9,11 +9,7 @@ import Welcome from 'web/components/onboarding/welcome'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import {
-  usePrivateUser,
-  useShouldBlockDestiny,
-  useUser,
-} from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { FeedTimeline } from 'web/components/feed-timeline'
 import { api } from 'web/lib/firebase/api'
 import { Headline } from 'common/news'
@@ -25,22 +21,15 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
-import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import {
   PrivateUser,
   freeQuestionRemaining,
   DAYS_TO_USE_FREE_QUESTIONS,
 } from 'common/user'
-import { buildArray } from 'common/util/array'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
-import { ControlledTabs } from 'web/components/layout/tabs'
-import { useUserTrendingTopics } from 'web/components/search/query-topics'
-import { SupabaseSearch } from 'web/components/supabase-search'
-import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { User } from 'common/user'
-import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { NewUserGoals } from 'web/components/home/new-user-goals'
 
@@ -117,13 +106,8 @@ export function HomeContent(props: {
     welcomeTopicsEnabled
   )
 
-  const [activeIndex, setActiveIndex] = usePersistentInMemoryState(
-    0,
-    `tabs-home`
-  )
-
   const hasAgedOutOfNewUserGoals =
-    (user?.createdTime ?? 0) + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS < Date.now()
+    (user?.createdTime ?? 0) + DAY_MS * 1.5 < Date.now()
   const newUserGoalsVariant = useABTest('new user goals', [
     'enabled',
     'disabled',
@@ -158,33 +142,14 @@ export function HomeContent(props: {
           </Col>
         )}
 
-      <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between px-1">
-        <ControlledTabs
-          className="mb-1"
-          onClick={(_, i) => {
-            setActiveIndex(i)
-          }}
-          activeIndex={activeIndex}
-          tabs={buildArray(
-            {
-              title: 'Home',
-              content: null,
-            },
-            {
-              title: 'Browse',
-              content: null,
-            },
-            user && {
-              title: 'Topics',
-              content: null,
-            }
-          )}
-        />
-        <DailyStats className="sm:mr-1" user={user} />
-      </Row>
+      {hasAgedOutOfNewUserGoals && (
+        <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full items-center px-1">
+          <DailyStats className="sm:mr-1" user={user} />
+        </Row>
+      )}
 
       {privateUser && (
-        <Col className={clsx(activeIndex !== 0 && 'hidden', 'w-full sm:px-2')}>
+        <Col className={clsx('w-full sm:px-2')}>
           {user && newUserGoalsEnabled && (
             <>
               <NewUserGoals user={user} />
@@ -206,17 +171,6 @@ export function HomeContent(props: {
           />
         </Col>
       )}
-      {user && !user.shouldShowWelcome && (
-        <BrowseSection
-          className={clsx(activeIndex !== 1 && 'hidden')}
-          privateUser={privateUser}
-          user={user}
-        />
-      )}
-      {user && activeIndex === 2 && (
-        <YourTopicsSection className="w-full" user={user} />
-      )}
-
       <button
         type="button"
         className={clsx(
@@ -231,50 +185,6 @@ export function HomeContent(props: {
       >
         <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
       </button>
-    </Col>
-  )
-}
-
-const BrowseSection = (props: {
-  privateUser: PrivateUser | null | undefined
-  user: User | undefined | null
-  className?: string
-}) => {
-  const { privateUser, user, className } = props
-
-  const [topicSlug, setTopicSlug] = usePersistentInMemoryState(
-    'for-you',
-    'home-browse'
-  )
-  const shouldFilterDestiny = useShouldBlockDestiny(user?.id)
-  const userTrendingTopics = useUserTrendingTopics(user, 25)
-
-  return (
-    <Col className={clsx('w-full max-w-full', className)}>
-      <BrowseTopicPills
-        className={'relative w-full py-1 pl-1'}
-        topics={userTrendingTopics ?? []}
-        currentTopicSlug={topicSlug}
-        setTopicSlug={(slug) => setTopicSlug(slug === topicSlug ? '' : slug)}
-      />
-      <SupabaseSearch
-        persistPrefix="browse-home"
-        autoFocus={false}
-        additionalFilter={{
-          excludeContractIds: privateUser?.blockedContractIds,
-          excludeGroupSlugs: buildArray(
-            privateUser?.blockedGroupSlugs,
-            shouldFilterDestiny &&
-              DESTINY_GROUP_SLUG != topicSlug &&
-              DESTINY_GROUP_SLUG
-          ),
-          excludeUserIds: privateUser?.blockedUserIds,
-        }}
-        hideSearch
-        hideContractFilters
-        topicSlug={topicSlug}
-        contractsOnly
-      />
     </Col>
   )
 }
