@@ -1,7 +1,6 @@
 import { sumBy, uniqBy } from 'lodash'
 import clsx from 'clsx'
 import { GoGoal } from 'react-icons/go'
-import Link from 'next/link'
 
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { formatMoney } from 'common/util/format'
@@ -22,7 +21,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
 import { DAY_MS } from 'common/util/time'
-import { Button } from '../buttons/button'
 
 export const NewUserGoals = (props: { user: User }) => {
   const { user } = props
@@ -48,10 +46,10 @@ export const NewUserGoals = (props: { user: User }) => {
     return (
       <ProgressDisplay
         className="w-full"
-        label="Goal 1"
+        label="Goal 1: Visit questions"
         value={10 - remainingViewBonuses}
         goal={10}
-        description="questions visited"
+        description="visited"
       >
         <div className="text-ink-600 text-lg">
           Earn {formatMoney(100)} per question visited
@@ -69,7 +67,7 @@ export const NewUserGoals = (props: { user: User }) => {
     return (
       <ProgressDisplay
         className="w-full"
-        label="Goal 2"
+        label="Goal 2: Make bets"
         value={amountBet}
         goal={goalAmountBet}
         format={formatMoney}
@@ -89,7 +87,7 @@ export const NewUserGoals = (props: { user: User }) => {
     return (
       <ProgressDisplay
         className="w-full"
-        label="Goal 3"
+        label="Goal 3: Earn a profit"
         value={manaEarned}
         goal={manaEarnedGoal}
         format={formatMoney}
@@ -102,13 +100,7 @@ export const NewUserGoals = (props: { user: User }) => {
             />
           </>
         }
-      >
-        <Link href="/browse/for-you?s=newest" className="w-full">
-          <Button className="mt-2 w-full" size="xs">
-            Find profit in new markets
-          </Button>
-        </Link>
-      </ProgressDisplay>
+      />
     )
   }
 
@@ -122,7 +114,7 @@ export const NewUserGoals = (props: { user: User }) => {
     return (
       <ProgressDisplay
         className="w-full"
-        label="Goal 4"
+        label="Goal 4: Create questions"
         value={questionsCreated}
         goal={questionsCreatedGoal}
         description={<>questions created</>}
@@ -162,26 +154,30 @@ const ProgressDisplay = (props: {
     className,
   } = props
   return (
-    <Col
-      className={clsx(
-        'gap-3 rounded-md bg-indigo-100 px-4 py-3 dark:bg-indigo-900',
-        className
-      )}
-    >
-      <Row className="items-center gap-2 text-xl">
-        <GoGoal className="text-2xl text-indigo-800 dark:text-indigo-300" />
-        {label}
-      </Row>
-      <Row className="items-center justify-between gap-4">
-        <div className="flex-shrink-0 text-lg">
-          <span className="">
-            {format(value)} of {format(goal)}
-          </span>{' '}
-          {description}
-        </div>
-      </Row>
-      <ProgressBar className="mb-1" value={value / goal} max={1} />
-      {children}
-    </Col>
+    <>
+      <Col
+        className={clsx(
+          'gap-3 rounded-t-md border border-b-0 border-indigo-300 bg-indigo-100 px-4 py-3 pb-0 shadow-sm dark:border-indigo-700 dark:bg-indigo-900',
+          className
+        )}
+      >
+        <Row className="items-center gap-2 text-xl">
+          <GoGoal className="text-2xl text-indigo-800 dark:text-indigo-300" />
+          {label}
+        </Row>
+        {children}
+      </Col>
+      <Col className="sticky top-20 z-20 gap-3 rounded-b-md border border-t-0 border-indigo-300 bg-indigo-100 px-4 py-3 shadow-sm dark:border-indigo-700 dark:bg-indigo-900">
+        <Row className="items-center justify-between gap-4">
+          <div className="flex-shrink-0 text-lg">
+            <span className="">
+              {format(value)} of {format(goal)}
+            </span>{' '}
+            {description}
+          </div>
+        </Row>
+        <ProgressBar className="mb-1" value={value / goal} max={1} />
+      </Col>
+    </>
   )
 }

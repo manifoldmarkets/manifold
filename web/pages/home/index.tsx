@@ -158,13 +158,6 @@ export function HomeContent(props: {
           </Col>
         )}
 
-      {user && newUserGoalsEnabled && (
-        <>
-          <NewUserGoals user={user} />
-          <div className="mt-4" />
-        </>
-      )}
-
       <Row className="bg-canvas-50 sticky top-8 z-50 mb-2 w-full justify-between px-1">
         <ControlledTabs
           className="mb-1"
@@ -192,6 +185,13 @@ export function HomeContent(props: {
 
       {privateUser && (
         <Col className={clsx(activeIndex !== 0 && 'hidden', 'w-full sm:px-2')}>
+          {user && newUserGoalsEnabled && (
+            <>
+              <NewUserGoals user={user} />
+              <div className="mt-4" />
+            </>
+          )}
+
           {welcomeTopicsEnabled && memberTopicsWithContracts && (
             <WelcomeTopicSections
               memberTopicsWithContracts={memberTopicsWithContracts}
