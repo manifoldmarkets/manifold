@@ -19,11 +19,9 @@ function getFilteredQuery(filteredParam: string, filterId?: string) {
 export function useRealtimeBets(options?: BetFilter) {
   let filteredParam
   let filteredQuery: Filter<'contract_bets'> | undefined
-  if (options) {
-    if (options.contractId) {
-      filteredParam = 'contractId'
-      filteredQuery = getFilteredQuery(filteredParam, options.contractId)
-    }
+  if (options?.contractId) {
+    filteredParam = 'contractId'
+    filteredQuery = getFilteredQuery(filteredParam, options.contractId)
   }
   const { rows, dispatch } = useSubscription(
     'contract_bets',

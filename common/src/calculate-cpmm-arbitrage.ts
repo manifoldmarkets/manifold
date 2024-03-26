@@ -212,10 +212,13 @@ function calculateCpmmMultiArbitrageBetsYes(
     true
   )
 
+  // We throw out redemption bets with matching yes bets bc we don't need them.
   const otherBetResults = combineBetsOnSameAnswers(
     noBetResults,
     'NO',
-    updatedAnswers
+    updatedAnswers.filter(
+      (r) => !initialAnswersToBuy.map((a) => a.id).includes(r.id)
+    )
   )
 
   return { newBetResults, otherBetResults, updatedAnswers }
