@@ -22,10 +22,8 @@ import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Group } from 'common/group'
 import {
-  ALL_TOPICS,
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
-  removeEmojis,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { orderBy, uniqBy } from 'lodash'
