@@ -77,7 +77,7 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     slug: TOP_SLUG,
     title: capitalize(TOP_SLUG),
   })
-  const whenAgi = (await getContract('IDlvsMfiACctiYH89xY8'))!
+  const whenAgi = (await getContract('FwJtZuhBMLl9wNISqX8h'))!
 
   return {
     props: {
