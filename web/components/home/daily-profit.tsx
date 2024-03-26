@@ -66,7 +66,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
         }, DAILY_PROFIT_CLICK_EVENT)}
       >
         <Row>
-          <Col className="items-start">
+          <Col className="items-center">
             <div>{formatMoney(investment)}</div>
             <div className="text-ink-600 text-xs ">Net worth</div>
           </Col>

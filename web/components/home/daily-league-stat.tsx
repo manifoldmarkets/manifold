@@ -22,7 +22,7 @@ export const DailyLeagueStat = (props: { user: User }) => {
       href="/leagues"
       onClick={() => track('click daily leagues button')}
     >
-      <Col className={clsx(dailyStatsClass, 'relative')}>
+      <Col className={clsx(dailyStatsClass, 'relative items-center')}>
         <div className="whitespace-nowrap">
           {name === 'Bronze'
             ? '🥉'

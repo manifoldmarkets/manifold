@@ -6,18 +6,13 @@ import { DailyLeagueStat } from './daily-league-stat'
 import { DailyLoan } from 'web/components/home/daily-loan'
 import { DailyProfit } from './daily-profit'
 
-export const dailyStatsClass = 'bg-canvas-0 rounded-lg px-2 py-1 shadow'
+export const dailyStatsClass =
+  'bg-canvas-0 rounded-lg px-3 py-1 shadow min-w-[60px]'
 
-export function DailyStats(props: {
-  user: User | null | undefined
-  className?: string
-}) {
+export function DailyStats(props: { user: User; className?: string }) {
   const { user, className } = props
-  if (!user) return <></>
   return (
-    <Row
-      className={clsx('z-30 items-center justify-end gap-1 pb-1', className)}
-    >
+    <Row className={clsx('items-center gap-3', className)}>
       <QuestsOrStreak user={user} />
       <DailyLeagueStat user={user} />
       <DailyLoan user={user} showChest={true} />

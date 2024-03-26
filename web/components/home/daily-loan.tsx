@@ -26,8 +26,9 @@ export function DailyLoan(props: {
   user: User
   refreshPortfolio?: () => void
   showChest?: boolean
+  className?: string
 }) {
-  const { user, showChest, refreshPortfolio } = props
+  const { user, showChest, refreshPortfolio, className } = props
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [loaning, setLoaning] = useState(false)
@@ -83,6 +84,8 @@ export function DailyLoan(props: {
     return (
       <Col
         className={clsx(
+          className,
+          'items-center',
           dailyStatsClass,
           receivedLoanToday || notEligibleForLoan
             ? ''
@@ -126,6 +129,7 @@ export function DailyLoan(props: {
   }
   return (
     <Button
+      className={className}
       color={'gray-outline'}
       size={'2xs'}
       loading={loaning}

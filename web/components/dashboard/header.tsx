@@ -19,7 +19,7 @@ export function HeadlineTabs(props: {
   const user = useUser()
 
   return (
-    <div className="bg-canvas-50 sticky top-0 z-50 mb-3 w-full">
+    <div className="bg-canvas-50 sticky top-0 z-50 w-full">
       <Carousel labelsParentClassName="gap-px">
         {headlines.map(({ id, slug, title }) => (
           <Tab
