@@ -1,12 +1,11 @@
 import * as admin from 'firebase-admin'
-import { z } from 'zod'
 
 import { PrivateUser, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 
 import { getIp, track } from 'shared/analytics'
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { removeUndefinedProps } from 'common/util/object'
@@ -38,22 +37,15 @@ import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 import { onboardLover } from 'shared/love/onboard-lover'
+import { onCreateUser } from 'api/helpers/on-create-user'
 
-const bodySchema = z
-  .object({
-    deviceToken: z.string().optional(),
-    adminToken: z.string().optional(),
-    visitedContractIds: z.array(z.string()).optional(),
-  })
-  .strict()
-
-export const createuser = authEndpoint(async (req, auth) => {
-  const {
-    deviceToken: preDeviceToken,
-    adminToken,
-    visitedContractIds,
-  } = validate(bodySchema, req.body)
-
+export const createuser: APIHandler<'createuser'> = async (
+  props,
+  auth,
+  req
+) => {
+  const { deviceToken: preDeviceToken, adminToken, visitedContractIds } = props
+  const firestore = admin.firestore()
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
   const isTestUser = firebaseUser.providerData[0].providerId === 'password'
@@ -77,6 +69,15 @@ export const createuser = authEndpoint(async (req, auth) => {
     (host?.includes('localhost')
       ? process.env.IS_MANIFOLD_POLITICS === 'true'
       : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
+
+  const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
+    const snap = await firestore
+      .collection('private-users')
+      .where('initialDeviceToken', '==', deviceToken)
+      .get()
+
+    return !snap.empty
+  }
 
   const ip = getIp(req)
   const deviceToken = isTestUser ? randomString(20) : preDeviceToken
@@ -197,9 +198,18 @@ export const createuser = authEndpoint(async (req, auth) => {
       ip
     ).catch((e) => log('error fb tracking:', e))
   else log('no FB_ACCESS_TOKEN')
+  const continuation = async () => {
+    await onCreateUser(user, privateUser)
+  }
 
-  return { user, privateUser }
-})
+  return {
+    result: {
+      user,
+      privateUser,
+    },
+    continue: continuation,
+  }
+}
 
 async function addContractsToSeenMarketsTable(
   userId: string,
@@ -255,26 +265,6 @@ async function upsertNewUserEmbeddings(
             `,
     [userId, embed]
   )
-}
-
-const firestore = admin.firestore()
-
-const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
-  const snap = await firestore
-    .collection('private-users')
-    .where('initialDeviceToken', '==', deviceToken)
-    .get()
-
-  return !snap.empty
-}
-
-export const numberUsersWithIp = async (ipAddress: string) => {
-  const snap = await firestore
-    .collection('private-users')
-    .where('initialIpAddress', '==', ipAddress)
-    .get()
-
-  return snap.docs.length
 }
 
 function getStorageBucketId() {

@@ -35,6 +35,7 @@ import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage } from 'common/chat-message'
+import { PrivateUser, User } from 'common/user'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -121,6 +122,19 @@ export const API = (_apiTypeCheck = {
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi
         answerId: z.string().optional(),
+      })
+      .strict(),
+  },
+  createuser: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { user: User; privateUser: PrivateUser },
+    props: z
+      .object({
+        deviceToken: z.string().optional(),
+        adminToken: z.string().optional(),
+        visitedContractIds: z.array(z.string()).optional(),
       })
       .strict(),
   },

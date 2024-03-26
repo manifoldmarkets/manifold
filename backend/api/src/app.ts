@@ -8,7 +8,6 @@ import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -157,6 +156,7 @@ import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
 import { recordContractInteraction } from 'api/record-contract-interaction'
 import { getUserPortfolio } from './get-user-portfolio'
+import { createuser } from 'api/create-user'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -298,6 +298,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'unique-bet-group-count': getUniqueBetGroupCount,
   'record-contract-interaction': recordContractInteraction,
   'get-user-portfolio': getUserPortfolio,
+  createuser: createuser,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -329,7 +330,6 @@ app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
-app.post('/createuser', ...apiRoute(createuser))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))

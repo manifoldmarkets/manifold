@@ -4,7 +4,6 @@ admin.initializeApp()
 
 // triggers
 export * from './triggers/log-writes' // Running the emulator? Comment this line out
-export * from './triggers/on-create-user'
 export * from './triggers/on-create-liquidity-provision'
 export * from './triggers/on-update-private-user'
 

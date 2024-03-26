@@ -257,7 +257,7 @@ export const VERIFIED_USERNAMES = [
   'BillyMcRascal',
   'kyootbot',
   'MaximLott',
-  'liron'
+  'liron',
 ]
 
 export const BLESSED_BANNED_USER_IDS = [
@@ -296,12 +296,31 @@ export const PARTNER_USER_IDS: string[] = [
   'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
   'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
   '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
-  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', //Stralor
-  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //Bayesian
-  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', //AndrewG
-  'EJQOCF3MfLTFYbhiKncrNefQDBz1', //chrisjbillington
-  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', //KevinBurke
-  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', //mattyb
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor aka Pat Scott
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
+  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
+  'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
+  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+]
+
+export const NEW_USER_HERLPER_IDS = [
+  'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
+  'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
+  'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
+  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+  'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
+  'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
+  'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
+  'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
+  'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
+  'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
+  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

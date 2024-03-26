@@ -4,7 +4,6 @@ import { Request, Response, NextFunction } from 'express'
 
 import { PrivateUser } from 'common/user'
 import { APIError } from 'common//api/utils'
-import { log } from 'shared/log'
 export { APIError } from 'common//api/utils'
 import {
   API,
@@ -152,7 +151,8 @@ export type APIHandler<N extends APIPath> = (
   props: ValidatedAPIParams<N>,
   auth: APISchema<N> extends { authed: true }
     ? AuthedUser
-    : AuthedUser | undefined
+    : AuthedUser | undefined,
+  req: Request
 ) => Promise<APIResponseOptionalContinue<N>>
 
 export const typedEndpoint = <N extends APIPath>(
@@ -177,7 +177,8 @@ export const typedEndpoint = <N extends APIPath>(
     try {
       const resultOptionalContinue = await handler(
         validate(propSchema, props),
-        authUser as AuthedUser
+        authUser as AuthedUser,
+        req
       )
 
       const hasContinue =

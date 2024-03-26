@@ -150,7 +150,7 @@ const getDesktopNav = (
         href: '/tv',
         icon: PiTelevisionSimple,
       },
-      !isNewUser && {
+      {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
@@ -187,7 +187,7 @@ const getMobileNav = (
     },
     // { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     !isNewUser && { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
-    !isNewUser && {
+    {
       name: 'Messages',
       href: '/messages',
       icon: PrivateMessagesIcon,

@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { convertSQLtoTS, Row, tsToMillis } from 'common/supabase/utils'
-export type ChatVisibility = 'private' | 'system_status'
+export type ChatVisibility = 'private' | 'system_status' | 'introduction'
 
 export type ChatMessage = {
   id: string
