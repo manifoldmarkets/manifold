@@ -205,4 +205,9 @@ export const CANDIDATE_DATA: Record<string, CandidateDataType> = {
     photo: '/political-candidates/abbott.png',
     shortName: 'Abbott',
   },
+  'Marco Rubio': {
+    party: 'Republican',
+    photo: '/political-candidates/rubio.png',
+    shortName: 'Rubio',
+  },
 }
