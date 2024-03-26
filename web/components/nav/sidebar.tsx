@@ -34,6 +34,7 @@ import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.share
 import { useState } from 'react'
 import { GiCapitol } from 'react-icons/gi'
 import { PiTelevisionSimple } from 'react-icons/pi'
+import { DAY_MS } from 'common/util/time'
 
 export default function Sidebar(props: {
   className?: string
@@ -55,11 +56,15 @@ export default function Sidebar(props: {
     setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
 
+  const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
+
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true))
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+        isNewUser,
+      })
+    : getDesktopNav(!!user, () => setIsModalOpen(true), { isNewUser })
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -116,7 +121,12 @@ export default function Sidebar(props: {
   )
 }
 
-const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
+const getDesktopNav = (
+  loggedIn: boolean,
+  openDownloadApp: () => void,
+  options: { isNewUser: boolean }
+) => {
+  const { isNewUser } = options
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
@@ -126,21 +136,21 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         icon: SearchIcon,
       },
       {
-        name: 'US Politics',
-        href: '/politics',
-        icon: GiCapitol,
-      },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimple,
-      },
-      {
         name: 'Notifications',
         href: `/notifications`,
         icon: NotificationsIcon,
       },
       {
+        name: 'US Politics',
+        href: '/politics',
+        icon: GiCapitol,
+      },
+      !isNewUser && {
+        name: 'TV',
+        href: '/tv',
+        icon: PiTelevisionSimple,
+      },
+      !isNewUser && {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
@@ -164,7 +174,11 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (
+  toggleModal: () => void,
+  options: { isNewUser: boolean }
+) => {
+  const { isNewUser } = options
   return buildArray<NavItem>(
     {
       name: 'US Politics',
@@ -172,10 +186,22 @@ const getMobileNav = (toggleModal: () => void) => {
       icon: GiCapitol,
     },
     // { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
-    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
-    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
-    { name: 'Site activity', href: '/live', icon: LightningBoltIcon },
+    !isNewUser && { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
+    !isNewUser && {
+      name: 'Messages',
+      href: '/messages',
+      icon: PrivateMessagesIcon,
+    },
+    !isNewUser && {
+      name: 'Dashboards',
+      href: '/dashboard',
+      icon: TemplateIcon,
+    },
+    !isNewUser && {
+      name: 'Site activity',
+      href: '/live',
+      icon: LightningBoltIcon,
+    },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
