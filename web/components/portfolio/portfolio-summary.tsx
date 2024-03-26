@@ -14,6 +14,7 @@ import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { DAY_MS } from 'common/util/time'
 
 export const PortfolioSummary = (props: {
   user: User
@@ -32,6 +33,7 @@ export const PortfolioSummary = (props: {
   const isCurrentUser = currentUser?.id === user.id
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
+  const isNewUser = user.createdTime > Date.now() - 1.5 * DAY_MS
 
   const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
@@ -64,19 +66,20 @@ export const PortfolioSummary = (props: {
         />
       </Row>
 
-      <PortfolioValueSection
-        userId={user.id}
-        defaultTimePeriod={
-          isCreatedInLastWeek
-            ? 'allTime'
-            : currentUser?.id === user.id
-            ? 'weekly'
-            : 'monthly'
-        }
-        lastUpdatedTime={user.metricsLastUpdated}
-        isCurrentUser={isCurrentUser}
-        hideAddFundsButton
-      />
+      {!isNewUser && (
+        <PortfolioValueSection
+          userId={user.id}
+          defaultTimePeriod={
+            isCreatedInLastWeek
+              ? 'allTime'
+              : currentUser?.id === user.id
+              ? 'weekly'
+              : 'monthly'
+          }
+          lastUpdatedTime={user.metricsLastUpdated}
+          hideAddFundsButton
+        />
+      )}
 
       {isCurrentUser && (
         <Col className="mb-6 mt-2 gap-2">

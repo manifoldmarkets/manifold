@@ -424,7 +424,6 @@ function UserProfile(props: {
                             currentUser?.id === user.id ? 'weekly' : 'monthly'
                           }
                           lastUpdatedTime={user.metricsLastUpdated}
-                          isCurrentUser={isCurrentUser}
                           hideAddFundsButton
                         />
                         <Spacer h={4} />

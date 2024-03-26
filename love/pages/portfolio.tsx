@@ -16,7 +16,6 @@ export default function PortfolioPage() {
             userId={user.id}
             defaultTimePeriod={'weekly'}
             lastUpdatedTime={user.metricsLastUpdated}
-            isCurrentUser={true}
             
           />
           <Spacer h={4} />
