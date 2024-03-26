@@ -63,11 +63,18 @@ export const YourTopicsSection = (props: {
     (g) => !followedGroupIds.has(g.id)
   )
 
+  if (data === undefined) {
+    return (
+      <Col className={clsx('mt-3 justify-between px-3', className)}>
+        <LoadingIndicator />
+      </Col>
+    )
+  }
+
   return (
-    <Col className={clsx('mt-1 justify-between gap-4 px-3', className)}>
-      <div className="text-ink-800 text-xl">Your followed topics</div>
+    <Col className={clsx('mt-3 justify-between gap-4 px-3', className)}>
+      <div className="text-ink-800 text-2xl">Your followed topics</div>
       <div className="grid w-full grid-cols-2 gap-x-2 sm:gap-x-4">
-        {data === undefined && <LoadingIndicator />}
         {followedGroups.map((g) => {
           return (
             <Row
@@ -93,7 +100,7 @@ export const YourTopicsSection = (props: {
         })}
       </div>
 
-      <div className="text-ink-800 mt-4 text-xl">Trending topics</div>
+      <div className="text-ink-800 mt-4 text-2xl">Trending topics</div>
       <div className="grid w-full grid-cols-2 gap-x-2 sm:gap-x-4">
         {trendingTopics === undefined && <LoadingIndicator />}
         {nonFollowedTopics.map((g) => {
