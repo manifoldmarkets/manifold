@@ -145,8 +145,8 @@ const getDesktopNav = (loggedIn: boolean, openDownloadApp: () => void) => {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
-      },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
+      }
+      // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
@@ -172,11 +172,11 @@ const getMobileNav = (toggleModal: () => void) => {
       href: '/politics',
       icon: GiCapitol,
     },
-    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    // { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
     { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
-    { name: 'Live', href: '/live', icon: LightningBoltIcon },
+    { name: 'Site activity', href: '/live', icon: LightningBoltIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
