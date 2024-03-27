@@ -1,14 +1,13 @@
 import { getUser, isProd } from 'shared/utils'
-import { PrivateUser, User } from 'common/user'
+import { type PrivateUser, type User } from 'common/user'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPrivateUserMessageChannelMain } from 'api/create-private-user-message-channel'
-import { JSONContent } from '@tiptap/core'
-import { ChatVisibility } from 'common/chat-message'
+import { type JSONContent } from '@tiptap/core'
 import { createPrivateUserMessageMain } from 'api/create-private-user-message'
 import { addNewUserToLeague } from 'shared/generate-leagues'
 import { createReferralsProgramNotification } from 'shared/create-notification'
 import { sendWelcomeEmail } from 'shared/emails'
-import { NEW_USER_HERLPER_IDS } from 'common/envs/constants'
+import { NEW_USER_HERLPER_IDS, isAdminId } from 'common/envs/constants'
 
 export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
   const pg = createSupabaseDirectClient()
@@ -24,15 +23,37 @@ const createIntroHelpMessage = async (newUser: User) => {
     isProd() ? NEW_USER_HERLPER_IDS[random] : '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
   ))!
 
+  const isFounder = ['Austin', 'SG', 'JamesGrugett'].includes(creator.username)
+  const isMFer = isAdminId(creator.id)
+
   const { channelId } = await createPrivateUserMessageChannelMain(
     creator.id,
     [creator.id, newUser.id],
     pg
   )
-  const messages = [[introSystemMessage(newUser.name), 'introduction']] as [
-    JSONContent,
-    ChatVisibility
-  ][]
+
+  const introSystemMessage = {
+    type: 'doc',
+    content: [
+      {
+        type: 'paragraph',
+        content: [
+          {
+            text: `Hi ${newUser.name}, I ${
+              isFounder
+                ? 'created Manifold with my friends.'
+                : isMFer
+                ? 'work here at Manifold.'
+                : 'am a long-time user of Manifold that likes to help out.'
+            } If you have any questions or run into any issues, feel free to ask me.`,
+            type: 'text',
+          },
+        ],
+      },
+    ],
+  } as JSONContent
+
+  const messages = [[introSystemMessage, 'introduction']] as const
 
   await Promise.all(
     messages.map(async ([message, visibility]) => {
@@ -46,18 +67,3 @@ const createIntroHelpMessage = async (newUser: User) => {
     })
   )
 }
-const introSystemMessage = (userName: string) =>
-  ({
-    type: 'doc',
-    content: [
-      {
-        type: 'paragraph',
-        content: [
-          {
-            text: `Hi ${userName}, I help out as moderator here. Let me know if you have any questions!`,
-            type: 'text',
-          },
-        ],
-      },
-    ],
-  } as JSONContent)
