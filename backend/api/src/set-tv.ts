@@ -5,7 +5,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const schema = z.object({
   id: z.string().optional(),
@@ -25,7 +25,8 @@ export const settv = authEndpoint(async (req, auth) => {
 
   const { id, slug, streamId, source, title, startTime, endTime } = tvSettings
 
-  const isFeatured = isAdminId(auth.uid) && tvSettings.isFeatured
+  const isFeatured =
+    (isModId(auth.uid) || isAdminId(auth.uid)) && tvSettings.isFeatured
 
   const db = createSupabaseClient()
   const contractId = await getContractIdFromSlug(db, slug)
@@ -65,7 +66,7 @@ export const deletetv = authEndpoint(async (req, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  if (isAdminId(userId)) {
+  if (isAdminId(userId) || isModId(auth.uid)) {
     await pg.none('delete from tv_schedule where id = $1', [id])
   } else {
     await pg.none('delete from tv_schedule where id = $1 and creator_id = $2', [

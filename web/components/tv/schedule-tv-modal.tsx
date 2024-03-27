@@ -10,7 +10,7 @@ import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
 import { deleteTV, setTV } from 'web/lib/firebase/api'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { ScheduleItem } from './tv-schedule'
@@ -115,8 +115,11 @@ export function ScheduleTVModal(props: {
   }
 
   const isAdmin = useAdmin()
+  const isMod = useTrusted()
   const user = useUser()
-  const isCreatorOrAdmin = stream?.creator_id === user?.id || isAdmin
+
+  const allowFeaturing = isAdmin || isMod
+  const allowDeletion = stream?.creator_id === user?.id || isAdmin || isMod
 
   return (
     <Modal
@@ -185,7 +188,7 @@ export function ScheduleTVModal(props: {
           />
         </Row>
 
-        {isAdmin && (
+        {allowFeaturing && (
           <Row className="items-center justify-between gap-2">
             <div>Featured</div>
             <ShortToggle on={isFeatured} setOn={(on) => setIsFeatured(on)} />
@@ -219,7 +222,7 @@ export function ScheduleTVModal(props: {
             )}
           </Button>
 
-          {stream && isCreatorOrAdmin && (
+          {stream && allowDeletion && (
             <Button
               size="xs"
               color="red-outline"
