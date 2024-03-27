@@ -48,6 +48,7 @@ import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useUser } from 'web/hooks/use-user'
 import { getVersusColors } from '../charts/contract/choice'
+import { useAudio } from 'web/hooks/use-audio'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -86,6 +87,8 @@ export function BuyPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
+  const play = useAudio('bills.mp3', { volume: 0.5 })
+
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
 
   const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
@@ -98,11 +101,13 @@ export function BuyPanel(props: {
   }, [initialOutcome])
 
   function onOutcomeChoice(choice: 'YES' | 'NO') {
+    play()
     if (outcome === choice && !initialOutcome) {
       setOutcome(undefined)
       setIsPanelBodyVisible(false)
     } else {
       track('bet intent', { location, option: outcome })
+
       setOutcome(choice)
       setIsPanelBodyVisible(true)
     }
@@ -232,7 +237,12 @@ export const BuyPanelBody = (props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
+  const playClick = useAudio('coinClick.mp3', {
+    volume: 0.25,
+  })
+
   const handleBetTypeChange = (type: 'Market' | 'Limit') => {
+    playClick()
     setBetType(type)
   }
 
@@ -257,6 +267,9 @@ export const BuyPanelBody = (props: {
     setBetAmount(newAmount)
   }
 
+  const playRegisterHi = useAudio('register.mp3', { volume: 0.5 })
+  const playRegisterLow = useAudio('registerLow.mp3', { volume: 0.5 })
+
   async function submitBet() {
     if (!user || !betAmount) return
 
@@ -277,6 +290,7 @@ export const BuyPanelBody = (props: {
         console.log('placed bet. Result:', r)
         setIsSubmitting(false)
         setBetAmount(undefined)
+        outcome === 'NO' ? playRegisterLow() : playRegisterHi()
         if (onBuySuccess) onBuySuccess()
         else {
           toast('Trade submitted!', {
