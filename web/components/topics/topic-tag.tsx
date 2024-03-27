@@ -14,6 +14,7 @@ export function TopicTag(props: {
     | 'categories list'
     | 'create page'
     | 'questions page'
+    | 'dashboard page'
   isPrivate?: boolean
   className?: string
   children?: React.ReactNode // end element - usually for a remove button

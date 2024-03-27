@@ -55,10 +55,6 @@ export function DashboardSetTopics(props: {
         }
       />
 
-      <div className="mb-3 mt-2 text-center">
-        Activity in these topics will show in a feed below your dashboard
-      </div>
-
       <Row className="justify-end gap-1">
         <Button color="gray" onClick={onClose}>
           Cancel

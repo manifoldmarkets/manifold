@@ -251,7 +251,7 @@ export function DashboardPage(props: {
           topics={dashboard.topics}
           setTopics={updateTopics}
           isEditing={editMode}
-          filterOutActivityFeed={embeddedInParent}
+          hideTopicLinks={embeddedInParent}
         />
       </Col>
     </>
