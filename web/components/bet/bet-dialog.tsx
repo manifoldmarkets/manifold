@@ -9,7 +9,7 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { BinaryOutcomes, BuyPanel } from './bet-panel'
+import { BuyPanel } from './bet-panel'
 import { Subtitle } from '../widgets/subtitle'
 import { getDefaultSort, MultiSort } from 'common/answer'
 import Link from 'next/link'
@@ -23,12 +23,11 @@ import { MultiNumericResolutionOrExpectation } from 'web/components/contract/con
 
 export function BetDialog(props: {
   contract: CPMMBinaryContract
-  initialOutcome: BinaryOutcomes
   open: boolean
   setOpen: (open: boolean) => void
   trackingLocation: string
 }) {
-  const { contract, initialOutcome, open, setOpen, trackingLocation } = props
+  const { contract, open, setOpen, trackingLocation } = props
   const { question } = contract
 
   return (
@@ -44,7 +43,6 @@ export function BetDialog(props: {
         <Subtitle className="!mb-4 !mt-0 !text-xl">{question}</Subtitle>
         <BuyPanel
           contract={contract}
-          initialOutcome={initialOutcome ?? 'YES'}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}
           inModal={true}

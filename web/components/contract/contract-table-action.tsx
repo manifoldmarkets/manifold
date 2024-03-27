@@ -114,7 +114,6 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         {open && (
           <BetDialog
             contract={contract as CPMMBinaryContract}
-            initialOutcome={undefined}
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"
