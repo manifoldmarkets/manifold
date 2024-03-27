@@ -49,6 +49,7 @@ export async function getElectionsPageProps() {
     'who-will-win-the-2024-democratic-pr-47576e90fa38',
     'who-will-win-the-new-hampshire-repu',
     'who-will-be-the-republican-nominee-8a36dedc6445',
+    '2024-house-races-which-congressiona',
     // 'who-will-be-the-democratic-nominee-9d4a78f63ce1',
     // 'who-would-win-the-us-presidential-e-e43c62c31980',
     // 'who-would-win-the-us-presidential-e-2f4e0b318013',
@@ -64,6 +65,7 @@ export async function getElectionsPageProps() {
     democratCandidateContract,
     newHampshireContract,
     republicanVPContract,
+    houseContract,
     // democraticVPContract,
     // democraticElectability,
     // republicanElectability,
@@ -111,6 +113,7 @@ export async function getElectionsPageProps() {
     headlines,
     trendingDashboard,
     partyGraphData: { partyPoints, afterTime },
+    houseContract,
   } as ElectionsPageProps
 }
 

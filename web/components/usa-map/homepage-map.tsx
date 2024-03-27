@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, MultiContract } from 'common/contract'
 import { Congress } from 'web/public/custom-components/congress'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
@@ -32,6 +32,7 @@ import {
   MapContractsDictionary,
   swingStates,
 } from 'web/public/data/elections-data'
+import { HouseTable } from './house-table'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
@@ -39,11 +40,13 @@ export function HomepageMap(props: {
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
+  houseContract: MultiContract
 }) {
   const {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
+    houseContract,
   } = props
 
   const presidencyContractsDictionary = Object.keys(
@@ -75,7 +78,9 @@ export function HomepageMap(props: {
     return acc
   }, {} as MapContractsDictionary)
 
-  const [mode, setMode] = useState<MapMode>('presidency')
+  const liveHouseContract = useLiveContract(houseContract)
+
+  const [mode, setMode] = useState<MapMode>('house')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
     undefined
@@ -180,6 +185,14 @@ export function HomepageMap(props: {
           ) : (
             <EmptyStateContract />
           )}
+        </>
+      ) : mode === 'house' ? (
+        <>
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
+            Which party will win the House?
+          </div>
+          <HouseTable liveHouseContract={liveHouseContract as MultiContract} />
+          <Spacer h={4} />
         </>
       ) : (
         <>
