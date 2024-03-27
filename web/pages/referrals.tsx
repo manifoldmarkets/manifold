@@ -36,6 +36,7 @@ export default function ReferralsPage() {
             src="/logo-flapping-with-money.gif"
             width={200}
             height={200}
+            alt=""
           />
 
           <div className={'mb-4'}>

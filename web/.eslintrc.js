@@ -7,6 +7,7 @@ module.exports = {
   },
   plugins: ['lodash', 'unused-imports'],
   extends: [
+    'next/core-web-vitals',
     'plugin:@typescript-eslint/recommended',
     'plugin:react-hooks/recommended',
     'plugin:react/recommended',

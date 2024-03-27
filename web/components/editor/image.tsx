@@ -27,17 +27,17 @@ function ExpandingImage(props: {
 
   return (
     <>
-    <img
-      loading="lazy"
+      <img
+        loading="lazy"
         alt={alt ?? ''}
-      {...rest}
+        {...rest}
         onClick={() => setExpanded(true)}
-      className={clsx(
-        'cursor-pointer object-contain',
+        className={clsx(
+          'cursor-pointer object-contain',
           size === 'md' ? 'max-h-[400px]' : 'h-[128px]'
-      )}
+        )}
         height={size === 'md' ? 400 : 128}
-    />
+      />
       {expanded && (
         <div
           className="bg-opacity fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"

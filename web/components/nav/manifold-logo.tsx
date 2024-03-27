@@ -25,6 +25,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         <img
           src="/logo.svg"
           className="h-10 w-10 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
+          alt=""
           aria-hidden
         />
         <div

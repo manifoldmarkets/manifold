@@ -136,7 +136,11 @@ function Testimonial(props: {
       </Row>
       <Link href={src} target="_blank">
         <Row className="group mt-2 justify-end gap-2 ">
-          <img src={icon} className="h-10 w-10 rounded-full drop-shadow-sm" />
+          <img
+            src={icon}
+            className="h-10 w-10 rounded-full drop-shadow-sm"
+            alt=""
+          />
           <Col className="text-sm">
             <div className="font-semibold transition-colors group-hover:text-teal-200">
               {name}

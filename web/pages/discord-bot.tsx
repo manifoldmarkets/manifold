@@ -51,6 +51,7 @@ export default function DiscordBot() {
             <img
               src={'/discord-ss.png'}
               className={'image m-2 rounded-lg object-cover'}
+              alt="Discord chat message from Manifold Bot containing an embedded link to a prediction market, then four unlabeled buttons, and finally six discord reactions to bet 5 yes, 10 yes, 25 yes, or 5 no, 10 no, 25 no."
             />
           </Row>
           <Row className={'text-primary-700 text-xl'}>How can I get it?</Row>

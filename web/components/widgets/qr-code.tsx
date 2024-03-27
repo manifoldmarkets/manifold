@@ -11,5 +11,13 @@ export function QRCode(props: {
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${width}x${height}&data=${urlEncoded}`
 
-  return <img src={qrUrl} width={width} height={height} className={className} />
+  return (
+    <img
+      src={qrUrl}
+      width={width}
+      height={height}
+      className={className}
+      alt={`QR code to ${urlEncoded}`}
+    />
+  )
 }

@@ -39,6 +39,7 @@ function OriginalGangstaTestPage(props: ContractParams) {
         src={buildOgUrl(ogCardProps as any, 'market')}
         height={315}
         width={600}
+        alt=""
       />
 
       <div className="text-ink-900 mb-2 mt-6 text-xl">

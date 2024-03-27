@@ -1,6 +1,8 @@
+/* eslint-disable jsx-a11y/alt-text */
 import { WeeklyPortfolioUpdateOGCardProps } from 'common/weekly-portfolio-update'
 import { ProfitLossGraph } from 'web/components/og/graph'
 import { Point } from 'common/edge/og'
+
 // Notes for working with this:
 // - Some css elements are missing or broken (e.g. 'gap' and 'text-ellipsis' and 'line-clamp')
 // - I also can't make things overflow hidden in only one direction
