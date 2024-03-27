@@ -11,6 +11,7 @@ import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
+import { autoAwardBounty } from './auto-award-bounty'
 
 export function createJobs() {
   return [
@@ -34,6 +35,11 @@ export function createJobs() {
       'calculate-conversion-scores',
       '0 5 * * * *', // on the 5th minute of every hour
       calculateConversionScore
+    ),
+    createJob(
+      'auto-award-bounty',
+      '0 55 * * * *', // on the 55th minute of every hour
+      autoAwardBounty
     ),
     createJob(
       'update-group-metrics',

@@ -12,6 +12,7 @@
       "functions/*": ["../functions/src/*", "../../functions/lib/*"],
       "api/*": ["../api/src/*", "../../api/lib/*"],
       "shared/*": ["../shared/src/*", "../../shared/lib/*"],
+      "scheduler/*": ["../scheduler/src/*", "../../scheduler/lib/*"],
       "scripts/*": ["./src/*"]
     }
   },
@@ -30,6 +31,9 @@
     },
     {
       "path": "../api"
+    },
+    {
+      "path": "../scheduler"
     }
   ],
   "compileOnSave": true

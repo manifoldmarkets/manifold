@@ -76,7 +76,7 @@ import { orderBy } from 'lodash'
 import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { DAY_MS } from 'common/util/time'
+import { getAutoBountyPayoutPerHour } from 'common/bounty'
 
 export const ContractOverview = memo(
   (props: {
@@ -1024,13 +1024,10 @@ const StonkOverview = (props: {
 
 const BountyPanel = (props: { contract: BountiedQuestionContract }) => {
   const { contract } = props
-  const { isAutoBounty, bountyLeft, createdTime } = contract
-
+  const { isAutoBounty } = contract
   if (!isAutoBounty) return null
 
-  const fracPayoutPerHour =
-    0.01 + (0.04 * (Date.now() - createdTime)) / (2 * DAY_MS)
-  const payoutPerHour = bountyLeft * fracPayoutPerHour
+  const payoutPerHour = getAutoBountyPayoutPerHour(contract)
 
   return (
     <Col className="border-ink-200 self-start rounded border px-3 py-2">
