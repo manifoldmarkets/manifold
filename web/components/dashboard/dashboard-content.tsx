@@ -154,7 +154,7 @@ export const DashboardContent = (props: {
           </Droppable>
         </DragDropContext>
       )}
-      {!hideTopicLinks && topics.length && <TopicList topics={topics} />}
+      {!hideTopicLinks && topics.length > 0 && <TopicList topics={topics} />}
     </>
   )
 }
