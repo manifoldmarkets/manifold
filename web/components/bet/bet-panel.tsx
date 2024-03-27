@@ -48,6 +48,8 @@ import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useUser } from 'web/hooks/use-user'
 import { getVersusColors } from '../charts/contract/choice'
+import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
+import { SpecialYesNoSelector } from 'web/components/bet/special-yes-no-selector'
 import { useAudio } from 'web/hooks/use-audio'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -117,21 +119,39 @@ export function BuyPanel(props: {
     <Col>
       {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
         <Row className={clsx('mb-2 w-full items-center gap-2')}>
-          <YesNoSelector
-            className="flex-1"
-            btnClassName="flex-1 px-2 sm:px-6"
-            selected={outcome}
-            highlight
-            onSelect={(choice) => {
-              onOutcomeChoice(choice)
-            }}
-            yesLabel={
-              isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
-            }
-            noLabel={
-              isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
-            }
-          />
+          {PRODUCT_MARKET_FIT_ENABLED && contract.outcomeType === 'BINARY' ? (
+            <SpecialYesNoSelector
+              prob={getCpmmProbability(contract.pool, contract.p)}
+              className="flex-1"
+              selected={outcome}
+              highlight
+              onSelect={(choice) => {
+                onOutcomeChoice(choice)
+              }}
+              yesLabel={
+                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+              }
+              noLabel={
+                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+              }
+            />
+          ) : (
+            <YesNoSelector
+              className="flex-1"
+              btnClassName="flex-1 px-2 sm:px-6"
+              selected={outcome}
+              highlight
+              onSelect={(choice) => {
+                onOutcomeChoice(choice)
+              }}
+              yesLabel={
+                isPseudoNumeric ? 'Bet HIGHER' : isStonk ? STONK_YES : 'Bet YES'
+              }
+              noLabel={
+                isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
+              }
+            />
+          )}
         </Row>
       )}
       {isPanelBodyVisible && (
