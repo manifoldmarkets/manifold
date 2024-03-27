@@ -320,14 +320,53 @@ export const BuyPanelBody = (props: {
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
-  const { currentPayout, probBefore, probAfter } = getProbsAndPayout(
-    contract,
-    multiProps,
-    outcome,
-    betAmount,
-    unfilledBets,
-    balanceByUserId
-  )
+  let currentPayout: number
+  let probBefore: number
+  let probAfter: number
+  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
+    const { answers, answerToBuy } = multiProps
+    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+      answers,
+      answerToBuy,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    const { pool, p } = newBetResult.cpmmState
+    currentPayout = sumBy(newBetResult.takers, 'shares')
+    if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
+      probBefore = 1 - answerToBuy.prob
+      probAfter = 1 - getCpmmProbability(pool, p)
+    } else {
+      probBefore = answerToBuy.prob
+      probAfter = getCpmmProbability(pool, p)
+    }
+  } else {
+    const cpmmState = isCpmmMulti
+      ? {
+          pool: {
+            YES: multiProps!.answerToBuy.poolYes,
+            NO: multiProps!.answerToBuy.poolNo,
+          },
+          p: 0.5,
+        }
+      : { pool: contract.pool, p: contract.p }
+
+    const result = computeCpmmBet(
+      cpmmState,
+      outcome ?? 'YES',
+      betAmount ?? 0,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+    currentPayout = result.shares
+
+    probBefore = result.probBefore
+    probAfter = result.probAfter
+  }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
   const probChange = Math.abs(probAfter - probBefore)
@@ -648,70 +687,6 @@ export const BuyPanelBody = (props: {
       )}
     </>
   )
-}
-const getProbsAndPayout = (
-  contract:
-    | CPMMBinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract,
-  multiProps: MultiBetProps | undefined,
-  outcome: BinaryOutcomes,
-  betAmount: number | undefined,
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
-) => {
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
-
-  let currentPayout: number
-  let probBefore: number
-  let probAfter: number
-  if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
-    const { answers, answerToBuy } = multiProps
-    const { newBetResult } = calculateCpmmMultiArbitrageBet(
-      answers,
-      answerToBuy,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId
-    )
-    const { pool, p } = newBetResult.cpmmState
-    currentPayout = sumBy(newBetResult.takers, 'shares')
-    if (multiProps.answerToBuy.text !== multiProps.answerText) {
-      probBefore = 1 - answerToBuy.prob
-      probAfter = 1 - getCpmmProbability(pool, p)
-    } else {
-      probBefore = answerToBuy.prob
-      probAfter = getCpmmProbability(pool, p)
-    }
-  } else {
-    const cpmmState = isCpmmMulti
-      ? {
-          pool: {
-            YES: multiProps!.answerToBuy.poolYes,
-            NO: multiProps!.answerToBuy.poolNo,
-          },
-          p: 0.5,
-        }
-      : { pool: contract.pool, p: contract.p }
-
-    const result = computeCpmmBet(
-      cpmmState,
-      outcome ?? 'YES',
-      betAmount ?? 0,
-      undefined,
-      unfilledBets,
-      balanceByUserId
-    )
-    currentPayout = result.shares
-
-    probBefore = result.probBefore
-    probAfter = result.probAfter
-  }
-  return { currentPayout, probBefore, probAfter }
 }
 
 export const QuickBetAmountsRow = (props: {
