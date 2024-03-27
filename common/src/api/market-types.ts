@@ -303,6 +303,7 @@ export const createMultiNumericSchema = z.object({
 export const createBountySchema = z.object({
   outcomeType: z.enum(['BOUNTIED_QUESTION']),
   totalBounty: z.number().min(MINIMUM_BOUNTY),
+  isAutoBounty: z.boolean().optional(),
 })
 
 export const createPollSchema = z.object({

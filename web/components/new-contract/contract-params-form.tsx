@@ -209,6 +209,10 @@ export function ContractParamsForm(props: {
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
   >(defaultBountyAmount, 'new-bounty' + paramsKey)
+  const [isAutoBounty, setIsAutoBounty] = usePersistentLocalState(
+    false,
+    `is-auto-bounty` + paramsKey
+  )
 
   const balance = getAvailableBalancePerQuestion(creator)
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -384,6 +388,8 @@ export function ContractParamsForm(props: {
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+        isAutoBounty:
+          outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         numberOfBuckets,
       })
       const newContract = await api('market', createProps as any)
@@ -510,6 +516,17 @@ export function ContractParamsForm(props: {
               {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
             </div>
           )}
+          <Row className="mt-2 items-center gap-2">
+            <span>
+              Auto-award bounty{' '}
+              <InfoTooltip
+                text={
+                  'Automatically pay out the bounty to commenters in proportion to likes over 48 hours.'
+                }
+              />
+            </span>
+            <ShortToggle on={isAutoBounty} setOn={setIsAutoBounty} />
+          </Row>
         </Col>
       )}
       {outcomeType === 'STONK' && (

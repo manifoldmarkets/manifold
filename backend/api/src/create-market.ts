@@ -85,6 +85,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    isAutoBounty,
     loverUserId1,
     loverUserId2,
     matchCreatorId,
@@ -190,6 +191,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         isLove,
         answerLoverUserIds,
         specialLiquidityPerAnswer,
+        isAutoBounty,
       })
     )
 
@@ -333,6 +335,7 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
+    isAutoBounty: boolean | undefined,
     extraLiquidity: number | undefined,
     specialLiquidityPerAnswer: number | undefined
 
@@ -398,7 +401,7 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
-    ;({ totalBounty } = validateMarketType(
+    ;({ totalBounty, isAutoBounty } = validateMarketType(
       outcomeType,
       createBountySchema,
       body
@@ -439,6 +442,7 @@ function validateMarketBody(body: Body) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    isAutoBounty,
     loverUserId1,
     loverUserId2,
     matchCreatorId,
