@@ -13,6 +13,7 @@ export const awardBounty = async (props: {
   prevBountyAwarded: number | undefined
   amount: number
 }) => {
+  const firestore = admin.firestore()
   const {
     contractId,
     fromUserId,
@@ -53,5 +54,3 @@ export const awardBounty = async (props: {
   }
   return txn
 }
-
-const firestore = admin.firestore()
