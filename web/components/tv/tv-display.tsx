@@ -13,7 +13,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
 import { Linkify } from 'web/components/widgets/linkify'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrTrusted } from 'web/hooks/use-admin'
 import { SimpleMultiOverview } from 'web/components/contract/contract-overview'
 import { PublicChat } from 'web/components/chat/public-chat'
 import { Tabs } from 'web/components/layout/tabs'
@@ -29,7 +29,9 @@ export function TVDisplay(props: {
   const { contract, stream } = props
 
   const user = useUser()
-  const isAdmin = useAdmin()
+
+  const isMod = useAdminOrTrusted()
+  const showModify = user?.id === stream?.creator_id || isMod
 
   const isMobile = useIsMobile(1280) //xl
   const [showSettings, setShowSettings] = useState(false)
@@ -114,7 +116,7 @@ export function TVDisplay(props: {
           </Col>
 
           <Row className="m-4 gap-4">
-            {(user?.id === stream?.creator_id || isAdmin) && (
+            {showModify && (
               <Button
                 color="indigo-outline"
                 onClick={() => setShowSettings(true)}
