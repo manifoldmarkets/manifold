@@ -14,6 +14,7 @@ import {
   CPMMMultiContract,
   getMainBinaryMCAnswer,
   CPMMNumericContract,
+  BountiedQuestionContract,
 } from 'common/contract'
 import { NumericContractChart } from '../charts/contract/numeric'
 import {
@@ -64,7 +65,7 @@ import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { useEvent } from 'web/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
-import { formatPercent } from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
@@ -75,6 +76,7 @@ import { orderBy } from 'lodash'
 import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { DAY_MS } from 'common/util/time'
 
 export const ContractOverview = memo(
   (props: {
@@ -166,7 +168,7 @@ export const ContractOverview = memo(
           <StonkOverview contract={contract} betPoints={betPoints as any} />
         )
       case 'BOUNTIED_QUESTION':
-        return <></>
+        return <BountyPanel contract={contract} />
       case 'POLL':
         return <PollPanel contract={contract} />
       case 'CERT':
@@ -1017,6 +1019,31 @@ const StonkOverview = (props: {
         <SignedInBinaryMobileBetting contract={contract} user={user} />
       )}
     </>
+  )
+}
+
+const BountyPanel = (props: { contract: BountiedQuestionContract }) => {
+  const { contract } = props
+  const { isAutoBounty, bountyLeft, createdTime } = contract
+
+  if (!isAutoBounty) return null
+
+  const fracPayoutPerHour =
+    0.01 + (0.04 * (Date.now() - createdTime)) / (2 * DAY_MS)
+  const payoutPerHour = bountyLeft * fracPayoutPerHour
+
+  return (
+    <Col className="border-ink-200 self-start rounded border px-3 py-2">
+      <div className="text-ink-700 text-sm">Auto-award enabled</div>
+      <Row className="items-baseline gap-1">
+        <div className="font-semibold text-teal-700">
+          {formatMoney(payoutPerHour)} per hour
+        </div>
+        <div className="text-ink-700 text-sm">
+          paid in proportion to comment likes
+        </div>
+      </Row>
+    </Col>
   )
 }
 
