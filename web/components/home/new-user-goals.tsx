@@ -46,10 +46,10 @@ export const NewUserGoals = (props: { user: User }) => {
     return (
       <ProgressDisplay
         className="w-full"
-        label="Goal 1: Visit questions"
+        label="Goal 1: Explore"
         value={10 - remainingViewBonuses}
         goal={10}
-        description="visited"
+        description="questions visited"
       >
         <div className="text-ink-600 text-lg">
           Earn {formatMoney(100)} per question visited
