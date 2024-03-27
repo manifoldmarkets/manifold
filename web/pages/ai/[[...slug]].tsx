@@ -23,7 +23,7 @@ import { referralQuery } from 'common/util/share'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
 import { getContract } from 'web/lib/supabase/contracts'
-import { CPMMNumericContract } from 'common/contract'
+import { contractPath, CPMMNumericContract } from 'common/contract'
 import { getExpectedValue } from 'common/multi-numeric'
 import { Clock } from 'web/components/clock/clock'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
@@ -178,7 +178,7 @@ function MultiDashboard(props: MultiDashboardProps) {
 
         <Col className={'my-4 w-full justify-center'}>
           <Link
-            href={whenAgi.slug}
+            href={contractPath(whenAgi)}
             className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
           >
             Countdown to AGI
