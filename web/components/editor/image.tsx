@@ -3,7 +3,9 @@ import clsx from 'clsx'
 import { useState } from 'react'
 
 export const BasicImage = Image.extend({
-  renderReact: (attrs: any) => <img loading="lazy" {...attrs} />,
+  renderReact: (attrs: any) => (
+    <img loading="lazy" {...attrs} alt={attrs.alt ?? ''} />
+  ),
 })
 
 export const DisplayImage = Image.extend({
@@ -21,22 +23,33 @@ function ExpandingImage(props: {
   size?: 'md'
 }) {
   const [expanded, setExpanded] = useState(false)
-  const { size, ...rest } = props
-  const height = size === 'md' ? 400 : 128
+  const { size, alt, ...rest } = props
+
   return (
+    <>
     <img
       loading="lazy"
+        alt={alt ?? ''}
       {...rest}
-      onClick={() => setExpanded((expanded) => !expanded)}
+        onClick={() => setExpanded(true)}
       className={clsx(
         'cursor-pointer object-contain',
-        expanded
-          ? 'min-h-[128px]'
-          : size === 'md'
-          ? 'max-h-[400px]'
-          : 'h-[128px]'
+          size === 'md' ? 'max-h-[400px]' : 'h-[128px]'
       )}
-      height={expanded ? undefined : height}
+        height={size === 'md' ? 400 : 128}
     />
+      {expanded && (
+        <div
+          className="bg-opacity fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+          onClick={() => setExpanded(false)}
+        >
+          <img
+            alt={alt ?? ''}
+            {...rest}
+            className="cursor-pointer object-contain"
+          />
+        </div>
+      )}
+    </>
   )
 }
