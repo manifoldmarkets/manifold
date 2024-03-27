@@ -1,3 +1,4 @@
+import { JSONContent } from '@tiptap/core'
 import {
   add_answers_mode,
   Binary,
@@ -15,7 +16,6 @@ import {
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
-import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import { randomString } from './util/random'
 import { PollOption } from './poll-option'
@@ -56,6 +56,8 @@ export function getNewContract(props: {
   answerLoverUserIds: string[] | undefined
 
   specialLiquidityPerAnswer: number | undefined
+
+  isAutoBounty: boolean | undefined
 }) {
   const {
     id,
@@ -82,6 +84,7 @@ export function getNewContract(props: {
     coverImageUrl,
     specialLiquidityPerAnswer,
     answerLoverUserIds,
+    isAutoBounty,
   } = props
   const createdTime = Date.now()
 
@@ -101,7 +104,7 @@ export function getNewContract(props: {
         answerLoverUserIds
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
   }[outcomeType]()
@@ -360,13 +363,17 @@ function createAnswers(
   })
 }
 
-const getBountiedQuestionProps = (ante: number) => {
+const getBountiedQuestionProps = (
+  ante: number,
+  isAutoBounty: boolean | undefined
+) => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
     bountyTxns: [],
     totalBounty: ante,
     bountyLeft: ante,
+    isAutoBounty: isAutoBounty ?? false,
   }
 
   return system

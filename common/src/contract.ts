@@ -346,6 +346,9 @@ export type BountiedQuestion = {
   bountyLeft: number
   // the bounty txn ids
   bountyTxns: string[]
+
+  // Special mode where bounty pays out automatically in proportion to likes over 48 hours.
+  isAutoBounty?: boolean
 }
 
 export type Poll = {
