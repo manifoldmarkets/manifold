@@ -13,7 +13,11 @@ import {
   LoginIcon,
   TemplateIcon,
 } from '@heroicons/react/outline'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+import { GiCapitol } from 'react-icons/gi'
 import clsx from 'clsx'
+import { useState } from 'react'
+
 import { buildArray } from 'common/util/array'
 import { usePathname, useRouter } from 'next/navigation'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -31,10 +35,9 @@ import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { useState } from 'react'
-import { GiCapitol } from 'react-icons/gi'
-import { PiTelevisionSimple } from 'react-icons/pi'
 import { DAY_MS } from 'common/util/time'
+import { LiveTVIcon, TVIcon } from '../tv-icon'
+import { useTVisActive } from '../tv/tv-schedule'
 
 export default function Sidebar(props: {
   className?: string
@@ -57,14 +60,16 @@ export default function Sidebar(props: {
   }
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
+  const isLiveTV = useTVisActive()
 
   const navOptions = props.navigationOptions?.length
     ? props.navigationOptions
     : isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
+        isLiveTV,
       })
-    : getDesktopNav(!!user, () => setIsModalOpen(true), { isNewUser })
+    : getDesktopNav(!!user, () => setIsModalOpen(true), { isNewUser, isLiveTV })
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -124,9 +129,10 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  options: { isNewUser: boolean }
+  options: { isNewUser: boolean, isLiveTV?: boolean}
 ) => {
-  const { isNewUser } = options
+  const {  isLiveTV } = options
+
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
@@ -145,10 +151,10 @@ const getDesktopNav = (
         href: '/politics',
         icon: GiCapitol,
       },
-      !isNewUser && {
+      {
         name: 'TV',
         href: '/tv',
-        icon: PiTelevisionSimple,
+        icon: isLiveTV ? LiveTVIcon: TVIcon,
       },
       {
         name: 'Messages',
@@ -176,17 +182,23 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (
   toggleModal: () => void,
-  options: { isNewUser: boolean }
+  options: { isNewUser: boolean; isLiveTV?: boolean}
 ) => {
-  const { isNewUser } = options
+  const { isNewUser, isLiveTV } = options
+
   return buildArray<NavItem>(
+    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     {
       name: 'US Politics',
       href: '/politics',
       icon: GiCapitol,
     },
-    // { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    !isNewUser && { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
+    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    {
+      name: 'TV',
+      href: '/tv',
+      icon: isLiveTV ? LiveTVIcon : TVIcon,
+    },
     {
       name: 'Messages',
       href: '/messages',
@@ -202,7 +214,6 @@ const getMobileNav = (
       href: '/live',
       icon: LightningBoltIcon,
     },
-    { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }
