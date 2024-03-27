@@ -27,7 +27,7 @@ import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 
 export function ContractsTable(props: {
   contracts: Contract[]
