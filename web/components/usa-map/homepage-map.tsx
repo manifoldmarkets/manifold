@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { Contract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
 import { Congress } from 'web/public/custom-components/congress'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
@@ -191,7 +191,9 @@ export function HomepageMap(props: {
           <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
             Which party will win the House?
           </div>
-          <HouseTable liveHouseContract={liveHouseContract as MultiContract} />
+          <HouseTable
+            liveHouseContract={liveHouseContract as CPMMMultiContract}
+          />
           <Spacer h={4} />
         </>
       ) : (
