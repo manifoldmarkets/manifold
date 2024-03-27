@@ -129,9 +129,9 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  options: { isNewUser: boolean, isLiveTV?: boolean}
+  options: { isNewUser: boolean; isLiveTV?: boolean }
 ) => {
-  const {  isLiveTV } = options
+  const { isLiveTV } = options
 
   if (loggedIn)
     return buildArray(
@@ -154,7 +154,7 @@ const getDesktopNav = (
       {
         name: 'TV',
         href: '/tv',
-        icon: isLiveTV ? LiveTVIcon: TVIcon,
+        icon: isLiveTV ? LiveTVIcon : TVIcon,
       },
       {
         name: 'Messages',
@@ -182,7 +182,7 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (
   toggleModal: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean}
+  options: { isNewUser: boolean; isLiveTV?: boolean }
 ) => {
   const { isNewUser, isLiveTV } = options
 
