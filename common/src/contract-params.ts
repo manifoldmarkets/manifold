@@ -31,6 +31,7 @@ import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
 import { MAX_ANSWERS } from './answer'
+import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 
 export async function getContractParams(
   contract: Contract,
@@ -63,6 +64,7 @@ export async function getContractParams(
     betReplies,
     chartAnnotations,
     topics,
+    dashboards,
     totalViews,
   ] = await Promise.all([
     checkAccess ? getCanAccessContract(contract, userId, db) : true,
@@ -107,6 +109,7 @@ export async function getContractParams(
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
+    getDashboardsToDisplayOnContract(contract.slug, db),
     getContractPageViews(db, contract.id),
   ])
   if (!canAccessContract) {
@@ -156,6 +159,7 @@ export async function getContractParams(
         (t) => t.importanceScore + (t.privacyStatus === 'public' ? 1 : 0),
         'desc'
       ),
+      dashboards,
     }),
   }
 }

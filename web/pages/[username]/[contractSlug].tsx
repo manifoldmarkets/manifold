@@ -161,6 +161,7 @@ export function ContractPageContent(props: ContractParams) {
     chartAnnotations,
     relatedContractsByTopicSlug,
     topics,
+    dashboards,
     pinnedComments,
     betReplies,
   } = props
@@ -447,7 +448,11 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketTopics contract={contract} topics={topics} />
+                <MarketTopics
+                  contract={contract}
+                  dashboards={dashboards}
+                  topics={topics}
+                />
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">

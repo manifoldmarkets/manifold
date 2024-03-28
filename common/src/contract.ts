@@ -485,6 +485,7 @@ export type ContractParams = {
   chartAnnotations: ChartAnnotation[]
   relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
+  dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
   betReplies: Bet[]
 }
