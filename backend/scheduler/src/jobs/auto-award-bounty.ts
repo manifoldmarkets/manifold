@@ -53,14 +53,14 @@ export const autoAwardBounty = async () => {
     for (const comment of comments) {
       const { likes, commentId, userId, bountyAwarded } = comment
       const amount = (likes / totalLikes) * totalPayout
-      // await awardBounty({
-      //   contractId: contract.id,
-      //   fromUserId: contract.creatorId,
-      //   toUserId: userId,
-      //   commentId,
-      //   prevBountyAwarded: bountyAwarded,
-      //   amount,
-      // })
+      await awardBounty({
+        contractId: contract.id,
+        fromUserId: contract.creatorId,
+        toUserId: userId,
+        commentId,
+        prevBountyAwarded: bountyAwarded,
+        amount,
+      })
     }
 
     const sortedComments = sortBy(comments, 'likes').reverse()
