@@ -49,7 +49,7 @@ export function SpecialYesNoSelector(props: {
       hoveredOutcome === 'NO' ? noButtonRef.current : yesButtonRef.current
     const centerX = div?.clientLeft ?? 0
     const centerY = div?.clientTop ?? 0
-    if (!hoveredOutcome || !div) return
+    if (!hoveredOutcome || !div || (prob < 0.6 && prob > 0.4)) return
     const speed = hoveredOutcome === 'YES' ? prob : 1 - prob
     const maxOffset = width * speed
     div.style.transition = `transform ${1 - speed}s ease-out`
