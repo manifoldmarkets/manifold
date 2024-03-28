@@ -1,5 +1,7 @@
 import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -35,14 +37,12 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -214,7 +214,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const isBinary = contract.outcomeType === 'BINARY'
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
   const bestFirst =
-    isBountiedQuestion && (!user || user.id !== contract.creatorId)
+    isBountiedQuestion &&
+    (!user || user.id !== contract.creatorId) &&
+    !contract.isAutoBounty
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
