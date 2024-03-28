@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react'
 import { Row } from '../layout/row'
 import { house2024 } from 'web/public/data/house-data'
 import { AnswerStatus } from '../answers/answer-components'
-import { HouseStatus } from './house-table-helpers'
+import { HouseStatus, houseProbToColor } from './house-table-helpers'
 import { DATA } from './usa-map-data'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -29,13 +29,16 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   )
   return (
     <>
-      <Row className="text-ink-500 mb-1 hidden w-full justify-between text-sm sm:flex">
+      <Row className="text-ink-500 mb-1 w-full justify-between text-sm">
         <Row>
-          {/* <div className="w-16 sm:w-40">District</div> */}
           <button
-            className="group flex w-40 flex-row items-center"
+            className="group flex w-[88px] flex-row items-center sm:w-40"
             onClick={() => {
-              setSort('alphabetical')
+              if (sort == 'alphabetical') {
+                setSort('prob-asc')
+              } else {
+                setSort('alphabetical')
+              }
             }}
           >
             District{' '}
@@ -54,7 +57,11 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
           <button
             className="group flex w-24 flex-row items-center"
             onClick={() => {
-              setSort('prob-asc')
+              if (sort == 'prob-asc') {
+                setSort('prob-desc')
+              } else {
+                setSort('prob-asc')
+              }
             }}
           >
             Democratic{' '}
@@ -70,7 +77,11 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
           <button
             className="w-22 group flex flex-row items-center justify-end"
             onClick={() => {
-              setSort('prob-desc')
+              if (sort == 'prob-desc') {
+                setSort('prob-asc')
+              } else {
+                setSort('prob-desc')
+              }
             }}
           >
             Republican{' '}
@@ -105,8 +116,14 @@ function HouseRow(props: { houseAnswer: Answer; contract: CPMMMultiContract }) {
   const houseData = house2024[houseAnswer.text.replace(/\s+/g, ' ')]
 
   return (
-    <Row className="border-ink-300 justify-between border-b py-1">
+    <Row className="border-ink-300 justify-between border-b">
       <Row className="items-center">
+        <div
+          className=" mr-2 h-full w-4 transition-colors sm:h-8"
+          style={{
+            background: houseProbToColor(houseAnswer.prob),
+          }}
+        />
         <div className="hidden w-32 sm:flex">{fullState}</div>
         <div className=" w-8 sm:hidden">{state}</div>
         <div className="w-8">{number}</div>

@@ -1,25 +1,19 @@
 import { track } from '@amplitude/analytics-browser'
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import { CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
-import {
-  CPMMMultiContract,
-  isBinaryMulti,
-  tradingAllowed,
-} from 'common/contract'
+import { CPMMMultiContract, isBinaryMulti } from 'common/contract'
 import { formatPercent, formatPercentShort } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { sumBy } from 'lodash'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useUser } from 'web/hooks/use-user'
-import { api, APIError } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/firebase/api'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { BinaryOutcomes, MultiBetProps } from '../bet/bet-panel'
 import { Button } from '../buttons/button'
@@ -27,26 +21,24 @@ import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 
-import { LimitBet } from 'common/bet'
 import { computeCpmmBet } from 'common/new-bet'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatOutcomeLabel,
-} from 'common/util/format'
-import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
+import { formatMoney } from 'common/util/format'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { BuyAmountInput } from '../widgets/amount-input'
 
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { getStonkDisplayShares } from 'common/stonk'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { withTracking } from 'web/lib/service/analytics'
+import { YourOrders } from '../bet/order-book'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import LimitOrderPanel from '../bet/limit-order-panel'
-import { OrderBookPanel, YourOrders } from '../bet/order-book'
-import { getVersusColors } from '../charts/contract/choice'
+import {
+  COLOR_MIXED_THRESHOLD,
+  DEM_DARK_HEX,
+  DEM_LIGHT_HEX,
+  REP_DARK_HEX,
+  REP_LIGHT_HEX,
+  hexToRgb,
+} from './state-election-map'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract
@@ -54,10 +46,6 @@ export const HouseStatus = (props: {
   noNewIcon?: boolean
 }) => {
   const { contract, answer } = props
-  const { resolutions } = contract
-
-  const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -484,4 +472,63 @@ export const BuyPanelBody = (props: {
       {/* Stonks don't allow limit orders but users may have them from before the conversion */}
     </>
   )
+}
+
+export const houseProbToColor = (prob: number) => {
+  type Color = { r: number; g: number; b: number }
+  function interpolateColor(color1: Color, color2: Color, factor: number) {
+    // Linear interpolation between two colors
+    const r = Math.round(color1.r + factor * (color2.r - color1.r))
+    const g = Math.round(color1.g + factor * (color2.g - color1.g))
+    const b = Math.round(color1.b + factor * (color2.b - color1.b))
+
+    // Convert RGB to Hex
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+  }
+  // Base colors
+  const DEM_LIGHT = hexToRgb(DEM_LIGHT_HEX)
+  const REP_LIGHT = hexToRgb(REP_LIGHT_HEX)
+  const DEM_DARK = hexToRgb(DEM_DARK_HEX)
+  const REP_DARK = hexToRgb(REP_DARK_HEX)
+
+  const probDemocratic = 1 - prob
+  const probRepublican = prob
+  const probOther = 0
+
+  if (
+    probDemocratic === undefined ||
+    probRepublican === undefined ||
+    probOther === undefined
+  )
+    return undefined
+
+  // Calculate the difference
+  const repOverDem = probRepublican - probDemocratic
+  const absoluteDifference = Math.abs(repOverDem)
+
+  if (absoluteDifference < COLOR_MIXED_THRESHOLD / 2) {
+    // Blend the light colors if difference is less than 5%
+    return interpolateColor(
+      DEM_LIGHT,
+      REP_LIGHT,
+      (repOverDem + COLOR_MIXED_THRESHOLD / 2) / COLOR_MIXED_THRESHOLD
+    )
+  } else {
+    // Interpolate towards the darker shade based on the dominant side
+    if (repOverDem < 0) {
+      return interpolateColor(
+        DEM_LIGHT,
+        DEM_DARK,
+        (absoluteDifference - COLOR_MIXED_THRESHOLD) /
+          (1 - COLOR_MIXED_THRESHOLD)
+      )
+    } else {
+      return interpolateColor(
+        REP_LIGHT,
+        REP_DARK,
+        (absoluteDifference - COLOR_MIXED_THRESHOLD) /
+          (1 - COLOR_MIXED_THRESHOLD)
+      )
+    }
+  }
 }
