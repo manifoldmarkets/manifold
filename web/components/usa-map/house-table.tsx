@@ -1,21 +1,19 @@
+import clsx from 'clsx'
 import { Answer, MultiSort, sortAnswers } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Row } from '../layout/row'
+import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { house2024 } from 'web/public/data/house-data'
-import { AnswerStatus } from '../answers/answer-components'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { HouseBar } from './house-bar'
 import { HouseStatus, houseProbToColor } from './house-table-helpers'
 import { DATA } from './usa-map-data'
-import { ChevronDownIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
-import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
-import { Col } from '../layout/col'
-import { HouseBar } from './house-bar'
 
 export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   const { liveHouseContract } = props
-  const [sort, setSort] = useState<MultiSort>('prob-desc')
+  const [sort, setSort] = useState<MultiSort>('alphabetical')
 
   const isMultipleChoice = liveHouseContract.outcomeType === 'MULTIPLE_CHOICE'
   const answers = liveHouseContract.answers
@@ -47,16 +45,19 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
     }
   }, [targetAnswer, sort])
 
+  const handleClick = (newTargetAnswer: string | undefined) =>
+    setTargetAnswer(newTargetAnswer)
+
+  const onMouseEnter = (hoverAnswer: string) => setHoverAnswer(hoverAnswer)
+  const onMouseLeave = () => setHoverAnswer(undefined)
   return (
     <>
       <HouseBar
         liveAnswers={answers}
         liveHouseContract={liveHouseContract}
-        handleClick={(newTargetAnswer: string | undefined) =>
-          setTargetAnswer(newTargetAnswer)
-        }
-        onMouseEnter={(hoverAnswer: string) => setHoverAnswer(hoverAnswer)}
-        onMouseLeave={() => setHoverAnswer(undefined)}
+        handleClick={handleClick}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
         targetAnswer={targetAnswer}
         hoveredAnswer={hoverAnswer}
       />
@@ -158,7 +159,7 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
         </Row>
       </Row>
       <Col className="h-80 overflow-y-scroll scroll-smooth" ref={scrollRef}>
-        {sortedAnswers.map((answer) => {
+        {sortedAnswers.map((answer, index) => {
           return (
             <HouseRow
               key={answer.text}
@@ -167,6 +168,10 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
               contract={liveHouseContract}
               isSelected={targetAnswer === answer.text}
               isHovered={hoverAnswer === answer.text}
+              handleClick={handleClick}
+              onMouseEnter={onMouseEnter}
+              onMouseLeave={onMouseLeave}
+              isFirst={index === 0}
             />
           )
         })}
@@ -181,8 +186,22 @@ function HouseRow(props: {
   id: string
   isSelected: boolean
   isHovered: boolean
+  handleClick: (newTargetAnswer: string | undefined) => void
+  onMouseEnter: (hoverState: string) => void
+  onMouseLeave: () => void
+  isFirst?: boolean
 }) {
-  const { houseAnswer, contract, id, isSelected, isHovered } = props
+  const {
+    houseAnswer,
+    contract,
+    id,
+    isSelected,
+    isHovered,
+    handleClick,
+    onMouseEnter,
+    onMouseLeave,
+    isFirst,
+  } = props
   const { state, number } = extractDistrictInfo(houseAnswer.text)
   const fullState = DATA[state].name
   const houseData = house2024[houseAnswer.text.replace(/\s+/g, ' ')]
@@ -191,9 +210,13 @@ function HouseRow(props: {
     <Row
       id={id}
       className={clsx(
-        'border-ink-300 justify-between border-b',
-        isSelected ? 'bg-canvas-50' : isHovered ? 'bg-canvas-50/50' : ''
+        'border-ink-300 justify-between border-b transition-colors',
+        isSelected ? 'bg-canvas-50' : isHovered ? 'bg-canvas-50/50' : '',
+        isFirst ? 'border-t' : ''
       )}
+      onClick={() => handleClick(houseAnswer.text)}
+      onMouseEnter={() => onMouseEnter(houseAnswer.text)}
+      onMouseLeave={onMouseLeave}
     >
       <Row className="items-center">
         <div
@@ -213,7 +236,15 @@ function HouseRow(props: {
               {houseData?.incumbentShort ? (
                 <span className="text-ink-600">
                   {' '}
-                  ({houseData.incumbentShort})
+                  ({houseData.incumbentShort}{' '}
+                  {houseData?.incumbentParty ? (
+                    <span className="text-ink-400">
+                      {' ' + houseData.incumbentParty.slice(0, 1)}
+                    </span>
+                  ) : (
+                    ''
+                  )}
+                  )
                 </span>
               ) : (
                 <></>
@@ -222,6 +253,15 @@ function HouseRow(props: {
           ) : (
             houseData?.incumbentShort ?? houseData?.status ?? ''
           )}
+          <span>
+            {houseData?.incumbentParty && !houseData?.status ? (
+              <span className="text-ink-400">
+                {' ' + houseData.incumbentParty.slice(0, 1)}
+              </span>
+            ) : (
+              ''
+            )}
+          </span>
         </div>
       </Row>
       <HouseStatus contract={contract} answer={houseAnswer} />
