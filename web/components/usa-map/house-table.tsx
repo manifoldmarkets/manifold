@@ -33,7 +33,7 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
       <Row className="text-ink-500 mb-1 w-full justify-between text-sm">
         <Row>
           <button
-            className="group flex w-[88px] flex-row items-center sm:w-40"
+            className="group flex w-[88px] flex-row items-center sm:w-[184px]"
             onClick={() => {
               if (sort == 'alphabetical') {
                 setSort('prob-asc')
