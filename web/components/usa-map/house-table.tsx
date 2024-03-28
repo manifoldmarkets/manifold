@@ -9,7 +9,8 @@ import { HouseStatus, houseProbToColor } from './house-table-helpers'
 import { DATA } from './usa-map-data'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { BiCaretDown } from 'react-icons/bi'
+import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
+import { Col } from '../layout/col'
 
 export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   const { liveHouseContract } = props
@@ -53,6 +54,36 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
           </button>
           <div>Incumbent</div>
         </Row>
+        <button
+          className="sm:w-22 group flex w-[121px]  flex-row items-center sm:hidden sm:justify-end"
+          onClick={() => {
+            if (sort == 'prob-desc') {
+              setSort('prob-asc')
+            } else {
+              setSort('prob-desc')
+            }
+          }}
+        >
+          Odds{' '}
+          <div className="relative">
+            <BiCaretUp
+              className={clsx(
+                ' absolute -top-[6px] h-4 w-4 transition-colors',
+                sort == 'prob-asc'
+                  ? 'text-ink-500'
+                  : 'group-hover:text-ink-500 text-ink-200 dark:text-ink-300'
+              )}
+            />
+            <BiCaretDown
+              className={clsx(
+                ' -mb-[2px] h-4 w-4 transition-colors',
+                sort == 'prob-desc'
+                  ? 'text-ink-500'
+                  : 'group-hover:text-ink-500 text-ink-200 dark:text-ink-300'
+              )}
+            />
+          </div>
+        </button>
         <Row className="hidden gap-4 sm:flex">
           <button
             className="group flex w-24 flex-row items-center"
