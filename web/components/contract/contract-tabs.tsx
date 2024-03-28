@@ -262,6 +262,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     () => strictlySortedComments.map((c) => c.id),
     strictlySortedComments.map((c) => c.id)
   )
+  useEffect(() => {
+    if (user) refreezeIds()
+  }, [user?.id])
 
   const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
     frozenCommentIds.includes(c.id)
