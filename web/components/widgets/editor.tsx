@@ -253,9 +253,9 @@ function RichContent(props: {
 }) {
   const { className, content, size = 'md' } = props
 
-  const jsxContent = useMemo(
-    () =>
-      generateReact(content, [
+  const jsxContent = useMemo(() => {
+    try {
+      return generateReact(content, [
         StarterKit,
         size === 'sm'
           ? DisplayImage
@@ -270,9 +270,12 @@ function RichContent(props: {
         LinkPreviewExtension.configure({ hideCloseButton: true }),
         DisplayTweet,
         DisplaySpoiler,
-      ]),
-    [content, size]
-  )
+      ])
+    } catch (e) {
+      console.error('Error generating react', e, 'for content', content)
+      return ''
+    }
+  }, [content, size])
 
   return (
     <div
