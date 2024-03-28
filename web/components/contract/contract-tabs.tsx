@@ -41,6 +41,8 @@ import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
+import { Button } from '../buttons/button'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -326,6 +328,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       })
   }, [endOfMessagesRef])
 
+  const [expandGptSummary, setExpandGptSummary] = usePersistentInMemoryState(
+    false,
+    `expand-gpt-summary-${contract.id}`
+  )
+
   return (
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
@@ -346,6 +353,34 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         onSubmit={loadNewer}
         commentTypes={['comment', 'repost']}
       />
+
+      {contract.gptCommentSummary && (
+        <Button
+          className="mb-2 rounded-md bg-teal-100 p-4"
+          size="xs"
+          color="none"
+          onClick={() => setExpandGptSummary((e) => !e)}
+        >
+          <Col className="gap-2 p-2">
+            <Row className="items-center gap-2">
+              {expandGptSummary ? (
+                <ChevronUpIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5" />
+              )}
+              <div className="text-lg">Comments summary</div>
+            </Row>
+            <div
+              className={clsx(
+                'whitespace-pre-line text-left text-sm',
+                !expandGptSummary && 'line-clamp-3'
+              )}
+            >
+              {contract.gptCommentSummary}
+            </div>
+          </Col>
+        </Button>
+      )}
 
       {comments.length > 0 && (
         <SortRow
