@@ -2,7 +2,7 @@ import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
 import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
-import { formatPercent } from './util/format'
+import { formatMoneyNumber, formatPercent } from './util/format'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { Answer, DpmAnswer, sortAnswers } from './answer'
 
@@ -44,7 +44,7 @@ export const getContractOGProps = (
 
   const bountyLeft =
     outcomeType === 'BOUNTIED_QUESTION'
-      ? contract.bountyLeft.toString()
+      ? formatMoneyNumber(contract.bountyLeft)
       : undefined
 
   return {
