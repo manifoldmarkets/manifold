@@ -1,5 +1,4 @@
 import { useUser } from 'web/hooks/use-user'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useRealtimePublicMessagesPolling } from 'web/hooks/use-public-chat-messages'
 import { uniq } from 'lodash'
@@ -27,7 +26,6 @@ import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
-import { useIsClient } from 'web/hooks/use-is-client'
 
 export const PublicChat = (props: {
   channelId: string
