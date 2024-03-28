@@ -21,12 +21,17 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { DOMAIN } from 'common/envs/constants'
+import { Presence } from './tv-page'
+import { sortBy } from 'lodash'
+import { Avatar } from '../widgets/avatar'
+import { buildArray } from 'common/util/array'
 
 export function TVDisplay(props: {
   contract: Contract
   stream?: ScheduleItem
+  watchers?: Presence[]
 }) {
-  const { contract, stream } = props
+  const { contract, stream, watchers } = props
 
   const user = useUser()
 
@@ -96,7 +101,7 @@ export function TVDisplay(props: {
             </Row>
             {isMobile ? (
               <Tabs
-                tabs={[
+                tabs={buildArray([
                   { title: 'Market', content: betPanel },
                   {
                     title: 'Chat',
@@ -108,7 +113,11 @@ export function TVDisplay(props: {
                       />
                     ),
                   },
-                ]}
+                  watchers && {
+                    title: `${watchers.length} Viewers`,
+                    content: <Watchers watchers={watchers} />,
+                  },
+                ])}
               />
             ) : (
               betPanel
@@ -139,15 +148,42 @@ export function TVDisplay(props: {
           </Row>
         </Col>
 
-        <Col className="ml-4 hidden min-h-full w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
-          <Col className={'sticky top-0'}>
-            <Row className={'border-b-2 py-2 text-xl text-indigo-700'}>
-              Live chat
-            </Row>
-            <PublicChat channelId={channelId} key={channelId} />
-          </Col>
+        <Col className="sticky top-0 ml-4 hidden h-screen w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
+          {watchers && (
+            <div className="text-ink-500">
+              <div>{watchers.length} viewers</div>
+              <Watchers watchers={watchers} limit={10} />
+            </div>
+          )}
+          <div className={'border-b-2 py-2 text-xl text-indigo-700'}>
+            Live chat
+          </div>
+          <PublicChat
+            channelId={channelId}
+            key={channelId}
+            className="min-h-0 grow"
+          />
         </Col>
       </Row>
     </Page>
+  )
+}
+
+const Watchers = (props: { watchers: Presence[]; limit?: number }) => {
+  const { watchers, limit } = props
+  const sorted = sortBy(watchers, 'onlineAt')
+  const displayed = limit ? sorted.slice(-limit) : sorted.reverse()
+
+  return (
+    <div className="flex flex-wrap gap-1 py-1">
+      {displayed.map((watcher) => (
+        <Avatar
+          key={watcher.id}
+          username={watcher.username}
+          avatarUrl={watcher.avatarUrl}
+          size="sm"
+        />
+      ))}
+    </div>
   )
 }

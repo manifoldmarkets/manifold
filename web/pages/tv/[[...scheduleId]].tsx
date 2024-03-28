@@ -13,6 +13,7 @@ export async function getStaticProps(props: {
   const scheduleId = props.params.scheduleId?.[0] ?? null
 
   const { data } = await db.from('tv_schedule').select('*')
+
   const schedule = filterSchedule(data as ScheduleItem[] | null, scheduleId)
 
   const contractIds = schedule.map((s) => s.contract_id)

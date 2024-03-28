@@ -27,6 +27,7 @@ import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export const PublicChat = (props: {
   channelId: string
@@ -34,10 +35,6 @@ export const PublicChat = (props: {
 }) => {
   const { channelId, className } = props
   const user = useUser()
-  const isSafari =
-    (typeof navigator !== 'undefined' &&
-      /^((?!chrome|android).)*safari/i.test(navigator.userAgent)) ||
-    getNativePlatform().platform === 'ios'
   const isMobile = useIsMobile()
 
   const realtimeMessages = useRealtimePublicMessagesPolling(channelId, 300)
@@ -99,97 +96,88 @@ export const PublicChat = (props: {
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
   return (
-    <Col className={clsx(' w-full', className)}>
-      <Col className="relative h-[100dvh]  lg:h-[calc(100dvh-150px)] xl:px-0">
+    <Col className={clsx('w-full', className)}>
+      <div ref={outerDiv} className="relative h-full overflow-y-auto xl:px-0">
         <div
-          ref={outerDiv}
-          className="relative h-full overflow-y-auto"
+          className="relative px-1 pb-4 pt-1 transition-all duration-100"
+          ref={innerDiv}
           style={{
-            transform: isSafari ? 'translate3d(0, 0, 0)' : 'none',
+            opacity: showMessages ? 1 : 0,
           }}
         >
-          <div
-            className="relative px-1 pb-4 pt-1 transition-all duration-100"
-            ref={innerDiv}
-            style={{
-              transform: isSafari ? 'translate3d(0, 0, 0)' : 'none',
-              opacity: showMessages ? 1 : 0,
-            }}
-          >
-            {realtimeMessages === undefined ? (
-              <LoadingIndicator />
-            ) : (
-              <>
-                <div
-                  className={'absolute h-1 '}
-                  ref={topVisibleRef}
-                  style={{ top: heightFromTop }}
-                />
-                {groupedMessages.map((messages, i) => {
-                  const firstMessage = messages[0]
-                  if (firstMessage.visibility === 'system_status') {
-                    return (
-                      <SystemChatMessageItem
-                        key={firstMessage.id}
-                        chats={messages}
-                        otherUsers={otherUsers
-                          ?.concat(filterDefined([user]))
-                          .filter((user) =>
-                            messages.some((m) => m.userId === user.id)
-                          )}
-                      />
-                    )
-                  }
-                  const otherUser = otherUsers?.find(
-                    (user) => user.id === firstMessage.userId
-                  )
+          {realtimeMessages === undefined ? (
+            <LoadingIndicator />
+          ) : (
+            <>
+              <div
+                className={'absolute h-1'}
+                ref={topVisibleRef}
+                style={{ top: heightFromTop }}
+              />
+              {groupedMessages.map((messages, i) => {
+                const firstMessage = messages[0]
+                if (firstMessage.visibility === 'system_status') {
                   return (
-                    <ChatMessageItem
+                    <SystemChatMessageItem
                       key={firstMessage.id}
                       chats={messages}
-                      currentUser={user}
-                      otherUser={otherUser}
-                      beforeSameUser={
-                        groupedMessages[i + 1]?.[0].userId ===
-                        firstMessage.userId
-                      }
-                      firstOfUser={
-                        groupedMessages[i - 1]?.[0].userId !==
-                        firstMessage.userId
-                      }
-                      onReplyClick={(chat) =>
-                        setReplyToUserInfo({
-                          id: chat.userId,
-                          username: otherUser?.username ?? '',
-                        })
-                      }
+                      otherUsers={otherUsers
+                        ?.concat(filterDefined([user]))
+                        .filter((user) =>
+                          messages.some((m) => m.userId === user.id)
+                        )}
                     />
                   )
-                })}
-              </>
-            )}
-            {realtimeMessages && messages.length === 0 && (
-              <div className="text-ink-500 dark:text-ink-600 p-2">
-                No messages yet. Say something why don't ya?
-              </div>
-            )}
-          </div>
+                }
+                const otherUser = otherUsers?.find(
+                  (user) => user.id === firstMessage.userId
+                )
+                return (
+                  <ChatMessageItem
+                    key={firstMessage.id}
+                    chats={messages}
+                    currentUser={user}
+                    otherUser={otherUser}
+                    beforeSameUser={
+                      groupedMessages[i + 1]?.[0].userId === firstMessage.userId
+                    }
+                    firstOfUser={
+                      groupedMessages[i - 1]?.[0].userId !== firstMessage.userId
+                    }
+                    onReplyClick={(chat) =>
+                      setReplyToUserInfo({
+                        id: chat.userId,
+                        username: otherUser?.username ?? '',
+                      })
+                    }
+                  />
+                )
+              })}
+            </>
+          )}
+          {realtimeMessages && messages.length === 0 && (
+            <div className="text-ink-500 dark:text-ink-600 p-2">
+              No messages yet. Say something why don't ya?
+            </div>
+          )}
         </div>
-      </Col>
-      {!user ? (
-        <Button color="gradient" onClick={firebaseLogin} className="w-full">
-          Signup to chat
-        </Button>
-      ) : (
-        <CommentInputTextArea
-          editor={editor}
-          user={user}
-          submit={submitMessage}
-          isSubmitting={isSubmitting}
-          submitOnEnter={!isMobile}
-          replyTo={replyToUserInfo}
-        />
-      )}
+      </div>
+      <div className="sticky bottom-[58px] lg:bottom-0">
+        {!user ? (
+          <Button color="gradient" onClick={firebaseLogin} className="w-full">
+            Signup to chat
+          </Button>
+        ) : (
+          <CommentInputTextArea
+            editor={editor}
+            user={user}
+            submit={submitMessage}
+            isSubmitting={isSubmitting}
+            submitOnEnter={!isMobile}
+            replyTo={replyToUserInfo}
+          />
+        )}
+      </div>
     </Col>
   )
 }
