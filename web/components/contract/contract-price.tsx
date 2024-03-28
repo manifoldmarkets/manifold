@@ -24,7 +24,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   formatExpectedValue,
   getExpectedValue,
-  getMultiNumericAnswerToRange,
+  answerTextToRange,
 } from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
@@ -153,7 +153,7 @@ export function MultiNumericResolutionOrExpectation(props: {
   const spring = useAnimatedNumber(value)
   const resolutionBuckets = contract.answers
     .filter((a) => resolutions && resolutions[a.id])
-    .map((a) => getMultiNumericAnswerToRange(a.text))
+    .map((a) => answerTextToRange(a.text))
   const smallestBucket = Math.min(...resolutionBuckets.map((b) => b[0]))
   const largestBucket = Math.max(...resolutionBuckets.map((b) => b[1]))
 

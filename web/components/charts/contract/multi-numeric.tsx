@@ -10,7 +10,7 @@ import { map, zip } from 'd3-array'
 import {
   formatExpectedValue,
   getExpectedValue,
-  getMultiNumericAnswerToMidpoint,
+  answerTextToMidpoint,
 } from 'common/multi-numeric'
 import { MultiPoints } from 'common/chart'
 
@@ -21,10 +21,11 @@ const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
   const expectedValues = Object.entries(bets).map(([answerId, pts]) =>
     pts.map((pt) => ({
       x: pt.x,
-      y: pt.y * getMultiNumericAnswerToMidpoint(answerTexts[answerId].text),
+      y: pt.y * answerTextToMidpoint(answerTexts[answerId].text),
       obj: pt.obj,
     }))
   )
+  console.log('expectedValues', expectedValues)
   return map(zip(...expectedValues), (group) => ({
     y: sum(group.map((pt) => pt.y)) ?? 0,
     x: group[0].x,
@@ -46,11 +47,12 @@ export const MultiNumericContractChart = (props: {
   const end = getEndDate(contract)
   const startP = getExpectedValue(contract, true)
   const endP = getExpectedValue(contract)
+  const stringifiedMultiPoints = JSON.stringify(multiPoints)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints),
-    [multiPoints]
+    [stringifiedMultiPoints]
   )
-  const now = useMemo(() => Date.now(), [multiPoints])
+  const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
 
   const singlePointData = useMemo(
     () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
