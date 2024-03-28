@@ -6,6 +6,7 @@ import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { awardBounty } from 'shared/bounty'
 import { promptGPT4 } from 'shared/helpers/openai-utils'
+import { revalidateContractStaticProps } from 'shared/utils'
 
 export const autoAwardBounty = async () => {
   const pg = createSupabaseDirectClient()
@@ -52,14 +53,14 @@ export const autoAwardBounty = async () => {
     for (const comment of comments) {
       const { likes, commentId, userId, bountyAwarded } = comment
       const amount = (likes / totalLikes) * totalPayout
-      await awardBounty({
-        contractId: contract.id,
-        fromUserId: contract.creatorId,
-        toUserId: userId,
-        commentId,
-        prevBountyAwarded: bountyAwarded,
-        amount,
-      })
+      // await awardBounty({
+      //   contractId: contract.id,
+      //   fromUserId: contract.creatorId,
+      //   toUserId: userId,
+      //   commentId,
+      //   prevBountyAwarded: bountyAwarded,
+      //   amount,
+      // })
     }
 
     const sortedComments = sortBy(comments, 'likes').reverse()
@@ -67,17 +68,26 @@ export const autoAwardBounty = async () => {
       `
 A user of our site has asked a question, and other users have written comments in reply.
 Each comment has a number of likes, which represent how many other users have clicked the "like" button on that comment.
-Please create one clear summary of all the comments that have been written in reply to the question, but put more emphasis on the comments that have received more likes.
-Do not mention any comment specifically or that you are attempting to summarize the comments -- rather, you should write one coherent summary that borrows content from any or all of the comments, feeling free to ignore some parts.
+Please create one clear synthesis of all the comments that have been written in reply to the question, but put more emphasis on the comments that have received more likes.
+Do not mention any comment specifically or that you are attempting to summarize the comments -- rather, you should write one coherent viewpoint that borrows content from any or all of the comments, feeling free to ignore some parts.
+Instead of trying to cover all viewpoints expressed in the comments, try to create a single viewpoint that is closer to the median of the comments, but with more weight toward the most liked comments.
+Try not to use hedging language, like "possibly", "maybe", "might", "may", "seem to", or "lean toward" and instead write with confidence.
 
-The following comments have been submitted:` +
-      sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
+Question: ${contract.question}
+
+Description: ${JSON.stringify(contract.description)}
+
+The following comments have been submitted:
+
+` + sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
     const resultMessage = await promptGPT4(prompt)
     if (resultMessage) {
       const firestore = admin.firestore()
       const contractRef = firestore.collection('contracts').doc(contract.id)
       await contractRef.update({ gptCommentSummary: resultMessage })
     }
+
+    await revalidateContractStaticProps(contract)
   }
 
   console.log('Done awarding bounties')
