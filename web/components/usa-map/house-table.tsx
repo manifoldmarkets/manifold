@@ -1,7 +1,7 @@
 import { Answer, MultiSort, sortAnswers } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract } from 'common/contract'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Row } from '../layout/row'
 import { house2024 } from 'web/public/data/house-data'
 import { AnswerStatus } from '../answers/answer-components'
@@ -34,6 +34,19 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
     undefined
   )
   const [hoverAnswer, setHoverAnswer] = useState<string | undefined>(undefined)
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (targetAnswer && scrollRef.current) {
+      const selectedElement = document.getElementById(targetAnswer)
+      if (selectedElement) {
+        scrollRef.current.scrollTop =
+          selectedElement.offsetTop - scrollRef.current.offsetTop
+      }
+    }
+  }, [targetAnswer, sort])
+
   return (
     <>
       <HouseBar
@@ -144,27 +157,44 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
           </button>
         </Row>
       </Row>
-      {sortedAnswers.map((answer) => {
-        return (
-          <HouseRow
-            key={answer.text}
-            houseAnswer={answer as Answer}
-            contract={liveHouseContract}
-          />
-        )
-      })}
+      <Col className="h-80 overflow-y-scroll scroll-smooth" ref={scrollRef}>
+        {sortedAnswers.map((answer) => {
+          return (
+            <HouseRow
+              key={answer.text}
+              id={answer.text}
+              houseAnswer={answer as Answer}
+              contract={liveHouseContract}
+              isSelected={targetAnswer === answer.text}
+              isHovered={hoverAnswer === answer.text}
+            />
+          )
+        })}
+      </Col>
     </>
   )
 }
 
-function HouseRow(props: { houseAnswer: Answer; contract: CPMMMultiContract }) {
-  const { houseAnswer, contract } = props
+function HouseRow(props: {
+  houseAnswer: Answer
+  contract: CPMMMultiContract
+  id: string
+  isSelected: boolean
+  isHovered: boolean
+}) {
+  const { houseAnswer, contract, id, isSelected, isHovered } = props
   const { state, number } = extractDistrictInfo(houseAnswer.text)
   const fullState = DATA[state].name
   const houseData = house2024[houseAnswer.text.replace(/\s+/g, ' ')]
 
   return (
-    <Row className="border-ink-300 justify-between border-b">
+    <Row
+      id={id}
+      className={clsx(
+        'border-ink-300 justify-between border-b',
+        isSelected ? 'bg-canvas-50' : isHovered ? 'bg-canvas-50/50' : ''
+      )}
+    >
       <Row className="items-center">
         <div
           className=" mr-2 h-full w-4 transition-colors sm:h-8"

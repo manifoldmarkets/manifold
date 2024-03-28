@@ -104,6 +104,7 @@ export function StateBar(props: {
   backgroundImage?: string
   width: string
   isMobile: boolean
+  displayState?: (state: string) => string
 }) {
   const {
     handleClick,
@@ -116,6 +117,7 @@ export function StateBar(props: {
     fill,
     width,
     isMobile,
+    displayState,
   } = props
   const selected = targetState === state
   const isHovered = hoveredState === state
@@ -145,7 +147,9 @@ export function StateBar(props: {
             '0 text-ink-700 absolute left-0 top-6 z-20 gap-1 rounded py-1 transition-all'
           )}
         >
-          <div className="whitespace-nowrap font-semibold">{state}</div>
+          <div className="whitespace-nowrap font-semibold">
+            {displayState ? displayState(state) : state}
+          </div>
         </Row>
       )}
     </div>

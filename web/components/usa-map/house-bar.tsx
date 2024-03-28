@@ -61,11 +61,13 @@ export function HouseBar(props: {
         <StateBar
           key={'DEM'}
           handleClick={() => {}}
-          onMouseEnter={() => {}}
-          onMouseLeave={() => {}}
+          onMouseEnter={() => {
+            onMouseEnter('Likely DEM - 170 seats')
+          }}
+          onMouseLeave={onMouseLeave}
           targetState={targetAnswer}
           hoveredState={hoveredAnswer}
-          state={'Definitely Democratic'}
+          state={'Likely DEM - 170 seats'}
           width={`${(democraticPortion / seatPortion) * 100}%`}
           fill={DEM_DARK_HEX}
           isMobile={isMobile}
@@ -81,6 +83,7 @@ export function HouseBar(props: {
               targetState={targetAnswer}
               hoveredState={hoveredAnswer}
               state={answer.text}
+              displayState={(state) => state.slice(0, 5)}
               fill={fill}
               width={`${(1 / seatPortion) * 100}%`}
               isMobile={isMobile}
@@ -91,11 +94,13 @@ export function HouseBar(props: {
         <StateBar
           key={'REP'}
           handleClick={() => {}}
-          onMouseEnter={() => {}}
-          onMouseLeave={() => {}}
+          onMouseEnter={() => {
+            onMouseEnter('Likely REP - 193 seats')
+          }}
+          onMouseLeave={onMouseLeave}
           targetState={targetAnswer}
           hoveredState={hoveredAnswer}
-          state={'Definitely Republican'}
+          state={'Likely REP - 193 seats'}
           fill={REP_DARK_HEX}
           width={`${(republicanPortion / seatPortion) * 100}%`}
           isMobile={isMobile}
