@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
-import { Congress } from 'web/public/custom-components/congress'
 import { CongressCenter } from 'web/public/custom-components/congress_center'
 import { CongressHouse } from 'web/public/custom-components/congress_house'
 import { CongressSenate } from 'web/public/custom-components/congress_senate'
