@@ -21,7 +21,6 @@ import { track } from 'web/lib/service/analytics'
 import { useZoom } from '../charts/helpers'
 import { periodDurations } from 'web/lib/util/time'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
-import { useUser } from 'web/hooks/use-user'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -268,8 +267,6 @@ function PortfolioValueSkeleton(props: {
     size = 'md',
   } = props
 
-  const isCurrentUser = userId === useUser()?.id
-
   const profitLabel = onlyShowProfit
     ? {
         daily: 'Daily profit',
@@ -304,22 +301,6 @@ function PortfolioValueSkeleton(props: {
           {profitElement}
         </Col>
 
-        {valueElement && (
-          <Col
-            className={clsx(
-              'w-24 cursor-pointer sm:w-28',
-              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-            )}
-            onClick={() => {
-              onClickNumber('value')
-              track('Portfolio Value Clicked')
-            }}
-          >
-            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
-            {!isCurrentUser && valueElement}
-          </Col>
-        )}
-
         {balanceElement && (
           <Col
             className={clsx(
@@ -334,7 +315,23 @@ function PortfolioValueSkeleton(props: {
             }}
           >
             <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
-            {!isCurrentUser && balanceElement}
+            {balanceElement}
+          </Col>
+        )}
+
+        {valueElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28',
+              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+            )}
+            onClick={() => {
+              onClickNumber('value')
+              track('Portfolio Value Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
+            {valueElement}
           </Col>
         )}
 
