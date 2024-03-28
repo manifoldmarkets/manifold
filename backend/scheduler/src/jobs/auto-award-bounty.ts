@@ -33,7 +33,7 @@ export const autoAwardBounty = async () => {
     console.log('total payout', totalPayout)
     const comments = await pg.map(
       `select
-        comment_id, user_id, likes, (data->>'bountyAwarded')::numeric as bountyAwarded,
+        comment_id, user_id, likes, (data->>'bountyAwarded')::numeric as bounty_awarded,
         data->>'content' as content
       from contract_comments
       where contract_id = $1
@@ -43,7 +43,7 @@ export const autoAwardBounty = async () => {
         likes: Number(r.likes),
         commentId: r.comment_id as string,
         userId: r.user_id as string,
-        bountyAwarded: Number(r.bountyAwarded ?? 0),
+        bountyAwarded: Number(r.bounty_awarded ?? 0),
         content: r.content as string,
       })
     )
