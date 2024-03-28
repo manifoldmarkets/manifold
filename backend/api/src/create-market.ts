@@ -382,12 +382,17 @@ function validateMarketBody(body: Body) {
     ))
     if (min >= max)
       throw new APIError(400, 'Numeric markets must have min < max.')
-    const { numberOfBuckets } = validateMarketType(
+    const { precision } = validateMarketType(
       outcomeType,
       createMultiNumericSchema,
       body
     )
-    answers = getMultiNumericAnswerBucketRangeNames(min, max, numberOfBuckets)
+    answers = getMultiNumericAnswerBucketRangeNames(min, max, precision)
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {

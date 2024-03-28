@@ -25,7 +25,6 @@ const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
       obj: pt.obj,
     }))
   )
-  console.log('expectedValues', expectedValues)
   return map(zip(...expectedValues), (group) => ({
     y: sum(group.map((pt) => pt.y)) ?? 0,
     x: group[0].x,
@@ -56,7 +55,7 @@ export const MultiNumericContractChart = (props: {
 
   const singlePointData = useMemo(
     () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
-    [betPoints, start, startP, end, endP]
+    [JSON.stringify(betPoints), start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])

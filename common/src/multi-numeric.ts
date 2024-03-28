@@ -1,4 +1,4 @@
-import { CPMMNumericContract } from 'common/contract'
+import { CPMMNumericContract, MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { find, findLast, mean, sum } from 'lodash'
 import {
@@ -14,32 +14,30 @@ export const getMultiNumericAnswerMidpoints = (
   return contract.answers.map((a) => mean(answerTextToRange(a.text)))
 }
 
-export const getNumericBucketSize = (
-  min: number,
-  max: number,
-  buckets: number
-) => (max - min) / buckets
+export const getPrecision = (min: number, max: number, buckets: number) =>
+  (max - min) / buckets
 
 export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
-  getNumericBucketSize(min, max, buckets) > 10 / buckets ? 0 : 2
+  getPrecision(min, max, buckets) > 10 / buckets ? 0 : 2
 
 export const getMultiNumericAnswerBucketRanges = (
   min: number,
   max: number,
-  buckets: number
+  precision: number
 ) => {
   const rangeSize = max - min
-  if (rangeSize === 0 || isNaN(buckets)) {
+  if (rangeSize === 0 || isNaN(precision)) {
     return [[min, max]]
   }
-  const stepSize = rangeSize / buckets
-  const decimalPlaces = getDecimalPlaces(min, max, buckets)
+  const decimalPlaces = precision < 1 ? 2 : 0
+  const buckets = Math.ceil(rangeSize / precision)
 
   const ranges: [number, number][] = []
   for (let i = 0; i < buckets; i++) {
-    const bucketStart = Number((min + i * stepSize).toFixed(decimalPlaces))
-    const bucketEnd = Number((min + (i + 1) * stepSize).toFixed(decimalPlaces))
-    ranges.push([bucketStart, bucketEnd])
+    const bucketStart = Number((min + i * precision).toFixed(decimalPlaces))
+    const bucketEnd = Number((min + (i + 1) * precision).toFixed(decimalPlaces))
+    if (bucketEnd > max) ranges.push([bucketStart, max])
+    else ranges.push([bucketStart, bucketEnd])
   }
 
   return ranges
@@ -48,9 +46,14 @@ export const getMultiNumericAnswerBucketRanges = (
 export const getMultiNumericAnswerBucketRangeNames = (
   min: number,
   max: number,
-  buckets: number
+  precision: number
 ) => {
-  const ranges = getMultiNumericAnswerBucketRanges(min, max, buckets)
+  const highestPrecision = (max - min) / MULTI_NUMERIC_BUCKETS_MAX
+  const lowestPrecision = (max - min) / 2
+  const hasPrecisionError =
+    !precision || precision < highestPrecision || precision > lowestPrecision
+  if (hasPrecisionError) return []
+  const ranges = getMultiNumericAnswerBucketRanges(min, max, precision)
   return ranges.map(([min, max]) => `${min}-${max}`)
 }
 export const answerToRange = (answer: Answer) => answerTextToRange(answer.text)

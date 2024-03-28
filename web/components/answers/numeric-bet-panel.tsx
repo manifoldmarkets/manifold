@@ -178,7 +178,7 @@ export const NumericBetPanel = (props: {
     potentialExpectedValue,
     potentialContractState,
   } = useMemo(() => {
-    if (!betAmount || !answersToBuy)
+    if (!betAmount || !answersToBuy || !mode)
       return {
         currentReturnPercent: '0%',
         potentialPayout: 0,
@@ -223,6 +223,7 @@ export const NumericBetPanel = (props: {
     unfilledBets,
     JSON.stringify(balanceByUserId),
     debouncedRange,
+    mode,
   ])
 
   return (
