@@ -1,6 +1,9 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
 import { Congress } from 'web/public/custom-components/congress'
+import { CongressCenter } from 'web/public/custom-components/congress_center'
+import { CongressHouse } from 'web/public/custom-components/congress_house'
+import { CongressSenate } from 'web/public/custom-components/congress_senate'
 import { WhiteHouse } from 'web/public/custom-components/whiteHouse'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
@@ -29,18 +32,21 @@ import {
   MapContractsDictionary,
   swingStates,
 } from 'web/public/data/elections-data'
+import { HouseTable } from './house-table'
 
-type MapMode = 'presidency' | 'senate' | 'governor'
+type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
 export function HomepageMap(props: {
   rawPresidencyStateContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
+  houseContract: MultiContract
 }) {
   const {
     rawPresidencyStateContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
+    houseContract,
   } = props
 
   const presidencyContractsDictionary = Object.keys(
@@ -72,7 +78,9 @@ export function HomepageMap(props: {
     return acc
   }, {} as MapContractsDictionary)
 
-  const [mode, setMode] = useState<MapMode>('presidency')
+  const liveHouseContract = useLiveContract(houseContract)
+
+  const [mode, setMode] = useState<MapMode>('house')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
     undefined
@@ -177,6 +185,16 @@ export function HomepageMap(props: {
             <EmptyStateContract />
           )}
         </>
+      ) : mode === 'house' ? (
+        <>
+          <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
+            Which party will win the House?
+          </div>
+          <HouseTable
+            liveHouseContract={liveHouseContract as CPMMMultiContract}
+          />
+          <Spacer h={4} />
+        </>
       ) : (
         <>
           <div className="pointer-events-none mx-auto font-semibold sm:text-lg">
@@ -234,28 +252,51 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
               '-mb-3',
               mode === 'presidency'
                 ? 'fill-primary-700'
-                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
+                : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
             )}
           />
         }
         text="Presidency"
       />
-      <MapTabButton
-        onClick={() => setMode('senate')}
-        isActive={mode === 'senate'}
-        icon={
-          <Congress
-            height={9}
-            className={clsx(
-              '-mb-3',
-              mode === 'senate'
-                ? 'fill-primary-700'
-                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
-            )}
-          />
-        }
-        text="Senate"
-      />
+      <Row className="relative">
+        <MapTabButton
+          onClick={() => setMode('senate')}
+          isActive={mode === 'senate'}
+          icon={
+            <CongressSenate
+              height={9}
+              className={clsx(
+                '-mb-3 -mr-6',
+                mode === 'senate'
+                  ? 'fill-primary-700'
+                  : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
+              )}
+            />
+          }
+          text="Senate"
+        />
+        <CongressCenter
+          height={9}
+          className={clsx('-ml-[15.5px] -mr-[13.5px]', 'fill-ink-500')}
+        />
+        <MapTabButton
+          onClick={() => setMode('house')}
+          isActive={mode === 'house'}
+          className="items-start"
+          icon={
+            <CongressHouse
+              height={9}
+              className={clsx(
+                '-mb-3 -ml-6',
+                mode === 'house'
+                  ? 'fill-primary-700'
+                  : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
+              )}
+            />
+          }
+          text="House"
+        />
+      </Row>
       <MapTabButton
         onClick={() => setMode('governor')}
         isActive={mode === 'governor'}
@@ -266,7 +307,7 @@ function MapTab(props: { mode: MapMode; setMode: (mode: MapMode) => void }) {
               '-mb-2 mt-1',
               mode === 'governor'
                 ? 'fill-primary-700'
-                : 'fill-ink-500 hover:fill-ink-700 transition-colors'
+                : 'fill-ink-500 group-hover:fill-ink-700 transition-colors'
             )}
           />
         }
@@ -281,14 +322,16 @@ function MapTabButton(props: {
   isActive: boolean
   icon: ReactNode
   text: string
+  className?: string
 }) {
-  const { onClick, isActive, icon, text } = props
+  const { onClick, isActive, icon, text, className } = props
   return (
     <button
       onClick={onClick}
       className={clsx(
         'group flex flex-col items-center transition-colors',
-        isActive ? 'text-primary-700' : 'text-ink-500 hover:text-ink-700 '
+        isActive ? 'text-primary-700' : 'text-ink-500 hover:text-ink-700 ',
+        className
       )}
     >
       {icon}

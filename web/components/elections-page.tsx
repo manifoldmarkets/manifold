@@ -29,6 +29,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
     republicanCandidateContract,
     democratCandidateContract,
     republicanVPContract,
+    houseContract,
     // democraticVPContract,
     // democraticElectability,
     // republicanElectability,
@@ -40,7 +41,8 @@ export function USElectionsPage(props: ElectionsPageProps) {
     !electionPartyContract ||
     !electionCandidateContract ||
     !republicanCandidateContract ||
-    !democratCandidateContract
+    !democratCandidateContract ||
+    !houseContract
     //  || !democraticElectability ||
     // !republicanElectability
   ) {
@@ -203,6 +205,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
         rawPresidencyStateContracts={rawPresidencyStateContracts}
         rawSenateStateContracts={rawSenateStateContracts}
         rawGovernorStateContracts={rawGovernorStateContracts}
+        houseContract={houseContract as MultiContract}
       />
       {/* <Col className="gap-6 sm:hidden sm:gap-8">
         <PoliticsCard
