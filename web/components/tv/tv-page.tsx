@@ -68,7 +68,14 @@ const usePresences = (streamId?: number) => {
     const chan = db.channel(`tv:${streamId}`)
     chan
       .on('presence', { event: 'sync' }, () => {
-        console.log('sync')
+        setUsers(
+          uniqBy(
+            Object.values(chan.presenceState<Presence>())
+              .map((s) => s[0])
+              .sort((a, b) => a.onlineAt - b.onlineAt),
+            'id'
+          )
+        )
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         setUsers((users) => uniqBy([...(newPresences as any), ...users], 'id'))
