@@ -11,6 +11,7 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { Col } from '../layout/col'
+import { HouseBar } from './house-bar'
 
 export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   const { liveHouseContract } = props
@@ -28,9 +29,25 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
     () => sortAnswers(liveHouseContract, answers, sort),
     [answers, sort]
   )
+
+  const [targetAnswer, setTargetAnswer] = useState<string | undefined>(
+    undefined
+  )
+  const [hoverAnswer, setHoverAnswer] = useState<string | undefined>(undefined)
   return (
     <>
-      <Row className="text-ink-500 mb-1 w-full justify-between text-sm">
+      <HouseBar
+        liveAnswers={answers}
+        liveHouseContract={liveHouseContract}
+        handleClick={(newTargetAnswer: string | undefined) =>
+          setTargetAnswer(newTargetAnswer)
+        }
+        onMouseEnter={(hoverAnswer: string) => setHoverAnswer(hoverAnswer)}
+        onMouseLeave={() => setHoverAnswer(undefined)}
+        targetAnswer={targetAnswer}
+        hoveredAnswer={hoverAnswer}
+      />
+      <Row className="text-ink-500 bg-canvas-0 sticky top-9 mb-1 w-full justify-between text-sm">
         <Row>
           <button
             className="group flex w-[88px] flex-row items-center sm:w-[184px]"
@@ -86,7 +103,7 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
         </button>
         <Row className="hidden gap-4 sm:flex">
           <button
-            className="group flex w-24 flex-row items-center"
+            className="text-azure-600 dark:text-azure-400 group flex w-24 flex-row items-center"
             onClick={() => {
               if (sort == 'prob-asc') {
                 setSort('prob-desc')
@@ -100,13 +117,13 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
               className={clsx(
                 ' h-4 w-4 transition-colors',
                 sort == 'prob-asc'
-                  ? 'text-ink-500'
-                  : 'group-hover:text-ink-500 text-ink-200 dark:text-ink-300'
+                  ? 'text-azure-600 dark:text-azure-400'
+                  : 'group-hover:text-azure-600 group-hover:dark:text-azure-400 text-ink-200 dark:text-ink-300'
               )}
             />
           </button>
           <button
-            className="w-22 group flex flex-row items-center justify-end"
+            className="w-22 text-sienna-600 dark:text-sienna-400 group flex flex-row items-center justify-end"
             onClick={() => {
               if (sort == 'prob-desc') {
                 setSort('prob-asc')
@@ -120,8 +137,8 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
               className={clsx(
                 ' h-4 w-4 transition-colors',
                 sort == 'prob-desc'
-                  ? 'text-ink-500'
-                  : 'group-hover:text-ink-500 text-ink-200 dark:text-ink-300'
+                  ? 'text-sienna-600 dark:text-sienna-400'
+                  : 'group-hover:text-sienna-600 group-hover:dark:text-sienna-400 text-ink-200 dark:text-ink-300'
               )}
             />
           </button>

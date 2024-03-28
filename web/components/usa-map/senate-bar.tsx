@@ -93,7 +93,7 @@ export function SenateBar(props: {
   )
 }
 
-function StateBar(props: {
+export function StateBar(props: {
   handleClick: (newTargetState: string | undefined) => void
   onMouseEnter: (hoverState: string) => void
   onMouseLeave: () => void
