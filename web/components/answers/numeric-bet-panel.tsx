@@ -82,13 +82,13 @@ export const NumericBetPanel = (props: {
   const stringifiedAnswers = JSON.stringify(answers)
 
   const betLabel = showDistribution
-    ? `${range[0]} - ${range[1]}`
+    ? `${range[0]} ≤ val < ${range[1]}`
     : mode === 'less than'
     ? `${capitalize(labels.lower)} than ` +
       formatExpectedValue(range[1], contract)
     : mode === 'more than'
     ? formatExpectedValue(range[0], contract) + ` or ${labels.higher}`
-    : `${range[0]} - ${range[1]}`
+    : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
     mode === 'less than'
