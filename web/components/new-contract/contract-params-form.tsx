@@ -62,6 +62,7 @@ import { TopicSelectorSection } from 'web/components/new-contract/topic-selector
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -81,9 +82,9 @@ export function ContractParamsForm(props: {
     params?.max?.toString() ?? '',
     'max' + paramsKey
   )
-  const [numberOfBuckets, setNumberOfBuckets] = usePersistentLocalState(
-    params?.numBuckets ?? MULTI_NUMERIC_BUCKETS_MAX,
-    'buckets-num' + paramsKey
+  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
+    params?.precision ?? 1,
+    'numeric-precision' + paramsKey
   )
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
     !!params?.isLogScale,
@@ -278,6 +279,11 @@ export function ContractParamsForm(props: {
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
 
+  const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
+    min ?? 0,
+    max ?? 0,
+    precision && precision > 0 ? precision : 1
+  ).length
   const isValid =
     isValidQuestion &&
     ante !== undefined &&
@@ -358,7 +364,7 @@ export function ContractParamsForm(props: {
     setHasChosenCategory(false)
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
-    setNumberOfBuckets(MULTI_NUMERIC_BUCKETS_MAX)
+    setPrecision(1)
   }
 
   const [submitState, setSubmitState] = useState<
@@ -390,7 +396,7 @@ export function ContractParamsForm(props: {
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
-        numberOfBuckets,
+        precision,
       })
       const newContract = await api('market', createProps as any)
 
@@ -562,10 +568,10 @@ export function ContractParamsForm(props: {
           maxString={maxString}
           setMaxString={setMaxString}
           submitState={submitState}
+          precision={precision}
+          setPrecision={setPrecision}
           min={min}
           max={max}
-          numBuckets={numberOfBuckets}
-          setNumBuckets={setNumberOfBuckets}
           paramsKey={paramsKey}
         />
       )}

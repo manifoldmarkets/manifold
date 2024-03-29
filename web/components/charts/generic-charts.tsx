@@ -127,6 +127,49 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     </SVGChart>
   )
 }
+export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
+  data: P[]
+  otherData: P[]
+  w: number
+  h: number
+  color: string
+  xScale: ScaleContinuousNumeric<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
+  curve?: CurveFactory
+}) => {
+  const { data, otherData, w, h, color, xScale, yScale, curve } = props
+
+  const px = useCallback((p: P) => xScale(p.x), [xScale])
+  const py0 = yScale(yScale.domain()[0])
+  const py1 = useCallback((p: P) => yScale(p.y), [yScale])
+
+  const { xAxis, yAxis } = useMemo(() => {
+    const xAxis = axisBottom<number>(xScale).ticks(w / 100)
+    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n))
+    return { xAxis, yAxis }
+  }, [w, xScale, yScale])
+
+  return (
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve ?? curveLinear}
+      />
+      <AreaWithTopStroke
+        color={'#d968ff'}
+        data={otherData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve ?? curveLinear}
+      />
+    </SVGChart>
+  )
+}
 
 // multi line chart
 export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {

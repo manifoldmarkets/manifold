@@ -323,6 +323,8 @@ export type MultipleChoice = {
 export type MultipleNumeric = {
   outcomeType: 'NUMBER'
   answers: Answer[]
+  min: number
+  max: number
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
@@ -456,8 +458,8 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
-export const MULTI_NUMERIC_BUCKETS_MAX = 10
-export const MULTI_NUMERIC_CREATION_ENABLED = false
+export const MULTI_NUMERIC_BUCKETS_MAX = 50
+export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const

@@ -8,7 +8,6 @@ import {
   MultiContract,
   RESOLUTIONS,
   VISIBILITIES,
-  MULTI_NUMERIC_BUCKETS_MAX,
 } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
@@ -297,7 +296,7 @@ export const createMultiNumericSchema = z.object({
   outcomeType: z.enum(['NUMBER']),
   min: z.number().safe(),
   max: z.number().safe(),
-  numberOfBuckets: z.number().min(2).max(MULTI_NUMERIC_BUCKETS_MAX),
+  precision: z.number().gt(0),
 })
 
 export const createBountySchema = z.object({

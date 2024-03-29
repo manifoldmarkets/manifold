@@ -12,6 +12,7 @@ const colors = {
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
   // light: ['primary-200', 'primary-300']
 } as const
+export type Mark = { value: number; label: string }
 
 export function Slider(props: {
   amount: number
@@ -19,7 +20,7 @@ export function Slider(props: {
   min?: number
   max?: number
   step?: number
-  marks?: { value: number; label: string }[]
+  marks?: Mark[]
   color?: keyof typeof colors
   className?: string
   disabled?: boolean
@@ -77,9 +78,6 @@ export function Slider(props: {
         </div>
       </Track>
       <Thumb className={thumbClasses} />
-      {/* {marks.map (value) => (
-          <Mark>{value}</Mark>
-        } */}
     </RxSlider.Root>
   )
 }
@@ -95,7 +93,7 @@ export function RangeSlider(props: {
   color?: keyof typeof colors
   handleSize?: number
   className?: string
-  marks?: { value: number; label: string }[]
+  marks?: Mark[]
 }) {
   const {
     lowValue,
