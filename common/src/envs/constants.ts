@@ -150,6 +150,7 @@ export const BOT_USERNAMES = [
   'AImogus',
   'brake',
   'brontobot',
+  'OracleBot',
 ]
 
 export const MOD_IDS = [
