@@ -1,4 +1,3 @@
-import { track } from '@amplitude/analytics-browser'
 import { XIcon } from '@heroicons/react/outline'
 import { CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -28,7 +27,7 @@ import { BuyAmountInput } from '../widgets/amount-input'
 
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { withTracking } from 'web/lib/service/analytics'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { YourOrders } from '../bet/order-book'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import {
