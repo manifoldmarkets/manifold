@@ -79,7 +79,7 @@ export function HomepageMap(props: {
 
   const liveHouseContract = useLiveContract(houseContract)
 
-  const [mode, setMode] = useState<MapMode>('house')
+  const [mode, setMode] = useState<MapMode>('presidency')
 
   const [targetState, setTargetState] = useState<string | undefined | null>(
     undefined

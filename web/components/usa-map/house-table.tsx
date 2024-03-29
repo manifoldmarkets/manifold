@@ -210,7 +210,7 @@ function HouseRow(props: {
     <Row
       id={id}
       className={clsx(
-        'border-ink-300 justify-between border-b transition-colors',
+        'border-ink-300 justify-between border-b py-2 transition-colors sm:py-0',
         isSelected ? 'bg-canvas-50' : isHovered ? 'bg-canvas-50/50' : '',
         isFirst ? 'border-t' : ''
       )}
