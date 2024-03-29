@@ -68,6 +68,7 @@ export const MultiNumericContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      negativeThreshold={min}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={singlePointData}
