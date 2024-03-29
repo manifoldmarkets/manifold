@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
-import { Row } from 'web/components/layout/row'
 
 const colors = {
   green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
@@ -141,51 +140,6 @@ export function RangeSlider(props: {
       </Track>
       <Thumb className={thumbClasses} />
       <Thumb className={thumbClasses} />
-    </RxSlider.Root>
-  )
-}
-
-export const DistributionRangeSlider = (props: {
-  lowValue: number
-  highValue: number
-  setValues: (low: number, high: number) => void
-  min?: number
-  max?: number
-  disabled?: boolean
-  step?: number
-  color?: keyof typeof colors
-  handleSize?: number
-  className?: string
-}) => {
-  const {
-    lowValue,
-    highValue,
-    setValues,
-    min,
-    max,
-    step,
-    disabled,
-    color = 'indigo',
-    className,
-  } = props
-
-  const [trackClasses, thumbClasses] = colors[color]
-
-  return (
-    <RxSlider.Root
-      className={clsx(className, 'relative flex touch-none select-none')}
-      value={[lowValue, highValue]}
-      step={step ?? 1}
-      onValueChange={([low, high]) => setValues(low, high)}
-      min={min}
-      max={max}
-      disabled={disabled}
-    >
-      <Track className={trackClasses}></Track>
-      <Row className={'mb-3'}>
-        <Thumb className={thumbClasses} />
-        <Thumb className={thumbClasses} />
-      </Row>
     </RxSlider.Root>
   )
 }

@@ -8,7 +8,7 @@ import { capitalize, debounce, find, first, groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { DistributionRangeSlider } from 'web/components/widgets/slider'
+import { RangeSlider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
@@ -245,7 +245,7 @@ export const NumericBetPanel = (props: {
               />
             )}
           </SizedContainer>
-          <DistributionRangeSlider
+          <RangeSlider
             step={Math.abs(maximum - minimum) / contract.answers.length}
             color={'indigo'}
             className={'mr-8 h-4 items-end'}
