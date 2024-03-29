@@ -18,7 +18,7 @@ export const getPrecision = (min: number, max: number, buckets: number) =>
   (max - min) / buckets
 
 export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
-  getPrecision(min, max, buckets) > 10 / buckets ? 0 : 2
+  getPrecision(min, max, buckets) % 1 === 0 ? 0 : 2
 
 export const getMultiNumericAnswerBucketRanges = (
   min: number,
@@ -29,7 +29,7 @@ export const getMultiNumericAnswerBucketRanges = (
   if (rangeSize === 0 || isNaN(precision)) {
     return [[min, max]]
   }
-  const decimalPlaces = precision < 1 ? 2 : 0
+  const decimalPlaces = precision % 1 === 0 ? 0 : 2
   const buckets = Math.ceil(rangeSize / precision)
 
   const ranges: [number, number][] = []
@@ -79,7 +79,6 @@ export const answerTextToMidpoint = (answerText: string) => {
   const [min, max] = answerTextToRange(answerText)
   return (max + min) / 2
 }
-const answerToMidpoint = (answer: Answer) => answerTextToMidpoint(answer.text)
 
 export function getExpectedValue(
   contract: CPMMNumericContract,

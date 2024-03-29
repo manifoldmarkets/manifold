@@ -3,9 +3,15 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { useEffect, useState } from 'react'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import {
+  getMultiNumericAnswerBucketRangeNames,
+  getMultiNumericAnswerBucketRanges,
+} from 'common/multi-numeric'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { track } from 'web/lib/service/analytics'
+import { useEvent } from 'web/hooks/use-event'
 
 export const MultiNumericRangeSection = (props: {
   minString: string
@@ -41,6 +47,7 @@ export const MultiNumericRangeSection = (props: {
     : 0
 
   const [precisionError, setPrecisionError] = useState<string>()
+  const [includeMax, setIncludeMax] = useState<boolean>(true)
   const minMaxError = min !== undefined && max !== undefined && min >= max
 
   useEffect(() => {
@@ -67,14 +74,29 @@ export const MultiNumericRangeSection = (props: {
       }
     }
     if (precision < highestPrecision || precision > lowestPrecision) return
-    const ranges = getMultiNumericAnswerBucketRangeNames(min, max, precision)
-    setBuckets(ranges)
-  }, [min, max, precision])
+    if (precision === 1) {
+      const ranges = getMultiNumericAnswerBucketRanges(min, max, precision)
+      setBuckets(ranges.map((r) => r[0].toString()))
+    } else {
+      const ranges = getMultiNumericAnswerBucketRangeNames(min, max, precision)
+      setBuckets(ranges)
+    }
+  }, [min, max, precision, includeMax])
 
-  const updatePrecision = (value: number) => {
-    if (isNaN(value) || value <= 0) setPrecision(undefined)
-    else setPrecision(value)
-  }
+  const updatePrecision = useEvent((value: number) => {
+    if (isNaN(value) || value <= 0) {
+      setPrecision(undefined)
+      setDisplayPrecision('')
+      setMaxString(displayMaxString)
+    } else {
+      const newMaxString = (
+        parseFloat(maxString) - (includeMax ? precision ?? 0 : 0)
+      ).toString()
+      setPrecision(value)
+      setDisplayPrecision(value.toString())
+      updateMax(newMaxString, value)
+    }
+  })
 
   const [buckets, setBuckets] = usePersistentLocalState<string[] | undefined>(
     undefined,
@@ -84,16 +106,37 @@ export const MultiNumericRangeSection = (props: {
   const [showAllBuckets, setShowAllBuckets] = useState(
     max && min ? numberOfBuckets <= bucketsToShow * 2 : false
   )
+  const [displayMaxString, setDisplayMaxString] = useState<string>(maxString)
+  const [displayPrecision, setDisplayPrecision] = useState<string>(
+    (precision ?? 1).toString()
+  )
+
+  const updateMax = (value: string, precision: number) => {
+    if (includeMax) setMaxString((parseFloat(value) + precision).toString())
+    else setMaxString(value)
+    setDisplayMaxString(value)
+  }
+
+  useEffect(() => {
+    const maxIncludingPrecision = (
+      parseFloat(maxString) + (precision ?? 0)
+    ).toString()
+    if (includeMax && maxString !== maxIncludingPrecision) {
+      setMaxString(maxIncludingPrecision)
+    } else if (!includeMax && maxString !== displayMaxString) {
+      setMaxString(displayMaxString)
+    }
+  }, [includeMax])
 
   return (
     <Col>
       <Row className={'flex-wrap gap-x-4'}>
         <Col className="mb-2 items-start">
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Range (excludes max) </span>
+          <Row className=" gap-1 px-1 py-2">
+            <span className="">Range </span>
             <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
-          </label>
-          <Row className="gap-2">
+          </Row>
+          <Row className={'gap-2'}>
             <Input
               type="number"
               error={minMaxError}
@@ -104,15 +147,16 @@ export const MultiNumericRangeSection = (props: {
               disabled={submitState === 'LOADING'}
               value={minString ?? ''}
             />
+
             <Input
               type="number"
               error={minMaxError}
               className="w-32"
               placeholder="High"
               onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setMaxString(e.target.value)}
+              onChange={(e) => updateMax(e.target.value, precision ?? 0)}
               disabled={submitState === 'LOADING'}
-              value={maxString}
+              value={displayMaxString}
             />
           </Row>
         </Col>
@@ -120,7 +164,7 @@ export const MultiNumericRangeSection = (props: {
           <label className="gap-2 px-1 py-2">
             <span className="mb-1">Precision </span>
             <InfoTooltip
-              text={`The precision of the range. The range will be divided into buckets of this size.`}
+              text={`The precision of the range. The range will be divided into possible answers of this size.`}
             />
           </label>
           <Input
@@ -129,11 +173,12 @@ export const MultiNumericRangeSection = (props: {
             placeholder="Precision"
             error={!!precisionError && !minMaxError}
             onClick={(e) => e.stopPropagation()}
-            onChange={(e) => updatePrecision(parseFloat(e.target.value))}
+            onChange={(e) => setDisplayPrecision(e.target.value)}
+            onBlur={(e) => updatePrecision(parseFloat(e.target.value))}
             disabled={submitState === 'LOADING'}
             min={highestPrecision}
             max={lowestPrecision}
-            value={precision}
+            value={displayPrecision}
           />
           <span className="text-scarlet-500 text-sm">{precisionError}</span>
         </Col>
@@ -146,12 +191,27 @@ export const MultiNumericRangeSection = (props: {
       )}
       {buckets && (
         <Col className={'gap-1'}>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Buckets </span>
-            <InfoTooltip
-              text={`These are the possible answers to the question. The more buckets there are, the more precise forecast is.`}
-            />
-          </label>
+          <Row>
+            <label className="gap-2 px-1 py-2">
+              <span className="mb-1">Answers </span>
+              <InfoTooltip
+                text={`You will choose one of these answers when you resolve the question. The more answers there are, the more precise forecast is.`}
+              />
+            </label>
+            <Row className="ml-2 items-center gap-1.5">
+              <ShortToggle
+                size={'sm'}
+                on={includeMax}
+                setOn={(toggle) => {
+                  setIncludeMax(toggle)
+                  track('Include max toggle', { toggle })
+                }}
+              />
+              <span className={'my-auto  text-sm'}>
+                Include max + precision
+              </span>
+            </Row>
+          </Row>
           <Row className={'ml-1 flex-wrap items-center gap-2'}>
             {buckets
               .slice(
@@ -163,7 +223,13 @@ export const MultiNumericRangeSection = (props: {
               .map((a, i) => (
                 <span className={'whitespace-nowrap'} key={a}>
                   {a}
-                  {i === 0 ? ', ' : ''}
+                  {showAllBuckets
+                    ? i !== buckets.length - 1
+                      ? ', '
+                      : ''
+                    : i === 0
+                    ? ', '
+                    : ''}
                 </span>
               ))}
             {!showAllBuckets && numberOfBuckets > 4 && (
