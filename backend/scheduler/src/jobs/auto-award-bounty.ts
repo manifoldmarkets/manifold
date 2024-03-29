@@ -6,7 +6,7 @@ import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { awardBounty } from 'shared/bounty'
 import { promptGPT4 } from 'shared/helpers/openai-utils'
-import { revalidateContractStaticProps } from 'shared/utils'
+import { log, revalidateContractStaticProps } from 'shared/utils'
 
 export const autoAwardBounty = async () => {
   const pg = createSupabaseDirectClient()
@@ -23,14 +23,14 @@ export const autoAwardBounty = async () => {
     (r) => r.data as BountiedQuestionContract
   )
 
-  console.log(
+  log(
     'Auto awarding bounties for contracts:',
     contracts.map((c) => c.question)
   )
 
   for (const contract of contracts) {
     const totalPayout = getAutoBountyPayoutPerHour(contract)
-    console.log('total payout', totalPayout)
+    log('total payout', totalPayout)
     const comments = await pg.map(
       `select
         comment_id, user_id, likes, (data->>'bountyAwarded')::numeric as bounty_awarded,
@@ -47,7 +47,7 @@ export const autoAwardBounty = async () => {
         content: r.content as string,
       })
     )
-    console.log('comments', comments)
+    log('comments', comments)
     const totalLikes = sumBy(comments, 'likes')
 
     for (const comment of comments) {
@@ -90,5 +90,5 @@ The following comments have been submitted:
     await revalidateContractStaticProps(contract)
   }
 
-  console.log('Done awarding bounties')
+  log('Done awarding bounties')
 }
