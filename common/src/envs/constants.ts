@@ -204,7 +204,7 @@ export const MOD_IDS = [
   'ps3zKQSRuzLJVMzDQMAOlCDFRgG2', // yaboi69
 ]
 
-export const MVP = ['Eliza']
+export const MVP = ['Eliza', 'Gabrielle']
 export const BTE_USER_ID = '4JuXgDx47xPagH5mcLDqLzUSN5g2'
 
 export const VERIFIED_USERNAMES = [
