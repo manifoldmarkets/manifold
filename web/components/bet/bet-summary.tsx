@@ -229,6 +229,13 @@ export function BetsSummary(props: {
           contract={contract as CPMMMultiContract}
         />
       )}
+      {/*{includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (*/}
+      {/*  <SellPanel*/}
+      {/*    contract={contract}*/}
+      {/*    user={includeSellButton}*/}
+      {/*    userBets={userBets}*/}
+      {/*  />*/}
+      {/*)}*/}
     </Col>
   )
 }

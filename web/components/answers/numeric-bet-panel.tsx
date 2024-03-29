@@ -28,7 +28,10 @@ import { XIcon } from '@heroicons/react/solid'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { SellSharesModal } from 'web/components/bet/sell-row'
-import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
+import {
+  calculateCpmmMultiArbitrageSellYesEqually,
+  calculateCpmmMultiArbitrageYesBets,
+} from 'common/calculate-cpmm-arbitrage'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 import { getContractBetMetrics } from 'common/calculate'
@@ -369,19 +372,36 @@ export const SellPanel = (props: {
   userBets: Bet[]
 }) => {
   const { contract, user, userBets } = props
-  const [showSellButtons, setShowSellButtons] = useState(false)
+  const [showSellButtons, _] = useState(false)
   const metric = getContractBetMetrics(contract, userBets)
   if (floatingEqual(metric.invested, 0)) return null
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
+  const totalShares = sumBy(userBets, (bet) => bet.shares)
+  const answersWithSharesIn = contract.answers.filter(
+    (a) => sumBy(userBetsByAnswer[a.id], (b) => b.shares) > 0
+  )
+  const sellAllShares = async () => {
+    const res = calculateCpmmMultiArbitrageSellYesEqually(
+      contract.answers,
+      answersWithSharesIn,
+      totalShares / answersWithSharesIn.length,
+      [],
+      {}
+    )
+    console.log('res', res)
+  }
   return (
     <Col className={'mt-2 gap-2'}>
       <Button
         color={'gray-outline'}
         className={'w-24'}
         size={'sm'}
-        onClick={() => setShowSellButtons(!showSellButtons)}
+        onClick={async () => {
+          await sellAllShares()
+          // setShowSellButtons(!showSellButtons)
+        }}
       >
-        {showSellButtons ? 'Hide' : 'Show'} sell
+        Sell {Math.floor(totalShares)} shares
       </Button>
       <Row className={'flex-wrap gap-1 sm:gap-2'}>
         {showSellButtons &&
