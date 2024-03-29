@@ -42,7 +42,6 @@ import { SizedContainer } from 'web/components/sized-container'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
-  disableShowDistribution?: boolean
   labels?: {
     lower: string
     about: string
@@ -56,7 +55,6 @@ export const NumericBetPanel = (props: {
       about: 'About right',
       higher: 'Higher',
     },
-    disableShowDistribution,
   } = props
   const { answers, min: minimum, max: maximum } = contract
   const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
@@ -298,18 +296,16 @@ export const NumericBetPanel = (props: {
           <Row className={'justify-between'}>
             <span className={'ml-1 text-xl'}>{betLabel}</span>
             <Row className={'items-center'}>
-              {!disableShowDistribution && (
-                <Button
-                  color={'gray-white'}
-                  size={'2xs'}
-                  onClick={() => {
-                    setShowDistribution(!showDistribution)
-                  }}
-                  className={'whitespace-nowrap'}
-                >
-                  {showDistribution ? 'Default' : 'Advanced'}
-                </Button>
-              )}
+              <Button
+                color={'gray-white'}
+                size={'2xs'}
+                onClick={() => {
+                  setShowDistribution(!showDistribution)
+                }}
+                className={'whitespace-nowrap'}
+              >
+                {showDistribution ? 'Default' : 'Advanced'}
+              </Button>
               <IconButton
                 className={'w-12'}
                 onClick={() => setMode(undefined)}

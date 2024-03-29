@@ -191,7 +191,6 @@ function MultiDashboard(props: MultiDashboardProps) {
             <Col className={'w-fit  gap-4'}>
               <Clock year={expectedValueAGI} />
               <NumericBetPanel
-                disableShowDistribution={true}
                 contract={whenAgi}
                 labels={{
                   lower: 'sooner',
