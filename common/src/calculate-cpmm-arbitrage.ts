@@ -144,7 +144,7 @@ function calculateCpmmMultiArbitrageBetsYes(
     })
 
     const { noBuyResults, yesBets, newUpdatedAnswers } =
-      getYesResultsAndUpdatedAnswers(
+      getBetResultsAndUpdatedAnswers(
         answersToBuy,
         yesAmounts,
         updatedAnswers,
@@ -180,7 +180,7 @@ function calculateCpmmMultiArbitrageBetsYes(
   return { newBetResults, otherBetResults, updatedAnswers }
 }
 
-const getYesResultsAndUpdatedAnswers = (
+const getBetResultsAndUpdatedAnswers = (
   answersToBuy: Answer[],
   yesAmounts: number[],
   updatedAnswers: Answer[],
@@ -1110,7 +1110,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
     newUpdatedAnswers: updatedAnswers,
     yesBets: _,
     noBuyResults,
-  } = getYesResultsAndUpdatedAnswers(
+  } = getBetResultsAndUpdatedAnswers(
     answersToBuyYesShares,
     yesAmounts,
     initialAnswers,
