@@ -14,12 +14,13 @@ export function HeadlineTabs(props: {
   currentSlug: string
   endpoint: DashboardEndpoints
   hideEmoji?: boolean
+  className?: string
 }) {
-  const { headlines, endpoint, currentSlug, hideEmoji } = props
+  const { headlines, endpoint, currentSlug, hideEmoji, className } = props
   const user = useUser()
 
   return (
-    <div className="bg-canvas-50 sticky top-0 z-50 w-full">
+    <div className={clsx(className, 'bg-canvas-50 sticky top-0 z-50 w-full')}>
       <Carousel labelsParentClassName="gap-px">
         {headlines.map(({ id, slug, title }) => (
           <Tab

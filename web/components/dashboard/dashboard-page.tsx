@@ -102,6 +102,7 @@ export function DashboardPage(props: {
           />
           {!editMode && (
             <HeadlineTabs
+              className="mb-3"
               headlines={headlines}
               currentSlug={slug}
               endpoint={endpoint}
