@@ -64,6 +64,7 @@ export const NumericBetPanel = (props: {
     minimum,
     maximum,
   ])
+  const [debouncedAmount, setDebouncedAmount] = useState(betAmount)
   const [mode, setMode] = useState<
     'less than' | 'more than' | 'about right' | undefined
   >(undefined)
@@ -138,6 +139,18 @@ export const NumericBetPanel = (props: {
       }, 300),
     []
   )
+  const updateBetAmount = (amount: number | undefined) => {
+    setBetAmount(amount)
+    debounceAmount(amount)
+  }
+
+  const debounceAmount = useMemo(
+    () =>
+      debounce((amount: number | undefined) => {
+        setDebouncedAmount(amount)
+      }, 200),
+    []
+  )
 
   const onChangeRange = (low: number, high: number) => {
     if (low === high) return
@@ -210,7 +223,7 @@ export const NumericBetPanel = (props: {
       ),
     }
     const potentialExpectedValue = getExpectedValue(potentialContractState)
-    console.log('potentialPayout', potentialPayout)
+    // console.log('potentialPayout', potentialPayout)
 
     return {
       currentReturnPercent,
@@ -219,7 +232,7 @@ export const NumericBetPanel = (props: {
       potentialContractState,
     }
   }, [
-    betAmount,
+    debouncedAmount,
     stringifiedAnswers,
     unfilledBets,
     JSON.stringify(balanceByUserId),
@@ -316,14 +329,14 @@ export const NumericBetPanel = (props: {
             </Row>
           </Row>
           <QuickBetAmountsRow
-            onAmountChange={setBetAmount}
+            onAmountChange={updateBetAmount}
             betAmount={betAmount}
           />
           <Row className={' flex-wrap gap-2'}>
             <BuyAmountInput
               parentClassName={isAdvancedTrader ? '' : '!w-56'}
               amount={betAmount}
-              onChange={setBetAmount}
+              onChange={updateBetAmount}
               error={error}
               setError={setError}
               disabled={isSubmitting}
