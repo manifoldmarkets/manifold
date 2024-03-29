@@ -31,6 +31,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { User } from 'common/user'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { NewUserGoals } from 'web/components/home/new-user-goals'
+import { ManifestBanner, useManifestBanner } from 'web/components/nav/banner'
 
 export async function getStaticProps() {
   try {
@@ -55,6 +56,8 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
+  const [showBanner, setShowBanner] = useManifestBanner()
+
   const [feedKey, setFeedKey] = usePersistentInMemoryState('feed', 'feed-key')
 
   const { headlines } = props
@@ -65,6 +68,7 @@ export default function Home(props: { headlines: Headline[] }) {
         trackPageView={'home'}
         trackPageProps={{ kind: 'desktop' }}
         className="!mt-0"
+        banner={showBanner && <ManifestBanner setShowBanner={setShowBanner} />}
       >
         <HeadlineTabs
           endpoint={'news'}

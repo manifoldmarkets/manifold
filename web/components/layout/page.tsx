@@ -20,6 +20,7 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
+  banner?: ReactNode
 }) {
   const {
     trackPageView,
@@ -28,6 +29,7 @@ export function Page(props: {
     className,
     hideSidebar,
     hideBottomBar,
+    banner,
   } = props
 
   // Force enable maintainance banner.
@@ -83,6 +85,7 @@ export function Page(props: {
               </div>
             </Banner>
           )}
+          {banner}
           {children}
         </main>
       </Col>
