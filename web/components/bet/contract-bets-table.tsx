@@ -34,7 +34,10 @@ import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { api } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
-import { getMultiNumericAnswerMidpoints } from 'common/multi-numeric'
+import {
+  answerToRange,
+  getMultiNumericAnswerMidpoints,
+} from 'common/multi-numeric'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -363,9 +366,9 @@ export const groupMultiNumericBets = (
   )
   if (betOnAnswers.length === 0) return { bet: undefined }
   const lowestAnswer = betOnAnswers[0]
-  const lowerRange = lowestAnswer.text.split('-')[0]
   const highestAnswer = betOnAnswers[betOnAnswers.length - 1]
-  const higherRange = highestAnswer.text.split('-')[1]
+  const lowerRange = answerToRange(lowestAnswer)[0]
+  const higherRange = answerToRange(highestAnswer)[1]
   const firstNonRedemptionBet = nonRedemptionBets[0]
   const bet = {
     ...firstNonRedemptionBet,
