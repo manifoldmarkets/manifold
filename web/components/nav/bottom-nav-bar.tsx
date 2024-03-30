@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import clsx from 'clsx'
-import { MenuAlt3Icon } from '@heroicons/react/solid'
+import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import {
   HomeIcon,
   NewspaperIcon,
@@ -238,7 +238,7 @@ export function MobileSidebar(props: {
       <Transition.Root show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
-          className="fixed inset-0 z-50 flex"
+          className="fixed inset-0 z-50 flex justify-end"
           onClose={setSidebarOpen}
         >
           <Transition.Child
@@ -253,9 +253,6 @@ export function MobileSidebar(props: {
             {/* background cover */}
             <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
           </Transition.Child>
-          <div className="w-14 flex-shrink-0" aria-hidden="true">
-            {/* Dummy element to force sidebar content to the right */}
-          </div>
           <Transition.Child
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
@@ -265,14 +262,19 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative ml-auto flex w-full max-w-xs flex-1 flex-col">
-              <div className="mx-2 h-0 flex-1 overflow-y-auto">
-                <Sidebar
-                  navigationOptions={props.sidebarNavigationOptions}
-                  isMobile
-                  hideCreateQuestionButton={hideCreateQuestionButton}
-                />
-              </div>
+            <div className="bg-canvas-0 relative w-full max-w-xs">
+              <Sidebar
+                className="mx-2 overflow-y-auto"
+                navigationOptions={props.sidebarNavigationOptions}
+                isMobile
+                hideCreateQuestionButton={hideCreateQuestionButton}
+              />
+              <button
+                className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <XIcon className="m-2 h-8 w-8" />
+              </button>
             </div>
           </Transition.Child>
         </Dialog>
