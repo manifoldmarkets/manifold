@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react'
 import { PointerMode } from 'web/components/charts/helpers'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 export const useChartAnnotations = (contractId: string) => {
   const { rows: annotations, status } = useSubscription(
@@ -52,7 +53,9 @@ export const useAnnotateChartTools = (
     if (pointerMode === 'annotate') setPointerMode('zoom')
   }, [chartAnnotations.length])
 
-  const enableAdd = user?.id === contract.creatorId
+  const enableAdd =
+    user &&
+    (user.id === contract.creatorId || isModId(user.id) || isAdminId(user.id))
   return {
     pointerMode,
     setPointerMode,
