@@ -1,5 +1,4 @@
 import { DotsVerticalIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { getShareUrl } from 'common/util/share'
 import { ReactNode, useState } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
