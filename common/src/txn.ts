@@ -44,6 +44,7 @@ type AnyTxnType =
   | ContractUndoResolutionPayout
   | ContractAnte
   | AddSubsidy
+  | ReclaimMana
 
 export type SourceType =
   | 'USER'
@@ -397,6 +398,13 @@ type AddSubsidy = {
   token: 'M$'
 }
 
+type ReclaimMana = {
+  category: 'RECLAIM_MANA'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -437,3 +445,4 @@ export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
+export type ReclaimManaTxn = Txn & ReclaimMana
