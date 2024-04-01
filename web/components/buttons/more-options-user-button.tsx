@@ -35,7 +35,7 @@ export function MoreOptionsUserButton(props: { user: User }) {
     <>
       <Button
         color={'gray-white'}
-        size={'xs'}
+        className="rounded-none px-6"
         onClick={() => setIsModalOpen(true)}
       >
         <DotsHorizontalIcon

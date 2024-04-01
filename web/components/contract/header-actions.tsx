@@ -10,6 +10,7 @@ import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { LikeButton } from './like-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
+import { Button } from '../buttons/button'
 
 export function HeaderActions(props: {
   contract: Contract
@@ -20,12 +21,11 @@ export function HeaderActions(props: {
   const { isPolitics } = contract
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const hasCoverImage = !!contract.coverImageUrl
 
   return (
-    <Row className="items-center">
+    // make tooltip children stretch
+    <Row className="[&>*]:flex">
       {children}
-
       {!isBlocked(privateUser, contract.creatorId) && (
         <LikeButton
           user={user}
@@ -37,25 +37,24 @@ export function HeaderActions(props: {
           trackingLocation={'contract page'}
         />
       )}
-      {!isPolitics && <RepostButton contract={contract} />}
+      {!isPolitics && <RepostButton size="xs" contract={contract} />}
 
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}
         tooltip="Copy question share link"
         className="text-ink-500 hover:text-ink-600"
+        size="xs"
         eventTrackingName="copy market link"
       />
 
       <Tooltip text="Question details" placement="bottom" noTap>
-        <button
-          className={clsx(
-            'text-ink-500 hover:text-ink-600 px-2 py-1.5 transition-colors',
-            hasCoverImage
-          )}
+        <Button
+          color={'gray-white'}
+          size="xs"
           onClick={() => setDialogOpen(true)}
         >
           <DotsVerticalIcon className="h-5 w-5" aria-hidden />
-        </button>
+        </Button>
       </Tooltip>
       <ContractInfoDialog
         contract={props.contract}

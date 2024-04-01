@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation'
 import clsx from 'clsx'
 import { Button } from 'web/components/buttons/button'
 
-// meant to be used over a cover image
 export function BackButton(props: { className?: string }) {
   const { className } = props
   const router = useRouter()
@@ -18,7 +17,7 @@ export function BackButton(props: { className?: string }) {
   if (!canGoBack) return <div />
   return (
     <Button
-      className={clsx(className)}
+      className={clsx('rounded-none', className)}
       onClick={router.back}
       color={'gray-white'}
     >

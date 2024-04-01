@@ -502,7 +502,7 @@ function BetsTable(props: {
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
-        <Row
+        <div
           className={clsx(
             'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
@@ -528,7 +528,7 @@ function BetsTable(props: {
               </Header>
             </span>
           ))}
-        </Row>
+        </div>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
           .map((contract) => {
@@ -579,7 +579,7 @@ function BetsTable(props: {
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}
-                  <Row className={'grid-cols-15 mt-1 grid w-full pt-2'}>
+                  <div className={'grid-cols-15 mt-1 grid w-full pt-2'}>
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
@@ -588,7 +588,7 @@ function BetsTable(props: {
                         {c.renderCell(contract)}
                       </div>
                     ))}
-                  </Row>
+                  </div>
                   <Row>
                     {expandedIds.includes(contract.id) &&
                       (bets === undefined ? (

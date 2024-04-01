@@ -24,7 +24,7 @@ import { UserHovercard } from '../user/user-hovercard'
 export const RepostButton = (props: {
   contract: Contract
   bet?: Bet
-  size?: SizeType
+  size: SizeType
   className?: string
 }) => {
   const { contract, bet, size, className } = props
@@ -34,7 +34,7 @@ export const RepostButton = (props: {
       <Tooltip text="Repost with comment to followers" placement="bottom" noTap>
         <Button
           color={'gray-white'}
-          size={size ?? 'xs'}
+          size={size}
           className={clsx(className)}
           onClick={() => setOpen(true)}
         >

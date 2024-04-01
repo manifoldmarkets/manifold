@@ -240,78 +240,53 @@ function UserProfile(props: {
       )}
       {showConfetti && <FullscreenConfetti />}
 
-      <Col className="relative mt-1">
-        {isMobile && (
-          <Row
-            className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
-            }
-          >
-            <BackButton />
+      <Col className="relative">
+        <Row
+          className={
+            'bg-canvas-50 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
+          }
+        >
+          {isMobile && (
+            <>
+              <BackButton className="px-6" />
 
-            <div
-              className={clsx(
-                'opacity-0 transition-opacity',
-                headerStuck && 'opacity-100'
-              )}
-            >
-              <UserLink user={user} noLink />
-            </div>
+              <div
+                className={clsx(
+                  'self-center opacity-0 transition-opacity',
+                  headerStuck && 'opacity-100'
+                )}
+              >
+                <UserLink user={user} noLink />
+              </div>
+            </>
+          )}
 
-            <div>
-              <MoreOptionsUserButton user={user} />
-              {isCurrentUser && (
-                <Row className="justify-end">
-                  <Button
-                    color="gray-white"
-                    size="xs"
-                    onClick={() => setExpandProfileInfo((v) => !v)}
-                  >
-                    <Row className="items-center gap-2">
-                      {expandProfileInfo ? (
-                        <ChevronDownIcon className="text-ink-700 h-5 w-5" />
-                      ) : (
-                        <ChevronUpIcon className="text-ink-700 h-5 w-5" />
-                      )}
-                      <Avatar
-                        username={user.username}
-                        avatarUrl={user.avatarUrl}
-                        size={'xs'}
-                        className="bg-ink-1000"
-                        noLink
-                      />
-                    </Row>
-                  </Button>
-                </Row>
-              )}
-            </div>
-          </Row>
-        )}
-
-        {isCurrentUser && !isMobile && (
-          <Row className="justify-end">
+          <MoreOptionsUserButton user={user} />
+          {isCurrentUser && (
             <Button
               color="gray-white"
+              className="gap-2 pr-8 max-sm:rounded-none sm:ml-auto"
               size="xs"
-              onClick={() => setExpandProfileInfo((v) => !v)}
+              onClick={() => {
+                setExpandProfileInfo((v) => !v)
+                if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
             >
-              <Row className="items-center gap-2">
-                {expandProfileInfo ? (
-                  <ChevronDownIcon className="text-ink-700 h-5 w-5" />
-                ) : (
-                  <ChevronUpIcon className="text-ink-700 h-5 w-5" />
-                )}
-                <Avatar
-                  username={user.username}
-                  avatarUrl={user.avatarUrl}
-                  size={'xs'}
-                  className="bg-ink-1000"
-                  noLink
-                />
-              </Row>
+              {expandProfileInfo ? (
+                <ChevronDownIcon className="text-ink-700 h-5 w-5" />
+              ) : (
+                <ChevronUpIcon className="text-ink-700 h-5 w-5" />
+              )}
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={'xs'}
+                className="bg-ink-1000"
+                noLink
+              />
             </Button>
-          </Row>
-        )}
+          )}
+        </Row>
 
         {(!isCurrentUser || expandProfileInfo) && (
           <Col className="mb-2">

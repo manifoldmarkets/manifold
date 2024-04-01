@@ -197,13 +197,13 @@ export const PrivateChat = (props: {
   const [replyToUserInfo, setReplyToUserInfo] = useState<ReplyToUserInfo>()
 
   return (
-    <Col className=" w-full">
+    <Col className="w-full">
       <Row
         className={
-          'border-ink-200 bg-canvas-50 items-center gap-1 border-b py-2'
+          'border-ink-200 bg-canvas-50 h-14 items-center gap-1 border-b'
         }
       >
-        <BackButton />
+        <BackButton className="self-stretch" />
         {channel.title ? (
           <Avatar noLink={true} avatarUrl={MANIFOLD_LOVE_LOGO} size={'md'} />
         ) : (
@@ -236,7 +236,7 @@ export const PrivateChat = (props: {
           <BannedBadge />
         )}
         <DropdownMenu
-          className={'ml-auto'}
+          className={'ml-auto [&_button]:p-4'}
           menuWidth={'w-44'}
           icon={<DotsVerticalIcon className="h-5 w-5" />}
           items={buildArray(

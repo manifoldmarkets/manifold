@@ -210,15 +210,14 @@ export const TopicOptionsButton = (props: {
   const isMember = yourGroupIds ? yourGroupIds.includes(group.id) : false
 
   return (
-    <span className={className}>
-      <TopicOptions
-        group={group}
-        user={user}
-        isMember={isMember}
-        unfollow={() => {
-          unfollowTopicInternal(user, group)
-        }}
-      />
-    </span>
+    <TopicOptions
+      group={group}
+      user={user}
+      isMember={isMember}
+      className={className}
+      unfollow={() => {
+        unfollowTopicInternal(user, group)
+      }}
+    />
   )
 }

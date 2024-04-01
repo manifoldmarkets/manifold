@@ -362,7 +362,7 @@ export function ContractPageContent(props: ContractParams) {
               'sticky z-50 flex items-end',
               !coverImageUrl
                 ? 'bg-canvas-0 top-0 w-full'
-                : ' top-[-92px] h-[140px]'
+                : 'top-[-92px] h-[140px]'
             )}
           >
             {coverImageUrl && (
@@ -390,7 +390,7 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full pr-2 transition-colors',
+                'sticky -top-px z-50 flex h-12 w-full transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -398,10 +398,10 @@ export function ContractPageContent(props: ContractParams) {
             >
               <Row className="mr-4 grow items-center">
                 {(headerStuck || !coverImageUrl) && (
-                  <BackButton className="self-stretch" />
+                  <BackButton className="self-stretch pr-8" />
                 )}
                 {headerStuck && (
-                  <span className="text-ink-1000 ml-4 line-clamp-2">
+                  <span className="text-ink-1000 line-clamp-2">
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
@@ -420,10 +420,8 @@ export function ContractPageContent(props: ContractParams) {
             </Row>
           </div>
           {coverImageUrl && (
-            <Row className="w-full justify-between pb-1 pr-2">
-              <Col className="my-auto">
-                <BackButton />
-              </Col>
+            <Row className="h-10 w-full justify-between">
+              <BackButton className="pr-8" />
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton

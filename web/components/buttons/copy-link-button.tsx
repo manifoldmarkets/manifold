@@ -92,7 +92,7 @@ const ToolTipOrDiv = (
   props: { hasChildren: boolean } & ComponentProps<typeof Tooltip>
 ) =>
   props.hasChildren ? (
-    <div>{props.children}</div>
+    <>{props.children}</>
   ) : (
     <Tooltip text={props.text} noTap placement="bottom">
       {' '}

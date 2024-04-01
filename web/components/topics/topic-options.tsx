@@ -33,8 +33,9 @@ export function TopicOptions(props: {
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
+  className?: string
 }) {
-  const { group, user, isMember, unfollow } = props
+  const { group, user, isMember, unfollow, className } = props
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
@@ -79,11 +80,13 @@ export function TopicOptions(props: {
     }
   ) as DropdownItem[]
   return (
-    <Col onClick={(e) => e.stopPropagation()}>
+    <>
       <DropdownMenu
         closeOnClick={true}
         items={groupOptionItems}
         icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+        className={className}
+        menuItemsClass="flex flex-col"
         withinOverflowContainer={true}
       />
       <Modal open={editingName} setOpen={setEditingName}>
@@ -114,7 +117,7 @@ export function TopicOptions(props: {
         open={showDelete}
         setOpen={setShowDelete}
       />
-    </Col>
+    </>
   )
 }
 
