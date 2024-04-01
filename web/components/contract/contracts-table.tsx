@@ -4,10 +4,9 @@ import { getDisplayProbability } from 'common/calculate'
 import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatPercentShort } from 'common/util/format'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
-import { shortenNumber } from 'web/lib/util/formatNumber'
 import { getTextColor } from './text-color'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
@@ -222,8 +221,7 @@ export function ContractStatusLabel(props: {
             contract.bountyLeft == 0 ? 'text-ink-300' : 'text-teal-600'
           )}
         >
-          {ENV_CONFIG.moneyMoniker}
-          {shortenNumber(contract.bountyLeft ?? 0)}
+          {formatMoney(contract.bountyLeft ?? 0)}
           {chanceLabel && (
             <span
               className={clsx(
