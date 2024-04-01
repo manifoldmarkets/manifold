@@ -2,7 +2,8 @@ import Link from 'next/link'
 import clsx from 'clsx'
 import { useUser } from 'web/hooks/use-user'
 import { ENV } from 'common/envs/constants'
-import BunnyIcon from 'web/lib/icons/logo-bunny.svg'
+import { LogoIcon } from '../icons/logo-icon'
+import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 
 export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
   const { className } = props
@@ -23,10 +24,20 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
           className
         )}
       >
-        <BunnyIcon
-          className="h-10 w-10 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
-          aria-hidden
-        />
+        {PRODUCT_MARKET_FIT_ENABLED ? (
+          <img
+            className="transition-all group-hover:rotate-12"
+            src="/logo-april-fools.svg"
+            width={45}
+            height={45}
+            alt=""
+          />
+        ) : (
+          <LogoIcon
+            className="h-10 w-10 shrink-0 stroke-indigo-700 transition-transform group-hover:rotate-12 dark:stroke-white"
+            aria-hidden
+          />
+        )}
         <div
           className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
         >
