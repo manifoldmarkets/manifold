@@ -64,7 +64,9 @@ export const InvestmentValueCard = memo(function (props: {
       : dailyProfitFromMetrics
 
   // If a user is new, then their portfolio value may be out of date, so show the metrics value instead
-  const portfolioValue = latestPortfolio ? latestPortfolio.investmentValue : 0
+  const portfolioValue = latestPortfolio
+    ? latestPortfolio.investmentValue + latestPortfolio.balance
+    : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
     : 0
@@ -73,7 +75,7 @@ export const InvestmentValueCard = memo(function (props: {
     metricsValue !== 0 &&
     user.createdTime > Date.now() - DAY_MS
       ? metricsValue + user.balance
-      : portfolioValue + user.balance
+      : portfolioValue
   const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
     (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
   )
