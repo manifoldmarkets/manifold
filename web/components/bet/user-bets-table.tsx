@@ -116,7 +116,7 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
-    'all',
+    'open',
     'bets-list-filter'
   )
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
