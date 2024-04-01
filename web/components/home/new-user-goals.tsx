@@ -21,10 +21,14 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
 import { DAY_MS } from 'common/util/time'
+import { MARKET_VISIT_BONUS, MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
+
+const maxVisitCount = MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
 
 export const NewUserGoals = (props: { user: User }) => {
   const { user } = props
   const remainingViewBonuses = useRemainingNewUserSignupBonuses()
+  console.log('remainingViewBonuses', remainingViewBonuses)
 
   const bets = useBets({ userId: user.id, limit: 100, order: 'desc' })
   const { rows } = useSubscription('contract_bets', {
@@ -47,12 +51,12 @@ export const NewUserGoals = (props: { user: User }) => {
       <ProgressDisplay
         className="w-full"
         label="Goal 1: Explore"
-        value={10 - remainingViewBonuses}
-        goal={10}
+        value={maxVisitCount - remainingViewBonuses}
+        goal={maxVisitCount}
         description="questions visited"
       >
         <div className="text-ink-600 text-lg">
-          Earn {formatMoney(100)} per question visited
+          Earn {formatMoney(MARKET_VISIT_BONUS)} per question visited
         </div>
       </ProgressDisplay>
     )

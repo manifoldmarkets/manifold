@@ -134,7 +134,11 @@ export const sendOnboardingMarketVisitBonus = async (
     }
     const signupBonusAmountPaid = user.signupBonusPaid
     if (signupBonusAmountPaid >= MARKET_VISIT_BONUS_TOTAL) {
-      log(`User ${userId} already received 9 market visit bonuses`)
+      log(
+        `User ${userId} already received ${
+          MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
+        } market visit bonuses`
+      )
       return { txn: null }
     }
     const signupBonusTxn: Omit<
@@ -153,7 +157,7 @@ export const sendOnboardingMarketVisitBonus = async (
     const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
     if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
       transaction.update(toDoc, {
-        signupBonusPaid: signupBonusAmountPaid + 100,
+        signupBonusPaid: signupBonusAmountPaid + MARKET_VISIT_BONUS,
       })
       log(`Sent mana bonus to user ${userId}`)
     } else {
