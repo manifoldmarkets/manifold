@@ -33,8 +33,8 @@ export function SpecialYesNoSelector(props: {
   const nearlyBelowLimit = prob <= 0.02
   const yesWidth = aboveLimit ? 0 : (1 - prob) * 100
   const noWidth = belowLimit ? 0 : prob * 100
-  const yesFontSize = Math.min((20 * yesWidth) / 100, 20)
-  const noFontSize = Math.min((20 * noWidth) / 100, 20)
+  const yesFontSize = Math.min((24 * yesWidth) / 100, 20)
+  const noFontSize = Math.min((24 * noWidth) / 100, 20)
   const yesButtonRef = useRef<HTMLButtonElement>(null)
   const noButtonRef = useRef<HTMLButtonElement>(null)
   const [hoveredOutcome, setHoveredOutcome] = useState<
@@ -59,7 +59,7 @@ export function SpecialYesNoSelector(props: {
       centerY + randomY
     }px)`
     // Calculate the delay duration based on the speed value
-    const maxSpeed = isMobile ? 2500 : 1000
+    const maxSpeed = isMobile ? 2000 : 800
     const delay = Math.max(0, maxSpeed - speed * maxSpeed)
 
     // Use setTimeout to delay the next frame of the animation
