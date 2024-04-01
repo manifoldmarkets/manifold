@@ -59,8 +59,7 @@ export function SpecialYesNoSelector(props: {
       centerY + randomY
     }px)`
     // Calculate the delay duration based on the speed value
-    const maxSpeed = isMobile ? 2000 : 800
-    const delay = Math.max(0, maxSpeed - speed * maxSpeed)
+    const delay = (isMobile ? 2000 : 10000) * speed
 
     // Use setTimeout to delay the next frame of the animation
     setTimeout(() => {
