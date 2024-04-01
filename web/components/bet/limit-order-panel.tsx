@@ -104,9 +104,14 @@ export default function LimitOrderPanel(props: {
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
-  const initialProb = isCpmmMulti
-    ? multiProps!.answerToBuy.prob
-    : getProbability(contract)
+  const initialProb =
+    isBinaryMC && outcome === 'YES'
+      ? multiProps!.answerToBuy.prob
+      : isBinaryMC && outcome === 'NO'
+      ? 1 - multiProps!.answerToBuy.prob
+      : isCpmmMulti
+      ? multiProps!.answerToBuy.prob
+      : getProbability(contract)
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
