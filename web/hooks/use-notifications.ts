@@ -16,7 +16,7 @@ import {
   getNotifications,
   getUnseenNotifications,
 } from 'common/supabase/notifications'
-import { newInMemoryStore } from 'web/lib/util/local'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { Row } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { User } from 'common/user'
@@ -28,17 +28,16 @@ export type NotificationGroup = {
 }
 
 const NOTIFICATIONS_KEY = 'notifications_1'
-const notificationsStore = newInMemoryStore()
 
 function useNotifications(
   userId: string,
   // Nobody's going through 10 pages of notifications, right?
-  count = 20 * NOTIFICATIONS_PER_PAGE
+  count = 15 * NOTIFICATIONS_PER_PAGE
 ) {
   const { rows } = usePersistentSubscription(
     NOTIFICATIONS_KEY,
     'user_notifications',
-    notificationsStore,
+    safeLocalStorage,
     { k: 'user_id', v: userId },
     () => getNotifications(db, userId, count)
   )
@@ -47,7 +46,7 @@ function useNotifications(
 
 function useUnseenNotifications(
   userId: string,
-  count = 10 * NOTIFICATIONS_PER_PAGE
+  count = NOTIFICATIONS_PER_PAGE
 ) {
   const { status, rows } = useSubscription(
     'user_notifications',
@@ -61,7 +60,7 @@ function useUnseenNotifications(
 
   useEffect(() => {
     if (status === 'live' && rows != null) {
-      const json = notificationsStore.getItem(NOTIFICATIONS_KEY)
+      const json = safeLocalStorage?.getItem(NOTIFICATIONS_KEY)
       const existing = json != null ? JSON.parse(json) : []
       const newNotifications =
         rows?.filter(
@@ -71,7 +70,7 @@ function useUnseenNotifications(
                 n2.notification_id === n.notification_id
             )
         ) ?? []
-      notificationsStore.setItem(
+      safeLocalStorage?.setItem(
         NOTIFICATIONS_KEY,
         JSON.stringify([...newNotifications, ...existing])
       )
