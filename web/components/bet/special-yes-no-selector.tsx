@@ -152,7 +152,8 @@ export function SpecialYesNoSelector(props: {
         className={clsx(
           aboveLimit ? '!p-1' : nearlyAboveLimit ? '!px-3' : '',
           selected === 'YES' && 'opacity-75',
-          selected !== undefined ? '!rounded-full' : ''
+          selected !== undefined ? '!rounded-full' : '',
+          'z-10'
         )}
         disabled={disabled}
       >
@@ -180,7 +181,8 @@ export function SpecialYesNoSelector(props: {
         className={clsx(
           belowLimit ? '!p-1' : nearlyBelowLimit ? '!px-3' : '',
           selected === 'NO' && 'opacity-75',
-          selected !== undefined ? '!rounded-full' : ''
+          selected !== undefined ? '!rounded-full' : '',
+          'z-10'
         )}
         disabled={disabled}
       >
