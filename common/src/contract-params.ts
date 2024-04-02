@@ -26,7 +26,7 @@ import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, orderBy, sortBy } from 'lodash'
+import { groupBy, minBy, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
@@ -126,7 +126,9 @@ export async function getContractParams(
     isCpmm1 || isBinaryDpm
       ? getSingleBetPoints(allBetPoints, contract)
       : isMulti
-      ? getMultiBetPoints(allBetPoints, contract)
+      ? isNumber
+        ? getMultiNumericBetPoints(allBetPoints, contract)
+        : getMultiBetPoints(allBetPoints, contract)
       : []
 
   const ogPoints =
@@ -180,7 +182,7 @@ export const getSingleBetPoints = (
 
 export const getMultiBetPoints = (
   betPoints: { x: number; y: number; answerId: string }[],
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: CPMMMultiContract
 ) => {
   const { answers } = contract
 
@@ -202,6 +204,45 @@ export const getMultiBetPoints = (
     pointsByAns[ans.id] = buildArray<{ x: number; y: number }>(
       startY != undefined && { x: ans.createdTime, y: startY },
       maxMinBin(points, 500)
+    )
+  })
+
+  return serializeMultiPoints(pointsByAns)
+}
+export const getMultiNumericBetPoints = (
+  betPoints: { x: number; y: number; answerId: string }[],
+  contract: CPMMNumericContract
+) => {
+  const { answers } = contract
+
+  const rawPointsByAns = groupBy(betPoints, 'answerId')
+
+  const subsetOfAnswers = sortBy(
+    answers,
+    (a) => (a.resolution ? 1 : 0),
+    (a) => -a.totalLiquidity
+  ).slice(0, MAX_ANSWERS)
+
+  const allUniqueCreatedTimes = new Set(betPoints.map((a) => a.x))
+  const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
+  subsetOfAnswers.forEach((ans) => {
+    const startY = getInitialAnswerProbability(contract, ans)
+
+    const rawPoints = rawPointsByAns[ans.id] ?? []
+    const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
+    // Bc we sometimes don't create low prob bets, we need to fill in the gaps
+    const missingTimes = Array.from(allUniqueCreatedTimes).filter(
+      (time) => !uniqueAnswerCreatedTimes.has(time)
+    )
+    const missingPoints = missingTimes.map((time) => ({
+      x: time,
+      y: minBy(rawPoints, (p) => Math.abs(p.x - time))?.y ?? 0,
+      answerId: ans.id,
+    }))
+    const points = orderBy([...rawPoints, ...missingPoints], (p) => p.x)
+    pointsByAns[ans.id] = buildArray<{ x: number; y: number }>(
+      startY != undefined && { x: ans.createdTime, y: startY },
+      points
     )
   })
 
