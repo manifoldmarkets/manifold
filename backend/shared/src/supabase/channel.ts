@@ -1,24 +1,15 @@
-import { createSupabaseClient } from './init'
+import { SupabaseClient } from './init'
 
-export const joinChannel = async (channelId: string) => {
-  const db = createSupabaseClient()
-  const channel = db.channel(channelId)
-
-  await new Promise((resolve, reject) => {
-    channel.subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') {
-        resolve(null)
-      } else if (err) {
-        reject(err)
-      } else {
-        reject(status)
-      }
-    })
-  })
-
-  return channel
-}
-
-export const joinContractChannel = (contractId: string) => {
-  return joinChannel(`contract:${contractId}`)
+export async function broadcast(
+  db: SupabaseClient,
+  channel: string,
+  event: string,
+  payload: any
+) {
+  const chan = db.channel(channel)
+  try {
+    await chan.send({ type: 'broadcast', event, payload })
+  } finally {
+    await db.removeChannel(chan)
+  }
 }
