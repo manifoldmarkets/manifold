@@ -1,4 +1,4 @@
-import { groupBy, uniqBy } from 'lodash'
+import { groupBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { calculateUserMetrics } from 'common/calculate-metrics'
@@ -6,7 +6,6 @@ import { bulkUpsert } from 'shared/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
 import { Tables } from 'common/supabase/utils'
-import { revalidateStaticProps } from 'shared/utils'
 
 export async function updateContractMetricsForUsers(
   contract: Contract,
@@ -20,11 +19,6 @@ export async function updateContractMetricsForUsers(
   }
 
   await bulkUpdateContractMetrics(metrics)
-  await Promise.all(
-    uniqBy(metrics.flat(), 'userUsername').map(async (metric) =>
-      revalidateStaticProps(`/${metric.userUsername}`)
-    )
-  )
 }
 
 export async function bulkUpdateContractMetrics(metrics: ContractMetric[]) {
