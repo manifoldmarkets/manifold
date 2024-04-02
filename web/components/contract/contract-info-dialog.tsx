@@ -129,6 +129,7 @@ export const Stats = (props: {
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
+
   return (
     <Table>
       <tbody>
@@ -349,13 +350,9 @@ export const Stats = (props: {
               />
             </td>
             <td>
-              <ShortToggle
-                className="align-middle"
-                disabled={
-                  isPublic
-                    ? !(isCreator || isMod)
-                    : !(isMod || (isCreator && wasUnlistedByCreator))
-                }
+              <CheckOrSwitch
+                canToggle={isMod || isCreator}
+                disabled={!isPublic && !isMod && !wasUnlistedByCreator}
                 on={isPublic}
                 setOn={(pub) =>
                   updateMarket({
@@ -363,38 +360,6 @@ export const Stats = (props: {
                     visibility: pub ? 'public' : 'unlisted',
                   })
                 }
-              />
-            </td>
-          </tr>
-        )}
-        {!hideAdvanced && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
-              🇺🇸 Politics
-              <InfoTooltip text={'Listed on Politics site'} />
-            </td>
-            <td>
-              <ShortToggle
-                className="align-middle"
-                disabled={!isMod}
-                on={!!isPolitics}
-                setOn={(on) => {
-                  toast.promise(
-                    api('market/:contractId/update', {
-                      contractId: contract.id,
-                      isPolitics: on,
-                    }),
-                    {
-                      loading: `${
-                        on ? 'Adding' : 'Removing'
-                      } question to Politics site...`,
-                      success: `Successfully ${
-                        on ? 'added' : 'removed'
-                      } question to Politics site!`,
-                      error: `Error ${on ? 'adding' : 'removing'}. Try again?`,
-                    }
-                  )
-                }}
               />
             </td>
           </tr>
@@ -409,9 +374,9 @@ export const Stats = (props: {
               />
             </td>
             <td>
-              <ShortToggle
-                className="align-middle"
-                disabled={!isMod || !isPublic}
+              <CheckOrSwitch
+                canToggle={isMod}
+                disabled={!isPublic}
                 on={isPublic && contract.isRanked !== false}
                 setOn={(on) => {
                   toast.promise(
@@ -446,9 +411,9 @@ export const Stats = (props: {
               />
             </td>
             <td>
-              <ShortToggle
-                className="align-middle"
-                disabled={!isMod || !isPublic}
+              <CheckOrSwitch
+                canToggle={isMod}
+                disabled={!isPublic}
                 on={isPublic && contract.isSubsidized !== false}
                 setOn={(on) => {
                   toast.promise(
@@ -479,6 +444,27 @@ export const Stats = (props: {
   )
 }
 
+const CheckOrSwitch = (props: {
+  canToggle: boolean
+  disabled?: boolean
+  on: boolean
+  setOn: (on: boolean) => void
+}) => {
+  const { on, setOn, canToggle, disabled } = props
+  return canToggle ? (
+    <ShortToggle
+      className="align-middle"
+      disabled={disabled}
+      on={on}
+      setOn={setOn}
+    />
+  ) : on ? (
+    <>✅</>
+  ) : (
+    <>❌</>
+  )
+}
+
 export function ContractInfoDialog(props: {
   contract: Contract
   user: User | null | undefined
@@ -502,7 +488,7 @@ export function ContractInfoDialog(props: {
 
       {!!user && (
         <>
-          <Row className="flex-wrap gap-2">
+          <Row className="my-2 flex-wrap gap-2">
             {!isCreator && <BoostButton contract={contract} />}
             <DuplicateContractButton contract={contract} />
 
