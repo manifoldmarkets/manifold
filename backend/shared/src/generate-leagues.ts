@@ -1,7 +1,7 @@
 import { groupBy, shuffle } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
 import {
   CURRENT_SEASON,
   getCohortSize,
@@ -14,6 +14,7 @@ import {
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
 import { bulkInsert } from './supabase/utils'
+import { log } from './utils'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -294,6 +295,11 @@ export const addToLeagueIfNotInOne = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
+  if (OPTED_OUT_OF_LEAGUES.includes(userId)) {
+    log('User opted out of leagues', userId)
+    return
+  }
+
   const season = SEASONS[SEASONS.length - 1]
 
   const existingLeague = await pg.oneOrNone<{

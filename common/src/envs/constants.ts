@@ -326,6 +326,15 @@ export const NEW_USER_HERLPER_IDS = [
   'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
 ]
 
+export const OPTED_OUT_OF_LEAGUES = [
+  'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
+  '8lZo8X5lewh4hnCoreI7iSc0GxK2', // ManifoldAI
+  'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
+  'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
+  'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+]
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
 export function firestoreConsolePath(contractId: string) {
