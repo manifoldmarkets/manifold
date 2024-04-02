@@ -36,8 +36,9 @@ import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { DAY_MS } from 'common/util/time'
-import { LiveTVIcon, TVIcon } from '../tv-icon'
+import { LiveTVIcon } from '../tv-icon'
 import { useTVisActive } from '../tv/tv-schedule'
+import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
@@ -146,9 +147,14 @@ const getDesktopNav = (
         icon: GiCapitol,
       },
       {
+        name: 'AI',
+        href: '/ai',
+        icon: PiRobotBold,
+      },
+      {
         name: 'TV',
         href: '/tv',
-        icon: isLiveTV ? LiveTVIcon : TVIcon,
+        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
       },
       {
         name: 'Messages',
@@ -165,6 +171,11 @@ const getDesktopNav = (
       name: 'US Politics',
       href: '/politics',
       icon: GiCapitol,
+    },
+    {
+      name: 'AI',
+      href: '/ai',
+      icon: PiRobotBold,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'Browse', href: '/browse', icon: SearchIcon },
@@ -187,11 +198,16 @@ const getMobileNav = (
       href: '/politics',
       icon: GiCapitol,
     },
+    {
+      name: 'AI',
+      href: '/ai',
+      icon: PiRobotBold,
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
     {
       name: 'TV',
       href: '/tv',
-      icon: isLiveTV ? LiveTVIcon : TVIcon,
+      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
     },
     {
       name: 'Messages',
