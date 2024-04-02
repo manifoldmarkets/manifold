@@ -402,7 +402,7 @@ export function ContractPageContent(props: ContractParams) {
                 )}
                 {headerStuck && (
                   <span
-                    className="text-ink-1000 line-clamp-2 cursor-pointer select-none"
+                    className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
                     onClick={() =>
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
