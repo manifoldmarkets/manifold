@@ -91,12 +91,7 @@ const signedOutNavigation = () => [
 ]
 
 // From https://codepen.io/chris__sev/pen/QWGvYbL
-export function BottomNavBar(props: {
-  navigationOptions?: NavItem[]
-  sidebarNavigationOptions?: NavItem[]
-  hideCreateQuestionButton?: boolean
-}) {
-  const { hideCreateQuestionButton } = props
+export function BottomNavBar() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const currentPage = usePathname() ?? ''
@@ -108,9 +103,7 @@ export function BottomNavBar(props: {
     return null
   }
 
-  const navigationOptions =
-    props.navigationOptions ??
-    (user ? getNavigation(user) : signedOutNavigation())
+  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
 
   return (
     <nav className="border-ink-200 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t-2 text-xs lg:hidden">
@@ -139,8 +132,6 @@ export function BottomNavBar(props: {
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
-            sidebarNavigationOptions={props.sidebarNavigationOptions}
-            hideCreateQuestionButton={hideCreateQuestionButton}
           />
         </>
       )}
@@ -229,10 +220,8 @@ function NavBarItem(props: {
 export function MobileSidebar(props: {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
-  sidebarNavigationOptions?: NavItem[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const { sidebarOpen, setSidebarOpen, hideCreateQuestionButton } = props
+  const { sidebarOpen, setSidebarOpen } = props
   return (
     <div>
       <Transition.Root show={sidebarOpen} as={Fragment}>
@@ -263,12 +252,7 @@ export function MobileSidebar(props: {
             leaveTo="translate-x-full"
           >
             <div className="bg-canvas-0 relative w-full max-w-xs">
-              <Sidebar
-                className="mx-2 overflow-y-auto"
-                navigationOptions={props.sidebarNavigationOptions}
-                isMobile
-                hideCreateQuestionButton={hideCreateQuestionButton}
-              />
+              <Sidebar className="mx-2 overflow-y-auto" isMobile />
               <button
                 className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none"
                 onClick={() => setSidebarOpen(false)}

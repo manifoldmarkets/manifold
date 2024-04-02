@@ -42,10 +42,8 @@ import { useTVisActive } from '../tv/tv-schedule'
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
-  navigationOptions?: NavItem[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile, hideCreateQuestionButton } = props
+  const { className, isMobile } = props
   const router = useRouter()
   const currentPage = usePathname() ?? undefined
 
@@ -62,9 +60,7 @@ export default function Sidebar(props: {
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
   const isLiveTV = useTVisActive()
 
-  const navOptions = props.navigationOptions?.length
-    ? props.navigationOptions
-    : isMobile
+  const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
@@ -73,14 +69,12 @@ export default function Sidebar(props: {
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
-  const createMarketButton = !hideCreateQuestionButton &&
-    user &&
-    !user.isBannedFromPosting && (
-      <CreateQuestionButton
-        key="create-market-button"
-        className={'mt-4 w-full'}
-      />
-    )
+  const createMarketButton = user && !user.isBannedFromPosting && (
+    <CreateQuestionButton
+      key="create-market-button"
+      className={'mt-4 w-full'}
+    />
+  )
 
   return (
     <nav
