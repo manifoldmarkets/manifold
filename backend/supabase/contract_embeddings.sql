@@ -24,3 +24,5 @@ set
 create index if not exists contract_embeddings_embedding_dec_2023 on contract_embeddings using ivfflat (embedding vector_cosine_ops)
     with
     (lists = 500);
+
+create index concurrently if not exists contract_embeddings_embedding_apr_2024 on contract_embeddings using hnsw (embedding vector_cosine_ops);
