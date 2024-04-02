@@ -401,7 +401,12 @@ export function ContractPageContent(props: ContractParams) {
                   <BackButton className="self-stretch pr-8" />
                 )}
                 {headerStuck && (
-                  <span className="text-ink-1000 line-clamp-2">
+                  <span
+                    className="text-ink-1000 line-clamp-2 cursor-pointer select-none"
+                    onClick={() =>
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }
+                  >
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
