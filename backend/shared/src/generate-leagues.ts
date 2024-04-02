@@ -135,30 +135,18 @@ const generateCohorts = async (
       cohortsWithOneLess
     )
 
-    let remainingUserIds = divisionUserIds.concat()
+    let remainingUserIds = shuffle(divisionUserIds.concat())
     let i = 0
     while (remainingUserIds.length > 0) {
       const cohortSize =
         i < cohortsWithOneLess ? usersPerCohort - 1 : usersPerCohort
-      const usersOrderedByProximity = await pg.many<{ user_id: string }>(
-        `select user_id from user_embeddings
-        where user_id = any($2)
-        order by user_embeddings.interest_embedding <=> (
-          select interest_embedding from user_embeddings where user_id = $1
-        )`,
-        [remainingUserIds[0], remainingUserIds, cohortSize]
-      )
-
-      // Randomize a little by choosing within a larger set.
-      const cohortOfUsers = shuffle(
-        usersOrderedByProximity.slice(0, cohortSize * 3)
-      ).slice(0, cohortSize)
+      const cohortOfUsers = remainingUserIds.slice(0, cohortSize)
 
       const cohort = genNewAdjectiveAnimal(cohortSet)
       cohortSet.add(cohort)
 
-      for (const user of cohortOfUsers) {
-        userCohorts[user.user_id] = { division, cohort }
+      for (const userId of cohortOfUsers) {
+        userCohorts[userId] = { division, cohort }
       }
       remainingUserIds = divisionUserIds.filter((uid) => !userCohorts[uid])
       i++
