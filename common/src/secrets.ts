@@ -25,6 +25,9 @@ export const secrets = (
     'DESTINY_API_KEY',
     'FB_ACCESS_TOKEN',
     'GEODB_API_KEY',
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_SID',
+    'TWILIO_VERIFY_SID',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()

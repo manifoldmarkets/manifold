@@ -154,6 +154,36 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'verify-phone-number': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { status: string },
+    props: z
+      .object({
+        phoneNumber: z.string(),
+        code: z.string(),
+      })
+      .strict(),
+  },
+  'request-otp': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { status: string },
+    props: z
+      .object({
+        phoneNumber: z.string(),
+      })
+      .strict(),
+  },
+  'phone-number': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { number: string },
+    props: z.object({}).strict(),
+  },
   'bet/cancel/:betId': {
     method: 'POST',
     visibility: 'public',

@@ -184,6 +184,7 @@ export const isContractBlocked = (
 
 export const canSetReferrer = (user: User) => {
   if (user.referredByUserId) return false
+  if (!user.verifiedPhone) return false
   const now = dayjs().utc()
   const userCreatedTime = dayjs(user.createdTime)
   return now.diff(userCreatedTime, 'minute') < MINUTES_ALLOWED_TO_REFER

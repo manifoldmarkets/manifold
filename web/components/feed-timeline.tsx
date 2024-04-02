@@ -20,17 +20,16 @@ import { PrivateUser, User } from 'common/user'
 export function FeedTimeline(props: {
   privateUser: PrivateUser
   user: User | undefined | null
-  feedKey?: string
   className?: string
 }) {
-  const { privateUser, user, feedKey = '', className } = props
+  const { privateUser, user, className } = props
   const {
     boosts,
     checkForNewer,
     addTimelineItems,
     savedFeedItems,
     loadMoreOlder,
-  } = useFeedTimeline(user, privateUser, `feed-timeline-${feedKey}`)
+  } = useFeedTimeline(user, privateUser, `feed-timeline-${user?.id}`)
   const pageVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),

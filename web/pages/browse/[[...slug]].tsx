@@ -15,7 +15,6 @@ import {
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
-import Welcome from 'web/components/onboarding/welcome'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
@@ -226,7 +225,6 @@ export function GroupPageContent(props: {
   // TODO: Overtly prompt users to follow topic, maybe w/ bottom bar
   return (
     <>
-      {user && <Welcome />}
       <Page
         trackPageView={'questions page'}
         className="bg-canvas-0 md:bg-canvas-50 lg:col-span-10"

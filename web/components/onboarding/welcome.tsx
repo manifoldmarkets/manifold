@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
-import clsx from 'clsx'
 
 import { STARTING_BALANCE } from 'common/economy'
 import { User } from 'common/user'
@@ -17,22 +16,30 @@ import {
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { TopicSelectorDialog } from './topic-selector-dialog'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Group } from 'common/group'
 import {
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
+  removeEmojis,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
-import { orderBy, uniqBy } from 'lodash'
+import { intersection, orderBy, uniq, uniqBy } from 'lodash'
 import { track } from 'web/lib/service/analytics'
 import { PencilIcon } from '@heroicons/react/outline'
 import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { changeUserInfo } from 'web/lib/firebase/api'
+import {
+  api,
+  changeUserInfo,
+  followTopic,
+  followUser,
+} from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
+import { unfollowTopic } from 'web/lib/supabase/groups'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { VerifyPhone } from 'web/components/verify-phone'
 
 const FORCE_SHOW_WELCOME_MODAL = false
 
@@ -46,18 +53,8 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
 
-  const [groupSelectorOpen, setGroupSelectorOpen] = useState(false)
-
-  const shouldShowWelcomeModals =
-    FORCE_SHOW_WELCOME_MODAL ||
-    (!isTwitch && user && user.shouldShowWelcome) ||
-    (user && !user.shouldShowWelcome && groupSelectorOpen)
-
-  const availablePages = buildArray([
-    <WhatIsManifoldPage />,
-    <PredictionMarketPage />,
-    user && <ThankYouPage />,
-  ])
+  const shouldShowWelcomeModal =
+    FORCE_SHOW_WELCOME_MODAL || (!isTwitch && user && user.shouldShowWelcome)
 
   const handleSetPage = (page: number) => {
     if (page === 0) {
@@ -70,24 +67,38 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
     setPage(page)
   }
 
-  const isLastPage = page === availablePages.length - 1
-
   useEffect(() => {
-    if (shouldShowWelcomeModals) {
+    if (shouldShowWelcomeModal) {
       track('welcome screen: landed', { isTwitch })
       setOpen(true)
     }
-  }, [shouldShowWelcomeModals])
-
-  useEffect(() => {
-    if (!authed || !user || !groupSelectorOpen) return
-    // Wait until after they've had the opportunity to change their name
-    setCachedReferralInfoForUser(user)
-  }, [groupSelectorOpen])
+  }, [shouldShowWelcomeModal])
 
   const [userInterestedTopics, setUserInterestedTopics] = useState<Group[]>([])
   const [userBetInTopics, setUserBetInTopics] = useState<Group[]>([])
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
+
+  const availablePages = buildArray([
+    <WhatIsManifoldPage />,
+    <PredictionMarketPage />,
+    <TopicsPage
+      trendingTopics={trendingTopics}
+      userInterestedTopics={userInterestedTopics}
+      userBetInTopics={userBetInTopics}
+      onNext={() => increasePage()}
+      setFeedKey={setFeedKey}
+      user={user}
+      goBack={() => handleSetPage(page - 1)}
+    />,
+    <VerifyPhone onClose={() => increasePage()} />,
+  ])
+
+  const showBottomButtons = page < availablePages.length - 2
+  useEffect(() => {
+    if (!authed || !user || !user.verifiedPhone) return
+    // Wait until after they've had the opportunity to change their name
+    setCachedReferralInfoForUser(user)
+  }, [user, authed])
 
   const getTrendingAndUserCategories = async (userId: string) => {
     const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
@@ -151,20 +162,17 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   }
 
   useEffect(() => {
-    if (user?.id && shouldShowWelcomeModals && authed)
+    if (user?.id && shouldShowWelcomeModal && authed)
       getTrendingAndUserCategories(user.id)
-  }, [user?.id, shouldShowWelcomeModals, authed])
+  }, [user?.id, shouldShowWelcomeModal, authed])
 
-  const close = () => {
-    setOpen(false)
-    setPage(0)
-
-    setGroupSelectorOpen(true)
-    track('welcome screen: group selector')
-  }
-  function increasePage() {
-    if (!isLastPage) handleSetPage(page + 1)
-    else close()
+  async function increasePage() {
+    if (page < availablePages.length - 1) handleSetPage(page + 1)
+    else {
+      if (user) await updateUser(user.id, { shouldShowWelcome: false })
+      track('welcome screen: complete')
+      setOpen(false)
+    }
   }
 
   function decreasePage() {
@@ -173,41 +181,25 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
     }
   }
 
-  if (!shouldShowWelcomeModals) return <></>
-
-  if (groupSelectorOpen)
-    return (
-      <TopicSelectorDialog
-        skippable={false}
-        trendingTopics={trendingTopics}
-        userInterestedTopics={userInterestedTopics}
-        userBetInTopics={userBetInTopics}
-        setFeedKey={setFeedKey}
-        onClose={() => {
-          track('welcome screen: complete')
-          setOpen(false)
-          setGroupSelectorOpen(false)
-        }}
-      />
-    )
+  if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} setOpen={increasePage} size={'lg'}>
-      <Col className="bg-canvas-0 place-content-between rounded-md px-8 py-6 text-sm md:text-lg">
+    <Modal open={open} size={'xl'} position={'bottom'}>
+      <Col className="bg-canvas-0 w-screen rounded-md px-4 py-6 text-sm sm:px-8 md:text-lg lg:w-full">
         {availablePages[page]}
         <Col>
-          <Row className="mt-2 justify-between">
-            <Button
-              color={'gray-white'}
-              className={page === 0 ? 'invisible' : ''}
-              onClick={decreasePage}
-            >
-              Previous
-            </Button>
-            <Button onClick={increasePage}>
-              {isLastPage ? `Claim ${formatMoney(STARTING_BALANCE)}` : 'Next'}
-            </Button>
-          </Row>
+          {showBottomButtons && (
+            <Row className="mt-2 justify-between">
+              <Button
+                color={'gray-white'}
+                className={page === 0 ? 'invisible' : ''}
+                onClick={decreasePage}
+              >
+                Previous
+              </Button>
+              <Button onClick={increasePage}>Next</Button>
+            </Row>
+          )}
         </Col>
       </Col>
     </Modal>
@@ -258,11 +250,11 @@ function WhatIsManifoldPage() {
   return (
     <>
       <Image
-        className="h-1/3 w-1/3 place-self-center object-contain sm:h-1/2 sm:w-1/2 "
+        className="h-1/3 w-1/3 place-self-center object-contain"
         src="/logo.svg"
         alt="Manifold Logo"
-        height={150}
-        width={150}
+        height={256}
+        width={256}
       />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
         Welcome to Manifold!
@@ -325,7 +317,7 @@ function PredictionMarketPage() {
       </div>
       <Image
         src="/welcome/manifold-example.gif"
-        className="my-4 h-full w-full object-contain"
+        className="my-4 h-full w-full max-w-xl self-center object-contain"
         alt={'Manifold example animation'}
         width={200}
         height={100}
@@ -334,52 +326,142 @@ function PredictionMarketPage() {
   )
 }
 
-function ThankYouPage() {
+function TopicsPage(props: {
+  onNext?: () => void
+  setFeedKey?: (key: string) => void
+  trendingTopics: Group[]
+  userInterestedTopics: Group[]
+  userBetInTopics: Group[]
+  goBack?: () => void
+  user: User | null | undefined
+}) {
+  const {
+    userInterestedTopics,
+    trendingTopics,
+    userBetInTopics,
+    onNext,
+    goBack,
+    user,
+  } = props
+
+  const [userSelectedTopics, setUserSelectedTopics] = useState<
+    string[] | undefined
+  >()
+
+  const topics = Object.keys(TOPICS_TO_SUBTOPICS)
+
+  useEffect(() => {
+    if (userBetInTopics.length > 0) {
+      userBetInTopics.forEach((group) => selectTopic(group.id))
+    } else if (userInterestedTopics.length > 0) {
+      userInterestedTopics.forEach((group) => selectTopic(group.id))
+    }
+  }, [])
+
+  const selectTopic = (groupId: string) => {
+    if (selectedTopics.includes(groupId)) {
+      if (user) unfollowTopic(groupId, user.id).catch((e) => console.error(e))
+      setUserSelectedTopics((tops) => (tops ?? []).filter((t) => t !== groupId))
+    } else {
+      setUserSelectedTopics((tops) => uniq([...(tops ?? []), groupId]))
+      if (user) followTopic({ groupId }).catch((e) => console.error(e))
+    }
+  }
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  const closeDialog = async () => {
+    setIsLoading(true)
+
+    if (user) {
+      // Don't await as this takes a long time.
+      api('update-user-embedding', {})
+    }
+
+    // if user is following us politics
+    if (
+      intersection(selectedTopics, [
+        'AjxQR8JMpNyDqtiqoA96',
+        'pYwsGvORZFlcq7QrkI6n',
+        'cEzcLXuitr6o4VPI01Q1',
+      ]).length > 0
+    ) {
+      await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
+    }
+
+    onNext?.()
+  }
+  const selectedTopics: string[] = userSelectedTopics ?? []
+
+  const pillButton = (
+    topicWithEmoji: string,
+    topicName: string,
+    groupIds: string[]
+  ) => (
+    <PillButton
+      key={topicName}
+      selected={groupIds.every((g) => selectedTopics.includes(g))}
+      onSelect={() => {
+        groupIds.map((g) => selectTopic(g))
+        track('onboarding select topic', { name: topicName })
+      }}
+    >
+      {topicWithEmoji}
+    </PillButton>
+  )
+
   return (
-    <>
-      <Image
-        className="mx-auto mb-6 h-1/2 w-1/2 object-contain"
-        src={'/welcome/treasure.png'}
-        alt="Mana signup bonus"
-        width={200}
-        height={100}
-      />
+    <Col>
       <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
-        Start trading
+        What interests you?
       </div>
       <div className="mb-4 text-lg">
         We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> to
-        help you get started.
-        {/* Get up to {formatMoney(1000)} by browsing more
-        questions. */}
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
+        play money. Now select 3 or more topics to help use curate your home
+        page.
       </div>
-      <div className="mb-4 text-lg">
-        Mana (Ṁ) is Manifold's play money. It cannot be redeemed for cash, but
-        can be purchased or donated to charity at:
-        <br /> $1 per Ṁ100.
-      </div>
-    </>
-  )
-}
+      <Col className="h-[25rem] overflow-y-auto sm:h-[32rem]">
+        <Col className={''}>
+          <div className="text-ink-700 text-sm">
+            {userInterestedTopics.length > 0 || userBetInTopics.length > 0
+              ? 'Suggested'
+              : 'Trending now'}
+          </div>
+          <Row className={'flex-wrap gap-1 '}>
+            {trendingTopics.map((group) => (
+              <div className="" key={group.id + '-section'}>
+                {pillButton(group.name, removeEmojis(group.name), [group.id])}
+              </div>
+            ))}
+          </Row>
+        </Col>
 
-export function CharityPage(props: { className?: string }) {
-  const { className } = props
-  return (
-    <Col className={clsx('bg-canvas-0', className)}>
-      <div className="text-primary-700 mb-4 text-xl">Donate to charity</div>
-      <img
-        height={100}
-        src="/welcome/charity.gif"
-        className="my-4 h-full w-full rounded-md object-contain"
-        alt=""
-      />
-      <p className="mb-2 mt-2 text-left text-lg">
-        You can turn your mana earnings into a real donation to charity, at a
-        100:1 ratio. E.g. when you donate{' '}
-        <span className="font-semibold">{formatMoney(1000)}</span> to Givewell,
-        Manifold sends them <span className="font-semibold">$10 USD</span>.
-      </p>
+        {topics.map((topic) => (
+          <div className="mb-3 " key={topic + '-section'}>
+            <div className="text-ink-700 text-sm">{topic.slice(3)}</div>
+            <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
+              {getSubtopics(topic)
+                .filter(([_, __, groupId]) => !!groupId)
+                .map(([subtopicWithEmoji, subtopic, groupIds]) => {
+                  return pillButton(subtopicWithEmoji, subtopic, groupIds)
+                })}
+            </Row>
+          </div>
+        ))}
+      </Col>
+      <Row className={'mt-4 justify-between'}>
+        <Button onClick={goBack} color={'gray-white'}>
+          Previous
+        </Button>
+        <Button
+          onClick={closeDialog}
+          disabled={(userSelectedTopics ?? []).length <= 2}
+          loading={isLoading}
+        >
+          Next
+        </Button>
+      </Row>
     </Col>
   )
 }

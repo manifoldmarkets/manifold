@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 
-import { User } from 'common/user'
+import { isVerified, User } from 'common/user'
 import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
@@ -33,7 +33,9 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       throw new APIError(404, `User ${fromId} not found`)
     }
     const fromUser = fromSnap.data() as User
-
+    if (!isVerified(fromUser)) {
+      throw new APIError(403, 'You must verify your phone number to send mana.')
+    }
     const canCreate = await canSendMana(fromUser, createSupabaseClient())
     if (!canCreate) {
       if (fromUser.isBannedFromPosting || fromUser.userDeleted) {

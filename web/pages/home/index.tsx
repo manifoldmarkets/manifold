@@ -4,8 +4,6 @@ import clsx from 'clsx'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import Welcome from 'web/components/onboarding/welcome'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -27,7 +25,6 @@ import {
 } from 'common/user'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { User } from 'common/user'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { NewUserGoals } from 'web/components/home/new-user-goals'
@@ -48,8 +45,6 @@ export async function getStaticProps() {
 }
 
 export default function Home(props: { headlines: Headline[] }) {
-  const isClient = useIsClient()
-
   useRedirectIfSignedOut()
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -57,45 +52,38 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveScroll('home')
 
   const [showBanner, setShowBanner] = useManifestBanner()
-
-  const [feedKey, setFeedKey] = usePersistentInMemoryState('feed', 'feed-key')
-
+  const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (
-    <>
-      <Welcome setFeedKey={setFeedKey} />
-      <Page
-        trackPageView={'home'}
-        trackPageProps={{ kind: 'desktop' }}
-        className="!mt-0"
-        banner={showBanner && <ManifestBanner setShowBanner={setShowBanner} />}
-      >
-        <HeadlineTabs
-          endpoint={'news'}
-          headlines={headlines}
-          currentSlug={'home'}
-          hideEmoji
-        />
-        {!user ? (
-          <LoadingIndicator />
-        ) : isClient ? (
-          <HomeContent
-            user={user}
-            privateUser={privateUser}
-            feedKey={feedKey}
-          />
-        ) : null}
-      </Page>
-    </>
+    <Page
+      trackPageView={'home'}
+      trackPageProps={{ kind: 'desktop' }}
+      className="!mt-0"
+      banner={
+        showBanner &&
+        olderUser && <ManifestBanner setShowBanner={setShowBanner} />
+      }
+    >
+      <HeadlineTabs
+        endpoint={'news'}
+        headlines={headlines}
+        currentSlug={'home'}
+        hideEmoji
+      />
+      {!user ? (
+        <LoadingIndicator />
+      ) : (
+        <HomeContent user={user} privateUser={privateUser} />
+      )}
+    </Page>
   )
 }
 
 export function HomeContent(props: {
   user: User | undefined | null
   privateUser: PrivateUser | undefined | null
-  feedKey: string
 }) {
-  const { user, privateUser, feedKey } = props
+  const { user, privateUser } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
@@ -167,12 +155,7 @@ export function HomeContent(props: {
             />
           )}
 
-          <FeedTimeline
-            key={feedKey}
-            feedKey={feedKey}
-            user={user}
-            privateUser={privateUser}
-          />
+          <FeedTimeline user={user} privateUser={privateUser} />
         </Col>
       )}
       <button

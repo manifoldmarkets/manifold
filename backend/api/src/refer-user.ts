@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
+import { isVerified, MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ReferralTxn } from 'common/txn'
@@ -47,6 +47,9 @@ export const referuser = authEndpoint(async (req, auth) => {
   const newUser = await getUserFirebase(auth.uid)
   if (!newUser) {
     throw new APIError(403, `User ${auth.uid} not found`)
+  }
+  if (!isVerified(newUser)) {
+    throw new APIError(403, 'You must verify your phone number first.')
   }
   let referredByContract: Contract | undefined
   if (contractId) {

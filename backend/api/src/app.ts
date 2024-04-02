@@ -157,6 +157,9 @@ import { deleteGroup } from './delete-group'
 import { recordContractInteraction } from 'api/record-contract-interaction'
 import { getUserPortfolio } from './get-user-portfolio'
 import { createuser } from 'api/create-user'
+import { verifyPhoneNumber } from 'api/verify-phone-number'
+import { requestOTP } from 'api/request-phone-otp'
+import { getPhoneNumber } from 'api/get-phone-number'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -299,6 +302,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-contract-interaction': recordContractInteraction,
   'get-user-portfolio': getUserPortfolio,
   createuser: createuser,
+  'verify-phone-number': verifyPhoneNumber,
+  'request-otp': requestOTP,
+  'phone-number': getPhoneNumber,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

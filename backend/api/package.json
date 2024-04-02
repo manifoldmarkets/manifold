@@ -49,11 +49,13 @@
     "sharp": "0.32.6",
     "string-similarity": "4.0.4",
     "stripe": "8.194.0",
+    "twilio": "5.0.1",
     "twitter-api-v2": "1.15.0",
     "zod": "3.21.4"
   },
   "devDependencies": {
     "@types/mailgun-js": "0.22.12",
-    "@types/marked": "4.0.7"
+    "@types/marked": "4.0.7",
+    "@types/twilio": "3.19.3"
   }
 }
