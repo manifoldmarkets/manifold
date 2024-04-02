@@ -10,6 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { Carousel } from 'web/components/widgets/carousel'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type Tab = {
   title: string
@@ -235,17 +236,31 @@ export function QueryUncontrolledTabs(
     defaultIndex?: number
     scrollToTop?: boolean
     minimalist?: boolean
+    saveTabInLocalStorageKey?: string
   }
 ) {
-  const { tabs, defaultIndex, minimalist, onClick, scrollToTop, ...rest } =
-    props
+  const {
+    tabs,
+    minimalist,
+    onClick,
+    scrollToTop,
+    saveTabInLocalStorageKey,
+    ...rest
+  } = props
   const router = useRouter()
   const pathName = usePathname()
   const { searchParams, createQueryString } = useDefinedSearchParams()
   const selectedIdx = tabs.findIndex((t) =>
     isTabSelected(searchParams, 'tab', t)
   )
-  const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex ?? 0
+  const [savedTabIndex, setSavedTabIndex] = usePersistentLocalState<
+    number | undefined
+  >(undefined, saveTabInLocalStorageKey ?? '')
+  const defaultIndex =
+    (saveTabInLocalStorageKey ? savedTabIndex : undefined) ??
+    props.defaultIndex ??
+    0
+  const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex
 
   useEffect(() => {
     if (onClick) {
@@ -254,6 +269,7 @@ export function QueryUncontrolledTabs(
         activeIndex
       )
     }
+    if (saveTabInLocalStorageKey) setSavedTabIndex(activeIndex)
   }, [activeIndex])
   if (minimalist) {
     return (

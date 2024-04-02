@@ -371,6 +371,9 @@ function UserProfile(props: {
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-2'}
+            saveTabInLocalStorageKey={
+              isCurrentUser ? `profile-tabs-${user.id}` : undefined
+            }
             tabs={buildArray(
               isCurrentUser && {
                 title: 'Summary',
