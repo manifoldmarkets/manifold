@@ -252,7 +252,7 @@ function UserProfile(props: {
 
               <div
                 className={clsx(
-                  'self-center opacity-0 transition-opacity',
+                  'self-center opacity-0 transition-opacity first:ml-4',
                   headerStuck && 'opacity-100'
                 )}
               >

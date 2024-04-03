@@ -14,7 +14,8 @@ export function BackButton(props: { className?: string }) {
     setCanGoBack(typeof window !== 'undefined' && window.history.length > 1)
   }, [])
 
-  if (!canGoBack) return <div />
+  if (!canGoBack) return null
+
   return (
     <Button
       className={clsx('rounded-none', className)}
