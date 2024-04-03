@@ -17,7 +17,6 @@ import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { track } from 'web/lib/service/analytics'
 import { DATA, StateDataType } from '../../usa-map/usa-map-data'
 import { PartyPanel } from './party-panel/party-panel'
-import { StateElectionMarket } from 'web/public/data/elections-data'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
 export function StateContractCard(props: {

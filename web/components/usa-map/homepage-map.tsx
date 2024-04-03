@@ -32,7 +32,6 @@ import {
   swingStates,
 } from 'web/public/data/elections-data'
 import { HouseTable } from './house-table'
-import { senate2024 } from 'web/public/data/senate-state-data'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
