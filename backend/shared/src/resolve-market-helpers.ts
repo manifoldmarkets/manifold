@@ -34,7 +34,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
-import { acquire, release } from './firestore-lock'
+import { acquireLock, releaseLock } from './firestore-lock'
 
 export type ResolutionParams = {
   outcome: string
@@ -59,7 +59,7 @@ export const resolveMarketHelper = async (
     // Allow multiple independent multi answers to resolve at the same time.
     lockId = `${unresolvedContract.id}-${answerId}`
   }
-  const didAcquire = await acquire(lockId)
+  const didAcquire = await acquireLock(lockId)
   if (!didAcquire) {
     throw new APIError(
       403,
@@ -243,7 +243,7 @@ export const resolveMarketHelper = async (
 
     return contract
   } finally {
-    await release(lockId)
+    await releaseLock(lockId)
   }
 }
 
