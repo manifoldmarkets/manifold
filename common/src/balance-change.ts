@@ -14,6 +14,7 @@ export type BalanceChange = {
   type: string
   createdTime: number
 }
+
 type MinimalContract = {
   question: string
   slug?: string
@@ -28,7 +29,8 @@ export const BET_BALANCE_CHANGE_TYPES = [
   'redeem_shares',
   'fill_bet',
   'loan_payment',
-]
+] as const
+
 export type BetBalanceChange = CustomBalanceChange & {
   type: (typeof BET_BALANCE_CHANGE_TYPES)[number]
   bet: Pick<Bet, 'outcome' | 'shares'>
@@ -53,11 +55,27 @@ export const TXN_BALANCE_CHANGE_TYPES = [
   'LOAN',
   'STARTING_BALANCE',
   'ADD_SUBSIDY',
-]
+  'CHARITY',
+] as const
+
 export type TxnType = (typeof TXN_BALANCE_CHANGE_TYPES)[number]
 export type TxnBalanceChange = CustomBalanceChange & {
   type: TxnType
   contract?: MinimalContract
   questType?: QuestType
   user?: Pick<User, 'username' | 'name'>
+  charity?: { name: string; slug: string }
 }
+
+export const isBetChange = (
+  change: AnyBalanceChangeType
+): change is BetBalanceChange => 'bet' in change
+
+export const isTxnChange = (
+  change: AnyBalanceChangeType
+): change is TxnBalanceChange =>
+  TXN_BALANCE_CHANGE_TYPES.includes(change.type as any)
+
+export const isRawBalanceChange = (
+  change: AnyBalanceChangeType
+): change is BalanceChange => 'key' in change

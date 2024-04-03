@@ -15,9 +15,9 @@ import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
-  TXN_BALANCE_CHANGE_TYPES,
   TxnBalanceChange,
   TxnType,
+  isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -104,15 +104,17 @@ export const BalanceCard = (props: {
 
 export const BalanceChangeTable = (props: {
   user: User
-  balanceChanges: TxnBalanceChange[] | BetBalanceChange[]
+  balanceChanges: AnyBalanceChangeType[]
   simple?: boolean
 }) => {
   const { user, simple } = props
   const [query, setQuery] = useState('')
   const balanceChanges = props.balanceChanges
     .filter((change) => {
-      const { type, contract } = change
-      const contractQuestion = contract?.question ?? ''
+      const { type } = change
+
+      const contractQuestion =
+        ('contract' in change && change.contract?.question) || ''
       const changeType = type
       const userName = 'user' in change ? change.user?.name ?? '' : ''
       const userUsername = 'user' in change ? change.user?.username ?? '' : ''
@@ -125,7 +127,9 @@ export const BalanceChangeTable = (props: {
           .toLowerCase()
           .includes(query.toLowerCase()) ||
         answerText.toLowerCase().includes(query.toLowerCase()) ||
-        (txnTitle(change) ?? '').toLowerCase().includes(query.toLowerCase()) ||
+        ((isTxnChange(change) && txnTitle(change)) || '')
+          .toLowerCase()
+          .includes(query.toLowerCase()) ||
         userName.toLowerCase().includes(query.toLowerCase()) ||
         userUsername.toLowerCase().includes(query.toLowerCase()) ||
         betText.toLowerCase().includes(query.toLowerCase())
@@ -152,6 +156,7 @@ export const BalanceChangeTable = (props: {
     </Col>
   )
 }
+
 function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
   user: User
@@ -192,7 +197,7 @@ function RenderBalanceChanges(props: {
               hideBalance={hideBalance}
             />
           )
-        } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+        } else if (isTxnChange(change)) {
           return (
             <TxnBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
@@ -380,7 +385,7 @@ const TxnBalanceChangeRow = (props: {
   hideBalance?: boolean
 }) => {
   const { change, balance, avatarSize, avatarlUrl, simple, hideBalance } = props
-  const { contract, amount, type, user: changeUser } = change
+  const { contract, amount, type, user: changeUser, charity: org } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
   } = {
@@ -400,6 +405,7 @@ const TxnBalanceChangeRow = (props: {
     LOAN: 'bg-amber-500',
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
+    CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
   return (
     <Row className={'gap-2'}>
@@ -434,6 +440,8 @@ const TxnBalanceChangeRow = (props: {
               ) : type === 'CREATE_CONTRACT_ANTE' ||
                 type === 'BOUNTY_POSTED' ? (
                 <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+              ) : type === 'CHARITY' ? (
+                '❤️'
               ) : (
                 '🎁'
               )
@@ -457,6 +465,13 @@ const TxnBalanceChangeRow = (props: {
           ) : changeUser ? (
             <Link
               href={'/' + changeUser.username}
+              className={clsx('line-clamp-2', linkClass)}
+            >
+              {txnTitle(change)}
+            </Link>
+          ) : org ? (
+            <Link
+              href={`/charity/${org.slug}`}
               className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}
@@ -491,11 +506,15 @@ const TxnBalanceChangeRow = (props: {
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
-  const { type, contract, user, questType } = change
+  const { type, contract, user, questType, charity } = change
 
   if (user) {
     return user.username
   }
+  if (charity) {
+    return charity.name
+  }
+
   switch (type) {
     case 'QUEST_REWARD':
       return questType ? questTypeToDescription(questType) : ''
@@ -516,7 +535,7 @@ const txnTitle = (change: TxnBalanceChange) => {
   }
 }
 
-const txnTypeToDescription = (txnCategory: TxnType) => {
+const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
@@ -548,6 +567,8 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return 'Bounty awarded'
     case 'MANA_PAYMENT':
       return 'User payment'
+    case 'CHARITY':
+      return 'Donation'
     case 'LOAN':
       return ''
     default:

@@ -13,6 +13,7 @@ import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
 import { getUser, log } from 'shared/utils'
 import { User } from 'common/user'
+import { charities } from 'common/charity'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -86,7 +87,7 @@ const getTxnBalanceChanges = async (
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       key: txn.id,
-      type: txn.category,
+      type: txn.category as any,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
       contract: contract
@@ -102,6 +103,14 @@ const getTxnBalanceChanges = async (
         : undefined,
       questType: txn.data?.questType,
       user: user ? { username: user.username, name: user.name } : undefined,
+      charity:
+        txn.toType === 'CHARITY'
+          ? {
+              name:
+                charities.find((c) => c.slug === txn.toId)?.name ?? txn.toId,
+              slug: txn.toId,
+            }
+          : undefined,
     }
     balanceChanges.push(balanceChange)
   }
@@ -132,6 +141,7 @@ const getContractIdFromTxn = (txn: Txn) => {
       'MARKET_BOOST_CREATE',
       'SIGNUP_BONUS',
       'LEAGUE_PRIZE',
+      'CHARITY',
     ].includes(txn.category)
   )
     log('No contractId in get-balance-changes for txn', txn)

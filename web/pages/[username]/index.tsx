@@ -77,7 +77,7 @@ import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
-import { BET_BALANCE_CHANGE_TYPES } from 'common/balance-change'
+import { BET_BALANCE_CHANGE_TYPES, isBetChange } from 'common/balance-change'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-card'
 import { Button } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -172,9 +172,7 @@ function UserProfile(props: {
     after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
   })
   const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) =>
-    BET_BALANCE_CHANGE_TYPES.includes(b.type)
-  )
+  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
 
   useSaveReferral(currentUser, {
