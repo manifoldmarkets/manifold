@@ -64,6 +64,7 @@ export function BinaryMultiAnswersPanel(props: {
           answer={outcome === 'YES' ? answers[0] : answers[1]}
           contract={contract}
           outcome={outcome}
+          setOutcome={setOutcome}
           closePanel={() => setOutcome(undefined)}
         />
       )}
@@ -106,8 +107,9 @@ function BinaryMultiChoiceBetPanel(props: {
   contract: CPMMMultiContract
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
+  setOutcome: (outcome: 'YES' | 'NO') => void
 }) {
-  const { answer, contract, closePanel, outcome } = props
+  const { answer, contract, closePanel, outcome, setOutcome } = props
 
   const [editing, setEditing] = useState(false)
   const color = getVersusColor(answer)
@@ -123,6 +125,7 @@ function BinaryMultiChoiceBetPanel(props: {
         answerText: answer.text,
       }}
       outcome={outcome}
+      setOutcome={setOutcome}
       onBuySuccess={() => setTimeout(closePanel, 500)}
       onClose={closePanel}
       location={'contract page answer'}

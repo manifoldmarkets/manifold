@@ -117,7 +117,7 @@ export function BuyPanel(props: {
 
   return (
     <Col>
-      {(!isPanelBodyVisible || alwaysShowOutcomeSwitcher) && (
+      {!isPanelBodyVisible && (
         <Row className={clsx('mb-2 w-full items-center gap-2')}>
           {PRODUCT_MARKET_FIT_ENABLED && contract.outcomeType === 'BINARY' ? (
             <SpecialYesNoSelector
@@ -165,6 +165,7 @@ export function BuyPanel(props: {
               : ''
           }
           outcome={outcome}
+          setOutcome={setOutcome}
           onClose={
             inModal || alwaysShowOutcomeSwitcher
               ? undefined
@@ -193,6 +194,8 @@ export const BuyPanelBody = (props: {
   multiProps?: MultiBetProps
   onBuySuccess?: () => void
   outcome?: BinaryOutcomes
+  setOutcome: (outcome: 'YES' | 'NO') => void
+  alwaysShowOutcomeSwitcher?: boolean
   location?: string
   onClose?: () => void
   replyToCommentId?: string
@@ -203,8 +206,10 @@ export const BuyPanelBody = (props: {
   const {
     contract,
     multiProps,
-    onBuySuccess,
     outcome,
+    setOutcome,
+    alwaysShowOutcomeSwitcher,
+    onBuySuccess,
     location = 'bet panel',
     onClose,
     replyToCommentId,
@@ -433,6 +438,24 @@ export const BuyPanelBody = (props: {
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
         {children}
+
+        {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
+          <Row className="mb-2 items-center space-x-3">
+            <div className="text-ink-700">Outcome</div>
+            <ChoicesToggleGroup
+              currentChoice={outcome}
+              color={outcome === 'YES' ? 'green' : 'red'}
+              choicesMap={{
+                Yes: 'YES',
+                No: 'NO',
+              }}
+              setChoice={(outcome) => {
+                setOutcome(outcome as 'YES' | 'NO')
+              }}
+            />
+          </Row>
+        )}
+
         {isAdvancedTrader && !isStonk && (
           <Row className="mb-2 items-center space-x-3">
             <div className="text-ink-700">Bet type</div>

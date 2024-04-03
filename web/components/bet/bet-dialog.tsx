@@ -46,12 +46,14 @@ export function BetDialog(props: {
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}
           location={trackingLocation}
           inModal={true}
+          initialOutcome="YES"
           alwaysShowOutcomeSwitcher
         />
       </Col>
     </Modal>
   )
 }
+
 export function MultiBetDialog(props: {
   contract: CPMMMultiContract | CPMMNumericContract
   open: boolean

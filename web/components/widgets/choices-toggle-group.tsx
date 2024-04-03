@@ -7,8 +7,8 @@ const colorClasses = {
   indigo:
     'text-ink-500 hover:bg-ink-50 aria-checked:bg-primary-100 aria-checked:text-primary-900',
   green:
-    'text-ink-500 hover:bg-teal-50 aria-checked:bg-teal-300/40 aria-checked:text-teal-800',
-  red: 'text-ink-500 hover:bg-scarlet-50 aria-checked:bg-scarlet-100 aria-checked:text-scarlet-800',
+    'text-ink-500 hover:bg-ink-50 aria-checked:bg-teal-500 aria-checked:text-ink-0',
+  red: 'text-ink-500 hover:bg-ink-50 aria-checked:bg-scarlet-500 aria-checked:text-ink-0',
 }
 
 export type ColorType = keyof typeof colorClasses
