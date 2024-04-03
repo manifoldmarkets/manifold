@@ -34,6 +34,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
+import { acquire, release } from './firestore-lock'
 
 export type ResolutionParams = {
   outcome: string
@@ -49,179 +50,201 @@ export const resolveMarketHelper = async (
   creator: User,
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
 ) => {
-  const { closeTime, id: contractId, outcomeType } = unresolvedContract
-
-  const resolutionTime = Date.now()
-  const newCloseTime = closeTime
-    ? Math.min(closeTime, resolutionTime)
-    : closeTime
-
-  const {
-    creatorPayout,
-    collectedFees,
-    bets,
-    resolutionProbability,
-    payouts,
-    payoutsWithoutLoans,
-  } = await getDataAndPayoutInfo(
-    outcome,
-    unresolvedContract,
-    resolutions,
-    probabilityInt,
-    answerId
-  )
-
-  let updatedContractAttrs: Partial<Contract> | undefined =
-    removeUndefinedProps({
-      isResolved: true,
-      resolution: outcome,
-      resolutionValue: value,
-      resolutionTime,
-      closeTime: newCloseTime,
-      resolutionProbability,
-      resolutions,
-      collectedFees,
-      resolverId: resolver.id,
-      subsidyPool: 0,
-      lastUpdatedTime: newCloseTime,
-    })
-  let updateAnswerAttrs: Partial<Answer> | undefined
-
-  if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
-    // Only resolve the contract if all other answers are resolved.
-    const allAnswersResolved = unresolvedContract.answers
-      .filter((a) => a.id !== answerId)
-      .every((a) => a.resolution)
-
-    const hasAnswerResolvedYes =
-      unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
-      outcome === 'YES'
-    const marketCancelled = unresolvedContract.answers
-      .every((a) => a.resolution === 'CANCEL')
-    const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
-    if (
-      allAnswersResolved &&
-      outcomeType !== 'NUMBER' &&
-      // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
-      (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
-    )
-      updatedContractAttrs = {
-        ...updatedContractAttrs,
-        resolution: finalResolution,
-      }
-    else updatedContractAttrs = undefined
-
-    const finalProb =
-      resolutionProbability ??
-      (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
-    updateAnswerAttrs = removeUndefinedProps({
-      resolution: outcome,
-      resolutionTime,
-      resolutionProbability,
-      prob: finalProb,
-      resolverId: resolver.id,
-    }) as Partial<Answer>
-    // We have to update the denormalized answer data on the contract for the updateContractMetrics call
-    updatedContractAttrs = {
-      ...(updatedContractAttrs ?? {}),
-      answers: unresolvedContract.answers.map((a) =>
-        a.id === answerId
-          ? {
-              ...a,
-              ...updateAnswerAttrs,
-            }
-          : a
-      ),
-    } as Partial<CPMMMultiContract>
-  }
-
-  const contract = {
-    ...unresolvedContract,
-    ...updatedContractAttrs,
-  } as Contract
-
-  // handle exploit where users can get negative payouts
-  const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
-
-  const userPayouts = groupPayoutsByUser(payouts)
-  log('user payouts', { userPayouts })
-
-  const negativePayouts = Object.values(userPayouts).filter(
-    (p) => p <= negPayoutThreshold
-  )
-
-  log('negative payouts', { negativePayouts })
-
+  let lockId = unresolvedContract.id
   if (
-    outcome === 'CANCEL' &&
-    !ENV_CONFIG.adminIds.includes(resolver.id) &&
-    negativePayouts.length > 0
+    unresolvedContract.outcomeType === 'MULTIPLE_CHOICE' &&
+    unresolvedContract.mechanism === 'cpmm-multi-1' &&
+    !unresolvedContract.shouldAnswersSumToOne
   ) {
+    // Allow multiple independent multi answers to resolve at the same time.
+    lockId = `${unresolvedContract.id}-${answerId}`
+  }
+  const didAcquire = await acquire(lockId)
+  if (!didAcquire) {
     throw new APIError(
       403,
-      'Negative payouts too large for resolution. Contact admin.'
+      'Contract is already being resolved (failed to acquire lock)'
     )
   }
 
-  // Should we combine all the payouts into one txn?
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  try {
+    const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
-  if (updatedContractAttrs) {
-    log('updating contract', { updatedContractAttrs })
-    await contractDoc.update(updatedContractAttrs)
-    log('contract resolved')
-  }
-  if (updateAnswerAttrs) {
-    const answerDoc = firestore.doc(
-      `contracts/${contractId}/answersCpmm/${answerId}`
-    )
-    await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
-  }
-  log('processing payouts', { payouts })
-  await payUsersTransactions(payouts, contractId, answerId)
+    const resolutionTime = Date.now()
+    const newCloseTime = closeTime
+      ? Math.min(closeTime, resolutionTime)
+      : closeTime
 
-  await updateContractMetricsForUsers(contract, bets)
-  // TODO: we may want to support clawing back trader bonuses on MC markets too
-  if (!answerId) {
-    await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
-  }
-  await revalidateStaticProps(contractPath(contract))
-
-  const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
-
-  const userIdToContractMetrics = mapValues(
-    groupBy(bets, (bet) => bet.userId),
-    (bets) => getContractBetMetrics(contract, bets)
-  )
-  await trackPublicEvent(resolver.id, 'resolve market', {
-    resolution: outcome,
-    contractId,
-  })
-
-  await recordContractEdit(
-    unresolvedContract,
-    resolver.id,
-    Object.keys(updatedContractAttrs ?? {})
-  )
-
-  await createContractResolvedNotifications(
-    contract,
-    resolver,
-    creator,
-    outcome,
-    probabilityInt,
-    value,
-    answerId,
-    {
-      userIdToContractMetrics,
-      userPayouts: userPayoutsWithoutLoans,
+    const {
       creatorPayout,
+      collectedFees,
+      bets,
       resolutionProbability,
+      payouts,
+      payoutsWithoutLoans,
+    } = await getDataAndPayoutInfo(
+      outcome,
+      unresolvedContract,
       resolutions,
-    }
-  )
+      probabilityInt,
+      answerId
+    )
 
-  return contract
+    let updatedContractAttrs: Partial<Contract> | undefined =
+      removeUndefinedProps({
+        isResolved: true,
+        resolution: outcome,
+        resolutionValue: value,
+        resolutionTime,
+        closeTime: newCloseTime,
+        resolutionProbability,
+        resolutions,
+        collectedFees,
+        resolverId: resolver.id,
+        subsidyPool: 0,
+        lastUpdatedTime: newCloseTime,
+      })
+    let updateAnswerAttrs: Partial<Answer> | undefined
+
+    if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+      // Only resolve the contract if all other answers are resolved.
+      const allAnswersResolved = unresolvedContract.answers
+        .filter((a) => a.id !== answerId)
+        .every((a) => a.resolution)
+
+      const hasAnswerResolvedYes =
+        unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
+        outcome === 'YES'
+      const marketCancelled = unresolvedContract.answers.every(
+        (a) => a.resolution === 'CANCEL'
+      )
+      const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
+      if (
+        allAnswersResolved &&
+        outcomeType !== 'NUMBER' &&
+        // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
+        (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
+      )
+        updatedContractAttrs = {
+          ...updatedContractAttrs,
+          resolution: finalResolution,
+        }
+      else updatedContractAttrs = undefined
+
+      const finalProb =
+        resolutionProbability ??
+        (outcome === 'YES' ? 1 : outcome === 'NO' ? 0 : undefined)
+      updateAnswerAttrs = removeUndefinedProps({
+        resolution: outcome,
+        resolutionTime,
+        resolutionProbability,
+        prob: finalProb,
+        resolverId: resolver.id,
+      }) as Partial<Answer>
+      // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+      updatedContractAttrs = {
+        ...(updatedContractAttrs ?? {}),
+        answers: unresolvedContract.answers.map((a) =>
+          a.id === answerId
+            ? {
+                ...a,
+                ...updateAnswerAttrs,
+              }
+            : a
+        ),
+      } as Partial<CPMMMultiContract>
+    }
+
+    const contract = {
+      ...unresolvedContract,
+      ...updatedContractAttrs,
+    } as Contract
+
+    // handle exploit where users can get negative payouts
+    const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
+
+    const userPayouts = groupPayoutsByUser(payouts)
+    log('user payouts', { userPayouts })
+
+    const negativePayouts = Object.values(userPayouts).filter(
+      (p) => p <= negPayoutThreshold
+    )
+
+    log('negative payouts', { negativePayouts })
+
+    if (
+      outcome === 'CANCEL' &&
+      !ENV_CONFIG.adminIds.includes(resolver.id) &&
+      negativePayouts.length > 0
+    ) {
+      throw new APIError(
+        403,
+        'Negative payouts too large for resolution. Contact admin.'
+      )
+    }
+
+    // Should we combine all the payouts into one txn?
+    const contractDoc = firestore.doc(`contracts/${contractId}`)
+
+    if (updatedContractAttrs) {
+      log('updating contract', { updatedContractAttrs })
+      await contractDoc.update(updatedContractAttrs)
+      log('contract resolved')
+    }
+    if (updateAnswerAttrs) {
+      const answerDoc = firestore.doc(
+        `contracts/${contractId}/answersCpmm/${answerId}`
+      )
+      await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+    }
+    log('processing payouts', { payouts })
+    await payUsersTransactions(payouts, contractId, answerId)
+
+    await updateContractMetricsForUsers(contract, bets)
+    // TODO: we may want to support clawing back trader bonuses on MC markets too
+    if (!answerId) {
+      await undoUniqueBettorRewardsIfCancelResolution(contract, outcome)
+    }
+    await revalidateStaticProps(contractPath(contract))
+
+    const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
+
+    const userIdToContractMetrics = mapValues(
+      groupBy(bets, (bet) => bet.userId),
+      (bets) => getContractBetMetrics(contract, bets)
+    )
+    await trackPublicEvent(resolver.id, 'resolve market', {
+      resolution: outcome,
+      contractId,
+    })
+
+    await recordContractEdit(
+      unresolvedContract,
+      resolver.id,
+      Object.keys(updatedContractAttrs ?? {})
+    )
+
+    await createContractResolvedNotifications(
+      contract,
+      resolver,
+      creator,
+      outcome,
+      probabilityInt,
+      value,
+      answerId,
+      {
+        userIdToContractMetrics,
+        userPayouts: userPayoutsWithoutLoans,
+        creatorPayout,
+        resolutionProbability,
+        resolutions,
+      }
+    )
+
+    return contract
+  } finally {
+    await release(lockId)
+  }
 }
 
 export const getDataAndPayoutInfo = async (
