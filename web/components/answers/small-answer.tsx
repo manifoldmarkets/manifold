@@ -174,7 +174,7 @@ export const SmallAnswerBar = (props: {
         ) : (
           <Linkify
             text={answer.text}
-            className="[&_a]:text-primary-800 text-sm"
+            className="[&_a]:text-primary-800 line-clamp-2 text-sm"
           />
         )}
         <Row>
