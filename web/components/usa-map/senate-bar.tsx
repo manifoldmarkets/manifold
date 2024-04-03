@@ -5,7 +5,7 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { currentSenate } from 'web/public/data/senate-state-data'
+import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
 import { partition } from 'lodash'
 import { sortByDemocraticDiff } from './electoral-college-visual'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
@@ -19,7 +19,8 @@ export function SenateBar(props: {
   hoveredState: string | null | undefined
 }) {
   const sortedContractsDictionary = sortByDemocraticDiff(
-    props.mapContractsDictionary
+    props.mapContractsDictionary,
+    senate2024
   )
   const { handleClick, onMouseEnter, onMouseLeave, targetState, hoveredState } =
     props
@@ -55,7 +56,10 @@ export function SenateBar(props: {
         })}
         {Object.entries(sortedContractsDictionary).map(
           ([stateKey, contract]) => {
-            const fill = probToColor(contract) ?? ''
+            const fill = probToColor(
+              contract,
+              senate2024.filter((s) => s.state === stateKey)[0]
+            )
             return (
               <StateBar
                 key={stateKey}

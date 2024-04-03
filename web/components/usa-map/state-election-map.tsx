@@ -1,4 +1,5 @@
 import { Contract } from 'common/contract'
+import { StateElectionMarket } from 'web/public/data/elections-data'
 
 export const DEM_LIGHT_HEX = '#cedcef'
 export const REP_LIGHT_HEX = '#f4dad7'
@@ -15,7 +16,10 @@ export function hexToRgb(hex: string) {
   return { r, g, b }
 }
 
-export const probToColor = (contract: Contract | null) => {
+export const probToColor = (
+  contract: Contract | null,
+  data?: StateElectionMarket
+) => {
   type Color = { r: number; g: number; b: number }
   function interpolateColor(color1: Color, color2: Color, factor: number) {
     // Linear interpolation between two colors
@@ -36,10 +40,10 @@ export const probToColor = (contract: Contract | null) => {
   const DEM_DARK = hexToRgb(DEM_DARK_HEX)
   const REP_DARK = hexToRgb(REP_DARK_HEX)
 
-  const probDemocratic = answers.find(
+  let probDemocratic = answers.find(
     (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
   )?.prob
-  const probRepublican = answers.find(
+  let probRepublican = answers.find(
     (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
   )?.prob
   const probOther = answers.find((a) => a.text == 'Other')?.prob
@@ -51,6 +55,23 @@ export const probToColor = (contract: Contract | null) => {
   )
     return undefined
 
+  if (data?.otherParty) {
+    console.log(data, probDemocratic, probRepublican, probOther)
+  }
+  if (data && data.otherParty) {
+    const otherAnswer = contract?.answers.find(
+      (answer) => answer.text == 'Other'
+    )
+    if (data.otherParty == 'Democratic Party') {
+      probDemocratic += probOther
+    }
+    if (data.otherParty == 'Republican Party') {
+      probRepublican += probOther
+    }
+  }
+  if (data?.otherParty) {
+    console.log('AFTER', data, probDemocratic, probRepublican, probOther)
+  }
   // Calculate the difference
   const repOverDem = probRepublican - probDemocratic
   const absoluteDifference = Math.abs(repOverDem)

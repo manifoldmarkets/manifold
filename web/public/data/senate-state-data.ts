@@ -41,6 +41,7 @@ export const senate2024: StateElectionMarket[] = [
   {
     state: 'ME',
     slug: 'which-party-will-win-the-us-senate-0c5f42942065',
+    otherParty: 'Democratic Party',
   },
   {
     state: 'MI',
@@ -118,8 +119,8 @@ export const senate2024: StateElectionMarket[] = [
   {
     state: 'VT',
     slug: 'which-party-will-win-the-us-senate-671f45a6f661',
+    otherParty: 'Democratic Party',
   },
-
   {
     state: 'WA',
     slug: 'which-party-will-win-the-us-senate-c49351e24df6',

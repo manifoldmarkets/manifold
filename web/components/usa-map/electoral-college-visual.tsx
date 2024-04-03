@@ -6,7 +6,10 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { MapContractsDictionary } from 'web/public/data/elections-data'
+import {
+  MapContractsDictionary,
+  StateElectionMarket,
+} from 'web/public/data/elections-data'
 
 export function ElectoralCollegeVisual(props: {
   sortedContractsDictionary: MapContractsDictionary
@@ -87,7 +90,8 @@ export function ElectoralCollegeVisual(props: {
 }
 
 export function sortByDemocraticDiff(
-  unsortedContractsDictionary: MapContractsDictionary
+  unsortedContractsDictionary: MapContractsDictionary,
+  data?: StateElectionMarket[]
 ): MapContractsDictionary {
   return Object.entries(unsortedContractsDictionary)
     .map(([state, contract]) => {
@@ -103,9 +107,34 @@ export function sortByDemocraticDiff(
           answer.text === 'Republican Party' ||
           answer.text.includes('Republican Party')
       )
+      let otherDem = null
+      let otherRep = null
+      if (
+        data &&
+        data.filter((d) => d.state === state) &&
+        data.filter((d) => d.state === state)[0].otherParty
+      ) {
+        const otherAnswer = contract?.answers.find(
+          (answer) => answer.text == 'Other'
+        )
+        if (
+          data.filter((d) => d.state === state)[0].otherParty ==
+          'Democratic Party'
+        ) {
+          otherDem = otherAnswer
+        }
+        if (
+          data.filter((d) => d.state === state)[0].otherParty ==
+          'Republican Party'
+        ) {
+          otherRep = otherAnswer
+        }
+      }
       const diff =
         democraticAnswer && republicanAnswer
-          ? democraticAnswer.prob - republicanAnswer.prob
+          ? democraticAnswer.prob +
+            (otherDem ? otherDem.prob : 0) -
+            (republicanAnswer.prob + (otherRep ? otherRep.prob : 0))
           : 0
       return { state, contract, diff }
     })
