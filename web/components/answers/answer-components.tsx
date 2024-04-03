@@ -14,7 +14,7 @@ import {
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
-import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
 import { Bet } from 'common/bet'
@@ -250,6 +250,7 @@ export const MultiBettor = (props: {
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
+        className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
       >
         <AnswerCpmmBetPanel
           answer={answer}
