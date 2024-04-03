@@ -12,7 +12,11 @@ import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
-import { MODAL_CLASS, Modal } from 'web/components/layout/modal'
+import {
+  MODAL_CLASS,
+  Modal,
+  SCROLLABLE_MODAL_CLASS,
+} from 'web/components/layout/modal'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
@@ -207,7 +211,7 @@ export const BinaryBetButton = (props: { contract: CPMMBinaryContract }) => {
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-        className={clsx(MODAL_CLASS)}
+        className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
       >
         <Link
           className={clsx(
