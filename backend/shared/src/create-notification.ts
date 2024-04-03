@@ -184,11 +184,8 @@ export type replied_users_info = {
   }
 }
 const ALL_TRADERS_ID = 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
-// TODO: remove contract updated from this, seems out of place
-export const createCommentOrUpdatedContractNotification = async (
+export const createCommentOnContractNotification = async (
   sourceId: string,
-  sourceType: 'comment' | 'contract',
-  sourceUpdateType: 'created' | 'updated',
   sourceUser: User,
   sourceText: string,
   sourceContract: Contract,
@@ -226,9 +223,9 @@ export const createCommentOrUpdatedContractNotification = async (
       isSeen: false,
       sourceId,
       sourceType: isManifoldLoveContract(sourceContract)
-        ? (`love_${sourceType}` as love_notification_source_types)
-        : sourceType,
-      sourceUpdateType,
+        ? 'love_comment'
+        : 'comment',
+      sourceUpdateType: 'created',
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,
       sourceUserUsername: sourceUser.username,
@@ -240,7 +237,7 @@ export const createCommentOrUpdatedContractNotification = async (
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
       data: {
-        isReply: sourceType === 'comment' && !!repliedUsersInfo,
+        isReply: !!repliedUsersInfo,
       } as CommentNotificationData,
     }
     return removeUndefinedProps(notification)
@@ -292,11 +289,7 @@ export const createCommentOrUpdatedContractNotification = async (
     }
 
     // Email notifications
-    if (
-      sendToEmail &&
-      !receivedNotifications.includes('email') &&
-      sourceType === 'comment'
-    ) {
+    if (sendToEmail && !receivedNotifications.includes('email')) {
       const { repliedToType, repliedToAnswerText, repliedToAnswerId, bet } =
         repliedUsersInfo?.[userId] ?? {}
       // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
@@ -321,9 +314,7 @@ export const createCommentOrUpdatedContractNotification = async (
       followerIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
-          sourceType === 'comment'
-            ? 'comment_on_contract_you_follow'
-            : 'update_on_contract_you_follow'
+          'comment_on_contract_you_follow'
         )
       )
     )
@@ -346,15 +337,13 @@ export const createCommentOrUpdatedContractNotification = async (
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
-          sourceType === 'comment'
-            ? 'comment_on_contract_with_users_shares_in'
-            : 'update_on_contract_with_users_shares_in'
+          'comment_on_contract_with_users_shares_in'
         )
       )
     )
   }
   const notifyRepliedUser = async () => {
-    if (sourceType === 'comment' && repliedUsersInfo)
+    if (repliedUsersInfo)
       await Promise.all(
         Object.keys(repliedUsersInfo).map((userId) =>
           sendNotificationsIfSettingsPermit(
@@ -368,7 +357,7 @@ export const createCommentOrUpdatedContractNotification = async (
   }
 
   const notifyTaggedUsers = async () => {
-    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0) {
+    if (taggedUserIds && taggedUserIds.length > 0) {
       if (
         taggedUserIds.includes(ALL_TRADERS_ID) &&
         (sourceUser.id === sourceContract.creatorId ||

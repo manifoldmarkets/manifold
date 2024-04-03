@@ -4,7 +4,7 @@ import { log, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
-  createCommentOrUpdatedContractNotification,
+  createCommentOnContractNotification,
   replied_users_info,
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
@@ -137,10 +137,8 @@ export const handleCommentNotifications = async (
     }
   }
 
-  await createCommentOrUpdatedContractNotification(
+  await createCommentOnContractNotification(
     comment.id,
-    'comment',
-    'created',
     commentCreator,
     richTextToString(comment.content),
     contract,

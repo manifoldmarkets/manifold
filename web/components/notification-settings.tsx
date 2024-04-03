@@ -125,8 +125,6 @@ const comments: NotificationSectionData = {
 const updates: NotificationSectionData = {
   label: 'Updates & Resolutions',
   subscriptionTypes: [
-    'market_updates_on_watched_markets',
-    'market_updates_on_watched_markets_with_shares_in',
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
     'all_votes_on_watched_markets',

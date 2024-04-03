@@ -173,14 +173,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Automatic loans from your predictions that are locked in unresolved questions',
   },
-  market_updates_on_watched_markets: {
-    simple: 'All creator updates',
-    detailed: 'All market updates made by the creator',
-  },
-  market_updates_on_watched_markets_with_shares_in: {
-    simple: `Only creator updates on questions that you've ${PAST_BET}`,
-    detailed: `Only updates made by the creator on questions that you've ${PAST_BET}`,
-  },
+
   on_new_follow: {
     simple: 'A user followed you',
     detailed: 'A user followed you',

@@ -267,14 +267,7 @@ export function NotificationItem(props: {
     (sourceType === 'contract' || sourceType === 'love_contract') &&
     sourceUpdateType === 'updated'
   ) {
-    return (
-      <MarketUpdateNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
+    return null
   } else if (
     (sourceType === 'contract' || sourceType === 'love_contract') &&
     sourceUpdateType === 'resolved'
@@ -887,61 +880,6 @@ function NewMarketNotification(props: {
         />{' '}
         <span>
           asked <PrimaryNotificationLink text={sourceContractTitle} />
-        </span>
-      </div>
-    </NotificationFrame>
-  )
-}
-
-function MarketUpdateNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const {
-    sourceContractTitle,
-    sourceId,
-    sourceUserName,
-    sourceUserUsername,
-    sourceUpdateType,
-    sourceText,
-  } = notification
-
-  const action = sourceUpdateType === 'closed' ? 'closed' : 'updated'
-  const subtitle =
-    sourceText && parseInt(sourceText) > 0 ? (
-      <span>
-        Updated close time: {new Date(parseInt(sourceText)).toLocaleString()}
-      </span>
-    ) : (
-      sourceText
-    )
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <AvatarNotificationIcon notification={notification} symbol={'✏️'} />
-      }
-      subtitle={subtitle}
-      link={getSourceUrl(notification)}
-    >
-      <div className="line-clamp-3">
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />{' '}
-        <span>
-          {action}{' '}
-          {!isChildOfGroup && (
-            <PrimaryNotificationLink text={sourceContractTitle} />
-          )}
-          {isChildOfGroup && <>the question</>}
         </span>
       </div>
     </NotificationFrame>

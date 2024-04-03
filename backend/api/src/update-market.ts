@@ -3,7 +3,6 @@ import {
   log,
   getContractSupabase,
   revalidateContractStaticProps,
-  getUser,
   processPaginated,
 } from 'shared/utils'
 import * as admin from 'firebase-admin'
@@ -14,8 +13,6 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
-import { Contract } from 'common/contract'
-import { createCommentOrUpdatedContractNotification } from 'shared/create-notification'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -101,10 +98,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       lastUpdatedTime: Date.now(),
     })
 
-    if (closeTime !== undefined) {
-      await handleUpdatedCloseTime(contract, closeTime, auth.uid)
-    }
-
     //TODO: Now that we don't have private contracts, do we really need to update visibilities?
     if (visibility) {
       await updateContractSubcollectionsVisibility(contract.id, visibility)
@@ -118,25 +111,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
 }
 
 const firestore = admin.firestore()
-
-async function handleUpdatedCloseTime(
-  previousContract: Contract,
-  newCloseTime: number,
-  updaterId: string
-) {
-  const contractUpdater = await getUser(updaterId)
-  if (!contractUpdater) throw new Error('Could not find contract updater')
-  const sourceText = newCloseTime.toString()
-
-  await createCommentOrUpdatedContractNotification(
-    previousContract.id,
-    'contract',
-    'updated',
-    contractUpdater,
-    sourceText,
-    previousContract
-  )
-}
 
 async function updateContractSubcollectionsVisibility(
   contractId: string,
