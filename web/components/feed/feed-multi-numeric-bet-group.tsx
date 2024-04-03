@@ -75,6 +75,7 @@ function BetGroupStatusText(props: {
         />
       </UserHovercard>
       <>
+        {' '}
         {bought} {money} of {lowerRange} - {higherRange}{' '}
         {expectedValueBefore === expectedValueAfter
           ? `at ${expectedValueBefore}`
