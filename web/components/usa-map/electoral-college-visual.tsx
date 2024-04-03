@@ -94,17 +94,19 @@ export function sortByDemocraticDiff(
       if (contract?.mechanism !== 'cpmm-multi-1')
         return { state, contract, ratio: 0 }
       const democraticAnswer = contract?.answers.find(
-        (answer) => answer.text === 'Democratic Party'
+        (answer) =>
+          answer.text === 'Democratic Party' ||
+          answer.text.includes('Democratic Party')
       )
       const republicanAnswer = contract?.answers.find(
-        (answer) => answer.text === 'Republican Party'
+        (answer) =>
+          answer.text === 'Republican Party' ||
+          answer.text.includes('Republican Party')
       )
-
       const diff =
         democraticAnswer && republicanAnswer
           ? democraticAnswer.prob - republicanAnswer.prob
           : 0
-
       return { state, contract, diff }
     })
     .sort((a, b) => b.diff! - a.diff!)

@@ -36,8 +36,12 @@ export const probToColor = (contract: Contract | null) => {
   const DEM_DARK = hexToRgb(DEM_DARK_HEX)
   const REP_DARK = hexToRgb(REP_DARK_HEX)
 
-  const probDemocratic = answers.find((a) => a.text == 'Democratic Party')?.prob
-  const probRepublican = answers.find((a) => a.text == 'Republican Party')?.prob
+  const probDemocratic = answers.find(
+    (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
+  )?.prob
+  const probRepublican = answers.find(
+    (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
+  )?.prob
   const probOther = answers.find((a) => a.text == 'Other')?.prob
 
   if (

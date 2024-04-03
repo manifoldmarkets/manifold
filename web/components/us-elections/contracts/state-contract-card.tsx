@@ -89,12 +89,14 @@ export function StateContractCard(props: {
             <VisibilityIcon contract={contract} />{' '}
             {customTitle ? customTitle : contract.question}
           </Link>
-          <ChooseStateButton setTargetState={setTargetState} />
+          <Col className="grow-y justify-end">
+            <ChooseStateButton setTargetState={setTargetState} />
+          </Col>
         </Row>
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <PartyPanel contract={contract as MultiContract} maxAnswers={2} />
+        <PartyPanel contract={contract as MultiContract} maxAnswers={3} />
       </div>
     </ClickFrame>
   )
@@ -109,7 +111,7 @@ export function ChooseStateButton(props: {
   return (
     <>
       <button
-        className="bg-primary-100 text-primary-700 rounded px-2 text-xs sm:hidden"
+        className="bg-primary-100 text-primary-700 h-fit whitespace-nowrap rounded px-2 py-1 text-xs sm:hidden"
         onClick={() => {
           setOpenStateSelectModal(true)
         }}
