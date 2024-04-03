@@ -5,7 +5,11 @@ import {
   Notification,
   UniqueBettorData,
 } from 'common/notification'
-import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyToDecimal,
+  maybePluralize,
+} from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
 import clsx from 'clsx'
@@ -144,11 +148,16 @@ export function UniqueBettorBonusIncomeNotification(props: {
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
           text={
-            (sourceText ? `${numNewTraders} new traders` : 'new traders') +
-            (answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : '')
+            sourceText
+              ? `${numNewTraders} ${maybePluralize(
+                  'new trader',
+                  numNewTraders
+                )}`
+              : 'new traders'
           }
         />{' '}
-        <QuestionOrGroupLink notification={notification} />
+        on <QuestionOrGroupLink notification={notification} />{' '}
+        {answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : ''}
       </span>
       {isPartner && totalUniqueBettors && (
         <div>
