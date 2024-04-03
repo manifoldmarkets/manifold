@@ -6,7 +6,6 @@ import {
   getInitialAnswerProbability,
 } from 'common/calculate'
 import { Answer } from 'common/answer'
-import { isProd } from 'common/envs/is-prod'
 
 export const getMultiNumericAnswerMidpoints = (
   contract: CPMMNumericContract
@@ -63,7 +62,7 @@ export const answerTextToRange = (originalAnswerText: string) => {
   const regex = /[-+]?\d+(\.\d+)?/g
   const matches = answerText.match(regex)
   if (!matches || matches.length !== 2) {
-    isProd() && console.error('Invalid numeric answer text', answerText)
+    console.error('Invalid numeric answer text', answerText)
     return [0, 0]
   }
   const dashCount = answerText.split('-').length - 1
