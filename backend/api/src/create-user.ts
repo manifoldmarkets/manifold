@@ -6,7 +6,6 @@ import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 
 import { getIp, track } from 'shared/analytics'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { SUS_STARTING_BALANCE, STARTING_BALANCE } from 'common/economy'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
 import { removeUndefinedProps } from 'common/util/object'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
@@ -48,8 +47,12 @@ export const createuser: APIHandler<'createuser'> = async (
   const firestore = admin.firestore()
   const firebaseUser = await admin.auth().getUser(auth.uid)
 
-  const isTestUser = firebaseUser.providerData[0].providerId === 'password'
-  if (isTestUser && adminToken !== process.env.TEST_CREATE_USER_KEY) {
+  const testUserAKAEmailPasswordUser =
+    firebaseUser.providerData[0].providerId === 'password'
+  if (
+    testUserAKAEmailPasswordUser &&
+    adminToken !== process.env.TEST_CREATE_USER_KEY
+  ) {
     throw new APIError(
       401,
       'Must use correct TEST_CREATE_USER_KEY to create user with email/password'
@@ -70,20 +73,10 @@ export const createuser: APIHandler<'createuser'> = async (
       ? process.env.IS_MANIFOLD_POLITICS === 'true'
       : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
 
-  const isPrivateUserWithDeviceToken = async (deviceToken: string) => {
-    const snap = await firestore
-      .collection('private-users')
-      .where('initialDeviceToken', '==', deviceToken)
-      .get()
-
-    return !snap.empty
-  }
-
   const ip = getIp(req)
-  const deviceToken = isTestUser ? randomString(20) : preDeviceToken
-  const deviceUsedBefore =
-    !deviceToken || (await isPrivateUserWithDeviceToken(deviceToken))
-  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  const deviceToken = testUserAKAEmailPasswordUser
+    ? randomString(20)
+    : preDeviceToken
 
   const fbUser = await admin.auth().getUser(auth.uid)
   const email = fbUser.email
@@ -133,8 +126,8 @@ export const createuser: APIHandler<'createuser'> = async (
         name,
         username,
         avatarUrl,
-        balance,
-        totalDeposits: balance,
+        balance: testUserAKAEmailPasswordUser ? 100 : 0,
+        totalDeposits: testUserAKAEmailPasswordUser ? 100 : 0,
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         nextLoanCached: 0,
@@ -148,7 +141,7 @@ export const createuser: APIHandler<'createuser'> = async (
         fromLove,
         fromPolitics,
         signupBonusPaid: 0,
-        verifiedPhone: false,
+        verifiedPhone: testUserAKAEmailPasswordUser,
       })
 
       const privateUser: PrivateUser = {

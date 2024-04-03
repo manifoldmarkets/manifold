@@ -14,7 +14,6 @@ import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
-import { isAdminId } from 'common/envs/constants'
 import { firebaseLogout } from 'web/lib/firebase/users'
 
 const KEY = 'TEST_CREATE_USER_KEY'
@@ -24,7 +23,7 @@ export default function TestUser() {
   const user = useUser()
   useEffect(() => {
     if (!user) return
-    if (isAdminId(user.id)) {
+    if (!hasSubmit) {
       firebaseLogout()
     } else {
       router.push('/home')
@@ -42,11 +41,13 @@ export default function TestUser() {
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
+  const [hasSubmit, setHasSubmit] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
     if (!createUserKey) return
     setSubmitting(true)
+    setHasSubmit(true)
     setCookie(KEY, createUserKey)
     const auth = getAuth()
     createUserWithEmailAndPassword(auth, email, password)
@@ -61,6 +62,7 @@ export default function TestUser() {
         console.log('ERROR creating firebase user', errorCode, errorMessage)
       })
   }
+
   const login = () => {
     setSigningIn(true)
     const auth = getAuth()

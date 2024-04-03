@@ -3,6 +3,8 @@ import { log } from 'shared/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isProd } from 'shared/utils'
 import * as admin from 'firebase-admin'
+import { STARTING_BALANCE, SUS_STARTING_BALANCE } from 'common/economy'
+import { PrivateUser } from 'common/user'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const twilio = require('twilio')
 
@@ -31,10 +33,6 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> = async (
   if (verification.status !== 'approved') {
     throw new APIError(400, 'Invalid code. Please try again.')
   }
-  const firestore = admin.firestore()
-  await firestore.collection('users').doc(auth.uid).update({
-    verifiedPhone: true,
-  })
 
   await pg
     .none(
@@ -49,6 +47,31 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> = async (
     .then(() => {
       log(verification.status, { phoneNumber, otpCode })
     })
+
+  const firestore = admin.firestore()
+  const privateUserSnap = await firestore
+    .collection('private-users')
+    .doc(auth.uid)
+    .get()
+  const privateUser = privateUserSnap.data() as PrivateUser
+  const isPrivateUserWithMatchingDeviceToken = async (deviceToken: string) => {
+    const snap = await firestore
+      .collection('private-users')
+      .where('initialDeviceToken', '==', deviceToken)
+      .where('id', '!=', auth.uid)
+      .get()
+
+    return !snap.empty
+  }
+  const { initialDeviceToken: deviceToken } = privateUser
+  const deviceUsedBefore =
+    !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
+  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  await firestore.collection('users').doc(auth.uid).update({
+    verifiedPhone: true,
+    balance,
+    totalDeposits: balance,
+  })
 
   return { status: 'success' }
 }

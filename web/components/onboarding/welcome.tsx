@@ -90,10 +90,12 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    <VerifyPhone onClose={() => increasePage()} />,
+    user && !user?.verifiedPhone && (
+      <VerifyPhone onClose={() => increasePage()} />
+    ),
   ])
+  const showBottomButtons = page < 2
 
-  const showBottomButtons = page < availablePages.length - 2
   useEffect(() => {
     if (!authed || !user || !user.verifiedPhone) return
     // Wait until after they've had the opportunity to change their name

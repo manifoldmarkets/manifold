@@ -45,7 +45,7 @@ const createIntroHelpMessage = async (newUser: User) => {
                 : isMFer
                 ? 'work here at Manifold.'
                 : 'am a long-time user of Manifold that likes to help out.'
-            } If you have any questions or run into any issues, feel free to ask me.`,
+            } If you have any questions or run into any issues, feel free to ask me. (This is an automated message, so I might not respond immediately.)`,
             type: 'text',
           },
         ],

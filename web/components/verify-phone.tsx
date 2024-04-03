@@ -55,6 +55,12 @@ export function VerifyPhone(props: { onClose: () => void }) {
           <span className={'text-ink-700 mb-4 text-center'}>
             We require all users to verify a phone number to prevent account
             abuse.
+            <br />
+            <br />
+            <span className={'italic'}>
+              We won't send you any other messages, this is just for
+              verification.
+            </span>
           </span>
           <PhoneInput
             defaultCountry={'us'}
