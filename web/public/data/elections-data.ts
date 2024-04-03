@@ -15,6 +15,7 @@ export interface StateElectionMarket {
   slug: string
   state: string
   additionalSlugs?: string[]
+  otherParty?: 'Democratic Party' | 'Republican Party'
 }
 
 export const NH_LINK =

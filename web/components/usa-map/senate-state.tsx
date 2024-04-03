@@ -11,7 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
 import { StateProps } from './presidential-state'
-import { currentSenate } from 'web/public/data/senate-state-data'
+import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
 
 export function SenateState(props: StateProps) {
   const {
@@ -30,7 +30,10 @@ export function SenateState(props: StateProps) {
         key={stateKey}
         stateData={data}
         state={stateKey}
-        fill={probToColor(stateContract)}
+        fill={probToColor(
+          stateContract,
+          senate2024.filter((s) => s.state === stateKey)[0]
+        )}
         onClickState={() => {
           handleClick(stateKey)
         }}
