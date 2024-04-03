@@ -1088,7 +1088,7 @@ function AnswerNotification(props: {
         answered{' '}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
       </div>

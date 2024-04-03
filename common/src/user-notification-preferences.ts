@@ -9,6 +9,7 @@ export type notification_preference = keyof notification_preferences
 export type notification_preferences = {
   // Watched Markets
   all_comments_on_watched_markets: notification_destination_types[]
+  all_answers_on_watched_markets: notification_destination_types[]
   poll_close_on_watched_markets: notification_destination_types[]
 
   // Comments
@@ -87,7 +88,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
   const defaults: notification_preferences = {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
-
+    // Answers
+    all_answers_on_watched_markets: constructPref(true, false, false),
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,

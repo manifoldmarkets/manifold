@@ -110,7 +110,6 @@ export type notification_reason_types =
   | 'update_on_contract_you_follow'
   | 'resolution_on_contract_you_follow'
   | 'comment_on_contract_with_users_shares_in'
-  | 'answer_on_contract_with_users_shares_in'
   | 'update_on_contract_with_users_shares_in'
   | 'resolution_on_contract_with_users_shares_in'
   | 'comment_on_contract_with_users_answer'
@@ -152,6 +151,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   betting_streaks: {
     simple: `Prediction streak bonuses & expirations`,
     detailed: `Bonuses and expiration notices for prediction streaks made over consecutive days`,
+  },
+  all_answers_on_watched_markets: {
+    simple: 'All new answers',
+    detailed: "All new answers on questions you're watching",
   },
   quest_payout: {
     simple: `Quest completion rewards`,

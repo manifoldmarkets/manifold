@@ -443,12 +443,12 @@ export const createNewAnswerOnContractNotification = async (
     return removeUndefinedProps(notification)
   }
 
-  const sendNotificationsIfSettingsPermit = async (
-    userId: string,
-    reason: NotificationReason
-  ) => {
+  const sendNotificationsIfSettingsPermit = async (userId: string) => {
     if (sourceUser.id == userId) return
-
+    const reason =
+      sourceContract.creatorId === userId
+        ? 'all_answers_on_my_markets'
+        : 'all_answers_on_watched_markets'
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) return
     if (userIsBlocked(privateUser, sourceUser.id)) return
@@ -483,10 +483,13 @@ export const createNewAnswerOnContractNotification = async (
     }
   }
 
-  log('notifying creator')
-  await sendNotificationsIfSettingsPermit(
-    sourceContract.creatorId,
-    'all_answers_on_my_markets'
+  const followerIds = await pg.map(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id],
+    (r) => r.follow_id as string
+  )
+  await Promise.all(
+    followerIds.map(async (userId) => sendNotificationsIfSettingsPermit(userId))
   )
 }
 

@@ -7,6 +7,7 @@ import {
   ExclamationIcon,
   InboxInIcon,
   InformationCircleIcon,
+  LightBulbIcon,
   RefreshIcon,
   TrendingUpIcon,
   UserIcon,
@@ -47,6 +48,7 @@ const emailsEnabled: Array<notification_preference> = [
   'all_replies_to_my_comments_on_watched_markets',
   'all_comments_on_contracts_with_shares_in_on_watched_markets',
 
+  'all_answers_on_watched_markets',
   'all_replies_to_my_answers_on_watched_markets',
 
   'your_contract_closed',
@@ -102,6 +104,11 @@ const mobilePushEnabled: Array<notification_preference> = [
 export type NotificationSectionData = {
   label: string
   subscriptionTypes: Partial<notification_preference>[]
+}
+
+const answers: NotificationSectionData = {
+  label: 'New Answers',
+  subscriptionTypes: ['all_answers_on_watched_markets'],
 }
 
 const comments: NotificationSectionData = {
@@ -211,6 +218,10 @@ export function NotificationSettings(props: {
         <NotificationSection
           icon={<ChatIcon className={'h-6 w-6'} />}
           data={comments}
+        />
+        <NotificationSection
+          icon={<LightBulbIcon className={'h-6 w-6'} />}
+          data={answers}
         />
         <NotificationSection
           icon={<TrendingUpIcon className={'h-6 w-6'} />}
