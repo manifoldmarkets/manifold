@@ -256,10 +256,11 @@ function UserProfile(props: {
               >
                 <UserLink user={user} noLink />
               </div>
+
+              <MoreOptionsUserButton user={user} />
             </>
           )}
 
-          <MoreOptionsUserButton user={user} />
           {isCurrentUser && (
             <Button
               color="gray-white"
