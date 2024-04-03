@@ -20,6 +20,7 @@ import { UserLink } from '../widgets/user-link'
 import { getUserVote } from 'web/lib/supabase/polls'
 import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
+import { maybePluralize } from 'common/util/format'
 
 export function PollPanel(props: {
   contract: PollContract
@@ -148,7 +149,9 @@ export function SeeVotesButton(props: {
         disabled={disabled}
       >
         <span>{option.votes}</span>{' '}
-        <span className={clsx('text-xs opacity-80')}>votes</span>
+        <span className={clsx('text-xs opacity-80')}>
+          {maybePluralize('vote', option.votes)}
+        </span>
       </button>
       <Modal open={open} setOpen={setOpen}>
         <SeeVotesModalContent option={option} contractId={contractId} />
