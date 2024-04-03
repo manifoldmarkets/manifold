@@ -83,8 +83,10 @@ export function PartyPanel(props: {
 
 export function getPartyColor(name: string) {
   // return 'bg-primary-500'
-  if (name == 'Democratic Party') return '#adc4e3'
-  if (name == 'Republican Party') return '#ecbab5'
+  if (name == 'Democratic Party' || name.includes('Democratic Party'))
+    return '#adc4e3'
+  if (name == 'Republican Party' || name.includes('Republican Party'))
+    return '#ecbab5'
   return '#9E9FBD'
 }
 
