@@ -7,6 +7,7 @@ export const getDashboardsToDisplayOnContract = async (
   const { data, error } = await db
     .from('dashboards')
     .select('title, slug')
+    .eq('visibility', 'public')
     .contains('items', `[{ "type":"question", "slug":"${slug}" }]`)
     .order('importance_score', { ascending: false })
     .order('politics_importance_score', { ascending: false })
