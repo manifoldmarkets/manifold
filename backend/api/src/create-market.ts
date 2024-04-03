@@ -46,7 +46,7 @@ import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
 import { removeUndefinedProps } from 'common/util/object'
-import { onCreateMarket } from 'api/helpers/on-create-contract'
+import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 
