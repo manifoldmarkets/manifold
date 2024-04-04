@@ -8,7 +8,7 @@ import {
 } from 'common/supabase/realtime'
 import { useEvent } from 'web/hooks/use-event'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
+import { usePostgresChanges } from 'web/lib/supabase/realtime/use-postgres-changes'
 import { Store } from 'web/lib/util/local'
 import { db } from 'web/lib/supabase/db'
 
@@ -136,7 +136,7 @@ export function useSubscription<T extends TableName>(
   })
 
   const bindings = [{ event: '*', table, filter } as const]
-  useRealtime({ bindings, onChange, onStatus, onEnabled })
+  usePostgresChanges({ bindings, onChange, onStatus, onEnabled })
   return { ...state, dispatch }
 }
 

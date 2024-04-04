@@ -25,7 +25,7 @@ export type BindingSpec<
   filter?: Filter<T>
 }
 
-export type RealtimeOptions<T extends TableName, E extends Event> = {
+export type PostgresChangesOptions<T extends TableName, E extends Event> = {
   bindings: BindingSpec<T, E>[]
   onChange: (change: Change<T, E>) => void
   onStatus?: (status: SubscriptionStatus, err?: Error) => void
@@ -41,8 +41,8 @@ function getChannelFilter<T extends TableName, E extends Event>(
   return { event, table, filter: filterString, schema: 'public' } as const
 }
 
-export function useRealtime<T extends TableName, E extends Event>(
-  opts: RealtimeOptions<T, E>
+export function usePostgresChanges<T extends TableName, E extends Event>(
+  opts: PostgresChangesOptions<T, E>
 ) {
   const { bindings, onChange, onStatus, onEnabled } = opts
   const channelId = `${useId()}`
