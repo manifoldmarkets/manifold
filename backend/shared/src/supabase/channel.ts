@@ -16,7 +16,7 @@ function signPayload(payload: object) {
   }
   return sign(payload, secret, {
     algorithm: 'HS256',
-    expiresIn: 60, // seconds
+    expiresIn: 3600, // seconds
   })
 }
 
