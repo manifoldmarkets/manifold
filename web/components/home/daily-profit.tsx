@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react'
-import { User } from 'common/user'
 import clsx from 'clsx'
+import { ArrowUpIcon } from '@heroicons/react/solid'
+import { User } from 'common/user'
 import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
@@ -16,10 +17,11 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { db } from 'web/lib/supabase/db'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { Table } from '../widgets/table'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { ArrowUpIcon } from '@heroicons/react/solid'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { ENV_CONFIG } from 'common/envs/constants'
+
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = memo(function DailyProfit(props: {
@@ -28,8 +30,16 @@ export const DailyProfit = memo(function DailyProfit(props: {
 }) {
   const { user } = props
 
-  const portfolio = useCurrentPortfolio(user?.id)
-  const investment = portfolio
+  const { data: portfolio } = useAPIGetter(
+    'get-user-portfolio',
+    user
+      ? {
+          userId: user.id,
+        }
+      : undefined
+  )
+
+  const networth = portfolio
     ? portfolio.investmentValue + (user?.balance ?? 0)
     : 0
 
@@ -67,7 +77,11 @@ export const DailyProfit = memo(function DailyProfit(props: {
       >
         <Row>
           <Col className="items-center">
-            <div>{formatMoney(investment)}</div>
+            <div>
+              {portfolio
+                ? formatMoney(networth)
+                : `${ENV_CONFIG.moneyMoniker}----`}
+            </div>
             <div className="text-ink-600 text-xs ">Net worth</div>
           </Col>
 
@@ -91,7 +105,7 @@ export const DailyProfit = memo(function DailyProfit(props: {
           metrics={data?.metrics}
           contracts={data?.contracts}
           dailyProfit={dailyProfit}
-          investment={investment}
+          investment={networth}
         />
       )}
     </>

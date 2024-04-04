@@ -1088,8 +1088,10 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       status: 'success'
       loanTotal: number
-      investment: number
+      investmentValue: number
       balance: number
+      totalDeposits: number
+      timestamp: number
     },
   },
 } as const)

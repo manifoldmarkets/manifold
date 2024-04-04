@@ -10,7 +10,7 @@ import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
 
-const computeInvestmentValue = (
+export const computeInvestmentValue = (
   bets: Bet[],
   contractsDict: { [k: string]: Contract }
 ) => {

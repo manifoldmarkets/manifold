@@ -2,11 +2,12 @@ import { ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
-import { last, minBy, sum } from 'lodash'
+import { minBy, sum } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { DailyLoan } from 'web/components/home/daily-loan'
@@ -24,13 +25,12 @@ const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
+  portfolio: PortfolioSnapshot | undefined
   weeklyPortfolioData: PortfolioSnapshot[]
-  loanTotal: number | undefined
   refreshPortfolio: () => void
 }) {
-  const { user, className, weeklyPortfolioData, loanTotal, refreshPortfolio } =
+  const { user, className, portfolio, weeklyPortfolioData, refreshPortfolio } =
     props
-  const latestPortfolio = last(weeklyPortfolioData)
   const dayAgoPortfolio = minBy(
     weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
     'timestamp'
@@ -54,18 +54,17 @@ export const InvestmentValueCard = memo(function (props: {
     }, [contractMetrics])
   )
   const dailyProfit =
-    latestPortfolio && dayAgoPortfolio
-      ? latestPortfolio.investmentValue +
-        latestPortfolio.balance -
-        latestPortfolio.totalDeposits -
+    portfolio && dayAgoPortfolio
+      ? portfolio.investmentValue +
+        portfolio.balance -
+        portfolio.totalDeposits -
         (dayAgoPortfolio.investmentValue +
           dayAgoPortfolio.balance -
           dayAgoPortfolio.totalDeposits)
       : dailyProfitFromMetrics
 
-  // If a user is new, then their portfolio value may be out of date, so show the metrics value instead
-  const portfolioValue = latestPortfolio
-    ? latestPortfolio.investmentValue + latestPortfolio.balance
+  const portfolioValue = portfolio
+    ? portfolio.investmentValue + portfolio.balance
     : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
@@ -91,7 +90,9 @@ export const InvestmentValueCard = memo(function (props: {
       <Col className={'w-full gap-1.5'}>
         <Col>
           <div className={'text-ink-800 text-2xl sm:text-4xl'}>
-            {formatMoney(netWorth)}
+            {portfolio
+              ? formatMoney(netWorth)
+              : `${ENV_CONFIG.moneyMoniker}----`}
           </div>
           <div className={'text-ink-800 ml-1'}>Your net worth</div>
         </Col>
@@ -123,9 +124,9 @@ export const InvestmentValueCard = memo(function (props: {
         )}
         <Col className={'absolute right-1 top-1 gap-1'}>
           <DailyLoan user={user} refreshPortfolio={refreshPortfolio} />
-          {!!loanTotal && (
+          {portfolio && portfolio.loanTotal > 0 && (
             <div className="text-ink-600 text-sm">
-              {formatMoney(loanTotal)} loaned
+              {formatMoney(portfolio.loanTotal)} loaned
             </div>
           )}
         </Col>

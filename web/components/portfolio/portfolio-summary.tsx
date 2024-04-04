@@ -61,7 +61,7 @@ export const PortfolioSummary = (props: {
           user={user}
           className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
           weeklyPortfolioData={weeklyPortfolioData}
-          loanTotal={portfolioData?.loanTotal}
+          portfolio={portfolioData}
           refreshPortfolio={refreshPortfolio}
         />
       </Row>
@@ -78,6 +78,7 @@ export const PortfolioSummary = (props: {
           }
           lastUpdatedTime={user.metricsLastUpdated}
           hideAddFundsButton
+          portfolio={portfolioData}
         />
       )}
 

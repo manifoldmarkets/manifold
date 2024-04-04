@@ -21,12 +21,14 @@ import { track } from 'web/lib/service/analytics'
 import { useZoom } from '../charts/helpers'
 import { periodDurations } from 'web/lib/util/time'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     userId: string
     defaultTimePeriod: Period
     lastUpdatedTime: number | undefined
+    portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
@@ -38,6 +40,7 @@ export const PortfolioValueSection = memo(
       hideAddFundsButton,
       defaultTimePeriod,
       lastUpdatedTime,
+      portfolio,
       onlyShowProfit,
       graphContainerClassName,
       preloadPoints,
@@ -78,7 +81,7 @@ export const PortfolioValueSection = memo(
     const handleGraphDisplayChange = (p: { y: number } | undefined) => {
       setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
     }
-    const lastPortfolioMetrics = last(portfolioHistory)
+    const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
