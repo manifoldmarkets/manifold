@@ -23,7 +23,7 @@ export function CommentOnAnswer(props: {
 
   return (
     <Row className="items-end pl-2">
-      <Curve className="text-ink-100 h-8 w-8 rotate-90" />
+      <Curve className="text-ink-100 h-8 w-8 shrink-0 rotate-90" />
       <div className="relative pb-1">
         <AnswerSectionForCommentOnAnswer answer={answer} color={color} />
         {clear && (
@@ -64,7 +64,7 @@ function AnswerSectionForCommentOnAnswer(props: {
             <RelativeTimestamp time={answer.createdTime} shortened={true} />
           </div>
         </Row>
-        <div className="text-sm">{text}</div>
+        <div className="line-clamp-2 text-sm">{text}</div>
       </Col>
     </Row>
   )

@@ -1,14 +1,14 @@
-import { Row } from 'web/components/layout/row'
-import { probToColor } from './state-election-map'
-import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
-import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 import clsx from 'clsx'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
 import { partition } from 'lodash'
-import { sortByDemocraticDiff } from './electoral-college-visual'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
+import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
+import { sortByDemocraticDiff } from './electoral-college-visual'
+import { probToColor } from './state-election-map'
+import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 
 export function SenateBar(props: {
   mapContractsDictionary: MapContractsDictionary
@@ -48,7 +48,7 @@ export function SenateBar(props: {
               targetState={targetState}
               hoveredState={hoveredState}
               state={state}
-              backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5'%3E%3Crect width='5' height='5' fill='%23e7dfe6'/%3E%3Cline x1='0' y1='0' x2='5' y2='5' stroke='%234a5fa8' stroke-width='1'/%3E%3Cline x1='5' y1='0' x2='0' y2='5' stroke='%234a5fa8' stroke-width='1'/%3E%3C/svg%3E")`}
+              backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%234a5fa8'/%3E%3Cline x1='0' y1='0' x2='8' y2='8' stroke='%23262c45' stroke-width='2'/%3E%3Cline x1='8' y1='0' x2='0' y2='8' stroke='%23262c45' stroke-width='2'/%3E%3C/svg%3E")`}
               width={`${(1 / 50) * 100}%`}
               isMobile={isMobile}
             />
@@ -86,7 +86,7 @@ export function SenateBar(props: {
               targetState={targetState}
               hoveredState={hoveredState}
               state={state}
-              backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='5'%3E%3Crect width='5' height='5' fill='%23e7dfe6'/%3E%3Cline x1='0' y1='0' x2='5' y2='5' stroke='%239d3336' stroke-width='1'/%3E%3Cline x1='5' y1='0' x2='0' y2='5' stroke='%239d3336' stroke-width='1'/%3E%3C/svg%3E")`}
+              backgroundImage={`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%239d3336'/%3E%3Cline x1='0' y1='0' x2='8' y2='8' stroke='%233e1316' stroke-width='2'/%3E%3Cline x1='8' y1='0' x2='0' y2='8' stroke='%233e1316' stroke-width='2'/%3E%3C/svg%3E")`}
               width={`${(1 / 50) * 100}%`}
               isMobile={isMobile}
             />
