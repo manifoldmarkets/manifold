@@ -400,14 +400,15 @@ export const FeedComment = memo(function FeedComment(props: {
                       isParent ? '-mt-2 ml-4 h-4 w-4' : '-mt-7 ml-10 h-10 w-4'
                     )}
                   />
-                  {/* Outer vertical bet reply line
+                  {/* Outer vertical bet reply line */}
                   <div
                     className={clsx(
                       straightThreadColor,
                       'absolute bottom-0 left-4 w-0.5 group-last:hidden ',
+                      i === groupedBets.length - 1 && 'hidden',
                       isParent ? 'top-0' : '-top-1'
                     )}
-                  /> */}
+                  />
                   <FeedReplyBet
                     className={'bg-canvas-50'}
                     avatarSize={'2xs'}
