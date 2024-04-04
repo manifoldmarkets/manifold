@@ -3,7 +3,6 @@ import {
   ChevronDownIcon,
   PencilIcon,
   PlusCircleIcon,
-  PresentationChartLineIcon,
   ScaleIcon,
   SearchIcon,
 } from '@heroicons/react/outline'
@@ -27,7 +26,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import Link from 'next/link'
-import { Button, IconButton, buttonClass } from 'web/components/buttons/button'
+import { Button, buttonClass } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
