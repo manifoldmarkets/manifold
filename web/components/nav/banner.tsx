@@ -40,15 +40,13 @@ export function Banner(props: {
   )
 }
 
-export function ManifestBanner(props: {
-  setShowBanner: (show: boolean) => void
-}) {
-  const { setShowBanner } = props
+export function ManifestBanner(props: { hideBanner: () => void }) {
+  const { hideBanner } = props
   return (
     <Banner
       className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
       link="https://manifest.is"
-      setShowBanner={setShowBanner}
+      setShowBanner={hideBanner}
     >
       <Row className="gap-2">
         <LogoIcon
@@ -67,16 +65,19 @@ export function ManifestBanner(props: {
   )
 }
 
+const manifestBannerViewCount = 3
 export const useManifestBanner = () => {
-  const [showBanner, setShowBanner] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'show-manifest-banner')
+  const [showBannerCount, setShowBannerCount] = usePersistentLocalState<
+    number | undefined
+  >(undefined, 'show-manifest-banner-count')
   useEffect(() => {
-    const shouldHide =
-      safeLocalStorage?.getItem('show-manifest-banner') === 'false'
-    if (!shouldHide) {
-      setShowBanner(true)
-    }
-  }, [showBanner])
-  return [showBanner, setShowBanner] as const
+    const value =
+      safeLocalStorage?.getItem('show-manifest-banner-count') ?? 'undefined'
+    const count = value === 'undefined' ? manifestBannerViewCount + 1 : +value
+    setShowBannerCount(count - 1)
+  }, [])
+  return [
+    !!showBannerCount && showBannerCount > 0,
+    () => setShowBannerCount(0),
+  ] as const
 }

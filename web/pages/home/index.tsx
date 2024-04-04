@@ -51,7 +51,7 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const [showBanner, setShowBanner] = useManifestBanner()
+  const [showBanner, hideBanner] = useManifestBanner()
   const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (
@@ -60,8 +60,7 @@ export default function Home(props: { headlines: Headline[] }) {
       trackPageProps={{ kind: 'desktop' }}
       className="!mt-0"
       banner={
-        showBanner &&
-        olderUser && <ManifestBanner setShowBanner={setShowBanner} />
+        showBanner && olderUser && <ManifestBanner hideBanner={hideBanner} />
       }
     >
       <HeadlineTabs
