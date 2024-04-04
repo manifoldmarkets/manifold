@@ -110,7 +110,7 @@ export function TopicSelector(props: {
               placeholder={
                 atMax
                   ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
-                  : placeholder ?? 'e.g. Science, Politics'
+                  : placeholder ?? 'Search topics'
               }
             />
           </Combobox.Button>
