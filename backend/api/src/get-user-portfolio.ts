@@ -48,9 +48,12 @@ export const getUserPortfolio: APIHandler<'get-user-portfolio'> = async (
 
   // Based off getRelevantContracts(pg, unresolvedBets) in update-user-metrics-core.ts
   const betContractIds = uniq(unresolvedBets.map((b) => b.contractId))
-  const [contracts, answers] = await Promise.all([
-    pg.map(
-      `select
+  const [contracts, answers] = await Promise.all(
+    betContractIds.length === 0
+      ? [[], []]
+      : [
+          pg.map(
+            `select
       id,
       data->'pool' as pool,
       data->>'mechanism' as mechanism,
@@ -58,29 +61,30 @@ export const getUserPortfolio: APIHandler<'get-user-portfolio'> = async (
       (data->>'p')::numeric as p
     from contracts where id in ($1:list)
     `,
-      [betContractIds],
-      (r) =>
-        ({
-          id: r.id,
-          pool: r.pool,
-          mechanism: r.mechanism,
-          p: r.p,
-          totalShares: r.total_shares,
-        } as any as Contract)
-    ),
-    pg.map(
-      `select id, contract_id, prob
+            [betContractIds],
+            (r) =>
+              ({
+                id: r.id,
+                pool: r.pool,
+                mechanism: r.mechanism,
+                p: r.p,
+                totalShares: r.total_shares,
+              } as any as Contract)
+          ),
+          pg.map(
+            `select id, contract_id, prob
     from answers
     where contract_id in ($1:list)`,
-      [betContractIds],
-      (r) =>
-        ({
-          id: r.id,
-          contractId: r.contract_id,
-          prob: r.prob,
-        } as any as Answer)
-    ),
-  ])
+            [betContractIds],
+            (r) =>
+              ({
+                id: r.id,
+                contractId: r.contract_id,
+                prob: r.prob,
+              } as any as Answer)
+          ),
+        ]
+  )
   const answersByContractId = groupBy(answers, 'contractId')
   for (const contract of contracts) {
     if (contract.mechanism === 'cpmm-multi-1') {
