@@ -18,7 +18,7 @@ function decodePayload(jwt: string) {
   return claims.data
 }
 
-export const useChannel = (
+export const useBroadcast = (
   channelId: string,
   onEvent: { [ev: string]: (payload: any) => void }
 ) => {
@@ -48,11 +48,11 @@ export const useChannel = (
   }, [channelId, Object.keys(onEvent)])
 }
 
-export const useContractBetChannel = (
+export const useContractBetBroadcast = (
   contractId: string,
   onBet: (bet: Bet) => void
 ) => {
-  return useChannel(`contract:${contractId}`, {
+  return useBroadcast(`contract:${contractId}`, {
     bet: onBet,
   })
 }
