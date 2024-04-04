@@ -334,7 +334,7 @@ export const NumericBetPanel = (props: {
           />
           <Row className={' flex-wrap gap-2'}>
             <BuyAmountInput
-              parentClassName={isAdvancedTrader ? '' : '!w-56'}
+              parentClassName={isAdvancedTrader ? '' : '!w-64'}
               amount={betAmount}
               onChange={updateBetAmount}
               error={error}

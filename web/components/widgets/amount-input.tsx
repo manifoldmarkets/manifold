@@ -227,7 +227,7 @@ export function BuyAmountInput(props: {
             'w-full !text-xl',
             isAdvancedTrader && '!h-[72px]',
             !disableQuickButtons &&
-              (hasLotsOfMana ? 'pr-[182px]' : 'pr-[134px]'),
+              (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
           amount={amount}
