@@ -46,7 +46,7 @@ function ExpandingImage(props: {
           <img
             alt={alt ?? ''}
             {...rest}
-            className="cursor-pointer object-contain"
+            className="max-h-full cursor-pointer object-contain"
           />
         </div>
       )}
