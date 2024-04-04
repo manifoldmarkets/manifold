@@ -284,6 +284,7 @@ export function OrderBookButton(props: {
             limitBets={limitBets}
             contract={contract}
             answer={answer}
+            showTitle
             expanded
           />
         </Col>
@@ -302,8 +303,9 @@ export function OrderBookPanel(props: {
     | MultiContract
   answer?: Answer
   expanded?: boolean
+  showTitle?: boolean
 }) {
-  const { limitBets, contract, expanded, answer } = props
+  const { limitBets, contract, expanded, answer, showTitle } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -360,7 +362,7 @@ export function OrderBookPanel(props: {
         </>
       )}
 
-      {isCPMMMulti && answer && <div>{answer.text}</div>}
+      {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
 
       <Row className="items-start justify-around gap-2">
         <OrderTable
