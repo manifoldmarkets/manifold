@@ -26,7 +26,6 @@ import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
-import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
@@ -43,6 +42,8 @@ import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
+import DropdownMenu from '../comments/dropdown-menu'
+import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -217,17 +218,26 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     isBountiedQuestion &&
     (!user || user.id !== contract.creatorId) &&
     !contract.isAutoBounty
+
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
     isBinary && 'Yes bets',
     isBinary && 'No bets'
   )
+
   const [sortIndex, setSortIndex] = usePersistentInMemoryState(
     0,
     `comments-sort-${contract.id}`
   )
   const sort = sorts[sortIndex]
+
+  const sortTooltip =
+    sort === 'Best'
+      ? isBountiedQuestion
+        ? 'Highest bounty, then most likes'
+        : 'Most likes first'
+      : null
 
   // replied to answers/comments are NOT newest, otherwise newest first
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
@@ -388,24 +398,39 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       )}
 
       {comments.length > 0 && (
-        <SortRow
-          sort={sort}
-          onSortClick={() => {
-            setSortIndex((i) => (i + 1) % sorts.length)
-            refreezeIds()
-            track('change-comments-sort', {
-              contractSlug: contract.slug,
-              contractName: contract.question,
-              totalComments: comments.length,
-              totalUniqueTraders: contract.uniqueBettorCount,
-            })
-          }}
-          customBestTooltip={
-            contract.outcomeType === 'BOUNTIED_QUESTION'
-              ? 'Highest bounty, then most likes'
-              : undefined
-          }
-        />
+        <Row className="justify-end">
+          <Tooltip text={sortTooltip}>
+            <Row className="items-center gap-1">
+              <span className="text-ink-400 text-sm">Sort by:</span>
+              <DropdownMenu
+                items={generateFilterDropdownItems(
+                  sorts.map((s, i) => ({ label: s, value: i + '' })),
+                  (value: string) => {
+                    const i = parseInt(value)
+                    setSortIndex(i)
+                    console.log(i)
+                    refreezeIds()
+                    track('change-comments-sort', {
+                      contractSlug: contract.slug,
+                      contractName: contract.question,
+                      totalComments: comments.length,
+                      totalUniqueTraders: contract.uniqueBettorCount,
+                    })
+                  }
+                )}
+                icon={
+                  <Row className="text-ink-600 w-20 items-center text-sm">
+                    <span className="whitespace-nowrap">{sort}</span>
+                    <ChevronDownIcon className="h-4 w-4" />
+                  </Row>
+                }
+                menuWidth={'w-24'}
+                selectedItemName={sort}
+                closeOnClick
+              />
+            </Row>
+          </Tooltip>
+        </Row>
       )}
 
       {pinnedComments.map((comment) => (
@@ -599,30 +624,3 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     </>
   )
 })
-
-export function SortRow(props: {
-  sort: string
-  onSortClick: () => void
-  customBestTooltip?: string
-}) {
-  const { sort, onSortClick, customBestTooltip } = props
-  return (
-    <Row className="items-center justify-end gap-4 whitespace-nowrap">
-      <Row className="items-center gap-1">
-        <span className="text-ink-400 text-sm">Sort by:</span>
-        <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
-          <Tooltip
-            text={
-              sort === 'Best' ? customBestTooltip ?? 'Most likes first' : ''
-            }
-          >
-            <Row className="items-center gap-1">
-              {sort}
-              <TriangleDownFillIcon className=" h-2 w-2" />
-            </Row>
-          </Tooltip>
-        </button>
-      </Row>
-    </Row>
-  )
-}

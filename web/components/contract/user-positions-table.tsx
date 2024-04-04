@@ -19,7 +19,7 @@ import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useState } from 'react'
-import { SortRow } from 'web/components/contract/contract-tabs'
+import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import {
@@ -604,6 +604,23 @@ export function LoadingPositionsRows() {
     <Row className="border-ink-200 min-h-[4rem] animate-pulse items-center justify-center gap-2 border-b p-2 last:border-none sm:rounded-md sm:border-none">
       <EmptyAvatar />
       <div className="bg-canvas-100 h-7 grow rounded-md" />
+    </Row>
+  )
+}
+
+function SortRow(props: { sort: string; onSortClick: () => void }) {
+  const { sort, onSortClick } = props
+  return (
+    <Row className="items-center justify-end gap-4 whitespace-nowrap">
+      <Row className="items-center gap-1">
+        <span className="text-ink-400 text-sm">Sort by:</span>
+        <button className="text-ink-600 w-20 text-sm" onClick={onSortClick}>
+          <Row className="items-center gap-1">
+            {sort}
+            <TriangleDownFillIcon className=" h-2 w-2" />
+          </Row>
+        </button>
+      </Row>
     </Row>
   )
 }
