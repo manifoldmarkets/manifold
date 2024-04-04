@@ -25,7 +25,7 @@ export default function LivePage() {
           }
         >
           <span className="text-primary-700 line-clamp-1 shrink px-1 text-2xl">
-            {topicFromRouter ? topicFromRouter.name : 'Live'} feed
+            {topicFromRouter ? topicFromRouter.name : 'Site'} activity feed
           </span>
           <TopicSelector
             setSelectedGroup={(group) => {
