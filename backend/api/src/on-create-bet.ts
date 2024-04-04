@@ -68,7 +68,6 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { joinContractChannel } from 'shared/supabase/channel'
 
 const firestore = admin.firestore()
 
