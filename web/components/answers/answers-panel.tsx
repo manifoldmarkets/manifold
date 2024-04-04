@@ -291,20 +291,13 @@ export function AnswersPanel(props: {
               }
               onClick={() => {
                 onAnswerClick?.(answer)
-                if (!('poolYes' in answer) || !user) return
-                setExpandedIds((ids) =>
-                  ids.includes(answer.id)
-                    ? ids.filter((id) => id !== answer.id)
-                    : [...ids, answer.id]
-                )
               }}
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              selected={selectedAnswerIds?.includes(answer.id)}
+              expanded={selectedAnswerIds?.includes(answer.id)}
               color={getAnswerColor(answer, answersArray)}
               userBets={userBetsByAnswer[answer.id]}
-              expanded={expandedIds.includes(answer.id)}
               shouldShowLimitOrderChart={
                 isAdvancedTrader && shouldShowLimitOrderChart
               }
@@ -571,7 +564,6 @@ export function Answer(props: {
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
   onClick?: () => void
-  selected?: boolean
   userBets?: Bet[]
   expanded?: boolean
   barColor?: string
@@ -585,7 +577,6 @@ export function Answer(props: {
     onCommentClick,
     onHover,
     onClick,
-    selected,
     color,
     userBets,
     expanded,
@@ -622,19 +613,19 @@ export function Answer(props: {
   )
   const canEdit = canEditAnswer(answer, contract, user)
 
-  const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
+  const textColorClass = clsx(
+    'group-hover:text-primary-700 transition-colors',
+    resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
+  )
   return (
-    <Col className={'w-full'}>
+    <Col className={'bg-canvas-50 w-full rounded'}>
       <AnswerBar
         color={color}
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={clsx(
-          'cursor-pointer',
-          selected && 'ring-primary-600 rounded  ring-2'
-        )}
+        className={'group cursor-pointer'}
         barColor={barColor}
         label={
           <Row className={'items-center gap-1'}>
@@ -660,36 +651,28 @@ export function Answer(props: {
           </Row>
         }
         end={
-          <Row className={'items-center gap-1.5 sm:gap-2'}>
-            {selected && (
-              <PresentationChartLineIcon
-                className="h-5 w-5 text-black"
-                style={{ fill: color }}
-              />
+          <Row className={'items-center gap-1'}>
+            {onClick && (
+              <div
+                className={
+                  'text-ink-500 group-hover:text-primary-700 mr-2 rounded transition-colors'
+                }
+              >
+                <ChevronDownIcon
+                  className={clsx(
+                    'h-5 w-5',
+                    expanded ? 'rotate-180' : 'rotate-0'
+                  )}
+                />
+              </div>
             )}
+
             <BetButtons
               contract={contract}
               answer={answer}
               fillColor={barColor}
               feedItem={feedItem}
             />
-            {onClick && (
-              <IconButton
-                className={'-ml-1 !px-1.5'}
-                size={'2xs'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onClick()
-                }}
-              >
-                <ChevronDownIcon
-                  className={clsx(
-                    'h-4 w-4',
-                    expanded ? 'rotate-180 transform' : 'rotate-0 transform'
-                  )}
-                />
-              </IconButton>
-            )}
           </Row>
         }
         renderBackgroundLayer={
@@ -708,20 +691,24 @@ export function Answer(props: {
           contract={contract}
           answer={answer as Answer}
           userBets={userBets}
-          className="mt-0.5 self-end sm:mx-3 sm:mt-0"
+          className="mx-3 self-end"
           user={user}
         />
       )}
 
       {expanded && (
-        <Row className={'mx-0.5 mb-1 mt-2 items-center gap-2'}>
-          <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
-          <Tooltip text={formatTime(answer.createdTime)}>
-            <div className="text-ink-600">
-              {shortenedFromNow(answer.createdTime)}
-            </div>
-          </Tooltip>
-          <Row className={'w-full justify-end gap-2'}>
+        <Row
+          className={'flex-wrap items-center justify-between gap-2 px-3 py-1'}
+        >
+          <Row className={'gap-2'}>
+            <AnswerAvatar answer={answer} isMobile={isMobile} /> {'·'}
+            <Tooltip text={formatTime(answer.createdTime)}>
+              <div className="text-ink-600">
+                {shortenedFromNow(answer.createdTime)}
+              </div>
+            </Tooltip>
+          </Row>
+          <Row className={'gap-2'}>
             {canEdit && (
               <Button
                 color={'gray-outline'}

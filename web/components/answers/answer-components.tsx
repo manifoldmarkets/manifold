@@ -276,7 +276,7 @@ export const MultiBettor = (props: {
     </>
   )
 }
-export const YesNoBetButtons = (props: {
+const YesNoBetButtons = (props: {
   answer: Answer
   contract: CPMMMultiContract
   fillColor?: string
@@ -303,7 +303,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="green-outline"
-        className={fillColor ?? 'bg-primary-50'}
+        className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -315,7 +315,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
-        className={fillColor ?? 'bg-primary-50'}
+        className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
