@@ -6,6 +6,7 @@ import {
   MVP,
   ENV_CONFIG,
   MOD_IDS,
+  PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
@@ -18,6 +19,8 @@ import { linkClass } from './site-link'
 import Foldy from 'web/public/logo.svg'
 import { Col } from 'web/components/layout/col'
 import { BsFillArrowThroughHeartFill } from 'react-icons/bs'
+import { LuCrown } from 'react-icons/lu'
+import { UserHovercard } from '../user/user-hovercard'
 
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
@@ -45,15 +48,17 @@ export function UserAvatarAndBadge(props: {
   const { username, avatarUrl } = user
 
   return (
-    <Row className={clsx('items-center gap-2', className)}>
-      <Avatar
-        avatarUrl={avatarUrl}
-        username={username}
-        size={'sm'}
-        noLink={noLink}
-      />
-      <UserLink user={user} noLink={noLink} />
-    </Row>
+    <UserHovercard userId={user.id}>
+      <Row className={clsx('items-center gap-2', className)}>
+        <Avatar
+          avatarUrl={avatarUrl}
+          username={username}
+          size={'sm'}
+          noLink={noLink}
+        />
+        <UserLink user={user} noLink={noLink} />
+      </Row>
+    </UserHovercard>
   )
 }
 
@@ -158,6 +163,9 @@ export function UserBadge(props: {
   if (VERIFIED_USERNAMES.includes(username)) {
     badges.push(<VerifiedBadge key="check" />)
   }
+  if (PARTNER_USER_IDS.includes(userId)) {
+    badges.push(<PartnerBadge key="partner" />)
+  }
   if (fresh) {
     badges.push(<FreshBadge key="fresh" />)
   }
@@ -206,6 +214,15 @@ function VerifiedBadge() {
   return (
     <Tooltip text="Verified" placement="right">
       <BadgeCheckIcon className="text-primary-700 h-4 w-4" aria-hidden />
+    </Tooltip>
+  )
+}
+
+// Show a crown for our partners
+function PartnerBadge() {
+  return (
+    <Tooltip text="Partner" placement="right">
+      <LuCrown className="text-primary-700 h-3.5 w-3.5" aria-hidden />
     </Tooltip>
   )
 }

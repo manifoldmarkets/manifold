@@ -32,7 +32,7 @@ const NOTIFICATIONS_KEY = 'notifications_1'
 function useNotifications(
   userId: string,
   // Nobody's going through 10 pages of notifications, right?
-  count = 20 * NOTIFICATIONS_PER_PAGE
+  count = 15 * NOTIFICATIONS_PER_PAGE
 ) {
   const { rows } = usePersistentSubscription(
     NOTIFICATIONS_KEY,
@@ -46,7 +46,7 @@ function useNotifications(
 
 function useUnseenNotifications(
   userId: string,
-  count = 10 * NOTIFICATIONS_PER_PAGE
+  count = NOTIFICATIONS_PER_PAGE
 ) {
   const { status, rows } = useSubscription(
     'user_notifications',
@@ -193,6 +193,8 @@ function groupGeneralNotifications(
         ? 'love_like'
         : n.sourceType === 'love_ship'
         ? 'love_ship'
+        : n.data?.isPartner
+        ? 'isPartner'
         : `${n.sourceTitle}${n.sourceContractId}`)
   )
   const mostRecentNotification = first(sortedNotifications)

@@ -93,7 +93,6 @@ export const ManaEarnedBreakdown = (props: {
       className={clsx(MODAL_CLASS, '')}
       open={showDialog}
       setOpen={(open) => setShowDialog(open)}
-      noAutoFocus
     >
       <Col>
         <Row className="mb-2 items-center gap-4">
@@ -233,4 +232,5 @@ const MANA_EARNED_CATEGORY_LABELS = {
   QUEST_REWARD: 'Quests',
   MARKET_BOOST_REDEEM: 'Boosts claimed',
   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
+  REFERRAL: 'Referrals',
 } as { [key: string]: string }

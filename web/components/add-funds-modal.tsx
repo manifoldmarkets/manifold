@@ -27,12 +27,17 @@ import { AD_REDEEM_REWARD } from 'common/boost'
 import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { buildArray } from 'common/util/array'
+import { Col } from 'web/components/layout/col'
+import { linkClass } from 'web/components/widgets/site-link'
+import clsx from 'clsx'
 
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
+  const { isNative, platform } = getNativePlatform()
 
   return (
     <Modal
@@ -43,7 +48,7 @@ export function AddFundsModal(props: {
       <Tabs
         trackingName="buy modal tabs"
         className="[&_svg]:hidden" // hide carousel switcher
-        tabs={[
+        tabs={buildArray(
           {
             title: 'Buy mana',
             content: <BuyManaTab onClose={() => setOpen(false)} />,
@@ -52,12 +57,32 @@ export function AddFundsModal(props: {
             title: 'Earn free mana',
             content: (
               <>
-                <div className="mb-4 mt-6">Other ways to earn mana:</div>
+                <div className="my-4">Other ways to earn mana:</div>
                 <OtherWaysToGetMana />
               </>
             ),
           },
-        ]}
+          (!isNative || (isNative && platform !== 'ios')) && {
+            title: 'Charity',
+            content: (
+              <Col>
+                <div className="my-4">
+                  Mana is redeemable for cash to charities.
+                </div>
+                <span>
+                  Check out our{' '}
+                  <Link
+                    className={clsx(linkClass, 'text-indigo-700')}
+                    href="/charity"
+                  >
+                    charity
+                  </Link>{' '}
+                  page to donate ❤️
+                </span>
+              </Col>
+            ),
+          }
+        )}
       />
     </Modal>
   )
@@ -99,10 +124,10 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
   return (
     <>
-      <div className="mb-4 mt-6">
+      <div className="my-4">
         Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
         questions.
-        <div className="italic">Not redeemable for cash.</div>
+        <div className="italic">Not redeemable for cash except to charity.</div>
       </div>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>

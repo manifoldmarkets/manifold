@@ -12,6 +12,8 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
+export const PRODUCT_MARKET_FIT_ENABLED = false
+
 export const DASHBOARD_ENABLED = ENV === 'DEV'
 
 export const ENV_CONFIG = CONFIGS[ENV]
@@ -101,7 +103,6 @@ export const BOT_USERNAMES = [
   'ms_test',
   'arb',
   'Turbot',
-  'MiraBot',
   'MetaculusBot',
   'burkebot',
   'Botflux',
@@ -143,10 +144,18 @@ export const BOT_USERNAMES = [
   'LUCAtheory',
   'TunglBot',
   'timetraveler',
+  'bayesianbot',
+  'CharlesLienBot',
+  'JaguarMcBot',
+  'AImogus',
+  'brake',
+  'brontobot',
+  'OracleBot',
 ]
 
 export const MOD_IDS = [
   '9hWkzPveXIelUk4XOrm5WroriST2', // a
+  'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   '4aW01GHrlgafwAPLI1St7MPnOni1', // CarsonGale
@@ -167,6 +176,7 @@ export const MOD_IDS = [
   'TUk0ELR0SNV74OfRAOD48ciiS0W2', // itsTomekK
   'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
   'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'XeQf3ygmrGM1MxdsE3JSlmq8vL42', // Jacy
   'eSqS9cD5mzYcP2o7FrST8aC5IWn2', // JosephNoonan
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
@@ -185,6 +195,7 @@ export const MOD_IDS = [
   'mowZ7T5LBUQuy5CWgctdHMkLo8J3', // NuñoSempere
   'EzsnDabZsZTcpcD1UmChzRUn9Bk1', // PeterWildeford
   'FSqqnRObrqf0GX63gp5Hk4lUvqn1', // ScottLawrence
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
@@ -194,7 +205,7 @@ export const MOD_IDS = [
   'ps3zKQSRuzLJVMzDQMAOlCDFRgG2', // yaboi69
 ]
 
-export const MVP = ['Eliza']
+export const MVP = ['Eliza', 'Gabrielle']
 export const BTE_USER_ID = '4JuXgDx47xPagH5mcLDqLzUSN5g2'
 
 export const VERIFIED_USERNAMES = [
@@ -247,6 +258,81 @@ export const VERIFIED_USERNAMES = [
   'postjawline',
   'MatthewYglesias',
   'BillyMcRascal',
+  'kyootbot',
+  'MaximLott',
+  'liron',
+]
+
+export const BLESSED_BANNED_USER_IDS = [
+  'KsLPvmOdRQasgOu2FQXdsSWh7ln2', // eharding
+  'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
+  '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
+]
+
+export const PARTNER_USER_IDS: string[] = [
+  'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
+  'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson
+  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'cb6PJqGOSVPEUhprDHCKWWMuJqu1', // DanMan314
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'hDq0cvn68jbAUVd6aWIU9aSv9ZA2', // strutheo
+  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+  'xQqqZqlgcoSxTgPe03BiXmVE2JJ2', // Soli
+  'Iiok8KHMCRfUiwtMq1tl5PeDbA73', // Lion
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
+  'SqOJYkeySMQjqP3UAypw6DxPx4Z2', // Shump
+  'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
+  'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
+  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+  '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
+  'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
+  'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
+  'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
+  'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
+  'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
+  'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
+  'foOeshHZOET3yMvRTMPINpnb8Bj2', // PunishedFurry
+  'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
+  'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
+  '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor aka Pat Scott
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
+  'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
+  'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
+  '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+]
+
+export const NEW_USER_HERLPER_IDS = [
+  'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
+  'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
+  'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
+  'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
+  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
+  'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
+  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
+  'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
+  'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
+  'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
+  'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
+  'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
+  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
+  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
+]
+
+export const OPTED_OUT_OF_LEAGUES = [
+  'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
+  '8lZo8X5lewh4hnCoreI7iSc0GxK2', // ManifoldAI
+  'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
+  'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
+  'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'
@@ -262,122 +348,56 @@ export const APPLE_APP_URL =
 
 export const TEN_YEARS_SECS = 60 * 60 * 24 * 365 * 10
 
-export const BLOCKED_BY_DEFAULT_GROUP_SLUGS = ['nsfw']
-
-export const DESTINY_GROUP_SLUGS = [
-  'destinygg',
-  'destinygg-stocks',
-  'eto',
-  'mumbowl-stonks',
-]
+export const DESTINY_GROUP_SLUG = 'destinygg'
 export const PROD_MANIFOLD_LOVE_GROUP_SLUG = 'manifoldlove-relationships'
+
+export const RATING_GROUP_SLUGS = ['nonpredictive', 'unsubsidized']
+
 export const GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL = [
-  'manifold-features',
   'manifold-6748e065087e',
-  'destinygg',
   'manifold-features-25bad7c7792e',
   'bugs',
   'manifold-leagues',
-  'nonpredictive',
-  'unsubsidized',
+  ...RATING_GROUP_SLUGS,
+  DESTINY_GROUP_SLUG,
   PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
-export const DEEMPHASIZED_GROUP_SLUGS = [
+// - Hide markets from signed-out landing page
+// - Hide from onboarding topic selector
+// - De-emphasize markets in the very first feed items generated for new users
+export const HIDE_FROM_NEW_USER_SLUGS = [
   'fun',
   'selfresolving',
   'experimental',
   'trading-bots',
   'gambling',
   'free-money',
+  'mana',
   'whale-watching',
   'spam',
   'test',
   'no-resolution',
   'eto',
   'friend-stocks',
-  'austin-less-wrong-2023-predictions',
-  'fantasy-football-stock-exchange',
   'ancient-markets',
   'jokes',
-  'olivia',
   'planecrash',
   'glowfic',
   'all-stonks',
-  'destinygg',
   'the-market',
   'nonpredictive-profits',
-  'nonpredictive',
   'personal-goals',
   'personal',
   'rationalussy',
-  'uk',
-  'uk-politics',
-  'crystal-ballin',
-  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
-  ...DESTINY_GROUP_SLUGS,
-  ...BLOCKED_BY_DEFAULT_GROUP_SLUGS,
-]
-
-export const GROUP_SLUGS_TO_IGNORE_FOR_NEWS = DEEMPHASIZED_GROUP_SLUGS.filter(
-  (slug) => ['uk', 'uk-politics'].includes(slug)
-)
-
-export const LIKELY_DUPLICATIVE_GROUP_SLUGS_ON_TOPICS_LIST = [
-  // politics, 2024-presidential-election, magaland, donald-trump
-  'us-politics',
-  'republican-party',
-  '2024-republican-primaries',
-  'presidential-politics',
-  // lk-99
-  'superconductivity',
-  // ai
-  'openai',
-  'technical-ai-timelines',
-  // crypto-speculation
-  'crypto-prices',
-  // musk-mania
-  'elon-musk',
-  // ignore all manifold groups
-  'manifold-user-retention',
+  'nsfw',
   'manifold-6748e065087e',
-  'manifold-leagues',
-  'manifold-features-25bad7c7792e',
-  'manifold-users',
-  // generally not helpful for browsing
-  'new-years-resolutions-2024',
-]
-
-export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
+  'bugs',
   'new-years-resolutions-2024',
   'metamarkets',
-  'magaland',
   'metaforecasting',
-  'nonpredictive-profits',
-  'nonpredictive',
-  '-sircryptomind-crypto-stock',
-  'selfresolving',
-  'fun',
-  'unranked',
-  'bugs',
-  'rationalussy',
-  'personal',
-  'world-default',
-  'shortterm-markets',
-  'global-macro',
-  'video-games',
-  'politics-default', // should follow US Politics instead
-  '2024-us-presidential-election', // same
-  'elon-musk', // listed as Elon Musk
-  'elon-musk-14d9d9498c7e',
-  'crypto-prices', // same as crypto,
-  'technical-ai-timelines', // same as ai
-  'presidential-politics', // same as politics
-  'unsubsidized',
   'death-markets',
-  PROD_MANIFOLD_LOVE_GROUP_SLUG,
-  'destiny',
-  'donald-trump-adb8f1bbf890',
+  ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']

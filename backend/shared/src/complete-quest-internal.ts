@@ -16,11 +16,13 @@ import * as timezone from 'dayjs/plugin/timezone'
 import { getQuestScore, setQuestScoreValue } from 'common/supabase/set-scores'
 import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
-import { GCPLog, log as oldLog } from 'shared/utils'
+import { log } from 'shared/utils'
+import { WEEK_MS } from 'common/util/time'
+
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
-export const completeSharingQuest = async (user: User, log: GCPLog) => {
+export const completeSharingQuest = async (user: User) => {
   const db = createSupabaseClient()
   const count = await getCurrentCountForQuest(user.id, 'SHARES', db)
   const oldEntry = await getQuestScore(user.id, 'SHARES', db)
@@ -29,8 +31,7 @@ export const completeSharingQuest = async (user: User, log: GCPLog) => {
     'SHARES',
     oldEntry.score,
     count,
-    undefined,
-    log
+    undefined
   )
 }
 
@@ -51,7 +52,7 @@ export const completeCalculatedQuestFromTrigger = async (
   // In case replication hasn't happened yet, add the id manually
   if (!contractIds.includes(contractId)) contractIds.push(contractId)
   const count = contractIds.length
-  oldLog(
+  log(
     'markets created this week count:',
     count,
     'for user:',
@@ -60,7 +61,7 @@ export const completeCalculatedQuestFromTrigger = async (
     idempotencyKey
   )
   const oldEntry = await getQuestScore(user.id, questType, db)
-  oldLog('current quest entry:', oldEntry, 'for user:', user.id)
+  log('current quest entry:', oldEntry, 'for user:', user.id)
   if (idempotencyKey && oldEntry.idempotencyKey === idempotencyKey)
     return { count: oldEntry.score }
   return await completeQuestInternal(
@@ -77,6 +78,10 @@ export const completeReferralsQuest = async (userId: string) => {
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS['REFERRALS']
   const count = await getCurrentCountForQuest(userId, 'REFERRALS', db)
+  log('completing referrals quest', {
+    userId,
+    count,
+  })
   await setQuestScoreValue(userId, questDetails.scoreId, count, db)
 }
 
@@ -85,8 +90,7 @@ const completeQuestInternal = async (
   questType: QuestType,
   oldScore: number,
   count: number,
-  idempotencyKey: string | undefined,
-  log: GCPLog = oldLog
+  idempotencyKey: string | undefined
 ) => {
   const db = createSupabaseClient()
   const questDetails = QUEST_DETAILS[questType]
@@ -134,14 +138,22 @@ const getCurrentCountForQuest = async (
       .startOf('day')
       .valueOf()
     const startTs = millisToTs(startOfDay)
-    oldLog('getting shares count for user', userId, 'from startTs', startTs)
+    log('getting shares count for user', userId, 'from startTs', startTs)
     return await getUserShareEventsCount(userId, startTs, db)
   } else if (questType === 'REFERRALS') {
-    const startOfWeek = dayjs()
+    let startOfWeek = dayjs()
       .tz('America/Los_Angeles')
       .startOf('week')
       .add(1, 'day')
       .valueOf()
+    const ptNow = dayjs().tz('America/Los_Angeles').valueOf()
+    if (ptNow < startOfWeek) startOfWeek = startOfWeek - WEEK_MS
+    log(
+      'refer-user: getting referrals count for user',
+      userId,
+      'from startOfWeek ts:',
+      startOfWeek
+    )
     return await getReferralCount(userId, startOfWeek, db)
   } else return 0
 }

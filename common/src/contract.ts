@@ -47,6 +47,7 @@ type AnyOutcomeType =
   | Stonk
   | BountiedQuestion
   | Poll
+  | MultipleNumeric
 
 type AnyContractType =
   | (CPMM & Binary)
@@ -62,6 +63,7 @@ type AnyContractType =
   | CPMMMulti
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
+  | CPMMMultiNumeric
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
@@ -103,24 +105,31 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   closeEmailsSent?: number
 
-  views: number
   volume: number
   volume24Hours: number
   elasticity: number
 
   collectedFees: Fees
-
-  groupSlugs?: string[]
-  groupLinks?: GroupLink[]
   uniqueBettorCount: number
+
+  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  groupSlugs?: string[]
+  /** @deprecated */
+  groupLinks?: GroupLink[]
+
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   importanceScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
   dailyScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  freshnessScore: number
+  /** @deprecated - not deprecated, only updated in supabase though*/
+  conversionScore: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
+
   unlistedById?: string
   featuredLabel?: string
   isTwitchContract?: boolean
@@ -128,11 +137,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   coverImageUrl?: string
   isRanked?: boolean
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
+  gptCommentSummary?: string
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
   matchCreatorId?: string // The user id of the person who proposed the match.
+  isLove?: boolean
 
   // Politics
   isPolitics?: boolean
@@ -141,6 +152,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
+export type CPMMNumericContract = Contract & CPMMMultiNumeric
 
 export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
@@ -227,9 +239,29 @@ export type CPMMMulti = {
 
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
   subsidyPool: number // current value of subsidy pool in Ṁ
+  specialLiquidityPerAnswer?: number // Special liquidity mode, where initial ante is copied into each answer's pool, with a min probability, and only one answer can resolve YES. shouldAnswersSumToOne must be false.
 
   // Answers chosen on resolution, with the weights of each answer.
-  // Weights sum to 1 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 1 for each answerId.
+  // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
+  resolutions?: { [answerId: string]: number }
+
+  // NOTE: This field is stored in the answers table and must be denormalized to the client.
+  answers: Answer[]
+}
+
+export type CPMMMultiNumeric = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'NUMBER'
+  shouldAnswersSumToOne: true
+  addAnswersMode: 'DISABLED'
+  max: number
+  min: number
+
+  totalLiquidity: number // for historical reasons, this the total subsidy amount added in Ṁ
+  subsidyPool: number // current value of subsidy pool in Ṁ
+
+  // Answers chosen on resolution, with the weights of each answer.
+  // Weights sum to 100 if shouldAnswersSumToOne is true. Otherwise, range from 0 to 100 for each answerId.
   resolutions?: { [answerId: string]: number }
 
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
@@ -288,6 +320,15 @@ export type MultipleChoice = {
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
+export type MultipleNumeric = {
+  outcomeType: 'NUMBER'
+  answers: Answer[]
+  min: number
+  max: number
+  resolution?: string | 'MKT' | 'CANCEL'
+  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
 export type Numeric = {
   outcomeType: 'NUMERIC'
   bucketCount: number
@@ -308,6 +349,9 @@ export type BountiedQuestion = {
   bountyLeft: number
   // the bounty txn ids
   bountyTxns: string[]
+
+  // Special mode where bounty pays out automatically in proportion to likes over 48 hours.
+  isAutoBounty?: boolean
 }
 
 export type Poll = {
@@ -320,6 +364,7 @@ export type MultiContract = (
   | FreeResponseContract
   | MultipleChoiceContract
   | CPMMMultiContract
+  | CPMMNumericContract
 ) & {
   answers: (DpmAnswer | Answer)[]
   resolutions?: { [outcome: string]: number }
@@ -336,6 +381,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'STONK',
   'BOUNTIED_QUESTION',
   'POLL',
+  'NUMBER',
 ] as const
 export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
 
@@ -379,6 +425,22 @@ export function contractPool(contract: Contract) {
     : 'Empty pool'
 }
 
+export const isBinaryMulti = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType !== 'NUMBER' &&
+  contract.answers.length === 2 &&
+  contract.addAnswersMode === 'DISABLED' &&
+  contract.shouldAnswersSumToOne
+// contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+
+export const getMainBinaryMCAnswer = (contract: Contract) =>
+  isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
+    ? contract.answers[0]
+    : undefined
+
+export const getBinaryMCProb = (prob: number, outcome: 'YES' | 'NO' | string) =>
+  outcome === 'YES' ? prob : 1 - prob
+
 export function getBinaryProbPercent(contract: BinaryContract) {
   return formatPercent(getDisplayProbability(contract))
 }
@@ -396,6 +458,8 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
+export const MULTI_NUMERIC_BUCKETS_MAX = 50
+export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const
@@ -417,12 +481,15 @@ export type ContractParams = {
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
+  totalViews: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
   relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
+  dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
+  betReplies: Bet[]
 }
 
 export type MaybeAuthedContractParams =

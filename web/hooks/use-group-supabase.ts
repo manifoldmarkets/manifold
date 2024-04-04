@@ -2,7 +2,7 @@ import { Contract } from 'common/contract'
 import { Group, GroupRole, LiteGroup, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { getUserIsGroupMember } from 'web/lib/firebase/api'
+import { api, getUserIsGroupMember } from 'web/lib/firebase/api'
 import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
@@ -17,14 +17,14 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useRealtimeChannel } from 'web/lib/supabase/realtime/use-realtime'
+import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
 import { Row } from 'common/supabase/utils'
 import { convertGroup } from 'common/supabase/groups'
 import { useAsyncData } from 'web/hooks/use-async-data'
-import { isAdminId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function useIsGroupMember(groupSlug: string) {
@@ -132,9 +132,9 @@ export function useRealtimeMemberTopics(
 
   return groups
 }
-
 export function useNewUserMemberTopicsAndContracts(
-  user: User | null | undefined
+  user: User | null | undefined,
+  enabled: boolean
 ) {
   type TopicWithContracts = {
     topic: Topic
@@ -144,18 +144,14 @@ export function useNewUserMemberTopicsAndContracts(
     TopicWithContracts[] | undefined
   >(undefined, `member-topics-and-contracts-${user?.id ?? ''}`)
 
-  const { data, refresh } = useAPIGetter('get-groups-with-top-contracts', {})
-
   useEffect(() => {
-    if (!data?.length) setGroups(undefined) // Show loading indicator right after selecting topics
-    refresh()
-  }, [user?.shouldShowWelcome])
-
-  useEffect(() => {
-    if (data) {
-      setGroups(data)
-    }
-  }, [JSON.stringify(data)])
+    if (!groups?.length) setGroups(undefined) // Show loading indicator right after selecting topics
+    if (enabled)
+      api('get-groups-with-top-contracts', {}).then((result) => {
+        setGroups(result)
+      })
+    else setGroups([])
+  }, [enabled, user?.shouldShowWelcome])
 
   return groups
 }
@@ -167,12 +163,12 @@ export function useGroupRole(
   const [userRole, setUserRole] = useState<GroupRole | null | undefined>(
     undefined
   )
-  const isManifoldAdmin = isAdminId(user?.id ?? '_')
+  const isMod = !user ? false : isModId(user.id) || isAdminId(user.id)
   useEffect(() => {
-    if (user && groupId) setTranslatedMemberRole(groupId, setUserRole, user)
+    getTranslatedMemberRole(groupId, user).then(setUserRole)
   }, [user, groupId])
 
-  return isManifoldAdmin ? 'admin' : userRole
+  return isMod ? 'admin' : userRole
 }
 
 export function useRealtimeGroupMemberIds(groupId: string) {
@@ -245,36 +241,33 @@ export function useRealtimeGroupMembers(
     }
   }, [hitBottom])
 
-  const channelFilter = { k: 'group_id', v: groupId } as const
-  useRealtimeChannel('*', 'group_members', channelFilter, (_change) => {
-    fetchGroupMembers()
+  const filter = { k: 'group_id', v: groupId } as const
+  useRealtime({
+    bindings: [{ table: 'group_members', event: '*', filter }],
+    onChange: (_change) => {
+      fetchGroupMembers()
+    },
   })
 
   return { admins, moderators, members, loadMore }
 }
 
-export async function setTranslatedMemberRole(
+export async function getTranslatedMemberRole(
   groupId: string | undefined,
-  setRole: (role: GroupRole | null) => void,
   user: User | null | undefined
 ) {
   if (user && groupId) {
-    getMemberRole(user, groupId)
-      .then((result) => {
-        if (result.data.length > 0) {
-          if (!result.data[0].role) {
-            setRole('member')
-          } else {
-            setRole(result.data[0].role as GroupRole)
-          }
-        } else {
-          setRole(null)
-        }
-      })
-      .catch((e) => console.log(e))
-  } else {
-    setRole(null)
+    try {
+      const { data } = await getMemberRole(user, groupId)
+      if (data.length == 0) {
+        return null
+      }
+      return (data[0]?.role ?? 'member') as GroupRole
+    } catch (e) {
+      console.error(e)
+    }
   }
+  return null
 }
 
 export function useGroupFromSlug(groupSlug: string) {

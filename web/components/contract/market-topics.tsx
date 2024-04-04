@@ -22,36 +22,31 @@ import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
 import { TopicTag } from 'web/components/topics/topic-tag'
 
-export function MarketTopics(props: { contract: Contract; topics: Topic[] }) {
+type TopicRowProps = {
+  contract: Contract
+  dashboards: { slug: string; title: string }[]
+  topics: Topic[]
+}
+
+export function MarketTopics(props: TopicRowProps) {
   const { contract, topics } = props
   if (contract.visibility === 'private') {
-    return <PrivateMarketGroups contract={contract} />
+    return <PrivateMarketGroups topic={topics[0]} />
   } else {
-    return <PublicMarketTopics contract={contract} topics={topics} />
+    return <PublicMarketTopics {...props} />
   }
 }
 
-function PrivateMarketGroups(props: { contract: Contract }) {
-  const { contract } = props
-  if (contract.groupLinks) {
-    return (
-      <div className="flex">
-        <TopicTag
-          location={'market page'}
-          topic={contract.groupLinks[0]}
-          isPrivate
-        />
-      </div>
-    )
+function PrivateMarketGroups(props: { topic?: Topic }) {
+  const { topic } = props
+  if (topic) {
+    return <TopicTag location={'market page'} topic={topic} isPrivate />
   }
-  return <></>
+  return null
 }
 
-const ContractTopicBreadcrumbs = (props: {
-  contract: Contract
-  topics: Topic[]
-}) => {
-  const { contract, topics } = props
+const ContractTopicBreadcrumbs = (props: TopicRowProps) => {
+  const { contract, dashboards, topics } = props
 
   const spanRef = useRef<HTMLSpanElement>(null)
   const [isClamped, setClamped] = useState(true)
@@ -76,10 +71,21 @@ const ContractTopicBreadcrumbs = (props: {
         ref={spanRef}
         className={clsx('min-h-[24px]', !showMore && 'line-clamp-1')}
       >
-        {topics.map((topic, i) => (
-          <span key={topic.id} className={'text-primary-700 text-sm'}>
+        {dashboards?.map((dashboard) => (
+          <span key={dashboard.slug}>
             <Link
-              className={linkClass}
+              className={'text-sm text-teal-800 hover:underline'}
+              href={`/news/${dashboard.slug}`}
+            >
+              {dashboard.title}
+            </Link>
+            {topics.length > 0 && <SpacerDot />}
+          </span>
+        ))}
+        {topics.map((topic, i) => (
+          <span key={topic.id}>
+            <Link
+              className={clsx(linkClass, 'text-primary-700 text-sm')}
               href={groupPath(topic.slug)}
               onClick={() => {
                 track('click category pill on market', {
@@ -90,12 +96,7 @@ const ContractTopicBreadcrumbs = (props: {
             >
               {removeEmojis(topic.name)}
             </Link>
-            {i !== topics.length - 1 && (
-              <span className="mx-1.5">
-                <wbr />
-                {'•'}
-              </span>
-            )}
+            {i !== topics.length - 1 && <SpacerDot />}
           </span>
         ))}
       </span>
@@ -115,10 +116,13 @@ const ContractTopicBreadcrumbs = (props: {
   )
 }
 
-export function PublicMarketTopics(props: {
-  contract: Contract
-  topics: Topic[]
-}) {
+const SpacerDot = () => (
+  <span className="text-ink-500 mx-1.5">
+    <wbr />•
+  </span>
+)
+
+export function PublicMarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
   const { contract, topics } = props
   const user = useUser()
@@ -136,7 +140,7 @@ export function PublicMarketTopics(props: {
   return (
     <>
       <Row className={'group gap-1'}>
-        <ContractTopicBreadcrumbs contract={contract} topics={topics} />
+        <ContractTopicBreadcrumbs {...props} />
         {user && canEdit && (
           <button
             onClick={(e) => {
@@ -146,7 +150,7 @@ export function PublicMarketTopics(props: {
             }}
             className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm sm:invisible sm:group-hover:visible"
           >
-            {contract.groupLinks?.length ? (
+            {topics.length ? (
               <PencilIcon className="mx-1 h-4 w-4" />
             ) : (
               <span className={clsx('flex items-center px-1 text-sm')}>

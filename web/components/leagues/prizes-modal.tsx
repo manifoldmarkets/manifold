@@ -14,7 +14,7 @@ export function PrizesModal(props: {
     ([division]) => division
   )
   return (
-    <Modal open={open} setOpen={setOpen} size={'lg'} noAutoFocus>
+    <Modal open={open} setOpen={setOpen} size={'lg'}>
       <Col className={'bg-canvas-0 text-ink-1000 gap-4 rounded-lg py-3'}>
         <Col className="gap-4 px-3 sm:px-4">
           <Title className={'!mb-0'}>Prizes</Title>

@@ -2,6 +2,7 @@ import { ENV_CONFIG } from '../envs/constants'
 import {
   BinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -17,6 +18,11 @@ const formatter = new Intl.NumberFormat('en-US', {
 export function formatMoney(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
+}
+
+export function formatMoneyShort(amount: number) {
+  const newAmount = getMoneyNumber(amount)
+  return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
 }
 
 export function formatMoneyUSD(amount: number) {
@@ -61,7 +67,11 @@ export function manaToUSD(mana: number) {
 }
 
 export function formatPercentShort(zeroToOne: number) {
-  return Math.min(zeroToOne * 100, 99).toFixed(0) + '%'
+  return getPercent(zeroToOne).toFixed(0) + '%'
+}
+
+export function getPercent(zeroToOne: number) {
+  return Math.min(zeroToOne * 100, 99)
 }
 
 function getPercentDecimalPlaces(zeroToOne: number) {
@@ -103,6 +113,8 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
 }
 
 export function shortFormatNumber(num: number): string {
+  if (num < 10 && num > -10) return showPrecision(num, 1)
+  if (num < 100 && num > -100) return showPrecision(num, 2)
   if (num < 1000 && num > -1000) return showPrecision(num, 3)
 
   const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
@@ -112,7 +124,11 @@ export function shortFormatNumber(num: number): string {
   return `${numStr}${suffix[i] ?? ''}`
 }
 
-export function maybePluralize(word: string, num: number, plural: string = 's'): string {
+export function maybePluralize(
+  word: string,
+  num: number,
+  plural: string = 's'
+): string {
   return num === 1 ? word : word + plural
 }
 
@@ -136,7 +152,8 @@ export const formatOutcomeLabel = (
     | BinaryContract
     | PseudoNumericContract
     | StonkContract
-    | CPMMMultiContract,
+    | CPMMMultiContract
+    | CPMMNumericContract,
   outcomeLabel: 'YES' | 'NO'
 ) => {
   if (

@@ -15,12 +15,15 @@ export function PaginationNextPrev(props: {
   isStart: boolean
   isEnd: boolean
   isLoading: boolean
+  isComplete: boolean
   getPrev: () => void
   getNext: () => void
 }) {
-  const { className, isStart, isEnd, isLoading, getPrev, getNext } = props
+  const { className, isStart, isEnd, isLoading, isComplete, getPrev, getNext } =
+    props
   return (
     <Row
+      aria-label="Pagination"
       className={clsx(className, 'flex-1 justify-between gap-2 sm:justify-end')}
     >
       <button
@@ -33,9 +36,9 @@ export function PaginationNextPrev(props: {
       <button
         className={buttonClass('lg', 'gray-outline')}
         onClick={getNext}
-        disabled={isLoading || isEnd}
+        disabled={isEnd && (isLoading || isComplete)}
       >
-        {isLoading ? <LoadingIndicator size="sm" /> : 'Next'}
+        {isEnd && isLoading ? <LoadingIndicator size="sm" /> : 'Next'}
       </button>
     </Row>
   )
@@ -43,20 +46,14 @@ export function PaginationNextPrev(props: {
 
 export function Pagination(props: {
   page: number
-  itemsPerPage: number
+  pageSize: number
   totalItems: number
   setPage: (page: number) => void
   className?: string
   savePageToQuery?: boolean
 }) {
-  const {
-    page,
-    itemsPerPage,
-    totalItems,
-    setPage,
-    className,
-    savePageToQuery,
-  } = props
+  const { page, pageSize, totalItems, setPage, className, savePageToQuery } =
+    props
   const router = useRouter()
   const { searchParams, createQueryString } = useDefinedSearchParams()
   const pathname = usePathname()
@@ -77,7 +74,7 @@ export function Pagination(props: {
     } else setPage(page)
   }
 
-  const maxPage = Math.ceil(totalItems / itemsPerPage) - 1
+  const maxPage = Math.ceil(totalItems / pageSize) - 1
 
   if (maxPage <= 0) return <Spacer h={4} />
 

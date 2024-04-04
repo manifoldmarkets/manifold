@@ -1,4 +1,4 @@
-import { DESTINY_GROUP_SLUGS } from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { Row, run, SupabaseClient } from 'common/supabase/utils'
 import { db } from './db'
 import { Contract } from 'common/contract'
@@ -25,8 +25,8 @@ export async function getShouldBlockDestiny(
     db
       .from('groups')
       .select('data')
+      .eq('slug', DESTINY_GROUP_SLUG)
       .in('id', groupIds)
-      .in('slug', DESTINY_GROUP_SLUGS)
   )
 
   return data.length === 0

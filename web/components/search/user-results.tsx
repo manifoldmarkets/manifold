@@ -23,7 +23,15 @@ export const UserResults = (props: { users: LiteUser[] }) => {
 }
 
 function UserResult(props: { user: LiteUser }) {
-  const { id, name, username, avatarUrl, bio, createdTime } = props.user
+  const {
+    id,
+    name,
+    username,
+    avatarUrl,
+    bio,
+    createdTime,
+    isBannedFromPosting,
+  } = props.user
 
   return (
     <Row className={'hover:bg-primary-100 p-1'}>
@@ -36,7 +44,7 @@ function UserResult(props: { user: LiteUser }) {
               className={'mt-1'}
             />
             <StackedUserNames
-              user={{ id, name, username, createdTime }}
+              user={{ id, name, username, createdTime, isBannedFromPosting }}
               className={'font-normal sm:text-lg'}
               usernameClassName={'sm:text-sm font-normal'}
             />

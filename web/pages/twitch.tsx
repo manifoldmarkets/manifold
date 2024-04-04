@@ -134,9 +134,10 @@ function TwitchPlaysManifoldMarkets(props: {
     <div>
       <Row className="mb-4">
         <img
-          src="/twitch-glitch.svg"
+          src="/twitch-glitch.svg" // logo
           className="mb-[0.4rem] mr-4 inline h-10 w-10"
-        ></img>
+          alt=""
+        />
         <Title className={'!-my-0 md:block'}>Twitch plays manifold</Title>
       </Row>
       <Col className="mb-4 gap-4">
@@ -399,7 +400,8 @@ function SetUpBot(props: {
         <img
           src="/twitch-bot-obs-screenshot.jpg"
           className="rounded-md border-l border-r border-t shadow-md"
-        ></img>
+          alt='screenshot of a stream with a game on the right and Manifold console on the right above chat. The console says "Resolve market", the market name, YES NO N/A buttons, a resolve button, and an unfeature market button.'
+        />
         To add the bot to your stream make sure you have logged in then follow
         the steps below.
         {twitchLinked && privateUser ? (

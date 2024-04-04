@@ -1,7 +1,6 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-
 import { CPMMMultiContract, MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
@@ -12,9 +11,9 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { DpmAnswer, Answer } from 'common/answer'
+import { DpmAnswer, Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { useUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
+import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
@@ -342,7 +341,7 @@ export function ResolutionAnswerItem(props: {
     showAvatar,
   } = props
   const { text } = answer
-  const user = useUserByIdOrAnswer(answer)
+  const user = useDisplayUserByIdOrAnswer(answer)
   const isChosen = chosenProb !== undefined
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -377,12 +376,13 @@ export function ResolutionAnswerItem(props: {
 
           {showChoice === 'checkbox' && (
             <AmountInput
-              inputClassName="w-16 h-7 !px-2"
+              inputClassName="w-12 h-7 !px-2"
               label=""
               amount={chosenProb ? Math.round(chosenProb) : undefined}
               onChangeAmount={(value) =>
                 onChoose(answer.id, value ? value : undefined)
               }
+              disableClearButton
             />
           )}
           <>
@@ -428,13 +428,11 @@ export const IndependentAnswersResolvePanel = (props: {
   const user = useUser()
 
   const { answers, addAnswersMode } = contract
-  const sortedAnswers = [
-    ...sortBy(
-      answers,
-      (a) => (a.resolution ? -a.subsidyPool : -Infinity),
-      (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
-    ),
-  ]
+  const sortedAnswers = sortBy(
+    answers,
+    (a) => (a.resolution ? -a.subsidyPool : -Infinity),
+    (a) => (addAnswersMode === 'ANYONE' ? -1 * a.prob : a.index)
+  )
 
   return (
     <GradientContainer>
@@ -468,7 +466,7 @@ function IndependentResolutionAnswerItem(props: {
   isInModal?: boolean
 }) {
   const { contract, answer, color, isAdmin } = props
-  const answerCreator = useUserByIdOrAnswer(answer)
+  const answerCreator = useDisplayUserByIdOrAnswer(answer)
   const user = useUser()
   const isCreator = user?.id === contract.creatorId
 
@@ -491,7 +489,7 @@ function IndependentResolutionAnswerItem(props: {
                   Other{' '}
                   <InfoTooltip
                     className="!text-ink-600"
-                    text="Represents all answers not listed. New answers are split out of this answer."
+                    text={OTHER_TOOLTIP_TEXT}
                   />
                 </span>
               ) : (

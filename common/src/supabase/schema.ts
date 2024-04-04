@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       answers: {
@@ -174,30 +174,21 @@ export interface Database {
           content: Json
           created_time: string
           id: number
-          user_avatar_url: string
           user_id: string
-          user_name: string
-          user_username: string
         }
         Insert: {
           channel_id: string
           content: Json
           created_time?: string
           id?: number
-          user_avatar_url: string
           user_id: string
-          user_name: string
-          user_username: string
         }
         Update: {
           channel_id?: string
           content?: Json
           created_time?: string
           id?: number
-          user_avatar_url?: string
           user_id?: string
-          user_name?: string
-          user_username?: string
         }
         Relationships: []
       }
@@ -316,6 +307,8 @@ export interface Database {
           created_time: string
           data: Json
           fs_updated_time: string | null
+          is_api: boolean
+          likes: number
           user_id: string
           visibility: string | null
         }
@@ -325,6 +318,8 @@ export interface Database {
           created_time: string
           data: Json
           fs_updated_time?: string | null
+          is_api?: boolean
+          likes?: number
           user_id: string
           visibility?: string | null
         }
@@ -334,6 +329,8 @@ export interface Database {
           created_time?: string
           data?: Json
           fs_updated_time?: string | null
+          is_api?: boolean
+          likes?: number
           user_id?: string
           visibility?: string | null
         }
@@ -432,11 +429,13 @@ export interface Database {
       contracts: {
         Row: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
@@ -455,16 +454,17 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }
         Insert: {
           close_time?: string | null
+          conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time: string
           group_slugs?: string[] | null
           id: string
@@ -483,16 +483,17 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Update: {
           close_time?: string | null
+          conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string
           group_slugs?: string[] | null
           id?: string
@@ -511,7 +512,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -556,21 +556,21 @@ export interface Database {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "dashboard_groups_group_id_fkey"
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_role"
             referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: "dashboard_groups_group_id_fkey"
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "dashboard_groups_group_id_fkey"
+            foreignKeyName: "public_dashboard_groups_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups_rbac"
@@ -713,7 +713,29 @@ export interface Database {
           contract_id?: string
           group_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
+          },
+          {
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_contracts_group_id_fke"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       group_embeddings: {
         Row: {
@@ -731,7 +753,29 @@ export interface Database {
           embedding?: string
           group_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
+          },
+          {
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_group_embeddings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       group_invites: {
         Row: {
@@ -769,21 +813,21 @@ export interface Database {
         }
         Relationships: [
           {
-            foreignKeyName: "group_invites_group_id_fkey"
+            foreignKeyName: "public_group_invites_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "group_role"
             referencedColumns: ["group_id"]
           },
           {
-            foreignKeyName: "group_invites_group_id_fkey"
+            foreignKeyName: "public_group_invites_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "group_invites_group_id_fkey"
+            foreignKeyName: "public_group_invites_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups_rbac"
@@ -810,13 +854,34 @@ export interface Database {
           member_id?: string
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
+          },
+          {
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       groups: {
         Row: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string | null
           id: string
           importance_score: number | null
           name: string
@@ -828,7 +893,6 @@ export interface Database {
         Insert: {
           creator_id?: string | null
           data: Json
-          fs_updated_time?: string | null
           id?: string
           importance_score?: number | null
           name: string
@@ -840,7 +904,6 @@ export interface Database {
         Update: {
           creator_id?: string | null
           data?: Json
-          fs_updated_time?: string | null
           id?: string
           importance_score?: number | null
           name?: string
@@ -1568,7 +1631,29 @@ export interface Database {
           id?: string
           visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_role"
+            referencedColumns: ["group_id"]
+          },
+          {
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_old_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups_rbac"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       platform_calibration: {
         Row: {
@@ -2041,21 +2126,72 @@ export interface Database {
         }
         Relationships: []
       }
-      txns: {
+      tv_schedule: {
         Row: {
-          data: Json
-          fs_updated_time: string
-          id: string
+          contract_id: string
+          end_time: string | null
+          id: number
+          schedule_created_time: string | null
+          source: string
+          start_time: string | null
+          stream_id: string
         }
         Insert: {
-          data: Json
-          fs_updated_time: string
-          id: string
+          contract_id: string
+          end_time?: string | null
+          id?: number
+          schedule_created_time?: string | null
+          source: string
+          start_time?: string | null
+          stream_id: string
         }
         Update: {
+          contract_id?: string
+          end_time?: string | null
+          id?: number
+          schedule_created_time?: string | null
+          source?: string
+          start_time?: string | null
+          stream_id?: string
+        }
+        Relationships: []
+      }
+      txns: {
+        Row: {
+          amount: number | null
+          category: string | null
+          created_time: string | null
+          data: Json
+          from_id: string | null
+          from_type: string | null
+          fs_updated_time: string
+          id: string
+          to_id: string | null
+          to_type: string | null
+        }
+        Insert: {
+          amount?: number | null
+          category?: string | null
+          created_time?: string | null
+          data: Json
+          from_id?: string | null
+          from_type?: string | null
+          fs_updated_time: string
+          id: string
+          to_id?: string | null
+          to_type?: string | null
+        }
+        Update: {
+          amount?: number | null
+          category?: string | null
+          created_time?: string | null
           data?: Json
+          from_id?: string | null
+          from_type?: string | null
           fs_updated_time?: string
           id?: string
+          to_id?: string | null
+          to_type?: string | null
         }
         Relationships: []
       }
@@ -2101,6 +2237,42 @@ export interface Database {
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_contract_views: {
+        Row: {
+          card_views: number
+          contract_id: string
+          id: number
+          last_card_view_ts: string | null
+          last_page_view_ts: string | null
+          last_promoted_view_ts: string | null
+          page_views: number
+          promoted_views: number
+          user_id: string | null
+        }
+        Insert: {
+          card_views?: number
+          contract_id: string
+          id?: never
+          last_card_view_ts?: string | null
+          last_page_view_ts?: string | null
+          last_promoted_view_ts?: string | null
+          page_views?: number
+          promoted_views?: number
+          user_id?: string | null
+        }
+        Update: {
+          card_views?: number
+          contract_id?: string
+          id?: never
+          last_card_view_ts?: string | null
+          last_page_view_ts?: string | null
+          last_promoted_view_ts?: string | null
+          page_views?: number
+          promoted_views?: number
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -2193,8 +2365,6 @@ export interface Database {
       }
       user_feed: {
         Row: {
-          answer_ids: string[] | null
-          bet_data: Json | null
           bet_id: string | null
           comment_id: string | null
           contract_id: string | null
@@ -2203,14 +2373,10 @@ export interface Database {
           data: Json | null
           data_type: string
           event_time: string
-          group_id: string | null
           id: number
           idempotency_key: string | null
           is_copied: boolean
-          news_id: string | null
           post_id: number | null
-          reaction_id: string | null
-          reason: string
           reasons: string[] | null
           relevance_score: number | null
           seen_duration: number | null
@@ -2218,8 +2384,6 @@ export interface Database {
           user_id: string
         }
         Insert: {
-          answer_ids?: string[] | null
-          bet_data?: Json | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
@@ -2228,14 +2392,10 @@ export interface Database {
           data?: Json | null
           data_type: string
           event_time: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
-          reason: string
           reasons?: string[] | null
           relevance_score?: number | null
           seen_duration?: number | null
@@ -2243,8 +2403,6 @@ export interface Database {
           user_id: string
         }
         Update: {
-          answer_ids?: string[] | null
-          bet_data?: Json | null
           bet_id?: string | null
           comment_id?: string | null
           contract_id?: string | null
@@ -2253,14 +2411,10 @@ export interface Database {
           data?: Json | null
           data_type?: string
           event_time?: string
-          group_id?: string | null
           id?: never
           idempotency_key?: string | null
           is_copied?: boolean
-          news_id?: string | null
           post_id?: number | null
-          reaction_id?: string | null
-          reason?: string
           reasons?: string[] | null
           relevance_score?: number | null
           seen_duration?: number | null
@@ -2407,33 +2561,6 @@ export interface Database {
         }
         Relationships: []
       }
-      user_seen_markets: {
-        Row: {
-          contract_id: string
-          created_time: string
-          id: number
-          is_promoted: boolean | null
-          type: string
-          user_id: string
-        }
-        Insert: {
-          contract_id: string
-          created_time?: string
-          id?: never
-          is_promoted?: boolean | null
-          type?: string
-          user_id: string
-        }
-        Update: {
-          contract_id?: string
-          created_time?: string
-          id?: never
-          is_promoted?: boolean | null
-          type?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_topics: {
         Row: {
           created_at: string
@@ -2457,30 +2584,36 @@ export interface Database {
       }
       users: {
         Row: {
+          balance: number
           created_time: string | null
           data: Json
           fs_updated_time: string
           id: string
           name: string
           name_username_vector: unknown | null
+          total_deposits: number
           username: string
         }
         Insert: {
+          balance?: number
           created_time?: string | null
           data: Json
           fs_updated_time: string
           id: string
           name: string
           name_username_vector?: unknown | null
+          total_deposits?: number
           username: string
         }
         Update: {
+          balance?: number
           created_time?: string | null
           data?: Json
           fs_updated_time?: string
           id?: string
           name?: string
           name_username_vector?: unknown | null
+          total_deposits?: number
           username?: string
         }
         Relationships: []
@@ -2734,8 +2867,8 @@ export interface Database {
         Row: {
           creator_id: string | null
           data: Json | null
-          fs_updated_time: string | null
           id: string | null
+          importance_score: number | null
           name: string | null
           name_fts: unknown | null
           privacy_status: string | null
@@ -2745,8 +2878,8 @@ export interface Database {
         Insert: {
           creator_id?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           name?: string | null
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -2756,8 +2889,8 @@ export interface Database {
         Update: {
           creator_id?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           id?: string | null
+          importance_score?: number | null
           name?: string | null
           name_fts?: unknown | null
           privacy_status?: string | null
@@ -2774,10 +2907,15 @@ export interface Database {
           data: Json | null
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string | null
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          is_politics: boolean | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -2788,7 +2926,6 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -2798,10 +2935,15 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2812,7 +2954,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -2822,10 +2963,15 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -2836,7 +2982,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -2912,10 +3057,12 @@ export interface Database {
           data: Json | null
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string | null
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
@@ -2929,7 +3076,6 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -2939,10 +3085,12 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -2956,7 +3104,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -2966,10 +3113,12 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -2983,7 +3132,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Relationships: []
@@ -2996,10 +3144,12 @@ export interface Database {
           data: Json | null
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string | null
           group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
@@ -3013,7 +3163,6 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }
         Insert: {
@@ -3023,10 +3172,12 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -3040,7 +3191,6 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
         }
         Update: {
@@ -3050,10 +3200,12 @@ export interface Database {
           data?: Json | null
           deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
           group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
@@ -3067,17 +3219,7 @@ export interface Database {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          views?: number | null
           visibility?: string | null
-        }
-        Relationships: []
-      }
-      related_contracts: {
-        Row: {
-          contract_id: string | null
-          data: Json | null
-          distance: number | null
-          from_contract_id: string | null
         }
         Relationships: []
       }
@@ -3087,10 +3229,17 @@ export interface Database {
           created_time: string | null
           creator_id: string | null
           data: Json | null
+          deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string | null
+          group_slugs: string[] | null
           id: string | null
           importance_score: number | null
+          is_politics: boolean | null
+          last_bet_time: string | null
+          last_comment_time: string | null
+          last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
           popularity_score: number | null
@@ -3108,10 +3257,17 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -3129,10 +3285,17 @@ export interface Database {
           created_time?: string | null
           creator_id?: string | null
           data?: Json | null
+          deleted?: boolean | null
           description_fts?: unknown | null
+          freshness_score?: number | null
           fs_updated_time?: string | null
+          group_slugs?: string[] | null
           id?: string | null
           importance_score?: number | null
+          is_politics?: boolean | null
+          last_bet_time?: string | null
+          last_comment_time?: string | null
+          last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
           popularity_score?: number | null
@@ -3195,17 +3358,6 @@ export interface Database {
           rank: number | null
           total_referrals: number | null
           total_referred_profit: number | null
-        }
-        Relationships: []
-      }
-      user_trending_contract: {
-        Row: {
-          close_time: string | null
-          contract_id: string | null
-          created_time: string | null
-          distance: number | null
-          popularity_score: number | null
-          user_id: string | null
         }
         Relationships: []
       }
@@ -3341,11 +3493,13 @@ export interface Database {
         }
         Returns: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
@@ -3364,7 +3518,6 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }[]
       }
@@ -3467,6 +3620,12 @@ export interface Database {
               contract: Json
             }[]
           }
+      get_contract_page_views: {
+        Args: {
+          contract_id: string
+        }
+        Returns: number
+      }
       get_contract_voters: {
         Args: {
           this_contract_id: string
@@ -3648,11 +3807,13 @@ export interface Database {
         Args: Record<PropertyKey, never>
         Returns: {
           close_time: string | null
+          conversion_score: number
           created_time: string | null
           creator_id: string | null
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
+          freshness_score: number | null
           fs_updated_time: string
           group_slugs: string[] | null
           id: string
@@ -3671,7 +3832,6 @@ export interface Database {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          views: number | null
           visibility: string | null
         }[]
       }
@@ -4009,6 +4169,12 @@ export interface Database {
         }
         Returns: boolean
       }
+      hnswhandler: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
       install_available_extensions_and_test: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -4240,7 +4406,6 @@ export interface Database {
         Returns: {
           creator_id: string | null
           data: Json
-          fs_updated_time: string | null
           id: string
           importance_score: number | null
           name: string

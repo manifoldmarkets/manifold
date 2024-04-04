@@ -9,12 +9,12 @@ import { XCircleIcon } from '@heroicons/react/solid'
 import { DashboardItem, DashboardQuestionItem } from 'common/dashboard'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { AddItemFloatyButton } from './add-dashboard-item'
-import { DashboardLive } from './dashboard-live'
-import { useIsVisible } from 'web/hooks/use-is-visible'
 import { LinkPreviews } from 'common/link-preview'
 import { DashboardText } from './dashboard-text-card'
 import { Contract } from 'common/contract'
 import clsx from 'clsx'
+import { TopicTag } from '../topics/topic-tag'
+import { useGroupsFromIds } from 'web/hooks/use-group-supabase'
 
 export const DashboardContent = (props: {
   items: DashboardItem[]
@@ -24,6 +24,7 @@ export const DashboardContent = (props: {
   topics: string[]
   setTopics?: (topics: string[]) => void
   isEditing?: boolean
+  hideTopicLinks?: boolean
 }) => {
   const {
     items,
@@ -33,6 +34,7 @@ export const DashboardContent = (props: {
     setItems,
     topics = [],
     setTopics,
+    hideTopicLinks,
   } = props
 
   const questions = items.filter(
@@ -42,15 +44,11 @@ export const DashboardContent = (props: {
   const slugs = questions.map((q) => q.slug)
   const contracts = useContracts(slugs, 'slug', initialContracts)
 
-  const [loadLiveFeed, setLoadLiveFeed] = useState(false)
-  const { ref: loadLiveRef } = useIsVisible(() => setLoadLiveFeed(true), true)
-
   const [hoverIndex, setHoverIndex] = useState<number>()
   const [hoverTop, setHoverTop] = useState<number>()
 
   return (
     <>
-      <div ref={loadLiveRef} />
       {!isEditing ? (
         <div className="mb-4 flex flex-col gap-4">
           {items.map((item) => (
@@ -156,12 +154,30 @@ export const DashboardContent = (props: {
           </Droppable>
         </DragDropContext>
       )}
-      {loadLiveFeed && <DashboardLive topics={topics} editing={isEditing} />}
+      {!hideTopicLinks && topics.length > 0 && <TopicList topics={topics} />}
     </>
   )
 }
 
-const key = (item: DashboardItem) => {
+const TopicList = (props: { topics: string[] }) => {
+  const groups = useGroupsFromIds(props.topics)
+  return (
+    <div className="text-ink-700 text-md flex items-center gap-1 py-2">
+      <span>See more questions:</span>
+      {groups?.map((group) => (
+        <TopicTag
+          key={group.id}
+          location={'dashboard page'}
+          topic={group}
+          isPrivate={group.privacyStatus === 'private'}
+          className="bg-ink-100"
+        />
+      ))}
+    </div>
+  )
+}
+
+export const key = (item: DashboardItem) => {
   if (item.type === 'link') return item.url
   if (item.type === 'question') return item.slug
   return item.id

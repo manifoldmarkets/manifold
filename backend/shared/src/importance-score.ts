@@ -30,17 +30,20 @@ export async function calculateImportanceScore(
   const weekAgo = now - 7 * DAY_MS
 
   const activeContracts = await pg.map(
-    `select data from contracts
+    `select data, conversion_score from contracts
     where last_bet_time > millis_to_ts($1)
     or last_comment_time > millis_to_ts($1)`,
     [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
-    (row) => row.data as Contract
+    (row) =>
+      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data from contracts where importance_score > 0.2`,
+    `select data, conversion_score from contracts
+      where importance_score > 0.2`,
     [],
-    (row) => row.data as Contract
+    (row) =>
+      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
   )
 
   const activeContractIds = activeContracts.map((c) => c.id)
@@ -79,7 +82,7 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, popularityScore, dailyScore } =
+    const { importanceScore, popularityScore, dailyScore, freshnessScore } =
       computeContractScores(
         now,
         contract,
@@ -95,11 +98,13 @@ export async function calculateImportanceScore(
     if (
       contract.importanceScore !== importanceScore ||
       contract.popularityScore !== popularityScore ||
-      contract.dailyScore !== dailyScore
+      contract.dailyScore !== dailyScore ||
+      contract.freshnessScore !== freshnessScore
     ) {
       contract.importanceScore = importanceScore
       contract.popularityScore = popularityScore
       contract.dailyScore = dailyScore
+      contract.freshnessScore = freshnessScore
       contractsWithUpdates.push(contract)
     }
   }
@@ -122,6 +127,17 @@ export async function calculateImportanceScore(
     console.log(contract.importanceScore, contract.question)
   })
 
+  // Sort in descending order by freshness
+  const freshest = sortBy(
+    contractsWithUpdates,
+    (c) => -1 * (c.freshnessScore ?? 0)
+  )
+  console.log('Top 30 contracts by freshness')
+
+  freshest.slice(0, 30).forEach((contract) => {
+    console.log(contract.freshnessScore, contract.question)
+  })
+
   console.log('Bottom 5 contracts by score')
   contractsWithUpdates
     .slice()
@@ -131,18 +147,22 @@ export async function calculateImportanceScore(
       console.log(contract.importanceScore, contract.question)
     })
 
-  if (!readOnly)
+  if (!readOnly) {
+    const limitedContractsWithUpdates = contractsWithUpdates.slice(0, 2500)
+    console.log('Updating', limitedContractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
       'contracts',
       ['id'],
-      contractsWithUpdates.map((contract) => ({
+      limitedContractsWithUpdates.map((contract) => ({
         id: contract.id,
         data: `${JSON.stringify(contract)}::jsonb`,
         importance_score: contract.importanceScore,
         popularity_score: contract.popularityScore,
+        freshness_score: contract.freshnessScore,
       }))
     )
+  }
 }
 
 export const getTodayComments = async (db: SupabaseClient) => {
@@ -212,7 +232,6 @@ export const computeContractScores = (
   const thisWeekScore = likesWeek + tradersWeek
   const thisWeekScoreWeight = thisWeekScore / 10
   const popularityScore = todayScore + thisWeekScoreWeight
-  const freshnessScore = 1 + Math.log(1 + popularityScore)
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
   const { createdTime, closeTime, isResolved, outcomeType } = contract
@@ -311,12 +330,18 @@ export const computeContractScores = (
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000)
 
-  const importanceScore =
+  const scorePerType =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
       : normalize(rawImportance, 8)
+
+  const importanceScore = scorePerType * (contract.conversionScore + 0.025)
+  const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
+  const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
+  const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
+  const freshnessScore = freshnessFactor * importanceScore
 
   return {
     todayScore,

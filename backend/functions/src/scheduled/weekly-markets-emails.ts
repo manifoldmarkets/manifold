@@ -1,62 +1,62 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { chunk } from 'lodash'
 
-import { getAllPrivateUsersNotSent, getUser, log } from 'shared/utils'
+import { getPrivateUsersNotSent, getUser, log } from 'shared/utils'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { secrets } from 'common/secrets'
 import { PrivateUser } from 'common/user'
-import {
-  USERS_TO_EMAIL,
-} from 'shared/interesting-markets-email-helpers'
 import { getForYouMarkets } from 'shared/supabase/search-contracts'
 
-// This should work until we have 60k users subscribed to trending_markets and not opted out
+// Run every minute on Monday for 2 hours starting at 12pm PT.
+// Should scale until 1000 * 180 = 180k users
+const EMAILS_PER_BATCH = 1000
+
 export const weeklyMarketsEmails = functions
   .runWith({ secrets, memory: '4GB', timeoutSeconds: 540 })
-  // every minute on Monday for 2 hours starting at 12pm PT
-  .pubsub.schedule('* 12-13 * * 1')
+  .pubsub.schedule('* 12-14 * * 1')
   .timeZone('America/Los_Angeles')
   .onRun(async () => {
-    const privateUsers = await getAllPrivateUsersNotSent(
+    const privateUsers = await getPrivateUsersNotSent(
       'weeklyTrendingEmailSent',
-      'trending_markets'
+      'trending_markets',
+      EMAILS_PER_BATCH
     )
 
-    const privateUsersToSendEmailsTo = privateUsers
-      // Get all users that haven't unsubscribed from weekly emails
-      .filter(
-        (user) =>
-          !user.notificationPreferences.opt_out_all.includes('email') &&
-          user.email
+    const CHUNK_SIZE = 25
+    let i = 0
+    const chunks = chunk(privateUsers, CHUNK_SIZE)
+    for (const chunk of chunks) {
+      await Promise.all(
+        chunk.map(async (pu) =>
+          sendEmailToPrivateUser(pu).catch((e) => log('error sending email', e))
+        )
       )
-      .slice(0, USERS_TO_EMAIL) // Send the emails out in batches
-   
-    let sent = 0
 
-    await Promise.all(
-      privateUsersToSendEmailsTo.map(async (pu) =>
-        sendEmailToPrivateUser(pu)
-          .then(() =>
-            log('sent email to', pu.email, ++sent, '/', USERS_TO_EMAIL)
-          )
-          .catch((e) => log('error sending email', e))
+      i++
+      log(
+        `Sent ${i * CHUNK_SIZE} of ${
+          privateUsers.length
+        } weekly trending emails in this batch`
       )
-    )
+    }
   })
 
-const sendEmailToPrivateUser = async (
-  privateUser: PrivateUser,
-) => {
+const sendEmailToPrivateUser = async (privateUser: PrivateUser) => {
   const user = await getUser(privateUser.id)
   if (!user) return
 
-  await admin
-    .firestore()
-    .collection('private-users')
-    .doc(user.id)
-    .update({
-      weeklyTrendingEmailSent: true,
-    })
+  await admin.firestore().collection('private-users').doc(user.id).update({
+    weeklyTrendingEmailSent: true,
+  })
+
+  if (
+    privateUser.notificationPreferences.opt_out_all.includes('email') ||
+    !privateUser.email
+  ) {
+    // Skip if oupted out of all. But still mark it as sent to not mess up firestore query.
+    return
+  }
 
   const contractsToSend = await getForYouMarkets(user.id)
   await sendInterestingMarketsEmail(user, privateUser, contractsToSend)

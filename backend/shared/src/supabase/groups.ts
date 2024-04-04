@@ -26,9 +26,9 @@ export const getMemberTopics = async (
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
-    `select * from groups where id in (
+    `select id,slug,name,importance_score,privacy_status,total_members from groups where id in (
         select group_id from group_members where member_id = $1
-    )`,
+    ) order by importance_score desc`,
     [userId],
     convertTopic
   )
@@ -117,9 +117,9 @@ export async function addUserToTopic(
     const member = { member_id: userId, group_id: groupId }
     // insert and return row
     const ret = await tx.one(
-      `insert into group_members($1:name) values($1:csv)
+      `insert into group_members (member_id, group_id) values ($1, $2)
       returning *`,
-      [member]
+      [member.member_id, member.group_id]
     )
 
     return { status: 'success', member: ret }

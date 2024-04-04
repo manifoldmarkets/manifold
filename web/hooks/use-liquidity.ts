@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react'
-
-import { CPMMContract } from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { getUserLiquidityShares } from 'common/calculate-cpmm'
-
 import { listenForLiquidity } from 'web/lib/firebase/liquidity'
 
 export const useLiquidity = (contractId: string) => {
@@ -16,15 +12,4 @@ export const useLiquidity = (contractId: string) => {
   }, [contractId])
 
   return liquidities
-}
-
-export const useUserLiquidity = (contract: CPMMContract, userId: string) => {
-  const liquidities = useLiquidity(contract.id)
-
-  const userShares = getUserLiquidityShares(
-    userId,
-    contract.pool,
-    liquidities ?? []
-  )
-  return userShares
 }

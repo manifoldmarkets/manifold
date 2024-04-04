@@ -58,20 +58,6 @@ create or replace view
   );
 
 create or replace view
-  related_contracts as (
-    select
-      id1 as from_contract_id,
-      id2 as contract_id,
-      distance,
-      data
-    from
-      contract_distance
-      join listed_open_contracts on id = id2
-    where
-      id1 != id2
-  );
-
-create or replace view
   user_contract_distance as (
     select
       user_id,
@@ -80,24 +66,6 @@ create or replace view
     from
       user_embeddings
       cross join contract_embeddings
-  );
-
-create or replace view
-  user_trending_contract as (
-    select
-      user_contract_distance.user_id,
-      user_contract_distance.contract_id,
-      distance,
-      public_open_contracts.popularity_score,
-      public_open_contracts.created_time,
-      public_open_contracts.close_time
-    from
-      user_contract_distance
-      join public_open_contracts on public_open_contracts.id = user_contract_distance.contract_id
-    where
-      public_open_contracts.popularity_score > 0
-    order by
-      popularity_score desc
   );
 
 drop view if exists group_role;

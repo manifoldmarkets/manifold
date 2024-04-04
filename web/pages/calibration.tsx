@@ -22,27 +22,42 @@ const TRADER_THRESHOLD = 15
 const SAMPLING_P = 0.02
 
 export const getStaticProps = async () => {
-  const result = await db
-    .from('platform_calibration')
-    .select('*')
-    .order('created_time', { ascending: false })
-    .limit(1)
+  try {
+    const result = await db
+      .from('platform_calibration')
+      .select('*')
+      .order('created_time', { ascending: false })
+      .limit(1)
 
-  const { points, score, n } = result.data?.[0]?.data as any
-  const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
-  const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
-  const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
+    const { points, score, n } = result.data?.[0]?.data as any
+    const trumpMarket = await getContract('AiEh38dIYVV5tOs1RmN3')
+    const gazaMarket = await getContract('KmWz1wvC8AmNX3a1iiUF')
+    const sbfMarket = await getContract('dRdXZtj8UXiXxkoF2rXE')
 
-  return {
-    props: {
-      points,
-      score,
-      n,
-      trumpMarket,
-      gazaMarket,
-      sbfMarket,
-    },
-    revalidate: 60 * 60, // Regenerate after an hour
+    return {
+      props: {
+        points,
+        score,
+        n,
+        trumpMarket,
+        gazaMarket,
+        sbfMarket,
+      },
+      revalidate: 60 * 60, // Regenerate after an hour
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      props: {
+        points: [],
+        score: 0,
+        n: 0,
+        trumpMarket: null,
+        gazaMarket: null,
+        sbfMarket: null,
+      },
+      revalidate: 60,
+    }
   }
 }
 
@@ -75,6 +90,112 @@ export default function CalibrationPage(props: {
           <Title>Track Record and Accuracy</Title>
 
           <TrustPanel />
+
+          <Subtitle>Overall calibration</Subtitle>
+          <div className="text-ink-600 mb-2">
+            This chart show whether events happened as often as we predicted. We
+            want to blue dots to be as close to the diagonal line as possible!{' '}
+          </div>
+          <div className="text-ink-600">
+            A dot with a question probability of 70% means we have a group of
+            markets that were predicted to have a 70% chance of occurring. If
+            our predictions are perfectly calibrated, then 70% of those markets
+            should have resolved yes and it should appear on the y-axis at 70%.
+          </div>
+
+          <Col className="mt-4 w-full">
+            <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
+              <div className="absolute bottom-0 right-4 top-0 flex items-center">
+                <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
+                  Resolved Yes
+                </span>
+              </div>
+
+              <SizedContainer className="aspect-video w-full pb-8 pr-8">
+                {(w, h) => (
+                  <CalibrationChart points={points} width={w} height={h} />
+                )}
+              </SizedContainer>
+              <div className="text-ink-800 text-center text-sm">
+                Question probability
+              </div>
+            </div>
+          </Col>
+
+          <div className="prose prose-md text-ink-600 max-w-[800px]">
+            <ul>
+              <li>
+                <b>Methodology and Brier score</b>
+                <br />
+                <div
+                  className=" flex cursor-pointer items-center"
+                  onClick={toggleCollapse}
+                >
+                  TL;DR Our data shows our markets are very accurate!&nbsp;
+                  <div className="text-primary-700 hover:underline">
+                    Learn more
+                  </div>
+                  <ChevronDownIcon
+                    className={` h-6 w-6  ${
+                      isCollapsed ? '' : 'rotate-180 transform'
+                    }`}
+                  />
+                </div>
+
+                {!isCollapsed && (
+                  <div>
+                    {
+                      <ul className=" list-decimal pl-5">
+                        <li>
+                          Every hour we sample {''}
+                          {formatPct(SAMPLING_P)} of all past trades on resolved
+                          binary questions with {TRADER_THRESHOLD} or more
+                          traders. Current sample size: {formatLargeNumber(n)}{' '}
+                          trades.
+                        </li>
+                        <li>
+                          For each sampled trade, we find the average
+                          probability between the start and end.
+                        </li>
+                        <li>
+                          We group trades with similar probabilities together.
+                        </li>
+                        <li>
+                          Then, we check for trades that said there was eg. a
+                          60% chance, and how often those markets resolve yes.
+                          In this case we would expect 60% of them to have
+                          resolved yes for perfect calibration!
+                        </li>
+                        <li>
+                          We can repeat this at each probability interval to
+                          plot a graph showing how the probability of our trades
+                          compare to how often is actually happens!
+                        </li>
+                        <li>
+                          Our {''}
+                          <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
+                            <b>Brier score</b>
+                          </InfoTooltip>
+                          : {Math.round(score * 1e5) / 1e5}
+                          <br />
+                          This number between 0 and 1 that tells us how good our
+                          predictions are. Closer to 0 is better. A score
+                          between 0.1 and 0.2 is very good!
+                        </li>
+                        <li>
+                          <b>Flaws</b>: This methodology uses trade-weighted
+                          rather than time-weighted calibration. Market accuracy
+                          may be better than what is reflected here, as large
+                          miscalibrated trades are usually corrected
+                          immediately!
+                        </li>
+                      </ul>
+                    }
+                  </div>
+                )}
+              </li>
+            </ul>
+          </div>
 
           <Subtitle>Case studies</Subtitle>
 
@@ -165,111 +286,6 @@ export default function CalibrationPage(props: {
             </div>
           </div>
 
-          <Subtitle>Overall calibration</Subtitle>
-          <div className="text-ink-600 mb-2">
-            This chart show whether events happened as often as we predicted. We
-            want to blue dots to be as close to the diagonal line as possible!{' '}
-          </div>
-          <div className="text-ink-600">
-            A dot with a question probability of 70% means we have a group of
-            markets that were predicted to have a 70% chance of occurring. If
-            our predictions are perfectly calibrated, then 70% of those markets
-            should have resolved yes and it should appear on the y-axis at 70%.
-          </div>
-
-          <Col className="mt-4 w-full">
-            <div className="bg-canvas-0 relative w-full  rounded-md p-4 pr-12">
-              <div className="absolute bottom-0 right-4 top-0 flex items-center">
-                <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                  Resolved Yes
-                </span>
-              </div>
-
-              <SizedContainer className="aspect-square w-full pb-8 pr-8">
-                {(w, h) => (
-                  <CalibrationChart points={points} width={w} height={h} />
-                )}
-              </SizedContainer>
-              <div className="text-ink-800 text-center text-sm">
-                Question probability
-              </div>
-            </div>
-          </Col>
-
-          <div className="prose prose-md text-ink-600 max-w-[800px]">
-            <ul>
-              <li>
-                <b>Methodology and Brier score</b>
-                <br />
-                <div
-                  className=" flex cursor-pointer items-center"
-                  onClick={toggleCollapse}
-                >
-                  TL;DR Our data shows our markets are very accurate!&nbsp;
-                  <div className="text-primary-700 hover:underline">
-                    Learn more
-                  </div>
-                  <ChevronDownIcon
-                    className={` h-6 w-6  ${
-                      isCollapsed ? '' : 'rotate-180 transform'
-                    }`}
-                  />
-                </div>
-
-                {!isCollapsed && (
-                  <div>
-                    {
-                      <ul className=" list-decimal pl-5">
-                        <li>
-                          Every hour we sample {''}
-                          {formatPct(SAMPLING_P)} of all past trades on resolved
-                          binary questions with {TRADER_THRESHOLD} or more
-                          traders. Current sample size: {formatLargeNumber(n)}{' '}
-                          trades.
-                        </li>
-                        <li>
-                          For each sampled trade, we find the average
-                          probability between the start and end.
-                        </li>
-                        <li>
-                          We group trades with similar probabilities together.
-                        </li>
-                        <li>
-                          Then, we check for trades that said there was eg. a
-                          60% chance, and how often those markets resolve yes.
-                          In this case we would expect 60% of them to have
-                          resolved yes for perfect calibration!
-                        </li>
-                        <li>
-                          We can repeat this at each probability interval to
-                          plot a graph showing how the probability of our trades
-                          compare to how often is actually happens!
-                        </li>
-                        <li>
-                          Our {''}
-                          <InfoTooltip text="Mean squared error of forecasted probability compared to the true outcome.">
-                            <b>Brier score</b>
-                          </InfoTooltip>
-                          : {Math.round(score * 1e5) / 1e5}
-                          <br />
-                          This number between 0 and 1 that tells us how good our
-                          predictions are. Closer to 0 is better. A score
-                          between 0.1 and 0.2 is very good!
-                        </li>
-                        <li>
-                          <b>Flaws</b>: This methodology uses trade-weighted
-                          rather than time-weighted calibration. Market accuracy
-                          may be better than what is reflected here, as large
-                          miscalibrated trades are usually corrected
-                          immediately!
-                        </li>
-                      </ul>
-                    }
-                  </div>
-                )}
-              </li>
-            </ul>
-          </div>
           <WasabiCharts />
         </Col>
       </Col>

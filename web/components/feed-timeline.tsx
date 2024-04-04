@@ -3,9 +3,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
-import { track } from 'web/lib/service/analytics'
-import Router from 'next/router'
-import { ArrowUpIcon, PencilAltIcon } from '@heroicons/react/solid'
+import { ArrowUpIcon } from '@heroicons/react/solid'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import Link from 'next/link'
 import { FeedTimelineItem, useFeedTimeline } from 'web/hooks/use-feed-timeline'
@@ -16,73 +14,22 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from 'web/components/widgets/avatar'
 import { range, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
-import { DAY_MS, MINUTE_MS } from 'common/util/time'
-import {
-  DAYS_TO_USE_FREE_QUESTIONS,
-  freeQuestionRemaining,
-  PrivateUser,
-  User,
-} from 'common/user'
-import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
-import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
+import { MINUTE_MS } from 'common/util/time'
+import { PrivateUser, User } from 'common/user'
 
 export function FeedTimeline(props: {
-  user: User | undefined | null
-  privateUser: PrivateUser | undefined | null
-}) {
-  const { user, privateUser } = props
-  const remaining = freeQuestionRemaining(
-    user?.freeQuestionsCreated,
-    user?.createdTime
-  )
-  return (
-    <Col className="w-full items-center pb-4 sm:px-2">
-      {user && remaining > 0 && (
-        <Row className="text-md mb-2 items-center justify-between gap-2 rounded-md border-2 border-indigo-500 p-2">
-          <span>
-            🎉 You've got{' '}
-            <span className="font-semibold">{remaining} free questions</span>!
-            Use them before they expire in{' '}
-            {shortenedFromNow(
-              user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-            )}
-            .
-          </span>
-          <CreateQuestionButton className={'max-w-[10rem]'} />
-        </Row>
-      )}
-      {privateUser && (
-        <FeedTimelineContent user={user} privateUser={privateUser} />
-      )}
-      <button
-        type="button"
-        className={clsx(
-          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-          'bottom-[64px]'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
-    </Col>
-  )
-}
-export function FeedTimelineContent(props: {
   privateUser: PrivateUser
   user: User | undefined | null
+  className?: string
 }) {
-  const { privateUser, user } = props
+  const { privateUser, user, className } = props
   const {
     boosts,
     checkForNewer,
     addTimelineItems,
     savedFeedItems,
     loadMoreOlder,
-  } = useFeedTimeline(user, privateUser, 'feed-timeline')
+  } = useFeedTimeline(user, privateUser, `feed-timeline-${user?.id}`)
   const pageVisible = useIsPageVisible()
   const [lastSeen, setLastSeen] = usePersistentLocalState(
     Date.now(),
@@ -119,7 +66,7 @@ export function FeedTimelineContent(props: {
     return () => setLastSeen(Date.now())
   }, [pageVisible, topIsVisible, isAuthed])
 
-  if (!savedFeedItems) return <LoadingIndicator />
+  if (!savedFeedItems) return <LoadingIndicator className={className} />
   const newAvatarUrls = uniq(
     filterDefined(newerTimelineItems.map((item) => item.avatarUrl))
   ).slice(0, 3)
@@ -137,7 +84,7 @@ export function FeedTimelineContent(props: {
   }
 
   return (
-    <Col className={'relative w-full max-w-3xl gap-4'}>
+    <Col className={clsx('relative w-full gap-4', className)}>
       <VisibilityObserver
         className="pointer-events-none absolute top-0 h-5 w-full select-none "
         onVisibilityUpdated={(visible) => {
@@ -177,9 +124,18 @@ export function FeedTimelineContent(props: {
 
       {savedFeedItems.length === 0 && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
-          We're fresh out of cards!
-          <Link href="/browse?s=newest&f=open" className="text-primary-700">
+          <div>Congratulations!</div>
+          <div>You've reached the end of the feed.</div>
+          <div>You are free.</div>
+          <br />
+          <Link
+            href="/browse?s=newest&f=open"
+            className="text-primary-700 hover:underline"
+          >
             Browse new questions
+          </Link>
+          <Link href="/create" className="text-primary-700 hover:underline">
+            Create a question
           </Link>
         </div>
       )}

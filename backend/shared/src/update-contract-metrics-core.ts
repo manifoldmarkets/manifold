@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 import { getAll } from 'shared/supabase/utils'
 import { Answer } from 'common/answer'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -14,7 +14,7 @@ import { groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
-export async function updateContractMetricsCore({ log }: JobContext) {
+export async function updateContractMetricsCore() {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -81,7 +81,14 @@ export async function updateContractMetricsCore({ log }: JobContext) {
         (a) => a.contractId === contract.id
       )
       for (const answer of contractAnswers) {
-        const { poolProb, resProb, resTime } = currentAnswerProbs[answer.id]
+        const { poolProb, resProb, resTime } =
+          contract.shouldAnswersSumToOne && contract.resolutions
+            ? {
+                poolProb: currentAnswerProbs[answer.id].poolProb,
+                resProb: (contract.resolutions[answer.id] ?? 0) / 100,
+                resTime: contract.resolutionTime,
+              }
+            : currentAnswerProbs[answer.id]
         const prob = resProb ?? poolProb
         const key = `${contract.id} ${answer.id}`
         const dayAgoProb = dayAgoProbs[key] ?? poolProb

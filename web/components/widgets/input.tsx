@@ -34,6 +34,7 @@ export const Input = forwardRef(
               : 'border-ink-300 placeholder-ink-400 focus:ring-primary-500 focus:border-primary-500',
             className
           )}
+          step={0.001} // default to 3 decimal places
           {...rest}
         />
       </>

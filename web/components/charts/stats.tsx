@@ -43,17 +43,25 @@ export function DailyChart(props: {
   startDate: number
   dailyValues: number[]
   excludeFirstDays?: number
+  excludeLastDays?: number
   pct?: boolean
 }) {
-  const { dailyValues, startDate, excludeFirstDays, pct } = props
+  const { dailyValues, startDate, excludeFirstDays, excludeLastDays, pct } =
+    props
 
   const zoomParams = useZoom()
   const [xMin, xMax] = zoomParams.viewXScale.domain()
 
-  const data = useMemo(
-    () => getPoints(startDate, dailyValues ?? []).slice(excludeFirstDays ?? 0),
-    [startDate, dailyValues, excludeFirstDays]
-  )
+  const data = useMemo(() => {
+    const pointsExcludingFirstDays = getPoints(
+      startDate,
+      dailyValues ?? []
+    ).slice(excludeFirstDays ?? 0)
+    return pointsExcludingFirstDays.slice(
+      0,
+      pointsExcludingFirstDays.length - (excludeLastDays ?? 0)
+    )
+  }, [startDate, dailyValues, excludeFirstDays, excludeLastDays])
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const minDate = min(data.map((d) => d.x))!
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

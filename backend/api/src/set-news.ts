@@ -1,34 +1,28 @@
-import { ENV_CONFIG, isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { revalidateCachedTag, revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { track } from 'shared/analytics'
 
-export const setnews: APIHandler<'set-news'> = async (props, auth, { log }) => {
-  const { dashboardIds, isPolitics } = props
-  log('set-news', { dashboardIds, isPolitics })
+export const setnews: APIHandler<'set-news'> = async (props, auth) => {
+  const { dashboardIds } = props
+  const nonNewsSlug = props.endpoint !== 'news' ? props.endpoint : undefined
+  log('set-news', { dashboardIds, endpoint: nonNewsSlug })
 
   if (!isAdminId(auth.uid) && !isModId(auth.uid)) {
     throw new APIError(403, 'You are not an admin or mod')
   }
 
   const pg = createSupabaseDirectClient()
-  // update all dashboards to be important
-
+  // TODO: if we keep adding more dashboard order types, we may want to make a dashboard_order table and have rows with slugs and orders
   const slugs: { slug: string }[] = await pg.tx(async (t) => {
-    await t.none(
-      isPolitics
-        ? `update dashboards
-                    set politics_importance_score = 0`
-        : `update dashboards
-                    set importance_score = 0`
-    )
+    const columnName =
+      (nonNewsSlug ? `${nonNewsSlug}_` : '') + 'importance_score'
+    await t.none(`update dashboards set ${columnName} = 0`)
     if (dashboardIds.length === 0) return []
     const queries = dashboardIds.map((id, i) =>
       t.one(
-        isPolitics
-          ? `update dashboards set politics_importance_score = $2 where id = $1 returning slug`
-          : `update dashboards set importance_score = $2 where id = $1 returning slug`,
+        `update dashboards set ${columnName} = $2 where id = $1 returning slug`,
         [id, 1 - i / dashboardIds.length]
       )
     )
@@ -37,8 +31,8 @@ export const setnews: APIHandler<'set-news'> = async (props, auth, { log }) => {
   })
 
   await Promise.all(
-    isPolitics
-      ? [revalidateCachedTag('politics-headlines', ENV_CONFIG.politicsDomain)]
+    nonNewsSlug
+      ? [revalidateStaticProps(`/${nonNewsSlug}`)]
       : [
           revalidateStaticProps(`/home`),
           revalidateStaticProps(`/news`),
@@ -46,7 +40,7 @@ export const setnews: APIHandler<'set-news'> = async (props, auth, { log }) => {
         ]
   )
 
-  track(auth.uid, 'set-news', { dashboardIds })
+  track(auth.uid, 'set-news', { dashboardIds, endpoint: nonNewsSlug })
 
   return { success: true }
 }

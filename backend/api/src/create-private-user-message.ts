@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { GCPLog, getPrivateUser, getUser } from 'shared/utils'
+import { log, getPrivateUser, getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -35,7 +35,7 @@ const postSchema = z
   })
   .strict()
 
-export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
+export const createprivateusermessage = authEndpoint(async (req, auth) => {
   const { content, channelId } = validate(postSchema, req.body)
   if (JSON.stringify(content).length > MAX_COMMENT_JSON_LENGTH) {
     throw new APIError(
@@ -52,7 +52,6 @@ export const createprivateusermessage = authEndpoint(async (req, auth, log) => {
     channelId,
     content,
     pg,
-    log,
     'private'
   )
 })
@@ -62,7 +61,6 @@ export const createPrivateUserMessageMain = async (
   channelId: number,
   content: JSONContent,
   pg: SupabaseDirectClient,
-  log: GCPLog,
   visibility: ChatVisibility,
   overrideCreatorId?: string
 ) => {
@@ -80,7 +78,7 @@ export const createPrivateUserMessageMain = async (
   } else if (overrideCreatorId !== manifoldLoveUserId) {
     throw new APIError(403, 'Only manifold love can post to arbitrary channels')
   }
-  await notifyOtherUserInChannelIfInactive(channelId, creator, pg, log)
+  await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
   await insertPrivateMessage(
     content,
     channelId,
@@ -133,8 +131,7 @@ export const createPrivateUserMessageMain = async (
 const notifyOtherUserInChannelIfInactive = async (
   channelId: number,
   creator: User,
-  pg: SupabaseDirectClient,
-  log: GCPLog
+  pg: SupabaseDirectClient
 ) => {
   const otherUserIds = await pg.manyOrNone<{ user_id: string }>(
     `select user_id from private_user_message_channel_members
@@ -148,13 +145,6 @@ const notifyOtherUserInChannelIfInactive = async (
 
   const otherUserId = first(otherUserIds)
   if (!otherUserId) return
-
-  // We're only sending emails for users who have a lover profile
-  const hasLoverProfile = await pg.oneOrNone(
-    `select 1 from lovers where user_id = $1`,
-    [otherUserId.user_id]
-  )
-  if (!hasLoverProfile) return
 
   const startOfDay = dayjs()
     .tz('America/Los_Angeles')
@@ -181,13 +171,24 @@ const notifyOtherUserInChannelIfInactive = async (
 
   const otherUser = await getUser(otherUserId.user_id)
   if (!otherUser) return
-  await createNewMessageNotification(creator, otherUser, channelId)
+  // We're only sending emails for users who have a lover profile
+  const hasLoverProfile = await pg.oneOrNone(
+    `select 1 from lovers where user_id = $1`,
+    [otherUserId.user_id]
+  )
+  await createNewMessageNotification(
+    creator,
+    otherUser,
+    channelId,
+    hasLoverProfile
+  )
 }
 
 const createNewMessageNotification = async (
   fromUser: User,
   toUser: User,
-  channelId: number
+  channelId: number,
+  otherUserHasLoverProfile: boolean
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -222,7 +223,7 @@ const createNewMessageNotification = async (
       sourceText
     )
   }
-  if (sendToEmail) {
+  if (sendToEmail && otherUserHasLoverProfile) {
     await sendNewMessageEmail(
       reason,
       privateUser,

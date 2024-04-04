@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/alt-text */
 import { OgCardProps } from 'common/contract-seo'
 import clsx from 'clsx'
 import { ProbGraph } from './graph'

@@ -17,9 +17,6 @@ export type notification_preferences = {
   all_replies_to_my_answers_on_watched_markets: notification_destination_types[]
   all_comments_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
 
-  // Answers
-  all_answers_on_contracts_with_shares_in_on_watched_markets: notification_destination_types[]
-
   // On users' markets
   your_contract_closed: notification_destination_types[]
   all_comments_on_my_markets: notification_destination_types[]
@@ -32,8 +29,6 @@ export type notification_preferences = {
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[]
   resolutions_on_watched_markets_with_shares_in: notification_destination_types[]
-  market_updates_on_watched_markets: notification_destination_types[]
-  market_updates_on_watched_markets_with_shares_in: notification_destination_types[]
   all_votes_on_watched_markets: notification_destination_types[]
   probability_updates_on_watched_markets: notification_destination_types[]
   bounty_awarded: notification_destination_types[]
@@ -91,8 +86,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
   const defaults: notification_preferences = {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
+    // Answers
     all_answers_on_watched_markets: constructPref(true, false, false),
-
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,
@@ -110,13 +105,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
       false
     ),
 
-    // Answers
-    all_answers_on_contracts_with_shares_in_on_watched_markets: constructPref(
-      true,
-      false,
-      false
-    ),
-
     // On users' markets
     your_contract_closed: constructPref(true, true, false), // High priority
     all_comments_on_my_markets: constructPref(true, true, false),
@@ -128,12 +116,6 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
 
     // Market updates
     resolutions_on_watched_markets: constructPref(true, true, true),
-    market_updates_on_watched_markets: constructPref(true, false, false),
-    market_updates_on_watched_markets_with_shares_in: constructPref(
-      true,
-      false,
-      false
-    ),
     all_votes_on_watched_markets: constructPref(false, false, false),
     resolutions_on_watched_markets_with_shares_in: constructPref(
       true,
@@ -166,7 +148,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     new_message: constructPref(true, true, true),
     tagged_user: constructPref(true, true, true),
     on_new_follow: constructPref(true, true, false),
-    contract_from_followed_user: constructPref(true, true, false),
+    contract_from_followed_user: constructPref(true, false, false),
     user_liked_your_content: constructPref(true, false, false),
 
     // General
@@ -197,24 +179,14 @@ export const notificationReasonToSubscriptionType: Partial<
   comment_on_your_contract: 'all_comments_on_my_markets',
   answer_on_your_contract: 'all_answers_on_my_markets',
   comment_on_contract_you_follow: 'all_comments_on_watched_markets',
-  answer_on_contract_you_follow: 'all_answers_on_watched_markets',
-  update_on_contract_you_follow: 'market_updates_on_watched_markets',
   resolution_on_contract_you_follow: 'resolutions_on_watched_markets',
   comment_on_contract_with_users_shares_in:
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
-  answer_on_contract_with_users_shares_in:
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
-  update_on_contract_with_users_shares_in:
-    'market_updates_on_watched_markets_with_shares_in',
   resolution_on_contract_with_users_shares_in:
     'resolutions_on_watched_markets_with_shares_in',
   comment_on_contract_with_users_answer: 'all_comments_on_watched_markets',
-  update_on_contract_with_users_answer: 'market_updates_on_watched_markets',
   resolution_on_contract_with_users_answer: 'resolutions_on_watched_markets',
-  answer_on_contract_with_users_answer: 'all_answers_on_watched_markets',
   comment_on_contract_with_users_comment: 'all_comments_on_watched_markets',
-  answer_on_contract_with_users_comment: 'all_answers_on_watched_markets',
-  update_on_contract_with_users_comment: 'market_updates_on_watched_markets',
   resolution_on_contract_with_users_comment: 'resolutions_on_watched_markets',
   reply_to_users_answer: 'all_replies_to_my_answers_on_watched_markets',
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',

@@ -7,104 +7,158 @@ import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
 import { chunk, max } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { z } from 'zod'
-import { validate, authEndpoint, APIError } from 'api/helpers/endpoint'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { GCPLog, getContractSupabase } from 'shared/utils'
+import { log, getContractSupabase } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
-import { MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { acquireLock, releaseLock } from 'shared/firestore-lock'
 
 const firestore = admin.firestore()
-const bodySchema = z
-  .object({
-    contractId: z.string(),
-  })
-  .strict()
+
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
-export const unresolve = authEndpoint(async (req, auth, log) => {
-  const { contractId } = validate(bodySchema, req.body)
+export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
+  const { contractId, answerId } = props
 
   const contract = await getContractSupabase(contractId)
 
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
-  if (
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
-  ) {
-    throw new APIError(400, `Can't unresolve a contract that doesn't sum to 1`)
+  await verifyUserCanUnresolve(contract, auth.uid, answerId)
+
+  const lockId = answerId ? `${contract.id}-${answerId}` : contract.id
+  const acquiredLock = await acquireLock(lockId)
+  if (!acquiredLock) {
+    throw new APIError(
+      403,
+      `Contract ${contract.id} is already being resolved/unresolved (failed to acquire lock)`
+    )
+  }
+  try {
+    await trackPublicEvent(auth.uid, 'unresolve market', {
+      contractId,
+    })
+    await undoResolution(contract, auth.uid, answerId)
+  } finally {
+    await releaseLock(lockId)
   }
 
-  const resolutionTime = contract.resolutionTime
-  if (!contract.isResolved || !resolutionTime)
-    throw new APIError(400, `Contract ${contractId} is not resolved`)
+  return { success: true }
+}
 
-  if (resolutionTime < TXNS_PR_MERGED_ON)
-    throw new APIError(
-      400,
-      `Contract ${contractId} was resolved before payouts were unresolvable transactions.`
-    )
+const verifyUserCanUnresolve = async (
+  contract: Contract,
+  userId: string,
+  answerId?: string
+) => {
+  const isMod = isModId(userId) || isAdminId(userId)
   const pg = createSupabaseDirectClient()
-  const isMod = isModId(auth.uid) || isAdminId(auth.uid)
-  if (contract.creatorId !== auth.uid && !isMod)
-    throw new APIError(403, `User ${auth.uid} must be a mod to unresolve.`)
-  else if (
-    contract.creatorId === auth.uid &&
-    resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
-    !isMod
-  ) {
-    throw new APIError(400, `Contract was resolved more than 10 minutes ago.`)
-  } else if (contract.creatorId === auth.uid && !isMod) {
-    // check if last resolution was by admin or mod, and if so, don't allow unresolution
+
+  if (contract.creatorId === userId && !isMod) {
+    // Check if last resolution was by admin or mod, and if so, don't allow unresolution
     const lastResolution = await pg.oneOrNone(
-      `select * from audit_events where contract_id = $1
-                             and name = 'resolve market'
-                           order by created_time desc limit 1`,
-      [contractId]
+      `select *
+         from audit_events
+         where contract_id = $1
+           and name = 'resolve market'
+         order by created_time desc
+         limit 1`,
+      [contract.id]
     )
-    if (lastResolution && lastResolution.user_id !== auth.uid) {
+    if (lastResolution && lastResolution.user_id !== userId) {
       throw new APIError(400, `Contract most recently resolved by a mod.`)
     }
   }
+  const resolutionTime = contract.resolutionTime
+  if (
+    contract.mechanism !== 'cpmm-multi-1' ||
+    (contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
+  ) {
+    if (!contract.isResolved || !resolutionTime)
+      throw new APIError(400, `Contract ${contract.id} is not resolved`)
 
-  await trackPublicEvent(auth.uid, 'unresolve market', {
-    contractId,
-  })
-  const updatedAttrs = await undoResolution(contractId, log)
-  await recordContractEdit(contract, auth.uid, Object.keys(updatedAttrs))
+    if (resolutionTime < TXNS_PR_MERGED_ON)
+      throw new APIError(
+        400,
+        `Contract ${contract.id} was resolved before payouts were unresolvable transactions.`
+      )
 
-  return { success: true }
-})
+    if (
+      contract.creatorId === userId &&
+      resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
+      !isMod
+    ) {
+      throw new APIError(400, `Contract was resolved more than 10 minutes ago.`)
+    }
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    if (!answerId) {
+      throw new APIError(400, `answerId is required for cpmm-multi-1 contracts`)
+    }
 
-const undoResolution = async (contractId: string, log: GCPLog) => {
+    const answerResolutionTime = await pg.oneOrNone(
+      `select data->'resolutionTime' as resolution_time
+         from answers
+         where id= $1
+         limit 1`,
+      [answerId],
+      (r) => r.resolution_time as number | null
+    )
+    if (!answerResolutionTime)
+      throw new APIError(400, `Answer ${answerId} is not resolved`)
+    if (
+      contract.creatorId === userId &&
+      answerResolutionTime <
+        Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
+      !isMod
+    ) {
+      throw new APIError(400, `Answer was resolved more than 10 minutes ago.`)
+    }
+  }
+
+  if (contract.creatorId !== userId && !isMod)
+    throw new APIError(403, `User ${userId} must be a mod to unresolve.`)
+}
+
+const undoResolution = async (
+  contract: Contract,
+  userId: string,
+  answerId?: string
+) => {
   const pg = createSupabaseDirectClient()
+  const contractId = contract.id
   const uniqueStartTimes = await pg.map(
     `select distinct data->'data'->'payoutStartTime' as payout_start_time
-            FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-             AND data->>'fromType' = 'CONTRACT'
-           AND data->>'fromId' = $1`,
-    [contractId],
+            FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+             AND from_type = 'CONTRACT'
+             AND from_id = $1
+             and ( $2 is null or data ->'data'->>'answerId' = $2)
+           `,
+    [contractId, answerId],
     (r) => r.payout_start_time as number | null
   )
   const maxPayoutStartTime = max(uniqueStartTimes)
   let txns: ContractResolutionPayoutTxn[]
   if (maxPayoutStartTime) {
     txns = await pg.map(
-      `SELECT * FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-                      AND data->>'fromType' = 'CONTRACT'
-                      AND data->>'fromId' = $1
-                      AND (data->'data'->>'payoutStartTime')::numeric = $2`,
-      [contractId, maxPayoutStartTime],
+      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+                      AND from_type = 'CONTRACT'
+                      AND from_id = $1
+                      AND (data->'data'->>'payoutStartTime')::numeric = $2
+                      and ( $3 is null or data ->'data'->>'answerId' = $3)
+                      `,
+      [contractId, maxPayoutStartTime, answerId],
       (r) => r.data as ContractResolutionPayoutTxn
     )
   } else {
     txns = await pg.map(
-      `SELECT * FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-                     AND data->>'fromType' = 'CONTRACT' 
-                     AND data->>'fromId' = $1`,
-      [contractId],
+      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+                     AND from_type = 'CONTRACT'
+                     AND from_id = $1
+                     and ( $2 is null or data ->'data'->>'answerId' = $2)
+                     `,
+      [contractId, answerId],
       (r) => r.data as ContractResolutionPayoutTxn
     )
   }
@@ -119,18 +173,31 @@ const undoResolution = async (contractId: string, log: GCPLog) => {
     })
   }
   log('reverted txns')
-  const updatedAttrs = {
-    isResolved: false,
-    resolutionTime: admin.firestore.FieldValue.delete(),
-    resolution: admin.firestore.FieldValue.delete(),
-    resolutions: admin.firestore.FieldValue.delete(),
-    resolutionProbability: admin.firestore.FieldValue.delete(),
-    closeTime: Date.now(),
+  if (contract.isResolved || contract.resolutionTime) {
+    const updatedAttrs = {
+      isResolved: false,
+      resolutionTime: admin.firestore.FieldValue.delete(),
+      resolution: admin.firestore.FieldValue.delete(),
+      resolutions: admin.firestore.FieldValue.delete(),
+      resolutionProbability: admin.firestore.FieldValue.delete(),
+      closeTime: Date.now(),
+    }
+    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+    await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
-  await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+  if (answerId) {
+    const updatedAttrs = {
+      resolution: admin.firestore.FieldValue.delete(),
+      resolutionTime: admin.firestore.FieldValue.delete(),
+      resolutionProbability: admin.firestore.FieldValue.delete(),
+      resolverId: admin.firestore.FieldValue.delete(),
+    }
+    await firestore
+      .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
+      .update(updatedAttrs)
+  }
 
   log('updated contract')
-  return updatedAttrs
 }
 
 export function undoContractPayoutTxn(

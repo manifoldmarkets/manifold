@@ -12,9 +12,14 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
-import { CPMMContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+} from 'common/contract'
 import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
+import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -77,6 +82,7 @@ export function BetsSummary(props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isStonk = outcomeType === 'STONK'
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
 
@@ -217,6 +223,19 @@ export function BetsSummary(props: {
           </div>
         </Row>
       )}
+      {mainBinaryMCAnswer && (
+        <BinaryMultiSellRow
+          answer={mainBinaryMCAnswer}
+          contract={contract as CPMMMultiContract}
+        />
+      )}
+      {/*{includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (*/}
+      {/*  <SellPanel*/}
+      {/*    contract={contract}*/}
+      {/*    user={includeSellButton}*/}
+      {/*    userBets={userBets}*/}
+      {/*  />*/}
+      {/*)}*/}
     </Col>
   )
 }

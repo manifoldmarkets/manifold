@@ -1,7 +1,7 @@
+import { useCallback } from 'react'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 import { groupConsecutive } from 'common/util/array'
-import { useEffect, useState } from 'react'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Col } from '../layout/col'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -9,13 +9,13 @@ import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { PaginationNextPrev } from '../widgets/pagination'
 import Link from 'next/link'
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { usePagination } from 'web/hooks/use-pagination'
 import { api } from 'web/lib/firebase/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { sum } from 'lodash'
 import { getCommentLink } from 'web/components/feed/copy-link-date-time'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
+import { UserHovercard } from '../user/user-hovercard'
 
 type ContractKey = {
   contractId: string
@@ -31,80 +31,46 @@ function contractPath(slug: string) {
 
 export function UserCommentsList(props: { user: User; isPolitics?: boolean }) {
   const { user, isPolitics } = props
-  const pageSize = 50
-  const [pageNum, setPageNum] = useState(0)
-  const [groupedComments, setGroupedComments] = useState<
-    {
-      key: {
-        contractId: string
-        contractQuestion: string
-        contractSlug: string
-      }
-      items: ContractComment[]
-    }[]
-  >([])
-  const [isLoading, setIsLoading] = useState(false)
-  const isAuth = useIsAuthorized()
 
-  useEffect(() => {
-    setIsLoading(true)
-    api('comments', {
-      userId: user.id,
-      limit: pageSize,
-      page: pageNum,
-      isPolitics,
-    })
-      .then((result) =>
-        setGroupedComments(
-          groupConsecutive(result, (c) => {
-            return {
-              contractId: c.contractId,
-              contractQuestion: c.contractQuestion,
-              contractSlug: c.contractSlug,
-            }
-          })
-        )
-      )
-      .finally(() => setIsLoading(false))
-  }, [pageNum, isAuth])
+  const q = useCallback(
+    async (p: { limit: number; offset: number }) => {
+      const page = p.offset / p.limit
+      return await api('comments', {
+        userId: user.id,
+        limit: p.limit,
+        page,
+        isPolitics,
+      })
+    },
+    [user.id, isPolitics]
+  )
+  const pagination = usePagination({ pageSize: 50, q })
 
-  if (groupedComments.length === 0) {
-    if (pageNum == 0) {
+  const items = groupConsecutive(pagination.items, (c) => {
+    return {
+      contractId: c.contractId,
+      contractQuestion: c.contractQuestion,
+      contractSlug: c.contractSlug,
+    }
+  })
+
+  if (items.length === 0) {
+    if (pagination.isComplete) {
       return <p className="text-ink-500 mt-4">No comments yet</p>
     } else {
-      // this can happen if their comment count is a multiple of page size
-      return <p className="text-ink-500 mt-4">No more comments to display</p>
+      return <LoadingIndicator className="mt-4" />
     }
   }
-  const totalItems = sum(
-    Object.values(groupedComments).map((c) => c.items.length)
-  )
+
   return (
     <Col className={'bg-canvas-50'}>
-      {isLoading && <LoadingIndicator className="mt-4" />}
-      {!isLoading &&
-        groupedComments.map(({ key, items }, i) => {
-          return (
-            <ProfileCommentGroup
-              key={i}
-              groupKey={key}
-              items={items as ContractComment[]}
-            />
-          )
-        })}
-
-      <nav
+      {items.map(({ key, items }, i) => {
+        return <ProfileCommentGroup key={i} groupKey={key} items={items} />
+      })}
+      <PaginationNextPrev
         className="border-ink-200 border-t px-4 py-3 sm:px-6"
-        aria-label="Pagination"
-      >
-        <PaginationNextPrev
-          getNext={() => setPageNum(pageNum + 1)}
-          getPrev={() => setPageNum(pageNum - 1)}
-          isEnd={totalItems < pageSize}
-          isLoading={isLoading}
-          isStart={pageNum === 0}
-        />
-      </nav>
+        {...pagination}
+      />
     </Col>
   )
 }
@@ -159,18 +125,26 @@ function ProfileComment(props: {
         'hover:bg-canvas-100 relative flex flex-row items-start space-x-3 rounded-lg p-2'
       }
     >
-      <Avatar noLink={true} username={userUsername} avatarUrl={userAvatarUrl} />
+      <UserHovercard userId={userId}>
+        <Avatar
+          noLink={true}
+          username={userUsername}
+          avatarUrl={userAvatarUrl}
+        />
+      </UserHovercard>
       <div className="min-w-0 flex-1">
         <div className="text-ink-500 mt-0.5 text-sm">
-          <UserLink
-            className="text-ink-500"
-            user={{
-              id: userId,
-              name: userName,
-              username: userUsername,
-            }}
-            noLink={true}
-          />{' '}
+          <UserHovercard userId={userId}>
+            <UserLink
+              className="text-ink-500"
+              user={{
+                id: userId,
+                name: userName,
+                username: userUsername,
+              }}
+              noLink={true}
+            />
+          </UserHovercard>{' '}
           <RelativeTimestamp time={createdTime} />
         </div>
         <Content content={content || text} size="sm" />

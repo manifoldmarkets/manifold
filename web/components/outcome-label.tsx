@@ -3,6 +3,7 @@ import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
+  getMainBinaryMCAnswer,
   MultiContract,
   OutcomeType,
   resolution,
@@ -20,7 +21,20 @@ export function OutcomeLabel(props: {
 }) {
   const { outcome, contract, truncate, answerId } = props
   const { outcomeType, mechanism } = contract
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
 
+  if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
+    return (
+      <MultiOutcomeLabel
+        contract={contract}
+        resolution={
+          outcome === 'YES' ? mainBinaryMCAnswer.id : contract.answers[1].id
+        }
+        truncate={truncate}
+        answerClassName={'font-bold text-base-400 !break-normal'}
+      />
+    )
+  }
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 
@@ -34,6 +48,21 @@ export function OutcomeLabel(props: {
 
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />
+  }
+  if (outcomeType === 'NUMBER') {
+    return (
+      <span>
+        {answerId && (
+          <MultiOutcomeLabel
+            contract={contract}
+            resolution={answerId}
+            truncate={truncate}
+            answerClassName={'font-bold text-base-400 !break-normal'}
+          />
+        )}{' '}
+        <BinaryOutcomeLabel outcome={outcome as any} />
+      </span>
+    )
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-multi-1') {
@@ -178,6 +207,11 @@ export function NumericValueLabel(props: { value: number }) {
   return <span className="text-sky-600">{formatLargeNumber(value)}</span>
 }
 
+export function MultiNumericValueLabel(props: { formattedValue: string }) {
+  const { formattedValue } = props
+  return <span className="text-sky-600">{formattedValue}</span>
+}
+
 export function BetOutcomeLabel(props: {
   contractOutcomeType: OutcomeType
   bet: Bet
@@ -192,7 +226,8 @@ export function BetOutcomeLabel(props: {
   }
   if (
     contractOutcomeType === 'FREE_RESPONSE' ||
-    contractOutcomeType === 'MULTIPLE_CHOICE'
+    contractOutcomeType === 'MULTIPLE_CHOICE' ||
+    contractOutcomeType === 'NUMBER'
   ) {
     return (
       <span className={clsx('text-primary-700')}>

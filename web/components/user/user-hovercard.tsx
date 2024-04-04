@@ -1,5 +1,5 @@
 import { Row } from '../layout/row'
-import { useEffect, useState } from 'react'
+import { Ref, forwardRef, useEffect, useState } from 'react'
 import { getFullUserById } from 'web/lib/supabase/users'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useAdminOrTrusted } from 'web/hooks/use-admin'
@@ -10,6 +10,9 @@ import { FollowButton } from '../buttons/follow-button'
 import { StackedUserNames } from '../widgets/user-link'
 import { Linkify } from '../widgets/linkify'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
+import dayjs from 'dayjs'
+import { Col } from '../layout/col'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -22,10 +25,14 @@ export function UserHovercard({
   userId,
   className,
 }: UserHovercardProps) {
+  const isClient = useIsClient()
+  if (!isClient) return null
   return (
     <HoverCard.Root openDelay={150}>
-      <HoverCard.Trigger asChild className={className}>
-        {children}
+      {/* Use "asChild" and wrap children in a button to prevent nested links.
+          Use inline-flex for the same layout as a link tag. */}
+      <HoverCard.Trigger className={className} asChild>
+        <button className="inline-flex">{children}</button>
       </HoverCard.Trigger>
 
       <HoverCard.Portal>
@@ -35,20 +42,21 @@ export function UserHovercard({
   )
 }
 
-function FetchUserHovercardContent({ userId }: { userId: string }) {
-  const [user, setUser] = useState<User | null>(null)
+const FetchUserHovercardContent = forwardRef(
+  ({ userId }: { userId: string }, ref: Ref<HTMLDivElement>) => {
+    const [user, setUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    getFullUserById(userId).then(setUser)
-  }, [])
+    useEffect(() => {
+      getFullUserById(userId).then(setUser)
+    }, [])
 
-  const followingIds = useFollows(userId)
-  const followerIds = useFollowers(userId)
-  const isMod = useAdminOrTrusted()
+    const followingIds = useFollows(userId)
+    const followerIds = useFollowers(userId)
+    const isMod = useAdminOrTrusted()
 
-  return (
-    user && (
+    return user ? (
       <HoverCard.Content
+        ref={ref}
         className="animate-slide-up-and-fade bg-canvas-0 ring-ink-1000 divide-ink-300 z-30 mt-2 w-56 divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
         align="start"
       >
@@ -75,18 +83,28 @@ function FetchUserHovercardContent({ userId }: { userId: string }) {
             </div>
           )}
 
-          <Row className="mt-3 gap-4 text-sm">
-            <div>
-              <span className="font-semibold">
-                {followingIds?.length ?? ''}
-              </span>{' '}
-              Following
-            </div>
-            <div>
-              <span className="font-semibold">{followerIds?.length ?? ''}</span>{' '}
-              Followers
-            </div>
-          </Row>
+          <Col className="mt-3 gap-1">
+            <Row className="gap-4 text-sm">
+              <div>
+                <span className="font-semibold">
+                  {followingIds?.length ?? ''}
+                </span>{' '}
+                Following
+              </div>
+              <div>
+                <span className="font-semibold">
+                  {followerIds?.length ?? ''}
+                </span>{' '}
+                Followers
+              </div>
+            </Row>
+
+            <Row className="gap-4 text-sm">
+              <div className="text-ink-400">
+                Joined {dayjs(user.createdTime).format('MMM DD, YYYY')}
+              </div>
+            </Row>
+          </Col>
         </div>
 
         {isMod && (
@@ -105,6 +123,6 @@ function FetchUserHovercardContent({ userId }: { userId: string }) {
           </div>
         )}
       </HoverCard.Content>
-    )
-  )
-}
+    ) : null
+  }
+)

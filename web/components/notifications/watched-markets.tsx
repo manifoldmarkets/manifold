@@ -74,7 +74,6 @@ export const UserWatchedContractsButton = memo(
               {!filteredWatchedContracts && <LoadingIndicator />}
               <ContractsTable
                 contracts={filteredWatchedContracts ?? ([] as any)}
-                hideHeader
                 columns={[
                   traderColumn,
                   probColumn,

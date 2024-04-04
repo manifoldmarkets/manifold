@@ -4,11 +4,11 @@ import { ensureDeviceToken } from 'web/components/auth-context'
 import { track } from 'web/lib/service/analytics'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 
-const TEST_CACHE: any = {}
+const AB_TEST_CACHE: { [testName: string]: boolean } = {}
 
-export const useABTest = <T>(
+export const useABTest = <T extends string>(
   testName: string,
-  variants: { [variantName: string]: T },
+  variants: T[],
   trackingProperties?: any
 ) => {
   const [variant, setVariant] = useState<T | undefined>(undefined)
@@ -18,16 +18,16 @@ export const useABTest = <T>(
     if (!deviceId) return
 
     const rand = createRNG(testName + deviceId)
-    const keys = Object.keys(variants).sort()
-    const key = keys[Math.floor(rand() * keys.length)]
+    const keys = variants.sort()
+    const randomVariant = keys[Math.floor(rand() * keys.length)]
 
-    setVariant(variants[key])
+    setVariant(randomVariant)
 
     // only track once per user session
-    if (!TEST_CACHE[testName]) {
-      TEST_CACHE[testName] = true
+    if (!AB_TEST_CACHE[testName]) {
+      AB_TEST_CACHE[testName] = true
 
-      track(testName, { ...trackingProperties, variant: key })
+      track(testName, { ...trackingProperties, variant: randomVariant })
     }
   }, [testName, trackingProperties, variants])
 

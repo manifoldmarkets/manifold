@@ -3,7 +3,11 @@ import { cloneDeep, groupBy, last, mapValues, sortBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  CPMMNumericContract,
+  MultiContract,
+} from 'common/contract'
 import { getAnswerProbability } from 'common/calculate'
 import {
   TooltipProps,
@@ -15,7 +19,7 @@ import {
   PointerMode,
 } from '../helpers'
 import { MultiValueHistoryChart } from '../generic-charts'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoints } from 'common/chart'
 import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
@@ -25,13 +29,13 @@ const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
   '#FFDD99', // sand
   '#FFAABB', // pink
-  '#77AADD', // navy
+  '#77F299', // light green
   '#CD46EA', // 🍆
   '#F23542', // blood red
   '#FF8C00', // orange
   '#44BB99', // forest
   '#FFD700', // gold
-  '#7EEE03', // chartreuse
+  '#77AADD', // navy
   '#F76B40', // orange-red
   '#C195F0', // Grimace shake purple
   '#0C7AE1', // octarine??
@@ -63,10 +67,19 @@ const CHOICE_ANSWER_COLORS = [
   '#DBD56E',
 ]
 
+export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
+
 export const CHOICE_OTHER_COLOR = '#C2C3DB'
 
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
+
+export const getVersusColor = (answer: Answer) => {
+  return answer.color ?? VERSUS_COLORS[answer.index]
+}
+
+export const getVersusColors = (answers: Answer[]) =>
+  answers.map(getVersusColor)
 
 export function getAnswerColor(
   answer: Answer | DpmAnswer,
@@ -80,6 +93,11 @@ export function getAnswerColor(
 
   return 'isOther' in answer && answer.isOther
     ? CHOICE_OTHER_COLOR
+    : 'color' in answer && answer.color
+    ? answer.color
+    : answerIdOrder.length === 2 &&
+      answerIdOrder.every((name) => name != 'Other')
+    ? VERSUS_COLORS[index]
     : nthColor(index)
 }
 
@@ -95,9 +113,6 @@ const getAnswers = (contract: MultiContract) => {
   )
 }
 
-type Point = HistoryPoint<never>
-export type MultiPoints = { [answerId: string]: Point[] }
-
 // new multi only
 export const getMultiBetPoints = (bets: Bet[]) => {
   return mapValues(groupBy(bets, 'answerId'), (bets) =>
@@ -110,7 +125,7 @@ export function useChartAnswers(contract: MultiContract) {
 }
 
 export const ChoiceContractChart = (props: {
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   multiPoints: MultiPoints
   width: number
   height: number
@@ -146,7 +161,10 @@ export const ChoiceContractChart = (props: {
 
   const data = useMemo(() => {
     const answerOrder = answers.map((a) => a.text)
-    const ret = {} as Record<string, { points: Point[]; color: string }>
+    const ret = {} as Record<
+      string,
+      { points: HistoryPoint<never>[]; color: string }
+    >
 
     answers.forEach((a) => {
       const points = cloneDeep(multiPoints[a.id] ?? [])
@@ -178,8 +196,8 @@ export const ChoiceContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
   const yScale = scaleLinear([0, 1], [height, 0])
-
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
+
   return (
     <MultiValueHistoryChart
       w={width}
@@ -210,7 +228,7 @@ export const ChoiceContractChart = (props: {
   )
 }
 
-const ChoiceTooltip = (props: {
+export const ChoiceTooltip = (props: {
   ttProps: TooltipProps<HistoryPoint> & { ans: string }
   xScale: any
   answers: (DpmAnswer | Answer)[]

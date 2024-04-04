@@ -5,9 +5,14 @@ import {
   Notification,
   UniqueBettorData,
 } from 'common/notification'
-import { formatMoney, formatMoneyToDecimal } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyToDecimal,
+  maybePluralize,
+} from 'common/util/format'
 import { groupBy } from 'lodash'
 import { useState } from 'react'
+import clsx from 'clsx'
 
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -32,8 +37,12 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { DIVISION_NAMES } from 'common/leagues'
-import clsx from 'clsx'
 import { Linkify } from 'web/components/widgets/linkify'
+import {
+  PARTNER_UNIQUE_TRADER_BONUS,
+  PARTNER_UNIQUE_TRADER_BONUS_MULTI,
+  PARTNER_UNIQUE_TRADER_THRESHOLD,
+} from 'common/partner'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -44,25 +53,32 @@ export function combineAndSumIncomeNotifications(
     notifications,
     (n) => n.sourceType
   )
+  const titleForNotification = (notification: Notification) => {
+    const outcomeType = notification.data?.outcomeType
+    return (
+      (notification.sourceTitle ?? notification.sourceContractTitle) +
+      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
+      notification.data?.isPartner
+    )
+  }
+
   for (const sourceType in groupedNotificationsBySourceType) {
     // Source title splits by contracts, groups, betting streak bonus
     const groupedNotificationsBySourceTitle = groupBy(
       groupedNotificationsBySourceType[sourceType],
-      (notification) => {
-        return (
-          (notification.sourceTitle ?? notification.sourceContractTitle) +
-          (notification.data?.answerText ?? '')
-        )
-      }
+      (notification) => titleForNotification(notification)
     )
     for (const sourceTitle in groupedNotificationsBySourceTitle) {
       const notificationsForSourceTitle =
         groupedNotificationsBySourceTitle[sourceTitle]
 
       let sum = 0
-      notificationsForSourceTitle.forEach(
-        (notification) => (sum = parseFloat(notification.sourceText) + sum)
-      )
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += parseFloat(notification.sourceText ?? '0')
+      })
+
+      const { bet: _, ...otherData } =
+        notificationsForSourceTitle[0]?.data ?? {}
 
       const newNotification = {
         ...notificationsForSourceTitle[0],
@@ -70,6 +86,7 @@ export function combineAndSumIncomeNotifications(
         sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
         data: {
           relatedNotifications: notificationsForSourceTitle,
+          ...otherData,
         },
       }
       newNotifications.push(newNotification)
@@ -86,7 +103,8 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = notification.data as UniqueBettorData
+  const data = (notification.data ?? {}) as UniqueBettorData
+  const { outcomeType, isPartner, totalUniqueBettors } = data
   const relatedNotifications =
     data && 'relatedNotifications' in data
       ? (data as any).relatedNotifications
@@ -98,6 +116,11 @@ export function UniqueBettorBonusIncomeNotification(props: {
       ? relatedNotifications[0].data?.answerText
       : undefined
 
+  const partnerBonusPerTrader =
+    outcomeType === 'MULTIPLE_CHOICE'
+      ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
+      : PARTNER_UNIQUE_TRADER_BONUS
+  const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   return (
     <NotificationFrame
       notification={notification}
@@ -115,9 +138,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel
-              uniqueBettorData={notification.data as UniqueBettorData}
-            />
+            <BettorStatusLabel uniqueBettorData={data} />
           </div>
         )
       }
@@ -127,12 +148,38 @@ export function UniqueBettorBonusIncomeNotification(props: {
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
           text={
-            (sourceText ? `${numNewTraders} new traders` : 'new traders') +
-            (answerText ? ` (${answerText})` : '')
+            sourceText
+              ? `${numNewTraders} ${maybePluralize(
+                  'new trader',
+                  numNewTraders
+                )}`
+              : 'new traders'
           }
         />{' '}
-        <QuestionOrGroupLink notification={notification} />
+        on <QuestionOrGroupLink notification={notification} />{' '}
+        {answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : ''}
       </span>
+      {isPartner && totalUniqueBettors && (
+        <div>
+          Partners bonus:{' '}
+          {totalUniqueBettors < PARTNER_UNIQUE_TRADER_THRESHOLD ? (
+            <>
+              only{' '}
+              <span className="font-semibold">
+                {PARTNER_UNIQUE_TRADER_THRESHOLD - totalUniqueBettors}
+              </span>{' '}
+              more traders to collect{' '}
+              <span className="font-semibold text-teal-600">
+                ${partnerBonusPerTrader.toFixed(2)} each
+              </span>
+            </>
+          ) : (
+            <span className="font-semibold text-teal-600">
+              ${partnerBonusAmount.toFixed(2)}
+            </span>
+          )}
+        </div>
+      )}
       <MultiUserNotificationModal
         notification={notification}
         modalLabel={'Traders'}
@@ -497,16 +544,19 @@ function IncomeNotificationLabel(props: {
 }
 
 const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
-  const { bet, outcomeType, answerText } = props.uniqueBettorData
+  const { bet, outcomeType, answerText, totalAmountBet } =
+    props.uniqueBettorData
   const { amount, outcome } = bet
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
       props.uniqueBettorData.max !== undefined) ||
-    outcomeType !== 'PSEUDO_NUMERIC'
+    (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'NUMBER')
   const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
-    <Row className={'line-clamp-1 gap-1'}>
-      <span className="text-ink-600">{formatMoney(amount)}</span>{' '}
+    <span className={'line-clamp-1 gap-1'}>
+      <span className="text-ink-600">
+        {formatMoney(totalAmountBet ?? amount)}
+      </span>{' '}
       {showOutcome && `${outcome} `}
       on{' '}
       <BetOutcomeLabel
@@ -519,7 +569,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
           props.uniqueBettorData as any,
           bet.probAfter
         )})`}
-    </Row>
+    </span>
   )
 }
 

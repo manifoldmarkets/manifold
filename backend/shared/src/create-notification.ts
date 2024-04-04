@@ -1,5 +1,4 @@
 import { getContractBetMetrics } from 'common/calculate'
-import * as admin from 'firebase-admin'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -23,15 +22,19 @@ import {
   User,
 } from 'common/user'
 import { Contract, MultiContract, renderResolution } from 'common/contract'
-import {
-  getContract,
-  getPrivateUser,
-  getUser,
-  getValues,
-  log,
-} from 'shared/utils'
+import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
-import { groupBy, keyBy, mapValues, minBy, sum, uniq } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  last,
+  mapValues,
+  minBy,
+  orderBy,
+  sum,
+  sumBy,
+  uniq,
+} from 'lodash'
 import { Bet, LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { removeUndefinedProps } from 'common/util/object'
@@ -74,6 +77,12 @@ import { buildArray, filterDefined } from 'common/util/array'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getCommentSafe } from './supabase/contract_comments'
+import { convertUser } from 'common/supabase/users'
+import { convertBet } from 'common/supabase/bets'
+import {
+  getRangeContainingValues,
+  answerTextToMidpoint,
+} from 'common/multi-numeric'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -170,18 +179,14 @@ export type replied_users_info = {
   [key: string]: {
     repliedToType: 'comment' | 'answer'
     repliedToAnswerText: string | undefined
-    repliedToId: string | undefined
+    repliedToAnswerId: string | undefined
     bet: Bet | undefined
   }
 }
 const ALL_TRADERS_ID = 'X3z4hxRXipWvGoFhxlDOVxmP5vL2'
-// TODO: remove contract updated from this, seems out of place
-export const createCommentOrAnswerOrUpdatedContractNotification = async (
+export const createCommentOnContractNotification = async (
   sourceId: string,
-  sourceType: 'comment' | 'answer' | 'contract',
-  sourceUpdateType: 'created' | 'updated',
   sourceUser: User,
-  idempotencyKey: string,
   sourceText: string,
   sourceContract: Contract,
   miscData?: {
@@ -211,16 +216,16 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     reason: NotificationReason
   ) => {
     const notification: Notification = {
-      id: idempotencyKey,
+      id: crypto.randomUUID(),
       userId,
       reason,
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
       sourceType: isManifoldLoveContract(sourceContract)
-        ? (`love_${sourceType}` as love_notification_source_types)
-        : sourceType,
-      sourceUpdateType,
+        ? 'love_comment'
+        : 'comment',
+      sourceUpdateType: 'created',
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,
       sourceUserUsername: sourceUser.username,
@@ -232,7 +237,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
       data: {
-        isReply: sourceType === 'comment' && !!repliedUsersInfo,
+        isReply: !!repliedUsersInfo,
       } as CommentNotificationData,
     }
     return removeUndefinedProps(notification)
@@ -285,33 +290,21 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
 
     // Email notifications
     if (sendToEmail && !receivedNotifications.includes('email')) {
-      if (sourceType === 'comment') {
-        const { repliedToType, repliedToAnswerText, repliedToId, bet } =
-          repliedUsersInfo?.[userId] ?? {}
-        // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
-        await sendNewCommentEmail(
-          reason,
-          privateUser,
-          sourceUser,
-          sourceContract,
-          sourceText,
-          sourceId,
-          bet,
-          repliedToAnswerText,
-          repliedToType === 'answer' ? repliedToId : undefined
-        )
-        receivedNotifications.push('email')
-      } else if (sourceType === 'answer') {
-        await sendNewAnswerEmail(
-          reason,
-          privateUser,
-          sourceUser.name,
-          sourceText,
-          sourceContract,
-          sourceUser.avatarUrl
-        )
-        receivedNotifications.push('email')
-      }
+      const { repliedToType, repliedToAnswerText, repliedToAnswerId, bet } =
+        repliedUsersInfo?.[userId] ?? {}
+      // TODO: change subject of email title to be more specific, i.e.: replied to you on/tagged you on/comment
+      await sendNewCommentEmail(
+        reason,
+        privateUser,
+        sourceUser,
+        sourceContract,
+        sourceText,
+        sourceId,
+        bet,
+        repliedToAnswerText,
+        repliedToType === 'answer' ? repliedToAnswerId : undefined
+      )
+      receivedNotifications.push('email')
     }
     usersToReceivedNotifications[userId] = receivedNotifications
   }
@@ -321,11 +314,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       followerIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
-          sourceType === 'answer'
-            ? 'answer_on_contract_you_follow'
-            : sourceType === 'comment'
-            ? 'comment_on_contract_you_follow'
-            : 'update_on_contract_you_follow'
+          'comment_on_contract_you_follow'
         )
       )
     )
@@ -334,56 +323,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   const notifyContractCreator = async () => {
     await sendNotificationsIfSettingsPermit(
       sourceContract.creatorId,
-      sourceType === 'comment'
-        ? 'all_comments_on_my_markets'
-        : 'all_answers_on_my_markets'
-    )
-  }
-
-  const notifyOtherAnswerersOnContract = async () => {
-    const dpmAnswererIds = await pg.map(
-      `select distinct data->>'userId' as user_id from contract_answers where contract_id = $1`,
-      [sourceContract.id],
-      (r) => r.user_id as string
-    )
-    const cpmmAnswererIds = await pg.map(
-      `select distinct user_id from answers where contract_id = $1`,
-      [sourceContract.id],
-      (r) => r.user_id as string
-    )
-    const recipientUserIds = uniq(dpmAnswererIds.concat(cpmmAnswererIds))
-
-    await Promise.all(
-      recipientUserIds.map((userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          sourceType === 'answer'
-            ? 'answer_on_contract_with_users_answer'
-            : sourceType === 'comment'
-            ? 'comment_on_contract_with_users_answer'
-            : 'update_on_contract_with_users_answer'
-        )
-      )
-    )
-  }
-
-  const notifyOtherCommentersOnContract = async () => {
-    const commenterIds = await pg.map(
-      `select distinct user_id from contract_comments where contract_id = $1`,
-      [sourceContract.id],
-      (r) => r.user_id as string
-    )
-    await Promise.all(
-      commenterIds.map((userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          sourceType === 'answer'
-            ? 'answer_on_contract_with_users_comment'
-            : sourceType === 'comment'
-            ? 'comment_on_contract_with_users_comment'
-            : 'update_on_contract_with_users_comment'
-        )
-      )
+      'all_comments_on_my_markets'
     )
   }
 
@@ -397,18 +337,13 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
       recipientUserIds.map((userId) =>
         sendNotificationsIfSettingsPermit(
           userId,
-          sourceType === 'answer'
-            ? 'answer_on_contract_with_users_shares_in'
-            : sourceType === 'comment'
-            ? 'comment_on_contract_with_users_shares_in'
-            : 'update_on_contract_with_users_shares_in'
+          'comment_on_contract_with_users_shares_in'
         )
       )
     )
   }
-
   const notifyRepliedUser = async () => {
-    if (sourceType === 'comment' && repliedUsersInfo)
+    if (repliedUsersInfo)
       await Promise.all(
         Object.keys(repliedUsersInfo).map((userId) =>
           sendNotificationsIfSettingsPermit(
@@ -422,7 +357,7 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   }
 
   const notifyTaggedUsers = async () => {
-    if (sourceType === 'comment' && taggedUserIds && taggedUserIds.length > 0) {
+    if (taggedUserIds && taggedUserIds.length > 0) {
       if (
         taggedUserIds.includes(ALL_TRADERS_ID) &&
         (sourceUser.id === sourceContract.creatorId ||
@@ -442,26 +377,6 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
     }
   }
 
-  const notifyLiquidityProviders = async () => {
-    const liquidityProviderIds = await pg.map(
-      `select distinct data->>'userId' as user_id from contract_liquidity where contract_id = $1`,
-      [sourceContract.id],
-      (r) => r.user_id as string
-    )
-    await Promise.all(
-      liquidityProviderIds.map((userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          sourceType === 'answer'
-            ? 'answer_on_contract_with_users_shares_in'
-            : sourceType === 'comment'
-            ? 'comment_on_contract_with_users_shares_in'
-            : 'update_on_contract_with_users_shares_in'
-        )
-      )
-    )
-  }
-
   //TODO: store all possible reasons why the user might be getting the notification
   // and choose the most lenient that they have enabled so they will unsubscribe
   // from the least important notifications
@@ -471,21 +386,103 @@ export const createCommentOrAnswerOrUpdatedContractNotification = async (
   await notifyTaggedUsers()
   log('notifying creator')
   await notifyContractCreator()
-  log('notifying answerers')
-  await notifyOtherAnswerersOnContract()
-  log('notifying lps')
-  await notifyLiquidityProviders()
   log('notifying bettors')
   await notifyBettorsOnContract()
-  log('notifying commenters')
-  await notifyOtherCommentersOnContract()
   // if they weren't notified previously, notify them now
   log('notifying followers')
   await notifyContractFollowers()
 }
 
+export const createNewAnswerOnContractNotification = async (
+  sourceId: string,
+  sourceUser: User,
+  sourceText: string,
+  sourceContract: Contract
+) => {
+  const pg = createSupabaseDirectClient()
+
+  const constructNotification = (
+    userId: string,
+    reason: NotificationReason
+  ) => {
+    const sourceType = 'answer'
+    const sourceUpdateType = 'created'
+    const notification: Notification = {
+      id: sourceId,
+      userId,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId,
+      sourceType: isManifoldLoveContract(sourceContract)
+        ? (`love_${sourceType}` as love_notification_source_types)
+        : sourceType,
+      sourceUpdateType,
+      sourceContractId: sourceContract.id,
+      sourceUserName: sourceUser.name,
+      sourceUserUsername: sourceUser.username,
+      sourceUserAvatarUrl: sourceUser.avatarUrl,
+      sourceText,
+      sourceContractCreatorUsername: sourceContract.creatorUsername,
+      sourceContractTitle: sourceContract.question,
+      sourceContractSlug: sourceContract.slug,
+      sourceSlug: sourceContract.slug,
+      sourceTitle: sourceContract.question,
+    }
+    return removeUndefinedProps(notification)
+  }
+
+  const sendNotificationsIfSettingsPermit = async (userId: string) => {
+    if (sourceUser.id == userId) return
+    const reason =
+      sourceContract.creatorId === userId
+        ? 'all_answers_on_my_markets'
+        : 'all_answers_on_watched_markets'
+    const privateUser = await getPrivateUser(userId)
+    if (!privateUser) return
+    if (userIsBlocked(privateUser, sourceUser.id)) return
+
+    const { sendToBrowser, sendToEmail, sendToMobile } =
+      getNotificationDestinationsForUser(privateUser, reason)
+
+    if (sendToBrowser) {
+      const notification = constructNotification(userId, reason)
+      await insertNotificationToSupabase(notification, pg)
+    }
+
+    if (sendToMobile) {
+      const notification = constructNotification(userId, reason)
+      await createPushNotification(
+        notification,
+        privateUser,
+        `${sourceUser.name} answered your question on ${sourceContract.question}`,
+        sourceText
+      )
+    }
+
+    if (sendToEmail) {
+      await sendNewAnswerEmail(
+        reason,
+        privateUser,
+        sourceUser.name,
+        sourceText,
+        sourceContract,
+        sourceUser.avatarUrl
+      )
+    }
+  }
+
+  const followerIds = await pg.map(
+    `select follow_id from contract_follows where contract_id = $1`,
+    [sourceContract.id],
+    (r) => r.follow_id as string
+  )
+  await Promise.all(
+    followerIds.map(async (userId) => sendNotificationsIfSettingsPermit(userId))
+  )
+}
+
 export const createBetFillNotification = async (
-  fromUser: User,
   toUser: User,
   bet: Bet,
   limitBet: LimitBet,
@@ -500,7 +497,15 @@ export const createBetFillNotification = async (
   )
   if (!sendToBrowser) return
 
-  const fill = limitBet.fills.find((fill) => fill.matchedBetId === bet.id)
+  // The limit order fills array has a matchedBetId that does not match this bet id
+  // (even though this bet has a fills array that is matched to the limit order)
+  // This is likely bc this bet is an arbitrage bet. This should be fixed.
+  // This matches based on timestamp because of the above bug.
+  const fill =
+    limitBet.fills.find((fill) => fill.timestamp === bet.createdTime) ??
+    last(orderBy(limitBet.fills, 'timestamp', 'asc'))
+  // const fill = limitBet.fills.find((f) => f.matchedBetId === bet.id)
+
   const fillAmount = fill?.amount ?? 0
   const remainingAmount =
     limitBet.orderAmount - sum(limitBet.fills.map((f) => f.amount))
@@ -522,9 +527,9 @@ export const createBetFillNotification = async (
     sourceId: limitBet.id,
     sourceType: 'bet',
     sourceUpdateType: 'updated',
-    sourceUserName: fromUser.name,
-    sourceUserUsername: fromUser.username,
-    sourceUserAvatarUrl: fromUser.avatarUrl,
+    sourceUserName: bet.userName,
+    sourceUserUsername: bet.userUsername,
+    sourceUserAvatarUrl: bet.userAvatarUrl ?? '',
     sourceText: fillAmount.toString(),
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
@@ -916,9 +921,10 @@ export const createUniqueBettorBonusNotification = async (
   amount: number,
   uniqueBettorIds: string[],
   idempotencyKey: string,
-  bet: Bet
+  bet: Bet,
+  bets: Bet[] | undefined,
+  isPartner: boolean | undefined
 ) => {
-  const firestore = admin.firestore()
   const privateUser = await getPrivateUser(creatorId)
   if (!privateUser) return
   const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
@@ -937,6 +943,19 @@ export const createUniqueBettorBonusNotification = async (
             isLogScale: contract.isLogScale,
           }
         : {}
+    const allBetOnAnswerIds = (bets ?? []).map((b) => b.answerId)
+    const range =
+      outcomeType === 'NUMBER'
+        ? getRangeContainingValues(
+            contract.answers
+              .filter((a) => allBetOnAnswerIds.includes(a.id))
+              .map((a) => a.text)
+              .map(answerTextToMidpoint),
+            contract.answers.map((a) => a.text),
+            contract.min,
+            contract.max
+          )
+        : undefined
 
     const notification: Notification = {
       id: idempotencyKey,
@@ -965,9 +984,14 @@ export const createUniqueBettorBonusNotification = async (
             ? (contract.answers as Answer[]).find(
                 (a) => a.id === bet.outcome || a.id === bet.answerId
               )?.text
+            : outcomeType === 'NUMBER' && range
+            ? `${range[0]}-${range[1]}`
             : undefined,
         outcomeType,
         ...pseudoNumericData,
+        isPartner,
+        totalUniqueBettors: uniqueBettorIds.length,
+        totalAmountBet: sumBy(bets, 'amount'),
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -981,30 +1005,32 @@ export const createUniqueBettorBonusNotification = async (
   // Only send on 5th bettor
   if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
     return
-  const mostRecentUniqueBettors = await getValues<User>(
-    firestore
-      .collection('users')
-      .where(
-        'id',
-        'in',
-        uniqueBettorsExcludingCreator.slice(
-          uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
-          uniqueBettorsExcludingCreator.length
-        )
-      )
+
+  const lastBettorIds = uniqueBettorsExcludingCreator.slice(
+    uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
+    uniqueBettorsExcludingCreator.length
   )
 
-  const bets = await getValues<Bet>(
-    firestore.collection('contracts').doc(contract.id).collection('bets')
+  const mostRecentUniqueBettors = await pg.map(
+    `select * from users where id in ($1:list)`,
+    [lastBettorIds],
+    convertUser
   )
-  const bettorsToTheirBets = groupBy(bets, (bet) => bet.userId)
+
+  const unseenBets = await pg.map<Bet>(
+    `select * from contract_bets where contract_id = $1
+            and user_id in ($2:list)`,
+    [contract.id, lastBettorIds],
+    convertBet
+  )
+
+  const bettorsToTheirBets = groupBy(unseenBets, (bet) => bet.userId)
 
   // Don't send if creator has seen their market since the 1st bet was placed
   const creatorHasSeenMarketSinceBet = await hasUserSeenMarket(
     contract.id,
     privateUser.id,
-    minBy(Object.values(bettorsToTheirBets).flat(), 'createdTime')
-      ?.createdTime ?? contract.createdTime,
+    minBy(unseenBets, 'createdTime')?.createdTime ?? contract.createdTime,
     pg
   )
   if (creatorHasSeenMarketSinceBet) return
@@ -1123,6 +1149,7 @@ export const createContractResolvedNotifications = async (
       (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText
+    else if (outcome === 'CHOOSE_MULTIPLE') resolutionText = 'multiple answers'
   } else if (contract.outcomeType === 'BINARY') {
     if (resolutionText === 'MKT' && probabilityInt)
       resolutionText = `${probabilityInt}%`
@@ -1130,6 +1157,11 @@ export const createContractResolvedNotifications = async (
   } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     if (resolutionText === 'MKT' && resolutionValue)
       resolutionText = `${resolutionValue}`
+  } else if (contract.outcomeType === 'NUMBER') {
+    const resolvedAnswers = contract.answers.filter((a) =>
+      Object.keys(resolutionData.resolutions ?? {}).includes(a.id)
+    )
+    resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
   }
 
   const {

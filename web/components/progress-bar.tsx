@@ -6,10 +6,9 @@ export const ProgressBar = (props: {
   value: number
   max: number
   className?: string
-  showPercentage?: boolean
 }) => {
   const { value, max, className } = props
-  const percentage = (value / max) * 100
+  const percentage = Math.min((value / max) * 100, 100)
   return (
     <Row className={'w-full justify-center'}>
       <Col className={clsx('bg-ink-200 h-2.5 w-full rounded-full', className)}>

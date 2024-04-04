@@ -8,33 +8,40 @@ import Link from 'next/link'
 import { NoSEO } from 'web/components/NoSEO'
 import { Page } from 'web/components/layout/page'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { UserHovercard } from 'web/components/user/user-hovercard'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { BannedBadge, UserLink } from 'web/components/widgets/user-link'
+import { useAdmin } from 'web/hooks/use-admin'
 import { getComment } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { getUser } from 'web/lib/supabase/user'
 
 export async function getStaticProps() {
-  const { data } = await run(
-    db
-      .from('reports')
-      .select()
-      .order('created_time', { ascending: false })
-      .limit(500)
-  )
-  const reports = await getReports(data).catch((e) => {
+  try {
+    const { data } = await run(
+      db
+        .from('reports')
+        .select()
+        .order('created_time', { ascending: false })
+        .limit(500)
+    )
+    const reports = await getReports(data)
+    return { props: { reports }, revalidate: 60 }
+  } catch (e) {
     console.error(e)
-    return []
-  })
-  return { props: { reports } }
+    return { props: { reports: [] }, revalidate: 60 }
+  }
 }
 
 export default function Reports(props: { reports: LiteReport[] }) {
   const reportsByContent = Object.values(groupBy(props.reports, 'contentId'))
+
+  const isAdmin = useAdmin()
+  if (!isAdmin) return <></>
 
   return (
     <Page trackPageView={false} className="px-2">
@@ -48,15 +55,17 @@ export default function Reports(props: { reports: LiteReport[] }) {
           <div key={contentId} className="my-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <Avatar
-                    username={owner.username}
-                    avatarUrl={owner.avatarUrl}
-                    size="sm"
-                  />
-                  <UserLink user={owner} className="text-ink-800 ml-2" />
-                  {owner.isBannedFromPosting && <BannedBadge />}
-                </div>
+                <UserHovercard userId={owner.id}>
+                  <div className="flex items-center">
+                    <Avatar
+                      username={owner.username}
+                      avatarUrl={owner.avatarUrl}
+                      size="sm"
+                    />
+                    <UserLink user={owner} className="text-ink-800 ml-2" />
+                    {owner.isBannedFromPosting && <BannedBadge />}
+                  </div>
+                </UserHovercard>
 
                 <div>
                   {contentType === 'user' ? (

@@ -9,7 +9,7 @@ import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
-import { User } from 'common/user'
+import { isVerified, User } from 'common/user'
 import {
   BetInfo,
   CandidateBet,
@@ -20,370 +20,203 @@ import {
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { redeemShares } from './redeem-shares'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
-import { createLimitBetCanceledNotification } from 'shared/create-notification'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { onCreateBets } from 'api/on-create-bet'
+import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
+import * as crypto from 'crypto'
 
-export const placeBet: APIHandler<'bet'> = async (props, auth, { log }) => {
+export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(props, auth.uid, isApi, log)
+  return await placeBetMain(props, auth.uid, isApi)
 }
 
+// Note: this returns a continuation function that should be run for consistency.
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
-  isApi: boolean,
-  log: GCPLog
+  isApi: boolean
 ) => {
   const { amount, contractId, replyToCommentId } = body
 
-  const result = await firestore.runTransaction(async (trans) => {
-    log(`Inside main transaction for ${uid}.`)
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const userDoc = firestore.doc(`users/${uid}`)
-    const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
+  const result = await firestore.runTransaction(
+    async (trans) => {
+      const { user, contract, contractDoc, userDoc } = await validateBet(
+        uid,
+        amount,
+        contractId,
+        trans,
+        isApi
+      )
 
-    if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-    if (!userSnap.exists) throw new APIError(404, 'User not found.')
+      const { closeTime, outcomeType, mechanism } = contract
+      if (closeTime && Date.now() > closeTime)
+        throw new APIError(403, 'Trading is closed.')
 
-    const contract = contractSnap.data() as Contract
-    const user = userSnap.data() as User
-    if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
-    log(
-      `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
-    )
+      const newBetResult = await (async (): Promise<
+        BetInfo & {
+          makers?: maker[]
+          ordersToCancel?: LimitBet[]
+          otherBetResults?: {
+            answer: Answer
+            bet: CandidateBet<Bet>
+            cpmmState: CpmmState
+            makers: maker[]
+            ordersToCancel: LimitBet[]
+          }[]
+        }
+      > => {
+        if (
+          (outcomeType == 'BINARY' ||
+            outcomeType === 'PSEUDO_NUMERIC' ||
+            outcomeType === 'STONK') &&
+          mechanism == 'cpmm-1'
+        ) {
+          // eslint-disable-next-line prefer-const
+          let { outcome, limitProb, expiresAt } = body
+          if (expiresAt && expiresAt < Date.now())
+            throw new APIError(400, 'Bet cannot expire in the past.')
 
-    const { closeTime, outcomeType, mechanism, collectedFees, volume } =
-      contract
-    if (closeTime && Date.now() > closeTime)
-      throw new APIError(403, 'Trading is closed.')
+          if (limitProb !== undefined && outcomeType === 'BINARY') {
+            const isRounded = floatingEqual(
+              Math.round(limitProb * 100),
+              limitProb * 100
+            )
+            if (!isRounded)
+              throw new APIError(
+                400,
+                'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+              )
 
-    const {
-      newBet,
-      otherBetResults,
-      newPool,
-      newTotalShares,
-      newTotalBets,
-      newTotalLiquidity,
-      newP,
-      makers,
-      ordersToCancel,
-    } = await (async (): Promise<
-      BetInfo & {
-        makers?: maker[]
-        ordersToCancel?: LimitBet[]
-        otherBetResults?: {
-          answer: Answer
-          bet: CandidateBet<Bet>
-          cpmmState: CpmmState
-          makers: maker[]
-          ordersToCancel: LimitBet[]
-        }[]
-      }
-    > => {
-      if (
-        (outcomeType == 'BINARY' ||
-          outcomeType === 'PSEUDO_NUMERIC' ||
-          outcomeType === 'STONK') &&
-        mechanism == 'cpmm-1'
-      ) {
-        // eslint-disable-next-line prefer-const
-        let { outcome, limitProb, expiresAt } = body
-        if (expiresAt && expiresAt < Date.now())
-          throw new APIError(400, 'Bet cannot expire in the past.')
+            limitProb = Math.round(limitProb * 100) / 100
+          }
 
-        if (limitProb !== undefined && outcomeType === 'BINARY') {
-          const isRounded = floatingEqual(
-            Math.round(limitProb * 100),
-            limitProb * 100
+          log(
+            `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
           )
-          if (!isRounded)
+          const { unfilledBets, balanceByUserId } =
+            await getUnfilledBetsAndUserBalances(trans, contractDoc)
+
+          return getBinaryCpmmBetInfo(
+            contract,
+            outcome,
+            amount,
+            limitProb,
+            unfilledBets,
+            balanceByUserId,
+            expiresAt
+          )
+        } else if (
+          (outcomeType == 'FREE_RESPONSE' ||
+            outcomeType === 'MULTIPLE_CHOICE') &&
+          mechanism == 'dpm-2'
+        ) {
+          if (!body.answerId) {
+            throw new APIError(400, 'answerId must be specified for multi bets')
+          }
+
+          const { answerId } = body
+          const answerDoc = contractDoc.collection('answers').doc(answerId)
+          const answerSnap = await trans.get(answerDoc)
+          if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
+          return getNewMultiBetInfo(answerId, amount, contract)
+        } else if (
+          (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
+          mechanism == 'cpmm-multi-1'
+        ) {
+          const { shouldAnswersSumToOne } = contract
+          if (!body.answerId) {
+            throw new APIError(400, 'answerId must be specified for multi bets')
+          }
+
+          const { answerId, outcome, limitProb, expiresAt } = body
+          if (expiresAt && expiresAt < Date.now())
+            throw new APIError(403, 'Bet cannot expire in the past.')
+          const answersSnap = await trans.get(
+            contractDoc.collection('answersCpmm')
+          )
+          const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+          const answer = answers.find((a) => a.id === answerId)
+          if (!answer) throw new APIError(404, 'Answer not found')
+          if ('resolution' in answer && answer.resolution)
+            throw new APIError(403, 'Answer is resolved and cannot be bet on')
+          if (shouldAnswersSumToOne && answers.length < 2)
             throw new APIError(
-              400,
-              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+              403,
+              'Cannot bet until at least two answers are added.'
             )
 
-          limitProb = Math.round(limitProb * 100) / 100
-        }
+          const roundedLimitProb = getRoundedLimitProb(limitProb)
 
-        log(
-          `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
-        )
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(trans, contractDoc)
-
-        return getBinaryCpmmBetInfo(
-          contract,
-          outcome,
-          amount,
-          limitProb,
-          unfilledBets,
-          balanceByUserId,
-          expiresAt
-        )
-      } else if (
-        (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
-        mechanism == 'dpm-2'
-      ) {
-        if (!body.answerId) {
-          throw new APIError(400, 'answerId must be specified for multi bets')
-        }
-
-        const { answerId } = body
-        const answerDoc = contractDoc.collection('answers').doc(answerId)
-        const answerSnap = await trans.get(answerDoc)
-        if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
-        return getNewMultiBetInfo(answerId, amount, contract)
-      } else if (
-        outcomeType === 'MULTIPLE_CHOICE' &&
-        mechanism == 'cpmm-multi-1'
-      ) {
-        const { shouldAnswersSumToOne } = contract
-        if (!body.answerId) {
-          throw new APIError(400, 'answerId must be specified for multi bets')
-        }
-
-        const { answerId, outcome, limitProb, expiresAt } = body
-        if (expiresAt && expiresAt < Date.now())
-          throw new APIError(403, 'Bet cannot expire in the past.')
-        const answersSnap = await trans.get(
-          contractDoc.collection('answersCpmm')
-        )
-        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-        const answer = answers.find((a) => a.id === answerId)
-        if (!answer) throw new APIError(404, 'Answer not found')
-        if ('resolution' in answer && answer.resolution)
-          throw new APIError(403, 'Answer is resolved and cannot be bet on')
-        if (shouldAnswersSumToOne && answers.length < 2)
-          throw new APIError(
-            403,
-            'Cannot bet until at least two answers are added.'
-          )
-
-        let roundedLimitProb = limitProb
-        if (limitProb !== undefined) {
-          const isRounded = floatingEqual(
-            Math.round(limitProb * 100),
-            limitProb * 100
-          )
-          if (!isRounded)
-            throw new APIError(
-              400,
-              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+          const { unfilledBets, balanceByUserId } =
+            await getUnfilledBetsAndUserBalances(
+              trans,
+              contractDoc,
+              // Fetch all limit orders if answers should sum to one.
+              shouldAnswersSumToOne ? undefined : answerId
             )
 
-          roundedLimitProb = Math.round(limitProb * 100) / 100
-        }
-
-        const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(
-            trans,
-            contractDoc,
-            // Fetch all limit orders if answers should sum to one.
-            shouldAnswersSumToOne ? undefined : answerId
+          return getNewMultiCpmmBetInfo(
+            contract,
+            answers,
+            answer,
+            outcome,
+            amount,
+            roundedLimitProb,
+            unfilledBets,
+            balanceByUserId,
+            expiresAt
           )
-
-        return getNewMultiCpmmBetInfo(
-          contract,
-          answers,
-          answer,
-          outcome,
-          amount,
-          roundedLimitProb,
-          unfilledBets,
-          balanceByUserId,
-          expiresAt
-        )
-      } else {
-        throw new APIError(
-          400,
-          'Contract type/mechanism not supported (or is no longer)'
-        )
-      }
-    })()
-    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-
-    if (
-      mechanism == 'cpmm-1' &&
-      (!newP ||
-        !isFinite(newP) ||
-        Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
-    ) {
-      throw new APIError(403, 'Trade too large for current liquidity pool.')
-    }
-
-    // Special case for relationship markets.
-    if (contract.loverUserId1 && newPool) {
-      if (contract.outcomeType === 'BINARY') {
-        // Binary relationship markets deprecated.
-        const prob = getCpmmProbability(newPool, newP ?? 0.5)
-        if (prob < 0.01) {
+        } else {
           throw new APIError(
-            403,
-            'Minimum of 1% probability in relationship markets.'
+            400,
+            'Contract type/mechanism not supported (or is no longer)'
           )
         }
-      } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
-        const prob = getCpmmProbability(newPool, 0.5)
-        if (prob < 0.05) {
-          throw new APIError(
-            403,
-            'Minimum of 5% probability in relationship markets.'
-          )
-        }
-      }
-    }
-
-    const betDoc = contractDoc.collection('bets').doc()
-
-    trans.create(
-      betDoc,
-      removeUndefinedProps({
-        id: betDoc.id,
-        userId: user.id,
-        userAvatarUrl: user.avatarUrl,
-        userUsername: user.username,
-        userName: user.name,
+      })()
+      log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+      const betGroupId =
+        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+          ? crypto.randomBytes(12).toString('hex')
+          : undefined
+      return processNewBetResult(
+        newBetResult,
+        contractDoc,
+        contract,
+        userDoc,
+        user,
         isApi,
+        trans,
         replyToCommentId,
-        ...newBet,
-      })
-    )
-    log(`Created new bet document for ${user.username} - auth ${uid}.`)
-
-    if (makers) {
-      updateMakers(makers, betDoc.id, contractDoc, trans, log)
-    }
-    if (ordersToCancel) {
-      for (const bet of ordersToCancel) {
-        trans.update(contractDoc.collection('bets').doc(bet.id), {
-          isCancelled: true,
-        })
-      }
-    }
-
-    trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
-    log(`Updated user ${user.username} balance - auth ${uid}.`)
-
-    if (newBet.amount !== 0) {
-      if (newBet.answerId) {
-        // Multi-cpmm-1 contract
-        trans.update(
-          contractDoc,
-          removeUndefinedProps({
-            volume: volume + newBet.amount,
-          })
-        )
-        if (newPool) {
-          const { YES: poolYes, NO: poolNo } = newPool
-          const prob = getCpmmProbability(newPool, 0.5)
-          trans.update(
-            contractDoc.collection('answersCpmm').doc(newBet.answerId),
-            removeUndefinedProps({
-              poolYes,
-              poolNo,
-              prob,
-            })
-          )
-        }
-      } else {
-        trans.update(
-          contractDoc,
-          removeUndefinedProps({
-            pool: newPool,
-            p: newP,
-            totalShares: newTotalShares,
-            totalBets: newTotalBets,
-            totalLiquidity: newTotalLiquidity,
-            collectedFees: addObjects(newBet.fees, collectedFees),
-            volume: volume + newBet.amount,
-          })
-        )
-      }
-
-      if (otherBetResults) {
-        for (const result of otherBetResults) {
-          const { answer, bet, cpmmState, makers, ordersToCancel } = result
-          const { probBefore, probAfter } = bet
-          const smallEnoughToIgnore =
-            probBefore < 0.001 &&
-            probAfter < 0.001 &&
-            Math.abs(probAfter - probBefore) < 0.00001
-
-          if (!smallEnoughToIgnore || Math.random() < 0.01) {
-            const betDoc = contractDoc.collection('bets').doc()
-            trans.create(betDoc, {
-              id: betDoc.id,
-              userId: user.id,
-              userAvatarUrl: user.avatarUrl,
-              userUsername: user.username,
-              userName: user.name,
-              isApi,
-              ...bet,
-            })
-            const { YES: poolYes, NO: poolNo } = cpmmState.pool
-            const prob = getCpmmProbability(cpmmState.pool, 0.5)
-            trans.update(
-              contractDoc.collection('answersCpmm').doc(answer.id),
-              removeUndefinedProps({
-                poolYes,
-                poolNo,
-                prob,
-              })
-            )
-          }
-          updateMakers(makers, betDoc.id, contractDoc, trans, log)
-          for (const bet of ordersToCancel) {
-            trans.update(contractDoc.collection('bets').doc(bet.id), {
-              isCancelled: true,
-            })
-          }
-        }
-      }
-
-      log(`Updated contract ${contract.slug} properties - auth ${uid}.`)
-    }
-
-    return { newBet, betId: betDoc.id, contract, makers, ordersToCancel, user }
-  })
+        betGroupId
+      )
+    },
+    { maxAttempts: 2 }
+  )
 
   log(`Main transaction finished - auth ${uid}.`)
 
-  const { newBet, betId, contract, makers, ordersToCancel, user } = result
-  const { mechanism } = contract
-
-  if (
-    (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') &&
-    newBet.amount !== 0
-  ) {
-    const userIds = uniq([
-      uid,
-      ...(makers ?? []).map((maker) => maker.bet.userId),
-    ])
-    await Promise.all(
-      userIds.map((userId) => redeemShares(userId, contract, log))
-    )
-    log(`Share redemption transaction finished - auth ${uid}.`)
-  }
-  if (ordersToCancel) {
-    await Promise.all(
-      ordersToCancel.map((order) => {
-        createLimitBetCanceledNotification(
-          user,
-          order.userId,
-          order,
-          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-          contract
-        )
-      })
-    )
+  const {
+    newBet,
+    fullBets,
+    allOrdersToCancel,
+    betId,
+    contract,
+    makers,
+    user,
+    betGroupId,
+  } = result
+  const continuation = async () => {
+    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }
 
-  return { ...newBet, betId: betId }
+  return {
+    result: { ...newBet, betId, betGroupId },
+    continue: continuation,
+  }
 }
 
 const firestore = admin.firestore()
@@ -427,8 +260,264 @@ export const getUnfilledBetsAndUserBalances = async (
 
   return { unfilledBets, balanceByUserId }
 }
+export type NewBetResult = BetInfo & {
+  makers?: maker[]
+  ordersToCancel?: LimitBet[]
+  otherBetResults?: {
+    answer: Answer
+    bet: CandidateBet<Bet>
+    cpmmState: CpmmState
+    makers: maker[]
+    ordersToCancel: LimitBet[]
+  }[]
+}
 
-type maker = {
+export const processNewBetResult = (
+  newBetResult: NewBetResult,
+  contractDoc: DocumentReference,
+  contract: Contract,
+  userDoc: DocumentReference,
+  user: User,
+  isApi: boolean,
+  trans: Transaction,
+  replyToCommentId?: string,
+  betGroupId?: string
+) => {
+  const allOrdersToCancel = []
+  const fullBets = [] as Bet[]
+
+  const {
+    newBet,
+    otherBetResults,
+    newPool,
+    newTotalShares,
+    newTotalBets,
+    newTotalLiquidity,
+    newP,
+    makers,
+    ordersToCancel,
+  } = newBetResult
+  const { mechanism, collectedFees } = contract
+  if (
+    mechanism == 'cpmm-1' &&
+    (!newP ||
+      !isFinite(newP) ||
+      Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
+  ) {
+    throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+
+  // Special case for relationship markets.
+  if (
+    contract.isLove &&
+    newPool &&
+    contract.outcomeType === 'MULTIPLE_CHOICE'
+  ) {
+    const answer = contract.answers.find((a) => a.id === newBet.answerId) as
+      | Answer
+      | undefined
+    if (
+      user.id === contract.creatorId ||
+      (answer && user.id === answer.loverUserId)
+    ) {
+      throw new APIError(403, 'You cannot bet on your own relationship market.')
+    }
+    const prob = getCpmmProbability(newPool, 0.5)
+    if (prob < 0.02) {
+      throw new APIError(
+        403,
+        'Minimum of 2% probability in relationship markets.'
+      )
+    }
+  }
+  // Special case for relationship markets. (Old markets.)
+  if (contract.loverUserId1 && newPool) {
+    if (contract.outcomeType === 'BINARY') {
+      // Binary relationship markets deprecated.
+      const prob = getCpmmProbability(newPool, newP ?? 0.5)
+      if (prob < 0.01) {
+        throw new APIError(
+          403,
+          'Minimum of 1% probability in relationship markets.'
+        )
+      }
+    } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+      const prob = getCpmmProbability(newPool, 0.5)
+      if (prob < 0.05) {
+        throw new APIError(
+          403,
+          'Minimum of 5% probability in relationship markets.'
+        )
+      }
+    }
+  }
+
+  const betDoc = contractDoc.collection('bets').doc()
+
+  const fullBet = removeUndefinedProps({
+    id: betDoc.id,
+    userId: user.id,
+    userAvatarUrl: user.avatarUrl,
+    userUsername: user.username,
+    userName: user.name,
+    isApi,
+    replyToCommentId,
+    betGroupId,
+    ...newBet,
+  })
+  trans.create(betDoc, fullBet)
+  fullBets.push(fullBet)
+  log(`Created new bet document for ${user.username} - auth ${user.id}.`)
+
+  if (makers) {
+    updateMakers(makers, betDoc.id, contractDoc, trans)
+  }
+  if (ordersToCancel) {
+    for (const bet of ordersToCancel) {
+      trans.update(contractDoc.collection('bets').doc(bet.id), {
+        isCancelled: true,
+      })
+    }
+    allOrdersToCancel.push(...ordersToCancel)
+  }
+
+  trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
+  log(`Updated user ${user.username} balance - auth ${user.id}.`)
+
+  if (newBet.amount !== 0) {
+    if (newBet.answerId) {
+      // Multi-cpmm-1 contract
+      if (newPool) {
+        const { YES: poolYes, NO: poolNo } = newPool
+        const prob = getCpmmProbability(newPool, 0.5)
+        trans.update(
+          contractDoc.collection('answersCpmm').doc(newBet.answerId),
+          removeUndefinedProps({
+            poolYes,
+            poolNo,
+            prob,
+          })
+        )
+      }
+    } else {
+      trans.update(
+        contractDoc,
+        removeUndefinedProps({
+          pool: newPool,
+          p: newP,
+          totalShares: newTotalShares,
+          totalBets: newTotalBets,
+          totalLiquidity: newTotalLiquidity,
+          collectedFees: addObjects(newBet.fees, collectedFees),
+        })
+      )
+    }
+
+    if (otherBetResults) {
+      for (const result of otherBetResults) {
+        const { answer, bet, cpmmState, makers, ordersToCancel } = result
+        const { probBefore, probAfter } = bet
+        const smallEnoughToIgnore =
+          probBefore < 0.001 &&
+          probAfter < 0.001 &&
+          Math.abs(probAfter - probBefore) < 0.00001
+
+        if (!smallEnoughToIgnore || Math.random() < 0.01) {
+          const betDoc = contractDoc.collection('bets').doc()
+          const fullBet = removeUndefinedProps({
+            id: betDoc.id,
+            userId: user.id,
+            userAvatarUrl: user.avatarUrl,
+            userUsername: user.username,
+            userName: user.name,
+            isApi,
+            betGroupId,
+            ...bet,
+          })
+          trans.create(betDoc, fullBet)
+          fullBets.push(fullBet)
+          const { YES: poolYes, NO: poolNo } = cpmmState.pool
+          const prob = getCpmmProbability(cpmmState.pool, 0.5)
+          trans.update(
+            contractDoc.collection('answersCpmm').doc(answer.id),
+            removeUndefinedProps({
+              poolYes,
+              poolNo,
+              prob,
+            })
+          )
+        }
+        updateMakers(makers, betDoc.id, contractDoc, trans)
+        for (const bet of ordersToCancel) {
+          trans.update(contractDoc.collection('bets').doc(bet.id), {
+            isCancelled: true,
+          })
+        }
+        allOrdersToCancel.push(...ordersToCancel)
+      }
+    }
+
+    log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
+  }
+  return {
+    newBet,
+    betId: betDoc.id,
+    contract,
+    makers,
+    allOrdersToCancel,
+    fullBets,
+    user,
+    fullBet,
+    betGroupId,
+  }
+}
+
+export const validateBet = async (
+  uid: string,
+  amount: number,
+  contractId: string,
+  trans: Transaction,
+  isApi: boolean
+) => {
+  log(`Inside main transaction for ${uid}.`)
+  const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const userDoc = firestore.doc(`users/${uid}`)
+  const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
+
+  if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
+  if (!userSnap.exists) throw new APIError(404, 'User not found.')
+
+  const contract = contractSnap.data() as Contract
+  const user = userSnap.data() as User
+  if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
+  if (
+    (user.isBannedFromPosting || user.userDeleted) &&
+    !BLESSED_BANNED_USER_IDS.includes(uid)
+  ) {
+    throw new APIError(403, 'You are banned or deleted. And not #blessed.')
+  }
+  if (!isVerified(user)) {
+    throw new APIError(403, 'You must verify your phone number to bet.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
+  if (contract.outcomeType === 'STONK' && isApi) {
+    throw new APIError(403, 'API users cannot bet on STONK contracts.')
+  }
+  log(
+    `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
+  )
+
+  return {
+    user,
+    contract,
+    contractDoc,
+    userDoc,
+  }
+}
+
+export type maker = {
   bet: LimitBet
   amount: number
   shares: number
@@ -438,8 +527,7 @@ export const updateMakers = (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction,
-  log: GCPLog
+  trans: Transaction
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
@@ -471,4 +559,16 @@ export const updateMakers = (
     const userDoc = firestore.collection('users').doc(userId)
     trans.update(userDoc, { balance: FieldValue.increment(-spent) })
   }
+}
+
+export const getRoundedLimitProb = (limitProb: number | undefined) => {
+  if (limitProb === undefined) return limitProb
+  const isRounded = floatingEqual(Math.round(limitProb * 100), limitProb * 100)
+  if (!isRounded)
+    throw new APIError(
+      400,
+      'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
+    )
+
+  return Math.round(limitProb * 100) / 100
 }

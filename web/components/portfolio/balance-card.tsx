@@ -15,9 +15,9 @@ import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
-  TXN_BALANCE_CHANGE_TYPES,
   TxnBalanceChange,
   TxnType,
+  isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -32,6 +32,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
+import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
 
 export const BalanceCard = (props: {
   user: User
@@ -39,7 +40,10 @@ export const BalanceCard = (props: {
   onSeeChanges: () => void
   className?: string
 }) => {
-  const { user, className, onSeeChanges, balanceChanges } = props
+  const { user, className, onSeeChanges } = props
+  const balanceChanges = props.balanceChanges.filter(
+    (b) => getMoneyNumber(b.amount) !== 0
+  )
   const [showAddFunds, setShowAddFunds] = useState(false)
   const spentToday = sumBy(
     balanceChanges.filter(
@@ -53,32 +57,41 @@ export const BalanceCard = (props: {
     ),
     'amount'
   )
-
   return (
     <Row className={className} onClick={onSeeChanges}>
       <Col className={'w-full gap-1.5'}>
-        <span className={'text-ink-800 ml-1'}>Your balance</span>
-        <span className={'text-ink-800 mb-1 text-5xl'}>
-          {formatMoney(user.balance)}
-        </span>
-        <Row className={'text-ink-600 w-full flex-wrap justify-between'}>
-          <Row className={'gap-1'}>
-            {formatMoney(earnedToday)} earned &{' '}
-            {formatMoney(spentToday).replace('-', '')} spent today
+        <Col>
+          <div className={'text-ink-800 text-4xl'}>
+            {formatMoney(user.balance)}
+          </div>
+          <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
+            Your balance
+          </div>
+        </Col>
+        <Row className="flex-1 items-center justify-between">
+          <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
+            {formatMoney(earnedToday)} in &{' '}
+            {formatMoney(spentToday).replace('-', '')} out today
           </Row>
-          <Row className={'text-ink-600 ml-auto mt-[3px] text-sm'}>
-            See changes
-          </Row>
+          <Button
+            color={'gray-white'}
+            onClick={(e) => {
+              e.stopPropagation()
+              onSeeChanges()
+            }}
+          >
+            See log
+          </Button>
         </Row>
       </Col>
-      <div className={'absolute right-4 top-3'}>
+      <div className={'absolute right-1 top-1'}>
         <Button
-          color="gray-outline"
+          color="gradient"
           onClick={(e) => {
             e.stopPropagation()
             setShowAddFunds(true)
           }}
-          size="2xs"
+          size="xs"
           className={'whitespace-nowrap'}
         >
           Add funds
@@ -91,31 +104,38 @@ export const BalanceCard = (props: {
 
 export const BalanceChangeTable = (props: {
   user: User
-  balanceChanges: TxnBalanceChange[] | BetBalanceChange[]
+  balanceChanges: AnyBalanceChangeType[]
+  simple?: boolean
 }) => {
-  const { user } = props
+  const { user, simple } = props
   const [query, setQuery] = useState('')
-  const balanceChanges = props.balanceChanges.filter((change) => {
-    const { type, contract } = change
-    const contractQuestion = contract?.question ?? ''
-    const changeType = type
-    const userName = 'user' in change ? change.user?.name ?? '' : ''
-    const userUsername = 'user' in change ? change.user?.username ?? '' : ''
-    const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
-    const betText = 'bet' in change ? betChangeToText(change) : ''
-    return (
-      contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
-      changeType.toLowerCase().includes(query.toLowerCase()) ||
-      txnTypeToDescription(changeType)
-        .toLowerCase()
-        .includes(query.toLowerCase()) ||
-      answerText.toLowerCase().includes(query.toLowerCase()) ||
-      (txnTitle(change) ?? '').toLowerCase().includes(query.toLowerCase()) ||
-      userName.toLowerCase().includes(query.toLowerCase()) ||
-      userUsername.toLowerCase().includes(query.toLowerCase()) ||
-      betText.toLowerCase().includes(query.toLowerCase())
-    )
-  })
+  const balanceChanges = props.balanceChanges
+    .filter((change) => {
+      const { type } = change
+
+      const contractQuestion =
+        ('contract' in change && change.contract?.question) || ''
+      const changeType = type
+      const userName = 'user' in change ? change.user?.name ?? '' : ''
+      const userUsername = 'user' in change ? change.user?.username ?? '' : ''
+      const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
+      const betText = 'bet' in change ? betChangeToText(change) : ''
+      return (
+        contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
+        changeType.toLowerCase().includes(query.toLowerCase()) ||
+        txnTypeToDescription(changeType)
+          .toLowerCase()
+          .includes(query.toLowerCase()) ||
+        answerText.toLowerCase().includes(query.toLowerCase()) ||
+        ((isTxnChange(change) && txnTitle(change)) || '')
+          .toLowerCase()
+          .includes(query.toLowerCase()) ||
+        userName.toLowerCase().includes(query.toLowerCase()) ||
+        userUsername.toLowerCase().includes(query.toLowerCase()) ||
+        betText.toLowerCase().includes(query.toLowerCase())
+      )
+    })
+    .slice(0, 1000)
   return (
     <Col className={' w-full justify-center'}>
       <Input
@@ -125,19 +145,37 @@ export const BalanceChangeTable = (props: {
         onChange={(e) => setQuery(e.target.value)}
       />
       <Col className={'gap-4 px-3 pt-4'}>
-        <RenderBalanceChanges balanceChanges={balanceChanges} user={user} />
+        <RenderBalanceChanges
+          avatarSize={'md'}
+          balanceChanges={balanceChanges}
+          user={user}
+          simple={simple}
+          hideBalance={!!query}
+        />
       </Col>
     </Col>
   )
 }
+
 function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
   user: User
+  avatarSize: 'sm' | 'md'
+  simple?: boolean
+  hideBalance?: boolean
 }) {
-  const { balanceChanges, user } = props
+  const { balanceChanges, user, avatarSize, simple, hideBalance } = props
+  let currBalance = user.balance
+  const balanceRunningTotals = [
+    currBalance,
+    ...balanceChanges.map((change) => {
+      currBalance -= change.amount
+      return currBalance
+    }),
+  ]
   return (
     <>
-      {orderBy(balanceChanges, 'createdTime', 'desc').map((change) => {
+      {orderBy(balanceChanges, 'createdTime', 'desc').map((change, i) => {
         const { type } = change
 
         if (
@@ -153,14 +191,22 @@ function RenderBalanceChanges(props: {
             <BetBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as BetBalanceChange}
+              balance={balanceRunningTotals[i]}
+              avatarSize={avatarSize}
+              simple={simple}
+              hideBalance={hideBalance}
             />
           )
-        } else if (TXN_BALANCE_CHANGE_TYPES.includes(type)) {
+        } else if (isTxnChange(change)) {
           return (
             <TxnBalanceChangeRow
               key={change.key ?? change.createdTime + change.amount + type}
               change={change as TxnBalanceChange}
+              balance={balanceRunningTotals[i]}
               avatarlUrl={user.avatarUrl}
+              avatarSize={avatarSize}
+              simple={simple}
+              hideBalance={hideBalance}
             />
           )
         }
@@ -169,21 +215,48 @@ function RenderBalanceChanges(props: {
   )
 }
 
-function ChangeIcon(props: {
-  slug: string
+export function ChangeIcon(props: {
+  slug: string | undefined
   symbol: string | ReactNode
   className: string
+  avatarSize: 'sm' | 'md'
 }) {
-  const { symbol, slug, className } = props
+  const { symbol, slug, avatarSize, className } = props
+  const image = (
+    <>
+      <div
+        className={clsx(
+          avatarSize === 'sm' ? 'h-8 w-8' : 'h-10 w-10',
+          'rounded-full',
+          className
+        )}
+      />
+      <div
+        className="absolute  self-center text-lg"
+        style={{
+          top: '50%',
+          right: '50%',
+          transform: 'translate(50%, -50%)',
+        }}
+      >
+        {symbol}
+      </div>
+    </>
+  )
+
   return (
     <div className="relative">
-      <Link href={slug} onClick={(e) => e.stopPropagation}>
-        <div className={clsx('h-10 w-10 rounded-full', className)} />
-        <div className="absolute bottom-1.5 left-[12px] text-lg">{symbol}</div>
-      </Link>
+      {slug ? (
+        <Link href={slug} onClick={(e) => e.stopPropagation}>
+          {image}
+        </Link>
+      ) : (
+        image
+      )}
     </div>
   )
 }
+
 const betChangeToText = (change: BetBalanceChange) => {
   const { type, bet } = change
   const { outcome } = bet
@@ -197,14 +270,19 @@ const betChangeToText = (change: BetBalanceChange) => {
     ? `Sell ${outcome} shares`
     : `Buy ${outcome}`
 }
-const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
-  const { change } = props
+const BetBalanceChangeRow = (props: {
+  change: BetBalanceChange
+  balance: number
+  avatarSize: 'sm' | 'md'
+  simple?: boolean
+  hideBalance?: boolean
+}) => {
+  const { change, balance, avatarSize, simple, hideBalance } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
   const niceAmount =
-    ENV_CONFIG.moneyMoniker +
-    shortFormatNumber(Math.round(amount)).replace('-', '')
+    ENV_CONFIG.moneyMoniker + shortFormatNumber(amount).replace('-', '')
   const direction =
     type === 'redeem_shares'
       ? 'sideways'
@@ -215,21 +293,21 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
       : outcome === 'YES'
       ? 'up'
       : 'down'
-  if (getMoneyNumber(amount) === 0) return null
   return (
     <Row className={'gap-2'}>
-      <Col>
+      <Col className={'mt-0.5'}>
         <ChangeIcon
-          slug={contract.slug}
+          avatarSize={avatarSize}
+          slug={
+            slug
+              ? contractPathWithoutContract(creatorUsername, slug)
+              : undefined
+          }
           symbol={
             type === 'loan_payment' ? (
               '🏦'
             ) : (
-              <div
-                className={clsx(
-                  direction === 'sideways' ? 'mb-1.5 ml-0.5' : 'mb-1'
-                )}
-              >
+              <div>
                 {direction === 'up' ? (
                   <FaArrowTrendUp className={'h-5 w-5 '} />
                 ) : direction === 'down' ? (
@@ -249,14 +327,18 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
           }
         />
       </Col>
-      <Col className={'w-full'}>
-        <Row className={'justify-between'}>
-          <Link
-            href={contractPathWithoutContract(creatorUsername, slug)}
-            className={clsx('line-clamp-1', linkClass)}
-          >
-            {question}
-          </Link>
+      <Col className={'w-full overflow-x-hidden'}>
+        <Row className={'justify-between gap-2'}>
+          {slug ? (
+            <Link
+              href={contractPathWithoutContract(creatorUsername, slug)}
+              className={clsx('line-clamp-2', linkClass)}
+            >
+              {question}
+            </Link>
+          ) : (
+            <div className={clsx('line-clamp-2')}>{question}</div>
+          )}
           <span
             className={clsx(
               'inline-flex whitespace-nowrap',
@@ -268,22 +350,42 @@ const BetBalanceChangeRow = (props: { change: BetBalanceChange }) => {
           </span>
         </Row>
         <Row>
-          <div className={clsx('text-ink-500 line-clamp-1')}>
-            {betChangeToText(change)}
-            {answer ? ` on ${answer.text}` : ''}
+          <div className={clsx('text-ink-600 line-clamp-1')}>
+            {betChangeToText(change)} {answer ? ` on ${answer.text}` : ''}
           </div>
         </Row>
+        {!simple && (
+          <Row className={'text-ink-600'}>
+            {!hideBalance && (
+              <>
+                {formatMoney(balance)} {'·'}
+              </>
+            )}{' '}
+            {customFormatTime(change.createdTime)}
+          </Row>
+        )}
       </Col>
     </Row>
   )
 }
 
+const customFormatTime = (time: number) => {
+  if (time > Date.now() - DAY_MS) {
+    return formatJustTime(time)
+  }
+  return formatTimeShort(time)
+}
+
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
+  balance: number
   avatarlUrl: string
+  avatarSize: 'sm' | 'md'
+  simple?: boolean
+  hideBalance?: boolean
 }) => {
-  const { change, avatarlUrl } = props
-  const { contract, amount, type, user: changeUser } = change
+  const { change, balance, avatarSize, avatarlUrl, simple, hideBalance } = props
+  const { contract, amount, type, user: changeUser, charity: org } = change
   const reasonToBgClassNameMap: {
     [key in TxnType]: string
   } = {
@@ -303,20 +405,29 @@ const TxnBalanceChangeRow = (props: {
     LOAN: 'bg-amber-500',
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
+    CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
   return (
     <Row className={'gap-2'}>
-      <Col>
+      <Col className={'mt-0.5'}>
         {type === 'STARTING_BALANCE' ? (
           <Avatar
             className={''}
             avatarUrl={avatarlUrl}
             noLink={true}
-            size={'md'}
+            size={avatarSize}
           />
         ) : (
           <ChangeIcon
-            slug={contract?.slug ?? changeUser?.username ?? ''}
+            avatarSize={avatarSize}
+            slug={
+              contract?.slug
+                ? contractPathWithoutContract(
+                    contract.creatorUsername,
+                    contract.slug
+                  )
+                : changeUser?.username
+            }
             symbol={
               type === 'MANA_PAYMENT' ? (
                 '💸'
@@ -329,6 +440,8 @@ const TxnBalanceChangeRow = (props: {
               ) : type === 'CREATE_CONTRACT_ANTE' ||
                 type === 'BOUNTY_POSTED' ? (
                 <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+              ) : type === 'CHARITY' ? (
+                '❤️'
               ) : (
                 '🎁'
               )
@@ -339,27 +452,32 @@ const TxnBalanceChangeRow = (props: {
       </Col>
       <Col className={'w-full'}>
         <Row className={'justify-between'}>
-          {contract ? (
+          {contract && contract.slug ? (
             <Link
               href={contractPathWithoutContract(
                 contract.creatorUsername,
                 contract.slug
               )}
-              className={clsx('line-clamp-1', linkClass)}
+              className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}
             </Link>
           ) : changeUser ? (
             <Link
               href={'/' + changeUser.username}
-              className={clsx('line-clamp-1', linkClass)}
+              className={clsx('line-clamp-2', linkClass)}
+            >
+              {txnTitle(change)}
+            </Link>
+          ) : org ? (
+            <Link
+              href={`/charity/${org.slug}`}
+              className={clsx('line-clamp-2', linkClass)}
             >
               {txnTitle(change)}
             </Link>
           ) : (
-            <div className={clsx(' truncate')}>
-              {txnTitle(change) ?? txnTypeToDescription(type)}
-            </div>
+            <div className={clsx('line-clamp-2')}>{txnTitle(change)}</div>
           )}
           <span
             className={clsx(
@@ -371,18 +489,32 @@ const TxnBalanceChangeRow = (props: {
             {formatMoney(amount).replace('-', '')}
           </span>
         </Row>
-        <Row className={'text-ink-500'}>{txnTypeToDescription(type)}</Row>
+        <div className={'text-ink-600'}>{txnTypeToDescription(type)}</div>
+        {!simple && (
+          <Row className={'text-ink-600'}>
+            {!hideBalance && (
+              <>
+                {formatMoney(balance)} {'·'}
+              </>
+            )}{' '}
+            {customFormatTime(change.createdTime)}
+          </Row>
+        )}
       </Col>
     </Row>
   )
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
-  const { type, contract, questType } = change
+  const { type, contract, user, questType, charity } = change
 
-  if (change.user) {
-    return change.user.username
+  if (user) {
+    return user.username
   }
+  if (charity) {
+    return charity.name
+  }
+
   switch (type) {
     case 'QUEST_REWARD':
       return questType ? questTypeToDescription(questType) : ''
@@ -390,6 +522,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return !contract ? 'Prediction streak bonus' : contract?.question
     case 'LOAN':
       return 'Loan'
+    case 'LEAGUE_PRIZE':
+      return 'League prize'
     case 'MARKET_BOOST_REDEEM':
       return 'Claim boost'
     case 'SIGNUP_BONUS':
@@ -401,7 +535,7 @@ const txnTitle = (change: TxnBalanceChange) => {
   }
 }
 
-const txnTypeToDescription = (txnCategory: TxnType) => {
+const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
@@ -412,9 +546,11 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
     case 'UNIQUE_BETTOR_BONUS':
       return 'Trader bonus'
     case 'BETTING_STREAK_BONUS':
-      return 'Quest'
+      return 'Quests'
     case 'SIGNUP_BONUS':
-      return 'New user quest'
+      return 'Quests'
+    case 'QUEST_REWARD':
+      return 'Quests'
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return 'Unresolve'
     case 'STARTING_BALANCE':
@@ -423,8 +559,6 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return ''
     case 'ADD_SUBSIDY':
       return 'Subsidy'
-    case 'QUEST_REWARD':
-      return 'Quest'
     case 'LEAGUE_PRIZE':
       return 'Leagues'
     case 'BOUNTY_POSTED':
@@ -433,6 +567,8 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
       return 'Bounty awarded'
     case 'MANA_PAYMENT':
       return 'User payment'
+    case 'CHARITY':
+      return 'Donation'
     case 'LOAN':
       return ''
     default:
@@ -442,14 +578,12 @@ const txnTypeToDescription = (txnCategory: TxnType) => {
 
 const questTypeToDescription = (questType: QuestType) => {
   switch (questType) {
-    case 'BETTING_STREAK':
-      return 'Prediction streak'
     case 'SHARES':
-      return 'Question share'
+      return 'Sharing bonus'
     case 'MARKETS_CREATED':
-      return 'Question creation'
+      return 'Creation bonus'
     case 'REFERRALS':
-      return 'Referral'
+      return 'Referral bonus'
     default:
       return 'questType'
   }

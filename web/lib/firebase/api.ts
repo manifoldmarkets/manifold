@@ -5,10 +5,9 @@ import { Group, PrivacyStatusType } from 'common/group'
 import { Contract } from './contracts'
 import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
-import { MaybeAuthedContractParams } from 'common/contract'
 import { Portfolio, PortfolioItem } from 'common/portfolio'
 import { ReportProps } from 'common/report'
-import { BaseDashboard, Dashboard, DashboardItem } from 'common/dashboard'
+import { BaseDashboard, DashboardItem } from 'common/dashboard'
 import { Bet } from 'common/bet'
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { baseApiCall, formatApiUrlWithParams } from 'common/util/api'
@@ -126,10 +125,6 @@ export function updateMemberRole(params: {
   return call(getApiUrl('updatememberrole'), 'POST', params)
 }
 
-export function unresolveMarket(params: { contractId: string }) {
-  return call(getApiUrl('unresolve'), 'POST', params)
-}
-
 export function updateGroupPrivacy(params: {
   groupId: string
   privacy: PrivacyStatusType
@@ -176,12 +171,23 @@ export function saveTopic(params: { topic: string }) {
   }>
 }
 
-export function getContractParams(params: { contractSlug: string }) {
-  return call(
-    getApiUrl('getcontractparams'),
-    'POST',
-    params
-  ) as Promise<MaybeAuthedContractParams>
+export function setTV(params: {
+  streamId: string
+  slug: string
+  source: string
+  title: string
+  startTime: string
+  endTime: string
+}) {
+  return call(getApiUrl('settv'), 'POST', params) as Promise<{
+    status: 'success'
+  }>
+}
+
+export function deleteTV(id: string) {
+  return call(getApiUrl('deletetv'), 'POST', { id }) as Promise<{
+    status: 'success'
+  }>
 }
 
 export function createGroupInvite(params: {
@@ -331,14 +337,6 @@ export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
-export function getDashboardFromSlug(params: { dashboardSlug: string }) {
-  return call(
-    getApiUrl('getdashboardfromslug'),
-    'POST',
-    params
-  ) as Promise<Dashboard>
-}
-
 export function referUser(params: {
   referredByUsername: string
   contractId?: string
@@ -374,7 +372,8 @@ export function updatePrivateMessageChannel(params: {
 }
 export function editAnswerCpmm(params: {
   answerId: string
-  text: string
+  text?: string
+  color?: string
   contractId: string
 }) {
   return call(getApiUrl('edit-answer-cpmm'), 'POST', params)

@@ -14,11 +14,12 @@ export function TopicTag(props: {
     | 'categories list'
     | 'create page'
     | 'questions page'
+    | 'dashboard page'
   isPrivate?: boolean
   className?: string
   children?: React.ReactNode // end element - usually for a remove button
 }) {
-  const { topic, isPrivate, className, children } = props
+  const { topic, location, isPrivate, className, children } = props
 
   const noEmojis = removeEmojis(topic.name)
 
@@ -37,6 +38,7 @@ export function TopicTag(props: {
           e.stopPropagation()
           track(`click category tag`, {
             categoryName: topic.name,
+            location,
           })
         }}
         className={'max-w-[200px] truncate sm:max-w-[250px]'}

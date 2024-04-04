@@ -2,12 +2,14 @@ import clsx from 'clsx'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Input } from './input'
 import { AmountInput } from './amount-input'
+import { IncrementDecrementButton } from './increment-button'
 
 export function ProbabilityInput(props: {
   prob: number | undefined
@@ -38,6 +40,14 @@ export function ProbabilityInput(props: {
     }
     onChange(isInvalid ? undefined : prob)
   }
+  const incrementProb = () => {
+    onChange(Math.min(99, (prob ?? 0) + 1))
+  }
+  const decrementProb = () => {
+    if (prob === undefined) return
+    if (prob === 1) onChange(undefined)
+    else onChange((prob ?? 0) - 1)
+  }
 
   return (
     <Col className={clsx(className, 'relative')}>
@@ -53,16 +63,21 @@ export function ProbabilityInput(props: {
         onChange={(e) => onProbChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowUp') {
-            onProbChange(`${Math.min(99, (prob ?? 0) + 1)}`)
+            incrementProb()
           } else if (e.key === 'ArrowDown') {
-            onProbChange(`${Math.max(0, (prob ?? 0) - 1)}`)
+            decrementProb()
           }
         }}
         error={error}
       />
-      <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
+      <span className="text-ink-400 absolute right-12 top-1/2 my-auto -translate-y-1/2">
         %
       </span>
+      <IncrementDecrementButton
+        className="absolute right-[1px] top-[1px] h-full"
+        onIncrement={incrementProb}
+        onDecrement={decrementProb}
+      />
     </Col>
   )
 }
@@ -73,6 +88,7 @@ export function ProbabilityOrNumericInput(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   prob: number | undefined
   setProb: (prob: number | undefined) => void
   disabled?: boolean
@@ -109,7 +125,7 @@ export function ProbabilityOrNumericInput(props: {
     />
   ) : (
     <ProbabilityInput
-      className={'w-24'}
+      className={'w-28'}
       prob={prob}
       onChange={setProb}
       disabled={disabled}

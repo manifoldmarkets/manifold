@@ -50,7 +50,6 @@ const emailsEnabled: Array<notification_preference> = [
 
   'all_answers_on_watched_markets',
   'all_replies_to_my_answers_on_watched_markets',
-  'all_answers_on_contracts_with_shares_in_on_watched_markets',
 
   'your_contract_closed',
   'all_comments_on_my_markets',
@@ -107,6 +106,11 @@ export type NotificationSectionData = {
   subscriptionTypes: Partial<notification_preference>[]
 }
 
+const answers: NotificationSectionData = {
+  label: 'New Answers',
+  subscriptionTypes: ['all_answers_on_watched_markets'],
+}
+
 const comments: NotificationSectionData = {
   label: 'New Comments',
   subscriptionTypes: [
@@ -118,18 +122,9 @@ const comments: NotificationSectionData = {
   ],
 }
 
-const answers: NotificationSectionData = {
-  label: 'New Answers',
-  subscriptionTypes: [
-    'all_answers_on_watched_markets',
-    'all_answers_on_contracts_with_shares_in_on_watched_markets',
-  ],
-}
 const updates: NotificationSectionData = {
   label: 'Updates & Resolutions',
   subscriptionTypes: [
-    'market_updates_on_watched_markets',
-    'market_updates_on_watched_markets_with_shares_in',
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
     'all_votes_on_watched_markets',
@@ -223,12 +218,12 @@ export function NotificationSettings(props: {
           data={comments}
         />
         <NotificationSection
-          icon={<TrendingUpIcon className={'h-6 w-6'} />}
-          data={updates}
-        />
-        <NotificationSection
           icon={<LightBulbIcon className={'h-6 w-6'} />}
           data={answers}
+        />
+        <NotificationSection
+          icon={<TrendingUpIcon className={'h-6 w-6'} />}
+          data={updates}
         />
         <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}

@@ -9,7 +9,10 @@ import {
   orderBy,
   where,
 } from 'shared/supabase/sql-builder'
-import { constructPrefixTsQuery } from 'shared/helpers/search'
+import {
+  constructIlikeQuery,
+  constructPrefixTsQuery,
+} from 'shared/helpers/search'
 import { LiteGroup } from 'common/group'
 
 export const supabasesearchgroups: APIHandler<'search-groups'> = async (
@@ -73,11 +76,12 @@ function getSearchGroupSQL(props: {
     term
       ? [
           where(
-            `name_fts @@ websearch_to_tsquery('english', $1)
-             or name_fts @@ to_tsquery('english', $2)`,
-            [term, constructPrefixTsQuery(term)]
+            `name_fts @@ plainto_tsquery('english', $1)
+             or name_fts @@ to_tsquery('english', $2)
+             or name ilike $3`,
+            [term, constructPrefixTsQuery(term), constructIlikeQuery(term)]
           ),
-          orderBy('importance_score desc'),
+          orderBy('importance_score * similarity($1, name) desc', term),
         ]
       : !uid
       ? orderBy('importance_score desc')
@@ -91,14 +95,7 @@ function getSearchGroupSQL(props: {
 
 export const supabasesearchmygroups: APIHandler<'search-my-groups'> = async (
   props,
-  auth,
-  logs,
-  res
+  ...rest
 ) => {
-  return supabasesearchgroups(
-    { ...props, memberGroupsOnly: true },
-    auth,
-    logs,
-    res
-  )
+  return supabasesearchgroups({ ...props, memberGroupsOnly: true }, ...rest)
 }

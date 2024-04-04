@@ -1,3 +1,4 @@
+import { JSONContent } from '@tiptap/core'
 import {
   add_answers_mode,
   Binary,
@@ -11,10 +12,10 @@ import {
   PseudoNumeric,
   Stonk,
   Visibility,
+  CPMMMultiNumeric,
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
-import { JSONContent } from '@tiptap/core'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
 import { randomString } from './util/random'
 import { PollOption } from './poll-option'
@@ -51,6 +52,12 @@ export function getNewContract(props: {
   loverUserId1: string | undefined
   loverUserId2: string | undefined
   matchCreatorId: string | undefined
+  isLove: boolean | undefined
+  answerLoverUserIds: string[] | undefined
+
+  specialLiquidityPerAnswer: number | undefined
+
+  isAutoBounty: boolean | undefined
 }) {
   const {
     id,
@@ -73,7 +80,11 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
     coverImageUrl,
+    specialLiquidityPerAnswer,
+    answerLoverUserIds,
+    isAutoBounty,
   } = props
   const createdTime = Date.now()
 
@@ -88,11 +99,14 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante
+        ante,
+        specialLiquidityPerAnswer,
+        answerLoverUserIds
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
-    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante),
+    BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
     POLL: () => getPollProps(answers),
+    NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -110,17 +124,17 @@ export function getNewContract(props: {
     question: question.trim(),
     description,
     visibility,
-    unlistedById: visibility === 'unlisted' ? creator.id : undefined,
     isResolved: false,
     createdTime,
     closeTime,
     dailyScore: 0,
     popularityScore: 0,
     importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
+    freshnessScore: 0,
+    conversionScore: DEFAULT_CONVERSION_SCORE,
     uniqueBettorCount: 0,
     lastUpdatedTime: createdTime,
 
-    views: 0,
     volume: 0,
     volume24Hours: 0,
     elasticity:
@@ -138,7 +152,11 @@ export function getNewContract(props: {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   })
+  if (visibility === 'unlisted') {
+    contract.unlistedById = creator.id
+  }
 
   return contract as Contract
 }
@@ -214,7 +232,9 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number
+  ante: number,
+  specialLiquidityPerAnswer?: number,
+  answerLoverUserIds?: string[]
 ) => {
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
@@ -225,7 +245,9 @@ const getMultipleChoiceProps = (
     addAnswersMode,
     shouldAnswersSumToOne,
     ante,
-    answersWithOther
+    answersWithOther,
+    specialLiquidityPerAnswer,
+    answerLoverUserIds
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -233,8 +255,39 @@ const getMultipleChoiceProps = (
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: answerObjects,
+    totalLiquidity: specialLiquidityPerAnswer ?? ante,
+    subsidyPool: 0,
+    specialLiquidityPerAnswer,
+  }
+
+  return system
+}
+const getNumberProps = (
+  contractId: string,
+  userId: string,
+  min: number,
+  max: number,
+  answers: string[],
+  ante: number
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    true,
+    ante,
+    answers
+  )
+  const system: CPMMMultiNumeric = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'NUMBER',
+    addAnswersMode: 'DISABLED',
+    shouldAnswersSumToOne: true,
+    answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
+    max,
+    min,
   }
 
   return system
@@ -246,7 +299,9 @@ function createAnswers(
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  answers: string[]
+  answers: string[],
+  specialLiquidityPerAnswer?: number,
+  answerLoverUserIds?: string[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -270,19 +325,28 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
+  } else if (specialLiquidityPerAnswer) {
+    // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
+    // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
+    // Then we can solve probability identity:
+    // prob = poolNo / (poolYes + poolNo)
+    prob = 0.02
+    poolYes = specialLiquidityPerAnswer
+    poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
   }
 
   const now = Date.now()
 
   return answers.map((text, i) => {
     const id = ids[i]
-    const answer: Answer = {
+    const answer: Answer = removeUndefinedProps({
       id,
       index: i,
       contractId,
       userId,
       text,
       createdTime: now,
+      loverUserId: answerLoverUserIds?.[i],
 
       poolYes,
       poolNo,
@@ -294,18 +358,22 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
-    }
+    })
     return answer
   })
 }
 
-const getBountiedQuestionProps = (ante: number) => {
+const getBountiedQuestionProps = (
+  ante: number,
+  isAutoBounty: boolean | undefined
+) => {
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
     bountyTxns: [],
     totalBounty: ante,
     bountyLeft: ante,
+    isAutoBounty: isAutoBounty ?? false,
   }
 
   return system
@@ -328,3 +396,8 @@ const getPollProps = (answers: string[]) => {
   }
   return system
 }
+
+export const DEFAULT_CONVERSION_SCORE_NUMERATOR = 2
+export const DEFAULT_CONVERSION_SCORE_DENOMINATOR = 6
+const DEFAULT_CONVERSION_SCORE =
+  DEFAULT_CONVERSION_SCORE_NUMERATOR / DEFAULT_CONVERSION_SCORE_DENOMINATOR

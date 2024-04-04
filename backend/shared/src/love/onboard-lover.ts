@@ -6,9 +6,9 @@ import {
 } from 'shared/supabase/private-messages'
 import { User } from 'common/user'
 import { track } from 'shared/analytics'
-import { GCPLog } from 'shared/utils'
+import { log } from 'shared/utils'
 
-export const onboardLover = async (user: User, ip: string, log: GCPLog) => {
+export const onboardLover = async (user: User, ip: string) => {
   const pg = createSupabaseDirectClient()
 
   const publicChannels = await pg.manyOrNone(
@@ -16,7 +16,7 @@ export const onboardLover = async (user: User, ip: string, log: GCPLog) => {
           and id not in (select channel_id from private_user_message_channel_members where user_id = $1)`,
     [user.id]
   )
-  log('Adding lover to public channels:', publicChannels)
+  log('Adding lover to public channels:', { publicChannels })
   await Promise.all(
     publicChannels.map(async (pc) => {
       await addUsersToPrivateMessageChannel([user.id], pc.id, pg)

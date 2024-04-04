@@ -1,10 +1,15 @@
 import {
   CashIcon,
   ChatAlt2Icon,
-  CurrencyDollarIcon,
   PencilIcon,
   ScaleIcon,
+  PresentationChartLineIcon,
+  ViewListIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  TagIcon,
 } from '@heroicons/react/outline'
+import { LuCrown } from 'react-icons/lu'
 import { ChartBarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
@@ -13,8 +18,9 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { SEO } from 'web/components/SEO'
+import dayjs from 'dayjs'
 
+import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
@@ -35,7 +41,6 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
@@ -71,6 +76,17 @@ import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage } from 'common/user'
+import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
+import { isBetChange } from 'common/balance-change'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-card'
+import { Button } from 'web/components/buttons/button'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { buildArray } from 'common/util/array'
+import { dailyStatsClass } from 'web/components/home/daily-stats'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
+import { YourTopicsSection } from 'web/components/topics/your-topics'
 
 export const getStaticProps = async (props: {
   params: {
@@ -83,6 +99,7 @@ export const getStaticProps = async (props: {
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
+
   return {
     props: removeUndefinedProps({
       user,
@@ -149,10 +166,23 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
+
+  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
+  })
+  const balanceChanges = newBalanceChanges ?? []
+  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
+  const balanceChangesKey = 'balance-changes'
+
   useSaveReferral(currentUser, {
     defaultReferrerUsername: user?.username,
   })
   const isCurrentUser = user.id === currentUser?.id
+  const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
+    false,
+    'expand-profile-info'
+  )
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -194,6 +224,7 @@ function UserProfile(props: {
       key={user.id}
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
+      className={clsx(isCurrentUser ? 'lg:!mt-0' : 'lg:mt-4')}
     >
       <SEO
         title={`${user.name} (@${user.username})`}
@@ -207,121 +238,182 @@ function UserProfile(props: {
       )}
       {showConfetti && <FullscreenConfetti />}
 
-      <Col className="relative mt-1">
-        {isMobile && (
-          <Row
-            className={
-              'bg-canvas-50 sticky top-0 z-10 w-full items-center justify-between gap-1 py-2 pl-4 pr-5 sm:gap-2'
-            }
-          >
-            <BackButton />
+      <Col className="relative">
+        <Row
+          className={
+            'bg-canvas-50 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
+          }
+        >
+          {isMobile && (
+            <>
+              <BackButton className="px-6" />
 
-            <div
-              className={clsx(
-                'opacity-0 transition-opacity',
-                headerStuck && 'opacity-100'
-              )}
+              <div
+                className={clsx(
+                  'self-center opacity-0 transition-opacity first:ml-4',
+                  headerStuck && 'opacity-100'
+                )}
+              >
+                <UserLink user={user} noLink />
+              </div>
+
+              <MoreOptionsUserButton user={user} />
+            </>
+          )}
+
+          {isCurrentUser && (
+            <Button
+              color="gray-white"
+              className="gap-2 pr-8 max-sm:rounded-none sm:ml-auto"
+              size="xs"
+              onClick={() => {
+                setExpandProfileInfo((v) => !v)
+                if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' })
+              }}
             >
-              <UserLink user={user} noLink />
-            </div>
-
-            <div>
-              <MoreOptionsUserButton user={user} />
-            </div>
-          </Row>
-        )}
-
-        <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
-          <Row className={clsx('gap-2')} ref={titleRef}>
-            <Col className={'relative max-h-14'}>
-              <ImageWithBlurredShadow
-                image={
-                  <Avatar
-                    username={user.username}
-                    avatarUrl={user.avatarUrl}
-                    size={'lg'}
-                    className="bg-ink-1000"
-                    noLink
-                  />
-                }
-              />
-              {isCurrentUser && (
-                <Link
-                  className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
-                  href="/profile"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
-                </Link>
+              {expandProfileInfo ? (
+                <ChevronDownIcon className="text-ink-700 h-5 w-5" />
+              ) : (
+                <ChevronUpIcon className="text-ink-700 h-5 w-5" />
               )}
-            </Col>
-            <StackedUserNames
-              usernameClassName={'sm:text-base'}
-              className={'font-bold sm:mr-0 sm:text-xl'}
-              user={user}
-              followsYou={followsYou}
-            />
-          </Row>
-          {isCurrentUser ? (
-            <Row className={'items-center gap-1 sm:gap-2'}>
-              <DailyLeagueStat user={user} />
-              <QuestsOrStreak user={user} />
-            </Row>
-          ) : isMobile ? (
-            <Row className={'items-center gap-1 sm:gap-2'}>
-              <SendMessageButton toUser={user} currentUser={currentUser} />
-              <FollowButton userId={user.id} />
-            </Row>
-          ) : (
-            <Row className="items-center gap-1 sm:gap-2">
-              <SendMessageButton toUser={user} currentUser={currentUser} />
-              <FollowButton userId={user.id} />
-              <MoreOptionsUserButton user={user} />
-            </Row>
+              <Avatar
+                username={user.username}
+                avatarUrl={user.avatarUrl}
+                size={'xs'}
+                className="bg-ink-1000"
+                noLink
+              />
+            </Button>
           )}
         </Row>
-        <Col className={'mx-4 mt-1'}>
-          <ProfilePublicStats user={user} currentUser={currentUser} />
-          {user.bio && (
-            <div className="sm:text-md mt-1 text-sm">
-              <Linkify text={user.bio}></Linkify>
-            </div>
-          )}
-          <UserHandles
-            website={user.website}
-            twitterHandle={user.twitterHandle}
-            discordHandle={user.discordHandle}
-            className="mt-2"
-          />
-        </Col>
 
-        <Col className="mx-4 mt-2">
+        {(!isCurrentUser || expandProfileInfo) && (
+          <Col className="mb-2">
+            <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
+              <Row className={clsx('gap-2')} ref={titleRef}>
+                <Col className={'relative max-h-14'}>
+                  <ImageWithBlurredShadow
+                    image={
+                      <Avatar
+                        username={user.username}
+                        avatarUrl={user.avatarUrl}
+                        size={'lg'}
+                        className="bg-ink-1000"
+                        noLink
+                      />
+                    }
+                  />
+                  {isCurrentUser && (
+                    <Link
+                      className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
+                      href="/profile"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
+                    </Link>
+                  )}
+                </Col>
+                <StackedUserNames
+                  usernameClassName={'sm:text-base'}
+                  className={'font-bold sm:mr-0 sm:text-xl'}
+                  user={user}
+                  followsYou={followsYou}
+                />
+              </Row>
+              {isCurrentUser ? (
+                <Row className={'items-center gap-1 sm:gap-2'}>
+                  <Link
+                    href={`/${user.username}/partner`}
+                    className={clsx(
+                      'hover:text-primary-500 text-ink-600 text-xs',
+                      dailyStatsClass
+                    )}
+                  >
+                    <LuCrown className="mx-auto text-2xl" />
+                    Partner
+                  </Link>
+                  <DailyLeagueStat user={user} />
+                  <QuestsOrStreak user={user} />
+                </Row>
+              ) : isMobile ? (
+                <Row className={'items-center gap-1 sm:gap-2'}>
+                  <SendMessageButton toUser={user} currentUser={currentUser} />
+                  <FollowButton userId={user.id} />
+                </Row>
+              ) : (
+                <Row className="items-center gap-1 sm:gap-2">
+                  <SendMessageButton toUser={user} currentUser={currentUser} />
+                  <FollowButton userId={user.id} />
+                  <MoreOptionsUserButton user={user} />
+                </Row>
+              )}
+            </Row>
+            <Col className={'mx-4 mt-1'}>
+              <ProfilePublicStats user={user} currentUser={currentUser} />
+              {user.bio && (
+                <div className="sm:text-md mt-1 text-sm">
+                  <Linkify text={user.bio}></Linkify>
+                </div>
+              )}
+              <UserHandles
+                website={user.website}
+                twitterHandle={user.twitterHandle}
+                discordHandle={user.discordHandle}
+                className="mt-2"
+              />
+            </Col>
+          </Col>
+        )}
+
+        <Col className="mx-4">
           <QueryUncontrolledTabs
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
-            labelClassName={'pb-2 pt-1 sm:pt-4 '}
-            tabs={[
-              {
-                title: 'Portfolio',
-                stackedTabIcon: <CurrencyDollarIcon className="h-5" />,
+            labelClassName={'pb-2 pt-2'}
+            saveTabInLocalStorageKey={
+              isCurrentUser ? `profile-tabs-${user.id}` : undefined
+            }
+            tabs={buildArray(
+              isCurrentUser && {
+                title: 'Summary',
+                prerender: true,
+                stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
+                content: (
+                  <PortfolioSummary
+                    className="mt-4"
+                    user={user}
+                    balanceChanges={balanceChanges}
+                  />
+                ),
+              },
+              (!!user.lastBetTime || hasBetBalanceChanges) && {
+                title: 'Trades',
+                prerender: true,
+                stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
                 content: (
                   <>
-                    <Spacer h={4} />
-                    <PortfolioValueSection
-                      userId={user.id}
-                      defaultTimePeriod={
-                        currentUser?.id === user.id ? 'weekly' : 'monthly'
-                      }
-                      lastUpdatedTime={user.metricsLastUpdated}
-                      isCurrentUser={isCurrentUser}
-                    />
-                    <Spacer h={4} />
+                    <Spacer h={2} />
+                    {!isCurrentUser && (
+                      <>
+                        <PortfolioValueSection
+                          userId={user.id}
+                          defaultTimePeriod={
+                            currentUser?.id === user.id ? 'weekly' : 'monthly'
+                          }
+                          lastUpdatedTime={user.metricsLastUpdated}
+                          hideAddFundsButton
+                        />
+                        <Spacer h={4} />
+                      </>
+                    )}
                     <UserBetsTable user={user} />
                   </>
                 ),
               },
-              {
+              (user.creatorTraders.allTime > 0 ||
+                (user.freeQuestionsCreated ?? 0) > 0) && {
                 title: 'Questions',
+                prerender: true,
                 stackedTabIcon: <ScaleIcon className="h-5" />,
                 content: (
                   <>
@@ -344,6 +436,23 @@ function UserProfile(props: {
                   </Col>
                 ),
               },
+              isCurrentUser && {
+                title: 'Topics',
+                prerender: false,
+                stackedTabIcon: <TagIcon className="h-5" />,
+                content: <YourTopicsSection className="w-full" user={user} />,
+              },
+              {
+                title: 'Balance log',
+                stackedTabIcon: <ViewListIcon className="h-5" />,
+                content: (
+                  <BalanceChangeTable
+                    user={user}
+                    balanceChanges={balanceChanges}
+                  />
+                ),
+                queryString: balanceChangesKey,
+              },
               {
                 title: 'Payments',
                 stackedTabIcon: <CashIcon className="h-5" />,
@@ -353,8 +462,8 @@ function UserProfile(props: {
                     <UserPayments userId={user.id} />
                   </>
                 ),
-              },
-            ]}
+              }
+            )}
           />
         </Col>
       </Col>

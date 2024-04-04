@@ -19,10 +19,11 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
-import { JobContext } from 'shared/utils'
+import { log } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { convertBet } from 'common/supabase/bets'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -34,7 +35,7 @@ const userToPortfolioMetrics: {
   }
 } = {}
 
-export async function updateUserMetricsCore({ log }: JobContext) {
+export async function updateUserMetricsCore() {
   const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
@@ -44,13 +45,13 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading users...')
-  const users = await pg.map(
-    `select data from users 
+  const userIds = await pg.map(
+    `select id from users
             order by data->'metricsLastUpdated' nulls first limit 2000`,
     [],
-    (r) => r.data as User
+    (r) => r.id as string
   )
-  const userIds = users.map((u) => u.id)
+
   for (const userId of userIds) {
     const doc = firestore.collection('users').doc(userId)
     writer.update(doc, { metricsLastUpdated: now })
@@ -66,14 +67,13 @@ export async function updateUserMetricsCore({ log }: JobContext) {
     )
   log(`Loaded creator trader counts.`)
 
-  const userIdsNeedingUpdate = users
-    .filter(
-      (u) =>
-        !userToPortfolioMetrics[u.id]?.currentPortfolio ||
-        (userToPortfolioMetrics[u.id]?.timeCachedPeriodProfits ?? 0) <
-          now - 6 * HOUR_MS
-    )
-    .map((u) => u.id)
+  const userIdsNeedingUpdate = userIds.filter(
+    (id) =>
+      !userToPortfolioMetrics[id]?.currentPortfolio ||
+      (userToPortfolioMetrics[id]?.timeCachedPeriodProfits ?? 0) <
+        now - 6 * HOUR_MS
+  )
+
   if (userIdsNeedingUpdate.length > 0) {
     log(
       `Fetching portfolio metrics for ${
@@ -82,9 +82,9 @@ export async function updateUserMetricsCore({ log }: JobContext) {
         Object.keys(userToPortfolioMetrics).length
       } users.`
     )
-    const userIdsMissingPortfolio = users
-      .filter((u) => !userToPortfolioMetrics[u.id]?.currentPortfolio)
-      .map((u) => u.id)
+    const userIdsMissingPortfolio = userIds.filter(
+      (id) => !userToPortfolioMetrics[id]?.currentPortfolio
+    )
     log(
       `Loading current portfolio snapshot for ${userIdsMissingPortfolio.length} users...`
     )
@@ -134,6 +134,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
   log('Loading contracts...')
   const allBets = Object.values(metricRelevantBets).flat()
   const contracts = await getRelevantContracts(pg, allBets)
+  log('Loading answers...')
   const answersByContractId = await getAnswersForContractsDirect(
     pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
@@ -147,12 +148,22 @@ export async function updateUserMetricsCore({ log }: JobContext) {
     ;(contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
-  log(`Loaded ${contracts.length} contracts.`)
+  log(`Loaded ${contracts.length} contracts and their answers.`)
 
-  log('Computing metric updates...')
   const userUpdates = []
   const portfolioUpdates = []
   const contractMetricUpdates = []
+
+  log('Loading user balances & deposit information...')
+  // Load user data right before calculating metrics to avoid out-of-date deposit/balance data (esp. for new users that
+  // get their first 9 deposits upon visiting new markets).
+  const users = await pg.map(
+    `select data from users
+            where id in ($1:list)`,
+    [userIds],
+    (r) => r.data as User
+  )
+  log('Computing metric updates...')
   for (const user of users) {
     const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
@@ -163,6 +174,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       allTime: allTimeTraders[user.id] ?? 0,
     }
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
+      if (contractsById[b.contractId].isResolved) return false
       const answers = answersByContractId[b.contractId]
       if (b.answerId === 'undefined' || !b.answerId) {
         return !contractsById[b.contractId].resolution
@@ -216,7 +228,7 @@ export async function updateUserMetricsCore({ log }: JobContext) {
       userMetricRelevantBets,
       (b) => b.contractId
     )
-
+    // TODO: we could only calculate metrics for answers that users have bet on
     const metricsByContract = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
@@ -307,7 +319,7 @@ const getMetricRelevantUserBets = async (
   )
   return mapValues(
     groupBy(bets, (r) => r.data.userId as string),
-    (rows) => rows.map((r) => r.data as Bet)
+    (rows) => rows.map(convertBet)
   )
 }
 

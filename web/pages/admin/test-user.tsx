@@ -3,7 +3,6 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
-import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -11,33 +10,45 @@ import {
 } from 'firebase/auth'
 import { randomString } from 'common/util/random'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { getCookie } from 'web/lib/util/cookie'
+import { getCookie, setCookie } from 'web/lib/util/cookie'
 import { Input } from 'web/components/widgets/input'
+import { useRouter } from 'next/router'
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogout } from 'web/lib/firebase/users'
+
+const KEY = 'TEST_CREATE_USER_KEY'
 
 export default function TestUser() {
-  useRedirectIfSignedIn()
-
+  const router = useRouter()
+  const user = useUser()
+  useEffect(() => {
+    if (!user) return
+    if (!hasSubmit) {
+      firebaseLogout()
+    } else {
+      router.push('/home')
+    }
+  }, [user])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [createUserKey, setCreateUserKey] = usePersistentLocalState(
-    '',
-    'TEST_CREATE_USER_KEY'
-  )
+  const [createUserKey, setCreateUserKey] = useState('')
 
   useEffect(() => {
     setEmail('manifoldTestNewUser+' + randomString() + '@gmail.com')
     setPassword(randomString())
-    const key = 'TEST_CREATE_USER_KEY'
-    const cookie = getCookie(key)
+    const cookie = getCookie(KEY)
     if (cookie) setCreateUserKey(cookie.replace(/"/g, ''))
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
+  const [hasSubmit, setHasSubmit] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
+    if (!createUserKey) return
     setSubmitting(true)
+    setHasSubmit(true)
+    setCookie(KEY, createUserKey)
     const auth = getAuth()
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
@@ -51,6 +62,7 @@ export default function TestUser() {
         console.log('ERROR creating firebase user', errorCode, errorMessage)
       })
   }
+
   const login = () => {
     setSigningIn(true)
     const auth = getAuth()

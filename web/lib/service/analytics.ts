@@ -1,14 +1,16 @@
 import * as Sprig from 'web/lib/service/sprig'
+// eslint-disable-next-line no-restricted-imports
 import * as amplitude from '@amplitude/analytics-browser'
-
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
-import { completeQuest } from 'web/lib/firebase/api'
+import { api, completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
-import { EventData, insertUserEvent } from 'common/supabase/analytics'
+import { run, SupabaseClient } from 'common/supabase/utils'
+import { Json } from 'common/supabase/schema'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
@@ -17,6 +19,8 @@ type EventIds = {
   commentId?: string | null
   adId?: string | null
 }
+
+type EventData = Record<string, Json | undefined>
 
 export async function track(name: string, properties?: EventIds & EventData) {
   const deviceId = amplitude.getDeviceId()
@@ -35,8 +39,9 @@ export async function track(name: string, properties?: EventIds & EventData) {
   const { contractId, adId, commentId, ...data } = allProperties
   try {
     if (ENV !== 'PROD') {
-      console.log(name, allProperties)
+      console.log(name, userId, allProperties)
       await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
+      return
     }
     await Promise.all([
       amplitude.track(name, removeUndefinedProps(allProperties)).promise,
@@ -102,4 +107,79 @@ export async function trackShareEvent(
     ...eventProperties,
   })
   completeQuest({ questType: 'SHARES' as QuestType }).catch(() => {})
+}
+
+function insertUserEvent(
+  name: string,
+  data: EventData,
+  db: SupabaseClient,
+  userId?: string | null,
+  contractId?: string | null,
+  commentId?: string | null,
+  adId?: string | null
+) {
+  if ((name === 'view market' || name === 'view market card') && contractId) {
+    const kind = !!data?.isPromoted
+      ? 'promoted'
+      : name === 'view market'
+      ? 'page'
+      : 'card'
+    if (userId == null) {
+      return api('record-contract-view', { contractId, kind })
+    } else {
+      return api('record-contract-view', { userId, contractId, kind })
+    }
+  } else if (
+    (name === 'click market card feed' ||
+      name === 'bet' ||
+      name === 'comment' ||
+      name === 'repost' ||
+      name === 'like') &&
+    contractId
+  ) {
+    const feedItem = data?.feedItem as FeedTimelineItem | undefined
+    const isCardClick = name === 'click market card feed'
+    const kind =
+      name === 'like' && feedItem
+        ? 'card like'
+        : name === 'like'
+        ? 'page like'
+        : name === 'comment'
+        ? 'page comment'
+        : name === 'repost'
+        ? 'page repost'
+        : !!data?.isPromoted && isCardClick
+        ? 'promoted click'
+        : isCardClick
+        ? 'card click'
+        : data?.location === 'feed card' ||
+          data?.location === 'feed' ||
+          !!feedItem
+        ? 'card bet'
+        : 'page bet'
+    if (userId !== null) {
+      return api(
+        'record-contract-interaction',
+        removeUndefinedProps({
+          contractId,
+          commentId: commentId ?? feedItem?.commentId ?? undefined,
+          kind,
+          feedType: feedItem?.dataType,
+          feedReasons: feedItem?.reasons,
+          betGroupId: data?.betGroupId as string,
+          betId: data?.betId as string,
+        })
+      )
+    }
+  }
+  return run(
+    db.from('user_events').insert({
+      name,
+      data: removeUndefinedProps(data) as Record<string, Json>,
+      user_id: userId,
+      contract_id: contractId,
+      comment_id: commentId,
+      ad_id: adId,
+    })
+  )
 }

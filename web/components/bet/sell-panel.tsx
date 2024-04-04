@@ -10,7 +10,11 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
-import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
 import { User } from 'common/user'
 import {
@@ -35,7 +39,7 @@ import toast from 'react-hot-toast'
 import { Answer } from 'common/answer'
 
 export function SellPanel(props: {
-  contract: CPMMContract | CPMMMultiContract
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -56,7 +60,8 @@ export function SellPanel(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne
+    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
+    outcomeType === 'NUMBER'
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)
@@ -312,7 +317,7 @@ export function SellPanel(props: {
 }
 
 const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
@@ -349,7 +354,7 @@ const getSaleResult = (
 }
 
 const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answerId: string,
   shares: number,
   outcome: 'YES' | 'NO',

@@ -13,6 +13,7 @@ import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
 import { getUser, log } from 'shared/utils'
 import { User } from 'common/user'
+import { charities } from 'common/charity'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -52,9 +53,9 @@ const getTxnBalanceChanges = async (
     `
     select data
     from txns
-    where fs_updated_time > millis_to_ts($1)
-      and (data->>'toId' = $2 or data->>'fromId' = $2)
-    and data->>'category' = ANY ($3);
+    where created_time > millis_to_ts($1)
+      and (to_id = $2 or from_id = $2)
+    and category = ANY ($3);
     `,
     [after, userId, TXN_BALANCE_CHANGE_TYPES],
     (row) => row.data as Txn
@@ -86,7 +87,7 @@ const getTxnBalanceChanges = async (
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       key: txn.id,
-      type: txn.category,
+      type: txn.category as any,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
       contract: contract
@@ -96,13 +97,20 @@ const getTxnBalanceChanges = async (
                 ? contract.question
                 : '[unlisted question]',
             visibility: contract.visibility,
-            slug:
-              contract.visibility === 'public' ? contract.slug : '[unlisted]',
+            slug: contract.visibility === 'public' ? contract.slug : '',
             creatorUsername: contract.creatorUsername,
           }
         : undefined,
       questType: txn.data?.questType,
       user: user ? { username: user.username, name: user.name } : undefined,
+      charity:
+        txn.toType === 'CHARITY'
+          ? {
+              name:
+                charities.find((c) => c.slug === txn.toId)?.name ?? txn.toId,
+              slug: txn.toId,
+            }
+          : undefined,
     }
     balanceChanges.push(balanceChange)
   }
@@ -132,6 +140,8 @@ const getContractIdFromTxn = (txn: Txn) => {
       'LOAN',
       'MARKET_BOOST_CREATE',
       'SIGNUP_BONUS',
+      'LEAGUE_PRIZE',
+      'CHARITY',
     ].includes(txn.category)
   )
     log('No contractId in get-balance-changes for txn', txn)
@@ -177,6 +187,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
       const nextBetExists = i < bets.length - 1
       const nextBetIsRedemption = nextBetExists && bets[i + 1].isRedemption
       if (isRedemption && nextBetIsRedemption) continue
+      if (isRedemption && amount === 0) continue
 
       const { question, visibility, creatorUsername, slug } = contract
       const text =
@@ -191,7 +202,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
         },
         contract: {
           question: visibility === 'public' ? question : '[unlisted question]',
-          slug: visibility === 'public' ? slug : '[unlisted]',
+          slug: visibility === 'public' ? slug : '',
           visibility,
           creatorUsername,
         },
@@ -212,7 +223,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           balanceChanges.push(balanceChange)
         }
       } else {
-        const changeToBalance = isRedemption ? -shares : -amount
+        const changeToBalance = isRedemption ? Math.abs(shares) : -amount
         const balanceChange = {
           ...balanceChangeProps,
           type: isRedemption

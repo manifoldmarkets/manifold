@@ -206,12 +206,20 @@ export async function getIsPrivateContractMember(
   return data
 }
 
-export const getTrendingContracts = async (limit: number) => {
-  return await db
-    .from('contracts')
-    .select('data, importance_score')
-    .is('resolution_time', null)
-    .order('importance_score', { ascending: false })
-    .limit(limit)
-    .then((res) => res.data?.map((c) => convertContract(c)))
+export async function getHasBetOnContract(props: {
+  userId: string | undefined
+  contractId: string
+}) {
+  const { userId, contractId } = props
+  if (!userId) return false
+
+  const { data } = await db
+    .from('user_contract_metrics')
+    .select('contract_id')
+    .eq('user_id', userId)
+    .eq('contract_id', contractId)
+    .limit(1)
+    .maybeSingle()
+
+  return data !== null
 }

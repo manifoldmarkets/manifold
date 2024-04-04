@@ -6,7 +6,7 @@ import { resolution } from 'common/contract'
 import { Button } from '../buttons/button'
 
 export function YesNoSelector(props: {
-  selected?: 'YES' | 'NO' | 'LIMIT'
+  selected?: 'YES' | 'NO'
   onSelect: (selected: 'YES' | 'NO') => void
   className?: string
   btnClassName?: string

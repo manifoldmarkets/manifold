@@ -1,6 +1,6 @@
 import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import { run, SupabaseClient } from 'common/supabase/utils'
 
 export type User = {
@@ -63,6 +63,7 @@ export type User = {
   fromPolitics?: boolean
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
+  verifiedPhone?: boolean
 }
 
 export type PrivateUser = {
@@ -95,6 +96,7 @@ export type PrivateUser = {
   hasSeenAppBannerInNotificationsOn?: number
   installedAppPlatforms?: string[]
   discordId?: string
+  paymentInfo?: string
 }
 
 // TODO: remove. Hardcoding the strings would be better.
@@ -126,7 +128,18 @@ export const getAvailableBalancePerQuestion = (user: User): number => {
   )
 }
 
-export const marketCreationCosts = (user: User, ante: number) => {
+export const marketCreationCosts = (
+  user: User,
+  ante: number,
+  allSuppliedByUser?: boolean
+) => {
+  if (allSuppliedByUser) {
+    return {
+      amountSuppliedByUser: ante,
+      amountSuppliedByHouse: 0,
+    }
+  }
+
   let amountSuppliedByUser = ante
   let amountSuppliedByHouse = 0
   if (freeQuestionRemaining(user.freeQuestionsCreated, user.createdTime) > 0) {
@@ -141,16 +154,14 @@ export const freeQuestionRemaining = (
   createdTime: number | undefined
 ) => {
   if (!createdTime) return 0
-  // hide if account less than one hour old
-  if (createdTime > Date.now() - HOUR_MS) return 0
 
   const now = getCurrentUtcTime()
   if (freeQuestionsCreated >= MAX_FREE_QUESTIONS) {
     return 0
   }
-  const daysSinceCreation =
+  const periodSinceCreation =
     (now.getTime() - createdTime) / (DAYS_TO_USE_FREE_QUESTIONS * DAY_MS)
-  if (daysSinceCreation >= 1) return 0
+  if (periodSinceCreation >= 1) return 0
   return MAX_FREE_QUESTIONS - freeQuestionsCreated
 }
 
@@ -185,4 +196,8 @@ export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
     user.isBannedFromPosting ||
     isUserLikelySpammer(user, bet.length > 0)
   )
+}
+
+export const isVerified = (user: User) => {
+  return user.verifiedPhone !== false
 }

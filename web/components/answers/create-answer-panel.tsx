@@ -4,8 +4,6 @@ import {
   CPMMMultiContract,
   FreeResponseContract,
   MultiContract,
-  add_answers_mode,
-  tradingAllowed,
 } from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
@@ -17,14 +15,14 @@ import {
   formatWithCommas,
 } from 'common/util/format'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import {
   calculateDpmShares,
   calculateDpmPayoutAfterCorrectBet,
   getDpmOutcomeProbabilityAfterBet,
 } from 'common/calculate-dpm'
 import { Bet } from 'common/bet'
-import { MAX_ANSWER_LENGTH, getMaximumAnswers } from 'common/answer'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
@@ -36,8 +34,12 @@ export function CreateAnswerCpmmPanel(props: {
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
+  close?: () => void
+  placeholder?: string
+  autoFocus?: boolean
 }) {
-  const { contract, text, setText, children } = props
+  const { contract, text, setText, children, close, placeholder, autoFocus } =
+    props
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -65,29 +67,35 @@ export function CreateAnswerCpmmPanel(props: {
         value={text}
         onChange={(e) => setText(e.target.value)}
         className="w-full"
-        placeholder="Search or add answer"
+        placeholder={placeholder ?? 'Search or add answer'}
         rows={1}
         maxLength={MAX_ANSWER_LENGTH}
+        onBlur={() => !text && close?.()}
+        autoFocus={autoFocus}
       />
 
       <Row className="justify-between">
         {children}
 
-        {text && (
-          <Row className="gap-1">
-            <Button size="2xs" color="gray" onClick={() => setText('')}>
-              Clear
-            </Button>
+        <Row className="gap-1">
+          {text && (
             <Button
               size="2xs"
-              loading={isSubmitting}
-              disabled={!canSubmit}
-              onClick={withTracking(submitAnswer, 'submit answer')}
+              color="gray"
+              onClick={() => (setText(''), close?.())}
             >
-              Add answer ({formatMoney(ANSWER_COST)})
+              Clear
             </Button>
-          </Row>
-        )}
+          )}
+          <Button
+            size="2xs"
+            loading={isSubmitting}
+            disabled={!canSubmit}
+            onClick={withTracking(submitAnswer, 'submit answer')}
+          >
+            Add answer ({formatMoney(ANSWER_COST)})
+          </Button>
+        </Row>
       </Row>
     </Col>
   )
@@ -226,34 +234,35 @@ function CreateAnswerDpmPanel(props: {
 
 export function SearchCreateAnswerPanel(props: {
   contract: MultiContract
-  addAnswersMode: add_answers_mode | undefined
+  canAddAnswer: boolean
   text: string
   setText: (text: string) => void
   children?: React.ReactNode
+  isSearchOpen?: boolean
+  setIsSearchOpen?: (isSearchOpen: boolean) => void
 }) {
-  const { contract, addAnswersMode, text, setText, children } = props
+  const {
+    contract,
+    canAddAnswer,
+    text,
+    setText,
+    children,
+    isSearchOpen,
+    setIsSearchOpen,
+  } = props
 
-  const user = useUser()
-  const privateUser = usePrivateUser()
-  const unresolvedAnswers = contract.answers.filter((a) =>
-    'resolution' in a ? !a.resolution : true
-  )
-  const shouldAnswersSumToOne =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.shouldAnswersSumToOne
-      : true
+  if (!isSearchOpen) return <>{children}</>
 
-  if (
-    user &&
-    !user.isBannedFromPosting &&
-    (addAnswersMode === 'ANYONE' ||
-      (addAnswersMode === 'ONLY_CREATOR' && user.id === contract.creatorId)) &&
-    tradingAllowed(contract) &&
-    !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-    unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
-  ) {
+  if (canAddAnswer && contract.outcomeType !== 'NUMBER') {
     return contract.mechanism === 'cpmm-multi-1' ? (
-      <CreateAnswerCpmmPanel contract={contract} text={text} setText={setText}>
+      <CreateAnswerCpmmPanel
+        contract={contract}
+        text={text}
+        setText={setText}
+        close={() => setIsSearchOpen?.(false)}
+        placeholder="Search or add answer"
+        autoFocus
+      >
         {children}
       </CreateAnswerCpmmPanel>
     ) : (
@@ -275,6 +284,8 @@ export function SearchCreateAnswerPanel(props: {
         onChange={(e) => setText(e.target.value)}
         className="!text-md"
         placeholder="Search answers"
+        onBlur={() => !text && setIsSearchOpen?.(false)}
+        autoFocus
       />
       {children}
     </>

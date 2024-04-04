@@ -5,7 +5,6 @@ import {
   LogoutIcon,
   MoonIcon,
   SunIcon,
-  SparklesIcon,
   StarIcon,
   QuestionMarkCircleIcon,
   NewspaperIcon,
@@ -14,10 +13,12 @@ import {
   LoginIcon,
   TemplateIcon,
 } from '@heroicons/react/outline'
-// import { GiftIcon, MapIcon, MoonIcon } from '@heroicons/react/solid'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+import { GiCapitol } from 'react-icons/gi'
 import clsx from 'clsx'
+import { useState } from 'react'
+
 import { buildArray } from 'common/util/array'
-import { capitalize } from 'lodash'
 import { usePathname, useRouter } from 'next/navigation'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
@@ -26,7 +27,6 @@ import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
@@ -35,17 +35,16 @@ import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { useState } from 'react'
-import { FaFlagUsa } from 'react-icons/fa6'
-import { getIsNative } from 'web/lib/native/is-native'
+import { DAY_MS } from 'common/util/time'
+import { LiveTVIcon } from '../tv-icon'
+import { useTVisActive } from '../tv/tv-schedule'
+import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
-  navigationOptions?: NavItem[]
-  hideCreateQuestionButton?: boolean
 }) {
-  const { className, isMobile, hideCreateQuestionButton } = props
+  const { className, isMobile } = props
   const router = useRouter()
   const currentPage = usePathname() ?? undefined
 
@@ -58,19 +57,25 @@ export default function Sidebar(props: {
   const toggleTheme = () => {
     setTheme(theme === 'auto' ? 'dark' : theme === 'dark' ? 'light' : 'auto')
   }
-  const navOptions = props.navigationOptions?.length
-    ? props.navigationOptions
-    : isMobile
-    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen))
-    : getDesktopNav(!!user, () => setIsModalOpen(true), true)
+
+  const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
+  const isLiveTV = useTVisActive()
+
+  const navOptions = isMobile
+    ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+        isNewUser,
+        isLiveTV,
+      })
+    : getDesktopNav(!!user, () => setIsModalOpen(true), { isNewUser, isLiveTV })
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
-  const createMarketButton = !hideCreateQuestionButton &&
-    user &&
-    !user.isBannedFromPosting && (
-      <CreateQuestionButton key="create-market-button" className={'mt-4'} />
-    )
+  const createMarketButton = user && !user.isBannedFromPosting && (
+    <CreateQuestionButton
+      key="create-market-button"
+      className={'mt-4 w-full'}
+    />
+  )
 
   return (
     <nav
@@ -98,7 +103,9 @@ export default function Sidebar(props: {
 
         {createMarketButton}
       </div>
-      <div className="mb-6 mt-auto flex flex-col gap-1">
+      <div
+        className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
+      >
         {user !== null && (
           <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
         )}
@@ -117,23 +124,17 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  showMarkets: boolean
+  options: { isNewUser: boolean; isLiveTV?: boolean }
 ) => {
+  const { isLiveTV } = options
+
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
-      showMarkets
-        ? {
-            name: 'Browse',
-            href: '/browse?topic=for-you',
-            icon: SearchIcon,
-          }
-        : { name: 'News', href: '/news', icon: NewspaperIcon },
       {
-        name: 'US Politics',
-        href: 'https://manifoldpolitics.com/',
-        icon: FaFlagUsa,
-        external: true,
+        name: 'Browse',
+        href: '/browse/for-you',
+        icon: SearchIcon,
       },
       {
         name: 'Notifications',
@@ -141,70 +142,126 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       {
+        name: 'US Politics',
+        href: '/politics',
+        icon: GiCapitol,
+      },
+      {
+        name: 'AI',
+        href: '/ai',
+        icon: PiRobotBold,
+      },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+      },
+      {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
-      },
-      { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
+      }
+      // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
     {
       name: 'US Politics',
-      href: 'https://manifoldpolitics.com/',
-      icon: FaFlagUsa,
-      external: true,
+      href: '/politics',
+      icon: GiCapitol,
+    },
+    {
+      name: 'AI',
+      href: '/ai',
+      icon: PiRobotBold,
     },
     { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
 // No sidebar when signed out
-const getMobileNav = (toggleModal: () => void) => {
+const getMobileNav = (
+  toggleModal: () => void,
+  options: { isNewUser: boolean; isLiveTV?: boolean }
+) => {
+  const { isNewUser, isLiveTV } = options
+
   return buildArray<NavItem>(
-    getIsNative()
-      ? {
-          name: 'US Elections',
-          href: '/elections',
-          icon: FaFlagUsa,
-        }
-      : {
-          name: 'US Politics',
-          href: 'https://manifoldpolitics.com/',
-          icon: FaFlagUsa,
-          external: true,
-        },
-    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon },
-    { name: 'Messages', href: '/messages', icon: PrivateMessagesIcon },
-    { name: 'Live', href: '/live', icon: LightningBoltIcon },
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
+    {
+      name: 'US Politics',
+      href: '/politics',
+      icon: GiCapitol,
+    },
+    {
+      name: 'AI',
+      href: '/ai',
+      icon: PiRobotBold,
+    },
+    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    {
+      name: 'TV',
+      href: '/tv',
+      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+    },
+    {
+      name: 'Messages',
+      href: '/messages',
+      icon: PrivateMessagesIcon,
+    },
+    !isNewUser && {
+      name: 'Dashboards',
+      href: '/dashboard',
+      icon: TemplateIcon,
+    },
+    !isNewUser && {
+      name: 'Site activity',
+      href: '/live',
+      icon: LightningBoltIcon,
+    },
     { name: 'Share with friends', href: '/referrals', icon: StarIcon } // remove this and I will beat you — SG
   )
 }
 
 const bottomNav = (
   loggedIn: boolean,
-  theme: 'light' | 'dark' | 'auto' | 'loading',
+  theme: 'light' | 'dark' | 'auto',
   toggleTheme: () => void,
   router: AppRouterInstance
 ) =>
-  buildArray(
+  buildArray<NavItem>(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
-      name: theme === 'loading' ? 'Auto' : capitalize(theme),
-      icon:
-        theme === 'light'
-          ? SunIcon
-          : theme === 'dark'
-          ? MoonIcon
-          : SparklesIcon,
+      name: theme ?? 'auto',
+      children:
+        theme === 'light' ? (
+          'Light'
+        ) : theme === 'dark' ? (
+          'Dark'
+        ) : (
+          <>
+            <span className="hidden dark:inline">Dark</span>
+            <span className="inline dark:hidden">Light</span> (auto)
+          </>
+        ),
+      icon: ({ className, ...props }) => (
+        <>
+          <MoonIcon
+            className={clsx(className, 'hidden dark:block')}
+            {...props}
+          />
+          <SunIcon
+            className={clsx(className, 'block dark:hidden')}
+            {...props}
+          />
+        </>
+      ),
       onClick: toggleTheme,
     },
     loggedIn && {

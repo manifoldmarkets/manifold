@@ -1,3 +1,6 @@
+import { initFirebase, initSecrets } from './utils'
+initFirebase()
+
 import * as fs from 'fs'
 import * as path from 'path'
 import * as Handlebars from 'handlebars'
@@ -5,8 +8,7 @@ import * as express from 'express'
 import * as basicAuth from 'express-basic-auth'
 import { sortBy } from 'lodash'
 import { isProd } from 'shared/utils'
-import { initGoogleCredentialsAndSecrets } from './utils'
-import { gLog as log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
 
@@ -22,7 +24,7 @@ const app = express()
 app.use(express.json())
 
 const server = app.listen(PORT, async () => {
-  await initGoogleCredentialsAndSecrets()
+  await initSecrets()
 
   const prod = isProd()
   log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)

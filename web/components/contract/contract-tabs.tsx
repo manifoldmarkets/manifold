@@ -1,5 +1,7 @@
 import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
 import {
@@ -8,7 +10,11 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { CPMMBinaryContract, Contract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  Contract,
+  CPMMNumericContract,
+} from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -18,11 +24,10 @@ import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'web/hooks/use-event'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
-import { track, withTracking } from 'web/lib/service/analytics'
+import { track } from 'web/lib/service/analytics'
 import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
 import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
@@ -31,19 +36,13 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
-import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { Button } from '../buttons/button'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { ArrowRightIcon } from '@heroicons/react/outline'
-import clsx from 'clsx'
 import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
-
-export const EMPTY_USER = '_'
+import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
+import { Button } from '../buttons/button'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -59,6 +58,7 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
+  betReplies: Bet[]
   appRouter?: boolean
 }) {
   const {
@@ -74,6 +74,7 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     pinnedComments,
     appRouter,
+    betReplies,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -83,33 +84,13 @@ export function ContractTabs(props: {
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
     maybePluralize('Comment', totalComments)
 
-  const user = useUser()
-
-  const { rows } = useRealtimeBets({
-    contractId: contract.id,
-    userId: user === undefined ? 'loading' : user?.id ?? EMPTY_USER,
-    filterAntes: true,
-    order: 'asc',
-  })
-  const userBets = rows ?? []
-
   const tradesTitle =
     (totalBets > 0 ? `${shortFormatNumber(totalBets)} ` : '') +
     maybePluralize('Trade', totalBets)
 
-  const visibleUserBets = userBets.filter(
-    (bet) => bet.amount !== 0 && !bet.isRedemption
-  )
-
-  const isMobile = useIsMobile()
-
-  const yourBetsTitle =
-    (visibleUserBets.length > 0 ? `${visibleUserBets.length} ` : '') +
-    (isMobile ? 'You' : 'Your Trades')
-
   const positionsTitle =
     (totalPositions > 0 ? `${shortFormatNumber(totalPositions)} ` : '') +
-    maybePluralize('Position', totalPositions)
+    maybePluralize('Holder', totalPositions)
 
   return (
     <ControlledTabs
@@ -123,8 +104,6 @@ export function ContractTabs(props: {
               ? 'comments'
               : title === tradesTitle
               ? 'trades'
-              : title === yourBetsTitle
-              ? 'your trades'
               : title === positionsTitle
               ? 'positions'
               : 'contract'
@@ -144,7 +123,7 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={bets}
+              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
               appRouter={appRouter}
             />
           ),
@@ -179,12 +158,6 @@ export function ContractTabs(props: {
               />
             </Col>
           ),
-        },
-        userBets.length > 0 && {
-          title: yourBetsTitle,
-          content: (
-            <ContractBetsTable contract={contract} bets={userBets} isYourBets />
-          ),
         }
       )}
     />
@@ -204,6 +177,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   highlightCommentId?: string
   pinnedComments: ContractComment[]
   appRouter?: boolean
+  scrollToEnd?: boolean
 }) {
   const {
     contract,
@@ -215,6 +189,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     bets,
     highlightCommentId,
     appRouter,
+    scrollToEnd,
   } = props
   const user = useUser()
 
@@ -226,7 +201,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // Supabase use realtime comments
   const { rows, loadNewer } = useRealtimeCommentsOnContract(
     contract.id,
-    user ? { userId: user.id } : undefined
+    user ? user.id : undefined
   )
   const comments = (rows ?? props.comments).filter(
     (c) => !blockedUserIds.includes(c.userId)
@@ -239,7 +214,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const isBinary = contract.outcomeType === 'BINARY'
   const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
   const bestFirst =
-    isBountiedQuestion && (!user || user.id !== contract.creatorId)
+    isBountiedQuestion &&
+    (!user || user.id !== contract.creatorId) &&
+    !contract.isAutoBounty
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
@@ -287,6 +264,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     () => strictlySortedComments.map((c) => c.id),
     strictlySortedComments.map((c) => c.id)
   )
+  useEffect(() => {
+    if (user) refreezeIds()
+  }, [user?.id])
 
   const firstOldCommentIndex = strictlySortedComments.findIndex((c) =>
     frozenCommentIds.includes(c.id)
@@ -343,26 +323,68 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     if (visible) loadMore()
   })
 
+  const endOfMessagesRef = useRef<any>(null)
+
+  useEffect(() => {
+    if (endOfMessagesRef && scrollToEnd)
+      endOfMessagesRef.current?.scrollIntoView({
+        behavior: 'auto',
+        block: 'start',
+      })
+  }, [endOfMessagesRef])
+
+  const [expandGptSummary, setExpandGptSummary] = usePersistentInMemoryState(
+    false,
+    `expand-gpt-summary-${contract.id}`
+  )
+
   return (
-    <Col className={className}>
-      {user && (
-        <ContractCommentInput
-          replyTo={replyTo}
-          replyToUserInfo={
-            replyTo && 'userUsername' in replyTo
-              ? {
-                  username: replyTo.userUsername,
-                  id: replyTo.userId,
-                }
-              : undefined
-          }
-          className="mb-4 mr-px mt-px"
-          contract={contract}
-          clearReply={clearReply}
-          trackingLocation={'contract page'}
-          onSubmit={loadNewer}
-          commentTypes={['comment', 'repost']}
-        />
+    <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
+      <div ref={endOfMessagesRef} />
+      <ContractCommentInput
+        replyTo={replyTo}
+        replyToUserInfo={
+          replyTo && 'userUsername' in replyTo
+            ? {
+                username: replyTo.userUsername,
+                id: replyTo.userId,
+              }
+            : undefined
+        }
+        className="mb-4 mr-px mt-px"
+        contract={contract}
+        clearReply={clearReply}
+        trackingLocation={'contract page'}
+        onSubmit={loadNewer}
+        commentTypes={['comment', 'repost']}
+      />
+
+      {contract.gptCommentSummary && (
+        <Button
+          className="mb-2 rounded-md bg-teal-100 p-4"
+          size="xs"
+          color="none"
+          onClick={() => setExpandGptSummary((e) => !e)}
+        >
+          <Col className="gap-2 p-2">
+            <Row className="items-center gap-2">
+              {expandGptSummary ? (
+                <ChevronUpIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5" />
+              )}
+              <div className="text-lg">Comments summary</div>
+            </Row>
+            <div
+              className={clsx(
+                'whitespace-pre-line text-left text-sm',
+                !expandGptSummary && 'line-clamp-3'
+              )}
+            >
+              {contract.gptCommentSummary}
+            </div>
+          </Col>
+        </Button>
       )}
 
       {comments.length > 0 && (
@@ -431,20 +453,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           className="pointer-events-none absolute bottom-0 h-[75vh]"
         />
       </div>
-
-      {!user && (
-        <Button
-          onClick={withTracking(
-            firebaseLogin,
-            'sign up to comment button click'
-          )}
-          className={clsx('mt-4', comments.length > 0 && 'ml-12')}
-          size="lg"
-          color="gradient"
-        >
-          Sign up to comment <ArrowRightIcon className="ml-2 h-4 w-4" />
-        </Button>
-      )}
     </Col>
   )
 })
@@ -481,6 +489,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   setReplyToBet?: (bet: Bet) => void
 }) {
   const { contract, setReplyToBet, totalBets } = props
+  const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
@@ -497,12 +506,24 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
+  const isMultiNumber = outcomeType === 'NUMBER'
+  const betsByBetGroupId = isMultiNumber
+    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+    : {}
+  const groupedBets = Object.values(betsByBetGroupId)
+
   const items = [
-    ...bets.map((bet) => ({
-      type: 'bet' as const,
-      id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
-      bet,
-    })),
+    ...(isMultiNumber
+      ? groupedBets.map((bets) => ({
+          type: 'betGroup' as const,
+          id: 'bets-tab-' + bets[0].betGroupId,
+          bets,
+        }))
+      : bets.map((bet) => ({
+          type: 'bet' as const,
+          id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
+          bet,
+        }))),
     ...visibleLps.map((lp) => ({
       type: 'liquidity' as const,
       id: lp.id,
@@ -533,6 +554,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       ? -item.bet.createdTime
       : item.type === 'liquidity'
       ? -item.lp.createdTime
+      : item.type === 'betGroup'
+      ? -item.bets[0].createdTime
       : undefined
   ).slice(start, end)
 
@@ -552,6 +575,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                 contract={contract}
                 bet={item.bet}
               />
+            ) : item.type === 'betGroup' ? (
+              <MultiNumericBetGroup
+                key={item.id}
+                contract={contract as CPMMNumericContract}
+                bets={item.bets}
+              />
             ) : (
               <FeedLiquidity key={item.id} liquidity={item.lp} />
             )
@@ -560,7 +589,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       </Col>
       <Pagination
         page={page}
-        itemsPerPage={ITEMS_PER_PAGE}
+        pageSize={ITEMS_PER_PAGE}
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)

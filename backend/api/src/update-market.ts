@@ -1,7 +1,9 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import {
+  log,
   getContractSupabase,
   revalidateContractStaticProps,
+  processPaginated,
 } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'
@@ -14,8 +16,7 @@ import { isEmpty } from 'lodash'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
-  auth,
-  { log }
+  auth
 ) => {
   const { contractId, ...fields } = body
   if (isEmpty(fields))
@@ -88,7 +89,42 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     )
   }
 
-  await revalidateContractStaticProps(contract)
+  const continuation = async () => {
+    log(`Revalidating contract ${contract.id}.`)
+    await revalidateContractStaticProps(contract)
+
+    log(`Updating lastUpdatedTime for contract ${contract.id}.`)
+    await firestore.collection('contracts').doc(contract.id).update({
+      lastUpdatedTime: Date.now(),
+    })
+
+    //TODO: Now that we don't have private contracts, do we really need to update visibilities?
+    if (visibility) {
+      await updateContractSubcollectionsVisibility(contract.id, visibility)
+    }
+  }
+
+  return {
+    result: { success: true },
+    continue: continuation,
+  }
 }
 
 const firestore = admin.firestore()
+
+async function updateContractSubcollectionsVisibility(
+  contractId: string,
+  newVisibility: 'public' | 'unlisted'
+) {
+  const contractRef = firestore.collection('contracts').doc(contractId)
+  const batchSize = 500
+
+  // Update bets' visibility
+  const betsRef = contractRef.collection('bets')
+  await processPaginated(betsRef, batchSize, (ts) => {
+    const updatePromises = ts.docs.map((doc) => {
+      return doc.ref.update({ visibility: newVisibility })
+    })
+    return Promise.all(updatePromises)
+  })
+}

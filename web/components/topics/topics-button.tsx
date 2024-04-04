@@ -110,23 +110,26 @@ export function FollowOrUnfolowTopicButton(props: {
   }
 
   const unfollow = user
-    ? withTracking(() => {
+    ? () => {
+        track('leave group', { slug: group.slug })
         unfollowTopic(group.id, user.id)
           .then(() => setIsMember(false))
-          .catch(() => {
+          .catch((e) => {
+            console.error(e)
             toast.error('Failed to unfollow category')
           })
-      }, 'leave group')
+      }
     : firebaseLogin
   const follow = user
-    ? withTracking(() => {
+    ? () => {
+        track('join group', { slug: group.slug })
         followTopic({ groupId: group.id })
           .then(() => setIsMember(true))
           .catch((e) => {
             console.error(e)
             toast.error('Failed to follow category')
           })
-      }, 'join group')
+      }
     : firebaseLogin
 
   if (isMember) {
@@ -196,6 +199,7 @@ export const unfollowTopicInternal = async (
     })
   track('leave group', { slug: group.slug })
 }
+
 export const TopicOptionsButton = (props: {
   group: Group
   yourGroupIds: string[] | undefined
@@ -203,25 +207,17 @@ export const TopicOptionsButton = (props: {
   className?: string
 }) => {
   const { group, className, yourGroupIds, user } = props
-  const [isMember, setIsMember] = useState(
-    yourGroupIds ? yourGroupIds.includes(group.id) : false
-  )
-  useEffect(() => {
-    if (yourGroupIds) setIsMember(yourGroupIds.includes(group.id))
-  }, [yourGroupIds?.length])
+  const isMember = yourGroupIds ? yourGroupIds.includes(group.id) : false
 
   return (
-    <span className={className}>
-      <TopicOptions
-        group={group}
-        user={user}
-        isMember={isMember}
-        unfollow={() => {
-          unfollowTopicInternal(user, group).then(() => {
-            setIsMember(false)
-          })
-        }}
-      />
-    </span>
+    <TopicOptions
+      group={group}
+      user={user}
+      isMember={isMember}
+      className={className}
+      unfollow={() => {
+        unfollowTopicInternal(user, group)
+      }}
+    />
   )
 }

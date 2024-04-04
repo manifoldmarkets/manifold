@@ -83,3 +83,21 @@ export const generateImage = async (q: string) => {
     .then((res) => res.data[0].url)
     .catch((err) => (console.log(err), undefined))
 }
+
+export const promptGPT4 = async (prompt: string) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+  const result = await openai.chat.completions
+    .create({
+      model: 'gpt-4-turbo-preview',
+      messages: [{ role: 'system', content: prompt }],
+      max_tokens: 4096,
+    })
+    .catch((err) => (console.log(err), undefined))
+
+  if (!result) return undefined
+
+  const message = result.choices[0].message.content
+  console.log('GPT4 returned message:', message)
+  return message
+}

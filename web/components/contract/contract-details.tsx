@@ -20,6 +20,7 @@ import { updateMarket } from 'web/lib/firebase/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
 import { useUserById } from 'web/hooks/use-user'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
@@ -28,33 +29,39 @@ export function AuthorInfo(props: { contract: Contract }) {
   return (
     <Row className="grow flex-wrap items-center gap-1">
       <div className="relative">
-        <Avatar
-          username={creatorUsername}
-          avatarUrl={creatorAvatarUrl}
-          size={'xs'}
-        />
+        <UserHovercard userId={creatorId}>
+          <Avatar
+            username={creatorUsername}
+            avatarUrl={creatorAvatarUrl}
+            size={'xs'}
+          />
+        </UserHovercard>
       </div>
-      <UserLink
-        user={{
-          id: creatorId,
-          name: creatorName,
-          username: creatorUsername,
-        }}
-        className={'mr-1'}
-      />
+      <UserHovercard userId={creatorId}>
+        <UserLink
+          user={{
+            id: creatorId,
+            name: creatorName,
+            username: creatorUsername,
+          }}
+          className={'mr-1'}
+        />
+      </UserHovercard>
       <FollowButton userId={contract.creatorId} size="2xs" />
       {contract.isResolved &&
         contract.resolverId! !== contract.creatorId &&
         resolver && (
           <>
             <span className={'ml-1'}>resolved by </span>
-            <UserLink
-              user={{
-                id: resolver.id,
-                name: resolver.name,
-                username: resolver.username,
-              }}
-            />
+            <UserHovercard userId={resolver.id}>
+              <UserLink
+                user={{
+                  id: resolver.id,
+                  name: resolver.name,
+                  username: resolver.username,
+                }}
+              />
+            </UserHovercard>
           </>
         )}
     </Row>

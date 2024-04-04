@@ -64,6 +64,7 @@ export const FeedRelatedContractsGroup = (props: {
           <Col className="px-2 pt-3">
             {contract && (
               <FeedContractCard
+                trackingPostfix={'feed related contract'}
                 item={item}
                 className={'shadow-none drop-shadow-none'}
                 contract={contract}
@@ -76,7 +77,6 @@ export const FeedRelatedContractsGroup = (props: {
               contracts={contracts
                 .slice(0, contractsToShow)
                 .filter((c) => c.id !== contract?.id)}
-              hideHeader={true}
             />
             {contracts.length > SHOW_CONTRACTS_DEFAULT && (
               <Row className={'mr-1 justify-end'}>

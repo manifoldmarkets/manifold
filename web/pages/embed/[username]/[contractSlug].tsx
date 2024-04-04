@@ -1,6 +1,12 @@
 import clsx from 'clsx'
-import { HistoryPoint, unserializeMultiPoints } from 'common/chart'
-import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
+import { HistoryPoint, MultiPoints } from 'common/chart'
+import {
+  CPMMMultiContract,
+  Contract,
+  contractPath,
+  isBinaryMulti,
+  getMainBinaryMCAnswer,
+} from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
@@ -10,7 +16,10 @@ import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { NoSEO } from 'web/components/NoSEO'
 import { SimpleAnswerBars } from 'web/components/answers/answers-panel'
-import { BinaryContractChart } from 'web/components/charts/contract/binary'
+import {
+  BinaryContractChart,
+  MultiBinaryChart,
+} from 'web/components/charts/contract/binary'
 import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
@@ -34,11 +43,7 @@ import { ContractSummaryStats } from 'web/components/contract/contract-summary-s
 import { PollPanel } from 'web/components/poll/poll-panel'
 import { getBetPoints } from 'common/supabase/bets'
 import { getSingleBetPoints } from 'common/contract-params'
-import { getMultiBetPoints } from 'common/contract-params'
-import {
-  ChoiceContractChart,
-  MultiPoints,
-} from 'web/components/charts/contract/choice'
+import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { Spacer } from 'web/components/layout/spacer'
 
 type Points = HistoryPoint<any>[]
@@ -67,15 +72,15 @@ export async function getStaticProps(props: {
   }
   const points = await getHistoryData(contract)
 
-  let multiPoints = null
-  if (contract.mechanism == 'cpmm-multi-1') {
-    const allBetPoints = await getBetPoints(db, contract.id)
-    const serializedMultiPoints = getMultiBetPoints(
-      allBetPoints,
-      contract as CPMMMultiContract
-    )
-    multiPoints = unserializeMultiPoints(serializedMultiPoints)
-  }
+  const multiPoints = null
+  // if (contract.mechanism == 'cpmm-multi-1') {
+  //   const allBetPoints = await getBetPoints(db, contract.id)
+  //   const serializedMultiPoints = getMultiBetPoints(
+  //     allBetPoints,
+  //     contract as CPMMMultiContract
+  //   )
+  //   multiPoints = unserializeMultiPoints(serializedMultiPoints)
+  // }
   return {
     props: { contract, points, multiPoints },
   }
@@ -161,7 +166,14 @@ const ContractChart = (props: {
       return (
         <StonkContractChart {...rest} betPoints={points} contract={contract} />
       )
-
+    case 'MULTIPLE_CHOICE':
+      return isBinaryMulti(contract) ? (
+        <MultiBinaryChart
+          {...rest}
+          contract={contract as CPMMMultiContract}
+          betPoints={points}
+        />
+      ) : null
     default:
       return null
   }
@@ -200,6 +212,7 @@ function ContractSmolView(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'
 
@@ -263,7 +276,24 @@ function ContractSmolView(props: {
             )}
           >
             {(w, h) =>
-              isMulti ? (
+              mainBinaryMCAnswer &&
+              contract.mechanism === 'cpmm-multi-1' &&
+              contract.outcomeType !== 'NUMBER' ? (
+                <div className="flex h-full flex-col justify-center">
+                  {showMultiChart && (
+                    <div className="relative">
+                      <ContractChart
+                        contract={contract}
+                        points={props.multiPoints![mainBinaryMCAnswer.id]}
+                        width={w - 10}
+                        height={h - 24}
+                      />
+                      <Spacer h={6} />
+                      {showQRCode && <FloatingQRCode shareUrl={shareUrl} />}
+                    </div>
+                  )}
+                </div>
+              ) : isMulti ? (
                 <div className="flex h-full flex-col justify-center">
                   {showMultiChart && (
                     <div className="relative">

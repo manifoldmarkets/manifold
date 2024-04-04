@@ -81,7 +81,7 @@ export default function UserPage(props: {
     <LovePage
       trackPageView={'user page'}
       trackPageProps={{ username: user.username }}
-      className={'p-2 sm:pt-0'}
+      className={'relative p-2 sm:pt-0'}
     >
       <SEO
         title={`${user.name} (@${user.username})`}

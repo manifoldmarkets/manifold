@@ -7,6 +7,7 @@ import { SupabaseClient } from 'common/supabase/utils'
 import { formatMoney } from 'common/util/format'
 
 export async function canSendMana(user: User, db: SupabaseClient) {
+  if (user.userDeleted || user.isBannedFromPosting) return false
   const ageThreshold = Date.now() - 14 * DAY_MS
   const portfolioHistory = last(
     await getPortfolioHistory(user.id, Date.now() - DAY_MS, db)

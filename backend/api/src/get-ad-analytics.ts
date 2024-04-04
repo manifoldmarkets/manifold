@@ -1,13 +1,10 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
-import { uniqBy } from 'lodash'
+import { sumBy } from 'lodash'
+import { log } from 'shared/utils'
 
-export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
-  body,
-  _,
-  { log }
-) => {
+export const getadanalytics: APIHandler<'get-ad-analytics'> = async (body) => {
   const { contractId } = body
   const db = createSupabaseClient()
   const [{ data: adData }, { data: viewData }] = await Promise.all([
@@ -19,10 +16,10 @@ export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
     ),
     run(
       db
-        .from('user_seen_markets')
-        .select('user_id, is_promoted')
-        .eq('type', 'view market card')
+        .from('user_contract_views')
+        .select('user_id, promoted_views, card_views')
         .eq('contract_id', contractId)
+        .or('promoted_views.gt.0, card_views.gt.0')
     ),
   ])
   log({ adData, viewData })
@@ -33,16 +30,16 @@ export const getadanalytics: APIHandler<'get-ad-analytics'> = async (
     db
       .from('txns')
       .select('*', { count: 'exact' })
-      .eq('data->>category' as any, 'MARKET_BOOST_REDEEM')
-      .eq('data->>fromId' as any, lastAdData?.id)
+      .eq('category', 'MARKET_BOOST_REDEEM')
+      .eq('from_id', lastAdData?.id)
   )
-  const promotedViewData = viewData?.filter((v) => v.is_promoted)
+  const promotedViewData = viewData?.filter((v) => v.promoted_views > 0)
   const totalFunds = adData?.reduce((acc, v) => acc + v.funds, 0) ?? 0
   return {
-    uniquePromotedViewers: uniqBy(promotedViewData, 'user_id').length,
-    totalPromotedViews: promotedViewData.length,
-    uniqueViewers: uniqBy(viewData, 'user_id').length,
-    totalViews: viewData.length,
+    uniquePromotedViewers: promotedViewData.length,
+    totalPromotedViews: sumBy(promotedViewData, (d) => d.promoted_views),
+    uniqueViewers: viewData.length,
+    totalViews: sumBy(viewData, (d) => d.promoted_views + d.card_views),
     redeemCount,
     isBoosted: !!adData?.length,
     totalFunds,

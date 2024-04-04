@@ -127,6 +127,49 @@ export const DistributionChart = <P extends DistributionPoint>(props: {
     </SVGChart>
   )
 }
+export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
+  data: P[]
+  otherData: P[]
+  w: number
+  h: number
+  color: string
+  xScale: ScaleContinuousNumeric<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
+  curve?: CurveFactory
+}) => {
+  const { data, otherData, w, h, color, xScale, yScale, curve } = props
+
+  const px = useCallback((p: P) => xScale(p.x), [xScale])
+  const py0 = yScale(yScale.domain()[0])
+  const py1 = useCallback((p: P) => yScale(p.y), [yScale])
+
+  const { xAxis, yAxis } = useMemo(() => {
+    const xAxis = axisBottom<number>(xScale).ticks(w / 100)
+    const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n))
+    return { xAxis, yAxis }
+  }, [w, xScale, yScale])
+
+  return (
+    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve ?? curveLinear}
+      />
+      <AreaWithTopStroke
+        color={'#d968ff'}
+        data={otherData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve ?? curveLinear}
+      />
+    </SVGChart>
+  )
+}
 
 // multi line chart
 export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
@@ -291,23 +334,51 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
           answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
         }
       >
-        {sortedLines.map(({ id, points, color }) => (
-          <g key={id}>
+        {sortedLines.map(
+          ({ id, points, color }) =>
+            (!hoveringId || hoveringId !== id) && (
+              <g key={id}>
+                <LinePath
+                  data={points}
+                  px={px}
+                  py={py}
+                  curve={curve}
+                  className={clsx(
+                    ' stroke-canvas-0 transition-[stroke-width]',
+                    hoveringId && hoveringId !== id
+                      ? 'stroke-[0px] opacity-50'
+                      : 'stroke-[4px]'
+                  )}
+                />
+                <LinePath
+                  data={points}
+                  px={px}
+                  py={py}
+                  curve={curve}
+                  className={clsx(
+                    ' transition-[stroke-width]',
+                    hoveringId && hoveringId !== id
+                      ? 'stroke-1 opacity-50'
+                      : 'stroke-2'
+                  )}
+                  stroke={color}
+                />
+              </g>
+            )
+        )}
+        {/* show hovering line on top */}
+        {hoveringId && hoveringId in data && (
+          <g key={`${hoveringId}-front`}>
             <LinePath
-              data={points}
+              data={data[hoveringId].points}
               px={px}
               py={py}
               curve={curve}
-              className={clsx(
-                'transition-[stroke-width]',
-                hoveringId && hoveringId !== id
-                  ? 'stroke-1 opacity-50'
-                  : 'stroke-2'
-              )}
-              stroke={color}
+              className={clsx(' transition-[stroke-width]', 'stroke-2')}
+              stroke={data[hoveringId].color}
             />
           </g>
-        ))}
+        )}
         {/* hover effect put last so it shows on top */}
         {hoveringId && hoveringId in data && (
           <AreaPath
@@ -457,7 +528,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     const [min, max] = yScale.domain()
     const nTicks = h < 200 ? 3 : 5
     const customTickValues = getTickValues(min, max, nTicks)
-    const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
     const yAxis =
       yKind === 'percent'
         ? axisRight<number>(yScale)
@@ -569,7 +640,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           px={px}
           py0={py0}
           py1={py1}
-          curve={curve ?? curveLinear}
+          curve={curve}
         />
         {mouse && (
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />
@@ -599,6 +670,173 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           open={true}
           setOpen={() => setShowChartAnnotationModal(undefined)}
           chartAnnotation={showChartAnnotationModal}
+        />
+      )}
+    </>
+  )
+}
+
+// copied gratuitously from SingleValueHistoryChart
+export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
+  data: P[]
+  w: number
+  h: number
+  topColor: string
+  bottomColor: string
+  xScale: ScaleTime<number, number>
+  yScale: ScaleContinuousNumeric<number, number>
+  zoomParams?: ZoomParams
+  showZoomer?: boolean
+  curve?: CurveFactory
+  onMouseOver?: (p: P | undefined) => void
+  Tooltip?: (props: TooltipProps<P>) => ReactNode
+  ttProps?: TooltipProps<P>
+}) => {
+  const {
+    data,
+    w,
+    h,
+    topColor,
+    bottomColor,
+    Tooltip,
+    showZoomer,
+    curve = curveStepAfter,
+    yScale,
+    zoomParams,
+  } = props
+
+  useEffect(() => {
+    if (props.xScale) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [w])
+
+  const xScale = zoomParams?.viewXScale ?? props.xScale
+
+  const [mouse, setMouse] = useState<TooltipProps<P>>()
+
+  const px = useCallback((p: P) => xScale(p.x), [xScale])
+  const py0 = yScale(0)
+  const pyMid = useCallback((p: P) => yScale(p.y), [yScale])
+  const py1 = yScale(1)
+
+  const { xAxis, yAxis } = useMemo(() => {
+    const [min, max] = yScale.domain()
+    const nTicks = h < 200 ? 3 : 5
+    const customTickValues = getTickValues(min, max, nTicks)
+    const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
+    const yAxis = axisRight<number>(yScale)
+      .tickValues(customTickValues)
+      .tickFormat((n) => formatPct(n))
+
+    return { xAxis, yAxis }
+  }, [w, h, xScale, yScale])
+
+  const xRangeSelector = dataAtXSelector(data, xScale)
+  const allTimeSelector = dataAtTimeSelector(data)
+
+  const onMouseOver = useEvent((mouseX: number) => {
+    setMouse(getMarkerPosition(mouseX, props.onMouseOver))
+  })
+  const getMarkerPosition = useCallback(
+    (
+      mouseX: number,
+      onMouseOver?: (p: P | undefined) => void,
+      useTimeSelector?: boolean
+    ) => {
+      const p = useTimeSelector
+        ? allTimeSelector(mouseX)
+        : xRangeSelector(mouseX)
+      onMouseOver?.(p.prev)
+      if (p.prev) {
+        const x0 = xScale(p.prev.x)
+        const x1 = p.next ? xScale(p.next.x) : x0
+        const y0 = yScale(p.prev.y)
+        const y1 = p.next ? yScale(p.next.y) : y0
+        const markerY = interpolateY(curve, mouseX, x0, x1, y0, y1)
+
+        return { ...p, y: markerY }
+      } else {
+        return undefined
+      }
+    },
+    [xScale, yScale, curve, allTimeSelector, xRangeSelector]
+  )
+
+  const onMouseLeave = useEvent(() => {
+    props.onMouseOver?.(undefined)
+    setMouse(undefined)
+  })
+
+  return (
+    <>
+      <SVGChart
+        w={w}
+        h={h}
+        xAxis={xAxis}
+        yAxis={yAxis}
+        ttParams={mouse}
+        zoomParams={zoomParams}
+        onMouseOver={onMouseOver}
+        onMouseLeave={onMouseLeave}
+        Tooltip={Tooltip}
+        xScale={xScale}
+        y0={py0}
+        yAtTime={(x: number) => getMarkerPosition(x, undefined, true)?.y ?? 0}
+      >
+        <AreaPath
+          fill={topColor}
+          data={data}
+          px={px}
+          py1={py1}
+          py0={pyMid}
+          curve={curve}
+          opacity={0.8}
+        />
+        <AreaPath
+          fill={bottomColor}
+          data={data}
+          px={px}
+          py1={pyMid}
+          py0={py0}
+          curve={curve}
+          opacity={0.8}
+        />
+
+        <LinePath
+          data={data}
+          px={px}
+          py={pyMid}
+          curve={curve}
+          className="stroke-canvas-50"
+        />
+
+        {mouse && (
+          <g>
+            <line
+              strokeWidth={1}
+              x1={mouse.x}
+              x2={mouse.x}
+              y1={py1}
+              y2={py0}
+              className="stroke-ink-800"
+              strokeDasharray={4}
+            />
+            <circle
+              cx={mouse.x}
+              cy={mouse.y}
+              r={4}
+              className="fill-ink-200 stroke-ink-800"
+            />
+          </g>
+        )}
+      </SVGChart>
+
+      {showZoomer && zoomParams && (
+        <ZoomSlider
+          zoomParams={zoomParams}
+          color="indigo"
+          className="relative top-4"
         />
       )}
     </>

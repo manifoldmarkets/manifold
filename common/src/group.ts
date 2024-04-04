@@ -1,6 +1,7 @@
 import { Row } from './supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { z, ZodRawShape } from 'zod'
+import { contentSchema } from './api/zod-types'
 
 export type Group = {
   id: string
@@ -31,14 +32,24 @@ export type GroupResponse = Row<'groups'>
 
 export type PrivacyStatusType = 'public' | 'curated' | 'private'
 export const MAX_GROUP_NAME_LENGTH = 75
-export const MAX_ABOUT_LENGTH = 140
+// export const MAX_ABOUT_LENGTH = 140
 export const MAX_ID_LENGTH = 60
+export const MAX_GROUPS_PER_MARKET = 10
+
+export const GroupAboutSchema = contentSchema.or(z.string())
+
+export const GroupNameSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(MAX_GROUP_NAME_LENGTH)
 
 export type GroupLink = {
   slug: string
   name: string
   groupId: string
-  createdTime: number
+  /** @deprecated - may not exist */
+  createdTime?: number
   /** @deprecated */
   userId?: string
 }
@@ -55,7 +66,7 @@ export type LiteGroup = Pick<
 >
 
 export function groupPath(groupSlug: string) {
-  return `/browse?${TOPIC_KEY}=${groupSlug}`
+  return `/browse/${groupSlug}`
 }
 
 // note: changing these breaks old urls. if you do, make sure to update omnisearch and opensearch.xml

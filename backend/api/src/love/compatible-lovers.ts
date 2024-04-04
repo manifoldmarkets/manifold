@@ -9,11 +9,11 @@ import {
   getGenderCompatibleLovers,
 } from 'shared/love/supabase'
 import { filterDefined } from 'common/util/array'
+import { log } from 'shared/utils'
 
 export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
   props,
-  _auth,
-  { log }
+  _auth
 ) => {
   const { userId } = props
 
@@ -28,10 +28,9 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     username: lover?.user?.username,
   })
 
-  log(
-    'got lover contracts',
-    loverContracts.map((c) => ({ id: c.id, question: c.question }))
-  )
+  log('got lover contracts', {
+    contracts: loverContracts.map((c) => ({ id: c.id, question: c.question })),
+  })
 
   if (!lover) throw new APIError(404, 'Lover not found')
 

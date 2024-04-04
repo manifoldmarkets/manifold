@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { clamp, sumBy } from 'lodash'
 import { useState } from 'react'
@@ -11,27 +10,32 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
-import { APIError, api } from 'web/lib/firebase/api'
 import { User } from 'web/lib/firebase/users'
-import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { OrderBookButton } from './order-book'
-import { YesNoSelector } from './yes-no-selector'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { MultiBetProps } from 'web/components/bet/bet-panel'
+import { track } from 'web/lib/service/analytics'
+import { APIError } from 'common/api/utils'
+import { removeUndefinedProps } from 'common/util/object'
+import { api } from 'web/lib/firebase/api'
+import clsx from 'clsx'
+import { getVersusColors } from '../charts/contract/choice'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -39,60 +43,86 @@ export default function LimitOrderPanel(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
-  multiProps?: { answers: Answer[]; answerToBuy: Answer }
+    | CPMMNumericContract
+  multiProps?: MultiBetProps
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
-  hidden: boolean
+
   onBuySuccess?: () => void
   className?: string
+  outcome: 'YES' | 'NO' | undefined
 }) {
   const {
     contract,
     multiProps,
-    user,
     unfilledBets,
     balanceByUserId,
-    hidden,
+    user,
+    outcome,
     onBuySuccess,
-    className,
   } = props
+  const isBinaryMC = isBinaryMulti(contract)
+  const binaryMCColors = isBinaryMC
+    ? getVersusColors((contract as any).answers)
+    : undefined
 
+  const binaryMCOutcome =
+    isBinaryMC && multiProps
+      ? multiProps.answerText === multiProps.answerToBuy.text
+        ? 'YES'
+        : 'NO'
+      : undefined
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const [betAmount, setBetAmount] = useState<number | undefined>(undefined)
+  const defaultBetAmount = 100
+  const [betAmount, setBetAmount] = useState<number | undefined>(
+    defaultBetAmount
+  )
   const [error, setError] = useState<string | undefined>()
   const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Expiring orders
-  const [addExpiration, setAddExpiration] = useState(false)
+  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
+    false,
+    'add-limit-order-expiration'
+  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
-  const [expirationDate, setExpirationDate] = useState<string>(initDate)
+  const [expirationDate, setExpirationDate] =
+    usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
-    useState<string>(initTime)
+    usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
+
   const expiresAt = addExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
-  const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
-    undefined
-  )
+  const initialProb =
+    isBinaryMC && outcome === 'YES'
+      ? multiProps!.answerToBuy.prob
+      : isBinaryMC && outcome === 'NO'
+      ? 1 - multiProps!.answerToBuy.prob
+      : isCpmmMulti
+      ? multiProps!.answerToBuy.prob
+      : getProbability(contract)
 
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
+    Math.round(initialProb * 100)
+  )
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
     isSubmitting || !outcome || !betAmount || !!error || !hasLimitBet
 
-  const limitProb =
+  const preLimitProb =
     limitProbInt === undefined
       ? undefined
       : clamp(
@@ -107,12 +137,26 @@ export default function LimitOrderPanel(props: {
           0.001,
           0.999
         )
+  const limitProb =
+    !preLimitProb || !isBinaryMC
+      ? preLimitProb
+      : getBinaryMCProb(preLimitProb, outcome as 'YES' | 'NO')
 
   const amount = betAmount ?? 0
 
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
   }
+
+  const cpmmState = isCpmmMulti
+    ? {
+        pool: {
+          YES: multiProps!.answerToBuy.poolYes,
+          NO: multiProps!.answerToBuy.poolNo,
+        },
+        p: 0.5,
+      }
+    : { pool: contract.pool, p: contract.p }
 
   async function submitBet() {
     if (!user || betDisabled) return
@@ -161,20 +205,6 @@ export default function LimitOrderPanel(props: {
     })
   }
 
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-      }
-    : { pool: contract.pool, p: contract.p }
-
-  const initialProb = isCpmmMulti
-    ? multiProps!.answerToBuy.prob
-    : getProbability(contract)
-
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
@@ -185,7 +215,7 @@ export default function LimitOrderPanel(props: {
     amount: filledAmount,
   } = getBetReturns(
     cpmmState,
-    outcome ?? 'YES',
+    binaryMCOutcome ?? outcome ?? 'YES',
     amount,
     limitProb ?? initialProb,
     unfilledBets,
@@ -194,34 +224,10 @@ export default function LimitOrderPanel(props: {
   )
   const returnPercent = formatPercent(currentReturn)
 
-  const unfilledBetsMatchingAnswer = unfilledBets.filter(
-    (b) => b.answerId === multiProps?.answerToBuy?.id
-  )
-
   return (
-    <Col className={clsx(className, hidden && 'hidden')}>
-      <Row className="mb-4 items-center justify-between">
-        <div className="text-lg">Place a limit order</div>
-
-        <OrderBookButton
-          limitBets={unfilledBetsMatchingAnswer}
-          contract={contract}
-        />
-      </Row>
-
-      <Col className="relative mb-8 w-full gap-3">
-        <Row className="items-center gap-3">
-          Outcome
-          <YesNoSelector
-            selected={outcome}
-            btnClassName={'!rounded-full'}
-            onSelect={(selected) => setOutcome(selected)}
-            disabled={isSubmitting}
-            yesLabel={isPseudoNumeric ? 'HIGHER' : undefined}
-            noLabel={isPseudoNumeric ? 'LOWER' : undefined}
-          />
-        </Row>
-        <Row className="w-full items-center gap-3">
+    <>
+      <Col className="relative my-2 w-full gap-3">
+        <Row className="text-ink-700 w-full items-center gap-3">
           {isPseudoNumeric ? 'Value' : 'Probability'}
           <ProbabilityOrNumericInput
             contract={contract}
@@ -234,19 +240,19 @@ export default function LimitOrderPanel(props: {
         </Row>
       </Col>
 
-      <span className="text-ink-800 mb-2 text-sm">Amount</span>
-
+      <Row className={'text-ink-700 my-2 items-center space-x-3'}>
+        Bet amount
+      </Row>
       <BuyAmountInput
         amount={betAmount}
         onChange={onBetChange}
         error={error}
         setError={setError}
         disabled={isSubmitting}
-        showBalance
         showSlider
       />
 
-      <div className="mb-4">
+      <div className="my-3">
         <Button
           className={'mt-4'}
           onClick={() => setAddExpiration(!addExpiration)}
@@ -256,81 +262,85 @@ export default function LimitOrderPanel(props: {
           {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
         </Button>
         {addExpiration && (
-          <Row className="mt-4 flex-wrap gap-2">
-            <Input
-              type={'date'}
-              className="dark:date-range-input-white"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                setExpirationDate(e.target.value)
-                if (!expirationHoursMinutes) {
-                  setExpirationHoursMinutes(initTime)
-                }
-              }}
-              min={dayjs().format('YYYY-MM-DD')}
-              max="9999-12-31"
-              disabled={isSubmitting}
-              value={expirationDate}
-            />
-            <Input
-              type={'time'}
-              className="dark:date-range-input-white"
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => setExpirationHoursMinutes(e.target.value)}
-              disabled={isSubmitting}
-              value={expirationHoursMinutes}
-            />
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num =
-                  dayjs(
-                    `${expirationDate}T${expirationHoursMinutes}`
-                  ).valueOf() + MINUTE_MS
-                const addTime = dayjs(num).format('HH:mm')
-                setExpirationHoursMinutes(addTime)
-              }}
-            >
-              + 1Min
-            </Button>{' '}
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num =
-                  dayjs(
-                    `${expirationDate}T${expirationHoursMinutes}`
-                  ).valueOf() + HOUR_MS
-                const addTime = dayjs(num).format('HH:mm')
-                setExpirationHoursMinutes(addTime)
-              }}
-            >
-              + 1Hr
-            </Button>
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num = dayjs(expirationDate).valueOf() + DAY_MS
-                const addDay = dayjs(num).format('YYYY-MM-DD')
-                setExpirationDate(addDay)
-              }}
-            >
-              + 1D
-            </Button>
-            <Button
-              color={'indigo-outline'}
-              size={'sm'}
-              onClick={() => {
-                const num = dayjs(expirationDate).valueOf() + WEEK_MS
-                const addDay = dayjs(num).format('YYYY-MM-DD')
-                setExpirationDate(addDay)
-              }}
-            >
-              + 1W
-            </Button>
-          </Row>
+          <Col className="gap-2">
+            <Row className="mt-4 gap-2">
+              <Input
+                type={'date'}
+                className="dark:date-range-input-white"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  setExpirationDate(e.target.value)
+                  if (!expirationHoursMinutes) {
+                    setExpirationHoursMinutes(initTime)
+                  }
+                }}
+                min={dayjs().format('YYYY-MM-DD')}
+                max="9999-12-31"
+                disabled={isSubmitting}
+                value={expirationDate}
+              />
+              <Input
+                type={'time'}
+                className="dark:date-range-input-white"
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setExpirationHoursMinutes(e.target.value)}
+                disabled={isSubmitting}
+                value={expirationHoursMinutes}
+              />
+            </Row>
+            <Row className="gap-2">
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num =
+                    dayjs(
+                      `${expirationDate}T${expirationHoursMinutes}`
+                    ).valueOf() + MINUTE_MS
+                  const addTime = dayjs(num).format('HH:mm')
+                  setExpirationHoursMinutes(addTime)
+                }}
+              >
+                + 1Min
+              </Button>{' '}
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num =
+                    dayjs(
+                      `${expirationDate}T${expirationHoursMinutes}`
+                    ).valueOf() + HOUR_MS
+                  const addTime = dayjs(num).format('HH:mm')
+                  setExpirationHoursMinutes(addTime)
+                }}
+              >
+                + 1Hr
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + DAY_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1D
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + WEEK_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1W
+              </Button>
+            </Row>
+          </Col>
         )}
       </div>
 
@@ -341,9 +351,9 @@ export default function LimitOrderPanel(props: {
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
-                <BinaryOutcomeLabel outcome={outcome} />
+                !isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />
               )}{' '}
-              filled now
+              {isBinaryMC ? 'Filled' : 'filled'} now
             </div>
             <div className="mr-2 whitespace-nowrap">
               {formatMoney(filledAmount)} of {formatMoney(orderAmount)}
@@ -359,7 +369,9 @@ export default function LimitOrderPanel(props: {
                   'Shares'
                 ) : (
                   <>
-                    Max <BinaryOutcomeLabel outcome={outcome} /> payout
+                    Max{' '}
+                    {!isBinaryMC && <BinaryOutcomeLabel outcome={outcome} />}{' '}
+                    payout
                   </>
                 )}
               </div>
@@ -373,32 +385,39 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {hasLimitBet && <Spacer h={8} />}
+        <Row className="items-center justify-between gap-2">
+          {user && (
+            <Button
+              size="xl"
+              disabled={betDisabled || inputError}
+              color={isBinaryMC ? 'none' : outcome === 'YES' ? 'green' : 'red'}
+              loading={isSubmitting}
+              className={clsx('flex-1 text-white')}
+              style={{
+                backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+              }}
+              onClick={submitBet}
+            >
+              {isSubmitting
+                ? 'Submitting...'
+                : !outcome
+                ? 'Choose YES or NO'
+                : !limitProb
+                ? 'Enter a probability'
+                : !betAmount
+                ? 'Enter an amount'
+                : binaryMCOutcome
+                ? `Submit order for ${formatMoney(
+                    betAmount
+                  )} at ${formatPercent(preLimitProb ?? 0)}`
+                : `Submit ${outcome} order for ${formatMoney(
+                    betAmount
+                  )} at ${formatPercent(limitProb)}`}
+            </Button>
+          )}
+        </Row>
       </Col>
-
-      {user && (
-        <Button
-          size="xl"
-          disabled={betDisabled || inputError}
-          color={outcome === 'YES' ? 'green' : 'red'}
-          loading={isSubmitting}
-          className="flex-1"
-          onClick={submitBet}
-        >
-          {isSubmitting
-            ? 'Submitting...'
-            : !outcome
-            ? 'Choose YES or NO'
-            : !limitProb
-            ? 'Enter a probability'
-            : !betAmount
-            ? 'Enter an amount'
-            : `Submit ${outcome} order for ${formatMoney(
-                betAmount
-              )} at ${formatPercent(limitProb)}`}
-        </Button>
-      )}
-    </Col>
+    </>
   )
 }
 

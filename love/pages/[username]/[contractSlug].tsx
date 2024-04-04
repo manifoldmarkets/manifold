@@ -57,9 +57,7 @@ import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
 import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import { ContractSEO } from 'web/components/contract/contract-seo'
-import { getContractFromSlug } from 'common/supabase/contracts'
 import { Bet } from 'common/bet'
-import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import {
@@ -68,41 +66,15 @@ import {
   shortFormatNumber,
 } from 'common/util/format'
 import { TbDroplet } from 'react-icons/tb'
-import { getContractParams } from 'common/contract-params'
+import { getStaticProps as getStaticWebProps } from 'web/pages/[username]/[contractSlug]'
 import { LovePage } from 'love/components/love-page'
 import { useReview } from 'web/hooks/use-review'
+import { DAY_MS } from 'common/util/time'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  const { contractSlug } = ctx.params
-  const adminDb = await initSupabaseAdmin()
-  const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
-
-  if (!contract)
-    return {
-      props: { state: 'not found' },
-      revalidate: 60,
-    }
-
-  if (contract.visibility === 'private')
-    return {
-      props: { state: 'not authed', slug: contract.slug },
-      revalidate: 60,
-    }
-
-  if (contract.deleted) {
-    return {
-      props: {
-        state: 'not authed',
-        slug: contract.slug,
-        visibility: contract.visibility,
-      },
-    }
-  }
-
-  const props = await getContractParams(contract, adminDb)
-  return { props }
+  return getStaticWebProps(ctx)
 }
 
 export async function getStaticPaths() {
@@ -286,8 +258,7 @@ export function ContractPageContent(props: ContractParams) {
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
-    user === null ||
-    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
+    user === null || (user && user.createdTime > Date.now() - 3 * DAY_MS)
 
   return (
     <>
@@ -566,6 +537,7 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={[]}
+                betReplies={[]}
               />
             </div>
           </Col>

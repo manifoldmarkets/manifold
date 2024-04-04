@@ -6,12 +6,16 @@ import {
   unserializeMultiPoints,
   unserializePoints,
 } from 'common/chart'
-import { ContractParams, MaybeAuthedContractParams } from 'common/contract'
+import {
+  ContractParams,
+  MaybeAuthedContractParams,
+  tradingAllowed,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { first, mergeWith } from 'lodash'
+import { first, mergeWith, uniqBy, debounce } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -29,10 +33,9 @@ import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
-import { PrivateContractPage } from 'web/components/contract/private-contract'
 import {
   RelatedContractsGrid,
-  RelatedContractsList,
+  SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
 import { EditableQuestionTitle } from 'web/components/contract/title-edit'
 import { ExplainerPanel } from 'web/components/explainer-panel'
@@ -77,8 +80,12 @@ import { DangerZone } from 'web/components/contract/danger-zone'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { parseJsonContentToText } from 'common/util/parse'
-import { useHasSeenContracts } from 'web/hooks/use-has-seen-contracts'
 import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-signup-bonus'
+import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { DAY_MS } from 'common/util/time'
+import { useContractBetChannel } from 'web/lib/supabase/realtime/use-channel'
+
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
@@ -86,18 +93,12 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract)
+  if (!contract || contract.visibility === 'private' || contract.deleted) {
     return {
       props: { state: 'not found' },
       revalidate: 60,
     }
-
-  if (contract.visibility === 'private')
-    return {
-      props: { state: 'not authed', slug: contract.slug },
-      revalidate: 60,
-    }
-
+  }
   if (contract.deleted) {
     return {
       props: {
@@ -117,41 +118,36 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: MaybeAuthedContractParams) {
-  if (props.state === 'not found') {
+  if (props.state === 'not found' || props.state === 'not authed') {
     return <Custom404 />
   }
 
-  return (
-    <Page trackPageView={false} className="xl:col-span-10">
-      {props.state === 'not authed' ? (
-        <PrivateContractPage contractSlug={props.slug} />
-      ) : (
-        <NonPrivateContractPage contractParams={props.params} />
-      )}
-    </Page>
-  )
+  return <NonPrivateContractPage contractParams={props.params} />
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, historyData, pointsString } = props.contractParams
 
   const points =
-    contract.outcomeType !== 'MULTIPLE_CHOICE'
+    contract.outcomeType !== 'MULTIPLE_CHOICE' &&
+    contract.outcomeType !== 'NUMBER'
       ? unserializePoints(historyData.points as any)
       : []
 
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
-  } else if (inIframe) {
+  }
+  if (inIframe) {
     return <ContractEmbedPage contract={contract} points={points} />
-  } else
-    return (
-      <>
-        <ContractSEO contract={contract} points={pointsString} />
-        <ContractPageContent key={contract.id} {...props.contractParams} />
-      </>
-    )
+  }
+
+  return (
+    <Page trackPageView={false} className="xl:col-span-10">
+      <ContractSEO contract={contract} points={pointsString} />
+      <ContractPageContent key={contract.id} {...props.contractParams} />
+    </Page>
+  )
 }
 
 export function ContractPageContent(props: ContractParams) {
@@ -159,12 +155,15 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
+    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
     relatedContractsByTopicSlug,
     topics,
+    dashboards,
     pinnedComments,
+    betReplies,
   } = props
 
   const contract =
@@ -218,30 +217,47 @@ export function ContractPageContent(props: ContractParams) {
 
   // Static props load bets in descending order by time
   const lastBetTime = first(historyData.bets)?.createdTime
+  const isNumber = contract.outcomeType === 'NUMBER'
 
   const { rows, loadNewer } = useRealtimeBets({
     contractId: contract.id,
     afterTime: lastBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE',
+    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
     order: 'asc',
   })
 
-  useEffect(() => {
-    loadNewer()
-  }, [contract.volume])
+  // Subscribe to 'bet' events broadcast on this contract channel.
+  useContractBetChannel(
+    contract.id,
+    debounce(
+      (_bet) => {
+        loadNewer()
+      },
+      500,
+      { leading: true, trailing: true }
+    )
+  )
 
   const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
-  const totalBets = props.totalBets + newBetsWithoutRedemptions.length
+  const totalBets =
+    props.totalBets +
+    (isNumber
+      ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
+      : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => [...historyData.bets, ...newBetsWithoutRedemptions],
+    () => [
+      ...historyData.bets,
+      ...(isNumber ? newBets : newBetsWithoutRedemptions),
+    ],
     [historyData.bets, newBets]
   )
 
   const betPoints = useMemo(() => {
     if (
       contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'FREE_RESPONSE'
+      contract.outcomeType === 'FREE_RESPONSE' ||
+      contract.outcomeType === 'NUMBER'
     ) {
       const data = unserializeMultiPoints(
         historyData.points as MultiSerializedPoints
@@ -301,23 +317,12 @@ export function ContractPageContent(props: ContractParams) {
     contract,
     relatedContracts
   )
-  const seenContractIds = useHasSeenContracts(
-    user?.id,
-    relatedMarkets
-      .map((c) => c.id)
-      .concat(
-        Object.values(relatedContractsByTopicSlug)
-          .flat()
-          .map((c) => c.id)
-      )
-  )
 
   // detect whether header is stuck by observing if title is visible
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
 
   const showExplainerPanel =
-    user === null ||
-    (user && user.createdTime > Date.now() - 24 * 60 * 60 * 1000)
+    user === null || (user && user.createdTime > Date.now() - 3 * DAY_MS)
 
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(contract.id, user?.id)
@@ -357,7 +362,7 @@ export function ContractPageContent(props: ContractParams) {
               'sticky z-50 flex items-end',
               !coverImageUrl
                 ? 'bg-canvas-0 top-0 w-full'
-                : ' top-[-92px] h-[140px]'
+                : 'top-[-92px] h-[140px]'
             )}
           >
             {coverImageUrl && (
@@ -385,7 +390,7 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 mt-px flex h-12 w-full pr-2 transition-colors',
+                'sticky -top-px z-50 flex h-12 w-full transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -393,10 +398,15 @@ export function ContractPageContent(props: ContractParams) {
             >
               <Row className="mr-4 grow items-center">
                 {(headerStuck || !coverImageUrl) && (
-                  <BackButton className="self-stretch" />
+                  <BackButton className="self-stretch pr-8" />
                 )}
                 {headerStuck && (
-                  <span className="text-ink-1000 ml-4 line-clamp-2">
+                  <span
+                    className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
+                    onClick={() =>
+                      window.scrollTo({ top: 0, behavior: 'smooth' })
+                    }
+                  >
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
@@ -415,10 +425,8 @@ export function ContractPageContent(props: ContractParams) {
             </Row>
           </div>
           {coverImageUrl && (
-            <Row className="w-full justify-between pb-1 pr-2">
-              <Col className="my-auto">
-                <BackButton />
-              </Col>
+            <Row className="h-10 w-full justify-between">
+              <BackButton className="pr-8" />
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
@@ -443,7 +451,11 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator}
                   />
                 </div>
-                <MarketTopics contract={contract} topics={topics} />
+                <MarketTopics
+                  contract={contract}
+                  dashboards={dashboards}
+                  topics={topics}
+                />
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">
@@ -451,6 +463,7 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
+                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
@@ -471,11 +484,19 @@ export function ContractPageContent(props: ContractParams) {
                 onAnswerCommentClick={setReplyTo}
                 chartAnnotations={chartAnnotations}
               />
+
+              {!tradingAllowed(contract) && (
+                <UserBetsSummary
+                  className="border-ink-200 !mb-2 mt-2 "
+                  contract={contract}
+                />
+              )}
+
+              <YourTrades contract={contract} />
             </Col>
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 showOnlyAfterBet={true}
                 justBet={justBet}
@@ -543,7 +564,6 @@ export function ContractPageContent(props: ContractParams) {
             {comments.length > 3 && (
               <RelatedContractsGrid
                 contracts={relatedMarkets}
-                seenContractIds={seenContractIds}
                 loadMore={loadMore}
                 justBet={!showRelatedMarketsBelowBet && justBet}
               />
@@ -561,7 +581,8 @@ export function ContractPageContent(props: ContractParams) {
                 <Spacer h={12} />
               </>
             )}
-            <div ref={tabsContainerRef}>
+
+            <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
                 // Pass cached contract so it won't rerender so many times.
                 contract={cachedContract}
@@ -576,11 +597,11 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
+                betReplies={betReplies}
               />
             </div>
             <RelatedContractsGrid
               contracts={relatedMarkets}
-              seenContractIds={seenContractIds}
               loadMore={loadMore}
               contractsByTopicSlug={relatedContractsByTopicSlug}
               topics={topics}
@@ -591,9 +612,8 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && <ExplainerPanel />}
 
-          <RelatedContractsList
+          <SidebarRelatedContractsList
             contracts={relatedMarkets}
-            seenContractIds={seenContractIds}
             loadMore={loadMore}
             topics={topics}
             contractsByTopicSlug={relatedContractsByTopicSlug}
@@ -619,5 +639,35 @@ function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
         ADMIN
       </div>
     </Row>
+  )
+}
+
+function YourTrades(props: { contract: Contract }) {
+  const { contract } = props
+  const user = useUser()
+
+  const { rows } = useRealtimeBets({
+    contractId: contract.id,
+    userId: user === undefined ? 'loading' : user?.id ?? '_',
+    filterAntes: true,
+    order: 'asc',
+  })
+  const userBets = rows ?? []
+
+  const visibleUserBets = userBets.filter(
+    (bet) => !bet.isRedemption && bet.amount !== 0
+  )
+
+  if (visibleUserBets.length === 0) return null
+  return (
+    <Col>
+      <div className="text-ink-700 text-lg">Your trades</div>
+      <ContractBetsTable
+        contract={contract}
+        bets={userBets}
+        isYourBets
+        truncate
+      />
+    </Col>
   )
 }

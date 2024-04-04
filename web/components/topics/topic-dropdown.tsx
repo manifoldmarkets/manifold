@@ -7,7 +7,7 @@ import { TopicSelector } from 'web/components/topics/topic-selector'
 import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { DotsVerticalIcon, MinusCircleIcon } from '@heroicons/react/solid'
-import { PencilIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import { PlusCircleIcon } from '@heroicons/react/outline'
 import { HiNoSymbol } from 'react-icons/hi2'
 import DropdownMenu, {
   DropdownItem,
@@ -15,7 +15,6 @@ import DropdownMenu, {
 import { CreateTopicModal } from 'web/components/topics/create-topic-modal'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { updatePrivateUser } from 'web/lib/firebase/users'
-import { useRouter } from 'next/router'
 
 export const TopicDropdown = (props: {
   setCurrentTopic: (topicSlug: string) => void
@@ -27,20 +26,12 @@ export const TopicDropdown = (props: {
     useState(false)
   const [showCreateGroup, setShowCreateGroup] = useState(false)
 
-  const router = useRouter()
-
   const privateUser = usePrivateUser()
   const groupOptionItems = [
     {
       name: 'Create new topic',
       icon: <PlusCircleIcon className="h-5 w-5" />,
       onClick: () => setShowCreateGroup(true),
-    },
-    {
-      name: 'Followed topics',
-      icon: <PencilIcon className="h-5 w-5" />,
-      onClick: () =>
-        router.replace({ query: { ...router.query, t: 'Topics', q: '' } }),
     },
     {
       name: 'Blocked topics',

@@ -1,8 +1,12 @@
 import clsx from 'clsx'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { LimitBet } from 'common/bet'
 import {
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -20,17 +24,19 @@ import { Row } from '../layout/row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
+  OutcomeLabel,
   PseudoNumericOutcomeLabel,
   YesLabel,
 } from '../outcome-label'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
-import { Title } from '../widgets/title'
-import { Tooltip } from '../widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { SizedContainer } from '../sized-container'
 import { api } from 'web/lib/firebase/api'
+import { UserHovercard } from '../user/user-hovercard'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { Answer } from 'common/answer'
 
 export function YourOrders(props: {
   contract:
@@ -38,6 +44,7 @@ export function YourOrders(props: {
     | PseudoNumericContract
     | StonkContract
     | CPMMMultiContract
+    | CPMMNumericContract
   bets: LimitBet[]
   className?: string
 }) {
@@ -53,9 +60,9 @@ export function YourOrders(props: {
   if (yourBets.length === 0) return null
 
   return (
-    <Col className={clsx(className, 'gap-2 overflow-hidden')}>
+    <Col className={clsx(className, 'gap-2 overflow-x-auto')}>
       <Row className="items-center justify-between">
-        <Subtitle className="!my-0">Your orders</Subtitle>
+        <Subtitle className="!my-0 mx-2">Your orders</Subtitle>
       </Row>
 
       <OrderTable limitBets={yourBets} contract={contract} isYou />
@@ -77,6 +84,7 @@ export function OrderTable(props: {
   const { limitBets, contract, isYou, side } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
+  const isBinaryMC = isBinaryMulti(contract)
   const onCancel = async () => {
     setIsCancelling(true)
     await Promise.all(
@@ -89,7 +97,17 @@ export function OrderTable(props: {
       {side && (
         <Row className="ml-2">
           <span className="mr-2">Buy</span>{' '}
-          {side === 'YES' ? <YesLabel /> : <NoLabel />}
+          {isBinaryMC ? (
+            <OutcomeLabel
+              contract={contract}
+              outcome={side}
+              truncate={'short'}
+            />
+          ) : side === 'YES' ? (
+            <YesLabel />
+          ) : (
+            <NoLabel />
+          )}
         </Row>
       )}
       <Table className="rounded">
@@ -149,6 +167,7 @@ function OrderRow(props: {
   const { contract, bet, isYou, showOutcome } = props
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isBinaryMC = isBinaryMulti(contract)
 
   const [isCancelling, setIsCancelling] = useState(false)
 
@@ -163,14 +182,14 @@ function OrderRow(props: {
       {!isYou && (
         <td>
           <a href={`/${bet.userUsername}`}>
-            <Tooltip text={bet.userName}>
+            <UserHovercard userId={bet.userId}>
               <Avatar
                 size={'sm'}
                 avatarUrl={bet.userAvatarUrl}
                 username={bet.userUsername}
                 noLink={true}
               />
-            </Tooltip>
+            </UserHovercard>
           </a>
         </td>
       )}
@@ -179,6 +198,12 @@ function OrderRow(props: {
           <div className="pl-2">
             {isPseudoNumeric ? (
               <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+            ) : isBinaryMC ? (
+              <OutcomeLabel
+                contract={contract}
+                outcome={outcome}
+                truncate={'short'}
+              />
             ) : (
               <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
             )}
@@ -188,6 +213,8 @@ function OrderRow(props: {
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
+          : isBinaryMC
+          ? formatPercent(getBinaryMCProb(limitProb, outcome))
           : formatPercent(limitProb)}
       </td>
       <td>{formatMoney(orderAmount - amount)}</td>
@@ -231,18 +258,54 @@ export function OrderBookButton(props: {
     | StonkContract
     | CPMMMultiContract
     | MultiContract
-  className?: string
+  answer?: Answer
   label?: React.ReactNode
-  buttonColor?: 'indigo' | 'gray-outline'
 }) {
-  const {
-    limitBets,
-    contract,
-    label,
-    className,
-    buttonColor = 'indigo',
-  } = props
+  const { limitBets, contract, answer, label } = props
   const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <Button
+        onClick={() => setOpen(true)}
+        disabled={limitBets.length === 0}
+        size="xs"
+        color={'gray-outline'}
+      >
+        {label ||
+          `${limitBets.length === 0 ? 'Currently' : 'View'} ${
+            limitBets.length
+          } order${limitBets.length === 1 ? '' : 's'}`}
+      </Button>
+
+      <Modal open={open} setOpen={setOpen} size="md">
+        <Col className="bg-canvas-0">
+          <OrderBookPanel
+            limitBets={limitBets}
+            contract={contract}
+            answer={answer}
+            showTitle
+            expanded
+          />
+        </Col>
+      </Modal>
+    </>
+  )
+}
+
+export function OrderBookPanel(props: {
+  limitBets: LimitBet[]
+  contract:
+    | CPMMBinaryContract
+    | PseudoNumericContract
+    | StonkContract
+    | CPMMMultiContract
+    | MultiContract
+  answer?: Answer
+  expanded?: boolean
+  showTitle?: boolean
+}) {
+  const { limitBets, contract, expanded, answer, showTitle } = props
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -258,90 +321,84 @@ export function OrderBookButton(props: {
   const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
+  const maxShownNotExpanded = 3
+  const moreOrdersCountYes = Math.max(0, yesBets.length - maxShownNotExpanded)
+  const moreOrdersCountNo = Math.max(0, noBets.length - maxShownNotExpanded)
+  const moreOrdersCount = moreOrdersCountYes + moreOrdersCountNo
+  const [isExpanded, setIsExpanded] = usePersistentInMemoryState(
+    expanded ?? false,
+    `${contract.id}-orderbook-expanded`
+  )
+
+  if (limitBets.length === 0) return <></>
+
   return (
-    <>
-      <Button
-        className={className}
-        onClick={() => setOpen(true)}
-        disabled={limitBets.length === 0}
-        size="xs"
-        color={buttonColor}
-      >
-        {label ||
-          `View ${limitBets.length} order${limitBets.length === 1 ? '' : 's'}`}
-      </Button>
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
+      <Subtitle className="!my-0">
+        Order book{' '}
+        <InfoTooltip
+          text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
+          className="ml-1"
+        />
+      </Subtitle>
 
-      <Modal open={open} setOpen={setOpen} size="md">
-        <Col className="bg-canvas-0 text-ink-800 rounded p-4 py-6">
-          <Title className="flex items-center">
-            Order book{' '}
-            <InfoTooltip
-              text="List of active limit orders by traders wishing to buy YES or NO at a given probability"
-              className="ml-1"
-            />
-          </Title>
+      {!isPseudoNumeric && yesBets.length >= 2 && noBets.length >= 2 && (
+        <>
+          <h2 className="text-center text-sm">
+            Cumulative shares vs probability
+          </h2>
+          <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
+            {(w, h) => (
+              <DepthChart
+                contract={contract as any}
+                answer={answer}
+                yesBets={yesBets}
+                noBets={noBets}
+                width={w}
+                height={h}
+              />
+            )}
+          </SizedContainer>
+        </>
+      )}
 
-          <h2 className="mb-1 text-center">Cumulative shares vs probability</h2>
-          {!isCPMMMulti && !isPseudoNumeric && (
-            <SizedContainer className="mb-6 h-[132px] w-full max-w-md self-center px-8 sm:h-[200px] sm:px-14">
-              {(w, h) => (
-                <DepthChart
-                  contract={contract as any}
-                  yesBets={yesBets}
-                  noBets={noBets}
-                  width={w}
-                  height={h}
-                />
-              )}
-            </SizedContainer>
-          )}
-          {isCPMMMulti ? (
-            contract.answers.map((answer) => {
-              const answerYesBets = yesBets.filter(
-                (bet) => bet.answerId === answer.id
-              )
-              const answerNoBets = noBets.filter(
-                (bet) => bet.answerId === answer.id
-              )
-              if (answerYesBets.length === 0 && answerNoBets.length === 0) {
-                return null
-              }
-              return (
-                <Col key={answer.id} className="gap-2">
-                  {answer.text}
-                  <Row className="mt-2 items-start justify-around gap-2">
-                    <OrderTable
-                      limitBets={answerYesBets}
-                      contract={contract}
-                      side="YES"
-                    />
-                    <OrderTable
-                      limitBets={answerNoBets}
-                      contract={contract}
-                      side="NO"
-                    />
-                  </Row>
-                </Col>
-              )
-            })
+      {showTitle && isCPMMMulti && answer && <div>{answer.text}</div>}
+
+      <Row className="items-start justify-around gap-2">
+        <OrderTable
+          limitBets={
+            isExpanded ? yesBets : yesBets.slice(0, maxShownNotExpanded)
+          }
+          contract={contract}
+          isYou={false}
+          side="YES"
+        />
+        <OrderTable
+          limitBets={isExpanded ? noBets : noBets.slice(0, maxShownNotExpanded)}
+          contract={contract}
+          isYou={false}
+          side="NO"
+        />
+      </Row>
+
+      {moreOrdersCount > 0 && (
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setIsExpanded((b) => !b)}
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer orders`}
+            </>
           ) : (
-            <Row className="mt-2 items-start justify-around gap-2">
-              <OrderTable
-                limitBets={yesBets}
-                contract={contract}
-                isYou={false}
-                side="YES"
-              />
-              <OrderTable
-                limitBets={noBets}
-                contract={contract}
-                isYou={false}
-                side="NO"
-              />
-            </Row>
+            <>
+              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+              {`Show ${moreOrdersCount} more orders`}
+            </>
           )}
-        </Col>
-      </Modal>
-    </>
+        </Button>
+      )}
+    </Col>
   )
 }

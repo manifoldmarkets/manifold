@@ -1,24 +1,22 @@
+import clsx from 'clsx'
 import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { DailyLeagueStat } from './daily-league-stat'
-import { DailyProfit } from 'web/components/home/daily-profit'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { DailyLoan } from 'web/components/home/daily-loan'
+import { DailyProfit } from './daily-profit'
 
-export const dailyStatsClass = 'bg-canvas-0 rounded-lg px-2 py-1 shadow'
+export const dailyStatsClass =
+  'bg-canvas-0 rounded-lg px-3 py-1 shadow min-w-[60px]'
 
-export function DailyStats(props: {
-  user: User | null | undefined
-  className?: string
-}) {
-  const { user } = props
-  const isMobile = useIsMobile()
-  if (!user) return <></>
+export function DailyStats(props: { user: User; className?: string }) {
+  const { user, className } = props
   return (
-    <Row className={'z-30 w-full items-center justify-end gap-3'}>
-      {!isMobile && <DailyProfit user={user} />}
-      <DailyLeagueStat user={user} />
+    <Row className={clsx('items-center gap-3', className)}>
       <QuestsOrStreak user={user} />
+      <DailyLeagueStat user={user} />
+      <DailyLoan user={user} showChest={true} />
+      <DailyProfit user={user} />
     </Row>
   )
 }

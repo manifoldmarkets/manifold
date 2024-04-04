@@ -1,5 +1,4 @@
 import { runScript } from 'run-script'
-import { getDummyLogs } from 'api/helpers'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract } from 'common/contract'
 import { manifoldLoveUserId } from 'common/love/constants'
@@ -55,8 +54,7 @@ if (require.main === module) {
           {
             answerId: answer.id,
             outcome,
-          },
-          getDummyLogs('resolve-market').log
+          }
         )
 
         lastResolution = outcome

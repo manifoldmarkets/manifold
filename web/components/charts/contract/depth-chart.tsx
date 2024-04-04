@@ -1,5 +1,9 @@
 import { LimitBet } from 'common/bet'
-import { CPMMBinaryContract, StonkContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  CPMMMultiContract,
+  StonkContract,
+} from 'common/contract'
 import { getDisplayProbability } from 'common/calculate'
 import { HistoryPoint } from 'common/chart'
 import { scaleLinear } from 'd3-scale'
@@ -7,15 +11,17 @@ import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
 import { curveStepBefore, line } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { formatLargeNumber } from 'common/util/format'
+import { Answer } from 'common/answer'
 
 export function DepthChart(props: {
-  contract: CPMMBinaryContract | StonkContract
+  contract: CPMMBinaryContract | StonkContract | CPMMMultiContract
+  answer?: Answer
   yesBets: LimitBet[]
   noBets: LimitBet[]
   width: number
   height: number
 }) {
-  const { contract, yesBets, noBets, width, height } = props
+  const { contract, answer, yesBets, noBets, width, height } = props
 
   const yesData = cumulative(yesBets)
   const noData = cumulative(noBets)
@@ -33,7 +39,9 @@ export function DepthChart(props: {
   noData.push({ x: 1, y: noData[noData.length - 1].y })
   noData.unshift({ x: noData[0].x, y: 0 })
 
-  const currentValue = getDisplayProbability(contract)
+  const currentValue = answer
+    ? answer.prob
+    : getDisplayProbability(contract as CPMMBinaryContract | StonkContract)
 
   const xScale = scaleLinear().domain([0, 1]).range([0, width])
   const yScale = scaleLinear().domain([0, maxAmount]).range([height, 0])

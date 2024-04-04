@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useEffect, useState } from 'react'
 
-import { Contract, contractPath } from 'common/contract'
+import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
@@ -45,6 +45,8 @@ import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { AD_WAIT_SECONDS } from 'common/boost'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { UserHovercard } from '../user/user-hovercard'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { removeUndefinedProps } from 'common/util/object'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -90,7 +92,7 @@ export function FeedContractCard(props: {
     outcomeType,
     mechanism,
   } = contract
-
+  const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
@@ -137,13 +139,17 @@ export function FeedContractCard(props: {
   )
 
   const trackClick = () =>
-    track(('click market card ' + trackingPostfix).trim(), {
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-      slug: contract.slug,
-      feedId: item?.id,
-      isPromoted: !!promotedData,
-    })
+    track(
+      ('click market card ' + trackingPostfix).trim(),
+      removeUndefinedProps({
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+        isPromoted: !!promotedData,
+        feedItem: item,
+        commentId: item?.commentId,
+      })
+    )
 
   const nonTextDescription = !JSONEmpty(contract.description)
 
@@ -151,9 +157,7 @@ export function FeedContractCard(props: {
     <ClickFrame
       className={clsx(
         className,
-        'relative rounded-xl',
-        'cursor-pointer ',
-        'hover:ring-[1px]',
+        'ring-primary-200 relative cursor-pointer rounded-xl hover:ring-1',
         'flex w-full flex-col gap-0.5 px-4',
         size === 'sm'
           ? 'bg-canvas-50'
@@ -244,7 +248,7 @@ export function FeedContractCard(props: {
             )}
             {isBinaryCpmm && !isClosed && (
               <BetButton
-                feedId={item?.id}
+                feedItem={item}
                 contract={contract}
                 user={user}
                 className="h-min"
@@ -263,16 +267,29 @@ export function FeedContractCard(props: {
         {contract.outcomeType === 'POLL' && (
           <PollPanel contract={contract} maxOptions={4} />
         )}
-        {contract.outcomeType === 'MULTIPLE_CHOICE' && (
-          <SimpleAnswerBars contract={contract} maxAnswers={4} />
+        {contract.outcomeType === 'MULTIPLE_CHOICE' && !isBinaryMc && (
+          <SimpleAnswerBars
+            contract={contract}
+            maxAnswers={4}
+            feedItem={item}
+          />
         )}
+
+        {isBinaryMc &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          contract.outcomeType !== 'NUMBER' && (
+            <BinaryMultiAnswersPanel
+              contract={contract}
+              answers={contract.answers}
+              feedItem={item}
+            />
+          )}
 
         {isBinaryCpmm && (showGraph || !ignore) && (
           <FeedBinaryChart
             contract={contract}
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
-            addLeadingBetPoint={true}
           />
         )}
         {promotedData && canAdPay && (
@@ -311,6 +328,7 @@ export function FeedContractCard(props: {
               contract={contract}
               user={user}
               underline={!!children}
+              feedItem={item}
             />
             {children}
           </Col>
@@ -333,8 +351,9 @@ const BottomActionRow = (props: {
   contract: Contract
   user: User | null | undefined
   underline?: boolean
+  feedItem?: FeedTimelineItem
 }) => {
-  const { contract, user, underline } = props
+  const { contract, feedItem, user, underline } = props
   const { question } = contract
 
   return (
@@ -397,6 +416,7 @@ const BottomActionRow = (props: {
           size={'2xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
+          feedItem={feedItem}
         />
       </BottomRowButtonWrapper>
     </Row>

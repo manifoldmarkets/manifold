@@ -1,45 +1,34 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
 import { useEffect, useState } from 'react'
-import { XIcon } from '@heroicons/react/outline'
-import { uniqBy } from 'lodash'
 import { generateJSON } from '@tiptap/core'
-import clsx from 'clsx'
 
 import {
-  Contract,
-  MAX_QUESTION_LENGTH,
-  Visibility,
   add_answers_mode,
+  Contract,
   contractPath,
   CreateableOutcomeType,
+  MAX_DESCRIPTION_LENGTH,
+  MAX_QUESTION_LENGTH,
+  MULTI_NUMERIC_BUCKETS_MAX,
+  NON_BETTING_OUTCOMES,
+  Visibility,
 } from 'common/contract'
-import {
-  MINIMUM_BOUNTY,
-  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
-  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
-import { BTE_USER_ID, ENV_CONFIG } from 'common/envs/constants'
+import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
+import { BTE_USER_ID, PARTNER_USER_IDS } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
-import { AddFundsModal } from 'web/components/add-funds-modal'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
-import { Button, IconButton } from 'web/components/buttons/button'
-import { TopicSelector } from 'web/components/topics/topic-selector'
+import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
-import { Checkbox } from 'web/components/widgets/checkbox'
-import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import {
-  TextEditor,
   getEditorLocalStorageKey,
+  TextEditor,
+  useTextEditor,
 } from 'web/components/widgets/editor'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Input } from 'web/components/widgets/input'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { MAX_DESCRIPTION_LENGTH, NON_BETTING_OUTCOMES } from 'common/contract'
-import { getAnte } from 'common/economy'
-import { Group } from 'common/group'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import {
   freeQuestionRemaining,
@@ -49,7 +38,6 @@ import {
 } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
-import { useTextEditor } from 'web/components/widgets/editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   api,
@@ -61,19 +49,20 @@ import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { getContractTypeThingFromValue } from './create-contract-types'
+import { getContractTypeFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
 import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { TopicTag } from 'web/components/topics/topic-tag'
 import { LiteMarket } from 'common/api/market-types'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { ContractMention } from 'web/components/contract/contract-mention'
 import { compareTwoStrings } from 'string-similarity'
-import { toast } from 'react-hot-toast'
-import { WEEK_MS } from 'common/util/time'
-
-const DUPES_TO_SHOW = 3
+import { CostSection } from 'web/components/new-contract/cost-section'
+import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
+import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
+import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
+import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
+import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -87,11 +76,15 @@ export function ContractParamsForm(props: {
     (params?.groupIds?.join('') ?? '')
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
-    'new-min' + paramsKey
+    'min' + paramsKey
   )
   const [maxString, setMaxString] = usePersistentLocalState(
     params?.max?.toString() ?? '',
-    'new-max' + paramsKey
+    'max' + paramsKey
+  )
+  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
+    params?.precision ?? 1,
+    'numeric-precision' + paramsKey
   )
   const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
     !!params?.isLogScale,
@@ -119,7 +112,7 @@ export function ContractParamsForm(props: {
     params?.addAnswersMode ?? 'DISABLED'
   )
   const [shouldAnswersSumToOne, setShouldAnswersSumToOne] = useState(
-    params?.shouldAnswersSumToOne ?? true
+    params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true
   )
   // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
 
@@ -190,6 +183,7 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
+  const isPartner = PARTNER_USER_IDS.includes(creator.id)
   const ante = getAnte(outcomeType, numAnswers)
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
@@ -216,6 +210,10 @@ export function ContractParamsForm(props: {
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
   >(defaultBountyAmount, 'new-bounty' + paramsKey)
+  const [isAutoBounty, setIsAutoBounty] = usePersistentLocalState(
+    false,
+    `is-auto-bounty` + paramsKey
+  )
 
   const balance = getAvailableBalancePerQuestion(creator)
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -240,16 +238,6 @@ export function ContractParamsForm(props: {
     ? parseFloat(initialValueString)
     : undefined
 
-  const closeDateMap: { [key: string]: number | string } = {
-    'A day': 1,
-    'A week': 7,
-    '30 days': 30,
-    'This year': daysLeftInTheYear,
-  }
-  const NEVER = 'Never'
-  if (outcomeType == 'POLL') {
-    closeDateMap['Never'] = NEVER
-  }
   const [neverCloses, setNeverCloses] = useState(false)
 
   const shouldHaveCloseDate =
@@ -289,12 +277,20 @@ export function ContractParamsForm(props: {
     // closeTime must be in the future
     !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
+  const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
+
+  const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
+    min ?? 0,
+    max ?? 0,
+    precision && precision > 0 ? precision : 1
+  ).length
   const isValid =
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
     (ante <= balance || creator.id === BTE_USER_ID) &&
     isValidDate &&
+    isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
       (min !== undefined &&
         max !== undefined &&
@@ -306,7 +302,10 @@ export function ContractParamsForm(props: {
         min < initialValue &&
         initialValue < max)) &&
     isValidMultipleChoice &&
-    (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined)
+    (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
+    (outcomeType === 'NUMBER'
+      ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
+      : true)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -315,14 +314,24 @@ export function ContractParamsForm(props: {
     if (!isValid) {
       if (!isValidDate) {
         setErrorText('Close date must be in the future')
-      }
-      if (!isValidMultipleChoice) {
+      } else if (!isValidMultipleChoice) {
         setErrorText(
           `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
         )
+      } else if (!isValidTopics) {
+        // can happen in rare cases when duplicating old question
+        setErrorText(
+          `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
+        )
       }
     }
-  }, [isValid, isValidDate, isValidMultipleChoice, isValidQuestion])
+  }, [
+    isValid,
+    isValidDate,
+    isValidMultipleChoice,
+    isValidQuestion,
+    isValidTopics,
+  ])
 
   const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({
@@ -333,11 +342,6 @@ export function ContractParamsForm(props: {
       ? JSON.parse(params.description)
       : undefined,
   })
-
-  function setCloseDateInDays(days: number) {
-    const newCloseDate = dayjs().add(days, 'day').format('YYYY-MM-DD')
-    setCloseDate(newCloseDate)
-  }
 
   const resetProperties = () => {
     // We would call this:
@@ -356,10 +360,11 @@ export function ContractParamsForm(props: {
     setMaxString('')
     setInitialValueString('')
     setIsLogScale(false)
-    setBountyAmount(50)
+    setBountyAmount(defaultBountyAmount)
     setHasChosenCategory(false)
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
+    setPrecision(1)
   }
 
   const [submitState, setSubmitState] = useState<
@@ -389,6 +394,9 @@ export function ContractParamsForm(props: {
         utcOffset: new Date().getTimezoneOffset(),
         totalBounty:
           amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+        isAutoBounty:
+          outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
+        precision,
       })
       const newContract = await api('market', createProps as any)
 
@@ -455,10 +463,8 @@ export function ContractParamsForm(props: {
     )
   }
 
-  const [fundsModalOpen, setFundsModalOpen] = useState(false)
-
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-
+  const isNumericMulti = outcomeType === 'NUMBER'
   return (
     <Col className="gap-6">
       <Col>
@@ -467,7 +473,7 @@ export function ContractParamsForm(props: {
         </label>
 
         <ExpandingInput
-          placeholder={getContractTypeThingFromValue('example', outcomeType)}
+          placeholder={getContractTypeFromValue(outcomeType, 'example')}
           autoFocus
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
@@ -476,34 +482,15 @@ export function ContractParamsForm(props: {
         />
       </Col>
       {similarContracts.length ? (
-        <Col className={'space-y-1 '}>
-          <Row className={'justify-between px-1'}>
-            <span>
-              {similarContracts.length > DUPES_TO_SHOW
-                ? `${DUPES_TO_SHOW}+`
-                : similarContracts.length}{' '}
-              Existing {outcomeType == 'POLL' ? 'poll(s)' : 'question(s)'}
-            </span>
-            <IconButton
-              size={'2xs'}
-              onClick={() => {
-                setSimilarContracts([])
-                setDismissedSimilarContractTitles((titles) =>
-                  titles.concat(question.toLowerCase().trim())
-                )
-              }}
-            >
-              <XIcon className="text-ink-500 h-4 w-4" />
-            </IconButton>
-          </Row>
-          {similarContracts.slice(0, DUPES_TO_SHOW).map((contract) => (
-            <Row key={contract.id} className="text-ink-700 pl-1 text-sm">
-              <ContractMention contract={contract} />
-            </Row>
-          ))}
-        </Col>
+        <SimilarContractsSection
+          similarContracts={similarContracts}
+          setSimilarContracts={setSimilarContracts}
+          setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
+          outcomeType={outcomeType}
+          question={question}
+        />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && (
+      {(isMulti || outcomeType == 'POLL') && !isNumericMulti && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
@@ -535,6 +522,17 @@ export function ContractParamsForm(props: {
               {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
             </div>
           )}
+          <Row className="mt-2 items-center gap-2">
+            <span>
+              Auto-award bounty{' '}
+              <InfoTooltip
+                text={
+                  'Automatically pay out the bounty to commenters in proportion to likes over 48 hours.'
+                }
+              />
+            </span>
+            <ShortToggle on={isAutoBounty} setOn={setIsAutoBounty} />
+          </Row>
         </Col>
       )}
       {outcomeType === 'STONK' && (
@@ -548,217 +546,58 @@ export function ContractParamsForm(props: {
         </div>
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
-        <Col>
-          <Col className="mb-2 items-start">
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Range </span>
-              <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
-            </label>
-
-            <Row className="gap-2">
-              <Input
-                type="number"
-                className="w-32"
-                placeholder="LOW"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setMinString(e.target.value)}
-                min={Number.MIN_SAFE_INTEGER}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={submitState === 'LOADING'}
-                value={minString ?? ''}
-              />
-              <Input
-                type="number"
-                className="w-32"
-                placeholder="HIGH"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setMaxString(e.target.value)}
-                min={Number.MIN_SAFE_INTEGER}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={submitState === 'LOADING'}
-                value={maxString}
-              />
-            </Row>
-
-            <Checkbox
-              className="my-2 text-sm"
-              label="Log scale"
-              checked={isLogScale}
-              toggle={() => setIsLogScale(!isLogScale)}
-              disabled={submitState === 'LOADING'}
-            />
-
-            {min !== undefined && max !== undefined && min >= max && (
-              <div className="text-scarlet-500 mb-2 mt-2 text-sm">
-                The maximum value must be greater than the minimum.
-              </div>
-            )}
-          </Col>
-
-          <div className="mb-2 flex flex-col items-start">
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Initial value </span>
-              <InfoTooltip text="The starting value for this question. Should be in between min and max values." />
-            </label>
-
-            <Row className="gap-2">
-              <Input
-                type="number"
-                placeholder="Initial value"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => setInitialValueString(e.target.value)}
-                max={Number.MAX_SAFE_INTEGER}
-                disabled={submitState === 'LOADING'}
-                value={initialValueString ?? ''}
-              />
-            </Row>
-
-            {initialValue !== undefined &&
-              min !== undefined &&
-              max !== undefined &&
-              min < max &&
-              (initialValue <= min || initialValue >= max) && (
-                <div className="text-scarlet-500 mb-2 mt-2 text-sm">
-                  Initial value must be in between {min} and {max}.{' '}
-                </div>
-              )}
-          </div>
-        </Col>
-      )}
-
-      <Col className="gap-3">
-        <span className="px-1">
-          Add topics{' '}
-          <InfoTooltip text="Question will be displayed alongside the other questions in the topic." />
-        </span>
-        {selectedGroups && selectedGroups.length > 0 && (
-          <Row className={'flex-wrap gap-2'}>
-            {selectedGroups.map((group) => (
-              <TopicTag
-                location={'create page'}
-                key={group.id}
-                topic={group}
-                isPrivate={false}
-                className="bg-ink-100"
-              >
-                <button
-                  onClick={() => {
-                    const cleared = selectedGroups.filter(
-                      (g) => g.id !== group.id
-                    )
-                    setSelectedGroups(cleared)
-                    if (question !== '') setHasChosenCategory(true)
-                  }}
-                >
-                  <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-                </button>
-              </TopicTag>
-            ))}
-          </Row>
-        )}
-        <TopicSelector
-          setSelectedGroup={(group) => {
-            const newUser = creator.createdTime > Date.now() - 2 * WEEK_MS
-            const topicsAllowed = newUser ? 5 : 10
-            if (selectedGroups.length >= topicsAllowed) {
-              toast.error(
-                `${
-                  newUser ? 'New users' : 'You'
-                } can only choose up to ${topicsAllowed} topics.`
-              )
-            } else if (group.privacyStatus === 'private') {
-              toast.error('You cannot use private groups.')
-            } else {
-              setSelectedGroups((groups) =>
-                uniqBy([...(groups ?? []), group], 'id')
-              )
-            }
-            setHasChosenCategory(true)
-          }}
-          ignoreGroupIds={selectedGroups.map((g) => g.id)}
+        <PseudoNumericRangeSection
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          initialValueString={initialValueString}
+          setInitialValueString={setInitialValueString}
+          isLogScale={isLogScale}
+          setIsLogScale={setIsLogScale}
+          submitState={submitState}
+          initialValue={initialValue}
+          min={min}
+          max={max}
         />
-      </Col>
-
+      )}{' '}
+      {isNumericMulti && (
+        <MultiNumericRangeSection
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          submitState={submitState}
+          precision={precision}
+          setPrecision={setPrecision}
+          min={min}
+          max={max}
+          paramsKey={paramsKey}
+        />
+      )}
+      <TopicSelectorSection
+        selectedGroups={selectedGroups}
+        setSelectedGroups={setSelectedGroups}
+        setHasChosenCategory={setHasChosenCategory}
+        question={question}
+      />
       <Col className="items-start gap-3">
         <label className="px-1">
           <span>Description</span>
         </label>
         <TextEditor editor={editor} />
       </Col>
-
-      {outcomeType !== 'STONK' && outcomeType !== 'BOUNTIED_QUESTION' && (
-        <Col className="items-start">
-          <label className="mb-1 gap-2 px-1 py-2">
-            <span>
-              {outcomeType == 'POLL' ? 'Poll' : 'Question'} closes in{' '}
-            </span>
-            <InfoTooltip
-              text={
-                outcomeType == 'POLL'
-                  ? 'Voting on this poll will be halted and resolve to the most voted option'
-                  : 'Trading will be halted after this time (local timezone).'
-              }
-            />
-          </label>
-          <Row className={'w-full items-center gap-2'}>
-            <ChoicesToggleGroup
-              currentChoice={
-                !closeDate
-                  ? NEVER
-                  : dayjs(`${closeDate}T23:59`).diff(dayjs(), 'day')
-              }
-              setChoice={(choice) => {
-                if (choice == NEVER) {
-                  setNeverCloses(true)
-                  setCloseDate(undefined)
-                } else {
-                  setNeverCloses(false)
-                  setCloseDateInDays(choice as number)
-                }
-
-                if (!closeHoursMinutes) {
-                  setCloseHoursMinutes(initTime)
-                }
-              }}
-              choicesMap={closeDateMap}
-              disabled={submitState === 'LOADING'}
-              className={clsx(
-                'col-span-4 sm:col-span-2',
-                outcomeType == 'POLL' ? 'text-xs sm:text-sm' : ''
-              )}
-            />
-          </Row>
-          {!neverCloses && (
-            <Row className="mt-4 gap-2">
-              <Input
-                type={'date'}
-                className="dark:date-range-input-white"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => {
-                  setCloseDate(e.target.value)
-                  if (!closeHoursMinutes) {
-                    setCloseHoursMinutes(initTime)
-                  }
-                }}
-                min={dayjs().format('YYYY-MM-DD')}
-                max="9999-12-31"
-                disabled={submitState === 'LOADING'}
-                value={closeDate}
-              />
-              {/*<Input*/}
-              {/*  type={'time'}*/}
-              {/* className="dark:date-range-input-white"*/}
-              {/*  onClick={(e) => e.stopPropagation()}*/}
-              {/*  onChange={(e) => setCloseHoursMinutes(e.target.value)}*/}
-              {/*  min={'00:00'}*/}
-              {/*  disabled={isSubmitting}*/}
-              {/*  value={closeHoursMinutes}*/}
-              {/*/>*/}
-            </Row>
-          )}
-        </Col>
-      )}
-
+      <CloseTimeSection
+        closeDate={closeDate}
+        setCloseDate={setCloseDate}
+        closeHoursMinutes={closeHoursMinutes}
+        setCloseHoursMinutes={setCloseHoursMinutes}
+        neverCloses={neverCloses}
+        setNeverCloses={setNeverCloses}
+        submitState={submitState}
+        outcomeType={outcomeType}
+        initTime={initTime}
+      />
       <Row className="mt-2 items-center gap-2">
         <span>
           Publicly listed{' '}
@@ -777,80 +616,15 @@ export function ContractParamsForm(props: {
           }}
         />
       </Row>
-      <Col className="items-start">
-        <label className="mb-1 gap-2 px-1 py-2">
-          <span>Cost </span>
-          <InfoTooltip
-            text={
-              outcomeType == 'BOUNTIED_QUESTION'
-                ? 'Your bounty. This amount is put upfront.'
-                : outcomeType == 'POLL'
-                ? 'Cost to create your poll.'
-                : `Cost to create your question. This amount is used to subsidize predictions.`
-            }
-          />
-        </label>
-
-        <div className="text-ink-700 pl-1 text-sm">
-          {amountSuppliedByUser === 0 ? (
-            <span className="text-teal-500">FREE </span>
-          ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
-            <>
-              {formatMoney(amountSuppliedByUser)}
-              {visibility === 'public' && (
-                <span>
-                  {' '}
-                  or <span className=" text-teal-500">FREE </span>
-                  if you get{' '}
-                  {isMulti
-                    ? Math.ceil(
-                        amountSuppliedByUser / UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-                      )
-                    : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
-                  + participants{' '}
-                  <InfoTooltip
-                    text={
-                      isMulti
-                        ? `You'll earn a bonus of ${formatMoney(
-                            UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-                          )} for each unique trader you get on each answer.`
-                        : `You'll earn a bonus of ${formatMoney(
-                            UNIQUE_BETTOR_BONUS_AMOUNT
-                          )} for each unique trader you get on your question, up to 50 traders. Then ${formatMoney(
-                            SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
-                          )} for every unique trader after that.`
-                    }
-                  />
-                </span>
-              )}
-            </>
-          ) : (
-            <span>
-              {amountSuppliedByUser
-                ? formatMoney(amountSuppliedByUser)
-                : `${ENV_CONFIG.moneyMoniker} --`}
-            </span>
-          )}
-        </div>
-        <div className="text-ink-500 pl-1"></div>
-
-        {ante > balance && (
-          <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
-            <span className="text-scarlet-500 mr-2">Insufficient balance</span>
-            <Button
-              size="xs"
-              color="green"
-              onClick={() => setFundsModalOpen(true)}
-            >
-              Get {ENV_CONFIG.moneyMoniker}
-            </Button>
-            <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
-          </div>
-        )}
-      </Col>
-
+      <CostSection
+        balance={balance}
+        amountSuppliedByUser={amountSuppliedByUser}
+        outcomeType={outcomeType}
+        isMulti={isMulti}
+        isPartner={isPartner}
+        visibility={visibility}
+      />
       {errorText && <span className={'text-error'}>{errorText}</span>}
-
       <Button
         className="w-full"
         type="submit"
@@ -873,18 +647,10 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-
       <div />
     </Col>
   )
 }
-
-// get days from today until the end of this year:
-const daysLeftInTheYear = dayjs().endOf('year').diff(dayjs(), 'day')
-
-// waiting for supabase logic
-
-export const LOADING_PING_INTERVAL = 200
 
 async function fetchContract(contractId: string) {
   try {

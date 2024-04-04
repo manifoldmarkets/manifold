@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { Group } from 'common/group'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import toast from 'react-hot-toast'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -70,7 +70,8 @@ export function ContractTopicsList(props: {
                 Add topics
               </Row>
               <TopicSelector
-                ignoreGroupIds={groups.map((g) => g.id)}
+                selectedIds={groups.map((g) => g.id)}
+                max={MAX_GROUPS_PER_MARKET}
                 setSelectedGroup={(group) =>
                   group &&
                   api('market/:contractId/group', {

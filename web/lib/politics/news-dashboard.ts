@@ -1,12 +1,18 @@
-import { api, getDashboardFromSlug } from 'web/lib/firebase/api'
+import { api } from 'web/lib/firebase/api'
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { omit } from 'lodash'
+import { capitalize, omit } from 'lodash'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
-export const getDashboardProps = async (slug: string) => {
-  const dashboard = await getDashboardFromSlug({ dashboardSlug: slug })
+export const getDashboardProps = async (
+  slug: string,
+  endpointProps?: { slug: DashboardEndpoints; topSlug: string }
+) => {
+  const dashboard = await api('get-dashboard-from-slug', {
+    dashboardSlug: slug,
+  })
 
   const links = dashboard.items
     .filter((item): item is DashboardLinkItem => item.type === 'link')
@@ -24,7 +30,18 @@ export const getDashboardProps = async (slug: string) => {
     removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
   )
 
-  const headlines = await api('headlines', {})
+  const headlines = await api(
+    'headlines',
+    removeUndefinedProps({ slug: endpointProps?.slug })
+  )
+  if (endpointProps?.topSlug) {
+    const topSlug = endpointProps.topSlug
+    headlines.unshift({
+      id: topSlug,
+      slug: '',
+      title: capitalize(topSlug),
+    })
+  }
   return {
     state: 'success',
     initialDashboard: dashboard,

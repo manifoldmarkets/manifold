@@ -1,21 +1,22 @@
 import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
-import { Bet } from 'common/bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUserFirebase } from 'shared/utils'
-import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
-  SupabaseDirectClient,
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { first } from 'lodash'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
+import { convertBet } from 'common/supabase/bets'
+import { Bet } from 'common/bet'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -54,7 +55,6 @@ export const createCommentOnContractInternal = async (
     isRepost?: boolean
   }
 ) => {
-  const firestore = admin.firestore()
   const {
     content,
     html,
@@ -75,20 +75,10 @@ export const createCommentOnContractInternal = async (
   const now = Date.now()
 
   const bet = replyToBetId
-    ? await firestore
-        .collection(`contracts/${contract.id}/bets`)
-        .doc(replyToBetId)
-        .get()
-        .then((doc) => doc.data() as Bet)
-    : await getMostRecentCommentableBet(
-        pg,
-        contract.id,
-        creator.id,
-        now,
-        replyToAnswerId
-      )
-
-  const position = await getLargestPosition(pg, contract.id, creator.id)
+    ? await pg
+        .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
+        .then(convertBet)
+    : undefined
 
   const isApi = auth.creds.kind === 'key'
 
@@ -103,7 +93,6 @@ export const createCommentOnContractInternal = async (
     userUsername: creator.username,
     userAvatarUrl: creator.avatarUrl,
 
-    // OnContract fields
     commentType: 'contract',
     contractId: contractId,
     contractSlug: contract.slug,
@@ -112,21 +101,7 @@ export const createCommentOnContractInternal = async (
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
 
-    commentorPositionShares: position?.shares,
-    commentorPositionOutcome: position?.outcome,
-    commentorPositionAnswerId: position?.answer_id,
-    commentorPositionProb:
-      position && contract.mechanism === 'cpmm-1' ? contract.prob : undefined,
-
-    // Response to another user's bet fields
-    betId: bet?.id,
-    betAmount: bet?.amount,
-    betOutcome: bet?.outcome,
-    betAnswerId: bet?.answerId,
-    bettorName: bet?.userName,
-    bettorUsername: bet?.userUsername,
-    betOrderAmount: bet?.orderAmount,
-    betLimitProb: bet?.limitProb,
+    ...denormalizeBet(bet),
     isApi,
     isRepost,
   } as ContractComment)
@@ -144,21 +119,67 @@ export const createCommentOnContractInternal = async (
     throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
   }
 
-  if (isApi) {
-    const userRef = firestore.doc(`users/${creator.id}`)
-    await userRef.update({
-      balance: FieldValue.increment(-FLAT_COMMENT_FEE),
-      totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
-    })
-  }
+  return {
+    result: comment,
+    continue: async () => {
+      if (isApi) {
+        const firestore = admin.firestore()
+        const userRef = firestore.doc(`users/${creator.id}`)
+        await userRef.update({
+          balance: FieldValue.increment(-FLAT_COMMENT_FEE),
+          totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
+        })
+      }
 
-  try {
-    await onCreateCommentOnContract({ contractId, comment, creator, bet })
-  } catch (e) {
-    console.error('Failed to run onCreateCommentOnContract: ' + e)
-  }
+      const bet = replyToBetId
+        ? undefined
+        : await getMostRecentCommentableBet(
+            pg,
+            contract.id,
+            creator.id,
+            now,
+            replyToAnswerId
+          )
 
-  return comment
+      const position = await getLargestPosition(pg, contract.id, creator.id)
+
+      const updatedComment = removeUndefinedProps({
+        ...comment,
+        commentorPositionShares: position?.shares,
+        commentorPositionOutcome: position?.outcome,
+        commentorPositionAnswerId: position?.answer_id,
+        commentorPositionProb:
+          position && contract.mechanism === 'cpmm-1'
+            ? contract.prob
+            : undefined,
+        ...denormalizeBet(bet),
+      })
+
+      await db
+        .from('contract_comments')
+        .update({ data: updatedComment })
+        .eq('comment_id', comment.id)
+
+      await onCreateCommentOnContract({
+        contract,
+        comment: updatedComment,
+        creator,
+        bet,
+      })
+    },
+  }
+}
+const denormalizeBet = (bet: Bet | undefined) => {
+  return {
+    betAmount: bet?.amount,
+    betOutcome: bet?.outcome,
+    betAnswerId: bet?.answerId,
+    bettorName: bet?.userName,
+    bettorUsername: bet?.userUsername,
+    betOrderAmount: bet?.orderAmount,
+    betLimitProb: bet?.limitProb,
+    betId: bet?.id,
+  }
 }
 
 export const validateComment = async (
@@ -173,6 +194,7 @@ export const validateComment = async (
 
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
 
@@ -216,7 +238,7 @@ async function getMostRecentCommentableBet(
          millis_to_ts($3) - interval $5)
       as cutoff
     )
-    select data from contract_bets
+    select * from contract_bets
       where contract_id = $1
       and user_id = $2
       and ($4 is null or answer_id = $4)
@@ -228,7 +250,7 @@ async function getMostRecentCommentableBet(
       limit 1
     `,
       [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
-      (r) => (r.data ? (r.data as Bet) : undefined)
+      convertBet
     )
     .catch((e) => console.error('Failed to get bet: ' + e))
   return first(bet ?? [])

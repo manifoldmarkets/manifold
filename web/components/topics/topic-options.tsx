@@ -1,4 +1,4 @@
-import { Group, GroupRole, PrivacyStatusType, TOPIC_KEY } from 'common/group'
+import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { useGroupRole } from 'web/hooks/use-group-supabase'
@@ -7,6 +7,7 @@ import {
   DotsVerticalIcon,
   PencilIcon,
   PlusCircleIcon,
+  TrashIcon,
 } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
@@ -21,22 +22,24 @@ import {
   AddContractToGroupPermissionType,
 } from 'web/components/topics/add-contract-to-group-modal'
 import { BsFillPersonDashFill } from 'react-icons/bs'
-import { AiFillTrophy } from 'react-icons/ai'
 import { BiSolidVolumeMute } from 'react-icons/bi'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { DeleteTopicModal } from './delete-topic-modal'
 
 export function TopicOptions(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
+  className?: string
 }) {
-  const { group, user, isMember, unfollow } = props
+  const { group, user, isMember, unfollow, className } = props
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
   const userRole = useGroupRole(group.id, user)
   const isCreator = group.creatorId == user?.id
   const isMobile = useIsMobile()
@@ -48,11 +51,6 @@ export function TopicOptions(props: {
         icon: <PlusCircleIcon className="h-5 w-5" />,
         onClick: () => setShowAddContract(true),
       },
-    {
-      name: 'Leaderboards',
-      icon: <AiFillTrophy className="h-5 w-5" />,
-      onClick: () => router.push(`/leaderboards?${TOPIC_KEY}=${group.slug}`),
-    },
     userRole === 'admin' && {
       name: 'Edit name',
       icon: <PencilIcon className="h-5 w-5" />,
@@ -74,14 +72,21 @@ export function TopicOptions(props: {
           privateUser.blockedGroupSlugs?.includes(group.slug)
             ? unBlockGroup(privateUser, group.slug)
             : blockGroup(privateUser, group.slug),
-      }
+      },
+    userRole === 'admin' && {
+      name: 'Delete',
+      icon: <TrashIcon className="text-scarlet-500 h-5 w-5" />,
+      onClick: () => setShowDelete(true),
+    }
   ) as DropdownItem[]
   return (
-    <Col onClick={(e) => e.stopPropagation()}>
+    <>
       <DropdownMenu
         closeOnClick={true}
         items={groupOptionItems}
         icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+        className={className}
+        menuItemsClass="flex flex-col"
         withinOverflowContainer={true}
       />
       <Modal open={editingName} setOpen={setEditingName}>
@@ -107,7 +112,12 @@ export function TopicOptions(props: {
           user={user}
         />
       )}
-    </Col>
+      <DeleteTopicModal
+        group={group}
+        open={showDelete}
+        setOpen={setShowDelete}
+      />
+    </>
   )
 }
 

@@ -52,8 +52,9 @@ export async function getStaticProps(ctx: { params: { charitySlug: string } }) {
     numSupporters: 0,
     total: 0,
   }
-  console.log(charity.id, stats)
-  const donations = await getDonationsPageQuery(charity.id)(PAGE_SIZE)
+  const donations = await getDonationsPageQuery(charity.id)({
+    limit: PAGE_SIZE,
+  })
   return {
     props: { charity, donations, stats },
     revalidate: 60,
@@ -90,7 +91,7 @@ function CharityPage(props: {
   const pagination = usePagination({
     pageSize: PAGE_SIZE,
     q: paginationCallback,
-    preload: donations,
+    prefix: donations,
   })
   return (
     <Page
@@ -124,7 +125,7 @@ function CharityPage(props: {
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
-          {(pagination.items ?? []).map((d, i) => (
+          {pagination.items.map((d, i) => (
             <Donation key={i} user={d.user} ts={d.ts} amount={d.amount} />
           ))}
           <PaginationNextPrev {...pagination} />

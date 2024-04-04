@@ -19,17 +19,29 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
-  const [totalsByCharity, mostRecentDonation] = await Promise.all([
-    getDonationsByCharity(),
-    getMostRecentDonation(),
-  ]).catch(() => [{}, { toId: '', fromId: '' }] as const)
-  return {
-    props: {
-      totalsByCharity,
-      mostRecentCharityId: mostRecentDonation.toId,
-      mostRecentDonor: await getUserById(mostRecentDonation.fromId),
-    },
-    revalidate: 60,
+  try {
+    const [totalsByCharity, mostRecentDonation] = await Promise.all([
+      getDonationsByCharity(),
+      getMostRecentDonation(),
+    ])
+    return {
+      props: {
+        totalsByCharity,
+        mostRecentCharityId: mostRecentDonation.toId,
+        mostRecentDonor: await getUserById(mostRecentDonation.fromId),
+      },
+      revalidate: 60,
+    }
+  } catch (err) {
+    console.error(err)
+    return {
+      props: {
+        totalsByCharity: {},
+        mostRecentCharityId: null,
+        mostRecentDonor: null,
+      },
+      revalidate: 60,
+    }
   }
 }
 
@@ -68,7 +80,7 @@ function DonatedStats(props: { stats: Stat[] }) {
 export default function Charity(props: {
   totalsByCharity: { [k: string]: { total: number; numSupporters: number } }
   mostRecentDonor?: DisplayUser | null
-  mostRecentCharityId?: string
+  mostRecentCharityId?: string | null
 }) {
   const { totalsByCharity, mostRecentCharityId, mostRecentDonor } = props
 
@@ -149,7 +161,7 @@ export default function Charity(props: {
           />
         </Col>
         <div className="grid max-w-xl grid-flow-row grid-cols-1 gap-4 self-center lg:max-w-full lg:grid-cols-2 xl:grid-cols-3">
-          {filterCharities.map((charity, i) => (
+          {filterCharities.map((charity) => (
             <CharityCard
               charity={charity}
               raised={totalsByCharity[charity.id]?.total ?? 0}

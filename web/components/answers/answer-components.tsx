@@ -3,8 +3,10 @@ import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
 import {
   CPMMMultiContract,
+  CPMMNumericContract,
   DpmMultipleChoiceContract,
   FreeResponseContract,
+  getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
@@ -12,7 +14,7 @@ import {
 import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
-import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
 import { Bet } from 'common/bet'
@@ -22,6 +24,7 @@ import { SellSharesModal } from '../bet/sell-row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
+  OutcomeLabel,
   ProbPercentLabel,
   YesLabel,
 } from '../outcome-label'
@@ -37,6 +40,10 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { HOUR_MS } from 'common/util/time'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
+import { UserHovercard } from '../user/user-hovercard'
+import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
+import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -113,7 +120,9 @@ export const CreatorAndAnswerLabel = (props: {
   text: string
   createdTime: number
   truncate?: 'short' | 'long' | 'none' //  | medium (30)
-  creator?: { name: string; username: string; avatarUrl?: string } | false
+  creator?:
+    | { name: string; username: string; avatarUrl?: string; id: string }
+    | false
   className?: string
 }) => {
   const { text, createdTime, truncate = 'none', creator, className } = props
@@ -137,12 +146,14 @@ export const CreatorAndAnswerLabel = (props: {
           {creator === false ? (
             <EmptyAvatar className="mr-2 inline" size={4} />
           ) : creator ? (
-            <Avatar
-              className="mr-2 inline"
-              size="2xs"
-              username={creator.username}
-              avatarUrl={creator.avatarUrl}
-            />
+            <UserHovercard userId={creator.id}>
+              <Avatar
+                className="mr-2 inline"
+                size="2xs"
+                username={creator.username}
+                avatarUrl={creator.avatarUrl}
+              />
+            </UserHovercard>
           ) : null}
         </Tooltip>
         <Linkify text={truncated} className="[&_a]:text-primary-800" />
@@ -232,25 +243,21 @@ export const MultiBettor = (props: {
   contract: CPMMMultiContract
 }) => {
   const { answer, contract } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
-    undefined
-  )
-
-  const user = useUser()
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
     <>
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-        className={MODAL_CLASS}
+        className={clsx(MODAL_CLASS, SCROLLABLE_MODAL_CLASS)}
       >
         <AnswerCpmmBetPanel
           answer={answer}
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
+          alwaysShowOutcomeSwitcher
         />
       </Modal>
 
@@ -269,38 +276,34 @@ export const MultiBettor = (props: {
     </>
   )
 }
-export const YesNoBetButtons = (props: {
+const YesNoBetButtons = (props: {
   answer: Answer
   contract: CPMMMultiContract
   fillColor?: string
+  feedItem?: FeedTimelineItem
 }) => {
-  const { answer, contract, fillColor } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | 'LIMIT' | undefined>(
-    undefined
-  )
-
-  const user = useUser()
+  const { answer, contract, feedItem, fillColor } = props
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
     <>
       <Modal
         open={outcome != undefined}
         setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-        className={MODAL_CLASS}
       >
         <AnswerCpmmBetPanel
           answer={answer}
+          feedItem={feedItem}
           contract={contract}
           outcome={outcome}
           closePanel={() => setOutcome(undefined)}
-          me={user}
         />
       </Modal>
 
       <Button
         size="2xs"
         color="green-outline"
-        className={fillColor ?? 'bg-primary-50'}
+        className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -312,7 +315,7 @@ export const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
-        className={fillColor ?? 'bg-primary-50'}
+        className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
           track('bet intent', { location: 'answer panel' })
@@ -327,7 +330,7 @@ export const YesNoBetButtons = (props: {
 
 export const MultiSeller = (props: {
   answer: Answer
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   user: User
 }) => {
@@ -360,11 +363,62 @@ export const MultiSeller = (props: {
   )
 }
 
+export const BinaryMultiSellRow = (props: {
+  contract: CPMMMultiContract
+  answer: Answer
+}) => {
+  const { contract, answer } = props
+  const user = useUser()
+  const userBets = useUserContractBets(user?.id, contract.id)?.filter(
+    (b) => b.answerId === answer.id
+  )
+  const [open, setOpen] = useState(false)
+  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+  if (!sharesOutcome || !user || contract.isResolved) return null
+  return (
+    <Row className={'mt-2'}>
+      {open && (
+        <SellSharesModal
+          contract={contract}
+          user={user}
+          userBets={userBets ?? []}
+          shares={shares}
+          sharesOutcome={sharesOutcome}
+          setOpen={setOpen}
+          answerId={getMainBinaryMCAnswer(contract)?.id}
+        />
+      )}
+      <Button
+        className="!py-1"
+        size="xs"
+        color="gray-outline"
+        onClick={(e) => {
+          setOpen(true)
+          // Necessary in the profile page to prevent the row from being toggled
+          e.stopPropagation()
+        }}
+      >
+        <Row className={'gap-1'}>
+          Sell
+          <OutcomeLabel
+            outcome={sharesOutcome}
+            contract={contract}
+            truncate={'short'}
+          />
+        </Row>
+      </Button>
+    </Row>
+  )
+}
+
 export const OpenProb = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  noNewIcon?: boolean
+  size?: 'sm' | 'md'
+  className?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, noNewIcon, size = 'md', className } = props
   const spring = useAnimatedNumber(getAnswerProbability(contract, answer.id))
   const cutoffTime = Date.now() - 6 * HOUR_MS
   const isNew =
@@ -372,11 +426,15 @@ export const OpenProb = (props: {
   return (
     <Row className={'items-center'}>
       <span
-        className={clsx(' min-w-[2.5rem] whitespace-nowrap text-lg font-bold')}
+        className={clsx(
+          'whitespace-nowrap font-bold',
+          size == 'sm' ? 'min-w-[36px]' : 'min-w-[2.5rem]  text-lg ',
+          className
+        )}
       >
         <animated.div>{spring.to((val) => formatPercent(val))}</animated.div>
       </span>
-      {isNew && (
+      {isNew && !noNewIcon && (
         <Tooltip text={'Recently submitted'}>
           <SparklesIcon className="h-4 w-4 text-green-500" />
         </Tooltip>
@@ -409,6 +467,7 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
 export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  noNewIcon?: boolean
 }) => {
   const { contract, answer } = props
   const { resolutions } = contract
@@ -444,7 +503,7 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} />
+    <OpenProb contract={contract} answer={answer} noNewIcon />
   ) : (
     <ClosedProb prob={prob} resolvedProb={resolvedProb} />
   )
@@ -452,9 +511,10 @@ export const AnswerStatus = (props: {
 export const BetButtons = (props: {
   contract: MultiContract
   answer: Answer | DpmAnswer
+  feedItem?: FeedTimelineItem
   fillColor?: string
 }) => {
-  const { contract, answer, fillColor } = props
+  const { contract, answer, fillColor, feedItem } = props
   const isDpm = contract.mechanism === 'dpm-2'
 
   const isOpen = tradingAllowed(
@@ -467,6 +527,7 @@ export const BetButtons = (props: {
 
   return (
     <YesNoBetButtons
+      feedItem={feedItem}
       answer={answer as Answer}
       contract={contract as CPMMMultiContract}
       fillColor={fillColor}
@@ -475,7 +536,7 @@ export const BetButtons = (props: {
 }
 
 export function AnswerPosition(props: {
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   userBets: Bet[]
   answer: Answer
   user: User

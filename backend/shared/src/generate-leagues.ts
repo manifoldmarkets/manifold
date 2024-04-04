@@ -1,7 +1,7 @@
 import { groupBy, shuffle } from 'lodash'
 import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
-import { BOT_USERNAMES } from 'common/envs/constants'
+import { BOT_USERNAMES, OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
 import {
   CURRENT_SEASON,
   getCohortSize,
@@ -14,6 +14,7 @@ import {
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotification } from 'shared/create-notification'
 import { bulkInsert } from './supabase/utils'
+import { log } from './utils'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -135,30 +136,18 @@ const generateCohorts = async (
       cohortsWithOneLess
     )
 
-    let remainingUserIds = divisionUserIds.concat()
+    let remainingUserIds = shuffle(divisionUserIds.concat())
     let i = 0
     while (remainingUserIds.length > 0) {
       const cohortSize =
         i < cohortsWithOneLess ? usersPerCohort - 1 : usersPerCohort
-      const usersOrderedByProximity = await pg.many<{ user_id: string }>(
-        `select user_id from user_embeddings
-        where user_id = any($2)
-        order by user_embeddings.interest_embedding <=> (
-          select interest_embedding from user_embeddings where user_id = $1
-        )`,
-        [remainingUserIds[0], remainingUserIds, cohortSize]
-      )
-
-      // Randomize a little by choosing within a larger set.
-      const cohortOfUsers = shuffle(
-        usersOrderedByProximity.slice(0, cohortSize * 3)
-      ).slice(0, cohortSize)
+      const cohortOfUsers = remainingUserIds.slice(0, cohortSize)
 
       const cohort = genNewAdjectiveAnimal(cohortSet)
       cohortSet.add(cohort)
 
-      for (const user of cohortOfUsers) {
-        userCohorts[user.user_id] = { division, cohort }
+      for (const userId of cohortOfUsers) {
+        userCohorts[userId] = { division, cohort }
       }
       remainingUserIds = divisionUserIds.filter((uid) => !userCohorts[uid])
       i++
@@ -218,7 +207,7 @@ const getSmallestCohort = async (
   season: number,
   division: number
 ) => {
-  return await pg.one<{ cohort: string; count: number }>(
+  return await pg.oneOrNone<{ cohort: string; count: number }>(
     `select cohort, count(user_id) as count from leagues
     where season = $1
       and division = $2
@@ -247,11 +236,10 @@ const addUserToLeague = async (
   season: number,
   division: number
 ) => {
-  const { cohort: smallestCohort, count } = await getSmallestCohort(
-    pg,
-    season,
-    division
-  )
+  const data = await getSmallestCohort(pg, season, division)
+  if (!data) return
+  const { cohort: smallestCohort, count } = data
+
   const cohort =
     count >= MAX_COHORT_SIZE
       ? await generateNewCohortName(pg, season)
@@ -307,6 +295,11 @@ export const addToLeagueIfNotInOne = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
+  if (OPTED_OUT_OF_LEAGUES.includes(userId)) {
+    log('User opted out of leagues', userId)
+    return
+  }
+
   const season = SEASONS[SEASONS.length - 1]
 
   const existingLeague = await pg.oneOrNone<{
@@ -323,7 +316,10 @@ export const addToLeagueIfNotInOne = async (
 
   const portfolio = await getCurrentPortfolio(pg, userId)
   const division = portfolio ? portfolioToDivision(portfolio) : 1
-  const { cohort } = await addUserToLeague(pg, userId, season, division)
+  const data = await addUserToLeague(pg, userId, season, division)
+  if (!data) return
+  const cohort = data.cohort
+
   await createLeagueChangedNotification(
     userId,
     undefined,
@@ -338,12 +334,9 @@ export const addNewUserToLeague = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
-  const { season, division, cohort } = await addUserToLeague(
-    pg,
-    userId,
-    CURRENT_SEASON,
-    1
-  )
+  const data = await addUserToLeague(pg, userId, CURRENT_SEASON, 1)
+  if (!data) return
+  const { season, division, cohort } = data
   await createLeagueChangedNotification(
     userId,
     undefined,

@@ -81,11 +81,10 @@ export const PROD_CONFIG: EnvConfig = {
     'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
     'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
     '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
-    'qJHrvvGfGsYiHZkGY6XjVfIMj233', // Alice
     'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
-    'vUks7InCtYhBFrdLQhqXFUBHD4D2', // Barak work account
+    '8lZo8X5lewh4hnCoreI7iSc0GxK2', // Manifold AI
   ],
   visibility: 'PUBLIC',
 

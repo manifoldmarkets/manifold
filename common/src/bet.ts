@@ -56,6 +56,7 @@ export type Bet = {
   isRedemption: boolean
   isChallenge: boolean
   visibility: Visibility
+  /** @deprecated */
   challengeSlug?: string
 
   // Props for bets in DPM contract below.
@@ -67,6 +68,7 @@ export type Bet = {
     betId: string // id of BUY bet being sold
   }
   replyToCommentId?: string
+  betGroupId?: string // Used to group buys on MC sumsToOne contracts
 } & Partial<LimitProps>
 
 export type NumericBet = Bet & {

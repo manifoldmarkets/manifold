@@ -1,8 +1,12 @@
-import { Contract } from 'common/contract'
+import {
+  Contract,
+  CPMMBinaryContract,
+  CPMMMultiContract,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { BetDialog } from '../bet/bet-dialog'
+import { BetDialog, MultiBetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -14,32 +18,73 @@ import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
+import { PollPanel } from '../poll/poll-panel'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
   return (
     <Row className="h-min flex-wrap gap-2 align-top">
+      <VoteButton contract={contract} />
       <BetButton contract={contract} />
       <ResolveButton contract={contract} />
     </Row>
   )
 }
 
+const VoteButton = (props: { contract: Contract }) => {
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+
+  if (props.contract.outcomeType === 'POLL') {
+    return (
+      <>
+        <Button
+          size="2xs"
+          color="gray-outline"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            if (!user) {
+              firebaseLogin()
+              return
+            }
+            setOpen(true)
+          }}
+        >
+          Vote
+        </Button>
+        {open && (
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            size="md"
+            className={MODAL_CLASS}
+          >
+            <PollPanel contract={props.contract} />
+          </Modal>
+        )}
+      </>
+    )
+  }
+
+  return <></>
+}
+
 export function BetButton(props: { contract: Contract; user?: User | null }) {
   const { contract } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
+  const [openMC, setOpenMC] = useState(false)
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    contract.outcomeType === 'BINARY' &&
-    contract.mechanism === 'cpmm-1'
+    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
   ) {
     return (
       <>
         <Button
           size="2xs"
-          color="indigo-outline"
+          color={'indigo-outline'}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -48,15 +93,25 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
               firebaseLogin()
               return
             }
-            setOpen(true)
+            if (contract.mechanism === 'cpmm-1') {
+              setOpen(true)
+            } else {
+              setOpenMC(true)
+            }
           }}
         >
           Bet
         </Button>
+        {openMC && (
+          <MultiBetDialog
+            contract={contract as CPMMMultiContract}
+            open={openMC}
+            setOpen={setOpenMC}
+          />
+        )}
         {open && (
           <BetDialog
-            contract={contract}
-            initialOutcome="YES"
+            contract={contract as CPMMBinaryContract}
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"

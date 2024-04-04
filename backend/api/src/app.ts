@@ -1,14 +1,13 @@
 import * as cors from 'cors'
+import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/utils'
+import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
 import { changeuserinfo } from './change-user-info'
-import { createuser } from './create-user'
-import { createanswer } from './create-answer'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -36,7 +35,6 @@ import { getsupabasetoken } from './get-supabase-token'
 import { updateUserEmbedding } from './update-user-embedding'
 import { deleteMarket } from './delete-market'
 import { saveTopic } from './save-topic'
-import { getcontractparams } from './get-contract-params'
 import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { creategroupinvite } from './create-group-invite'
@@ -74,7 +72,10 @@ import { updatedashboard } from './update-dashboard'
 import { deletedashboard } from './delete-dashboard'
 import { setnews } from './set-news'
 import { getnews } from './get-news'
-import { getdashboardfromslug } from './get-dashboard-from-slug'
+import {
+  getdashboardfromslug,
+  getDashboardFromSlug,
+} from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { referuser } from 'api/refer-user'
 import { banuser } from 'api/ban-user'
@@ -94,7 +95,6 @@ import { updateprivateusermessagechannel } from 'api/update-private-user-message
 import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
-import { oncreatebet } from 'api/on-create-bet'
 import { getCompatibleLovers } from './love/compatible-lovers'
 import { API, type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
@@ -113,7 +113,7 @@ import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
-import { addOrRemoveGroupFromContract } from './update-tag'
+import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { searchUsers } from './supabase-search-users'
 import {
   searchMarketsLite,
@@ -125,7 +125,7 @@ import { type APIHandler, typedEndpoint } from './helpers/endpoint'
 import { requestloan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
-import { getrelatedmarkets } from 'api/get-related-markets'
+import { getrelatedmarketscache } from 'api/get-related-markets'
 import { getadanalytics } from 'api/get-ad-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
@@ -137,12 +137,29 @@ import { getLikesAndShips } from './love/get-likes-and-ships'
 import { hasFreeLike } from './love/has-free-like'
 import { starLover } from './love/star-lover'
 import { getLovers } from './love/get-lovers'
-
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
-
-import { getLoverAnswers } from './love/get-lover-answers'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
+import { getLoverAnswers } from './love/get-lover-answers'
+import { createYourLoveMarket } from './love/create-your-love-market'
+import { getLoveMarket } from './love/get-love-market'
+import { getLoveMarkets } from './love/get-love-markets'
+import { placeMultiBet } from 'api/place-multi-bet'
+import { deletetv, settv } from './set-tv'
+import { getPartnerStats } from './get-partner-stats'
+import { getSeenMarketIds } from 'api/get-seen-market-ids'
+import { recordContractView } from 'api/record-contract-view'
+import { createPublicChatMessage } from 'api/create-public-chat-message'
+import { createAnswerDpm } from 'api/create-answer-dpm'
+import { getFollowedGroups } from './get-followed-groups'
+import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
+import { deleteGroup } from './delete-group'
+import { recordContractInteraction } from 'api/record-contract-interaction'
+import { getUserPortfolio } from './get-user-portfolio'
+import { createuser } from 'api/create-user'
+import { verifyPhoneNumber } from 'api/verify-phone-number'
+import { requestOTP } from 'api/request-phone-otp'
+import { getPhoneNumber } from 'api/get-phone-number'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -153,24 +170,33 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestLogger: RequestHandler = (req, _res, next) => {
-  log(`${req.method} ${req.url} ${JSON.stringify(req.body ?? '')}`)
-  next()
+const requestContext: RequestHandler = (req, _res, next) => {
+  const traceContext = req.get('X-Cloud-Trace-Context')
+  const traceId = traceContext
+    ? traceContext.split('/')[0]
+    : crypto.randomUUID()
+  const context = { endpoint: req.path, traceId }
+  withLogContext(context, () => {
+    log(`${req.method} ${req.url}`)
+    next()
+  })
 }
 
-const apiErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
-  if (res.headersSent) {
-    return next(err)
-  }
-  if (err instanceof APIError) {
-    const output: { [k: string]: unknown } = { message: err.message }
-    if (err.details != null) {
-      output.details = err.details
+const apiErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+  if (error instanceof APIError) {
+    log.info(error)
+    if (!res.headersSent) {
+      const output: { [k: string]: unknown } = { message: error.message }
+      if (error.details != null) {
+        output.details = error.details
+      }
+      res.status(error.code).json(output)
     }
-    res.status(err.code).json(output)
   } else {
-    console.error(err.stack)
-    res.status(500).json({ message: `An unknown error occurred: ${err.stack}` })
+    log.error(error)
+    if (!res.headersSent) {
+      res.status(500).json({ message: error.stack, error })
+    }
   }
 }
 
@@ -184,13 +210,14 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestLogger)
+app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
+  'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
   'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
@@ -201,11 +228,13 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   comments: getComments,
   market: createMarket,
   'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
-  'market/:contractId/group': addOrRemoveGroupFromContract,
+  'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
   'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
     getMarkets({ groupId: id, limit }, ...rest),
+  'group/:slug/delete': deleteGroup,
+  'group/by-id/:id/delete': deleteGroup,
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
@@ -240,7 +269,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestloan,
   'remove-pinned-photo': removePinnedPhoto,
-  'get-related-markets': getrelatedmarkets,
+  'get-related-markets-cache': getrelatedmarketscache,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-ad-analytics': getadanalytics,
   'get-compatibility-questions': getCompatibilityQuestions,
@@ -258,6 +287,24 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
+  'create-your-love-market': createYourLoveMarket,
+  'get-love-market': getLoveMarket,
+  'get-love-markets': getLoveMarkets,
+  'get-partner-stats': getPartnerStats,
+  'get-seen-market-ids': getSeenMarketIds,
+  'record-contract-view': recordContractView,
+  'get-dashboard-from-slug': getDashboardFromSlug,
+  'create-public-chat-message': createPublicChatMessage,
+  createanswer: createAnswerDpm,
+  unresolve: unresolve,
+  'get-followed-groups': getFollowedGroups,
+  'unique-bet-group-count': getUniqueBetGroupCount,
+  'record-contract-interaction': recordContractInteraction,
+  'get-user-portfolio': getUserPortfolio,
+  createuser: createuser,
+  'verify-phone-number': verifyPhoneNumber,
+  'request-otp': requestOTP,
+  'phone-number': getPhoneNumber,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -289,8 +336,6 @@ app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
 app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
-app.post('/createuser', ...apiRoute(createuser))
-app.post('/createanswer', ...apiRoute(createanswer))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
@@ -321,7 +366,6 @@ app.post(
   express.raw({ type: '*/*' }),
   stripewebhook
 )
-app.post('/getcontractparams', ...apiRoute(getcontractparams))
 app.post('/creategroupinvite', ...apiRoute(creategroupinvite))
 app.post('/follow-topic', ...apiRoute(followtopic))
 app.post('/league-activity', ...apiRoute(leagueActivity))
@@ -345,7 +389,9 @@ app.post(
 )
 app.post('/follow-user', ...apiRoute(followUser))
 app.post('/report', ...apiRoute(report))
-app.post('/unresolve', ...apiRoute(unresolve))
+
+app.post('/settv', ...apiRoute(settv))
+app.post('/deletetv', ...apiRoute(deletetv))
 
 app.post('/createdashboard', ...apiRoute(createdashboard))
 app.post('/getyourdashboards', ...apiRoute(getyourdashboards))
@@ -385,19 +431,6 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
-
-const publicApiRoute = (endpoint: RequestHandler) => {
-  return [
-    allowCorsUnrestricted,
-    express.json(),
-    endpoint,
-    apiErrorHandler,
-  ] as const
-}
-
-// Ian: not sure how to restrict triggers to supabase origin, yet
-app.post('/on-create-bet', ...publicApiRoute(oncreatebet))
-
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

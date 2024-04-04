@@ -9,7 +9,12 @@ import {
   calculateCpmmSale,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { CPMMContract, CPMMMultiContract, DPMContract } from './contract'
+import {
+  CPMMContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  DPMContract,
+} from './contract'
 import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees, noFees } from './fees'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
@@ -167,7 +172,7 @@ export const getCpmmSellBetInfo = (
 }
 
 export const getCpmmMultiSellBetInfo = (
-  contract: CPMMMultiContract,
+  contract: CPMMMultiContract | CPMMNumericContract,
   answers: Answer[],
   answerToSell: Answer,
   shares: number,

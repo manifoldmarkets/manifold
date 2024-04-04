@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
 
@@ -11,62 +11,115 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button } from 'web/components/buttons/button'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { AboutPrivacyTerms } from 'web/components/privacy-terms'
-import { formatMoney } from 'common/util/format'
 import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
-import { STARTING_BALANCE } from 'common/economy'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { LogoSEO } from 'web/components/LogoSEO'
 import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
-import { CPMMBinaryContract, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { db } from 'web/lib/supabase/db'
-import { DEEMPHASIZED_GROUP_SLUGS } from 'common/envs/constants'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 import { useUser } from 'web/hooks/use-user'
 import { some } from 'd3-array'
-import { ExternalLinkIcon } from '@heroicons/react/outline'
-
-const excluded = [...DEEMPHASIZED_GROUP_SLUGS, 'manifold-6748e065087e']
+import { getContract } from 'web/lib/supabase/contracts'
+import { useABTest } from 'web/hooks/use-ab-test'
+import { Typewriter } from 'web/components/home/typewriter'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { Carousel } from 'web/components/widgets/carousel'
+import { removeEmojis } from 'common/topics'
+import { filterDefined } from 'common/util/array'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
-    .from('trending_contracts')
+    .from('contracts')
     .select('data')
-    .neq('outcome_type', 'STONK')
-    .gt('data->uniqueBettorCount', 10)
-    .limit(50)
+    .not(
+      'outcome_type',
+      'in',
+      `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
+    )
+    .order('importance_score', { ascending: false })
+    .limit(100)
+
   const contracts = (data ?? []).map((d) => d.data) as Contract[]
+
+  const prezContract = await getContract('ikSUiiNS8MwAI75RwEJf')
+
   const filteredContracts = contracts.filter(
-    (c) => !c.groupSlugs?.some((slug) => excluded.includes(slug as any))
+    (c) =>
+      !c.groupSlugs?.some((slug) =>
+        HIDE_FROM_NEW_USER_SLUGS.includes(slug as any)
+      )
   )
 
   const hasCommonGroupSlug = (contract: Contract, groupSlugsSet: string[]) =>
     some(contract.groupSlugs ?? [], (slug) => groupSlugsSet.includes(slug))
 
-  const addedGroupSlugs: string[] = []
-  const uniqueContracts: Contract[] = []
+  const addedGroupSlugs: string[] = ['us-politics']
+  const uniqueContracts: Contract[] = filterDefined([prezContract])
   filteredContracts.forEach((contract) => {
     if (!hasCommonGroupSlug(contract, addedGroupSlugs)) {
       uniqueContracts.push(contract)
       addedGroupSlugs.push(...(contract.groupSlugs ?? []))
     }
   })
+  const topicSlugs = [
+    'us-politics',
+    'technology-default',
+    'ai',
+    'entertainment',
+    'sports-default',
+    'science-default',
+  ]
+  const topicSlugToContracts: Record<string, Contract[]> = {}
+  topicSlugs.forEach((slug) => {
+    topicSlugToContracts[slug] = filteredContracts
+      .filter((c) => (c.groupSlugs ?? []).includes(slug))
+      .slice(0, 7)
+  })
+  const { data: topicData } = await db
+    .from('groups')
+    .select('name,slug')
+    .in('slug', topicSlugs)
+  // Order topics by topicSlugs order
+  const topics = (topicData ?? []).sort(
+    (a, b) => topicSlugs.indexOf(a.slug) - topicSlugs.indexOf(b.slug)
+  )
+
   return {
-    props: { trendingContracts: uniqueContracts.slice(0, 7) },
+    props: {
+      trendingContracts: uniqueContracts.slice(0, 7),
+      topicSlugToContracts,
+      topics,
+    },
   }
 })
 
 export default function LandingPage(props: {
-  trendingContracts: CPMMBinaryContract[]
+  trendingContracts: Contract[]
+  topicSlugToContracts: Record<string, Contract[]>
+  topics: { name: string; slug: string }[]
 }) {
-  const { trendingContracts } = props
+  const { trendingContracts, topicSlugToContracts, topics } = props
 
   const user = useUser()
   useSaveReferral(user)
   useSaveCampaign()
   useRedirectIfSignedIn()
 
+  const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const contracts = selectedTopicSlug
+    ? topicSlugToContracts[selectedTopicSlug] ?? []
+    : trendingContracts
+  const abTestVariant = useABTest('signed out home page variations v0', [
+    'know the future',
+    'real-world impact',
+    'wisdom of the crowds',
+    'bet',
+    'bet-typewriter',
+  ])
 
   return (
     <Page trackPageView={'signed out home page'} hideSidebar>
@@ -88,19 +141,16 @@ export default function LandingPage(props: {
                   size="xs"
                   className="hidden whitespace-nowrap lg:flex"
                 >
-                  Markets
+                  Browse
                 </Button>
               </Link>
-              <Link
-                href="https://manifoldpolitics.com/"
-                className="hidden lg:flex"
-              >
+              <Link href="/politics" className="hidden lg:flex">
                 <Button
                   color="gray-white"
                   size="xs"
                   className="whitespace-nowrap"
                 >
-                  US Politics <ExternalLinkIcon className="ml-2 h-3 w-3" />
+                  US Politics
                 </Button>
               </Link>
               <Button
@@ -137,34 +187,98 @@ export default function LandingPage(props: {
 
           <Row className="justify-between rounded-lg p-8">
             <Col className="max-w-lg gap-2">
-              <h1 className="mb-4 text-4xl">Predict the future</h1>
-              <h1 className="text-lg">
-                Play-money markets. Real-world accuracy.
-              </h1>
-              <h1 className="text-lg">
-                Compete with your friends by betting on literally anything. It's
-                play money,{' '}
-                <strong className="font-semibold">not crypto</strong>, and free
-                to play.
-              </h1>
-
+              {abTestVariant === 'know the future' && (
+                <>
+                  <h1 className="mb-4 text-4xl">Know the future</h1>
+                  <h1 className="text-lg">
+                    Harness wisdom of the crowds to predict politics, pandemics,
+                    tech breakthroughs & more with
+                    <span className={'ml-1 underline'}>play money</span>.
+                  </h1>
+                  <h1 className="text-lg">
+                    Forecasting for everything that matters.
+                  </h1>
+                </>
+              )}
+              {abTestVariant === 'real-world impact' && (
+                <>
+                  <h1 className="mb-4 text-4xl">
+                    Play-money betting.
+                    <br />
+                    Real-world impact.
+                  </h1>
+                  <h1 className="text-lg">
+                    Harness humanity's collective intelligence to make smarter
+                    decisions through forecasting.
+                  </h1>
+                  <h1 className="text-lg">
+                    Join a global community betting on a better world.
+                  </h1>
+                </>
+              )}
+              {abTestVariant === 'wisdom of the crowds' && (
+                <>
+                  <h1 className="mb-4 text-4xl">
+                    Harness the wisdom of the crowds
+                  </h1>
+                  <h1 className="text-lg">
+                    <span className={'underline'}>Play-money</span> betting.{' '}
+                    <span className={'underline'}>Real-world</span> decisions.
+                  </h1>
+                  <h1 className="text-lg">
+                    Shape the world with accurate forecasts for better
+                    decision-making.
+                  </h1>
+                </>
+              )}
+              {abTestVariant === 'bet' && (
+                <>
+                  <h1 className="mb-4 text-4xl">Bet on politics & more</h1>
+                  <h1 className="text-lg">
+                    Play-money markets. Real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Compete with your friends by betting on politics, tech,
+                    sports, and more. It's play money and free to play.
+                  </h1>
+                </>
+              )}
+              {abTestVariant === 'bet-typewriter' && (
+                <>
+                  <h1 className="mb-4 text-4xl">
+                    Bet on the next:{' '}
+                    <Row>
+                      <Typewriter
+                        words={[
+                          'election',
+                          'tech breakthrough',
+                          'game',
+                          'bachelor',
+                        ]}
+                      />
+                    </Row>
+                  </h1>
+                  <h1 className="text-lg">
+                    Play-money betting. Real-world accuracy.
+                  </h1>
+                  <h1 className="text-lg">
+                    Forecast events in politics, policy, technology, sports &
+                    beyond.
+                  </h1>
+                </>
+              )}
               <Button
                 color="gradient"
                 size="2xl"
                 className="mt-8"
                 onClick={firebaseLogin}
               >
-                Start predicting
+                {abTestVariant === 'know the future'
+                  ? 'See the forecasts'
+                  : abTestVariant === 'real-world impact'
+                  ? 'Forecast the future'
+                  : 'Start predicting'}
               </Button>
-
-              <div className="text-md ml-8 ">
-                ...and get{'   '}
-                <span className="z-10 font-semibold">
-                  {formatMoney(STARTING_BALANCE)}
-                </span>
-                {'   '}
-                in play money!
-              </div>
             </Col>
             <Col className="hidden sm:flex">
               <img
@@ -175,12 +289,33 @@ export default function LandingPage(props: {
             </Col>
           </Row>
         </Col>
-
-        <ContractsSection
-          contracts={trendingContracts}
-          className="w-full self-center"
-        />
-
+        <Col className={'max-w-3xl md:self-center'}>
+          <Row className={'mb-3 text-xl'}>🔥 Trending Topics</Row>
+          <Carousel labelsParentClassName={'gap-2'} className="mx-1">
+            {topics.map((topic) => (
+              <PillButton
+                className={'!text-lg'}
+                key={topic.slug}
+                onSelect={() =>
+                  setSelectedTopicSlug(
+                    selectedTopicSlug === topic.slug ? undefined : topic.slug
+                  )
+                }
+                selected={selectedTopicSlug === topic.slug}
+              >
+                {removeEmojis(topic.name)}
+              </PillButton>
+            ))}
+          </Carousel>
+        </Col>
+        <Col className={clsx('w-full max-w-3xl gap-4 self-center')}>
+          {contracts.map((contract) => (
+            <FeedContractCard
+              key={contract.id + selectedTopicSlug}
+              contract={contract}
+            />
+          ))}
+        </Col>
         <TestimonialsPanel />
 
         <AboutPrivacyTerms />
@@ -188,17 +323,3 @@ export default function LandingPage(props: {
     </Page>
   )
 }
-
-const ContractsSection = memo(function ContractsSection(props: {
-  contracts: Contract[]
-  className?: string
-}) {
-  const { contracts, className } = props
-  return (
-    <Col className={clsx('max-w-2xl gap-4', className)}>
-      {contracts.map((contract) => (
-        <FeedContractCard key={contract.id} contract={contract} />
-      ))}
-    </Col>
-  )
-})

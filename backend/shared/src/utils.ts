@@ -26,51 +26,8 @@ import { convertUser } from 'common/supabase/users'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
-
-// type for scheduled job functions
-export type JobContext = {
-  log: GCPLog
-  lastEndTime?: number
-}
-
-export const log = (...args: unknown[]) => {
-  console.log(`[${new Date().toISOString()}]`, ...args)
-}
-
-// log levels GCP's log explorer recognizes
-export const LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'] as const
-export type GCPLogLevel = (typeof LEVELS)[number]
-
-export type GCPLog = (message: any, details?: object | null) => void
-
-function replacer(key: string, value: any) {
-  if (typeof value === 'bigint') {
-    return value.toString()
-  } else {
-    return value
-  }
-}
-
-export const gLog = (
-  severity: GCPLogLevel,
-  message: any,
-  details?: object | null
-) => {
-  const output = { severity, message: message ?? null, ...(details ?? {}) }
-  try {
-    const stringified = JSON.stringify(output, replacer)
-    console.log(stringified)
-  } catch (e) {
-    console.error('Could not stringify log output')
-    console.error(e)
-  }
-}
-
-gLog.debug = (message: any, details?: object) => gLog('DEBUG', message, details)
-gLog.info = (message: any, details?: object) => gLog('INFO', message, details)
-gLog.warn = (message: any, details?: object) =>
-  gLog('WARNING', message, details)
-gLog.error = (message: any, details?: object) => gLog('ERROR', message, details)
+import { log, Logger } from 'shared/log'
+export { log, Logger }
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -102,10 +59,6 @@ export const invokeFunction = async (name: string, body?: unknown) => {
   }
 }
 
-export function getDomainForContract(contract: Contract) {
-  return contract.isPolitics ? ENV_CONFIG.politicsDomain : ENV_CONFIG.domain
-}
-
 export const revalidateStaticProps = async (
   // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
   pathToRevalidate: string,
@@ -117,15 +70,16 @@ export const revalidateStaticProps = async (
       throw new Error('Revalidation failed because of missing API_SECRET.')
 
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
-    const { ok, status, statusText } = await fetch(
+    const resp = await fetch(
       `https://${domain ?? ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
     )
-    if (!ok)
-      throw new Error(
-        'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
-      )
 
-    console.log('Revalidated', pathToRevalidate)
+    if (resp.ok) {
+      log('Revalidated', pathToRevalidate)
+    } else {
+      const body = await resp.text()
+      log.error(`HTTP ${resp.status} revalidating ${queryStr}: ${body}`)
+    }
   }
 }
 
@@ -144,20 +98,14 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
         'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
       )
 
-    console.log('Revalidated tag', tag)
+    log('Revalidated tag', tag)
   }
 }
 
 export async function revalidateContractStaticProps(contract: Contract) {
   await Promise.all([
-    revalidateStaticProps(
-      contractPath(contract),
-      getDomainForContract(contract)
-    ),
-    revalidateStaticProps(
-      `/embed${contractPath(contract)}`,
-      getDomainForContract(contract)
-    ),
+    revalidateStaticProps(contractPath(contract)),
+    revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
 
@@ -295,7 +243,7 @@ export const getContract = (contractId: string) => {
 export const getContractSupabase = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score from contracts where id = $1
+    `select data, importance_score, conversion_score from contracts where id = $1
             limit 1`,
     [contractId],
     (row) => convertContract(row)
@@ -305,7 +253,7 @@ export const getContractSupabase = async (contractId: string) => {
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score from contracts where slug = $1
+    `select data, importance_score, conversion_score from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)
@@ -347,9 +295,10 @@ export const getAllPrivateUsers = async () => {
   return users.docs.map((doc) => doc.data() as PrivateUser)
 }
 
-export const getAllPrivateUsersNotSent = async (
+export const getPrivateUsersNotSent = async (
   type: 'weeklyTrendingEmailSent' | 'weeklyPortfolioUpdateEmailSent',
-  preference: 'trending_markets' | 'profit_loss_updates'
+  preference: 'trending_markets' | 'profit_loss_updates',
+  limit: number
 ) => {
   const firestore = admin.firestore()
   // Unfortunately firestore can't do 'array-not-contains' for the opt_out_all preference
@@ -357,6 +306,7 @@ export const getAllPrivateUsersNotSent = async (
     .collection('private-users')
     .where(`notificationPreferences.${preference}`, 'array-contains', 'email')
     .where(type, '==', false)
+    .limit(limit)
     .get()
   return users.docs.map((doc) => doc.data() as PrivateUser)
 }
@@ -444,8 +394,8 @@ export function contractUrl(contract: Contract) {
 export async function getTrendingContractsToEmail() {
   const pg = createSupabaseDirectClient()
   return await pg.map(
-    `select data from contracts 
-            where resolution_time is null 
+    `select data from contracts
+            where resolution_time is null
               and visibility = 'public'
               and not (group_slugs && $1)
               and question not ilike '%stock%'

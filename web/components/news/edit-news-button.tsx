@@ -12,12 +12,13 @@ import { Input } from '../widgets/input'
 import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
 import { Headline } from 'common/news'
+import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 
 export const EditNewsButton = (props: {
   defaultDashboards: Headline[]
-  isPolitics?: boolean
+  endpoint: DashboardEndpoints
 }) => {
-  const { defaultDashboards, isPolitics } = props
+  const { defaultDashboards, endpoint } = props
   const [open, setOpen] = useState(false)
 
   return (
@@ -31,7 +32,7 @@ export const EditNewsButton = (props: {
       </button>
       {open && (
         <EditNewsModal
-          isPolitics={isPolitics}
+          endpoint={endpoint}
           setOpen={setOpen}
           defaultDashboards={defaultDashboards}
         />
@@ -43,9 +44,9 @@ export const EditNewsButton = (props: {
 const EditNewsModal = (props: {
   setOpen(open: boolean): void
   defaultDashboards: Headline[]
-  isPolitics?: boolean
+  endpoint: DashboardEndpoints
 }) => {
-  const { setOpen, defaultDashboards, isPolitics } = props
+  const { setOpen, defaultDashboards, endpoint } = props
 
   const [dashboards, setDashboards] = useState(defaultDashboards)
 
@@ -73,7 +74,7 @@ const EditNewsModal = (props: {
             onClick={() => {
               api('set-news', {
                 dashboardIds: dashboards.map((d) => d.id),
-                isPolitics,
+                endpoint,
               })
               setOpen(false)
             }}

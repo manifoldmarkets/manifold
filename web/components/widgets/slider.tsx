@@ -12,6 +12,7 @@ const colors = {
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
   // light: ['primary-200', 'primary-300']
 } as const
+export type Mark = { value: number; label: string }
 
 export function Slider(props: {
   amount: number
@@ -19,21 +20,23 @@ export function Slider(props: {
   min?: number
   max?: number
   step?: number
-  marks?: { value: number; label: string }[]
+  marks?: Mark[]
   color?: keyof typeof colors
   className?: string
   disabled?: boolean
+  inverted?: boolean
 }) {
   const {
     amount,
     onChange,
-    min,
-    max,
+    min = 0,
+    max = 100,
     step,
     marks,
     className,
     disabled,
     color = 'indigo',
+    inverted,
   } = props
 
   const [trackClasses, thumbClasses] = colors[color]
@@ -51,13 +54,14 @@ export function Slider(props: {
       max={max}
       step={step}
       disabled={disabled}
+      inverted={inverted}
     >
       <Track className={trackClasses}>
         <div className="absolute left-2.5 right-2.5 h-full">
           {marks?.map(({ value, label }) => (
             <div
               className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${value}%` }}
+              style={{ left: `${(value / (max - min)) * 100}%` }}
               key={value}
             >
               <div
@@ -74,9 +78,6 @@ export function Slider(props: {
         </div>
       </Track>
       <Thumb className={thumbClasses} />
-      {/* {marks.map (value) => (
-          <Mark>{value}</Mark>
-        } */}
     </RxSlider.Root>
   )
 }
@@ -88,11 +89,11 @@ export function RangeSlider(props: {
   min?: number
   max?: number
   disabled?: boolean
-  overlappable?: boolean
+  step?: number
   color?: keyof typeof colors
   handleSize?: number
   className?: string
-  marks?: { value: number; label: string }[]
+  marks?: Mark[]
 }) {
   const {
     lowValue,
@@ -100,7 +101,7 @@ export function RangeSlider(props: {
     setValues,
     min,
     max,
-    overlappable,
+    step,
     disabled,
     color = 'indigo',
     className,
@@ -116,7 +117,7 @@ export function RangeSlider(props: {
         'relative flex h-7 touch-none select-none items-center'
       )}
       value={[lowValue, highValue]}
-      minStepsBetweenThumbs={overlappable ? 0 : 1}
+      step={step ?? 1}
       onValueChange={([low, high]) => setValues(low, high)}
       min={min}
       max={max}

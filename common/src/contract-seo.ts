@@ -1,12 +1,10 @@
 import { Contract, MultiContract } from './contract'
 import { getFormattedMappedValue } from './pseudo-numeric'
-import {
-  getAnswerProbability,
-  getDisplayProbability,
-  getTopAnswer,
-} from './calculate'
+import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
-import { formatPercent } from './util/format'
+import { formatMoneyNumber, formatPercent } from './util/format'
+import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { Answer, DpmAnswer, sortAnswers } from './answer'
 
 export const getContractOGProps = (
   contract: Contract
@@ -25,7 +23,7 @@ export const getContractOGProps = (
     outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
       ? resolution
         ? (contract as MultiContract).answers.find((a) => a.id === resolution)
-        : getTopAnswer(contract)
+        : sortAnswers(contract, contract.answers as (Answer | DpmAnswer)[])[0]
       : undefined
 
   const probPercent =
@@ -38,13 +36,15 @@ export const getContractOGProps = (
       : undefined
 
   const numericValue =
-    outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
+    outcomeType === 'NUMBER'
+      ? getFormattedExpectedValue(contract)
+      : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined
 
   const bountyLeft =
     outcomeType === 'BOUNTIED_QUESTION'
-      ? contract.bountyLeft.toString()
+      ? formatMoneyNumber(contract.bountyLeft)
       : undefined
 
   return {

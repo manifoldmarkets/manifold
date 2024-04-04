@@ -110,7 +110,6 @@ export type notification_reason_types =
   | 'update_on_contract_you_follow'
   | 'resolution_on_contract_you_follow'
   | 'comment_on_contract_with_users_shares_in'
-  | 'answer_on_contract_with_users_shares_in'
   | 'update_on_contract_with_users_shares_in'
   | 'resolution_on_contract_with_users_shares_in'
   | 'comment_on_contract_with_users_answer'
@@ -153,6 +152,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: `Prediction streak bonuses & expirations`,
     detailed: `Bonuses and expiration notices for prediction streaks made over consecutive days`,
   },
+  all_answers_on_watched_markets: {
+    simple: 'All new answers',
+    detailed: "All new answers on questions you're watching",
+  },
   quest_payout: {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
@@ -170,14 +173,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Automatic loans from your predictions that are locked in unresolved questions',
   },
-  market_updates_on_watched_markets: {
-    simple: 'All creator updates',
-    detailed: 'All market updates made by the creator',
-  },
-  market_updates_on_watched_markets_with_shares_in: {
-    simple: `Only creator updates on questions that you've ${PAST_BET}`,
-    detailed: `Only updates made by the creator on questions that you've ${PAST_BET}`,
-  },
+
   on_new_follow: {
     simple: 'A user followed you',
     detailed: 'A user followed you',
@@ -253,14 +249,6 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Only replies to your answers',
     detailed: "Only replies to your answers on questions you're watching",
     verb: 'replied to you',
-  },
-  all_answers_on_watched_markets: {
-    simple: 'All new answers',
-    detailed: "All new answers on questions you're watching",
-  },
-  all_answers_on_contracts_with_shares_in_on_watched_markets: {
-    simple: `Only on questions you've ${PAST_BET}`,
-    detailed: `Answers on questions that you're watching and that you've ${PAST_BET}`,
   },
   opt_out_all: {
     simple: 'Opt out of all notifications (excludes when your questions close)',
@@ -365,6 +353,9 @@ export type UniqueBettorData = {
   min?: number
   max?: number
   isLogScale?: boolean
+  isPartner?: boolean
+  totalUniqueBettors?: number
+  totalAmountBet?: number
 }
 
 export type ReviewNotificationData = {

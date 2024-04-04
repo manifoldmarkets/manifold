@@ -1,5 +1,5 @@
 'use client'
-import { debounce, Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { LimitBet } from 'common/bet'
@@ -41,6 +41,7 @@ import { linkClass } from '../widgets/site-link'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Carousel } from 'web/components/widgets/carousel'
+import { UserHovercard } from '../user/user-hovercard'
 
 type BetSort =
   | 'newest'
@@ -76,11 +77,8 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
       undefined,
       `user-open-limit-bets-${user.id}`
     )
-  const debounceGetMetrics = useEvent(debounce(() => getMetrics(), 100))
-  useEffect(() => {
-    debounceGetMetrics()
-  }, [user.id, isAuth])
-  const getMetrics = () =>
+
+  const getMetrics = useEvent(() =>
     getUserContractsMetricsWithContracts({
       userId: user.id,
       offset: 0,
@@ -98,6 +96,12 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
     })
+  )
+  useEffect(() => {
+    if (isAuth !== undefined) {
+      getMetrics()
+    }
+  }, [getMetrics, user.id, isAuth])
 
   useEffect(() => {
     getOpenLimitOrdersWithContracts(user.id, 5000, isPolitics).then(
@@ -112,7 +116,7 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
   }, [setInitialContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
-    'all',
+    'open',
     'bets-list-filter'
   )
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -498,7 +502,7 @@ function BetsTable(props: {
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
-        <Row
+        <div
           className={clsx(
             'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
@@ -524,7 +528,7 @@ function BetsTable(props: {
               </Header>
             </span>
           ))}
-        </Row>
+        </div>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
           .map((contract) => {
@@ -559,18 +563,23 @@ function BetsTable(props: {
                       >
                         {contract.question}
                       </Link>
-                      <UserLink
-                        className={'text-ink-600 w-fit text-sm'}
-                        user={{
-                          id: contract.creatorId,
-                          name: contract.creatorName,
-                          username: contract.creatorUsername,
-                        }}
-                      />
+                      <UserHovercard
+                        className="self-start"
+                        userId={contract.creatorId}
+                      >
+                        <UserLink
+                          className={'text-ink-600 w-fit text-sm'}
+                          user={{
+                            id: contract.creatorId,
+                            name: contract.creatorName,
+                            username: contract.creatorUsername,
+                          }}
+                        />
+                      </UserHovercard>
                     </Col>
                   </Row>
                   {/* Contract Metrics details*/}
-                  <Row className={'grid-cols-15 mt-1 grid w-full pt-2'}>
+                  <div className={'grid-cols-15 mt-1 grid w-full pt-2'}>
                     {dataColumns.map((c) => (
                       <div
                         className={clsx(getColSpan(c.span))}
@@ -579,7 +588,7 @@ function BetsTable(props: {
                         {c.renderCell(contract)}
                       </div>
                     ))}
-                  </Row>
+                  </div>
                   <Row>
                     {expandedIds.includes(contract.id) &&
                       (bets === undefined ? (
@@ -628,7 +637,7 @@ function BetsTable(props: {
 
       <Pagination
         page={page}
-        itemsPerPage={rowsPerSection}
+        pageSize={rowsPerSection}
         totalItems={contracts.length}
         setPage={setPage}
       />

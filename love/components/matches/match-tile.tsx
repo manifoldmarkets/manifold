@@ -172,8 +172,7 @@ export const MatchTile = (props: {
           <MatchBetButton
             contract={contract}
             answer={answer}
-            answers={answers}
-            user={user}
+            singleBetButton
             modalHeader={
               <MatchAvatars
                 profileLover={profileLover}

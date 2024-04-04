@@ -1,7 +1,12 @@
 import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
-import { CPMMMultiContract, Contract, MultiContract } from 'common/contract'
-import { getUser } from 'shared/utils'
+import {
+  CPMMMultiContract,
+  Contract,
+  MultiContract,
+  CPMMNumericContract,
+} from 'common/contract'
+import { log, getUser } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { Answer } from 'common/answer'
@@ -14,11 +19,11 @@ import {
   resolveNumericSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
+import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
-  auth,
-  { log }
+  auth
 ) => {
   const { contractId } = props
   const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -43,6 +48,8 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   }
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
+  if (caller.isBannedFromPosting || caller.userDeleted)
+    throw new APIError(403, 'Deleted or banned user cannot resolve markets')
   if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
@@ -66,7 +73,29 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
     resolutionParams,
   })
 
-  await resolveMarketHelper(contract, caller, creator, resolutionParams, log)
+  if (
+    contract.isLove &&
+    contract.mechanism === 'cpmm-multi-1' &&
+    resolutionParams.outcome === 'YES' &&
+    'answerId' in resolutionParams
+  ) {
+    // For Love Markets:
+    // When resolving one answer YES, first resolve all other answers.
+    await resolveLoveMarketOtherAnswers(
+      contract,
+      caller,
+      creator,
+      resolutionParams
+    )
+
+    // Refresh answers.
+    const answersSnap = await firestore
+      .collection(`contracts/${contractId}/answersCpmm`)
+      .get()
+    contract.answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+  }
+
+  await resolveMarketHelper(contract, caller, creator, resolutionParams)
   // TODO: return?
 }
 
@@ -113,7 +142,7 @@ function getResolutionParams(
       resolutions: undefined,
     }
   } else if (
-    outcomeType === 'MULTIPLE_CHOICE' &&
+    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
     contract.mechanism === 'cpmm-multi-1'
   ) {
     const cpmmMultiParams = validate(resolveMultiSchema, props)
@@ -202,7 +231,10 @@ function validateAnswer(contract: MultiContract, answer: number) {
     throw new APIError(403, `${answer} is not a valid answer ID`)
   }
 }
-function validateAnswerCpmm(contract: CPMMMultiContract, answerId: string) {
+function validateAnswerCpmm(
+  contract: CPMMMultiContract | CPMMNumericContract,
+  answerId: string
+) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answerId)) {
     throw new APIError(403, `${answerId} is not a valid answer ID`)

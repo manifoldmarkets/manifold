@@ -1,18 +1,22 @@
-import { SupabaseClient } from 'common/supabase/utils'
+import { SupabaseClient, convertSQLtoTS } from 'common/supabase/utils'
 import type { PostgrestFilterBuilder } from '@supabase/postgrest-js'
 import { Row, Schema, millisToTs, run, selectJson, tsToMillis } from './utils'
 import { Bet, BetFilter } from 'common/bet'
-import { User } from 'common/user'
-import { getContractBetMetrics } from 'common/calculate'
-import { Contract } from 'common/contract'
-import { chunk, groupBy, maxBy, minBy } from 'lodash'
-import { removeUndefinedProps } from 'common/util/object'
+import { chunk, sortBy } from 'lodash'
+import { buildArray } from 'common/util/array'
 
 export const CONTRACT_BET_FILTER: BetFilter = {
   filterRedemptions: true,
   filterChallenges: false,
   filterAntes: false,
 }
+
+export const convertBet = (row: Row<'contract_bets'>) =>
+  convertSQLtoTS<'contract_bets', Bet>(row, {
+    fs_updated_time: false,
+    created_time: tsToMillis as any,
+    answer_id: (a) => (a != null ? a : undefined),
+  })
 
 export async function getBet(db: SupabaseClient, id: string) {
   const q = selectJson(db, 'contract_bets').eq('bet_id', id).single()
@@ -49,13 +53,13 @@ export async function getBetsOnContracts(
   const chunks = chunk(contractIds, 100)
   const rows = await Promise.all(
     chunks.map(async (ids: string[]) => {
-      let q = db.from('contract_bets').select('data').in('contract_id', ids)
+      let q = db.from('contract_bets').select().in('contract_id', ids)
       q = applyBetsFilter(q, options)
       const { data } = await run(q)
       return data
     })
   )
-  return rows.flat().map((r) => r.data as Bet)
+  return rows.flat().map(convertBet)
 }
 
 export const getPublicBets = async (
@@ -77,7 +81,7 @@ export const getBets = async (db: SupabaseClient, options?: BetFilter) => {
   return data.map((r) => r.data)
 }
 
-// gets 50,000 unsorted random bets
+// gets random bets - 50,000 by default
 export const getBetPoints = async <S extends SupabaseClient>(
   db: S,
   contractId: string,
@@ -86,7 +90,7 @@ export const getBetPoints = async <S extends SupabaseClient>(
   let q = db
     .from('contract_bets')
     .select('created_time, prob_before, prob_after, data->answerId')
-    .order('bet_id')
+    .order('bet_id') // get "random" points so it doesn't bunch up at the end
   q = applyBetsFilter(q, {
     contractId,
     limit: 50000,
@@ -94,13 +98,25 @@ export const getBetPoints = async <S extends SupabaseClient>(
   })
   const { data } = await run(q)
 
-  return data
-    .filter((r: any) => r.prob_after != r.prob_before)
-    .map((r: any) => ({
+  const sorted = sortBy(data, 'created_time')
+
+  if (sorted.length === 0) return []
+
+  // we need to include previous prob for binary in case the prob shifted from something
+  const includePrevProb = !!options?.afterTime && !sorted[0].answerId
+
+  return buildArray(
+    includePrevProb && {
+      x: tsToMillis(sorted[0].created_time) - 1,
+      y: sorted[0].prob_before as number,
+      answerId: sorted[0].answerId as string,
+    },
+    sorted.map((r: any) => ({
       x: tsToMillis(r.created_time),
       y: r.prob_after as number,
       answerId: r.answerId as string,
     }))
+  )
 }
 
 export const applyBetsFilter = <
@@ -143,110 +159,4 @@ export const applyBetsFilter = <
     q = q.eq('answer_id', options.answerId)
   }
   return q
-}
-
-export type PositionChangeData = {
-  previous: {
-    invested: number
-    outcome: string
-    answerId: string | undefined // undefined for binary contracts
-  } | null // null for no position
-  current: {
-    invested: number
-    outcome: string
-    answerId: string | undefined // undefined for binary contracts
-  } | null // null for no position
-  change: number
-  startTime: number
-  endTime: number
-  beforeProb: number
-  afterProb: number
-}
-
-const IGNORE_ABOVE_PROB = 0.9
-const IGNORE_BELOW_PROB = 0.1
-
-export const getUserMostChangedPosition = async (
-  bettor: User,
-  contract: Contract,
-  since: number,
-  db: SupabaseClient
-) => {
-  const now = Date.now()
-  const bets = await getBets(db, {
-    contractId: contract.id,
-    order: 'desc',
-    userId: bettor.id,
-    beforeTime: now,
-    isOpenLimitOrder: false,
-  })
-  const previousBets = bets.filter((b) => b.createdTime < since)
-  const allBetsByAnswer = groupBy(bets, (b) => b.answerId)
-  const previousBetsByAnswer = groupBy(previousBets, (b) => b.answerId)
-  const investedByAnswer = Object.entries(allBetsByAnswer).map(
-    ([answerId, bets]) => {
-      const recentBets = bets.filter((b) => b.createdTime >= since)
-      const beforeProb = minBy(recentBets, 'createdTime')?.probBefore ?? 0
-      const afterProb = maxBy(recentBets, 'createdTime')?.probAfter ?? 0
-      // Ignore bets milking the AMM for the last few drops
-      if (
-        (beforeProb > IGNORE_ABOVE_PROB && afterProb > IGNORE_ABOVE_PROB) ||
-        (beforeProb < IGNORE_BELOW_PROB && afterProb < IGNORE_BELOW_PROB)
-      ) {
-        return [
-          answerId,
-          {
-            change: null,
-          },
-        ] as const
-      }
-
-      const previousMetrics = getContractBetMetrics(
-        contract,
-        previousBetsByAnswer[answerId] ?? []
-      )
-      const previous = previousMetrics.maxSharesOutcome
-        ? removeUndefinedProps({
-            invested: Math.round(previousMetrics.invested),
-            outcome: previousMetrics.maxSharesOutcome,
-            answerId: bets[0].answerId,
-          })
-        : null
-      const currentMetrics = getContractBetMetrics(contract, bets)
-      const current = currentMetrics.maxSharesOutcome
-        ? removeUndefinedProps({
-            invested: Math.round(currentMetrics.invested),
-            outcome: currentMetrics.maxSharesOutcome,
-            answerId: bets[0].answerId,
-          })
-        : null
-      const change =
-        previous?.outcome === current?.outcome
-          ? (current?.invested ?? 0) - (previous?.invested ?? 0)
-          : (current?.invested ?? 0) + (previous?.invested ?? 0)
-
-      return [
-        answerId,
-        {
-          previous,
-          current,
-          change,
-          startTime: since,
-          endTime: now,
-          beforeProb: parseFloat(beforeProb.toPrecision(2)),
-          afterProb: parseFloat(afterProb.toPrecision(2)),
-        } as PositionChangeData,
-      ] as const
-    }
-  )
-
-  const max = maxBy(
-    investedByAnswer.filter(([, v]) => v.change !== null),
-    ([, v]) => Math.abs(v.change ?? 0)
-  )
-  if (!max) return undefined
-
-  return {
-    ...max[1],
-  } as PositionChangeData
 }

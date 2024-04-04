@@ -1,12 +1,13 @@
 import { User } from 'common/user'
 import { useEffect, useRef, useState } from 'react'
-import { getUser, getUsers } from 'web/lib/supabase/user'
+import { getDisplayUser, getUser, getUsers } from 'web/lib/supabase/user'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { Answer, DpmAnswer } from 'common/answer'
 import { uniqBy, uniq } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { filterDefined } from 'common/util/array'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { DisplayUser } from 'web/lib/supabase/users'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = usePersistentInMemoryState<User | null | undefined>(
@@ -16,6 +17,20 @@ export function useUserById(userId: string | undefined) {
   useEffect(() => {
     if (userId) {
       getUser(userId).then((result) => {
+        setUser(result)
+      })
+    }
+  }, [userId])
+  return user
+}
+export function useDisplayUserById(userId: string | undefined) {
+  const [user, setUser] = usePersistentInMemoryState<
+    DisplayUser | null | undefined
+  >(undefined, `user-${userId}`)
+
+  useEffect(() => {
+    if (userId) {
+      getDisplayUser(userId).then((result) => {
         setUser(result)
       })
     }
@@ -69,9 +84,9 @@ export function useUsersInStore(
   return users?.filter((user) => userIds.includes(user?.id))
 }
 
-export function useUserByIdOrAnswer(answer: Answer | DpmAnswer) {
+export function useDisplayUserByIdOrAnswer(answer: Answer | DpmAnswer) {
   const userId = answer.userId
-  const user = useUserById(userId)
+  const user = useDisplayUserById(userId)
   if ('name' in answer)
     return {
       id: userId,

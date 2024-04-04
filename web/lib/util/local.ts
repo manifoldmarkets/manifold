@@ -38,3 +38,16 @@ try {
 try {
   safeSessionStorage = getStorageProxy(sessionStorage)
 } catch {}
+
+export function newInMemoryStore(): Store {
+  const store: Record<string, string> = {}
+  return {
+    getItem: (key: string) => store[key],
+    setItem: (key: string, value: string) => {
+      store[key] = value
+    },
+    removeItem: (key: string) => {
+      delete store[key]
+    },
+  }
+}

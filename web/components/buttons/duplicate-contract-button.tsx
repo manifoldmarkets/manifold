@@ -7,6 +7,7 @@ import { buttonClass } from './button'
 import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { getLinkTarget } from 'web/components/widgets/linkify'
+import { getPrecision } from 'common/multi-numeric'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -45,6 +46,15 @@ function duplicateContractHref(contract: Contract) {
       params.isLogScale = true
     }
     params.initValue = getMappedValue(contract, contract.initialProbability)
+  }
+  if (contract.outcomeType === 'NUMBER') {
+    params.min = contract.min
+    params.max = contract.max
+    params.precision = getPrecision(
+      contract.min,
+      contract.max,
+      contract.answers.length
+    )
   }
 
   if (contract.outcomeType === 'MULTIPLE_CHOICE') {

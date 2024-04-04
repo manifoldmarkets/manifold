@@ -1,18 +1,20 @@
 import { OutcomeType } from 'common/contract'
 
-export const FIXED_ANTE = 50
-export const ANSWER_COST = FIXED_ANTE / 2
+export const FIXED_ANTE = 100
+export const ANSWER_COST = FIXED_ANTE / 4
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: ANSWER_COST, // Amount per answer.
   FREE_RESPONSE: ANSWER_COST, // Amount per answer.
-  PSEUDO_NUMERIC: FIXED_ANTE * 5,
+  PSEUDO_NUMERIC: FIXED_ANTE * 2.5,
   STONK: FIXED_ANTE,
   BOUNTIED_QUESTION: 0,
-  POLL: 10,
+  POLL: 100,
+  NUMBER: FIXED_ANTE,
 }
 
-export const MINIMUM_BOUNTY = 5
+export const MINIMUM_BOUNTY = 100
+export const MULTIPLE_CHOICE_MINIMUM_COST = 100
 
 export const getAnte = (
   outcomeType: OutcomeType,
@@ -21,7 +23,7 @@ export const getAnte = (
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
   if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
-    return Math.max(ante * (numAnswers ?? 0), 10)
+    return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
   }
 
   return ante
@@ -29,8 +31,8 @@ export const getAnte = (
 
 export const STARTING_BALANCE = 100
 export const NEXT_DAY_BONUS = 100 // Paid on day following signup
-export const MARKET_VISIT_BONUS = 100 // Paid on first distinct 9 market visits
-export const MARKET_VISIT_BONUS_TOTAL = 900
+export const MARKET_VISIT_BONUS = 20 // Paid on first distinct 5 market visits
+export const MARKET_VISIT_BONUS_TOTAL = 100
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 

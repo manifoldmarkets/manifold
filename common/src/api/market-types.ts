@@ -16,6 +16,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
 import { MAX_ID_LENGTH } from 'common/group'
 import { contentSchema } from './zod-types'
+import { MINIMUM_BOUNTY } from 'common/economy'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -117,6 +118,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -170,6 +172,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   })
 }
 
@@ -289,10 +292,17 @@ export const createMultiSchema = z.object({
   shouldAnswersSumToOne: z.boolean().optional(),
   extraLiquidity: z.number().min(1).optional(),
 })
+export const createMultiNumericSchema = z.object({
+  outcomeType: z.enum(['NUMBER']),
+  min: z.number().safe(),
+  max: z.number().safe(),
+  precision: z.number().gt(0),
+})
 
 export const createBountySchema = z.object({
   outcomeType: z.enum(['BOUNTIED_QUESTION']),
-  totalBounty: z.number().min(1),
+  totalBounty: z.number().min(MINIMUM_BOUNTY),
+  isAutoBounty: z.boolean().optional(),
 })
 
 export const createPollSchema = z.object({
@@ -323,6 +333,8 @@ export const createMarketProps = z
     loverUserId1: z.string().optional(),
     loverUserId2: z.string().optional(),
     matchCreatorId: z.string().optional(),
+    isLove: z.boolean().optional(),
+    specialLiquidityPerAnswer: z.number().positive().optional(),
   })
   .and(
     z.union([
@@ -331,6 +343,7 @@ export const createMarketProps = z
       createBountySchema,
       createPollSchema,
       createBinarySchema,
+      createMultiNumericSchema,
     ])
   )
 

@@ -8,7 +8,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { JobContext, getUser, log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -33,7 +33,7 @@ const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 D1 send mana bonus email
 [deprecated] D2 send creator guide email
 */
-export async function sendOnboardingNotificationsInternal({ log }: JobContext) {
+export async function sendOnboardingNotificationsInternal() {
   const firestore = admin.firestore()
   const { recentUserIds } = await getRecentNonLoverUserIds()
 
@@ -51,8 +51,8 @@ const getRecentNonLoverUserIds = async () => {
   const pg = createSupabaseDirectClient()
 
   const userDetails = await pg.map(
-    `select id, (data->'createdTime') as created_time from users 
-          where 
+    `select id, (data->'createdTime') as created_time from users
+          where
               millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
               millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'and
               (data->>'fromLove' is null or data->>'fromLove' = 'false')
@@ -134,7 +134,11 @@ export const sendOnboardingMarketVisitBonus = async (
     }
     const signupBonusAmountPaid = user.signupBonusPaid
     if (signupBonusAmountPaid >= MARKET_VISIT_BONUS_TOTAL) {
-      log(`User ${userId} already received 9 market visit bonuses`)
+      log(
+        `User ${userId} already received ${
+          MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
+        } market visit bonuses`
+      )
       return { txn: null }
     }
     const signupBonusTxn: Omit<
@@ -153,7 +157,7 @@ export const sendOnboardingMarketVisitBonus = async (
     const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
     if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
       transaction.update(toDoc, {
-        signupBonusPaid: signupBonusAmountPaid + 100,
+        signupBonusPaid: signupBonusAmountPaid + MARKET_VISIT_BONUS,
       })
       log(`Sent mana bonus to user ${userId}`)
     } else {
@@ -216,7 +220,12 @@ const createSignupBonusNotification = async (
   const { sendToEmail: trendingSendToEmail } =
     getNotificationDestinationsForUser(privateUser, 'trending_markets')
 
-  if (!sendToEmail && !trendingSendToEmail) return
+  if (!sendToEmail && !trendingSendToEmail) {
+    log(
+      `User opted out of onboarding email, onboarding_flow: ${sendToEmail} 'trending_markets:', ${trendingSendToEmail}`
+    )
+    return
+  }
 
   const contractsToSend = await getForYouMarkets(privateUser.id)
 

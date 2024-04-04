@@ -14,6 +14,9 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { track } from 'web/lib/service/analytics'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { useEvent } from 'web/hooks/use-event'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -52,9 +55,15 @@ export function CommentInput(props: {
     className: isSubmitting ? '!text-ink-400' : '',
   })
 
-  async function submitComment(type: CommentType) {
+  const submitComment = useEvent(async (type: CommentType) => {
     if (!editor || editor.isEmpty || isSubmitting) return
     setIsSubmitting(true)
+    if (!user) {
+      track('sign in to comment')
+      await firebaseLogin()
+      setIsSubmitting(false)
+      return
+    }
     editor.commands.focus('end')
     // if last item is text, try to linkify it by adding and deleting a space
     if (editor.state.selection.empty) {
@@ -75,7 +84,7 @@ export function CommentInput(props: {
     } finally {
       setIsSubmitting(false)
     }
-  }
+  })
 
   if (user?.isBannedFromPosting) return <></>
 
@@ -195,18 +204,15 @@ export function CommentInputTextArea(props: {
             </button>
           </Tooltip>
         )}
-        {user &&
-          !isSubmitting &&
-          submit &&
-          commentTypes.includes('comment') && (
-            <button
-              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
-              disabled={!editor || editor.isEmpty}
-              onClick={() => submit('comment')}
-            >
-              <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-            </button>
-          )}
+        {!isSubmitting && submit && commentTypes.includes('comment') && (
+          <button
+            className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+            disabled={!editor || editor.isEmpty}
+            onClick={() => submit('comment')}
+          >
+            <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+          </button>
+        )}
 
         {submit && isSubmitting && (
           <LoadingIndicator

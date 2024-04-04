@@ -1,10 +1,14 @@
-import { Firestore, DocumentData } from 'firebase-admin/firestore'
+import {
+  Firestore,
+  CollectionReference,
+  DocumentData,
+} from 'firebase-admin/firestore'
 import { log } from './utils'
 import { bulkInsert } from 'shared/supabase/utils'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
-export type WriteMessage<T extends DocumentData = DocumentData> = {
+type WriteMetadata = {
   ts: number
   eventId: string
   writeKind: string
@@ -12,7 +16,25 @@ export type WriteMessage<T extends DocumentData = DocumentData> = {
   path: string
   parentId: string
   docId: string
+}
+
+export type WriteMessage<T extends DocumentData = DocumentData> = {
   data: T | null | undefined
+} & WriteMetadata
+
+// we can run into trouble writing arbitrary json into firestore because there
+// is a max nesting limit of 20 levels in the server SDK, which tiptap stuff exceeds
+
+export type FailedWriteDoc = { json: string } & WriteMetadata
+
+function firestoreDocToMessage(docData: FailedWriteDoc): WriteMessage {
+  const { json, ...rest } = docData
+  return { data: JSON.parse(json), ...rest }
+}
+
+function messageToFirestoreDoc(message: WriteMessage): FailedWriteDoc {
+  const { data, ...rest } = message
+  return { json: JSON.stringify(data), ...rest }
 }
 
 export async function createFailedWrites(
@@ -22,10 +44,10 @@ export async function createFailedWrites(
   const coll = firestore
     .collection('replicationState')
     .doc('supabase')
-    .collection('failedWrites')
+    .collection('failedWrites') as CollectionReference<FailedWriteDoc>
   const creator = new SafeBulkWriter({ throttling: false })
   for (const entry of entries) {
-    creator.create(coll.doc(), entry)
+    creator.create(coll.doc(), messageToFirestoreDoc(entry))
   }
   await creator.close()
 }
@@ -35,19 +57,18 @@ export async function replayFailedWrites(
   supabase: SupabaseDirectClient,
   limit = 1000
 ) {
-  const failedWrites = await firestore
+  const coll = firestore
     .collection('replicationState')
     .doc('supabase')
-    .collection('failedWrites')
-    .limit(limit)
-    .get()
+    .collection('failedWrites') as CollectionReference<FailedWriteDoc>
+  const failedWrites = await coll.limit(limit).get()
   if (failedWrites.size == 0) {
     return 0
   }
 
   log('INFO', `Attempting to replay ${failedWrites.size} write(s)...`)
   const deleter = new SafeBulkWriter({ throttling: false })
-  const entries = failedWrites.docs.map((d) => d.data() as WriteMessage)
+  const entries = failedWrites.docs.map((d) => firestoreDocToMessage(d.data()))
   await replicateWrites(supabase, ...entries)
   for (const doc of failedWrites.docs) {
     deleter.delete(doc.ref)

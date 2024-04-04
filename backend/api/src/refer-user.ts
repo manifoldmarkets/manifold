@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
+import { isVerified, MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ReferralTxn } from 'common/txn'
@@ -10,7 +10,7 @@ import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import * as admin from 'firebase-admin'
-import { GCPLog, getContractSupabase, getUserFirebase } from 'shared/utils'
+import { log, getContractSupabase, getUserFirebase } from 'shared/utils'
 import * as crypto from 'crypto'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
@@ -24,7 +24,7 @@ const bodySchema = z
   })
   .strict()
 
-export const referuser = authEndpoint(async (req, auth, log) => {
+export const referuser = authEndpoint(async (req, auth) => {
   const { referredByUsername, contractId } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
@@ -48,6 +48,9 @@ export const referuser = authEndpoint(async (req, auth, log) => {
   if (!newUser) {
     throw new APIError(403, `User ${auth.uid} not found`)
   }
+  if (!isVerified(newUser)) {
+    throw new APIError(403, 'You must verify your phone number first.')
+  }
   let referredByContract: Contract | undefined
   if (contractId) {
     referredByContract = await getContractSupabase(contractId)
@@ -56,7 +59,7 @@ export const referuser = authEndpoint(async (req, auth, log) => {
     }
     log(`referredByContract: ${referredByContract.slug}`)
   }
-  await handleReferral(newUser.id, referredByUser.id, log, referredByContract)
+  await handleReferral(newUser.id, referredByUser.id, referredByContract)
   await trackPublicEvent(newUser.id, 'Referral', {
     referredByUserId: referredByUser.id,
     referredByContractId: contractId,
@@ -68,7 +71,6 @@ export const referuser = authEndpoint(async (req, auth, log) => {
 async function handleReferral(
   newUserId: string,
   referredByUserId: string,
-  log: GCPLog,
   referredByContract?: Contract
 ) {
   const firestore = admin.firestore()

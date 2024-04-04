@@ -11,6 +11,9 @@ export type NavItem = {
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
   external?: boolean
+  alwaysShowName?: boolean
+  prefetch?: boolean
+  children?: React.ReactNode
 }
 
 export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
@@ -41,12 +44,13 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
             isCurrentPage
               ? 'text-ink-600'
               : 'text-ink-500 group-hover:text-ink-600',
-            '-ml-1 mr-3 h-6 w-6 flex-shrink-0'
+            '  -ml-1 mr-3 h-6 w-6 flex-shrink-0',
+            item.name == 'US Politics' ? '-mt-1' : ''
           )}
           aria-hidden="true"
         />
       )}
-      <span className="truncate">{item.name}</span>
+      <span className="truncate">{item.children ?? item.name}</span>
       {item.external && <ExternalLinkIcon className="ml-2 h-4 w-4" />}
     </>
   )

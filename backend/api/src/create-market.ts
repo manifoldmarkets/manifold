@@ -6,21 +6,19 @@ import {
   Contract,
   CPMMBinaryContract,
   CPMMMultiContract,
+  CPMMNumericContract,
+  MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import {
-  getAvailableBalancePerQuestion,
-  marketCreationCosts,
-  User,
-} from 'common/user'
+import { isVerified, marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
-import { GCPLog, getUser, htmlToRichText } from 'shared/utils'
+import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
@@ -38,6 +36,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
   createBountySchema,
+  createMultiNumericSchema,
   createMultiSchema,
   createNumericSchema,
   createPollSchema,
@@ -46,23 +45,25 @@ import {
 import { z } from 'zod'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { removeUndefinedProps } from 'common/util/object'
+import { onCreateMarket } from 'api/helpers/on-create-market'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
 
 type Body = ValidatedAPIParams<'market'>
+const firestore = admin.firestore()
 
-export const createMarket: APIHandler<'market'> = async (
-  body,
-  auth,
-  { log }
-) => {
-  const market = await createMarketHelper(body, auth, log)
-  return toLiteMarket(market)
+export const createMarket: APIHandler<'market'> = async (body, auth) => {
+  const market = await createMarketHelper(body, auth)
+  return {
+    result: toLiteMarket(market),
+    continue: async () => {
+      await onCreateMarket(market, firestore)
+    },
+  }
 }
 
-export async function createMarketHelper(
-  body: Body,
-  auth: AuthedUser,
-  log: GCPLog
-) {
+export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {
     question,
     description,
@@ -84,14 +85,24 @@ export async function createMarketHelper(
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    isAutoBounty,
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   } = validateMarketBody(body)
 
   const userId = auth.uid
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
+
+  if (!isVerified(user)) {
+    throw new APIError(
+      403,
+      'You must verify your phone number to create a market.'
+    )
+  }
 
   if (loverUserId1 || loverUserId2) {
     if (auth.uid !== manifoldLoveUserId) {
@@ -102,7 +113,7 @@ export async function createMarketHelper(
   const groups = groupIds
     ? await Promise.all(
         groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, userId)
+          getGroupCheckPermissions(gId, visibility, userId, { isLove })
         )
       )
     : null
@@ -112,7 +123,9 @@ export async function createMarketHelper(
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
   const ante =
-    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
+    (specialLiquidityPerAnswer ??
+      totalBounty ??
+      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
   if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
@@ -131,9 +144,13 @@ export async function createMarketHelper(
 
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const { amountSuppliedByUser } = marketCreationCosts(user, ante)
+    const { amountSuppliedByUser } = marketCreationCosts(
+      user,
+      ante,
+      !!specialLiquidityPerAnswer
+    )
 
-    if (ante > getAvailableBalancePerQuestion(user) && user.id !== BTE_USER_ID)
+    if (amountSuppliedByUser > user.balance && user.id !== BTE_USER_ID)
       throw new APIError(
         403,
         `Balance must be at least ${amountSuppliedByUser}.`
@@ -141,48 +158,53 @@ export async function createMarketHelper(
 
     const slug = await getSlug(trans, question)
 
-    const contract = getNewContract({
-      id: contractRef.id,
-      slug,
-      creator: user,
-      question,
-      outcomeType,
-      description:
-        typeof description !== 'string' && description
-          ? description
-          : anythingToRichText({
-              raw: description,
-              html: descriptionHtml,
-              markdown: descriptionMarkdown,
-              jsonString: descriptionJson,
-              // default: use a single empty space as the description
-            }) ?? htmlToRichText(`<p> </p>`),
-      initialProb: initialProb ?? 50,
-      ante,
-      closeTime,
-      visibility,
-      isTwitchContract,
-      min: min ?? 0,
-      max: max ?? 0,
-      isLogScale: isLogScale ?? false,
-      answers: answers ?? [],
-      addAnswersMode,
-      shouldAnswersSumToOne,
-      loverUserId1,
-      loverUserId2,
-      matchCreatorId,
-    })
+    let answerLoverUserIds: string[] = []
+    if (isLove && answers) {
+      answerLoverUserIds = await getLoveAnswerUserIds(answers)
+      console.log('answerLoverUserIds', answerLoverUserIds)
+    }
 
-    const res = await runCreateMarketTxn(
-      contract,
-      ante,
-      user,
-      userDoc.ref,
-      contractRef,
-      trans
+    const contract = getNewContract(
+      removeUndefinedProps({
+        id: contractRef.id,
+        slug,
+        creator: user,
+        question,
+        outcomeType,
+        description:
+          typeof description !== 'string' && description
+            ? description
+            : anythingToRichText({
+                raw: description,
+                html: descriptionHtml,
+                markdown: descriptionMarkdown,
+                jsonString: descriptionJson,
+                // default: use a single empty space as the description
+              }) ?? htmlToRichText(`<p> </p>`),
+        initialProb: initialProb ?? 50,
+        ante,
+        closeTime,
+        visibility,
+        isTwitchContract,
+        min: min ?? 0,
+        max: max ?? 0,
+        isLogScale: isLogScale ?? false,
+        answers: answers ?? [],
+        addAnswersMode,
+        shouldAnswersSumToOne,
+        loverUserId1,
+        loverUserId2,
+        matchCreatorId,
+        isLove,
+        answerLoverUserIds,
+        specialLiquidityPerAnswer,
+        isAutoBounty,
+      })
     )
+
+    await runCreateMarketTxn(contractRef.id, ante, user, userDoc.ref, trans)
     trans.create(contractRef, contract)
-    return res
+    return contract
   })
 
   log('created contract ', {
@@ -212,11 +234,10 @@ export async function createMarketHelper(
 }
 
 const runCreateMarketTxn = async (
-  contract: Contract,
+  contractId: string,
   ante: number,
   user: User,
   userDocRef: admin.firestore.DocumentReference,
-  contractRef: admin.firestore.DocumentReference,
   trans: Transaction
 ) => {
   const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
@@ -224,22 +245,11 @@ const runCreateMarketTxn = async (
     ante
   )
 
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(trans, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contract.id,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
-
   if (amountSuppliedByUser > 0) {
     await runTxn(trans, {
       fromId: user.id,
       fromType: 'USER',
-      toId: contract.id,
+      toId: contractId,
       toType: 'CONTRACT',
       amount: amountSuppliedByUser,
       token: 'M$',
@@ -247,12 +257,21 @@ const runCreateMarketTxn = async (
     })
   }
 
+  if (amountSuppliedByHouse > 0) {
+    await runTxnFromBank(trans, {
+      amount: amountSuppliedByHouse,
+      category: 'CREATE_CONTRACT_ANTE',
+      toId: contractId,
+      toType: 'CONTRACT',
+      fromType: 'BANK',
+      token: 'M$',
+    })
+  }
+
   if (amountSuppliedByHouse > 0)
     trans.update(userDocRef, {
       freeQuestionsCreated: FieldValue.increment(1),
     })
-
-  return contract
 }
 
 async function getCloseTimestamp(
@@ -281,8 +300,6 @@ const getSlug = async (trans: Transaction, question: string) => {
     : proposedSlug
 }
 
-const firestore = admin.firestore()
-
 async function getContractFromSlug(trans: Transaction, slug: string) {
   const contractsRef = firestore.collection('contracts')
   const query = contractsRef.where('slug', '==', slug)
@@ -308,7 +325,14 @@ function validateMarketBody(body: Body) {
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
   } = body
+
+  if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
+    throw new APIError(
+      400,
+      `You may only tag up to ${MAX_GROUPS_PER_MARKET} topics on a question`
+    )
 
   let min: number | undefined,
     max: number | undefined,
@@ -318,7 +342,9 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
-    extraLiquidity: number | undefined
+    isAutoBounty: boolean | undefined,
+    extraLiquidity: number | undefined,
+    specialLiquidityPerAnswer: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -350,11 +376,36 @@ function validateMarketBody(body: Body) {
 
     ;({ initialProb, extraLiquidity } = parsed)
   }
+  if (outcomeType === 'NUMBER') {
+    if (!MULTI_NUMERIC_CREATION_ENABLED)
+      throw new APIError(
+        400,
+        'Creating numeric markets is not currently enabled.'
+      )
+    ;({ min, max } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (min >= max)
+      throw new APIError(400, 'Numeric markets must have min < max.')
+    const { precision } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    )
+    answers = getMultiNumericAnswerBucketRangeNames(min, max, precision)
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
+  }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
     ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
       validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED')
+    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
@@ -362,7 +413,7 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
-    ;({ totalBounty } = validateMarketType(
+    ;({ totalBounty, isAutoBounty } = validateMarketType(
       outcomeType,
       createBountySchema,
       body
@@ -372,6 +423,16 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'POLL') {
     ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
   }
+
+  if (body.specialLiquidityPerAnswer) {
+    if (outcomeType !== 'MULTIPLE_CHOICE' || body.shouldAnswersSumToOne)
+      throw new APIError(
+        400,
+        'specialLiquidityPerAnswer can only be used with independent MULTIPLE_CHOICE markets'
+      )
+    specialLiquidityPerAnswer = body.specialLiquidityPerAnswer
+  }
+
   return {
     question,
     description,
@@ -393,9 +454,12 @@ function validateMarketBody(body: Body) {
     addAnswersMode,
     shouldAnswersSumToOne,
     totalBounty,
+    isAutoBounty,
     loverUserId1,
     loverUserId2,
     matchCreatorId,
+    isLove,
+    specialLiquidityPerAnswer,
   }
 }
 
@@ -416,8 +480,10 @@ function validateMarketType<T extends z.ZodType>(
 async function getGroupCheckPermissions(
   groupId: string,
   visibility: string,
-  userId: string
+  userId: string,
+  options: { isLove?: boolean } = {}
 ) {
+  const { isLove } = options
   const db = createSupabaseClient()
 
   const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
@@ -450,6 +516,7 @@ async function getGroupCheckPermissions(
       userId,
       group,
       membership,
+      isLove,
     })
   ) {
     throw new APIError(
@@ -461,14 +528,54 @@ async function getGroupCheckPermissions(
   return group
 }
 
-async function createAnswers(contract: CPMMMultiContract) {
-  const { answers } = contract
+async function createAnswers(
+  contract: CPMMMultiContract | CPMMNumericContract
+) {
+  const { isLove } = contract
+  let { answers } = contract
+
+  if (isLove) {
+    // Add loverUserId to the answer.
+    answers = await Promise.all(
+      answers.map(async (a) => {
+        // Parse username from answer text.
+        const matches = a.text.match(/@(\w+)/)
+        const loverUsername = matches ? matches[1] : null
+        if (!loverUsername) return a
+        const loverUserId = (await getUserByUsername(loverUsername))?.id
+        if (!loverUserId) return a
+        return {
+          ...a,
+          loverUserId,
+        }
+      })
+    )
+  }
+
   await Promise.all(
     answers.map((answer) => {
       return firestore
         .collection(`contracts/${contract.id}/answersCpmm`)
         .doc(answer.id)
         .set(answer)
+    })
+  )
+}
+
+async function getLoveAnswerUserIds(answers: string[]) {
+  // Get the loverUserId from the answer text.
+  return await Promise.all(
+    answers.map(async (answerText) => {
+      // Parse username from answer text.
+      const matches = answerText.match(/@(\w+)/)
+      console.log('matches', matches)
+      const loverUsername = matches ? matches[1] : null
+      if (!loverUsername)
+        throw new APIError(500, 'No lover username found ' + answerText)
+      const user = await getUserByUsername(loverUsername)
+      if (!user)
+        throw new APIError(500, 'No user found with username ' + answerText)
+      return user.id
     })
   )
 }
@@ -483,7 +590,8 @@ async function generateAntes(
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'NUMBER'
   ) {
     const liquidityDoc = firestore
       .collection(`contracts/${contract.id}/liquidity`)

@@ -3,7 +3,10 @@ import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
 import { memo, ReactNode, useState, useMemo } from 'react'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import {
+  PeriodToSnapshots,
+  usePortfolioHistory,
+} from 'web/hooks/use-portfolio-history'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
@@ -18,26 +21,38 @@ import { track } from 'web/lib/service/analytics'
 import { useZoom } from '../charts/helpers'
 import { periodDurations } from 'web/lib/util/time'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     userId: string
     defaultTimePeriod: Period
-    isCurrentUser: boolean
     lastUpdatedTime: number | undefined
+    portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
+    graphContainerClassName?: string
+    preloadPoints?: PeriodToSnapshots
+    size?: 'sm' | 'md'
   }) {
     const {
       userId,
       hideAddFundsButton,
       defaultTimePeriod,
       lastUpdatedTime,
+      portfolio,
       onlyShowProfit,
+      graphContainerClassName,
+      preloadPoints,
+      size = 'md',
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
-    const portfolioHistory = usePortfolioHistory(userId, currentTimePeriod)
+    const portfolioHistory = usePortfolioHistory(
+      userId,
+      currentTimePeriod,
+      preloadPoints
+    )
     const [graphMode, setGraphMode] = useState<GraphMode>('profit')
 
     const first = portfolioHistory?.[0]
@@ -66,7 +81,7 @@ export const PortfolioValueSection = memo(
     const handleGraphDisplayChange = (p: { y: number } | undefined) => {
       setGraphDisplayNumber(p != null ? formatMoney(p.y) : null)
     }
-    const lastPortfolioMetrics = last(portfolioHistory)
+    const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
     const onClickNumber = useEvent((mode: GraphMode) => {
       setGraphMode(mode)
       setGraphDisplayNumber(null)
@@ -111,7 +126,7 @@ export const PortfolioValueSection = memo(
           profitElement={placeholderSection}
           balanceElement={!onlyShowProfit ? placeholderSection : undefined}
           valueElement={!onlyShowProfit ? placeholderSection : undefined}
-          className={showDisclaimer ? 'h-8' : ''}
+          className={clsx(showDisclaimer ? 'h-8' : '', graphContainerClassName)}
           graphElement={(_width, height) => {
             if (showDisclaimer) {
               return (
@@ -135,6 +150,7 @@ export const PortfolioValueSection = memo(
           }}
           disabled={true}
           placement={isMobile ? 'bottom' : undefined}
+          size={size}
         />
       )
     }
@@ -196,8 +212,8 @@ export const PortfolioValueSection = memo(
         }
         graphElement={(width, height) => (
           <PortfolioGraph
-            key={graphMode} // we need to reset axis scale state if mode changes
             mode={graphMode}
+            duration={currentTimePeriod}
             points={graphPoints}
             width={width}
             height={height}
@@ -208,6 +224,8 @@ export const PortfolioValueSection = memo(
         )}
         onlyShowProfit={onlyShowProfit}
         placement={isMobile && !onlyShowProfit ? 'bottom' : undefined}
+        className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
+        size={size}
       />
     )
   }
@@ -230,6 +248,7 @@ function PortfolioValueSkeleton(props: {
   placement?: 'bottom'
   hideAddFundsButton?: boolean
   onlyShowProfit?: boolean
+  size?: 'sm' | 'md'
 }) {
   const {
     graphMode,
@@ -248,6 +267,7 @@ function PortfolioValueSkeleton(props: {
     className,
     hideAddFundsButton,
     onlyShowProfit,
+    size = 'md',
   } = props
 
   const profitLabel = onlyShowProfit
@@ -284,22 +304,6 @@ function PortfolioValueSkeleton(props: {
           {profitElement}
         </Col>
 
-        {valueElement && (
-          <Col
-            className={clsx(
-              'w-24 cursor-pointer sm:w-28',
-              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
-            )}
-            onClick={() => {
-              onClickNumber('value')
-              track('Portfolio Value Clicked')
-            }}
-          >
-            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
-            {valueElement}
-          </Col>
-        )}
-
         {balanceElement && (
           <Col
             className={clsx(
@@ -315,6 +319,22 @@ function PortfolioValueSkeleton(props: {
           >
             <div className="text-ink-600 text-xs sm:text-sm">Balance</div>
             {balanceElement}
+          </Col>
+        )}
+
+        {valueElement && (
+          <Col
+            className={clsx(
+              'w-24 cursor-pointer sm:w-28',
+              graphMode != 'value' ? 'opacity-40 hover:opacity-80' : ''
+            )}
+            onClick={() => {
+              onClickNumber('value')
+              track('Portfolio Value Clicked')
+            }}
+          >
+            <div className="text-ink-600 text-xs sm:text-sm">Net worth</div>
+            {valueElement}
           </Col>
         )}
 
@@ -338,7 +358,9 @@ function PortfolioValueSkeleton(props: {
       </Row>
       <SizedContainer
         className={clsx(
-          className ? className : 'mb-4 h-[150px] pr-11 sm:h-[200px] lg:pr-0'
+          className,
+          'pr-11 lg:pr-0',
+          size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
         )}
       >
         {graphElement}

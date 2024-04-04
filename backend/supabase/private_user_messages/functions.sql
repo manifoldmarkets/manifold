@@ -7,8 +7,9 @@ where pumcm.user_id = p_user_id
   and pumcm.status not in (select unnest(p_ignored_statuses))
   and exists (
     select 1
-    from private_user_messages
-    where pumc.id = private_user_messages.channel_id
+    from private_user_messages pum
+    where pumc.id = pum.channel_id
+    and (case when pum.visibility = 'introduction' then pum.user_id != p_user_id else true end)
 )
 order by pumc.last_updated_time desc
 limit p_limit;

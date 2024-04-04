@@ -3,7 +3,11 @@ import { useState } from 'react'
 import { XIcon } from '@heroicons/react/solid'
 
 import { Answer, DpmAnswer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  CPMMNumericContract,
+  MultiContract,
+} from 'common/contract'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
@@ -27,9 +31,8 @@ import {
   getOutcomeProbabilityAfterBet,
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
-import { Subtitle } from '../widgets/subtitle'
 import { BuyPanel } from '../bet/bet-panel'
-import { User } from 'common/user'
+import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer
@@ -220,31 +223,42 @@ const getSimulatedBetInfo = (
 
 export function AnswerCpmmBetPanel(props: {
   answer: Answer
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   closePanel: () => void
-  outcome: 'YES' | 'NO' | 'LIMIT' | undefined
-  me: User | null | undefined
+  outcome: 'YES' | 'NO' | undefined
+  alwaysShowOutcomeSwitcher?: boolean
+  feedItem?: FeedTimelineItem
 }) {
-  const { answer, contract, closePanel, outcome, me } = props
+  const {
+    answer,
+    contract,
+    closePanel,
+    outcome,
+    feedItem,
+    alwaysShowOutcomeSwitcher,
+  } = props
+
   return (
-    <Col className="gap-2">
-      <Row className="justify-between">
-        <Subtitle className="!mt-0">{answer.text}</Subtitle>
-        <div className="text-xl">{formatPercent(answer.prob)}</div>
-      </Row>
+    <Col className="rounded-2xl backdrop-blur-sm">
       <BuyPanel
         contract={contract}
         multiProps={{
           answers: contract.answers,
           answerToBuy: answer as Answer,
         }}
-        user={me}
         initialOutcome={outcome}
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
+        feedItem={feedItem}
         inModal={true}
-      />
+        alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
+      >
+        <Row className="text-ink-900 mb-6 justify-between text-lg">
+          <h1>{answer.text}</h1>
+          <div className="font-semibold">{formatPercent(answer.prob)}</div>
+        </Row>
+      </BuyPanel>
     </Col>
   )
 }

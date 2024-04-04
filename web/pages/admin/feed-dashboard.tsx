@@ -1,5 +1,5 @@
 import { Col } from 'web/components/layout/col'
-import { FeedTimelineContent } from 'web/components/feed-timeline'
+import { FeedTimeline } from 'web/components/feed-timeline'
 import { useRecentlyActiveUsersAndPrivateUsers } from 'web/hooks/use-users'
 
 export default function FeedDashboard() {
@@ -9,7 +9,7 @@ export default function FeedDashboard() {
       {privateUsersAndUsers?.map(({ privateUser, user }) => (
         <Col key={user.id} className={'col-span-2'}>
           {privateUser && (
-            <FeedTimelineContent user={user} privateUser={privateUser} />
+            <FeedTimeline user={user} privateUser={privateUser} />
           )}
         </Col>
       ))}

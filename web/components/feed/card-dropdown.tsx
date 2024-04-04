@@ -17,7 +17,7 @@ import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
 import { useAdmin } from 'web/hooks/use-admin'
 import { InformationCircleIcon } from '@heroicons/react/outline'
-import { useUserById } from 'web/hooks/use-user-supabase'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function FeedDropdown(props: {
   contract: Contract
@@ -31,7 +31,7 @@ export function FeedDropdown(props: {
   const user = useUser()
   const isAdmin = useAdmin()
   const creatorId = item?.creatorId ?? contract.creatorId
-  const creator = useUserById(creatorId)
+  const creator = useDisplayUserById(creatorId)
   const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
 
   const markUninteresting = async () => {
@@ -77,7 +77,7 @@ export function FeedDropdown(props: {
         toast(
           item?.dataType +
             ' : ' +
-            item?.reasons?.join(', ') +
+            item?.reasons.join(', ') +
             ', importance: ' +
             importanceScore.toPrecision(2)
         ),

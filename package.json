@@ -16,17 +16,17 @@
   ],
   "scripts": {
     "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/functions verify:dir; yarn --cwd=backend/shared verify:dir",
-    "lint": "eslint common --fix ; eslint web --fix ; eslint backend/functions --fix",
+    "lint": "yarn --cwd=web lint-fix; eslint common --fix ; eslint backend/functions --fix ; eslint backend/api --fix ; eslint backend/shared --fix",
     "_comment": "Place your admin json under /backend/functions/ to enable this:",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
   "dependencies": {},
   "devDependencies": {
     "@types/node": "18.18.8",
-    "@typescript-eslint/eslint-plugin": "6.12.0",
-    "@typescript-eslint/parser": "6.12.0",
+    "@typescript-eslint/eslint-plugin": "7.4.0",
+    "@typescript-eslint/parser": "7.4.0",
     "concurrently": "8.2.2",
-    "eslint": "8.48.0",
+    "eslint": "8.57.0",
     "eslint-plugin-lodash": "^7.4.0",
     "eslint-plugin-unused-imports": "^2.0.0",
     "nodemon": "2.0.20",

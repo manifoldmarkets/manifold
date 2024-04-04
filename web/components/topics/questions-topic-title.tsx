@@ -1,11 +1,6 @@
-import { Group, TOPIC_KEY } from 'common/group'
-import {
-  ArrowLeftIcon,
-  BookmarkIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/outline'
+import { Group } from 'common/group'
+import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { DOMAIN } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
 import {
@@ -18,10 +13,10 @@ import { User } from 'common/user'
 import { forwardRef, Ref, useState } from 'react'
 import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useRouter } from 'next/router'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
-import { Col } from 'web/components/layout/col'
 import { toast } from 'react-hot-toast'
+import { getTopicShareUrl } from 'common/util/share'
+import { BackButton } from '../contract/back-button'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -40,42 +35,35 @@ export const QuestionsTopicTitle = forwardRef(
     const isMobile = useIsMobile()
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
-    const router = useRouter()
 
     return (
       <Row
         className={
-          'col-span-8 my-1 items-center justify-between gap-1 sm:mb-3 xl:col-span-7'
+          'col-span-8 h-11 justify-between gap-1 sm:mb-1 xl:col-span-7'
         }
         ref={ref}
       >
-        <Col className={'mb-1 truncate'}>
-          <Row className={'items-center gap-1'}>
-            <Button size={'2xs'} color={'gray-white'} onClick={router.back}>
-              <ArrowLeftIcon className={'h-5 w-5'} />
-            </Button>
-            <span
-              className="text-primary-700 !mb-0 truncate text-2xl"
-              onClick={() =>
-                currentTopic ? toast(`Questions in ${currentTopic.name}`) : null
-              }
-            >
-              {currentTopic?.name ??
-                (topicSlug === 'for-you'
-                  ? '⭐️ For you'
-                  : topicSlug === 'recent'
-                  ? '⏳ Your recents'
-                  : 'Browse')}
-            </span>
-          </Row>
-        </Col>
-        <Row className="items-center px-2">
+        <Row className={'gap-1 truncate'}>
+          <BackButton className="lg:hidden" />
+          <span
+            className="text-primary-700 self-center truncate text-2xl"
+            onClick={() =>
+              currentTopic ? toast(`Questions in ${currentTopic.name}`) : null
+            }
+          >
+            {currentTopic?.name ??
+              (topicSlug === 'for-you'
+                ? '⭐️ For you'
+                : topicSlug === 'recent'
+                ? '⏳ Your recents'
+                : 'Browse')}
+          </span>
+        </Row>
+        <Row>
           {currentTopic && (
             <>
               <CopyLinkOrShareButton
-                url={`https://${DOMAIN}/browse?${TOPIC_KEY}=${
-                  currentTopic?.slug ?? ''
-                }`}
+                url={getTopicShareUrl(currentTopic?.slug ?? '', user?.username)}
                 className={'gap-1 whitespace-nowrap'}
                 eventTrackingName={'copy questions page link'}
                 size={isMobile ? 'sm' : 'md'}
@@ -132,12 +120,13 @@ export const QuestionsTopicTitle = forwardRef(
               group={currentTopic}
               yourGroupIds={yourGroupIds}
               user={user}
+              className={'flex [&_*]:flex [&_button]:pr-2'}
             />
           ) : user ? (
             <TopicDropdown
               setCurrentTopic={setTopicSlug}
               user={user}
-              className={'md:hidden'}
+              className={'self-center md:hidden'}
             />
           ) : null}
         </Row>

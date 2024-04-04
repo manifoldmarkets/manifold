@@ -41,7 +41,6 @@ import { useEvent } from 'web/hooks/use-event'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
-import { firebaseLogin } from 'web/lib/firebase/users'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
 import TriangleFillIcon from 'web/lib/icons/triangle-fill-icon.svg'
 import { track } from 'web/lib/service/analytics'
@@ -72,6 +71,7 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { RepostModal } from 'web/components/comments/repost-modal'
 import { TiPin } from 'react-icons/ti'
 import Router from 'next/router'
+import { UserHovercard } from '../user/user-hovercard'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -268,7 +268,7 @@ export const FeedComment = memo(function FeedComment(props: {
   const [comment, updateComment] = usePartialUpdater(props.comment)
   useEffect(() => updateComment(props.comment), [props.comment])
 
-  const { userUsername, userAvatarUrl } = comment
+  const { userUsername, userAvatarUrl, userId } = comment
   const ref = useRef<HTMLDivElement>(null)
   const marketCreator = contract.creatorId === comment.userId
   const isBetParent = !!bets?.length
@@ -304,12 +304,14 @@ export const FeedComment = memo(function FeedComment(props: {
               )}
             />
           )}
-          <Avatar
-            username={userUsername}
-            size={isParent ? 'sm' : '2xs'}
-            avatarUrl={userAvatarUrl}
-            className={clsx(marketCreator && 'shadow shadow-amber-300', 'z-10')}
-          />
+          <UserHovercard userId={userId} className="z-10 self-start">
+            <Avatar
+              username={userUsername}
+              size={isParent ? 'sm' : '2xs'}
+              avatarUrl={userAvatarUrl}
+              className={clsx(marketCreator && 'shadow shadow-amber-300')}
+            />
+          </UserHovercard>
 
           {/* Outer vertical reply line*/}
           {(showParentLine || !isParent) && (
@@ -706,7 +708,7 @@ function CommentActions(props: {
     comment.userId != user.id &&
     onAward
   const [showBetModal, setShowBetModal] = useState(false)
-  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
   const diff =
     (comment.betReplyAmountsByOutcome?.YES ?? 0) -
     (comment.betReplyAmountsByOutcome?.NO ?? 0)
@@ -787,12 +789,12 @@ function CommentActions(props: {
             </span>
             <BuyPanel
               contract={contract as any}
-              user={user}
               initialOutcome={outcome}
               onBuySuccess={() => setTimeout(() => setShowBetModal(false), 500)}
               location={'comment on contract'}
               inModal={true}
               replyToCommentId={comment.id}
+              alwaysShowOutcomeSwitcher={true}
             />
           </Col>
         </Modal>
@@ -849,8 +851,6 @@ export function ContractCommentInput(props: {
   commentTypes: CommentType[]
   onClearInput?: () => void
 }) {
-  const user = useUser()
-  const privateUser = usePrivateUser()
   const {
     contract,
     replyTo,
@@ -863,16 +863,14 @@ export function ContractCommentInput(props: {
     commentTypes,
     onClearInput,
   } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
   const isReplyToBet = replyTo && 'amount' in replyTo
   const isReplyToAnswer = replyTo && !isReplyToBet
 
   const onSubmitComment = useEvent(
     async (editor: Editor, type: CommentType) => {
-      if (!user) {
-        track('sign in to comment')
-        await firebaseLogin()
-        return
-      }
+      if (!user) return
 
       let comment: ContractComment | undefined
       if (type === 'comment') {
@@ -902,6 +900,8 @@ export function ContractCommentInput(props: {
           : replyToUserInfo
           ? 'user'
           : undefined,
+        commentId: comment.id,
+        contractId: contract.id,
       })
     }
   )
@@ -914,6 +914,7 @@ export function ContractCommentInput(props: {
           betAmount={replyTo.amount}
           betOutcome={replyTo.outcome}
           bettorName={replyTo.userName}
+          bettorId={replyTo.userId}
           bettorUsername={replyTo.userUsername}
           betOrderAmount={replyTo.orderAmount}
           betLimitProb={replyTo.limitProb}
@@ -987,15 +988,17 @@ export function FeedCommentHeader(props: {
       <Row className="justify-between">
         <Row className=" gap-1">
           <span>
-            <UserLink
-              user={{
-                id: userId,
-                name: userName,
-                username: userUsername,
-              }}
-              marketCreator={inTimeline ? false : marketCreator}
-              className={'font-semibold'}
-            />
+            <UserHovercard userId={userId}>
+              <UserLink
+                user={{
+                  id: userId,
+                  name: userName,
+                  username: userUsername,
+                }}
+                marketCreator={inTimeline ? false : marketCreator}
+                className={'font-semibold'}
+              />
+            </UserHovercard>
             {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
               <span className={'ml-1'}>
                 {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
@@ -1181,6 +1184,7 @@ export function ReplyToBetRow(props: {
   betOutcome: string
   betAmount: number
   bettorName: string
+  bettorId?: string
   bettorUsername: string
   betOrderAmount?: number
   betLimitProb?: number
@@ -1192,6 +1196,7 @@ export function ReplyToBetRow(props: {
     commenterIsBettor,
     betAmount,
     bettorName,
+    bettorId,
     bettorUsername,
     betAnswerId,
     contract,
@@ -1217,10 +1222,12 @@ export function ReplyToBetRow(props: {
         )}
       >
         {!commenterIsBettor && (
-          <UserLink
-            short={(isLimitBet || betAnswerId !== undefined) && isMobile}
-            user={{ id: '', name: bettorName, username: bettorUsername }}
-          />
+          <UserHovercard userId={bettorId ?? ''}>
+            <UserLink
+              short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+              user={{ id: '', name: bettorName, username: bettorUsername }}
+            />
+          </UserHovercard>
         )}
         {isLimitBet ? (
           <>

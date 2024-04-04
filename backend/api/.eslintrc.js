@@ -37,5 +37,24 @@ module.exports = {
       process.platform === 'win32' ? 'windows' : 'unix',
     ],
     'lodash/import-scope': [2, 'member'],
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'openai',
+            importNames: ['APIError'],
+            message:
+              'Please import APIError from `api/helpers/endpoint` instead',
+          },
+          {
+            name: 'openai/error',
+            importNames: ['APIError'],
+            message:
+              'Please import APIError from `api/helpers/endpoint` instead',
+          },
+        ],
+      },
+    ],
   },
 }

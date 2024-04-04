@@ -2,6 +2,7 @@ import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { db } from './db'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
+import { DisplayUser } from 'web/lib/supabase/users'
 
 export async function getUser(userId: string) {
   const { data: user } = await run(
@@ -9,6 +10,20 @@ export async function getUser(userId: string) {
   )
   if (user && user.length > 0) {
     return user[0].data as User
+  } else {
+    return null
+  }
+}
+export async function getDisplayUser(userId: string) {
+  const { data: user } = await run(
+    db
+      .from('users')
+      .select('data->>avatarUrl,name,username')
+      .eq('id', userId)
+      .limit(1)
+  )
+  if (user && user.length > 0) {
+    return { ...user[0], id: userId } as DisplayUser
   } else {
     return null
   }

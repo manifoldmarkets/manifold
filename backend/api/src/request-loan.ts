@@ -3,7 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { writeAsync } from 'shared/utils'
+import { log, writeAsync } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { groupBy, uniq } from 'lodash'
@@ -11,13 +11,9 @@ import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
 import { LoanTxn } from 'common/txn'
-import { runTxnFromBankAsProfit } from 'shared/txn/run-txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
-export const requestloan: APIHandler<'request-loan'> = async (
-  _,
-  auth,
-  { log }
-) => {
+export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 
@@ -146,10 +142,7 @@ const payUserLoan = async (
         countsAsProfit: true,
       },
     }
-    const { message, txn, status } = await runTxnFromBankAsProfit(
-      trans,
-      loanTxn
-    )
+    const { message, txn, status } = await runTxnFromBank(trans, loanTxn, true)
     if (status !== 'success') {
       throw new APIError(500, message ?? 'Error creating loan txn')
     }

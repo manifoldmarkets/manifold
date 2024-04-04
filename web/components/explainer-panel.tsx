@@ -2,30 +2,36 @@ import clsx from 'clsx'
 import { Col } from './layout/col'
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import { Card } from './widgets/card'
-import { STARTING_BALANCE } from 'common/economy'
-import { formatMoney } from 'common/util/format'
 import React from 'react'
 import { Row } from './layout/row'
+import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
+import { TbTargetArrow } from 'react-icons/tb'
+import { track } from 'web/lib/service/analytics'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
+  const handleSectionClick = (sectionTitle: string) => {
+    track('explainer section click', { sectionTitle })
+  }
   return (
-    <div className={className}>
-      <Col className="mx-auto max-w-[60ch]">
-        <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
-        <WhatIsAPM />
-        <WhatIsMana />
-        <WhyManifold />
-      </Col>
-    </div>
+    <Col className={clsx(' max-w-[60ch]', className)}>
+      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
+      <Accuracy onClick={handleSectionClick} />
+      <WhatAreOdds onClick={handleSectionClick} />
+      <WhyShouldI onClick={handleSectionClick} />
+      <PlayMoney onClick={handleSectionClick} />
+    </Col>
   )
 }
 
 export const ExpandSection = (props: {
   title: React.ReactNode
   children: React.ReactNode
+  onClick?: () => void
 }) => {
-  const { title, children } = props
+  const { title, children, onClick } = props
 
   return (
     <Card className="mb-4">
@@ -36,6 +42,7 @@ export const ExpandSection = (props: {
             <ChevronDoubleDownIcon
               className="h-full w-full transition group-open:-rotate-180"
               aria-hidden
+              onClick={onClick}
             />
           </span>
         </summary>
@@ -45,44 +52,111 @@ export const ExpandSection = (props: {
   )
 }
 
-const Caps = (props: { children: React.ReactNode }) => (
-  <span className="font-bold uppercase">{props.children}</span>
-)
-
-export const WhatIsAPM = () => (
-  <ExpandSection title="📈 What is a prediction market?">
-    Prediction markets let you bet on future events.
-    <br />
-    The price of an outcome reflects the odds of that outcome, which varies as
-    people buy and sell.
-    <br />
-    Manifold's probabilities are very accurate at forecasting the future!
+const WhatAreOdds = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <Row className="items-start">
+        <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
+        What are the odds?
+      </Row>
+    }
+    onClick={() => onClick('What are the odds?')}
+  >
+    <div className="pb-2">The odds are the chance that the event happens.</div>
+    <div className="pb-2">
+      The odds are set by traders who have insight into the question weighted
+      proportional to their confidence (bet size) and how correct they've been
+      in the past (balance).
+    </div>
   </ExpandSection>
 )
 
-export const WhatIsMana = () => (
-  <ExpandSection title="💰 What is mana (Ṁ)?">
-    Mana (Ṁ) is the play-money used to bet on Manifold.
-    <br />
-    You start with ${formatMoney(STARTING_BALANCE)} for free. Earn more by
-    winning bets and gaining bonuses.
-    <br />
-    Most users never have to buy mana!
-    <br />
-    Mana can't be redeemed for cash, but you can donate it to charity at a rate
-    of $1 per Ṁ100.
+const WhyShouldI = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <>
+        <FaHandHoldingUsd className="mr-2" /> Why should I bet?
+      </>
+    }
+    onClick={() => onClick('Why should I bet?')}
+  >
+    <div className="pb-2">
+      Betting on questions provides decision-makers with accurate predictions of
+      the future.
+    </div>
+    <div className="pb-2">
+      It’s like combining the accuracy of sports betting and the stock market to
+      answer important, real-world questions.
+    </div>
+  </ExpandSection>
+)
+const PlayMoney = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <>
+        <ManaCircleIcon className="mr-2 h-4 w-4" />
+        Why use play money?
+      </>
+    }
+    onClick={() => onClick('Why play money?')}
+  >
+    <div className="pb-2">
+      Our play money, ({ENV_CONFIG.moneyMoniker}) is free to get started with
+      and produces better forecasts.
+    </div>
+    <div className="pb-2">
+      It's just one click to sign up and start forecasting. Plus, you can cash
+      out your winnings to charity!
+    </div>
   </ExpandSection>
 )
 
-export const WhyManifold = () => (
-  <ExpandSection title="🤔 Why Manifold?">
-    • <Caps>News</Caps> - Understand current events with precise probabilities,
-    not sensationalist media.
-    <br />• <Caps>Compete</Caps> - Progress up the leagues to earn prizes!
-    <br />• <Caps>Ask</Caps> - Create a question about anything you want!
-    <br />• <Caps>Venture</Caps> - You judge the outcome of questions you write.
-    Because you're not just a user. You're a creator. An entrepreneur. A
-    business. Your bettors are customers. Your reputation is on the line. But if
-    you ask questions people love, you will earn a lot of mana!
+const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
+  <ExpandSection
+    title={
+      <>
+        <TbTargetArrow className="mr-2" /> Are our forecasts accurate?
+      </>
+    }
+    onClick={() => onClick('Are our forecasts accurate?')}
+  >
+    <div className="pb-2">
+      Manifold is{' '}
+      <a
+        className="text-primary-700 hover:underline"
+        target="_blank"
+        href="https://manifold.markets/calibration"
+      >
+        very well calibrated
+      </a>
+      , with forecasts on average within <strong>4 percentage points</strong> of
+      the true probability.
+    </div>
+    <div className="pb-2">
+      By using play money and the combined wisdom of thousands of users, we
+      outperform real-money platforms. For example, in the{' '}
+      <a
+        className="text-primary-700 hover:underline"
+        target="_blank"
+        href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
+      >
+        2022 US midterm elections
+      </a>
+      , we outperformed all real-money prediction markets and were in line with
+      FiveThirtyEight’s performance.
+    </div>
+    <div></div>
   </ExpandSection>
 )

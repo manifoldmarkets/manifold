@@ -28,7 +28,8 @@ if (require.main === module) {
         manifoldLoveUserId,
         lover_user_id1,
         lover_user_id2,
-        50
+        50,
+        undefined
       ).catch((e) => {
         console.log('error creating match', e)
       })

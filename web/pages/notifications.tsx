@@ -220,7 +220,7 @@ function RenderNotificationGroups(props: {
       {notificationGroups.length > 0 && totalItems > NOTIFICATIONS_PER_PAGE && (
         <Pagination
           page={page}
-          itemsPerPage={NOTIFICATIONS_PER_PAGE}
+          pageSize={NOTIFICATIONS_PER_PAGE}
           totalItems={totalItems}
           setPage={setPage}
           savePageToQuery={true}
@@ -324,7 +324,6 @@ function NotificationGroupItem(props: {
           notifications.filter((n) => incomeTypesToSum.includes(n.sourceType))
         )
       ),
-
     'createdTime'
   ).reverse()
   const onboardingNotifs = notifications.some(

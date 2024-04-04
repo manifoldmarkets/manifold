@@ -1,12 +1,10 @@
-import clsx from 'clsx'
-import { ExclamationIcon } from '@heroicons/react/solid'
-
-import { Row } from '../layout/row'
-import { ConfirmationButton } from './confirmation-button'
-import { Button, ColorType, SizeType } from './button'
 import { Ref, useEffect, useState } from 'react'
+import clsx from 'clsx'
+
+import { Button, SizeType } from './button'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
+import { AlertBox } from '../widgets/alert-box'
 
 export function WarningConfirmationButton(props: {
   amount: number | undefined
@@ -15,8 +13,9 @@ export function WarningConfirmationButton(props: {
   onSubmit?: () => void
   disabled: boolean
   isSubmitting: boolean
-  openModalButtonClass?: string
-  color: ColorType
+  actionLabelClassName?: string
+  ButtonClassName?: string
+  color: string
   size: SizeType
   actionLabel: string
   userOptedOutOfWarning: boolean | undefined
@@ -28,7 +27,8 @@ export function WarningConfirmationButton(props: {
     warning,
     disabled,
     isSubmitting,
-    openModalButtonClass,
+    actionLabelClassName,
+    ButtonClassName,
     size,
     color,
     actionLabel,
@@ -60,50 +60,31 @@ export function WarningConfirmationButton(props: {
     ? 'Enter an amount'
     : actionLabel
 
-  if (!warning || userOptedOutOfWarning) {
-    return (
+  const realColor = warning
+    ? 'yellow'
+    : color == 'indigo' || color == 'green' || color == 'red'
+    ? color
+    : 'none'
+
+  return (
+    <>
+      {warning && !userOptedOutOfWarning && (
+        <AlertBox title="Whoa, there!">
+          <div>{warning}</div>
+        </AlertBox>
+      )}
+
       <Button
         size={size}
         disabled={isSubmitting || disabled}
-        className={clsx(openModalButtonClass)}
         onClick={onSubmit}
-        color={color}
+        color={realColor}
         ref={betButtonRef as Ref<HTMLButtonElement>}
+        className={clsx(ButtonClassName, 'disabled:bg-ink-200 text-white')}
+        style={{ backgroundColor: realColor === 'none' ? color : undefined }}
       >
-        {buttonText}
+        <span className={clsx(actionLabelClassName)}>{buttonText}</span>
       </Button>
-    )
-  }
-
-  return (
-    <ConfirmationButton
-      openModalBtn={{
-        label: buttonText,
-        size: size,
-        color: 'yellow',
-        disabled: isSubmitting || disabled,
-      }}
-      cancelBtn={{
-        label: 'Cancel',
-        color: 'yellow',
-        disabled: isSubmitting,
-      }}
-      submitBtn={{
-        label: 'Submit',
-        color: 'indigo',
-        isSubmitting,
-      }}
-      onSubmit={onSubmit}
-    >
-      <Row className="items-center text-xl">
-        <ExclamationIcon
-          className="h-16 w-16 text-yellow-400"
-          aria-hidden="true"
-        />
-        Whoa, there!
-      </Row>
-
-      <p>{warning}</p>
-    </ConfirmationButton>
+    </>
   )
 }

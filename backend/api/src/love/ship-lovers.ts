@@ -4,12 +4,12 @@ import {
 } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
 import { createLoveShipNotification } from 'shared/create-love-notification'
+import { createAnswerCpmmMain } from 'api/create-answer-cpmm'
+import { addTargetToUserMarket } from 'shared/love/love-markets'
+import { LOVE_MARKET_COST } from 'common/love/constants'
+import { log } from 'shared/utils'
 
-export const shipLovers: APIHandler<'ship-lovers'> = async (
-  props,
-  auth,
-  { log }
-) => {
+export const shipLovers: APIHandler<'ship-lovers'> = async (props, auth) => {
   const { targetUserId1, targetUserId2, remove } = props
   const creatorId = auth.uid
 
@@ -59,10 +59,29 @@ export const shipLovers: APIHandler<'ship-lovers'> = async (
     throw new APIError(500, 'Failed to create ship: ' + error.message)
   }
 
-  await Promise.all([
-    createLoveShipNotification(data, data.target1_id),
-    createLoveShipNotification(data, data.target2_id),
-  ])
+  const continuation = async () => {
+    const createAnswer = (
+      contractId: string,
+      creatorId: string,
+      targetUserId: string,
+      text: string
+    ) =>
+      createAnswerCpmmMain(contractId, text, creatorId, {
+        overrideAddAnswersMode: 'ONLY_CREATOR',
+        specialLiquidityPerAnswer: LOVE_MARKET_COST,
+        loverUserId: targetUserId,
+      })
 
-  return { status: 'success' }
+    await Promise.all([
+      createLoveShipNotification(data, data.target1_id),
+      createLoveShipNotification(data, data.target2_id),
+    ])
+    await addTargetToUserMarket(targetUserId1, targetUserId2, createAnswer)
+    await addTargetToUserMarket(targetUserId2, targetUserId1, createAnswer)
+  }
+
+  return {
+    result: { status: 'success' },
+    continue: continuation,
+  }
 }

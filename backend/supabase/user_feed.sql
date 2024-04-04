@@ -5,23 +5,17 @@ create table if not exists
                   seen_time timestamptz null, -- null means unseen
                   user_id text not null,
                   event_time timestamptz not null,
-                  data_type text not null, -- 'new_comment', 'new_contract'
-                  reason text not null, --  follow_user, follow_contract, etc
+                  data_type text not null, -- 'new_contract'
                   data jsonb null,
                   contract_id text null,
                   comment_id text null,
                   post_id bigint null,
                   creator_id text null,
-                  news_id text null,
-                  group_id text null,
-                  reaction_id text null,
                   bet_id text null,
                   idempotency_key text null,
                   is_copied boolean not null default false,
-                  bet_data jsonb null,
-                  answer_ids text[] null,
                   relevance_score numeric default 0,
-                  reasons text[] null,
+                  reasons text[] not null, -- in order of importance
                   seen_duration bigint null, -- ms
                   unique (user_id, idempotency_key)
 );

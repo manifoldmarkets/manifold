@@ -1,62 +1,85 @@
-import { memo, useEffect, useMemo, useState } from 'react'
-import { User } from 'common/user'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
-import { db } from 'web/lib/supabase/db'
-import { ContractMetric } from 'common/contract-metric'
-import { CPMMContract } from 'common/contract'
-import { sum } from 'lodash'
-import clsx from 'clsx'
-import { withTracking } from 'web/lib/service/analytics'
-import { Row } from 'web/components/layout/row'
-import { Col } from 'web/components/layout/col'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { DailyProfitModal } from 'web/components/home/daily-profit'
 import { ArrowUpIcon } from '@heroicons/react/solid'
-import { DailyLoan } from 'web/components/home/daily-loan'
+import clsx from 'clsx'
+import { CPMMContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
 import { DAY_MS } from 'common/util/time'
+import { minBy, sum } from 'lodash'
+import { memo, useEffect, useMemo, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { DailyLoan } from 'web/components/home/daily-loan'
+import { DailyProfitModal } from 'web/components/home/daily-profit'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { withTracking } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { getCutoff } from 'web/lib/util/time'
+
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
+
 export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
+  portfolio: PortfolioSnapshot | undefined
+  weeklyPortfolioData: PortfolioSnapshot[]
+  refreshPortfolio: () => void
 }) {
-  const { user, className } = props
-
-  const portfolio = useCurrentPortfolio(user.id)
-
+  const { user, className, portfolio, weeklyPortfolioData, refreshPortfolio } =
+    props
+  const dayAgoPortfolio = minBy(
+    weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
+    'timestamp'
+  )
   const [open, setOpen] = useState(false)
 
-  const [data, setData] = usePersistentInMemoryState<
+  const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
     { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
   >(undefined, `daily-profit-${user?.id}`)
 
   useEffect(() => {
     getUserContractMetricsByProfitWithContracts(user.id, db, 'day').then(
-      setData
+      setContractMetrics
     )
-  }, [setData])
+  }, [setContractMetrics])
 
-  const dailyProfit = Math.round(
+  const dailyProfitFromMetrics = Math.round(
     useMemo(() => {
-      if (!data) return 0
-      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-    }, [data])
+      if (!contractMetrics) return 0
+      return sum(contractMetrics.metrics.map((m) => m.from?.day.profit ?? 0))
+    }, [contractMetrics])
   )
+  const dailyProfit =
+    portfolio && dayAgoPortfolio
+      ? portfolio.investmentValue +
+        portfolio.balance -
+        portfolio.totalDeposits -
+        (dayAgoPortfolio.investmentValue +
+          dayAgoPortfolio.balance -
+          dayAgoPortfolio.totalDeposits)
+      : dailyProfitFromMetrics
 
-  // If a user is new and we haven't calculated their portfolio value recently enough, show the metrics value instead
   const portfolioValue = portfolio
-    ? portfolio.investmentValue + portfolio.loanTotal
+    ? portfolio.investmentValue + portfolio.balance
     : 0
-  const metricsValue = data ? sum(data.metrics.map((m) => m.payout ?? 0)) : 0
-  const investment =
+  const metricsValue = contractMetrics
+    ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
+    : 0
+  const netWorth =
     metricsValue !== portfolioValue &&
     metricsValue !== 0 &&
     user.createdTime > Date.now() - DAY_MS
-      ? metricsValue
+      ? metricsValue + user.balance
       : portfolioValue
+  const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
+    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
+  )
+  const moreChanges = visibleMetrics.length
 
-  const percentChange = dailyProfit / investment
   return (
     <Row
       className={clsx(className, 'relative')}
@@ -64,37 +87,58 @@ export const InvestmentValueCard = memo(function (props: {
         setOpen(true)
       }, DAILY_INVESTMENT_CLICK_EVENT)}
     >
-      <Col className={'gap-1.5'}>
-        <span className={'text-ink-800 ml-1'}>Your investments</span>
-        <span className={'text-ink-800 mb-1 text-5xl'}>
-          {formatMoney(investment)}
-        </span>
-        {investment !== 0 && (
-          <Row
-            className={clsx(
-              'items-center',
-              dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
-            )}
-          >
-            {dailyProfit > 0 ? (
-              <ArrowUpIcon className={'h-4 w-4'} />
-            ) : dailyProfit < 0 ? (
-              <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
-            ) : null}
-            {formatPercent(percentChange)} today
+      <Col className={'w-full gap-1.5'}>
+        <Col>
+          <div className={'text-ink-800 text-2xl sm:text-4xl'}>
+            {portfolio
+              ? formatMoney(netWorth)
+              : `${ENV_CONFIG.moneyMoniker}----`}
+          </div>
+          <div className={'text-ink-800 ml-1'}>Your net worth</div>
+        </Col>
+        {netWorth !== 0 && (
+          <Row className="justify-between">
+            <Row
+              className={clsx(
+                'mb-1 items-center',
+                dailyProfit >= 0 ? 'text-teal-600' : 'text-ink-600'
+              )}
+            >
+              {dailyProfit > 0 ? (
+                <ArrowUpIcon className={'h-4 w-4'} />
+              ) : dailyProfit < 0 ? (
+                <ArrowUpIcon className={'h-4 w-4 rotate-180 transform'} />
+              ) : null}
+              {formatMoney(dailyProfit)} profit today
+            </Row>
+            <Button
+              color={'gray-white'}
+              onClick={(e) => {
+                e.stopPropagation()
+                setOpen(true)
+              }}
+            >
+              See {moreChanges} changes
+            </Button>
           </Row>
         )}
-        <div className={'absolute right-4 top-3'}>
-          <DailyLoan user={user} />
-        </div>
+        <Col className={'absolute right-1 top-1 gap-1'}>
+          <DailyLoan user={user} refreshPortfolio={refreshPortfolio} />
+          {portfolio && portfolio.loanTotal > 0 && (
+            <div className="text-ink-600 text-sm">
+              {formatMoney(portfolio.loanTotal)} loaned
+            </div>
+          )}
+        </Col>
+
         {open && (
           <DailyProfitModal
             setOpen={setOpen}
             open={open}
-            metrics={data?.metrics}
-            contracts={data?.contracts}
+            metrics={contractMetrics?.metrics}
+            contracts={contractMetrics?.contracts}
             dailyProfit={dailyProfit}
-            investment={investment}
+            investment={netWorth}
           />
         )}
       </Col>

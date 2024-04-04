@@ -1,11 +1,15 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import {
   Contract,
+  CPMMNumericContract,
   DPMContract,
   FreeResponseContract,
+  getBinaryMCProb,
+  isBinaryMulti,
   MultipleChoiceContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
-import { partition, sortBy, sumBy } from 'lodash'
+import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
 import {
   formatMoney,
   formatPercent,
@@ -29,18 +33,25 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { api } from 'web/lib/firebase/api'
+import { Button } from '../buttons/button'
+import {
+  answerToRange,
+  getMultiNumericAnswerMidpoints,
+} from 'common/multi-numeric'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
   hideRedemptionAndLoanMessages?: boolean
+  truncate?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages } = props
+  const { contract, isYourBets, hideRedemptionAndLoanMessages, truncate } =
+    props
   const { isResolved, mechanism, outcomeType, closeTime } = contract
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte && b.amount !== 0),
+    props.bets.filter((b) => !b.isAnte && (b.amount !== 0 || b.loanAmount)),
     (bet) => bet.createdTime
   ).reverse()
 
@@ -75,6 +86,21 @@ export function ContractBetsTable(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && Date.now() > closeTime
+  const isBinaryMC = isBinaryMulti(contract)
+  const isMultiNumber = outcomeType === 'NUMBER'
+  const betsByBetGroupId = isMultiNumber
+    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+    : {}
+  const groupedBets = orderBy(
+    Object.values(betsByBetGroupId),
+    (bets) => bets[0].createdTime,
+    'desc'
+  )
+
+  const [truncated, setTruncated] = useState(truncate ?? false)
+  const truncatedBetCount = 3
+  const moreBetsCount =
+    (isMultiNumber ? groupedBets.length : normalBets.length) - truncatedBetCount
 
   return (
     <div className="overflow-x-auto">
@@ -120,15 +146,16 @@ export function ContractBetsTable(props: {
               <th></th>
             )}
             {(isCPMM || isCpmmMulti) && <th>Type</th>}
-            {isCpmmMulti && <th>Answer</th>}
-            <th>Outcome</th>
+            {isCpmmMulti && !isBinaryMC && !isMultiNumber && <th>Answer</th>}
+            {isMultiNumber && <th>Range</th>}
+            {!isMultiNumber && <th>Outcome</th>}
             <th>Amount</th>
             {isDPM && !isNumeric && (
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
-            {isPseudoNumeric ? (
+            {isPseudoNumeric || isMultiNumber ? (
               <th>Value</th>
             ) : isStonk ? (
               <th>Stock price</th>
@@ -139,17 +166,50 @@ export function ContractBetsTable(props: {
           </tr>
         </thead>
         <tbody>
-          {normalBets.map((bet) => (
-            <BetRow
-              key={bet.id}
-              bet={bet}
-              saleBet={salesDict[bet.id]}
-              contract={contract}
-              isYourBet={isYourBets}
-            />
-          ))}
+          {isMultiNumber
+            ? groupedBets
+                .slice(0, truncated ? truncatedBetCount : undefined)
+                .map((bets) => (
+                  <MultiNumberBetRow
+                    key={bets[0].id}
+                    bets={bets}
+                    contract={contract as CPMMNumericContract}
+                    isYourBet={isYourBets}
+                  />
+                ))
+            : (truncated
+                ? normalBets.slice(0, truncatedBetCount)
+                : normalBets
+              ).map((bet) => (
+                <BetRow
+                  key={bet.id}
+                  bet={bet}
+                  saleBet={salesDict[bet.id]}
+                  contract={contract}
+                  isYourBet={isYourBets}
+                />
+              ))}
         </tbody>
       </Table>
+
+      {truncate && moreBetsCount > 0 && (
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setTruncated((b) => !b)}
+        >
+          {truncated ? (
+            <>
+              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
+              {`Show ${moreBetsCount} more trades`}
+            </>
+          ) : (
+            <>
+              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
+            </>
+          )}
+        </Button>
+      )}
     </div>
   )
 }
@@ -186,6 +246,7 @@ function BetRow(props: {
   const isStonk = outcomeType === 'STONK'
   const isMulti =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const isBinaryMC = isBinaryMulti(contract)
 
   const dpmPayout = (() => {
     if (!isDPM) return 0
@@ -237,8 +298,8 @@ function BetRow(props: {
         </td>
       )}
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
-      {isCpmmMulti && (
-        <td>
+      {isCpmmMulti && !isBinaryMC && (
+        <td className="max-w-[200px] truncate sm:max-w-[250px]">
           {contract.answers.find((a) => a.id === bet.answerId)?.text ?? ''}
         </td>
       )}
@@ -246,7 +307,7 @@ function BetRow(props: {
         {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
-        ) : isCpmmMulti ? (
+        ) : isCpmmMulti && !isBinaryMC ? (
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
@@ -275,14 +336,108 @@ function BetRow(props: {
               {getFormattedMappedValue(contract, probBefore)} →{' '}
               {getFormattedMappedValue(contract, probAfter)}
             </>
+          ) : isBinaryMC ? (
+            <>
+              {formatPercent(getBinaryMCProb(probBefore, outcome))} →{' '}
+              {formatPercent(getBinaryMCProb(probAfter, outcome))}
+            </>
           ) : (
             <>
               {formatPercent(probBefore)} → {formatPercent(probAfter)}
             </>
           )
+        ) : isBinaryMC ? (
+          formatPercent(getBinaryMCProb(bet.limitProb ?? 0, outcome))
         ) : (
           formatPercent(bet.limitProb ?? 0)
         )}
+      </td>
+      <td>{formatTimeShort(createdTime)}</td>
+    </tr>
+  )
+}
+export const groupMultiNumericBets = (
+  bets: Bet[],
+  contract: CPMMNumericContract
+) => {
+  const nonRedemptionBets = bets.filter((b) => !b.isRedemption)
+  const betOnAnswers = contract.answers.filter((a) =>
+    nonRedemptionBets.some((b) => b.answerId === a.id)
+  )
+  if (betOnAnswers.length === 0) return { bet: undefined }
+  const lowestAnswer = betOnAnswers[0]
+  const highestAnswer = betOnAnswers[betOnAnswers.length - 1]
+  const lowerRange = answerToRange(lowestAnswer)[0]
+  const higherRange = answerToRange(highestAnswer)[1]
+  const firstNonRedemptionBet = nonRedemptionBets[0]
+  const bet = {
+    ...firstNonRedemptionBet,
+    amount: sumBy(bets, (b) => b.amount),
+    shares: sumBy(bets, (b) => b.shares),
+    isApi: nonRedemptionBets.some((b) => b.isApi),
+  }
+  const getExpectedValueAtProbs = (probs: number[]) => {
+    const answerValues = getMultiNumericAnswerMidpoints(contract)
+    return sum(probs.map((p, i) => p * answerValues[i]))
+  }
+  const betProbAfters = contract.answers.map(
+    (a) => bets.find((b) => b.answerId === a.id)?.probAfter ?? 0
+  )
+  const expectedValueAfter = getExpectedValueAtProbs(betProbAfters).toFixed(2)
+  const betProbBefores = contract.answers.map(
+    (a) => bets.find((b) => b.answerId === a.id)?.probBefore ?? 0
+  )
+  const expectedValueBefore = getExpectedValueAtProbs(betProbBefores).toFixed(2)
+
+  const ofTotalAmount = bets.some(
+    (b) => b.orderAmount !== undefined && b.limitProb !== undefined
+  )
+    ? ` / ${formatMoney(sumBy(bets, (b) => b.orderAmount ?? 0))}`
+    : ''
+
+  return {
+    bet,
+    lowerRange,
+    higherRange,
+    expectedValueBefore,
+    expectedValueAfter,
+    ofTotalAmount,
+  }
+}
+
+function MultiNumberBetRow(props: {
+  bets: Bet[]
+  contract: CPMMNumericContract
+  saleBet?: Bet
+  isYourBet: boolean
+}) {
+  const { bets, contract } = props
+  const {
+    bet,
+    lowerRange,
+    higherRange,
+    expectedValueBefore,
+    expectedValueAfter,
+    ofTotalAmount,
+  } = groupMultiNumericBets(bets, contract)
+  if (!bet) return null
+
+  const { amount, createdTime, shares } = bet
+
+  return (
+    <tr>
+      <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>
+      <td className="max-w-[200px] truncate sm:max-w-[250px]">
+        {lowerRange} - {higherRange}
+      </td>
+      <td>
+        {formatMoney(Math.abs(amount))}
+        {ofTotalAmount}
+      </td>
+      <td>{formatWithCommas(Math.abs(shares))}</td>
+
+      <td>
+        {expectedValueBefore} → {expectedValueAfter}
       </td>
       <td>{formatTimeShort(createdTime)}</td>
     </tr>

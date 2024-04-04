@@ -32,6 +32,7 @@ import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
+  CPMMNumericContract,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
@@ -121,7 +122,7 @@ export function getAnswerProbability(
 }
 
 export function getInitialAnswerProbability(
-  contract: MultiContract,
+  contract: MultiContract | CPMMNumericContract,
   answer: Answer | DpmAnswer
 ) {
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -553,7 +554,7 @@ export const getContractBetMetricsPerAnswer = (
 }
 
 const calculatePeriodProfit = (
-  contract: CPMMContract | CPMMMultiContract,
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer
@@ -608,31 +609,4 @@ export function getContractBetNullMetrics() {
     hasNoShares: false,
     maxSharesOutcome: null,
   } as ContractMetric
-}
-export function getTopAnswer(contract: MultiContract) {
-  const { answers } = contract
-  return maxBy<Answer | DpmAnswer>(answers, (answer) =>
-    'prob' in answer ? answer.prob : getOutcomeProbability(contract, answer.id)
-  )
-}
-
-export function getTopNSortedAnswers(contract: MultiContract, n: number) {
-  const { answers, resolution, resolutions } = contract
-
-  const [winningAnswers, losingAnswers] = partition(
-    answers,
-    (answer: Answer | DpmAnswer) =>
-      answer.id === resolution || (resolutions && resolutions[answer.id])
-    // Types were messed up with out this cast.
-  ) as [(Answer | DpmAnswer)[], (Answer | DpmAnswer)[]]
-
-  return [
-    ...sortBy(winningAnswers, (answer) =>
-      resolutions ? -1 * resolutions[answer.id] : 0
-    ),
-    ...sortBy(
-      losingAnswers,
-      (answer) => -1 * getAnswerProbability(contract, answer.id)
-    ),
-  ].slice(0, n)
 }

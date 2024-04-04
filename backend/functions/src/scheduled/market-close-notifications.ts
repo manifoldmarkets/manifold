@@ -28,7 +28,11 @@ export async function sendMarketCloseEmails() {
         .where('isResolved', '==', false)
         .where('closeTime', '<', now)
     )
-    const contracts = snap.docs.map((doc) => doc.data() as Contract)
+    const contracts = snap.docs
+      .map((doc) => doc.data() as Contract)
+      .filter(
+        (c) => c.outcomeType !== 'POLL' && c.outcomeType !== 'BOUNTIED_QUESTION'
+      )
     console.log(`Found ${contracts.length} closed contracts`)
     const needsNotification = contracts.filter((contract) =>
       shouldSendFirstOrFollowUpCloseNotification(contract)

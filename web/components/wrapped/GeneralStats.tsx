@@ -13,8 +13,8 @@ export function GeneralStats(props: {
   goToNextPage: () => void
   user: User
 }) {
-  const { goToPrevPage, goToNextPage, user, monthlyBets } = props
-  const [animateTotalSpentIn, setAnimateTotalSpentIn] = useState(true)
+  const { goToPrevPage, goToNextPage, monthlyBets } = props
+  const animateTotalSpentIn = true
   const [animateMostSpentIn, setAnimateMostSpentIn] = useState(false)
   const [animateGraphicIn, setAnimateGraphicIn] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)

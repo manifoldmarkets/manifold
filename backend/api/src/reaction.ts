@@ -2,12 +2,9 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { createLikeNotification } from 'shared/create-notification'
 import { assertUnreachable } from 'common/util/types'
+import { log } from 'shared/utils'
 
-export const addOrRemoveReaction: APIHandler<'react'> = async (
-  props,
-  auth,
-  { log, logError }
-) => {
+export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const { contentId, contentType, remove } = props
   const userId = auth.uid
 
@@ -53,10 +50,13 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
       }
 
       if (!data?.creator_id) {
-        logError('Failed to send like notification. Contract has no creator', {
-          contentId,
-        })
-        return
+        throw new APIError(
+          500,
+          'Failed to send like notification. Contract has no creator',
+          {
+            contentId,
+          }
+        )
       }
 
       ownerId = data.creator_id
@@ -74,7 +74,7 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
 
     if (existing.data?.length) {
       log('Reaction already exists, do nothing')
-      return
+      return { result: { success: true }, continue: async () => {} }
     }
 
     // actually do the insert
@@ -94,5 +94,22 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (
     }
 
     await createLikeNotification(data)
+  }
+  return {
+    result: { success: true },
+    continue: async () => {
+      if (contentType === 'comment') {
+        const { count } = await db
+          .from('user_reactions')
+          .select('*', { head: true, count: 'exact' })
+          .eq('content_id', contentId)
+          .eq('content_type', contentType)
+        log('new like count ' + count)
+        await db
+          .from('contract_comments')
+          .update({ likes: count ?? 0 })
+          .eq('comment_id', contentId)
+      }
+    },
   }
 }

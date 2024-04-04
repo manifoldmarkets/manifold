@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { getServiceAccountCredentials, loadSecretsToEnv } from 'common/secrets'
 import { getLocalEnv } from 'shared/init-admin'
 import {
@@ -5,8 +6,8 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
-import { log } from 'shared/utils'
-import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
+import { addInterestingContractsToFeed } from 'shared/add-interesting-contracts-to-feed'
+import { DAY_MS } from 'common/util/time'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -17,11 +18,11 @@ export async function testBackendFunction() {
     const db = createSupabaseClient()
     const firestore = admin.firestore()
     // await updateViewsAndViewersEmbeddings(pg)
-    // await addInterestingContractsToFeed(db, pg)
+    await addInterestingContractsToFeed(db, pg, true, Date.now() - DAY_MS)
     // await sendOnboardingNotificationsInternal(firestore)
     // await addInterestingContractsToFeed(db, pg, true)
-    // await updateContractMetricsCore({ log: log })
-    await updateUserMetricsCore({ log: log })
+    // await updateContractMetricsCore()
+    // await updateUserMetricsCore()
     // await updateContractViews()
     // const comment = (
     //   await firestore
