@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 export const BasicImage = Image.extend({
   renderReact: (attrs: any) => (
-    <img loading="lazy" {...attrs} alt={attrs.alt ?? ''} />
+    <img loading="lazy" {...attrs} alt={attrs.alt ?? ''} style={attrs.style} />
   ),
 })
 
@@ -21,9 +21,10 @@ function ExpandingImage(props: {
   alt?: string
   title?: string
   size?: 'md'
+  style?: React.CSSProperties
 }) {
   const [expanded, setExpanded] = useState(false)
-  const { size, alt, ...rest } = props
+  const { size, alt, style, ...rest } = props
 
   return (
     <>
@@ -36,6 +37,7 @@ function ExpandingImage(props: {
           'cursor-pointer object-contain',
           size === 'md' ? 'max-h-[400px]' : 'h-[128px]'
         )}
+        style={style}
         height={size === 'md' ? 400 : 128}
       />
       {expanded && (

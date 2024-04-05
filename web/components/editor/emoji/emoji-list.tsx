@@ -57,7 +57,7 @@ export const EmojiList = forwardRef(
               key={item.codePoint}
               onClick={() => selectItem(i)}
             >
-              {item.character} {item.shortcodes[0]}
+              <EmojiCharacter item={item} /> {item.shortcodes[0]}
             </button>
           ))
         )}
@@ -65,3 +65,18 @@ export const EmojiList = forwardRef(
     )
   }
 )
+
+function EmojiCharacter(props: { item: EmojiData }) {
+  const { item } = props
+  if (item.svgPath) {
+    return (
+      <img
+        src={item.svgPath}
+        alt={item.shortcodes[0]}
+        className="inline-block h-[1em] w-[1em] align-text-bottom"
+      />
+    )
+  } else {
+    return <>{item.character}</>
+  }
+}
