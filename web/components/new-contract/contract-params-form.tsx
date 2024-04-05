@@ -15,7 +15,7 @@ import {
   Visibility,
 } from 'common/contract'
 import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
-import { BTE_USER_ID, PARTNER_USER_IDS } from 'common/envs/constants'
+import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
@@ -288,7 +288,7 @@ export function ContractParamsForm(props: {
     isValidQuestion &&
     ante !== undefined &&
     ante !== null &&
-    (ante <= balance || creator.id === BTE_USER_ID) &&
+    ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
