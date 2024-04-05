@@ -80,8 +80,8 @@ export const multiSellMainMain = async (
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
     )
-    const loanAmountByAnswerId = mapValues(betsByAnswerId, () =>
-      sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+    const loanAmountByAnswerId = mapValues(betsByAnswerId, (bets) =>
+      sumBy(bets, (bet) => bet.loanAmount ?? 0)
     )
     const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
       sumBy(bets, (b) => b.shares)
