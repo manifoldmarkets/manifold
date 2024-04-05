@@ -1,4 +1,13 @@
-import { groupBy, keyBy, last, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  last,
+  mapValues,
+  maxBy,
+  sortBy,
+  sumBy,
+  uniqBy,
+} from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
@@ -36,7 +45,7 @@ import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
 import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeCommentsOnContract } from 'web/hooks/use-comments-supabase'
+import { useRealtimeCommentsPolling } from 'web/hooks/use-comments-supabase'
 import { ParentFeedComment } from '../feed/feed-comments'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
@@ -200,11 +209,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   // )
 
   // Supabase use realtime comments
-  const { rows, loadNewer } = useRealtimeCommentsOnContract(
+  const rows = useRealtimeCommentsPolling(
     contract.id,
-    user ? user.id : undefined
+    maxBy(props.comments, 'createdTime')?.createdTime ?? 0,
+    500
   )
-  const comments = (rows ?? props.comments).filter(
+  const comments = [...props.comments, ...(rows ?? [])].filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
 
@@ -365,7 +375,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         contract={contract}
         clearReply={clearReply}
         trackingLocation={'contract page'}
-        onSubmit={loadNewer}
         commentTypes={['comment', 'repost']}
       />
 
@@ -461,7 +470,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               ? childrensBounties[parent.id]
               : undefined
           }
-          onSubmitReply={loadNewer}
           bets={bets?.filter(
             (b) =>
               b.replyToCommentId &&

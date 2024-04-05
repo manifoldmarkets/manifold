@@ -10,10 +10,12 @@ import {
   getNumContractComments,
 } from 'web/lib/supabase/comments'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { maxBy } from 'lodash'
-import { tsToMillis } from 'common/supabase/utils'
+import { maxBy, orderBy } from 'lodash'
+import { Row, tsToMillis } from 'common/supabase/utils'
 import { convertContractComment } from 'common/supabase/comments'
 import { api } from 'web/lib/firebase/api'
+import { db } from 'web/lib/supabase/db'
+import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -94,4 +96,45 @@ export function useRealtimeComments(
     getAllCommentRows(limit)
   )
   return rows?.map((r) => r.data as ContractComment)
+}
+
+export function useRealtimeCommentsPolling(
+  contractId: string,
+  afterTime: number,
+  ms: number,
+  initialLimit = 50
+) {
+  const allRowsQ = db
+    .from('contract_comments')
+    .select()
+    .eq('contract_id', contractId)
+    .gt('created_time', new Date(afterTime).toISOString())
+
+  const newRowsOnlyQ = (rows: Row<'contract_comments'>[] | undefined) => {
+    // You can't use allRowsQ here because it keeps tacking on another gt clause
+    const latestCreatedTime = maxBy(rows, 'created_time')?.created_time
+    return db
+      .from('contract_comments')
+      .select()
+      .eq('contract_id', contractId)
+      .gt(
+        'created_time',
+        latestCreatedTime ?? new Date(afterTime ?? 0).toISOString()
+      )
+  }
+
+  const results = usePersistentSupabasePolling(
+    'contract_comments',
+    allRowsQ,
+    newRowsOnlyQ,
+    `contract-comments-${contractId}-${ms}ms-${initialLimit}limit-v1`,
+    {
+      ms,
+      deps: [contractId],
+      shouldUseLocalStorage: false,
+    }
+  )
+  return results
+    ? orderBy(results.map(convertContractComment), 'createdTime', 'desc')
+    : undefined
 }
