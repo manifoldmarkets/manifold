@@ -231,11 +231,7 @@ export function BetsSummary(props: {
         />
       )}
       {includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (
-        <MultiNumericSellPanel
-          contract={contract}
-          user={includeSellButton}
-          userBets={userBets}
-        />
+        <MultiNumericSellPanel contract={contract} userBets={userBets} />
       )}
     </Col>
   )

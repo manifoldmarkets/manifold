@@ -1,4 +1,4 @@
-import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
+import { CPMMNumericContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
 import { Button } from 'web/components/buttons/button'
@@ -6,7 +6,7 @@ import { useMemo, useState } from 'react'
 import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import clsx from 'clsx'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/firebase/api'
 import { removeUndefinedProps } from 'common/util/object'
@@ -17,28 +17,28 @@ import {
   answerTextToRange,
   getRangeContainingValues,
   answerToMidpoint,
+  formatExpectedValue,
 } from 'common/multi-numeric'
 import { Bet } from 'common/bet'
-import { User } from 'common/user'
-import { SellSharesModal } from 'web/components/bet/sell-row'
 import { calculateCpmmMultiArbitrageSellYesEqually } from 'common/calculate-cpmm-arbitrage'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { SizedContainer } from 'web/components/sized-container'
 import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
+import { getInvested } from 'common/calculate'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
   userBets: Bet[]
-  user: User
 }) => {
-  const { contract, user, userBets } = props
+  const { contract, userBets } = props
   const { answers, min: minimum, max: maximum } = contract
-  const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
+  const expectedValue = getExpectedValue(contract)
   const userNonRedemptionBetsByAnswer = groupBy(
     userBets.filter((bet) => bet.shares !== 0),
     (bet) => bet.answerId
   )
+
   const answersToSharesIn = mapValues(userNonRedemptionBetsByAnswer, (bets) =>
     sumBy(bets, (b) => b.shares)
   )
@@ -51,7 +51,6 @@ export const NumericSellPanel = (props: {
   const [debouncedRange, setDebouncedRange] =
     useState<[number, number]>(rangeWithSharesIn)
 
-  const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id
@@ -77,7 +76,6 @@ export const NumericSellPanel = (props: {
 
   const sellShares = async () => {
     setIsSubmitting(true)
-    setError(undefined)
     toast
       .promise(
         api(
@@ -88,8 +86,8 @@ export const NumericSellPanel = (props: {
           })
         ),
         {
-          loading: 'Placing bet...',
-          success: 'Bet placed!',
+          loading: 'Selling shares...',
+          success: 'Shares sold!',
           error: (e) => e.message,
         }
       )
@@ -116,27 +114,30 @@ export const NumericSellPanel = (props: {
   }
 
   const {
-    currentReturnPercent,
     potentialPayout,
     potentialExpectedValue,
     potentialContractState,
+    loanPaid,
+    invested,
   } = useMemo(() => {
     const nullRes = {
-      currentReturnPercent: '0%',
       potentialPayout: 0,
       potentialExpectedValue: expectedValue,
       potentialContractState: contract,
+      loanPaid: 0,
+      invested: 0,
     }
     if (sharesInAnswersToSell <= 0 || !answerIdsToSell.length) return nullRes
+    const betsOnAnswersToSell = userBets.filter(
+      (bet) => bet.answerId && answerIdsToSell.includes(bet.answerId)
+    )
+    const invested = getInvested(contract, betsOnAnswersToSell)
+
     const userBetsToSellByAnswerId = groupBy(
-      userBets.filter(
-        (bet) =>
-          bet.shares !== 0 &&
-          bet.answerId &&
-          answerIdsToSell.includes(bet.answerId)
-      ),
+      betsOnAnswersToSell.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
     )
+    const loanPaid = sumBy(betsOnAnswersToSell, (bet) => bet.loanAmount ?? 0)
     const { newBetResults, updatedAnswers } =
       calculateCpmmMultiArbitrageSellYesEqually(
         contract.answers,
@@ -148,14 +149,7 @@ export const NumericSellPanel = (props: {
       newBetResults.flatMap((r) => r.takers),
       (taker) => -taker.amount
     )
-    const amountPaid = sum(
-      answerIdsToSell
-        .map((a) => userNonRedemptionBetsByAnswer[a])
-        .flatMap((bets) => bets.map((bet) => bet.amount))
-    )
 
-    const currentReturn = (potentialPayout - amountPaid) / amountPaid
-    const currentReturnPercent = formatPercent(currentReturn)
     const potentialContractState = {
       ...contract,
       answers: answers.map(
@@ -163,10 +157,10 @@ export const NumericSellPanel = (props: {
       ),
     }
     const potentialExpectedValue = getExpectedValue(potentialContractState)
-    // console.log('potentialPayout', potentialPayout)
 
     return {
-      currentReturnPercent,
+      loanPaid,
+      invested,
       potentialPayout,
       potentialExpectedValue,
       potentialContractState,
@@ -178,7 +172,9 @@ export const NumericSellPanel = (props: {
     JSON.stringify(balanceByUserId),
     debouncedRange,
   ])
-
+  const isLoanOwed = loanPaid > 0
+  const profit = potentialPayout - invested
+  const netProceeds = potentialPayout - loanPaid
   return (
     <Col className={'gap-2'}>
       <Col className={'mb-2 gap-2'}>
@@ -205,14 +201,42 @@ export const NumericSellPanel = (props: {
           max={maximum}
         />
       </Col>
+      <Row className="text-ink-500  items-center justify-between gap-2">
+        <span className={''}>Sale value:</span>
+        <span className="text-ink-700">{formatMoney(potentialPayout)}</span>
+      </Row>
+      {isLoanOwed && (
+        <Row className="text-ink-500  items-center justify-between gap-2">
+          Loan repayment
+          <span className="text-ink-700">
+            {formatMoney(Math.floor(-loanPaid))}
+          </span>
+        </Row>
+      )}
+      <Row className="text-ink-500 items-center justify-between gap-2">
+        Profit
+        <span className="text-ink-700">{formatMoney(profit)}</span>
+      </Row>
+      <Row className="items-center justify-between">
+        <div className="text-ink-500">{'Expected value'}</div>
+        <div>
+          {formatExpectedValue(expectedValue, contract)}
+          <span className="mx-2">→</span>
+          {formatExpectedValue(potentialExpectedValue, potentialContractState)}
+        </div>
+      </Row>
+      <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
+        Payout
+        <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+      </Row>
+
       <Row className={'justify-end'}>
         <Button
           disabled={isSubmitting || sharesInAnswersToSell <= 0}
           onClick={sellShares}
           loading={isSubmitting}
         >
-          Sell {Math.floor(sharesInAnswersToSell)} shares for{' '}
-          {formatMoney(potentialPayout)}
+          Sell {Math.floor(sharesInAnswersToSell)} shares
         </Button>
       </Row>
     </Col>
@@ -220,10 +244,9 @@ export const NumericSellPanel = (props: {
 }
 export const MultiNumericSellPanel = (props: {
   contract: CPMMNumericContract
-  user: User
   userBets: Bet[]
 }) => {
-  const { contract, user, userBets } = props
+  const { contract, userBets } = props
   const [showSellPanel, setShowSellPanel] = useState(false)
   const totalShares = sumBy(userBets, (bet) => bet.shares)
   if (floatingEqual(totalShares, 0)) return null
@@ -241,42 +264,8 @@ export const MultiNumericSellPanel = (props: {
         {showSellPanel ? 'Hide' : 'Show'} sell shares panel
       </Button>
       {showSellPanel && (
-        <NumericSellPanel user={user} contract={contract} userBets={userBets} />
+        <NumericSellPanel contract={contract} userBets={userBets} />
       )}
-    </Col>
-  )
-}
-export const SellButton = (props: {
-  answer: Answer
-  contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
-  user: User
-}) => {
-  const { answer, contract, userBets, user } = props
-  const [open, setOpen] = useState(false)
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  if (floatingEqual(sharesSum, 0)) return null
-  return (
-    <Col>
-      {open && (
-        <SellSharesModal
-          contract={contract}
-          user={user}
-          userBets={userBets}
-          shares={Math.abs(sharesSum)}
-          sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
-          setOpen={setOpen}
-          answerId={answer.id}
-        />
-      )}
-      <Button color={'gray-outline'} onClick={() => setOpen(true)}>
-        <Col>
-          <span>{answer.text}</span>
-          <span>Sell {Math.round(sharesSum)} shares</span>
-        </Col>
-      </Button>
     </Col>
   )
 }

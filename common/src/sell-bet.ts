@@ -286,12 +286,18 @@ export const getCpmmMultiSellSharesInfo = (
   const now = Date.now()
 
   return newBetResults.map((b, i) => ({
-    ...getNewSellBetInfo(b, now, answers, contract, loanPaid),
+    ...getNewSellBetInfo(
+      b,
+      now,
+      answers,
+      contract,
+      loanPaid / newBetResults.length
+    ),
     otherBetResults:
       i === 0
         ? otherBetResults.map((ob) => ({
             ...ob,
-            ...getNewSellBetInfo(ob, now, answers, contract, loanPaid),
+            ...getNewSellBetInfo(ob, now, answers, contract, 0),
           }))
         : [],
   }))
