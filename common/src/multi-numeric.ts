@@ -169,3 +169,5 @@ export const getExpectedValuesArray = (contract: CPMMNumericContract) => {
     }))
   )
 }
+
+export const NEW_GRAPH_COLOR = '#d968ff'

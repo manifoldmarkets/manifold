@@ -273,7 +273,7 @@ export const getCpmmMultiSellSharesInfo = (
   userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  loanPaid: number
+  loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
   const { otherBetResults, newBetResults } =
     calculateCpmmMultiArbitrageSellYesEqually(
@@ -286,18 +286,12 @@ export const getCpmmMultiSellSharesInfo = (
   const now = Date.now()
 
   return newBetResults.map((b, i) => ({
-    ...getNewSellBetInfo(
-      b,
-      now,
-      answers,
-      contract,
-      loanPaid / newBetResults.length
-    ),
+    ...getNewSellBetInfo(b, now, answers, contract, loanPaidByAnswerId),
     otherBetResults:
       i === 0
         ? otherBetResults.map((ob) => ({
             ...ob,
-            ...getNewSellBetInfo(ob, now, answers, contract, 0),
+            ...getNewSellBetInfo(ob, now, answers, contract, {}),
           }))
         : [],
   }))
@@ -308,7 +302,7 @@ const getNewSellBetInfo = (
   now: number,
   initialAnswers: Answer[],
   contract: Contract,
-  loanPaid: number
+  loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
   const { takers, cpmmState, answer: updatedAnswer, outcome } = newBetResult
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -318,6 +312,7 @@ const getNewSellBetInfo = (
     (a) => a.id === updatedAnswer.id
   ) as Answer
   const isRedemption = amount === 0
+  const loanPaid = loanPaidByAnswerId[oldAnswer.id] ?? 0
   const newBet: CandidateBet<Bet> = removeUndefinedProps({
     contractId: contract.id,
     outcome,

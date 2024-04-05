@@ -13,7 +13,7 @@ import { log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { Contract } from 'common/contract'
 import { User } from 'common/user'
-import { groupBy, mapValues, sumBy } from 'lodash'
+import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 
@@ -76,10 +76,12 @@ export const multiSellMainMain = async (
       snap.docs.map((doc) => doc.data() as Bet)
     )
 
-    const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
     const betsByAnswerId = groupBy(
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
+    )
+    const loanAmountByAnswerId = mapValues(betsByAnswerId, () =>
+      sumBy(userBets, (bet) => bet.loanAmount ?? 0)
     )
     const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
       sumBy(bets, (b) => b.shares)
@@ -92,7 +94,6 @@ export const multiSellMainMain = async (
         `You specified an answer to sell in which you have 0 shares.`
       )
 
-    const loanPaid = !isFinite(loanAmount) ? 0 : loanAmount
     const betGroupId = crypto.randomBytes(12).toString('hex')
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
@@ -100,7 +101,7 @@ export const multiSellMainMain = async (
       betsByAnswerId,
       unfilledBets,
       balancesByUserId,
-      loanPaid
+      loanAmountByAnswerId
     )
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const bets = betResults.map((newBetResult) =>
@@ -116,6 +117,7 @@ export const multiSellMainMain = async (
         betGroupId
       )
     )
+    const loanPaid = sum(Object.values(loanAmountByAnswerId))
     if (loanPaid > 0 && bets.length > 0) {
       trans.update(userDoc, {
         balance: FieldValue.increment(-loanPaid),

@@ -22,6 +22,7 @@ import {
   getExpectedValue,
   answerTextToRange,
   getExpectedValuesArray,
+  NEW_GRAPH_COLOR,
 } from 'common/multi-numeric'
 import { XIcon } from '@heroicons/react/solid'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
@@ -235,30 +236,41 @@ export const NumericBetPanel = (props: {
   return (
     <Col className={'gap-2'}>
       {showDistribution && !!mode && (
-        <Col className={'mb-2 gap-2'}>
-          <SizedContainer
-            className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
-          >
-            {(w, h) => (
-              <MultiNumericDistributionChart
-                contract={contract}
-                updatedContract={potentialContractState}
-                width={w}
-                height={h}
-                range={range}
-              />
-            )}
-          </SizedContainer>
-          <RangeSlider
-            step={Math.abs(maximum - minimum) / contract.answers.length}
-            color={'indigo'}
-            className={'mr-8 h-4 items-end'}
-            highValue={range[1]}
-            lowValue={range[0]}
-            setValues={onChangeRange}
-            min={minimum}
-            max={maximum}
-          />
+        <Col className={'gap-2'}>
+          <Row className={'gap-1'}>
+            <svg width="20" height="20" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="50" fill={NEW_GRAPH_COLOR} />
+            </svg>
+            <span className={'text-ink-500 text-sm'}>
+              Distribution after purchase
+            </span>
+          </Row>
+          <Col className={'mb-2 gap-2'}>
+            <SizedContainer
+              className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
+            >
+              {(w, h) => (
+                <MultiNumericDistributionChart
+                  newColor={NEW_GRAPH_COLOR}
+                  contract={contract}
+                  updatedContract={potentialContractState}
+                  width={w}
+                  height={h}
+                  range={range}
+                />
+              )}
+            </SizedContainer>
+            <RangeSlider
+              step={Math.abs(maximum - minimum) / contract.answers.length}
+              color={'indigo'}
+              className={'mr-8 h-4 items-end'}
+              highValue={range[1]}
+              lowValue={range[0]}
+              setValues={onChangeRange}
+              min={minimum}
+              max={maximum}
+            />
+          </Col>
         </Col>
       )}
       {mode === undefined ? (
@@ -374,9 +386,20 @@ export const MultiNumericDistributionChart = (props: {
   width: number
   height: number
   range: [number, number]
-  sharesRange?: [number, number]
+  newColor: string
+  sharesProps?: {
+    sharesRange: [number, number]
+  }
 }) => {
-  const { contract, range, sharesRange, updatedContract, width, height } = props
+  const {
+    contract,
+    newColor,
+    range,
+    sharesProps,
+    updatedContract,
+    width,
+    height,
+  } = props
   const { min, max } = contract
   const data = useMemo(() => getExpectedValuesArray(contract), [contract])
   const otherData = useMemo(
@@ -402,7 +425,8 @@ export const MultiNumericDistributionChart = (props: {
       otherData={otherData}
       color={NUMERIC_GRAPH_COLOR}
       verticalLines={range}
-      sharesRange={sharesRange}
+      sharesProps={sharesProps}
+      newColor={newColor}
     />
   )
 }

@@ -4,7 +4,7 @@ import { Answer } from 'common/answer'
 import { Button } from 'web/components/buttons/button'
 import { useMemo, useState } from 'react'
 import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
-import { floatingEqual } from 'common/util/math'
+import { floatingEqual, floatingGreater } from 'common/util/math'
 import clsx from 'clsx'
 import { formatMoney } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
@@ -18,6 +18,7 @@ import {
   getRangeContainingValues,
   answerToMidpoint,
   formatExpectedValue,
+  NEW_GRAPH_COLOR,
 } from 'common/multi-numeric'
 import { Bet } from 'common/bet'
 import { calculateCpmmMultiArbitrageSellYesEqually } from 'common/calculate-cpmm-arbitrage'
@@ -26,6 +27,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { getInvested } from 'common/calculate'
+import { DiagonalPattern } from 'web/components/charts/generic-charts'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
@@ -42,14 +44,16 @@ export const NumericSellPanel = (props: {
   const answersToSharesIn = mapValues(userNonRedemptionBetsByAnswer, (bets) =>
     sumBy(bets, (b) => b.shares)
   )
-  const answersWithSharesIn = answers.filter((a) => answersToSharesIn[a.id] > 0)
-  const rangeWithSharesIn = getRangeContainingValues(
+  const answersWithSharesIn = answers.filter((a) =>
+    floatingGreater(answersToSharesIn[a.id], 0)
+  )
+  const sharesRange = getRangeContainingValues(
     answersWithSharesIn.map(answerToMidpoint),
     contract
   )
-  const [range, setRange] = useState<[number, number]>(rangeWithSharesIn)
+  const [range, setRange] = useState<[number, number]>(sharesRange)
   const [debouncedRange, setDebouncedRange] =
-    useState<[number, number]>(rangeWithSharesIn)
+    useState<[number, number]>(sharesRange)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
@@ -104,6 +108,12 @@ export const NumericSellPanel = (props: {
 
   const onChangeRange = (low: number, high: number) => {
     if (low === high) return
+    if (low < sharesRange[0]) {
+      low = sharesRange[0]
+    }
+    if (high > sharesRange[1]) {
+      high = sharesRange[1]
+    }
     setRange([
       roundToEpsilon(low),
       roundToEpsilon(
@@ -175,20 +185,46 @@ export const NumericSellPanel = (props: {
   const isLoanOwed = loanPaid > 0
   const profit = potentialPayout - invested
   const netProceeds = potentialPayout - loanPaid
+  const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
   return (
     <Col className={'gap-2'}>
+      <Row className={'gap-1'}>
+        <svg width="20" height="20" viewBox="0 0 120 120">
+          <defs>
+            <DiagonalPattern
+              size={20}
+              strokeWidth={5}
+              id={patternId}
+              color={'#007bcb'}
+            />
+          </defs>
+          <circle cx="60" cy="60" r="50" fill={`url(#${patternId})`} />
+        </svg>
+        <span className={'text-ink-500 text-sm'}>
+          Range you own shares ({sharesRange[0]} - {sharesRange[1]})
+        </span>
+      </Row>
+      <Row className={'gap-1'}>
+        <svg width="20" height="20" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill={NEW_GRAPH_COLOR} />
+        </svg>
+        <span className={'text-ink-500 text-sm'}>Distribution after sale</span>
+      </Row>
       <Col className={'mb-2 gap-2'}>
         <SizedContainer
           className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
         >
           {(w, h) => (
             <MultiNumericDistributionChart
+              newColor={NEW_GRAPH_COLOR}
               contract={contract}
               updatedContract={potentialContractState}
               width={w}
               height={h}
               range={range}
-              sharesRange={rangeWithSharesIn}
+              sharesProps={{
+                sharesRange: sharesRange,
+              }}
             />
           )}
         </SizedContainer>
