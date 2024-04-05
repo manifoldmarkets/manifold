@@ -6,6 +6,7 @@ import {
   curveLinear,
   curveStepAfter,
   curveStepBefore,
+  line,
 } from 'd3-shape'
 import { last, mapValues, range } from 'lodash'
 import {
@@ -136,28 +137,50 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
+  verticalLines?: [number, number]
+  sharesRange?: [number, number]
 }) => {
-  const { data, otherData, w, h, color, xScale, yScale, curve } = props
+  const {
+    data,
+    otherData,
+    sharesRange,
+    w,
+    h,
+    color,
+    xScale,
+    yScale,
+    curve,
+    verticalLines,
+  } = props
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
 
   const { xAxis, yAxis } = useMemo(() => {
-    const xAxis = axisBottom<number>(xScale).ticks(w / 100)
+    const xTicks = xScale.ticks(w / 100)
+    const xAxis = axisBottom<number>(xScale).tickValues(
+      verticalLines ? [...xTicks, ...verticalLines] : xTicks
+    )
+
     const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n))
     return { xAxis, yAxis }
-  }, [w, xScale, yScale])
+  }, [w, xScale, yScale, verticalLines])
+
+  const aline = line<[number, number]>()
+    .x((d) => xScale(d[0]))
+    .y((d) => yScale(d[1]))
 
   return (
     <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
-      <AreaWithTopStroke
+      <AreaWithTopStrokeAndRange
         color={color}
         data={data}
         px={px}
         py0={py0}
         py1={py1}
         curve={curve ?? curveLinear}
+        range={sharesRange}
       />
       <AreaWithTopStroke
         color={'#d968ff'}
@@ -167,7 +190,84 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
         py1={py1}
         curve={curve ?? curveLinear}
       />
+      {verticalLines && (
+        <>
+          <path
+            d={
+              aline([
+                [verticalLines[0], yScale.domain()[0]],
+                [verticalLines[0], yScale.domain()[1]],
+              ]) ?? undefined
+            }
+            stroke="gray"
+            strokeWidth={1}
+            strokeDasharray={4}
+          />
+          <path
+            d={
+              aline([
+                [verticalLines[1], yScale.domain()[0]],
+                [verticalLines[1], yScale.domain()[1]],
+              ]) ?? undefined
+            }
+            stroke="gray"
+            strokeWidth={1}
+            strokeDasharray={4}
+          />
+        </>
+      )}
     </SVGChart>
+  )
+}
+
+const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
+  color: string
+  data: P[]
+  px: (p: P) => number
+  py0: number
+  py1: (p: P) => number
+  curve: CurveFactory
+  range?: [number, number]
+  rangeColor?: string
+}) => {
+  const { color, data, px, py0, py1, curve, range, rangeColor } = props
+
+  if (!range) {
+    return (
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+    )
+  }
+
+  const [rangeStart, rangeEnd] = range
+  const rangeData = data.filter((p) => p.x >= rangeStart && p.x <= rangeEnd)
+  const regularData = data.filter((p) => p.x <= rangeStart || p.x > rangeEnd)
+
+  return (
+    <>
+      <AreaWithTopStroke
+        color={color}
+        data={regularData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+      <AreaWithTopStroke
+        color={rangeColor || '#14b8a5'}
+        data={rangeData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+    </>
   )
 }
 

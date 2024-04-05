@@ -245,6 +245,7 @@ export const NumericBetPanel = (props: {
                 updatedContract={potentialContractState}
                 width={w}
                 height={h}
+                range={range}
               />
             )}
           </SizedContainer>
@@ -372,8 +373,10 @@ export const MultiNumericDistributionChart = (props: {
   updatedContract: CPMMNumericContract
   width: number
   height: number
+  range: [number, number]
+  sharesRange?: [number, number]
 }) => {
-  const { contract, updatedContract, width, height } = props
+  const { contract, range, sharesRange, updatedContract, width, height } = props
   const { min, max } = contract
   const data = useMemo(() => getExpectedValuesArray(contract), [contract])
   const otherData = useMemo(
@@ -398,6 +401,8 @@ export const MultiNumericDistributionChart = (props: {
       data={data}
       otherData={otherData}
       color={NUMERIC_GRAPH_COLOR}
+      verticalLines={range}
+      sharesRange={sharesRange}
     />
   )
 }

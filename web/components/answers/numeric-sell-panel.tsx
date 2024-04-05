@@ -187,6 +187,8 @@ export const NumericSellPanel = (props: {
               updatedContract={potentialContractState}
               width={w}
               height={h}
+              range={range}
+              sharesRange={rangeWithSharesIn}
             />
           )}
         </SizedContainer>
@@ -201,42 +203,37 @@ export const NumericSellPanel = (props: {
           max={maximum}
         />
       </Col>
-      <Row className="text-ink-500  items-center justify-between gap-2">
-        <span className={''}>Sale value:</span>
-        <span className="text-ink-700">{formatMoney(potentialPayout)}</span>
+      <Row className="text-ink-500 mx-4 items-center justify-between sm:justify-end sm:gap-8 ">
+        <Col className={'text-ink-500 gap-2'}>
+          <span className={''}>Sale value:</span>
+          {isLoanOwed && <span>Loan repayment</span>}
+          Profit
+          <div className="text-ink-500">{'Expected value'}</div>
+          Payout
+        </Col>
+        <Col className={'text-ink-700 items-end gap-2'}>
+          <span className="text-ink-700">{formatMoney(potentialPayout)}</span>
+          {isLoanOwed && <span>{formatMoney(Math.floor(-loanPaid))}</span>}
+          <span className="text-ink-700">{formatMoney(profit)}</span>
+          <div>
+            {formatExpectedValue(expectedValue, contract)}
+            <span className="mx-2">→</span>
+            {formatExpectedValue(
+              potentialExpectedValue,
+              potentialContractState
+            )}
+          </div>
+          <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+        </Col>
       </Row>
-      {isLoanOwed && (
-        <Row className="text-ink-500  items-center justify-between gap-2">
-          Loan repayment
-          <span className="text-ink-700">
-            {formatMoney(Math.floor(-loanPaid))}
-          </span>
-        </Row>
-      )}
-      <Row className="text-ink-500 items-center justify-between gap-2">
-        Profit
-        <span className="text-ink-700">{formatMoney(profit)}</span>
-      </Row>
-      <Row className="items-center justify-between">
-        <div className="text-ink-500">{'Expected value'}</div>
-        <div>
-          {formatExpectedValue(expectedValue, contract)}
-          <span className="mx-2">→</span>
-          {formatExpectedValue(potentialExpectedValue, potentialContractState)}
-        </div>
-      </Row>
-      <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
-        Payout
-        <span className="text-ink-700">{formatMoney(netProceeds)}</span>
-      </Row>
-
       <Row className={'justify-end'}>
         <Button
           disabled={isSubmitting || sharesInAnswersToSell <= 0}
           onClick={sellShares}
           loading={isSubmitting}
         >
-          Sell {Math.floor(sharesInAnswersToSell)} shares
+          Sell {Math.floor(sharesInAnswersToSell)} shares between {range[0]} and{' '}
+          {range[1]}
         </Button>
       </Row>
     </Col>
