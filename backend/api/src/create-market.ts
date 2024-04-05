@@ -146,7 +146,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const { amountSuppliedByUser } = marketCreationCosts(
+    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
       user,
       ante,
       !!specialLiquidityPerAnswer
@@ -204,7 +204,19 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       })
     )
 
-    await runCreateMarketTxn(contractRef.id, ante, user, userDoc.ref, trans)
+    await runCreateMarketTxn({
+      contractId: contractRef.id,
+      userId,
+      amountSuppliedByUser,
+      amountSuppliedByHouse,
+      transaction: trans,
+    })
+
+    if (amountSuppliedByHouse > 0)
+      trans.update(userDoc.ref, {
+        freeQuestionsCreated: FieldValue.increment(1),
+      })
+
     trans.create(contractRef, contract)
     return contract
   })
@@ -235,21 +247,24 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   return contract
 }
 
-const runCreateMarketTxn = async (
-  contractId: string,
-  ante: number,
-  user: User,
-  userDocRef: admin.firestore.DocumentReference,
-  trans: Transaction
-) => {
-  const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
-    user,
-    ante
-  )
+const runCreateMarketTxn = async (args: {
+  contractId: string
+  userId: string
+  amountSuppliedByUser: number
+  amountSuppliedByHouse: number
+  transaction: Transaction
+}) => {
+  const {
+    contractId,
+    userId,
+    amountSuppliedByUser,
+    amountSuppliedByHouse,
+    transaction,
+  } = args
 
   if (amountSuppliedByUser > 0) {
-    await runTxn(trans, {
-      fromId: user.id,
+    const { status, message } = await runTxn(transaction, {
+      fromId: userId,
       fromType: 'USER',
       toId: contractId,
       toType: 'CONTRACT',
@@ -257,10 +272,13 @@ const runCreateMarketTxn = async (
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
     })
+
+    if (status === 'error')
+      throw new APIError(400, message ?? 'Unkown error when trying to add ante')
   }
 
   if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(trans, {
+    const { status, message } = await runTxnFromBank(transaction, {
       amount: amountSuppliedByHouse,
       category: 'CREATE_CONTRACT_ANTE',
       toId: contractId,
@@ -268,12 +286,13 @@ const runCreateMarketTxn = async (
       fromType: 'BANK',
       token: 'M$',
     })
-  }
 
-  if (amountSuppliedByHouse > 0)
-    trans.update(userDocRef, {
-      freeQuestionsCreated: FieldValue.increment(1),
-    })
+    if (status === 'error')
+      throw new APIError(
+        500,
+        message ?? 'Unknown error when trying to add ante'
+      )
+  }
 }
 
 async function getCloseTimestamp(
