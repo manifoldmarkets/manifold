@@ -149,7 +149,18 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
-        // Multi-buy
+        answerIds: z.array(z.string()).min(1),
+      })
+      .strict(),
+  },
+  'multi-sell': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as (CandidateBet & { betId: string })[],
+    props: z
+      .object({
+        contractId: z.string(),
         answerIds: z.array(z.string()).min(1),
       })
       .strict(),

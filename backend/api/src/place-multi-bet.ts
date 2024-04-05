@@ -1,16 +1,13 @@
 import * as admin from 'firebase-admin'
 
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { BetInfo, CandidateBet, getNewMultiCpmmBetsInfo } from 'common/new-bet'
-import { Bet, LimitBet } from 'common/bet'
+import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Answer } from 'common/answer'
-import { CpmmState } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   getRoundedLimitProb,
   getUnfilledBetsAndUserBalances,
-  maker,
   processNewBetResult,
   validateBet,
 } from 'api/place-bet'
@@ -43,68 +40,50 @@ export const placeMultiBetMain = async (
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed.')
 
-    const newBetResults = await (async (): Promise<
-      (BetInfo & {
-        makers?: maker[]
-        ordersToCancel?: LimitBet[]
-        otherBetResults?: {
-          answer: Answer
-          bet: CandidateBet<Bet>
-          cpmmState: CpmmState
-          makers: maker[]
-          ordersToCancel: LimitBet[]
-        }[]
-      })[]
-    > => {
-      if (mechanism != 'cpmm-multi-1') {
-        throw new APIError(
-          400,
-          'Contract type/mechanism not supported (or is no longer)'
-        )
-      }
-      const { shouldAnswersSumToOne } = contract
-      const { answerIds, limitProb, expiresAt } = body
-      if (expiresAt && expiresAt < Date.now())
-        throw new APIError(403, 'Bet cannot expire in the past.')
-      const answersSnap = await trans.get(contractDoc.collection('answersCpmm'))
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-      const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
-      if (!betOnAnswers) throw new APIError(404, 'Answers not found')
-      if ('resolution' in betOnAnswers && betOnAnswers.resolution)
-        throw new APIError(403, 'Answer is resolved and cannot be bet on')
-      if (shouldAnswersSumToOne && answers.length < 2)
-        throw new APIError(
-          403,
-          'Cannot bet until at least two answers are added.'
-        )
+    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
+      throw new APIError(400, 'Contract type/mechanism not supported')
+    }
+    const { shouldAnswersSumToOne } = contract
+    const { answerIds, limitProb, expiresAt } = body
+    if (expiresAt && expiresAt < Date.now())
+      throw new APIError(403, 'Bet cannot expire in the past.')
+    const answersSnap = await trans.get(contractDoc.collection('answersCpmm'))
+    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+    const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
+    if (!betOnAnswers) throw new APIError(404, 'Answers not found')
+    if ('resolution' in betOnAnswers && betOnAnswers.resolution)
+      throw new APIError(403, 'Answer is resolved and cannot be bet on')
+    if (shouldAnswersSumToOne && answers.length < 2)
+      throw new APIError(
+        403,
+        'Cannot bet until at least two answers are added.'
+      )
 
-      const roundedLimitProb = getRoundedLimitProb(limitProb)
-      const unfilledBetsAndBalances = await Promise.all(
-        answerIds.map(
-          async (answerId) =>
-            await getUnfilledBetsAndUserBalances(trans, contractDoc, answerId)
-        )
+    const roundedLimitProb = getRoundedLimitProb(limitProb)
+    const unfilledBetsAndBalances = await Promise.all(
+      answerIds.map(
+        async (answerId) =>
+          await getUnfilledBetsAndUserBalances(trans, contractDoc, answerId)
       )
-      const unfilledBets = unfilledBetsAndBalances.flatMap(
-        (b) => b.unfilledBets
-      )
-      let balancesByUserId: Record<string, number> = {}
-      unfilledBetsAndBalances.forEach((b) => {
-        balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
-      })
+    )
+    const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
+    let balancesByUserId: Record<string, number> = {}
+    unfilledBetsAndBalances.forEach((b) => {
+      balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
+    })
 
-      return getNewMultiCpmmBetsInfo(
-        contract,
-        answers,
-        betOnAnswers,
-        'YES',
-        amount,
-        roundedLimitProb,
-        unfilledBets,
-        balancesByUserId,
-        expiresAt
-      )
-    })()
+    const newBetResults = getNewMultiCpmmBetsInfo(
+      contract,
+      answers,
+      betOnAnswers,
+      'YES',
+      amount,
+      roundedLimitProb,
+      unfilledBets,
+      balancesByUserId,
+      expiresAt
+    )
+
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')
     return newBetResults.map((newBetResult) =>

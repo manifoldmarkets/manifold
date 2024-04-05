@@ -10,6 +10,7 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import {
+  Contract,
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
@@ -19,6 +20,10 @@ import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees, noFees } from './fees'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import { removeUndefinedProps } from './util/object'
+import {
+  ArbitrageBetArray,
+  calculateCpmmMultiArbitrageSellYesEqually,
+} from 'common/calculate-cpmm-arbitrage'
 
 export type CandidateBet<T extends Bet> = Omit<
   T,
@@ -260,5 +265,80 @@ export const getCpmmMultiSellBetInfo = (
     makers,
     ordersToCancel,
     otherResultsWithBet,
+  }
+}
+export const getCpmmMultiSellSharesInfo = (
+  contract: CPMMMultiContract | CPMMNumericContract,
+  answers: Answer[],
+  userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  loanPaid: number
+) => {
+  const { otherBetResults, newBetResults } =
+    calculateCpmmMultiArbitrageSellYesEqually(
+      answers,
+      userBetsByAnswerIdToSell,
+      unfilledBets,
+      balanceByUserId
+    )
+
+  const now = Date.now()
+
+  return newBetResults.map((b, i) => ({
+    ...getNewSellBetInfo(b, now, answers, contract, loanPaid),
+    otherBetResults:
+      i === 0
+        ? otherBetResults.map((ob) => ({
+            ...ob,
+            ...getNewSellBetInfo(ob, now, answers, contract, loanPaid),
+          }))
+        : [],
+  }))
+}
+
+const getNewSellBetInfo = (
+  newBetResult: ArbitrageBetArray[number],
+  now: number,
+  initialAnswers: Answer[],
+  contract: Contract,
+  loanPaid: number
+) => {
+  const { takers, cpmmState, answer: updatedAnswer, outcome } = newBetResult
+  const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const amount = sumBy(takers, 'amount')
+  const shares = sumBy(takers, 'shares')
+  const oldAnswer = initialAnswers.find(
+    (a) => a.id === updatedAnswer.id
+  ) as Answer
+  const isRedemption = amount === 0
+  const newBet: CandidateBet<Bet> = removeUndefinedProps({
+    contractId: contract.id,
+    outcome,
+    orderAmount: amount,
+    isCancelled: false,
+    amount,
+    loanAmount: isRedemption ? 0 : -loanPaid,
+    shares,
+    answerId: oldAnswer.id,
+    fills: takers,
+    isFilled: true,
+    probBefore: oldAnswer.prob,
+    probAfter,
+    createdTime: now,
+    fees: noFees,
+    isAnte: false,
+    isRedemption,
+    isChallenge: false,
+    visibility: contract.visibility,
+  })
+
+  // The bet prop is for otherBetResults and newBet is for newBetResults
+  return {
+    newBet,
+    bet: newBet,
+    newPool: cpmmState.pool,
+    makers: newBetResult.makers,
+    ordersToCancel: newBetResult.ordersToCancel,
   }
 }

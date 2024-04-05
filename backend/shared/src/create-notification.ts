@@ -81,7 +81,7 @@ import { convertUser } from 'common/supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import {
   getRangeContainingValues,
-  answerTextToMidpoint,
+  answerToMidpoint,
 } from 'common/multi-numeric'
 
 type recipients_to_reason_texts = {
@@ -949,11 +949,8 @@ export const createUniqueBettorBonusNotification = async (
         ? getRangeContainingValues(
             contract.answers
               .filter((a) => allBetOnAnswerIds.includes(a.id))
-              .map((a) => a.text)
-              .map(answerTextToMidpoint),
-            contract.answers.map((a) => a.text),
-            contract.min,
-            contract.max
+              .map(answerToMidpoint),
+            contract
           )
         : undefined
 

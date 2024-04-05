@@ -160,6 +160,7 @@ import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
 import { getPhoneNumber } from 'api/get-phone-number'
+import { multiSell } from 'api/multi-sell'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -305,6 +306,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'verify-phone-number': verifyPhoneNumber,
   'request-otp': requestOTP,
   'phone-number': getPhoneNumber,
+  'multi-sell': multiSell,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
