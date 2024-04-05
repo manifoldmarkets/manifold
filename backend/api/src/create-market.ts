@@ -49,7 +49,10 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 
-type Body = ValidatedAPIParams<'market'>
+type Body = ValidatedAPIParams<'market'> & {
+  specialLiquidityPerAnswer?: number
+}
+
 const firestore = admin.firestore()
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
@@ -421,15 +424,6 @@ function validateMarketBody(body: Body) {
 
   if (outcomeType === 'POLL') {
     ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
-  }
-
-  if (body.specialLiquidityPerAnswer) {
-    if (outcomeType !== 'MULTIPLE_CHOICE' || body.shouldAnswersSumToOne)
-      throw new APIError(
-        400,
-        'specialLiquidityPerAnswer can only be used with independent MULTIPLE_CHOICE markets'
-      )
-    specialLiquidityPerAnswer = body.specialLiquidityPerAnswer
   }
 
   return {

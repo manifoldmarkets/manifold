@@ -334,7 +334,6 @@ export const createMarketProps = z
     loverUserId2: z.string().optional(),
     matchCreatorId: z.string().optional(),
     isLove: z.boolean().optional(),
-    specialLiquidityPerAnswer: z.number().positive().optional(),
   })
   .and(
     z.union([
