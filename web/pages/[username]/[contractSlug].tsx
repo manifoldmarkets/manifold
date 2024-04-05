@@ -49,7 +49,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useBets, useRealtimeBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
@@ -646,13 +646,15 @@ function YourTrades(props: { contract: Contract }) {
   const { contract } = props
   const user = useUser()
 
-  const { rows } = useRealtimeBets({
+  const betFilterOptions = {
     contractId: contract.id,
     userId: user === undefined ? 'loading' : user?.id ?? '_',
     filterAntes: true,
     order: 'asc',
-  })
-  const userBets = rows ?? []
+  } as const
+  const staticBets = useBets(betFilterOptions)
+  const { rows } = useRealtimeBets(betFilterOptions)
+  const userBets = rows ?? staticBets ?? []
 
   const visibleUserBets = userBets.filter(
     (bet) => !bet.isRedemption && bet.amount !== 0
