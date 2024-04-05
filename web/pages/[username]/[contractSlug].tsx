@@ -222,12 +222,17 @@ export function ContractPageContent(props: ContractParams) {
   const lastBetTime = first(historyData.bets)?.createdTime
   const isNumber = contract.outcomeType === 'NUMBER'
 
-  const rows = useRealtimeBetsPolling(contract.id, 500, {
-    contractId: contract.id,
-    afterTime: lastBetTime,
-    filterRedemptions: contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
-    order: 'asc',
-  })
+  const rows = useRealtimeBetsPolling(
+    contract.id,
+    {
+      contractId: contract.id,
+      afterTime: lastBetTime,
+      filterRedemptions:
+        contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
+      order: 'asc',
+    },
+    500
+  )
 
   const newBets = rows ?? []
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)

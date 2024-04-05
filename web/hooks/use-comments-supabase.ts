@@ -101,8 +101,7 @@ export function useRealtimeComments(
 export function useRealtimeCommentsPolling(
   contractId: string,
   afterTime: number,
-  ms: number,
-  initialLimit = 50
+  ms: number
 ) {
   const allRowsQ = db
     .from('contract_comments')
@@ -127,7 +126,7 @@ export function useRealtimeCommentsPolling(
     'contract_comments',
     allRowsQ,
     newRowsOnlyQ,
-    `contract-comments-${contractId}-${ms}ms-${initialLimit}limit-v1`,
+    `contract-comments-${contractId}-${ms}ms-v1`,
     {
       ms,
       deps: [contractId],
