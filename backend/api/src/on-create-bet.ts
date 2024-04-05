@@ -78,18 +78,20 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
-  joinContractChannel(contract.id)
-    .then(async (channel) => {
-      await channel.send({
-        type: 'broadcast',
-        event: 'bet',
-        payload: normalBets.length === 1 ? normalBets[0] : normalBets,
-      })
-      await channel.unsubscribe()
-    })
-    .catch((e) => {
-      log('Failed to send bet event to channel', e)
-    })
+  // Temporarily disable joining contract channel.
+  // TODO: I think mqp was going to change this to broadcast the bet without joining a channel.
+  // joinContractChannel(contract.id)
+  //   .then(async (channel) => {
+  //     await channel.send({
+  //       type: 'broadcast',
+  //       event: 'bet',
+  //       payload: normalBets.length === 1 ? normalBets[0] : normalBets,
+  //     })
+  //     await channel.unsubscribe()
+  //   })
+  //   .catch((e) => {
+  //     log('Failed to send bet event to channel', e)
+  //   })
 
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
