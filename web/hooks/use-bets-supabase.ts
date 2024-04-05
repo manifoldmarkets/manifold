@@ -2,12 +2,18 @@ import { Bet, BetFilter } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from 'web/hooks/use-event'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { convertBet, getBetRows, getBets } from 'common/supabase/bets'
+import {
+  applyBetsFilter,
+  convertBet,
+  getBetRows,
+  getBets,
+} from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { maxBy } from 'lodash'
-import { tsToMillis } from 'common/supabase/utils'
+import { maxBy, orderBy } from 'lodash'
+import { Row, tsToMillis } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -95,4 +101,47 @@ export function useBets(options?: BetFilter) {
   }, [options])
 
   return bets
+}
+
+export function useRealtimeBetsPolling(
+  contractId: string,
+  ms: number,
+  options: BetFilter,
+  initialLimit = 50
+) {
+  let allRowsQ = db.from('contract_bets').select('*')
+  allRowsQ = allRowsQ.order('created_time', {
+    ascending: options?.order === 'asc',
+  })
+  allRowsQ = applyBetsFilter(allRowsQ, options)
+
+  const newRowsOnlyQ = (rows: Row<'contract_bets'>[] | undefined) => {
+    // You can't use allRowsQ here because it keeps tacking on another gt clause
+    const { afterTime, ...rest } = options
+    const latestCreatedTime = maxBy(rows, 'created_time')?.created_time
+    let q = db
+      .from('contract_bets')
+      .select('*')
+      .gt(
+        'created_time',
+        latestCreatedTime ?? new Date(afterTime ?? 0).toISOString()
+      )
+    q = applyBetsFilter(q, rest)
+    return q
+  }
+
+  const results = usePersistentSupabasePolling(
+    'contract_bets',
+    allRowsQ,
+    newRowsOnlyQ,
+    `contract-bets-${contractId}-${ms}ms-${initialLimit}limit-v1`,
+    {
+      ms,
+      deps: [contractId],
+      shouldUseLocalStorage: false,
+    }
+  )
+  return results
+    ? orderBy(results.map(convertBet), 'createdTime', 'desc')
+    : undefined
 }
