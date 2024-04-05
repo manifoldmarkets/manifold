@@ -220,6 +220,32 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
   )
 }
 
+const HatchFillPattern = (props: {
+  id: string
+  color: string
+  strokeWidth: number
+  height: number
+  size: number
+}) => {
+  const { id, color, height, strokeWidth, size } = props
+  return (
+    <pattern
+      id={id}
+      patternUnits="userSpaceOnUse"
+      width={size}
+      height={size}
+      patternTransform="rotate(-45)"
+    >
+      <rect
+        width={strokeWidth}
+        height={height}
+        transform="translate(0,0)"
+        fill={color}
+      ></rect>
+    </pattern>
+  )
+}
+
 const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
   color: string
   data: P[]
@@ -247,20 +273,27 @@ const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
 
   const [rangeStart, rangeEnd] = range
   const rangeData = data.filter((p) => p.x >= rangeStart && p.x <= rangeEnd)
-  const regularData = data.filter((p) => p.x <= rangeStart || p.x > rangeEnd)
+  const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
 
   return (
     <>
       <AreaWithTopStroke
         color={color}
-        data={regularData}
+        data={data}
         px={px}
         py0={py0}
         py1={py1}
         curve={curve}
       />
+      <HatchFillPattern
+        id={patternId}
+        color={rangeColor ?? '#007bcb'}
+        strokeWidth={3}
+        size={15}
+        height={15}
+      />
       <AreaWithTopStroke
-        color={rangeColor || '#14b8a5'}
+        color={`url(#${patternId})`}
         data={rangeData}
         px={px}
         py0={py0}
