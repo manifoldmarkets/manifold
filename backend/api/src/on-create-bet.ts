@@ -78,15 +78,18 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
-  // NOTE: Temporarily disabled to see if it fixes our API server.
-  // joinContractChannel(contract.id).then(async (channel) => {
-  //   await channel.send({
-  //     type: 'broadcast',
-  //     event: 'bet',
-  //     payload: normalBets.length === 1 ? normalBets[0] : normalBets,
-  //   })
-  //   await channel.unsubscribe()
-  // })
+  joinContractChannel(contract.id)
+    .then(async (channel) => {
+      await channel.send({
+        type: 'broadcast',
+        event: 'bet',
+        payload: normalBets.length === 1 ? normalBets[0] : normalBets,
+      })
+      await channel.unsubscribe()
+    })
+    .catch((e) => {
+      log('Failed to send bet event to channel', e)
+    })
 
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
