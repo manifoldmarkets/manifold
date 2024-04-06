@@ -229,7 +229,8 @@ export function FeedContractCard(props: {
             onClick={trackClick}
             style={{ fontWeight: 500 }}
           >
-            <VisibilityIcon contract={contract} /> {removeEmojis(contract.question)}
+            <VisibilityIcon contract={contract} />{' '}
+            {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
             <ContractStatusLabel
