@@ -181,7 +181,7 @@ export const NumericSellPanel = (props: {
   }, [
     JSON.stringify(userBets),
     stringifiedAnswers,
-    unfilledBets,
+    JSON.stringify(unfilledBets),
     JSON.stringify(balanceByUserId),
     debouncedRange,
   ])
@@ -287,7 +287,7 @@ export const NumericSellPanel = (props: {
         </Col>
       </Row>
       <Row className={'justify-between sm:gap-36 md:justify-center'}>
-        <Button onClick={cancel} className={'ml-2'} color={'gray-outline'}>
+        <Button onClick={cancel} className={''} color={'gray-outline'}>
           Cancel
         </Button>
         <Button
