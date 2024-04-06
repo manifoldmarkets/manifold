@@ -127,7 +127,10 @@ export async function getContractParams(
       ? getSingleBetPoints(allBetPoints, contract)
       : isMulti
       ? isNumber
-        ? getMultiNumericBetPoints(allBetPoints, contract)
+        ? getFilledInMultiNumericBetPoints(
+            groupBy(allBetPoints, 'answerId'),
+            contract
+          )
         : getMultiBetPoints(allBetPoints, contract)
       : []
 
@@ -209,13 +212,11 @@ export const getMultiBetPoints = (
 
   return serializeMultiPoints(pointsByAns)
 }
-export const getMultiNumericBetPoints = (
-  betPoints: { x: number; y: number; answerId: string }[],
+export const getFilledInMultiNumericBetPoints = (
+  pointsByAnswerId: { [answerId: string]: { x: number; y: number }[] },
   contract: CPMMNumericContract
 ) => {
   const { answers } = contract
-
-  const rawPointsByAns = groupBy(betPoints, 'answerId')
 
   const subsetOfAnswers = sortBy(
     answers,
@@ -223,12 +224,14 @@ export const getMultiNumericBetPoints = (
     (a) => -a.totalLiquidity
   ).slice(0, MAX_ANSWERS)
 
-  const allUniqueCreatedTimes = new Set(betPoints.map((a) => a.x))
+  const allUniqueCreatedTimes = new Set(
+    Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
+  )
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
   subsetOfAnswers.forEach((ans) => {
     const startY = getInitialAnswerProbability(contract, ans)
 
-    const rawPoints = rawPointsByAns[ans.id] ?? []
+    const rawPoints = pointsByAnswerId[ans.id] ?? []
     const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
     // Bc we sometimes don't create low prob bets, we need to fill in the gaps
     const missingTimes = Array.from(allUniqueCreatedTimes).filter(

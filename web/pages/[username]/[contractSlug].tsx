@@ -235,6 +235,7 @@ export function ContractPageContent(props: ContractParams) {
   )
 
   const newBets = rows ?? []
+  const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
     props.totalBets +
@@ -246,7 +247,7 @@ export function ContractPageContent(props: ContractParams) {
       ...historyData.bets,
       ...(isNumber ? newBets : newBetsWithoutRedemptions),
     ],
-    [historyData.bets, newBets]
+    [historyData.bets, stringifiedNewBets]
   )
 
   const betPoints = useMemo(() => {
@@ -271,7 +272,7 @@ export function ContractPageContent(props: ContractParams) {
       }))
       return [...points, ...newPoints]
     }
-  }, [historyData.points, newBets])
+  }, [historyData.points, stringifiedNewBets])
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
