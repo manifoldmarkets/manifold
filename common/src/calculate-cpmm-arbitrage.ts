@@ -1139,8 +1139,9 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
     }
     oppositeBuyResults.push(...yesBets)
     const totalYesAmount = sum(yesAmounts)
-    // TODO: after adding limit orders, we need to keep track of the matchedBetIds in the redemption bets we're throwing away
-    const saleBets = noBuyResults.noBetResults
+    const { noBetResults, extraMana } = noBuyResults
+    const saleBets = noBetResults
+      // TODO: after adding limit orders, we need to keep track of the matchedBetIds in the redemption bets we're throwing away
       .filter((betResult) => answerIdsToSellNow.includes(betResult.answer.id))
       .map((betResult) => {
         const answer = updatedAnswers.find((a) => a.id === betResult.answer.id)!
@@ -1151,7 +1152,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
             {
               matchedBetId: null,
               amount:
-                -(sharesToSell - totalYesAmount + noBuyResults.extraMana) /
+                -(sharesToSell - totalYesAmount + extraMana) /
                 answerIdsToSellNow.length,
               shares: -sharesToSell,
               timestamp: first(betResult.takers)?.timestamp ?? Date.now(),
@@ -1167,7 +1168,6 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
     for (const answerIdToSell of answerIdsToSellNow) {
       sharesByAnswerId[answerIdToSell] -= sharesToSell
     }
-
     const answersToSellRemaining = Object.values(sharesByAnswerId).filter(
       (shares) => shares > 0
     )
