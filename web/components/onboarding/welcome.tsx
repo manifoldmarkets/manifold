@@ -186,7 +186,7 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} size={'xl'} position={'bottom'}>
+    <Modal open={open} size={'lg'} position={'bottom'}>
       <Col className="bg-canvas-0 w-screen rounded-md px-4 py-6 text-sm sm:px-8 md:text-lg lg:w-full">
         {availablePages[page]}
         <Col>
@@ -312,7 +312,11 @@ function PredictionMarketPage() {
       <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
-      <div className="mt-2 text-lg">Bet on the answer you think is right.</div>
+      <div className="mt-2 text-lg">
+        We've sent you{' '}
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
+        play money. Bet on the answer you think is right.
+      </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than
         polls.
@@ -418,19 +422,16 @@ function TopicsPage(props: {
         What interests you?
       </div>
       <div className="mb-4 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. Now select 3 or more topics to help use curate your home
-        page.
+        Select 3 or more topics to personalize your experience.
       </div>
-      <Col className="h-[25rem] overflow-y-auto sm:h-[32rem]">
-        <Col className={''}>
+      <Col className="h-[25rem] gap-2 overflow-y-auto sm:h-[32rem]">
+        <Col className={'gap-1'}>
           <div className="text-ink-700 text-sm">
             {userInterestedTopics.length > 0 || userBetInTopics.length > 0
               ? 'Suggested'
               : 'Trending now'}
           </div>
-          <Row className={'flex-wrap gap-1 '}>
+          <Row className={'flex-wrap gap-1'}>
             {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
                 {pillButton(group.name, removeEmojis(group.name), [group.id])}
@@ -440,7 +441,7 @@ function TopicsPage(props: {
         </Col>
 
         {topics.map((topic) => (
-          <div className="mb-3 " key={topic + '-section'}>
+          <Col className="mb-3 gap-1" key={topic + '-section'}>
             <div className="text-ink-700 text-sm">{topic.slice(3)}</div>
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
               {getSubtopics(topic)
@@ -449,7 +450,7 @@ function TopicsPage(props: {
                   return pillButton(subtopicWithEmoji, subtopic, groupIds)
                 })}
             </Row>
-          </div>
+          </Col>
         ))}
       </Col>
       <Row className={'mt-4 justify-between'}>
