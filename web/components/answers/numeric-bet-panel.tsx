@@ -23,6 +23,7 @@ import {
   answerTextToRange,
   getExpectedValuesArray,
   NEW_GRAPH_COLOR,
+  answerToRange,
 } from 'common/multi-numeric'
 import { XIcon } from '@heroicons/react/solid'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
@@ -229,6 +230,7 @@ export const NumericBetPanel = (props: {
     debouncedRange,
     mode,
   ])
+  const step = answerToRange(answers[0])[1] - answerToRange(answers[0])[0]
 
   return (
     <Col className={'gap-2'}>
@@ -277,7 +279,7 @@ export const NumericBetPanel = (props: {
               )}
             </SizedContainer>
             <RangeSlider
-              step={Math.abs(maximum - minimum) / contract.answers.length}
+              step={step}
               color={'indigo'}
               className={'mr-8 h-4 items-end'}
               highValue={range[1]}
