@@ -4,7 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { useMemo, useState } from 'react'
-import { capitalize, debounce, find, first, sumBy } from 'lodash'
+import { capitalize, debounce, find, first, minBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
@@ -24,6 +24,7 @@ import {
   getExpectedValuesArray,
   NEW_GRAPH_COLOR,
   answerToRange,
+  getPrecision,
 } from 'common/multi-numeric'
 import { XIcon } from '@heroicons/react/solid'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
@@ -142,14 +143,21 @@ export const NumericBetPanel = (props: {
       }, 200),
     []
   )
+  const availableRanges = useMemo(
+    () => answers.map(answerToRange),
+    [answers.length]
+  )
 
   const onChangeRange = (low: number, high: number) => {
     if (low === high) return
+    const start =
+      minBy(availableRanges, (r) => Math.abs(r[0] - low))?.[0] ?? minimum
+    const end =
+      minBy(availableRanges, (r) => Math.abs(r[1] - high))?.[1] ?? maximum
+    const range = [start, end]
     setRange([
-      roundToEpsilon(low),
-      roundToEpsilon(
-        high !== range[1] ? (high === maximum ? maximum : high) : range[1]
-      ),
+      roundToEpsilon(start),
+      roundToEpsilon(end !== start ? (end === maximum ? maximum : end) : end),
     ])
     debounceRange(range)
   }
@@ -157,15 +165,30 @@ export const NumericBetPanel = (props: {
   const changeMode = (newMode: 'less than' | 'more than' | 'about right') => {
     const newExpectedValue = getExpectedValue(contract)
     setExpectedValue(newExpectedValue)
-
+    const answerTexts = answers.map((a) => a.text)
     const midPointBucket = getRangeContainingValue(
       newExpectedValue,
-      answers.map((a) => a.text),
+      answerTexts,
       minimum,
       maximum
     )
     if (newMode === 'about right') {
-      setRange(midPointBucket)
+      const quarterRange = (maximum - minimum) / 4
+      const quarterAbove = Math.min(newExpectedValue + quarterRange, maximum)
+      const quarterBelow = Math.max(newExpectedValue - quarterRange, minimum)
+      const start = getRangeContainingValue(
+        quarterBelow,
+        answerTexts,
+        minimum,
+        maximum
+      )
+      const end = getRangeContainingValue(
+        quarterAbove,
+        answerTexts,
+        minimum,
+        maximum
+      )
+      setRange([start[0], end[1]])
     } else if (newMode === 'less than') {
       setRange([minimum, midPointBucket[1]])
     } else if (newMode === 'more than') {
@@ -230,7 +253,7 @@ export const NumericBetPanel = (props: {
     debouncedRange,
     mode,
   ])
-  const step = answerToRange(answers[0])[1] - answerToRange(answers[0])[0]
+  const step = getPrecision(minimum, maximum, answers.length)
 
   return (
     <Col className={'gap-2'}>
