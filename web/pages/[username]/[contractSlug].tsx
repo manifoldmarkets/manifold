@@ -243,10 +243,14 @@ export function ContractPageContent(props: ContractParams) {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => [
-      ...historyData.bets,
-      ...(isNumber ? newBets : newBetsWithoutRedemptions),
-    ],
+    () =>
+      uniqBy(
+        [
+          ...historyData.bets,
+          ...(isNumber ? newBets : newBetsWithoutRedemptions),
+        ],
+        'id'
+      ),
     [historyData.bets, stringifiedNewBets]
   )
 

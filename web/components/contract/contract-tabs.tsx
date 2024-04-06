@@ -214,7 +214,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     maxBy(props.comments, 'createdTime')?.createdTime ?? 0,
     500
   )
-  const comments = [...props.comments, ...(rows ?? [])].filter(
+  const comments = uniqBy([...props.comments, ...(rows ?? [])], 'id').filter(
     (c) => !blockedUserIds.includes(c.userId)
   )
 
