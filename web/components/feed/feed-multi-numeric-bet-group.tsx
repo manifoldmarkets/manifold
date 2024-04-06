@@ -57,8 +57,8 @@ function BetGroupStatusText(props: {
     expectedValueAfter,
   } = groupMultiNumericBets(bets, contract)
   if (!bet) return null
-  const { amount, isApi } = bet
-  const bought = amount >= 0 ? 'bought' : 'sold'
+  const { amount, isApi, shares } = bet
+  const bought = shares >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = formatMoney(absAmount)
 

@@ -20,6 +20,7 @@ import {
 import { SellRow } from 'web/components/bet/sell-row'
 import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
+import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -229,13 +230,9 @@ export function BetsSummary(props: {
           contract={contract as CPMMMultiContract}
         />
       )}
-      {/*{includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (*/}
-      {/*  <SellPanel*/}
-      {/*    contract={contract}*/}
-      {/*    user={includeSellButton}*/}
-      {/*    userBets={userBets}*/}
-      {/*  />*/}
-      {/*)}*/}
+      {includeSellButton && contract.outcomeType === 'NUMBER' && userBets && (
+        <MultiNumericSellPanel contract={contract} userBets={userBets} />
+      )}
     </Col>
   )
 }

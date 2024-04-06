@@ -6,6 +6,7 @@ import {
   curveLinear,
   curveStepAfter,
   curveStepBefore,
+  line,
 } from 'd3-shape'
 import { last, mapValues, range } from 'lodash'
 import {
@@ -133,41 +134,167 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
   w: number
   h: number
   color: string
+  newColor: string
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
+  verticalLines?: [number, number]
+  shadedRanges?: [number, number][]
 }) => {
-  const { data, otherData, w, h, color, xScale, yScale, curve } = props
+  const {
+    data,
+    otherData,
+    shadedRanges,
+    w,
+    h,
+    newColor,
+    color,
+    xScale,
+    yScale,
+    curve,
+    verticalLines,
+  } = props
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py0 = yScale(yScale.domain()[0])
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
 
   const { xAxis, yAxis } = useMemo(() => {
-    const xAxis = axisBottom<number>(xScale).ticks(w / 100)
+    const xTicks = xScale.ticks(w / 100)
+    const xAxis = axisBottom<number>(xScale).tickValues(
+      verticalLines ? [...xTicks, ...verticalLines] : xTicks
+    )
+
     const yAxis = axisRight<number>(yScale).tickFormat((n) => formatPct(n))
     return { xAxis, yAxis }
-  }, [w, xScale, yScale])
+  }, [w, xScale, yScale, verticalLines])
+
+  const aline = line<[number, number]>()
+    .x((d) => xScale(d[0]))
+    .y((d) => yScale(d[1]))
 
   return (
     <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
-      <AreaWithTopStroke
+      <AreaWithTopStrokeAndRange
         color={color}
         data={data}
         px={px}
         py0={py0}
         py1={py1}
         curve={curve ?? curveLinear}
+        shadedRanges={shadedRanges}
       />
       <AreaWithTopStroke
-        color={'#d968ff'}
+        color={newColor}
         data={otherData}
         px={px}
         py0={py0}
         py1={py1}
         curve={curve ?? curveLinear}
       />
+      {verticalLines && (
+        <>
+          <path
+            d={
+              aline([
+                [verticalLines[0], yScale.domain()[0]],
+                [verticalLines[0], yScale.domain()[1]],
+              ]) ?? undefined
+            }
+            stroke="gray"
+            strokeWidth={1}
+            strokeDasharray={4}
+          />
+          <path
+            d={
+              aline([
+                [verticalLines[1], yScale.domain()[0]],
+                [verticalLines[1], yScale.domain()[1]],
+              ]) ?? undefined
+            }
+            stroke="gray"
+            strokeWidth={1}
+            strokeDasharray={4}
+          />
+        </>
+      )}
     </SVGChart>
+  )
+}
+
+export const DiagonalPattern = (props: {
+  id: string
+  color: string
+  strokeWidth?: number
+  size?: number
+}) => {
+  const { id, color, strokeWidth = 3, size = 15 } = props
+  return (
+    <pattern
+      id={id}
+      patternUnits="userSpaceOnUse"
+      width={size}
+      height={size}
+      patternTransform="rotate(-45)"
+    >
+      <rect width={strokeWidth} height={size} fill={color}></rect>
+    </pattern>
+  )
+}
+
+const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
+  color: string
+  data: P[]
+  px: (p: P) => number
+  py0: number
+  py1: (p: P) => number
+  curve: CurveFactory
+  rangeColor?: string
+  shadedRanges?: [number, number][]
+}) => {
+  const { color, data, px, py0, py1, curve, shadedRanges, rangeColor } = props
+
+  if (!shadedRanges) {
+    return (
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+    )
+  }
+
+  const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
+  const rangeAreas = shadedRanges.map(([rangeStart, rangeEnd], index) => {
+    const rangeData = data.filter((p) => p.x >= rangeStart && p.x <= rangeEnd)
+    return (
+      <AreaWithTopStroke
+        key={index}
+        color={`url(#${patternId})`}
+        data={rangeData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+    )
+  })
+  return (
+    <>
+      <AreaWithTopStroke
+        color={color}
+        data={data}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+      <DiagonalPattern id={patternId} color={rangeColor ?? '#007bcb'} />
+      {rangeAreas}
+    </>
   )
 }
 
