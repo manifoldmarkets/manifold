@@ -174,7 +174,7 @@ export function FeedContractCard(props: {
     >
       <Col
         className={clsx(
-          'w-full flex-col pt-2',
+          'w-full pt-2',
           size === 'xs' ? '' : 'gap-1.5 '
         )}
       >
@@ -225,37 +225,32 @@ export function FeedContractCard(props: {
           </Row>
         </Row>
 
-        <div
-          className={clsx(
-            'flex flex-col sm:flex-row sm:justify-between sm:gap-4',
-            size === 'xs' ? '' : 'gap-1'
-          )}
-        >
+        <Col className={clsx(size === 'xs' ? '' : 'gap-4')}>
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
             onClick={trackClick}
+            style={{ fontWeight: 500 }}
           >
             <VisibilityIcon contract={contract} /> {contract.question}
           </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-            {isBinaryCpmm && !isClosed && (
-              <BetButton
-                feedItem={item}
-                contract={contract}
-                user={user}
-                className="h-min"
-              />
-            )}
-          </Row>
-        </div>
+          {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+              chanceLabel
+            />
+          )}
+          {isBinaryCpmm && !isClosed && (
+            <BetButton
+              feedItem={item}
+              contract={contract}
+              user={user}
+              className="h-min"
+            />
+          )}
+        </Col>
       </Col>
 
       <div

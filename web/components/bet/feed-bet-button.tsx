@@ -37,19 +37,19 @@ export function BetButton(props: {
     <div className={className}>
       <Button
         color="green-outline"
-        size="2xs"
+        size="xs"
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        Yes
+        Bet Yes
       </Button>
 
       <Button
         color="red-outline"
-        size="2xs"
+        size="xs"
         onClick={() => handleBetButtonClick('NO')}
       >
-        No
+        Bet No
       </Button>
 
       {open && (
