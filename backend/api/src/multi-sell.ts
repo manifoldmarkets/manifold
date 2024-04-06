@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
-import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
   getUnfilledBetsAndUserBalances,
@@ -19,16 +18,8 @@ import { FieldValue } from 'firebase-admin/firestore'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await multiSellMainMain(props, auth.uid, isApi)
-}
-
-// Note: this returns a continuation function that should be run for consistency.
-export const multiSellMainMain = async (
-  body: ValidatedAPIParams<'multi-sell'>,
-  uid: string,
-  isApi: boolean
-) => {
-  const { contractId } = body
+  const { contractId, answerIds } = props
+  const { uid } = auth
 
   const results = await firestore.runTransaction(async (trans) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
@@ -49,7 +40,6 @@ export const multiSellMainMain = async (
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
       throw new APIError(400, 'Contract type/mechanism not supported')
     }
-    const { answerIds } = body
     const answersSnap = await trans.get(contractDoc.collection('answersCpmm'))
     const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
     const answersToSell = answers.filter((a) => answerIds.includes(a.id))
