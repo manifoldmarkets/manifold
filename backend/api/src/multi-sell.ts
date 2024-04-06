@@ -65,15 +65,15 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
     const userBets = userBetsSnap.flatMap((snap) =>
       snap.docs.map((doc) => doc.data() as Bet)
     )
-
-    const betsByAnswerId = groupBy(
+    const loanAmountByAnswerId = mapValues(
+      groupBy(userBets, 'answerId'),
+      (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
+    )
+    const nonRedemptionBetsByAnswerId = groupBy(
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
     )
-    const loanAmountByAnswerId = mapValues(betsByAnswerId, (bets) =>
-      sumBy(bets, (bet) => bet.loanAmount ?? 0)
-    )
-    const sharesByAnswerId = mapValues(betsByAnswerId, (bets) =>
+    const sharesByAnswerId = mapValues(nonRedemptionBetsByAnswerId, (bets) =>
       sumBy(bets, (b) => b.shares)
     )
     const minShares = Math.min(...Object.values(sharesByAnswerId))
@@ -88,7 +88,7 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
       answers,
-      betsByAnswerId,
+      nonRedemptionBetsByAnswerId,
       unfilledBets,
       balancesByUserId,
       loanAmountByAnswerId
