@@ -1145,7 +1145,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
       .map((betResult) => {
         const answer = updatedAnswers.find((a) => a.id === betResult.answer.id)!
         const { poolYes, poolNo } = answer
-        const betToReturn = {
+        return {
           ...betResult,
           takers: [
             {
@@ -1159,9 +1159,6 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
             },
             //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
           ],
-        }
-        return {
-          ...betToReturn,
           cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
           answer,
         }
