@@ -391,7 +391,7 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 flex h-12 w-full transition-colors',
+                'sticky -top-px z-50 h-12 w-full transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -427,7 +427,9 @@ export function ContractPageContent(props: ContractParams) {
           </div>
           {coverImageUrl && (
             <Row className="h-10 w-full justify-between">
-              <BackButton className="pr-8" />
+              <div>
+                <BackButton className="pr-8" />
+              </div>
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
