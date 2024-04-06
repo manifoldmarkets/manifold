@@ -27,6 +27,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
 import { useState } from 'react'
+import { removeEmojis } from 'common/util/string'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -269,7 +270,7 @@ function ContractQuestion(props: {
             <ManaCircleIcon className="text-primary-600 mb-[2px] mr-1 inline h-4 w-4" />
           </Tooltip>
         )}
-        {contract.question}
+        {removeEmojis(contract.question)}
       </div>
     </Row>
   )

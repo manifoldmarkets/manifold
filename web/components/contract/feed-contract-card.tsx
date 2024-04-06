@@ -47,6 +47,7 @@ import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { removeUndefinedProps } from 'common/util/object'
+import { removeEmojis } from 'common/util/string'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -228,7 +229,7 @@ export function FeedContractCard(props: {
             onClick={trackClick}
             style={{ fontWeight: 500 }}
           >
-            <VisibilityIcon contract={contract} /> {contract.question}
+            <VisibilityIcon contract={contract} /> {removeEmojis(contract.question)}
           </Link>
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
             <ContractStatusLabel
