@@ -168,9 +168,7 @@ export function ContractStatusLabel(props: {
       ) : (
         <span className={clsx(probTextColor, className)}>
           {formatPercentShort(getDisplayProbability(contract))}
-          {chanceLabel && (
-            <span className="text-sm font-normal"> chance</span>
-          )}
+          {chanceLabel && <span className="text-sm font-normal"> chance</span>}
         </span>
       )
     }
