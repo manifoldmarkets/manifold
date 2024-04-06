@@ -26,8 +26,6 @@ import {
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { useABTest } from 'web/hooks/use-ab-test'
-import { NewUserGoals } from 'web/components/home/new-user-goals'
 import { ManifestBanner, useManifestBanner } from 'web/components/nav/banner'
 
 export async function getStaticProps() {
@@ -98,39 +96,30 @@ export function HomeContent(props: {
 
   const hasAgedOutOfNewUserGoals =
     (user?.createdTime ?? 0) + DAY_MS * 1 < Date.now()
-  const newUserGoalsVariant = useABTest('new user goals', [
-    'enabled',
-    'disabled',
-  ])
-  const newUserGoalsEnabled =
-    !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
 
   if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
     return <LoadingIndicator />
   }
   return (
     <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
-      {user &&
-        !newUserGoalsEnabled &&
-        freeQuestionsEnabled &&
-        remaining > 0 && (
-          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
-            <Row className="flex-1 flex-wrap gap-x-1">
-              <span>🎉 You've got {remaining} free questions!</span>
-              <span>
-                Expires in{' '}
-                {simpleFromNow(
-                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-                )}
-              </span>
-            </Row>
-            <CreateQuestionButton
-              className={'flex-1'}
-              color="indigo-outline"
-              size="xs"
-            />
-          </Col>
-        )}
+      {user && freeQuestionsEnabled && remaining > 0 && (
+        <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
+          <Row className="flex-1 flex-wrap gap-x-1">
+            <span>🎉 You've got {remaining} free questions!</span>
+            <span>
+              Expires in{' '}
+              {simpleFromNow(
+                user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+              )}
+            </span>
+          </Row>
+          <CreateQuestionButton
+            className={'flex-1'}
+            color="indigo-outline"
+            size="xs"
+          />
+        </Col>
+      )}
 
       {hasAgedOutOfNewUserGoals && user && (
         <DailyStats
@@ -141,13 +130,6 @@ export function HomeContent(props: {
 
       {privateUser && (
         <Col className={clsx('w-full sm:px-2')}>
-          {user && newUserGoalsEnabled && (
-            <>
-              <NewUserGoals user={user} />
-              <div className="mt-4" />
-            </>
-          )}
-
           {welcomeTopicsEnabled && memberTopicsWithContracts && (
             <WelcomeTopicSections
               memberTopicsWithContracts={memberTopicsWithContracts}
