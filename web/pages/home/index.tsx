@@ -94,9 +94,6 @@ export function HomeContent(props: {
     welcomeTopicsEnabled
   )
 
-  const hasAgedOutOfNewUserGoals =
-    (user?.createdTime ?? 0) + DAY_MS * 1 < Date.now()
-
   if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
     return <LoadingIndicator />
   }
@@ -121,7 +118,7 @@ export function HomeContent(props: {
         </Col>
       )}
 
-      {hasAgedOutOfNewUserGoals && user && (
+      {user && (
         <DailyStats
           className="bg-canvas-50 sticky top-9 z-50 mb-1 w-full px-2 pb-2 pt-1"
           user={user}
