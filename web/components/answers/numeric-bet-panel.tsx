@@ -3,7 +3,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { capitalize, debounce, find, first, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -62,10 +62,7 @@ export const NumericBetPanel = (props: {
     'less than' | 'more than' | 'about right' | undefined
   >(undefined)
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [showDistribution, setShowDistribution] = useState(isAdvancedTrader)
-  useEffect(() => {
-    setShowDistribution(isAdvancedTrader)
-  }, [isAdvancedTrader])
+  const [showDistribution, setShowDistribution] = useState(true)
   const [error, setError] = useState<string | undefined>()
   const [inputRef, focusAmountInput] = useFocus()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -341,7 +338,7 @@ export const NumericBetPanel = (props: {
                 }}
                 className={'whitespace-nowrap'}
               >
-                {showDistribution ? 'Default' : 'Advanced'}
+                {showDistribution ? 'Simple' : 'Advanced'}
               </Button>
               <IconButton
                 className={'w-12'}
