@@ -28,12 +28,14 @@ import { MultiNumericDistributionChart } from 'web/components/answers/numeric-be
 import { Row } from 'web/components/layout/row'
 import { getInvested } from 'common/calculate'
 import { DiagonalPattern } from 'web/components/charts/generic-charts'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
   userBets: Bet[]
+  cancel: () => void
 }) => {
-  const { contract, userBets } = props
+  const { contract, userBets, cancel } = props
   const { answers, min: minimum, max: maximum } = contract
   const expectedValue = getExpectedValue(contract)
   const userNonRedemptionBetsByAnswer = groupBy(
@@ -187,28 +189,49 @@ export const NumericSellPanel = (props: {
   const netProceeds = potentialPayout - loanPaid
   const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
   return (
-    <Col className={'gap-2'}>
-      <Row className={'gap-1'}>
-        <svg width="20" height="20" viewBox="0 0 120 120">
-          <defs>
-            <DiagonalPattern
-              size={20}
-              strokeWidth={5}
-              id={patternId}
-              color={'#007bcb'}
+    <Col className={'mt-2 gap-2'}>
+      <span className={'mb-2 text-xl'}>Probability Distribution</span>
+      <Row className={' flex-wrap gap-4'}>
+        <Row className={'gap-1'}>
+          <svg width="20" height="20" viewBox="0 0 120 120">
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              fill={NUMERIC_GRAPH_COLOR}
+              opacity={0.7}
             />
-          </defs>
-          <circle cx="60" cy="60" r="50" fill={`url(#${patternId})`} />
-        </svg>
-        <span className={'text-ink-500 text-sm'}>
-          Range you own shares ({sharesRange[0]} - {sharesRange[1]})
-        </span>
-      </Row>
-      <Row className={'gap-1'}>
-        <svg width="20" height="20" viewBox="0 0 120 120">
-          <circle cx="60" cy="60" r="50" fill={NEW_GRAPH_COLOR} />
-        </svg>
-        <span className={'text-ink-500 text-sm'}>Distribution after sale</span>
+          </svg>
+          <span className={'text-ink-500 text-sm'}>Before sale</span>
+        </Row>
+        <Row className={'gap-1'}>
+          <svg width="20" height="20" viewBox="0 0 120 120">
+            <circle
+              cx="60"
+              cy="60"
+              r="50"
+              fill={NEW_GRAPH_COLOR}
+              opacity={0.7}
+            />
+          </svg>
+          <span className={'text-ink-500 text-sm'}>After sale</span>
+        </Row>
+        <Row className={'gap-1'}>
+          <svg width="20" height="20" viewBox="0 0 120 120">
+            <defs>
+              <DiagonalPattern
+                size={20}
+                strokeWidth={5}
+                id={patternId}
+                color={'#007bcb'}
+              />
+            </defs>
+            <circle cx="60" cy="60" r="50" fill={`url(#${patternId})`} />
+          </svg>
+          <span className={'text-ink-500 text-sm'}>
+            Range you have shares in ({sharesRange[0]} - {sharesRange[1]})
+          </span>
+        </Row>
       </Row>
       <Col className={'mb-2 gap-2'}>
         <SizedContainer
@@ -239,7 +262,7 @@ export const NumericSellPanel = (props: {
           max={maximum}
         />
       </Col>
-      <Row className="text-ink-500 mx-4 items-center justify-between sm:justify-end sm:gap-8 ">
+      <Row className="text-ink-500 mx-4 items-center justify-between sm:justify-around sm:gap-20 ">
         <Col className={'text-ink-500 gap-2'}>
           <span className={''}>Sale value:</span>
           {isLoanOwed && <span>Loan repayment</span>}
@@ -262,7 +285,10 @@ export const NumericSellPanel = (props: {
           <span className="text-ink-700">{formatMoney(netProceeds)}</span>
         </Col>
       </Row>
-      <Row className={'justify-end'}>
+      <Row className={'justify-between sm:gap-36 md:justify-center'}>
+        <Button onClick={cancel} className={'ml-2'} color={'gray-outline'}>
+          Cancel
+        </Button>
         <Button
           disabled={isSubmitting || sharesInAnswersToSell <= 0}
           onClick={sellShares}
@@ -286,18 +312,24 @@ export const MultiNumericSellPanel = (props: {
 
   return (
     <Col className={'mt-2 gap-2'}>
-      <Button
-        color={'gray-outline'}
-        className={'w-48'}
-        size={'sm'}
-        onClick={async () => {
-          setShowSellPanel(!showSellPanel)
-        }}
-      >
-        {showSellPanel ? 'Hide' : 'Show'} sell shares panel
-      </Button>
+      {!showSellPanel && (
+        <Button
+          color={'gray-outline'}
+          className={'w-48'}
+          size={'sm'}
+          onClick={async () => {
+            setShowSellPanel(!showSellPanel)
+          }}
+        >
+          Show sell shares panel
+        </Button>
+      )}
       {showSellPanel && (
-        <NumericSellPanel contract={contract} userBets={userBets} />
+        <NumericSellPanel
+          cancel={() => setShowSellPanel(false)}
+          contract={contract}
+          userBets={userBets}
+        />
       )}
     </Col>
   )

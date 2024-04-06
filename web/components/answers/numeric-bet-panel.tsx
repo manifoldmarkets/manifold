@@ -237,13 +237,32 @@ export const NumericBetPanel = (props: {
     <Col className={'gap-2'}>
       {showDistribution && !!mode && (
         <Col className={'gap-2'}>
-          <Row className={'gap-1'}>
-            <svg width="20" height="20" viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="50" fill={NEW_GRAPH_COLOR} />
-            </svg>
-            <span className={'text-ink-500 text-sm'}>
-              Distribution after purchase
-            </span>
+          <span className={' text-xl'}>Probability Distribution</span>
+          <Row className={'gap-4'}>
+            <Row className={'gap-1'}>
+              <svg width="20" height="20" viewBox="0 0 120 120">
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill={NUMERIC_GRAPH_COLOR}
+                  opacity={0.7}
+                />
+              </svg>
+              <span className={'text-ink-500 text-sm'}>Before purchase</span>
+            </Row>
+            <Row className={'gap-1'}>
+              <svg width="20" height="20" viewBox="0 0 120 120">
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="50"
+                  fill={NEW_GRAPH_COLOR}
+                  opacity={0.7}
+                />
+              </svg>
+              <span className={'text-ink-500 text-sm'}>After purchase</span>
+            </Row>
           </Row>
           <Col className={'mb-2 gap-2'}>
             <SizedContainer
@@ -357,7 +376,7 @@ export const NumericBetPanel = (props: {
                 </span>
               </Row>
               <Row className={'gap-1'}>
-                <span className={'text-ink-700'}>New value:</span>
+                <span className={'text-ink-700'}>New expected value:</span>
                 {formatExpectedValue(potentialExpectedValue, contract)}
               </Row>
             </Col>
