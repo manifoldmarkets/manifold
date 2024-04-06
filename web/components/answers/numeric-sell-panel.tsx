@@ -19,6 +19,7 @@ import {
   answerToMidpoint,
   formatExpectedValue,
   NEW_GRAPH_COLOR,
+  answerToRange,
 } from 'common/multi-numeric'
 import { Bet } from 'common/bet'
 import { calculateCpmmMultiArbitrageSellYesEqually } from 'common/calculate-cpmm-arbitrage'
@@ -245,9 +246,9 @@ export const NumericSellPanel = (props: {
               width={w}
               height={h}
               range={range}
-              sharesProps={{
-                sharesRange: sharesRange,
-              }}
+              shadedRanges={
+                answersWithSharesIn.map(answerToRange) as [number, number][]
+              }
             />
           )}
         </SizedContainer>

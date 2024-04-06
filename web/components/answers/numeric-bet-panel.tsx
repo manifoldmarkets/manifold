@@ -406,15 +406,13 @@ export const MultiNumericDistributionChart = (props: {
   height: number
   range: [number, number]
   newColor: string
-  sharesProps?: {
-    sharesRange: [number, number]
-  }
+  shadedRanges?: [number, number][]
 }) => {
   const {
     contract,
+    shadedRanges,
     newColor,
     range,
-    sharesProps,
     updatedContract,
     width,
     height,
@@ -444,7 +442,7 @@ export const MultiNumericDistributionChart = (props: {
       otherData={otherData}
       color={NUMERIC_GRAPH_COLOR}
       verticalLines={range}
-      sharesProps={sharesProps}
+      shadedRanges={shadedRanges}
       newColor={newColor}
     />
   )

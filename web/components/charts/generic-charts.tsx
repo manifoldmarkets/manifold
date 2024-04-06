@@ -139,14 +139,12 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
   yScale: ScaleContinuousNumeric<number, number>
   curve?: CurveFactory
   verticalLines?: [number, number]
-  sharesProps?: {
-    sharesRange: [number, number]
-  }
+  shadedRanges?: [number, number][]
 }) => {
   const {
     data,
     otherData,
-    sharesProps,
+    shadedRanges,
     w,
     h,
     newColor,
@@ -184,7 +182,7 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
         py0={py0}
         py1={py1}
         curve={curve ?? curveLinear}
-        sharesProps={sharesProps}
+        shadedRanges={shadedRanges}
       />
       <AreaWithTopStroke
         color={newColor}
@@ -252,14 +250,11 @@ const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
   py1: (p: P) => number
   curve: CurveFactory
   rangeColor?: string
-  sharesProps?: {
-    sharesRange: [number, number]
-  }
+  shadedRanges?: [number, number][]
 }) => {
-  const { color, data, px, py0, py1, curve, sharesProps, rangeColor } = props
-  const { sharesRange } = sharesProps ?? {}
+  const { color, data, px, py0, py1, curve, shadedRanges, rangeColor } = props
 
-  if (!sharesRange) {
+  if (!shadedRanges) {
     return (
       <AreaWithTopStroke
         color={color}
@@ -272,10 +267,21 @@ const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
     )
   }
 
-  const [rangeStart, rangeEnd] = sharesRange
-  const rangeData = data.filter((p) => p.x >= rangeStart && p.x <= rangeEnd)
   const patternId = `pattern-${Math.random().toString(36).slice(2, 9)}`
-
+  const rangeAreas = shadedRanges.map(([rangeStart, rangeEnd], index) => {
+    const rangeData = data.filter((p) => p.x >= rangeStart && p.x <= rangeEnd)
+    return (
+      <AreaWithTopStroke
+        key={index}
+        color={`url(#${patternId})`}
+        data={rangeData}
+        px={px}
+        py0={py0}
+        py1={py1}
+        curve={curve}
+      />
+    )
+  })
   return (
     <>
       <AreaWithTopStroke
@@ -287,14 +293,7 @@ const AreaWithTopStrokeAndRange = <P extends DistributionPoint>(props: {
         curve={curve}
       />
       <DiagonalPattern id={patternId} color={rangeColor ?? '#007bcb'} />
-      <AreaWithTopStroke
-        color={`url(#${patternId})`}
-        data={rangeData}
-        px={px}
-        py0={py0}
-        py1={py1}
-        curve={curve}
-      />
+      {rangeAreas}
     </>
   )
 }
