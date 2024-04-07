@@ -70,7 +70,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
             className={'mb-4'}
           />
 
-          <Button disabled={phoneNumber.length < 12} onClick={requestOTP}>
+          <Button disabled={phoneNumber.length < 7} onClick={requestOTP}>
             Request code
           </Button>
         </Col>
