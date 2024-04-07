@@ -78,13 +78,13 @@ export const AnswerBar = (props: {
       onPointerLeave={onHover && (() => onHover(false))}
       onClick={onClick}
     >
-      <Row className="my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
+      <Row className="group my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
         <div className="flex-grow">{label}</div>
         <Row className="relative  items-center justify-end gap-2">{end}</Row>
       </Row>
       <div
         className={clsx(
-          'absolute bottom-0 left-0 right-0 -z-10 h-full rounded transition-all ',
+          'absolute bottom-0 left-0 right-0 -z-10 h-full rounded opacity-70 transition-all group-hover:opacity-100',
           hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
