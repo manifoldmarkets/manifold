@@ -6,7 +6,10 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
 import { chunk, max } from 'lodash'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
 import { log, getContractSupabase } from 'shared/utils'
@@ -15,6 +18,12 @@ import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
+import {
+  TxnData,
+  insertTxn,
+  insertTxns,
+  logFailedTxn,
+} from 'shared/txn/run-txn'
 
 const firestore = admin.firestore()
 
@@ -166,56 +175,72 @@ const undoResolution = async (
   log('With max payout start time ' + maxPayoutStartTime)
   const chunkedTxns = chunk(txns, 250)
   for (const chunk of chunkedTxns) {
-    await firestore.runTransaction(async (transaction) => {
-      for (const txn of chunk) {
-        undoContractPayoutTxn(transaction, txn)
-      }
-    })
-  }
-  log('reverted txns')
-  if (contract.isResolved || contract.resolutionTime) {
-    const updatedAttrs = {
-      isResolved: false,
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutions: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
-      closeTime: Date.now(),
-    }
-    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
-    await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
-  }
-  if (answerId) {
-    const updatedAttrs = {
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
-      resolverId: admin.firestore.FieldValue.delete(),
-    }
     await firestore
-      .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
-      .update(updatedAttrs)
-  }
+      .runTransaction(async (fsTrans) => {
+        await pg.tx(async (pgTrans) => {
+          for (const txn of chunk) {
+            undoContractPayoutTxnBalance(fsTrans, txn)
+          }
+          insertTxns(pgTrans, chunk.map(constructUndoContractPayoutTxn))
+        })
+      })
+      .catch((e) => {
+        for (const txn of chunk) {
+          log.error('Failed chunk')
+          logFailedTxn(txn)
+        }
+        throw e
+      })
 
-  log('updated contract')
+    log('reverted txns')
+
+    if (contract.isResolved || contract.resolutionTime) {
+      const updatedAttrs = {
+        isResolved: false,
+        resolutionTime: admin.firestore.FieldValue.delete(),
+        resolution: admin.firestore.FieldValue.delete(),
+        resolutions: admin.firestore.FieldValue.delete(),
+        resolutionProbability: admin.firestore.FieldValue.delete(),
+        closeTime: Date.now(),
+      }
+      await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+      await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
+    }
+    if (answerId) {
+      const updatedAttrs = {
+        resolution: admin.firestore.FieldValue.delete(),
+        resolutionTime: admin.firestore.FieldValue.delete(),
+        resolutionProbability: admin.firestore.FieldValue.delete(),
+        resolverId: admin.firestore.FieldValue.delete(),
+      }
+      await firestore
+        .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
+        .update(updatedAttrs)
+    }
+
+    log('updated contract')
+  }
 }
 
-export function undoContractPayoutTxn(
-  fbTransaction: admin.firestore.Transaction,
+function undoContractPayoutTxnBalance(
+  fbTrans: admin.firestore.Transaction,
   txnData: ContractResolutionPayoutTxn
 ) {
-  const { amount, toId, data, fromId, id } = txnData
+  const { amount, toId, data } = txnData
   const { deposit } = data ?? {}
   const toDoc = firestore.doc(`users/${toId}`)
-  fbTransaction.update(toDoc, {
+
+  fbTrans.update(toDoc, {
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-(deposit ?? 0)),
   })
+}
 
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = {
-    id: newTxnDoc.id,
-    createdTime: Date.now(),
+function constructUndoContractPayoutTxn(
+  txnData: ContractResolutionPayoutTxn
+): Omit<ContractUndoResolutionPayoutTxn, 'id' | 'createdTime'> {
+  const { amount, toId, fromId, id } = txnData
+  return {
     amount: amount,
     toId: fromId,
     fromType: 'USER',
@@ -225,8 +250,5 @@ export function undoContractPayoutTxn(
     token: 'M$',
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
-  } as ContractUndoResolutionPayoutTxn
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-
-  return { status: 'success', data: txnData }
+  }
 }

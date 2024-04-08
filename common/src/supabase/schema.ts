@@ -2158,40 +2158,40 @@ export type Database = {
       }
       txns: {
         Row: {
-          amount: number | null
-          category: string | null
-          created_time: string | null
+          amount: number
+          category: string
+          created_time: string
           data: Json
-          from_id: string | null
-          from_type: string | null
+          from_id: string
+          from_type: string
           fs_updated_time: string | null
           id: string
-          to_id: string | null
-          to_type: string | null
+          to_id: string
+          to_type: string
         }
         Insert: {
-          amount?: number | null
-          category?: string | null
+          amount?: number
+          category?: string
           created_time?: string | null
           data: Json
-          from_id?: string | null
-          from_type?: string | null
+          from_id?: string
+          from_type?: string
           fs_updated_time?: string | null
-          id: string
-          to_id?: string | null
-          to_type?: string | null
+          id?: string | null
+          to_id?: string
+          to_type?: string
         }
         Update: {
-          amount?: number | null
-          category?: string | null
-          created_time?: string | null
+          amount?: number
+          category?: string
+          created_time?: string
           data?: Json
-          from_id?: string | null
-          from_type?: string | null
+          from_id?: string
+          from_type?: string
           fs_updated_time?: string | null
           id?: string
-          to_id?: string | null
-          to_type?: string | null
+          to_id?: string
+          to_type?: string
         }
         Relationships: []
       }

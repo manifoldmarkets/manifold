@@ -63,8 +63,7 @@ export const redeemboost = authEndpoint(async (req, auth) => {
     )
     const reward = AD_REDEEM_REWARD
 
-    await insertTxns(
-      tx,
+    await insertTxns(tx, [
       {
         category: 'MARKET_BOOST_REDEEM',
         fromType: 'AD',
@@ -86,8 +85,8 @@ export const redeemboost = authEndpoint(async (req, auth) => {
         token: 'M$',
         description: 'Manifold fee for redeeming market ad',
         createdTime: Date.now(),
-      } as MarketAdRedeemFeeTxn
-    )
+      } as MarketAdRedeemFeeTxn,
+    ])
 
     const toUser = firestore.doc(`users/${auth.uid}`)
     toUser.update({

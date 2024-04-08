@@ -22,6 +22,7 @@ import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
+  SupabaseTransaction,
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -252,7 +253,7 @@ const runCreateMarketTxn = async (args: {
   userId: string
   amountSuppliedByUser: number
   amountSuppliedByHouse: number
-  transaction: Transaction
+  transaction: SupabaseTransaction
 }) => {
   const {
     contractId,
@@ -263,7 +264,7 @@ const runCreateMarketTxn = async (args: {
   } = args
 
   if (amountSuppliedByUser > 0) {
-    const { status, message } = await runTxn(transaction, {
+    await runTxn(transaction, {
       fromId: userId,
       fromType: 'USER',
       toId: contractId,
@@ -272,13 +273,10 @@ const runCreateMarketTxn = async (args: {
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
     })
-
-    if (status === 'error')
-      throw new APIError(400, message ?? 'Unkown error when trying to add ante')
   }
 
   if (amountSuppliedByHouse > 0) {
-    const { status, message } = await runTxnFromBank(transaction, {
+    await runTxnFromBank(transaction, {
       amount: amountSuppliedByHouse,
       category: 'CREATE_CONTRACT_ANTE',
       toId: contractId,
@@ -286,12 +284,6 @@ const runCreateMarketTxn = async (args: {
       fromType: 'BANK',
       token: 'M$',
     })
-
-    if (status === 'error')
-      throw new APIError(
-        500,
-        message ?? 'Unknown error when trying to add ante'
-      )
   }
 }
 

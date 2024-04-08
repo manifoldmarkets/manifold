@@ -1,14 +1,14 @@
 create table if not exists
   txns (
-    id text not null primary key,
+    id text not null primary key default random_alphanumeric (8),
     data jsonb not null,
     created_time timestamptz default now(),
-    from_id text,
-    from_type text,
-    to_id text,
-    to_type text,
-    amount numeric,
-    category text,
+    from_id text not null,
+    from_type text not null,
+    to_id text not null,
+    to_type text not null,
+    amount numeric not null,
+    category text not null,
     fs_updated_time timestamp
   );
 
@@ -19,28 +19,6 @@ drop policy if exists "public read" on txns;
 create policy "public read" on txns for
 select
   using (true);
-
-create
-or replace function txns populate_cols () returns trigger language plpgsql as $$
-begin
-    if new.data is not null then
-    new.created_time :=
-        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
-    new.from_id := (new.data ->> 'fromId');
-    new.from_type := (new.data ->> 'fromType');
-    new.to_id := (new.data ->> 'toId');
-    new.to_type := (new.data ->> 'toType');
-    new.amount := (new.data ->> 'amount')::numeric;
-    new.category := (new.data ->> 'category');
-    end if;
-    return new;
-end
-$$;
-
-create trigger txns populate before insert
-or
-update on txns for each row
-execute function txns populate_cols ();
 
 create
 or replace function get_daily_claimed_boosts (user_id text) returns table (total numeric) as $$

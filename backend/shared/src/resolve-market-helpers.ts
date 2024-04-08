@@ -432,7 +432,7 @@ export const payUsersTransactions = async (
 
     await pg
       .tx(async (tx) => {
-        insertTxns(tx, ...txns)
+        insertTxns(tx, txns)
 
         await firestore.runTransaction(async (transaction) => {
           payoutChunk.forEach(({ userId, payout, deposit }) => {

@@ -49,7 +49,7 @@ export const addLiquidity: APIHandler<
         newLiquidityProvisionDoc.id
       )
 
-    await runTxn(transaction, {
+    await runTxn(transaction as any, {
       fromId: user.id,
       amount: amount,
       toId: contractId,

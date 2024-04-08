@@ -21,16 +21,9 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   }
   const fromId = auth.uid
 
- if (!isVerified(fromUser)) {
+  const pg = createSupabaseDirectClient()
+  if (!isVerified(fromUser)) {
     throw new APIError(403, 'You must verify your phone number to send mana.')
-  }
-
-  const canCreate = await canSendMana(fromUser, createSupabaseClient())
-  if (!canCreate) {
-    if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
-      throw new APIError(403, 'Your account is banned or deleted.')
-    }
-    throw new APIError(403, SEND_MANA_REQ)
   }
 
   if (toIds.length <= 0) {
@@ -53,10 +46,11 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     )
   }
 
-  const pg = createSupabaseDirectClient()
-
   const canCreate = await canSendManaDirect(fromUser, pg)
   if (!canCreate) {
+    if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
+      throw new APIError(403, 'Your account is banned or deleted.')
+    }
     throw new APIError(403, SEND_MANA_REQ)
   }
 
