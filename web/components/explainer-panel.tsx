@@ -16,7 +16,7 @@ export const ExplainerPanel = (props: { className?: string }) => {
     track('explainer section click', { sectionTitle })
   }
   return (
-    <Col className={clsx(' max-w-[60ch]', className)}>
+    <Col className={clsx(className)}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
       <Accuracy onClick={handleSectionClick} />
       <WhatAreOdds onClick={handleSectionClick} />

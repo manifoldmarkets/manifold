@@ -562,7 +562,7 @@ export function ContractPageContent(props: ContractParams) {
               />
             )}
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden" />
             )}
             {comments.length > 3 && (
               <RelatedContractsGrid
