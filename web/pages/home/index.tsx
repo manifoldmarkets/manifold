@@ -98,7 +98,7 @@ export function HomeContent(props: {
     return <LoadingIndicator />
   }
   return (
-    <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
+    <Col className="w-full items-center self-center pb-4 sm:px-2">
       {user && freeQuestionsEnabled && remaining > 0 && (
         <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
           <Row className="flex-1 flex-wrap gap-x-1">
