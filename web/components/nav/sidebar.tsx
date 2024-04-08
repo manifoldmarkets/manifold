@@ -151,11 +151,11 @@ const getDesktopNav = (
         href: '/ai',
         icon: PiRobotBold,
       },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-      // },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+      },
       {
         name: 'Messages',
         href: '/messages',
