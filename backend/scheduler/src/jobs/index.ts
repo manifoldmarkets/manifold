@@ -22,13 +22,13 @@ export function createJobs() {
       addTrendingFeedContracts
     ),
     createJob(
-      'update-contract-metrics',
-      '0 */20 * * * *', // every 20 minutes - (on the 5th minute of every hour)
+      'update-contract-metrics-non-multi',
+      '0 */11 * * * *', // every 11 minutes - (on the 6th minute of every hour)
       () => updateContractMetricsCore('non-multi')
     ),
     createJob(
-      'update-contract-metrics',
-      '0 */15 * * * *', // every 15 minutes - (on the 5th minute of every hour)
+      'update-contract-metrics-multi',
+      '0 */9 * * * *', // every 9 minutes - (on the 3rd minute of every hour)
       () => updateContractMetricsCore('multi')
     ),
     createJob(
