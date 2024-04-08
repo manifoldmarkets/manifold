@@ -23,8 +23,13 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-metrics',
-      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
-      updateContractMetricsCore
+      '0 */20 * * * *', // every 20 minutes - (on the 5th minute of every hour)
+      () => updateContractMetricsCore('non-multi')
+    ),
+    createJob(
+      'update-contract-metrics',
+      '0 */15 * * * *', // every 15 minutes - (on the 5th minute of every hour)
+      () => updateContractMetricsCore('multi')
     ),
     createJob(
       'update-stats',
