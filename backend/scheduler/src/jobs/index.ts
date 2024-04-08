@@ -12,6 +12,7 @@ import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 import { autoAwardBounty } from './auto-award-bounty'
+import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
 
 export function createJobs() {
   return [
@@ -23,12 +24,12 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-metrics-non-multi',
-      '0 */11 * * * *', // every 11 minutes - (on the 6th minute of every hour)
+      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
       () => updateContractMetricsCore('non-multi')
     ),
     createJob(
       'update-contract-metrics-multi',
-      '0 */9 * * * *', // every 9 minutes - (on the 3rd minute of every hour)
+      '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
       () => updateContractMetricsCore('multi')
     ),
     createJob(
@@ -57,15 +58,11 @@ export function createJobs() {
       addConvertingContractsToFeed
     ),
     createJob(
-      'onboarding-notification',
-      '0 0 11 * * *', // 11 AM daily
-      sendOnboardingNotificationsInternal
-    ),
-    createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
       updateUserMetricsCore
     ),
+    // Daily jobs:
     createJob(
       'truncate-incoming-writes',
       '0 0 0 * * *', // midnight daily
@@ -85,6 +82,16 @@ export function createJobs() {
       'clean-old-notifications',
       '0 0 2 * * *', // 2 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'reset-pg-stats',
+      '0 0 3 * * *', // 3 AM daily
+      resetPgStats
+    ),
+    createJob(
+      'onboarding-notification',
+      '0 0 11 * * *', // 11 AM daily
+      sendOnboardingNotificationsInternal
     ),
   ]
 }
