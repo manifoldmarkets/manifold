@@ -13,7 +13,7 @@ import {
 } from 'common/calculate-metrics'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
-import { filterDefined } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import { hasChanges } from 'common/util/object'
 import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
@@ -44,30 +44,33 @@ export async function updateUserMetricsCore() {
   const pg = createSupabaseDirectClient()
   const writer = new SafeBulkWriter(undefined, firestore)
 
-  log('Loading users...')
-  const userIds = await pg.map(
-    `select id from users
-            order by data->'metricsLastUpdated' nulls first limit 2000`,
+  log('Loading active users...')
+  const activeUserIds = await pg.map(
+    `select distinct (users.id), users.data->'metricsLastUpdated' as last_updated from users
+     join user_contract_interactions uci on users.id = uci.user_id
+     where uci.created_time > now() -  interval '1 month'
+     or (random() < 0.005 and users.data->'lastBetTime' is not null)
+     order by last_updated nulls first limit 500;`,
     [],
     (r) => r.id as string
   )
 
-  for (const userId of userIds) {
+  for (const userId of activeUserIds) {
     const doc = firestore.collection('users').doc(userId)
     writer.update(doc, { metricsLastUpdated: now })
   }
-  log(`Loaded ${userIds.length} users.`)
+  log(`Loaded ${activeUserIds.length} active users.`)
 
   log('Loading creator trader counts...')
   const [yesterdayTraders, weeklyTraders, monthlyTraders, allTimeTraders] =
     await Promise.all(
       [yesterday, weekAgo, monthAgo, undefined].map((t) =>
-        getCreatorTraders(pg, userIds, t)
+        getCreatorTraders(pg, activeUserIds, t)
       )
     )
   log(`Loaded creator trader counts.`)
 
-  const userIdsNeedingUpdate = userIds.filter(
+  const userIdsNeedingUpdate = activeUserIds.filter(
     (id) =>
       !userToPortfolioMetrics[id]?.currentPortfolio ||
       (userToPortfolioMetrics[id]?.timeCachedPeriodProfits ?? 0) <
@@ -82,7 +85,7 @@ export async function updateUserMetricsCore() {
         Object.keys(userToPortfolioMetrics).length
       } users.`
     )
-    const userIdsMissingPortfolio = userIds.filter(
+    const userIdsMissingPortfolio = activeUserIds.filter(
       (id) => !userToPortfolioMetrics[id]?.currentPortfolio
     )
     log(
@@ -121,7 +124,7 @@ export async function updateUserMetricsCore() {
   // for the purposes of computing the daily/weekly/monthly profit on them
   const metricRelevantBets = await getMetricRelevantUserBets(
     pg,
-    userIds,
+    activeUserIds,
     monthAgo
   )
   log(
@@ -160,7 +163,7 @@ export async function updateUserMetricsCore() {
   const users = await pg.map(
     `select data from users
             where id in ($1:list)`,
-    [userIds],
+    [activeUserIds],
     (r) => r.data as User
   )
   log('Computing metric updates...')
@@ -228,14 +231,17 @@ export async function updateUserMetricsCore() {
       userMetricRelevantBets,
       (b) => b.contractId
     )
-    // TODO: we could only calculate metrics for answers that users have bet on
     const metricsByContract = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
       user,
       answersByContractId
     ).flat()
-    contractMetricUpdates.push(...metricsByContract)
+    // TODO: we could read their previous contract metrics and only write updates if they've changed
+    contractMetricUpdates.push(
+      // Their contract metrics are updated upon selling out of a contract
+      ...metricsByContract.filter((cm) => cm.hasShares)
+    )
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
@@ -272,19 +278,24 @@ export async function updateUserMetricsCore() {
   }
   log('Finished user updates.')
 
-  log('Updating contract metrics...')
-  await bulkUpdateContractMetrics(contractMetricUpdates).catch((e) => {
-    log('Error upserting contract metrics', e)
-  })
-  log('Finished updating contract metrics.')
-
-  log('Inserting Supabase portfolio history entries...')
-  if (portfolioUpdates.length > 0) {
-    await bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
-  }
-
-  log('Committing Firestore writes...')
-  await writer.close()
+  log('Writing updates and inserts...')
+  await Promise.all(
+    buildArray(
+      bulkUpdateContractMetrics(contractMetricUpdates)
+        .catch((e) => log.error('Error upserting contract metrics', e))
+        .then(() => log('Finished updating contract metrics.')),
+      portfolioUpdates.length > 0 &&
+        bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
+          .catch((e) => log.error('Error inserting user portfolio history', e))
+          .then(() =>
+            log('Finished creating Supabase portfolio history entries...')
+          ),
+      writer
+        .close()
+        .catch((e) => log.error('Error bulk writing user updates', e))
+        .then(() => log('Committed Firestore writes.'))
+    )
+  )
 
   await revalidateStaticProps('/leaderboards')
 
