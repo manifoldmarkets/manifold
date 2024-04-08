@@ -27,6 +27,7 @@ import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { ManifestBanner, useManifestBanner } from 'web/components/nav/banner'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 
 export async function getStaticProps() {
   try {
@@ -58,7 +59,11 @@ export default function Home(props: { headlines: Headline[] }) {
       trackPageProps={{ kind: 'desktop' }}
       className="!mt-0"
       banner={
-        showBanner && olderUser && <ManifestBanner hideBanner={hideBanner} />
+        showBanner && olderUser ? (
+          <ManifestBanner hideBanner={hideBanner} />
+        ) : (
+          <VerifyPhoneNumberBanner user={user} />
+        )
       }
     >
       <HeadlineTabs

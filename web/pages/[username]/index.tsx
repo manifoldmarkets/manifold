@@ -87,6 +87,7 @@ import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { YourTopicsSection } from 'web/components/topics/your-topics'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 
 export const getStaticProps = async (props: {
   params: {
@@ -379,11 +380,14 @@ function UserProfile(props: {
                 prerender: true,
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
-                  <PortfolioSummary
-                    className="mt-4"
-                    user={user}
-                    balanceChanges={balanceChanges}
-                  />
+                  <>
+                    <VerifyPhoneNumberBanner user={currentUser} />
+                    <PortfolioSummary
+                      className="mt-4"
+                      user={user}
+                      balanceChanges={balanceChanges}
+                    />
+                  </>
                 ),
               },
               (!!user.lastBetTime || hasBetBalanceChanges) && {

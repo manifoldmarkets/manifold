@@ -8,10 +8,13 @@ import { toast } from 'react-hot-toast'
 import 'react-international-phone/style.css'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
+import { STARTING_BALANCE } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export function VerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
   const requestOTP = async () => {
+    setLoading(true)
     await toast
       .promise(
         api('request-otp', {
@@ -25,9 +28,11 @@ export function VerifyPhone(props: { onClose: () => void }) {
       )
       .then(() => setPage(1))
       .catch((e) => console.error(e))
+      .finally(() => setLoading(false))
   }
 
   const verifyPhone = async () => {
+    setLoading(true)
     await toast
       .promise(
         api('verify-phone-number', {
@@ -42,7 +47,9 @@ export function VerifyPhone(props: { onClose: () => void }) {
       )
       .then(() => onClose())
       .catch((e) => console.error(e))
+      .finally(() => setLoading(false))
   }
+  const [loading, setLoading] = useState(false)
   const [otp, setOtp] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [page, setPage] = useState(0)
@@ -52,14 +59,16 @@ export function VerifyPhone(props: { onClose: () => void }) {
       {page === 0 && (
         <Col className="items-center justify-center gap-2">
           <Title>Verify your phone number</Title>
-          <span className={'text-ink-700 mb-4 text-center'}>
-            We require all users to verify a phone number to prevent account
-            abuse.
+          <span className={'-mt-2 mb-2 text-center'}>
+            Verify your phone number to collect your{' '}
+            <span className={'font-bold text-teal-500'}>
+              {formatMoney(STARTING_BALANCE)}
+            </span>{' '}
+            signup bonus.
             <br />
             <br />
             <span className={'italic'}>
-              We won't send you any other messages, this is just for
-              verification.
+              (We won't send you any other messages.)
             </span>
           </span>
           <PhoneInput
@@ -69,10 +78,22 @@ export function VerifyPhone(props: { onClose: () => void }) {
             placeholder={'Phone Number'}
             className={'mb-4'}
           />
-
-          <Button disabled={phoneNumber.length < 7} onClick={requestOTP}>
-            Request code
-          </Button>
+          <Row
+            className={
+              'mb-4 mt-4 w-full justify-between px-8 sm:mt-8 sm:justify-center sm:gap-8'
+            }
+          >
+            <Button color={'gray-white'} onClick={onClose}>
+              Skip
+            </Button>
+            <Button
+              disabled={phoneNumber.length < 7 || loading}
+              loading={loading}
+              onClick={requestOTP}
+            >
+              Request code
+            </Button>
+          </Row>
         </Col>
       )}
       {page === 1 && (
@@ -95,8 +116,12 @@ export function VerifyPhone(props: { onClose: () => void }) {
             <Button color={'gray-white'} onClick={() => setPage(0)}>
               Back
             </Button>
-            <Button disabled={otp.length < 6} onClick={verifyPhone}>
-              Verify code
+            <Button
+              disabled={otp.length < 6 || loading}
+              loading={loading}
+              onClick={verifyPhone}
+            >
+              Verify code & claim {formatMoney(STARTING_BALANCE)}
             </Button>
           </Row>
         </Col>

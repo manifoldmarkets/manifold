@@ -1,13 +1,10 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { User } from 'common/user'
-import { canSendMana } from 'common/manalink'
+import { isVerified, User } from 'common/user'
+import { canSendMana, SEND_MANA_REQ } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
@@ -51,14 +48,10 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, `User ${creator_id} not found`)
     }
     const fromUser = fromSnap.data() as User
-    const db = createSupabaseClient()
 
-    const canCreate = await canSendMana(fromUser, db)
+    const canCreate = await canSendMana(fromUser)
     if (!canCreate) {
-      throw new APIError(
-        403,
-        `You don't have at least 1000 mana or your account isn't 1 week old`
-      )
+      throw new APIError(403, SEND_MANA_REQ)
     }
 
     // Only permit one redemption per user per link
@@ -87,6 +80,21 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       )
     }
 
+    const toDoc = firestore.doc(`users/${auth.uid}`)
+    const toSnap = await transaction.get(toDoc)
+    if (!toSnap.exists) {
+      throw new APIError(500, `User ${auth.uid} not found`)
+    }
+    const toUser = toSnap.data() as User
+
+    const canReceive = isVerified(toUser)
+    if (!canReceive) {
+      throw new APIError(
+        403,
+        'You must verify your phone number to claim mana.'
+      )
+    }
+
     // Actually execute the txn
     const data = {
       fromId: creator_id,
@@ -96,7 +104,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       amount,
       token: 'M$',
       category: 'MANALINK',
-      description: `Manalink ${slug} claimed: ${amount} from ${fromUser.username} to ${auth.uid}`,
+      description: `Manalink ${slug} claimed: ${amount} from ${toUser.username} to ${auth.uid}`,
     } as const
 
     const result = await runTxn(transaction, data)

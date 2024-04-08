@@ -85,14 +85,12 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
       userBetInTopics={userBetInTopics}
-      onNext={() => increasePage()}
+      onNext={increasePage}
       setFeedKey={setFeedKey}
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !user?.verifiedPhone && (
-      <VerifyPhone onClose={() => increasePage()} />
-    ),
+    user && !user?.verifiedPhone && <VerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
@@ -187,7 +185,7 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   return (
     <Modal open={open} size={'lg'} position={'bottom'}>
-      <Col className="bg-canvas-0 w-screen rounded-md px-4 py-6 text-sm sm:px-8 md:text-lg lg:w-full">
+      <Col className="bg-canvas-0 rounded-md px-4 py-6 text-sm md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
           {showBottomButtons && (

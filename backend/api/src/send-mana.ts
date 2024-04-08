@@ -1,12 +1,11 @@
 import * as admin from 'firebase-admin'
 
 import { isVerified, User } from 'common/user'
-import { canSendMana, SEND_MANA_REQ } from 'common/manalink'
+import { canSendMana, SEND_MANA_REQ } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
-import { createSupabaseClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 
@@ -36,7 +35,8 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     if (!isVerified(fromUser)) {
       throw new APIError(403, 'You must verify your phone number to send mana.')
     }
-    const canCreate = await canSendMana(fromUser, createSupabaseClient())
+
+    const canCreate = await canSendMana(fromUser)
     if (!canCreate) {
       if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
         throw new APIError(403, 'Your account is banned or deleted.')
@@ -54,6 +54,19 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
           amount * toIds.length
         } but only had ${fromUser.balance} `
       )
+    }
+    const toUsers = await Promise.all(
+      toIds.map(async (toId) => {
+        const toDoc = firestore.doc(`users/${toId}`)
+        const toSnap = await transaction.get(toDoc)
+        if (!toSnap.exists) {
+          throw new APIError(404, `User ${toId} not found`)
+        }
+        return toSnap.data() as User
+      })
+    )
+    if (toUsers.some((toUser) => !isVerified(toUser))) {
+      throw new APIError(403, 'All destination users must be verified.')
     }
 
     const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
