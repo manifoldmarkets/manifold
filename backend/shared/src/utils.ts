@@ -105,7 +105,8 @@ export const revalidateCachedTag = async (tag: string, domain: string) => {
 export async function revalidateContractStaticProps(contract: Contract) {
   await Promise.all([
     revalidateStaticProps(contractPath(contract)),
-    revalidateStaticProps(`/embed${contractPath(contract)}`),
+    Math.random() < 0.1 &&
+      revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
 
