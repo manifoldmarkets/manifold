@@ -28,6 +28,7 @@ import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
 import { useState } from 'react'
 import { removeEmojis } from 'common/util/string'
+import { useABTest } from 'web/hooks/use-ab-test'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -79,6 +80,7 @@ function ContractRow(props: {
   const contract =
     useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
     props.contract
+  const answersABTest = useABTest('show answers in browse', ['show', 'hide'])
   const { columns, hideAvatar, highlighted, faded, onClick } = props
   return (
     <Link
@@ -116,7 +118,8 @@ function ContractRow(props: {
           ))}
         </Row>
       </div>
-      {contract.outcomeType == 'MULTIPLE_CHOICE' &&
+      {answersABTest === 'show' &&
+        contract.outcomeType == 'MULTIPLE_CHOICE' &&
         contract.mechanism == 'cpmm-multi-1' && (
           <ContractAnswers contract={contract} />
         )}
