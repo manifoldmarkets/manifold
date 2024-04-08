@@ -51,12 +51,7 @@ export const QuestionsTopicTitle = forwardRef(
               currentTopic ? toast(`Questions in ${currentTopic.name}`) : null
             }
           >
-            {currentTopic?.name ??
-              (topicSlug === 'for-you'
-                ? '⭐️ For you'
-                : topicSlug === 'recent'
-                ? '⏳ Your recents'
-                : 'Browse')}
+            {currentTopic?.name ?? 'Browse'}
           </span>
         </Row>
         <Row>
