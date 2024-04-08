@@ -24,6 +24,7 @@ import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { convertBet } from 'common/supabase/bets'
+import { ContractMetric } from 'common/contract-metric'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -46,11 +47,15 @@ export async function updateUserMetricsCore() {
 
   log('Loading active users...')
   const activeUserIds = await pg.map(
-    `select distinct (users.id), users.data->'metricsLastUpdated' as last_updated from users
-     join user_contract_interactions uci on users.id = uci.user_id
-     where uci.created_time > now() -  interval '1 month'
-     or (random() < 0.005 and users.data->'lastBetTime' is not null)
-     order by last_updated nulls first limit 500;`,
+    `select distinct users.id, users.data->'metricsLastUpdated' as last_updated
+     from users where (
+       users.id in (
+           select distinct user_id from user_contract_interactions
+           where created_time > now() - interval '1 month'
+       )
+           or (random() < 0.005 and users.data->'lastBetTime' is not null)
+       )
+     order by last_updated nulls first limit 500`,
     [],
     (r) => r.id as string
   )
@@ -142,6 +147,7 @@ export async function updateUserMetricsCore() {
     pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
   )
+  log(`Loaded ${contracts.length} contracts and their answers.`)
 
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
@@ -151,7 +157,21 @@ export async function updateUserMetricsCore() {
     ;(contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
-  log(`Loaded ${contracts.length} contracts and their answers.`)
+  log('Loading current contract metrics...')
+  const currentContractMetrics = await pg.map(
+    `select data from user_contract_metrics
+            where user_id in ($1:list)
+            and contract_id in ($2:list)
+            `,
+    [activeUserIds, contracts.map((c) => c.id)],
+    (r) => r.data as ContractMetric
+  )
+  log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
+
+  const contractMetricsByUserId = groupBy(
+    currentContractMetrics,
+    (m) => m.userId
+  )
 
   const userUpdates = []
   const portfolioUpdates = []
@@ -237,10 +257,20 @@ export async function updateUserMetricsCore() {
       user,
       answersByContractId
     ).flat()
-    // TODO: we could read their previous contract metrics and only write updates if they've changed
+    const currentMetricsForUser = contractMetricsByUserId[user.id] ?? []
     contractMetricUpdates.push(
-      // Their contract metrics are updated upon selling out of a contract
-      ...metricsByContract.filter((cm) => cm.hasShares)
+      ...metricsByContract.filter(
+        (cm) =>
+          // Their contract metrics are updated upon selling out of a contract
+          cm.hasShares &&
+          hasChanges(
+            cm,
+            currentMetricsForUser.find(
+              (m) =>
+                m.contractId === cm.contractId && cm.answerId === m.answerId
+            ) ?? {}
+          )
+      )
     )
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
