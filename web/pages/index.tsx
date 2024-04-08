@@ -185,8 +185,8 @@ export default function LandingPage(props: {
             </Row>
           </Row>
 
-          <Row className="justify-between rounded-lg p-8">
-            <Col className="max-w-lg gap-2">
+          <Row className="justify-between rounded-lg ">
+            <Col className="w-full gap-2 sm:max-w-lg">
               {abTestVariant === 'know the future' && (
                 <>
                   <h1 className="mb-4 text-4xl">Know the future</h1>
@@ -280,21 +280,21 @@ export default function LandingPage(props: {
                   : 'Start predicting'}
               </Button>
             </Col>
-            <Col className="hidden sm:flex">
+            <Col className="mx-auto hidden h-full sm:flex">
               <img
                 src="welcome/manipurple.png"
                 width={220}
                 alt={'manifold logo'}
+                className="my-auto"
               />
             </Col>
           </Row>
         </Col>
-        <Col className={'max-w-3xl md:self-center'}>
+        <Col>
           <Row className={'mb-3 text-xl'}>🔥 Trending Topics</Row>
           <Carousel labelsParentClassName={'gap-2'} className="mx-1">
             {topics.map((topic) => (
               <PillButton
-                className={'!text-lg'}
                 key={topic.slug}
                 onSelect={() =>
                   setSelectedTopicSlug(
@@ -308,7 +308,7 @@ export default function LandingPage(props: {
             ))}
           </Carousel>
         </Col>
-        <Col className={clsx('w-full max-w-3xl gap-4 self-center')}>
+        <Col className={clsx('w-full gap-4 self-center')}>
           {contracts.map((contract) => (
             <FeedContractCard
               key={contract.id + selectedTopicSlug}
