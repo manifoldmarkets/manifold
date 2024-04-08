@@ -46,6 +46,7 @@ export async function updateUserMetricsCore() {
   const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading active users...')
+  const random = Math.random()
   const activeUserIds = await pg.map(
     `select distinct users.id, users.data->'metricsLastUpdated' as last_updated
      from users where (
@@ -53,10 +54,10 @@ export async function updateUserMetricsCore() {
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '1 month'
        )
-           or (random() < 0.005 and users.data->'lastBetTime' is not null)
+         or ($1 < 0.005 and users.data->'lastBetTime' is not null)
        )
      order by last_updated nulls first limit 500`,
-    [],
+    [random],
     (r) => r.id as string
   )
 
@@ -311,9 +312,10 @@ export async function updateUserMetricsCore() {
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
-      bulkUpdateContractMetrics(contractMetricUpdates)
-        .catch((e) => log.error('Error upserting contract metrics', e))
-        .then(() => log('Finished updating contract metrics.')),
+      contractMetricUpdates.length > 0 &&
+        bulkUpdateContractMetrics(contractMetricUpdates)
+          .catch((e) => log.error('Error upserting contract metrics', e))
+          .then(() => log('Finished updating contract metrics.')),
       portfolioUpdates.length > 0 &&
         bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
           .catch((e) => log.error('Error inserting user portfolio history', e))
