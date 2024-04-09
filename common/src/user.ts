@@ -199,5 +199,8 @@ export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
 }
 
 export const isVerified = (user: User) => {
+  return user.verifiedPhone !== false || !!user.purchasedMana
+}
+export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }
