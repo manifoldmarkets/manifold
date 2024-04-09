@@ -64,6 +64,7 @@ export type User = {
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   verifiedPhone?: boolean
+  purchasedMana?: boolean
 }
 
 export type PrivateUser = {
