@@ -1,3 +1,12 @@
+const TAKER_FEE_CONSTANT = 0.07
+
+export const getTakerFee = (amount: number, prob: number) => {
+  return TAKER_FEE_CONSTANT * prob * (1 - prob) * amount
+}
+
+// Creators take a fraction of the taker fee.
+export const CREATOR_FEE_FRAC = 0.5
+
 export const FLAT_TRADE_FEE = 0.25
 export const FLAT_COMMENT_FEE = 1
 

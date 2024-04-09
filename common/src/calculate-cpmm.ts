@@ -1,7 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
+import { CREATOR_FEE_FRAC, Fees, getTakerFee } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -59,31 +59,48 @@ function calculateCpmmShares(
     [outcome: string]: number
   },
   p: number,
-  bet: number,
+  betAmount: number,
   betChoice: string
 ) {
-  if (bet === 0) return 0
+  if (betAmount === 0) return 0
 
   const { YES: y, NO: n } = pool
   const k = y ** p * n ** (1 - p)
 
   return betChoice === 'YES'
     ? // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E%28p%29*%28n%2Bb%29%5E%281-p%29+%3D+k%2C+solve+s
-      y + bet - (k * (bet + n) ** (p - 1)) ** (1 / p)
-    : n + bet - (k * (bet + y) ** -p) ** (1 / (1 - p))
+      y + betAmount - (k * (betAmount + n) ** (p - 1)) ** (1 / p)
+    : n + betAmount - (k * (betAmount + y) ** -p) ** (1 / (1 - p))
 }
 
-export function getCpmmFees(state: CpmmState, bet: number, outcome: string) {
-  const prob = getCpmmProbabilityAfterBetBeforeFees(state, outcome, bet)
-  const betP = outcome === 'YES' ? 1 - prob : prob
+export function getCpmmFees(
+  state: CpmmState,
+  betAmount: number,
+  outcome: string
+) {
+  // Do three iterations toward average probability of the bet minus fees.
+  // Charging fees means the bet amount is lower and the average probability moves slightly less far.
+  const shares1 = calculateCpmmShares(state.pool, state.p, betAmount, outcome)
+  const averageProb1 = betAmount / shares1
+  const fee1 = getTakerFee(betAmount, averageProb1)
 
-  const liquidityFee = LIQUIDITY_FEE * betP * bet
-  const platformFee = PLATFORM_FEE * betP * bet
-  const creatorFee = CREATOR_FEE * betP * bet
+  const betAmount2 = betAmount - fee1
+  const shares2 = calculateCpmmShares(state.pool, state.p, betAmount2, outcome)
+  const averageProb2 = betAmount2 / shares2
+  const fee2 = getTakerFee(betAmount, averageProb2)
+
+  const betAmount3 = betAmount - fee2
+  const shares3 = calculateCpmmShares(state.pool, state.p, betAmount3, outcome)
+  const averageProb3 = betAmount3 / shares3
+  const fee3 = getTakerFee(betAmount, averageProb3)
+
+  const totalFees = betAmount === 0 ? 0 : fee3
+  const creatorFee = totalFees * CREATOR_FEE_FRAC
+  const platformFee = totalFees * (1 - CREATOR_FEE_FRAC)
+  const liquidityFee = 0
   const fees: Fees = { liquidityFee, platformFee, creatorFee }
 
-  const totalFees = liquidityFee + platformFee + creatorFee
-  const remainingBet = bet - totalFees
+  const remainingBet = betAmount - totalFees
 
   return { remainingBet, totalFees, fees }
 }
