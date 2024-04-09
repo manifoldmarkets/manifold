@@ -57,7 +57,7 @@ export default function Home(props: { headlines: Headline[] }) {
     <Page
       trackPageView={'home'}
       trackPageProps={{ kind: 'desktop' }}
-      className="!mt-0"
+      className=" !mt-0"
       banner={
         showBanner && olderUser ? (
           <ManifestBanner hideBanner={hideBanner} />
