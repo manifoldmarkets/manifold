@@ -242,9 +242,9 @@ const useLastSeenMessagesPageTime = () => {
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
   useEffect(() => {
-    if (pathname === 'messages') {
+    if (pathname === '/messages') {
       setLastSeenMessagesPageTime(Date.now())
-      track('view love messages page')
+      track('view messages page')
       return
     }
   }, [pathname, isVisible])
