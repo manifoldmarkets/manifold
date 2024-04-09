@@ -451,6 +451,7 @@ export const getNewMultiCpmmBetInfo = (
     probBefore,
     shares,
     pool: newPool,
+    fees,
   } = computeCpmmBet(
     cpmmState,
     outcome,
@@ -475,7 +476,7 @@ export const getNewMultiCpmmBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
-    fees: noFees,
+    fees,
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
@@ -556,7 +557,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   }
   const now = Date.now()
   return newBetResults.map((newBetResult, i) => {
-    const { takers, cpmmState, answer: updatedAnswer } = newBetResult
+    const { takers, cpmmState, answer: updatedAnswer, totalFees } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const amount = sumBy(takers, 'amount')
     const shares = sumBy(takers, 'shares')
@@ -583,7 +584,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       probBefore: answer.prob,
       probAfter,
       createdTime: now,
-      fees: noFees,
+      fees: totalFees,
       isAnte: false,
       isRedemption: false,
       isChallenge: false,
@@ -592,7 +593,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     })
 
     const otherResultsWithBet = otherBetsResults.map((result) => {
-      const { answer: updatedAnswer, takers, cpmmState, outcome } = result
+      const { answer: updatedAnswer, takers, cpmmState, outcome, totalFees } = result
       const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -611,7 +612,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         probBefore,
         probAfter,
         createdTime: now,
-        fees: noFees,
+        fees: totalFees,
         isAnte: false,
         isRedemption: true,
         isChallenge: false,
@@ -648,7 +649,7 @@ export const getBetDownToOneMultiBetInfo = (
   const now = Date.now()
 
   const betResults = noBetResults.map((result) => {
-    const { answer, takers, cpmmState } = result
+    const { answer, takers, cpmmState, totalFees } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -666,7 +667,7 @@ export const getBetDownToOneMultiBetInfo = (
       probBefore,
       probAfter,
       createdTime: now,
-      fees: noFees,
+      fees: totalFees,
       isAnte: false,
       isRedemption: true,
       isChallenge: false,
