@@ -1,7 +1,12 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import { CREATOR_FEE_FRAC, Fees, getTakerFee } from './fees'
+import {
+  CREATOR_FEE_FRAC,
+  Fees,
+  getTakerAmountBeforeFees,
+  getTakerFee,
+} from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -158,6 +163,18 @@ export function calculateCpmmAmountToProb(
         (k - n * ((p * (prob - 1)) / ((p - 1) * prob)) ** p)
     : (((1 - p) * (prob - 1)) / (-p * prob)) ** (p - 1) *
         (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
+}
+
+export function calculateCpmmAmountToProbIncludingFees(
+  state: CpmmState,
+  prob: number,
+  outcome: 'YES' | 'NO'
+) {
+  const amount = calculateCpmmAmountToProb(state, prob, outcome)
+  const shares = calculateCpmmShares(state.pool, state.p, amount, outcome)
+  const averageProb = amount / shares
+
+  return getTakerAmountBeforeFees(amount, averageProb)
 }
 
 export function calculateCpmmAmountToBuySharesFixedP(

@@ -1,7 +1,10 @@
 const TAKER_FEE_CONSTANT = 0.07
 
-export const getTakerFee = (amount: number, prob: number) => {
-  return TAKER_FEE_CONSTANT * prob * (1 - prob) * amount
+export const getTakerFee = (totalAmount: number, prob: number) => {
+  return TAKER_FEE_CONSTANT * prob * (1 - prob) * totalAmount
+}
+export const getTakerAmountBeforeFees = (shareCost: number, prob: number) => {
+  return shareCost / (1 - TAKER_FEE_CONSTANT * prob * (1 - prob))
 }
 
 // Creators take a fraction of the taker fee.
