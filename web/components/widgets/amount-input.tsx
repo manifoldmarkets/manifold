@@ -16,6 +16,9 @@ import {
   IncrementDecrementAmountButton,
 } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { isVerified, User } from 'common/user'
+import { STARTING_BALANCE } from 'common/economy'
+import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 
 export function AmountInput(
   props: {
@@ -271,7 +274,11 @@ export function BuyAmountInput(props: {
         )}
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
-            {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
+            {error === 'Insufficient balance' ? (
+              <BuyMoreFunds user={user} />
+            ) : (
+              error
+            )}
           </div>
         ) : (
           showBalance &&
@@ -287,8 +294,10 @@ export function BuyAmountInput(props: {
   )
 }
 
-const BuyMoreFunds = () => {
+const BuyMoreFunds = (props: { user: User | null | undefined }) => {
+  const { user } = props
   const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
+  const [showVerifyPhone, setShowVerifyPhone] = useState(false)
   return (
     <>
       Not enough funds.
@@ -298,6 +307,15 @@ const BuyMoreFunds = () => {
       >
         Buy more?
       </button>
+      {user && !isVerified(user) && (
+        <button
+          className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
+          onClick={() => setShowVerifyPhone(true)}
+        >
+          Verify your phone number for {formatMoney(STARTING_BALANCE)}
+        </button>
+      )}
+      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
       <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
   )

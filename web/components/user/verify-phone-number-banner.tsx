@@ -16,7 +16,7 @@ export const VerifyPhoneNumberBanner = (props: {
   return (
     <Col
       className={
-        'border-ink-400 mx-4 my-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 sm:flex-row'
+        'border-ink-400 mx-4 my-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 dark:bg-indigo-700 sm:flex-row'
       }
     >
       <span>
@@ -35,13 +35,20 @@ export const VerifyPhoneNumberBanner = (props: {
       >
         Claim {formatMoney(STARTING_BALANCE)}
       </Button>
-      {showVerifyPhone && (
-        <Modal open={showVerifyPhone} setOpen={setShowVerifyPhone}>
-          <Col className={'bg-canvas-0 p-4'}>
-            <VerifyPhone onClose={() => setShowVerifyPhone(false)} />
-          </Col>
-        </Modal>
-      )}
+      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
     </Col>
+  )
+}
+export const VerifyPhoneModal = (props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+}) => {
+  const { open, setOpen } = props
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={'bg-canvas-0 p-4'}>
+        <VerifyPhone onClose={() => setOpen(false)} />
+      </Col>
+    </Modal>
   )
 }
