@@ -16,7 +16,7 @@ import {
   IncrementDecrementAmountButton,
 } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { isVerified, User } from 'common/user'
+import { User, verifiedPhone } from 'common/user'
 import { STARTING_BALANCE } from 'common/economy'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 
@@ -307,7 +307,7 @@ const BuyMoreFunds = (props: { user: User | null | undefined }) => {
       >
         Buy more?
       </button>
-      {user && !isVerified(user) && (
+      {user && !verifiedPhone(user) && (
         <button
           className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
           onClick={() => setShowVerifyPhone(true)}
