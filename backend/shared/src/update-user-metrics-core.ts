@@ -14,7 +14,7 @@ import {
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { buildArray, filterDefined } from 'common/util/array'
-import { hasChanges } from 'common/util/object'
+import { hasChanges, hasSignificantDeepChanges } from 'common/util/object'
 import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
@@ -169,7 +169,7 @@ export async function updateUserMetricsCore() {
   )
   log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
 
-  const contractMetricsByUserId = groupBy(
+  const currentMetricsByUserId = groupBy(
     currentContractMetrics,
     (m) => m.userId
   )
@@ -252,26 +252,23 @@ export async function updateUserMetricsCore() {
       userMetricRelevantBets,
       (b) => b.contractId
     )
-    const metricsByContract = calculateMetricsByContractAndAnswer(
+    const freshMetrics = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
       user,
       answersByContractId
     ).flat()
-    const currentMetricsForUser = contractMetricsByUserId[user.id] ?? []
+    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
     contractMetricUpdates.push(
-      ...metricsByContract.filter(
-        (cm) =>
-          // Their contract metrics are updated upon selling out of a contract
-          cm.hasShares &&
-          hasChanges(
-            cm,
-            currentMetricsForUser.find(
-              (m) =>
-                m.contractId === cm.contractId && cm.answerId === m.answerId
-            ) ?? {}
-          )
-      )
+      ...freshMetrics.filter((freshMetric) => {
+        const currentMetric = currentMetricsForUser.find(
+          (m) =>
+            freshMetric.contractId === m.contractId &&
+            freshMetric.answerId === m.answerId
+        )
+        if (!currentMetric) return true
+        return hasSignificantDeepChanges(freshMetric, currentMetric, 0.1)
+      })
     )
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
