@@ -1,11 +1,12 @@
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
 import { isVerified, User } from 'common/user'
-import { canSendMana, SEND_MANA_REQ } from 'common/can-send-mana'
+import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
+import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
@@ -49,9 +50,11 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
     }
     const fromUser = fromSnap.data() as User
 
-    const canCreate = await canSendMana(fromUser)
-    if (!canCreate) {
-      throw new APIError(403, SEND_MANA_REQ)
+    const { canSend, message } = await canSendMana(fromUser, () =>
+      getUserPortfolioInternal(fromUser.id)
+    )
+    if (!canSend) {
+      throw new APIError(403, message)
     }
 
     // Only permit one redemption per user per link

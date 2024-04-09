@@ -1098,7 +1098,6 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
     returns: {} as {
-      status: 'success'
       loanTotal: number
       investmentValue: number
       balance: number
