@@ -1268,10 +1268,10 @@ export const createContractResolvedNotifications = async (
           : '.'
       const profit = userPayout - userInvestment
       const profitPercent = Math.round((profit / userInvestment) * 100)
-      const profitString = ` You made ${formatMoney(
+      const profitString = ` You made M${Math.round(
         profit
       )} (+${profitPercent}%)`
-      const lossString = ` You lost ${formatMoney(-profit)}`
+      const lossString = ` You lost M${Math.round(-profit)}`
       await createPushNotification(
         notification,
         privateUser,
