@@ -5,9 +5,11 @@ import { QUEST_DETAILS, QuestType } from 'common/quest'
 
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getRecentContractIds } from 'common/supabase/contracts'
-import { getUserShareEventsCount } from 'common/supabase/user-events'
 import { APIError } from 'common//api/utils'
 import { createQuestPayoutNotification } from 'shared/create-notification'
 import * as dayjs from 'dayjs'
@@ -139,7 +141,7 @@ const getCurrentCountForQuest = async (
       .valueOf()
     const startTs = millisToTs(startOfDay)
     log('getting shares count for user', userId, 'from startTs', startTs)
-    return await getUserShareEventsCount(userId, startTs, db)
+    return await getUserShareEventsCount(userId, startTs)
   } else if (questType === 'REFERRALS') {
     let startOfWeek = dayjs()
       .tz('America/Los_Angeles')
@@ -200,4 +202,15 @@ const awardQuestBonus = async (
     const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
     return { message, txn, status, bonusAmount: rewardAmount }
   })
+}
+
+export async function getUserShareEventsCount(userId: string, startTs: string) {
+  const pg = createSupabaseDirectClient()
+  const res = await pg.one(
+    `select count(*)::int from user_contract_interactions
+                where user_id = $1 and name = 'page share'
+                  and created_time >= $2`,
+    [userId, startTs]
+  )
+  return res.count
 }

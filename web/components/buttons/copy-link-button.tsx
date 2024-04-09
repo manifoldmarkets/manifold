@@ -32,6 +32,9 @@ export function CopyLinkOrShareButton(props: {
   size?: SizeType
   children?: React.ReactNode
   color?: ColorType
+  trackingInfo?: {
+    contractId: string
+  }
 }) {
   const {
     url,
@@ -42,6 +45,7 @@ export function CopyLinkOrShareButton(props: {
     iconClassName,
     tooltip,
     color,
+    trackingInfo,
   } = props
   // NOTE: this results in hydration errors on mobile dev
   const { isNative, platform } = getNativePlatform()
@@ -51,7 +55,7 @@ export function CopyLinkOrShareButton(props: {
     if (!url) return
     copyToClipboard(url)
     if (!isNative) toast.success('Link copied!')
-    trackShareEvent(eventTrackingName, url)
+    trackShareEvent(eventTrackingName, url, trackingInfo)
   }
 
   return (

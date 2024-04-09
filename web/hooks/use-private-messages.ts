@@ -131,7 +131,7 @@ export const useUnseenPrivateMessageChannels = (
     console.error('useUnseenPrivateMessageChannels must be authorized')
 
   const pathName = usePathname()
-  const lastSeenMessagesPageTime = useLastSeenMessagesPageTime(userId)
+  const lastSeenMessagesPageTime = useLastSeenMessagesPageTime()
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
     usePersistentLocalState<Record<number, number> | undefined>(
       undefined,
@@ -235,7 +235,7 @@ export const useUnseenPrivateMessageChannels = (
   return { unseenMessages }
 }
 
-const useLastSeenMessagesPageTime = (userId: string) => {
+const useLastSeenMessagesPageTime = () => {
   const pathname = usePathname()
   const isVisible = useIsPageVisible()
 
@@ -247,18 +247,6 @@ const useLastSeenMessagesPageTime = (userId: string) => {
       track('view love messages page')
       return
     }
-    // On every path or visibility change, check the last time we saw the messages page
-    run(
-      db
-        .from('user_events')
-        .select('ts')
-        .in('name', ['view love messages page', 'view messages page'])
-        .eq('user_id', userId)
-        .order('ts', { ascending: false })
-        .limit(1)
-    ).then(({ data }) => {
-      setLastSeenMessagesPageTime(new Date(data[0]?.ts ?? 0).valueOf())
-    })
   }, [pathname, isVisible])
 
   return lastSeenMessagesPageTime

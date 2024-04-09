@@ -133,6 +133,7 @@ function insertUserEvent(
     (name === 'click market card feed' ||
       name === 'click market card welcome topic section' ||
       name === 'bet' ||
+      name === 'copy market link' ||
       name === 'comment' ||
       name === 'repost' ||
       name === 'like') &&
@@ -141,7 +142,9 @@ function insertUserEvent(
     const feedItem = data?.feedItem as FeedTimelineItem | undefined
     const isCardClick = name.includes('click market card')
     const kind =
-      name === 'like' && feedItem
+      name === 'copy market link'
+        ? 'page share'
+        : name === 'like' && feedItem
         ? 'card like'
         : name === 'like'
         ? 'page like'

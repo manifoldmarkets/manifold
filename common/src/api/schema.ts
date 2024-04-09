@@ -1048,6 +1048,7 @@ export const API = (_apiTypeCheck = {
         'card click',
         'promoted click',
         'card like',
+        'page share',
       ]),
       commentId: z.string().optional(),
       feedReasons: z.array(z.string()).optional(),
