@@ -35,7 +35,6 @@ import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
-import { onboardLover } from 'shared/love/onboard-lover'
 import { onCreateUser } from 'api/helpers/on-create-user'
 import { STARTING_BALANCE } from 'common/economy'
 
@@ -169,30 +168,38 @@ export const createuser: APIHandler<'createuser'> = async (
   )
 
   log('created user ', { username: user.username, firebaseId: auth.uid })
-  const pg = createSupabaseDirectClient()
-  if (fromLove) await onboardLover(user, ip)
-  await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
-  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
-  const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
-  await generateNewUserFeedFromContracts(
-    auth.uid,
-    pg,
-    DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
-    interestingContractIds,
-    0.5
-  )
 
-  await track(auth.uid, 'create user', { username: user.username }, { ip })
-
-  if (process.env.FB_ACCESS_TOKEN)
-    await trackSignupFB(
-      process.env.FB_ACCESS_TOKEN,
-      user.id,
-      email ?? '',
-      ip
-    ).catch((e) => log('error fb tracking:', e))
-  else log('no FB_ACCESS_TOKEN')
   const continuation = async () => {
+    const pg = createSupabaseDirectClient()
+    await track(
+      user.id,
+      fromLove ? 'create lover' : 'create user',
+      { username: user.username },
+      { ip }
+    )
+
+    await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
+    await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
+    const interestingContractIds = await getImportantContractsForNewUsers(
+      30,
+      pg
+    )
+    await generateNewUserFeedFromContracts(
+      auth.uid,
+      pg,
+      DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
+      interestingContractIds,
+      0.5
+    )
+
+    if (process.env.FB_ACCESS_TOKEN)
+      await trackSignupFB(
+        process.env.FB_ACCESS_TOKEN,
+        user.id,
+        email ?? '',
+        ip
+      ).catch((e) => log('error fb tracking:', e))
+    else log('no FB_ACCESS_TOKEN')
     await onCreateUser(user, privateUser)
   }
 
