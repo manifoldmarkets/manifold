@@ -9,6 +9,10 @@ import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
 import { log } from 'shared/log'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { HOUR_MS } from 'common/util/time'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
@@ -36,6 +40,7 @@ const getRelatedMarkets = async (
   if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
+  const groupsToIgnore = [UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID]
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
       `
@@ -54,6 +59,7 @@ const getRelatedMarkets = async (
         from groups as g
         join group_contracts as gc on g.id = gc.group_id
         where contract_id = $1
+        and g.id not in (select unnest($3::text[]))
       )
       select gs.slug, c.data, c.importance_score
       from group_slugs as gs
@@ -66,18 +72,19 @@ const getRelatedMarkets = async (
       ) as c
       order by gs.slug, c.importance_score desc
       `,
-      [contractId, (limit ?? 5) + 15],
+      [contractId, (limit ?? 5) + 15, groupsToIgnore],
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
-      `select slug, importance_score from groups where slug = ANY(
+      `select slug, id, importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
               where id = $1
               )
+              and id not in (select unnest($2::text[]))
               order by importance_score desc
           `,
-      [contractId],
+      [contractId, groupsToIgnore],
       (row) => ({
         slug: row.slug as string,
         importanceScore: row.importance_score as number,
