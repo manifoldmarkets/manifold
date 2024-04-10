@@ -13,12 +13,13 @@ import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
+import { ValidatedAPIParams } from 'common/api/schema'
+import { orderBy } from 'lodash'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
 > = async (body) => {
-  const { contractId, limit, limitTopics } = body
-  return getRelatedMarkets(contractId, limit, limitTopics)
+  return getRelatedMarkets(body)
 }
 type cacheType = {
   marketIdsFromEmbeddings: string[]
@@ -30,10 +31,9 @@ const cachedRelatedMarkets = new Map<string, cacheType>()
 // We cache the state of the contracts every 5 minutes via the cache header,
 // and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
 const getRelatedMarkets = async (
-  contractId: string,
-  limit: number,
-  limitTopics: number
+  body: ValidatedAPIParams<'get-related-markets-cache'>
 ) => {
+  const { contractId, limit, limitTopics, embeddingsLimit } = body
   log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(contractId)
@@ -49,7 +49,7 @@ const getRelatedMarkets = async (
         match_count := $2,
         similarity_threshold := 0.7
         )`,
-      [contractId, limit],
+      [contractId, embeddingsLimit],
       (row) => row.data as Contract
     ),
     pg.map(
@@ -72,7 +72,7 @@ const getRelatedMarkets = async (
       ) as c
       order by gs.slug, c.importance_score desc
       `,
-      [contractId, (limit ?? 5) + 15, groupsToIgnore],
+      [contractId, (limit ?? 5) + 25, groupsToIgnore],
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
@@ -91,10 +91,11 @@ const getRelatedMarkets = async (
       })
     ),
   ])
-
+  const orderByNonStonks = (c: Contract) =>
+    c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
   const marketsByTopicSlug = orderAndDedupeGroupContracts(
     topics,
-    groupContracts,
+    orderBy(groupContracts, (c) => orderByNonStonks(c[1]), 'desc'),
     limit
   )
 
@@ -123,7 +124,11 @@ const getRelatedMarkets = async (
   })
 
   return {
-    marketsFromEmbeddings,
+    marketsFromEmbeddings: orderBy(
+      marketsFromEmbeddings,
+      orderByNonStonks,
+      'desc'
+    ),
     marketsByTopicSlug,
   }
 }

@@ -92,6 +92,7 @@ export async function getContractParams(
     unauthedApi('get-related-markets-cache', {
       contractId: contract.id,
       limit: 2,
+      embeddingsLimit: 10,
       limitTopics: 4,
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
