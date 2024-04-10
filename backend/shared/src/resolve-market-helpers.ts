@@ -161,13 +161,13 @@ export const resolveMarketHelper = async (
     } as Contract
 
     // handle exploit where users can get negative payouts
-    const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
+    const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
 
     const userPayouts = groupPayoutsByUser(payouts)
     log('user payouts', { userPayouts })
 
     const negativePayouts = Object.values(userPayouts).filter(
-      (p) => p <= negPayoutThreshold
+      (p) => p < negPayoutThreshold
     )
 
     log('negative payouts', { negativePayouts })
