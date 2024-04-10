@@ -384,7 +384,8 @@ function BetsTable(props: {
       header: { sort: 'closeTime', label: 'Close' },
       span: 3,
       renderCell: (c: Contract) => {
-        const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
+        const closeTime = c.resolutionTime ?? c.closeTime
+        const date = new Date(closeTime ?? Infinity)
         const isThisYear = new Date().getFullYear() === date.getFullYear()
         const dateString = date.toLocaleDateString('en-US', {
           month: '2-digit',
@@ -393,7 +394,9 @@ function BetsTable(props: {
         })
         return (
           <Row className={'justify-end'}>
-            <span className={'text-ink-500'}>{dateString}</span>
+            <span className={'text-ink-500'}>
+              {closeTime ? dateString : 'N/A'}
+            </span>
           </Row>
         )
       },
