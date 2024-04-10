@@ -13,6 +13,7 @@ import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { Row } from '../layout/row'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -42,12 +43,10 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       <div className="shrink-0 grow">
         <div>{user.name}</div>
         <div className="flex items-center text-sm">
-          <Row className="mr-2 items-center">
-            <ManaCoin />
-            <animated.div>
-              {balance.to((b) => formatMoneyNoMoniker(b))}
-            </animated.div>
-          </Row>
+          <AnimatedManaCoinNumber
+            amount={user?.balance ?? 0}
+            className="mr-2"
+          />
           <button
             className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
             onClick={(e) => {
