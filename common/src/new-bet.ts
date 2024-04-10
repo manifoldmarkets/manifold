@@ -18,7 +18,6 @@ import {
 } from './contract'
 import {
   CREATOR_FEE_FRAC,
-  getTakerAmountBeforeFees,
   getTakerFee,
   noFees,
 } from './fees'
@@ -141,13 +140,11 @@ const computeFill = (
   const makerPrice =
     outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb
 
-  const maxTakerShares =
-    (amount - getTakerFee(amount, matchedBet.limitProb)) / takerPrice
+  const maxTakerShares = amount / (takerPrice + getTakerFee(1, takerPrice))
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
 
-  const takerAmount = getTakerAmountBeforeFees(shares * takerPrice, takerPrice)
-  const takerFee = getTakerFee(takerAmount, takerPrice)
+  const takerFee = getTakerFee(shares, takerPrice)
   const creatorFee = CREATOR_FEE_FRAC * takerFee
   const platformFee = (1 - CREATOR_FEE_FRAC) * takerFee
   const fees = { creatorFee, platformFee, liquidityFee: 0 }
@@ -155,17 +152,13 @@ const computeFill = (
   const maker = {
     bet: matchedBet,
     matchedBetId: 'taker',
-    amount:
-      shares *
-      (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb),
+    amount: shares * makerPrice,
     shares,
     timestamp,
   }
   const taker = {
     matchedBetId: matchedBet.id,
-    amount:
-      shares *
-      (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
+    amount: shares * takerPrice + takerFee,
     shares,
     timestamp,
     fees,
@@ -593,7 +586,13 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     })
 
     const otherResultsWithBet = otherBetsResults.map((result) => {
-      const { answer: updatedAnswer, takers, cpmmState, outcome, totalFees } = result
+      const {
+        answer: updatedAnswer,
+        takers,
+        cpmmState,
+        outcome,
+        totalFees,
+      } = result
       const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)

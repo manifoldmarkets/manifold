@@ -1,12 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import {
-  CREATOR_FEE_FRAC,
-  Fees,
-  getTakerAmountBeforeFees,
-  getTakerFee,
-} from './fees'
+import { CREATOR_FEE_FRAC, Fees, getTakerFee } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -83,23 +78,22 @@ export function getCpmmFees(
   betAmount: number,
   outcome: string
 ) {
-  // Do three iterations toward average probability of the bet minus fees.
+  // Do a few iterations toward average probability of the bet minus fees.
   // Charging fees means the bet amount is lower and the average probability moves slightly less far.
-  const shares1 = calculateCpmmShares(state.pool, state.p, betAmount, outcome)
-  const averageProb1 = betAmount / shares1
-  const fee1 = getTakerFee(betAmount, averageProb1)
+  let fee = 0
+  for (let i = 0; i < 10; i++) {
+    const betAmountAfterFee = betAmount - fee
+    const shares = calculateCpmmShares(
+      state.pool,
+      state.p,
+      betAmountAfterFee,
+      outcome
+    )
+    const averageProb = betAmountAfterFee / shares
+    fee = getTakerFee(shares, averageProb)
+  }
 
-  const betAmount2 = betAmount - fee1
-  const shares2 = calculateCpmmShares(state.pool, state.p, betAmount2, outcome)
-  const averageProb2 = betAmount2 / shares2
-  const fee2 = getTakerFee(betAmount, averageProb2)
-
-  const betAmount3 = betAmount - fee2
-  const shares3 = calculateCpmmShares(state.pool, state.p, betAmount3, outcome)
-  const averageProb3 = betAmount3 / shares3
-  const fee3 = getTakerFee(betAmount, averageProb3)
-
-  const totalFees = betAmount === 0 ? 0 : fee3
+  const totalFees = betAmount === 0 ? 0 : fee
   const creatorFee = totalFees * CREATOR_FEE_FRAC
   const platformFee = totalFees * (1 - CREATOR_FEE_FRAC)
   const liquidityFee = 0
@@ -173,8 +167,8 @@ export function calculateCpmmAmountToProbIncludingFees(
   const amount = calculateCpmmAmountToProb(state, prob, outcome)
   const shares = calculateCpmmShares(state.pool, state.p, amount, outcome)
   const averageProb = amount / shares
-
-  return getTakerAmountBeforeFees(amount, averageProb)
+  const fees = getTakerFee(shares, averageProb)
+  return amount + fees
 }
 
 export function calculateCpmmAmountToBuySharesFixedP(
