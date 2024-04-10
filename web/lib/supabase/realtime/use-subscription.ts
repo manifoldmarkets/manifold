@@ -131,12 +131,11 @@ export function useSubscription<T extends TableName>(
     }
   })
 
-  const onEnabled = useEvent((enabled: boolean) => {
-    dispatch({ type: enabled ? 'ENABLED' : 'DISABLED' })
-  })
+  const onEnabled = useEvent(() => dispatch({ type: 'ENABLED' }))
+  const onDisabled = useEvent(() => dispatch({ type: 'DISABLED' }))
 
   const bindings = [{ event: '*', table, filter } as const]
-  usePostgresChanges({ bindings, onChange, onStatus, onEnabled })
+  usePostgresChanges({ bindings, onChange, onStatus, onEnabled, onDisabled })
   return { ...state, dispatch }
 }
 
