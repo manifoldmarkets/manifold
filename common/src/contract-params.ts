@@ -91,7 +91,7 @@ export async function getContractParams(
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets-cache', {
       contractId: contract.id,
-      limit: 4,
+      limit: 2,
       limitTopics: 4,
     }),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side

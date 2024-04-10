@@ -94,7 +94,8 @@ const getRelatedMarkets = async (
 
   const marketsByTopicSlug = orderAndDedupeGroupContracts(
     topics,
-    groupContracts
+    groupContracts,
+    limit
   )
 
   // Return only the limit for each topic
