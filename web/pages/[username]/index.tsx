@@ -265,7 +265,7 @@ function UserProfile(props: {
           {isCurrentUser && (
             <Button
               color="gray-white"
-              className="gap-2 pr-8 max-sm:rounded-none sm:ml-auto"
+              className="gap-2 whitespace-nowrap pr-8 max-sm:rounded-none sm:ml-auto"
               size="xs"
               onClick={() => {
                 setExpandProfileInfo((v) => !v)
@@ -273,9 +273,15 @@ function UserProfile(props: {
               }}
             >
               {expandProfileInfo ? (
-                <ChevronDownIcon className="text-ink-700 h-5 w-5" />
+                <Row className={'w-fit items-center gap-1'}>
+                  Hide profile
+                  <ChevronUpIcon className="h-4 w-4" />
+                </Row>
               ) : (
-                <ChevronUpIcon className="text-ink-700 h-5 w-5" />
+                <Row className={'w-fit items-center gap-1'}>
+                  See profile
+                  <ChevronDownIcon className="h-4 w-4" />
+                </Row>
               )}
               <Avatar
                 username={user.username}
