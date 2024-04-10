@@ -434,6 +434,9 @@ export const BuyPanelBody = (props: {
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
+  const choicesMap: { [key: string]: string } = isStonk
+    ? { Buy: 'YES', Short: 'NO' }
+    : { Yes: 'YES', No: 'NO' }
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -445,10 +448,7 @@ export const BuyPanelBody = (props: {
             <ChoicesToggleGroup
               currentChoice={outcome}
               color={outcome === 'YES' ? 'green' : 'red'}
-              choicesMap={{
-                Yes: 'YES',
-                No: 'NO',
-              }}
+              choicesMap={choicesMap}
               setChoice={(outcome) => {
                 setOutcome(outcome as 'YES' | 'NO')
               }}
@@ -591,7 +591,9 @@ export const BuyPanelBody = (props: {
                         'YES'
                       )} or ${formatOutcomeLabel(contract, 'NO')}`
                     : isStonk
-                    ? formatOutcomeLabel(contract, outcome)
+                    ? formatOutcomeLabel(contract, outcome) +
+                      ' ' +
+                      formatMoney(betAmount)
                     : `Bet ${
                         binaryMCOutcomeLabel ??
                         formatOutcomeLabel(contract, outcome)

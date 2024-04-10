@@ -95,6 +95,7 @@ export function FeedContractCard(props: {
   } = contract
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+  const isStonk = outcomeType === 'STONK'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -245,6 +246,15 @@ export function FeedContractCard(props: {
               contract={contract}
               user={user}
               className="h-min"
+            />
+          )}
+          {!isClosed && isStonk && (
+            <BetButton
+              feedItem={item}
+              contract={contract}
+              user={user}
+              className="h-min"
+              labels={{ yes: 'Buy', no: 'Short' }}
             />
           )}
         </Col>
