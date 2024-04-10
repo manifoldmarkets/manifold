@@ -37,6 +37,7 @@ import { DEFAULT_FEED_USER_ID } from 'common/feed'
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 import { onboardLover } from 'shared/love/onboard-lover'
 import { onCreateUser } from 'api/helpers/on-create-user'
+import { STARTING_BALANCE } from 'common/economy'
 
 export const createuser: APIHandler<'createuser'> = async (
   props,
@@ -126,8 +127,8 @@ export const createuser: APIHandler<'createuser'> = async (
         name,
         username,
         avatarUrl,
-        balance: testUserAKAEmailPasswordUser ? 100 : 0,
-        totalDeposits: testUserAKAEmailPasswordUser ? 100 : 0,
+        balance: STARTING_BALANCE,
+        totalDeposits: STARTING_BALANCE,
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         nextLoanCached: 0,
@@ -141,7 +142,6 @@ export const createuser: APIHandler<'createuser'> = async (
         fromLove,
         fromPolitics,
         signupBonusPaid: 0,
-        verifiedPhone: testUserAKAEmailPasswordUser,
       })
 
       const privateUser: PrivateUser = {
