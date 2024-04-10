@@ -319,7 +319,6 @@ export const NEW_USER_HERLPER_IDS = [
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
   'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
   'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
-  'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
