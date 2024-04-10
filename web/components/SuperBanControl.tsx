@@ -1,14 +1,11 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Modal } from './layout/modal'
 import { superBanUser } from 'web/lib/firebase/super-ban-user'
 import { Col } from './layout/col'
 import { Button } from './buttons/button'
 
-interface SuperBanControlProps {
-  userId: string
-}
-
-const SuperBanControl: React.FC<SuperBanControlProps> = ({ userId }) => {
+const SuperBanControl = (props: { userId: string }) => {
+  const { userId } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [summaryMessage, setSummaryMessage] = useState('')
@@ -24,8 +21,12 @@ const SuperBanControl: React.FC<SuperBanControlProps> = ({ userId }) => {
     }
   }
 
-  function renderConfirmationModal() {
-    return (
+  return (
+    <>
+      <Button color="red" size="xs" onClick={() => setShowConfirmModal(true)}>
+        Superban
+      </Button>
+
       <Modal open={showConfirmModal} setOpen={setShowConfirmModal} size="md">
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <div className="text-left">
@@ -44,27 +45,13 @@ const SuperBanControl: React.FC<SuperBanControlProps> = ({ userId }) => {
           </div>
         </Col>
       </Modal>
-    )
-  }
 
-  function renderSummaryModal() {
-    return (
       <Modal open={showSummaryModal} setOpen={setShowSummaryModal} size="md">
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
           <div className="text-center">{summaryMessage}</div>
         </Col>
       </Modal>
-    )
-  }
-
-  return (
-    <div>
-      <Button color="red" onClick={() => setShowConfirmModal(true)}>
-        Superban
-      </Button>
-      {renderConfirmationModal()}
-      {renderSummaryModal()}
-    </div>
+    </>
   )
 }
 

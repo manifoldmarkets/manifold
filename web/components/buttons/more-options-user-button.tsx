@@ -6,6 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import clsx from 'clsx'
 import { DotsHorizontalIcon } from '@heroicons/react/outline'
+import { ChartBarIcon } from '@heroicons/react/solid'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { BlockUser } from 'web/components/profile/block-user'
@@ -17,6 +18,8 @@ import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import { ReferralsButton } from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/firebase/api'
 import SuperBanControl from '../SuperBanControl'
+import Link from 'next/link'
+import { linkClass } from '../widgets/site-link'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -45,14 +48,14 @@ export function MoreOptionsUserButton(props: { user: User }) {
       </Button>
       <Modal open={isModalOpen} setOpen={setIsModalOpen}>
         <Col className={'bg-canvas-0 text-ink-1000 rounded-md p-4 '}>
-          <Title className={'!mb-2 flex justify-between'}>
-            {name}
+          <div className="mb-2 flex flex-wrap justify-between">
+            <Title className={'!mb-0'}>{name}</Title>
             {(isAdmin || isTrusted) && (
-              <Row>
+              <Row className="gap-2">
                 <SuperBanControl userId={userId} />
                 <Button
                   color={'red'}
-                  className="ml-2"
+                  size="xs"
                   onClick={() => {
                     banUser({
                       userId,
@@ -64,30 +67,44 @@ export function MoreOptionsUserButton(props: { user: User }) {
                 </Button>
               </Row>
             )}
-          </Title>
-          <span className={'ml-1 text-sm'}> joined {createdTime}</span>
-          {isAdmin && (
-            <Row className={'items-center gap-2 px-1'}>
-              <a
-                className="text-primary-400 text-sm hover:underline"
-                href={firestoreUserConsolePath(user.id)}
-              >
-                firestore user
-              </a>
-              <a
-                className="text-primary-400 text-sm hover:underline"
-                href={firestorePrivateConsolePath(user.id)}
-              >
-                private user
-              </a>
-              <ReferralsButton user={user} className={'text-sm'} />
-              <SimpleCopyTextButton
-                text={user.id}
-                tooltip="Copy user id"
-                eventTrackingName={'admin copy user id'}
-              />
-            </Row>
-          )}
+          </div>
+          <Row
+            className={
+              'text-ink-600 flex-wrap items-center gap-x-3 gap-y-1 px-1'
+            }
+          >
+            <span className={'text-sm'}>Joined {createdTime}</span>
+            <ReferralsButton user={user} className={'text-sm'} />
+            <Link
+              href={`/${user.username}/calibration`}
+              className={clsx(linkClass, 'text-sm')}
+            >
+              <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
+              Calibration
+            </Link>
+            {isAdmin && (
+              <>
+                <a
+                  className="text-primary-400 text-sm hover:underline"
+                  href={firestoreUserConsolePath(user.id)}
+                >
+                  firestore user
+                </a>
+                <a
+                  className="text-primary-400 text-sm hover:underline"
+                  href={firestorePrivateConsolePath(user.id)}
+                >
+                  private user
+                </a>
+                <SimpleCopyTextButton
+                  text={user.id}
+                  tooltip="Copy user id"
+                  className="!px-1 !py-px"
+                  eventTrackingName={'admin copy user id'}
+                />
+              </>
+            )}
+          </Row>
           <UncontrolledTabs
             className={'mb-4'}
             tabs={[

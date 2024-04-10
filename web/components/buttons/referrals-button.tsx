@@ -25,6 +25,7 @@ import { canSetReferrer } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { UserHovercard } from '../user/user-hovercard'
+import { buildArray } from 'common/util/array'
 
 export const ReferralsButton = memo(function ReferralsButton(props: {
   user: User
@@ -66,28 +67,32 @@ export function ReferralsDialog(props: {
     getReferrals(user.id).then(setReferredUsers)
   }, [referredUsers, isOpen, user.id])
   const currentUser = useUser()
+  const isYou = currentUser?.id === user.id
+
   const referredByUser = useUserById(user.referredByUserId)
   const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 rounded p-6">
-        <span className={'text-primary-700 pb-2 text-xl'}>
-          Refer a friend for{' '}
-          <span className={'text-teal-500'}>
-            ${formatMoney(REFERRAL_AMOUNT)}
-          </span>{' '}
-          each!
-        </span>
+        {isYou && (
+          <span className={'text-primary-700 pb-2 text-xl'}>
+            Refer a friend for{' '}
+            <span className={'text-teal-500'}>
+              ${formatMoney(REFERRAL_AMOUNT)}
+            </span>{' '}
+            each!
+          </span>
+        )}
         <Tabs
           className="my-2"
           defaultIndex={defaultTab}
-          tabs={[
+          tabs={buildArray([
             {
-              title: 'Your referrer',
+              title: isYou ? 'Your referrer' : 'Referred by',
               content: (
                 <>
-                  {user.id === currentUser?.id && canSetReferrer(user) ? (
+                  {isYou && canSetReferrer(user) ? (
                     <Col className={'mt-1'}>
                       <span>Know who referred you?</span>
                       <SelectUsers
@@ -162,7 +167,7 @@ export function ReferralsDialog(props: {
               ),
             },
             {
-              title: `Your ${
+              title: `${isYou ? 'Your ' : ''}${
                 referredUsers && referredUsers.length > 0
                   ? referredUsers.length
                   : ''
@@ -196,7 +201,7 @@ export function ReferralsDialog(props: {
                 </Col>
               ),
             },
-            {
+            isYou && {
               title: 'Share',
               content: (
                 <Col className="gap-2">
@@ -208,7 +213,7 @@ export function ReferralsDialog(props: {
                 </Col>
               ),
             },
-          ]}
+          ])}
         />
       </Col>
     </Modal>
