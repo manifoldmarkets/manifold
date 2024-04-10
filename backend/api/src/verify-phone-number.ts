@@ -4,7 +4,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isProd } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { STARTING_BALANCE, SUS_STARTING_BALANCE } from 'common/economy'
-import { PrivateUser } from 'common/user'
+import { PrivateUser, User } from 'common/user'
+import { SignupBonusTxn } from 'common/txn'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const twilio = require('twilio')
 
@@ -66,11 +68,42 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> = async (
   const { initialDeviceToken: deviceToken } = privateUser
   const deviceUsedBefore =
     !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
-  const balance = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
-  await firestore.collection('users').doc(auth.uid).update({
-    verifiedPhone: true,
-    balance,
-    totalDeposits: balance,
+  const amount = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
+  await firestore.runTransaction(async (transaction) => {
+    const toDoc = firestore.doc(`users/${auth.uid}`)
+    const toUserSnap = await transaction.get(toDoc)
+    if (!toUserSnap.exists)
+      throw new APIError(400, 'User not found', { userId: auth.uid })
+    const user = toUserSnap.data() as User
+    const { verifiedPhone } = user
+    if (verifiedPhone === true || verifiedPhone === undefined)
+      throw new APIError(400, 'User already verified')
+
+    const signupBonusTxn: Omit<
+      SignupBonusTxn,
+      'fromId' | 'id' | 'createdTime'
+    > = {
+      fromType: 'BANK',
+      amount: amount,
+      category: 'SIGNUP_BONUS',
+      toId: auth.uid,
+      token: 'M$',
+      toType: 'USER',
+      description: 'Signup bonus for verifying phone number',
+      data: {},
+    }
+    const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
+    if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
+      transaction.update(toDoc, {
+        verifiedPhone: true,
+      })
+      log(`Sent phone verification bonus to user ${auth.uid}`)
+    } else {
+      log(
+        `No phone verification bonus sent to user ${auth.uid}: ${manaBonusTxn.message}`
+      )
+      throw new APIError(400, 'Error sending phone verification bonus')
+    }
   })
 
   return { status: 'success' }
