@@ -392,6 +392,12 @@ function TopicsPage(props: {
     ) {
       await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
     }
+    if (
+      intersection(selectedTopics, ['0d39aa2b-1447-4298-bc60-5ef67d9cea4f'])
+        .length > 0
+    ) {
+      await followUser('fBFdG15kdfeBmjRVEajSMLayZ2y1') // follow @JasonTweenieMemes
+    }
 
     onNext?.()
   }
