@@ -6,11 +6,13 @@ import clsx from 'clsx'
 import { usePathname } from 'next/navigation'
 
 import { User } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyNoMoniker } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { Row } from '../layout/row'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -40,9 +42,12 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       <div className="shrink-0 grow">
         <div>{user.name}</div>
         <div className="flex items-center text-sm">
-          <span className="mr-2">
-            <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
-          </span>
+          <Row className="mr-2 items-center">
+            <ManaCoin />
+            <animated.div>
+              {balance.to((b) => formatMoneyNoMoniker(b))}
+            </animated.div>
+          </Row>
           <button
             className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
             onClick={(e) => {

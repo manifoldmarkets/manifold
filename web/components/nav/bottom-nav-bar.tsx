@@ -16,7 +16,7 @@ import { useState, Fragment } from 'react'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyNoMoniker } from 'common/util/format'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { trackCallback } from 'web/lib/service/analytics'
@@ -28,6 +28,8 @@ import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { usePathname } from 'next/navigation'
 import { Avatar } from '../widgets/avatar'
 import { GiCapitol } from 'react-icons/gi'
+import { Row } from '../layout/row'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -169,7 +171,13 @@ function NavBarItem(props: {
           <div className="mx-auto my-1">
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
-          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+          {/* <animated.div>{balance.to((b) => formatMoney(b))}</animated.div> */}
+          <Row className="items-center">
+            <ManaCoin />
+            <animated.div>
+              {balance.to((b) => formatMoneyNoMoniker(b))}
+            </animated.div>
+          </Row>
         </Col>
       </Link>
     )
