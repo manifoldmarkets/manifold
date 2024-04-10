@@ -10,7 +10,7 @@ export function BlockMarketButton(props: { contract: Contract }) {
   const { contract } = props
   const privateUser = usePrivateUser()
   if (!privateUser || (privateUser && privateUser.id === contract.creatorId))
-    return <div />
+    return null
   const isBlocked = privateUser.blockedContractIds?.includes(contract.id)
 
   const onBlock = async () => {
