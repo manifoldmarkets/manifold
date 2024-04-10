@@ -320,6 +320,7 @@ export const NEW_USER_HERLPER_IDS = [
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
 export const OPTED_OUT_OF_LEAGUES = [
