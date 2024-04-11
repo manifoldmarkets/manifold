@@ -15,17 +15,10 @@ import { EyeIcon } from '@heroicons/react/solid'
 
 export function ContractSummaryStats(props: {
   contract: Contract
-  views?: number
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const views =
-    props.views == null
-      ? null
-      : props.views < contract.uniqueBettorCount
-      ? contract.uniqueBettorCount
-      : props.views
-
+  const { viewCount: views } = contract
   return (
     <>
       {contract.outcomeType == 'BOUNTIED_QUESTION' ? (

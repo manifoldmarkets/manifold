@@ -185,7 +185,9 @@ export function ContractPageContent(props: ContractParams) {
       contract.answers = answers
     }
   }
-  const { viewCount: totalViews } = contract
+  if (!contract.viewCount) {
+    contract.viewCount = props.contract.viewCount
+  }
 
   const cachedContract = useMemo(
     () => contract,
@@ -473,7 +475,6 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
-                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
