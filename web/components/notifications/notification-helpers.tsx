@@ -147,7 +147,7 @@ export function AvatarNotificationIcon(props: {
 }
 
 export function NotificationIcon(props: {
-  symbol: string
+  symbol: string | ReactNode
   symbolBackgroundClass: string
 }) {
   const { symbol, symbolBackgroundClass } = props
@@ -192,7 +192,7 @@ export function NotificationFrame(props: {
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
       <Row className="w-full items-start gap-3">
-        <div className="w-10">{icon}</div>
+        <Col className="relative h-full w-10 items-center">{icon}</Col>
         <Col className="font w-full">
           <span>{children}</span>
           <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
