@@ -164,7 +164,7 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col>
+        <Col className="items-center">
           <div className="mx-auto my-1">
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
