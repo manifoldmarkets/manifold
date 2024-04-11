@@ -812,7 +812,6 @@ export function MarketResolvedNotification(props: {
           isChildOfGroup={isChildOfGroup}
           highlighted={highlighted}
           setHighlighted={setHighlighted}
-          // subtitle={<div className="mb-1">{subtitle}</div>}
           icon={
             <>
               <div
