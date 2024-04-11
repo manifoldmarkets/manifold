@@ -7,7 +7,7 @@ import {
   ChevronDownIcon,
   TagIcon,
 } from '@heroicons/react/outline'
-import { ChartBarIcon, PencilIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { removeUndefinedProps } from 'common/util/object'
