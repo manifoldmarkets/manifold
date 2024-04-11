@@ -18,6 +18,7 @@ import { Row } from '../layout/row'
 import {
   formatLargeNumber,
   formatMoney,
+  formatMoneyWithDecimals,
   formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
@@ -51,6 +52,7 @@ import { getVersusColors } from '../charts/contract/choice'
 import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 import { SpecialYesNoSelector } from 'web/components/bet/special-yes-no-selector'
 import { useAudio } from 'web/hooks/use-audio'
+import { getFeeTotal } from 'common/fees'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -362,6 +364,7 @@ export const BuyPanelBody = (props: {
   let currentPayout: number
   let probBefore: number
   let probAfter: number
+  let fees: number
   if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
     const { answers, answerToBuy } = multiProps
     const { newBetResult } = calculateCpmmMultiArbitrageBet(
@@ -382,6 +385,7 @@ export const BuyPanelBody = (props: {
       probBefore = answerToBuy.prob
       probAfter = getCpmmProbability(pool, p)
     }
+    fees = getFeeTotal(newBetResult.totalFees)
   } else {
     const cpmmState = isCpmmMulti
       ? {
@@ -405,6 +409,7 @@ export const BuyPanelBody = (props: {
 
     probBefore = result.probBefore
     probAfter = result.probAfter
+    fees = getFeeTotal(result.fees)
   }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
@@ -612,7 +617,7 @@ export const BuyPanelBody = (props: {
           </Col>
         )}
 
-        {user ? (
+        {user && (
           <Row className="mt-3 items-start justify-between">
             <div className="flex-grow">
               <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
@@ -622,102 +627,93 @@ export const BuyPanelBody = (props: {
                 </span>
               </span>
             </div>
-
-            {isAdvancedTrader && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
-              </div>
-            )}
-          </Row>
-        ) : null}
-
-        {!isAdvancedTrader && (
-          <Row className=" items-start justify-between">
-            <div className=" flex-grow">
-              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
-                {isPseudoNumeric
-                  ? 'Estimated value'
-                  : isStonk
-                  ? 'New stock price'
-                  : 'New probability'}
-              </span>
-
-              <span className="text-sm font-semibold">
-                {getFormattedMappedValue(
-                  contract,
-                  probStayedSame ? probBefore : probAfter
-                )}
-              </span>
-              {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
-                  {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
-                  {getFormattedMappedValue(
-                    contract,
-                    Math.abs(probAfter - probBefore)
-                  )}
-                </span>
-              )}
-
-              {!isPseudoNumeric && !isStonk && !isBinaryMC && (
-                <InfoTooltip
-                  text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
-                    contract,
-                    probBefore
-                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                  className="text-ink-600 ml-1 mt-0.5"
-                  size="sm"
-                />
-              )}
-
-              {isBinaryMC && (
-                <InfoTooltip
-                  text={`Your bet will move the probability from ${getFormattedMappedValue(
-                    contract,
-                    probBefore
-                  )} to ${getFormattedMappedValue(contract, probAfter)}.`}
-                  className="text-ink-600 ml-1 mt-0.5"
-                  size="sm"
-                />
-              )}
-            </div>
-
-            {user && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
-              </div>
-            )}
           </Row>
         )}
+
+        {!isAdvancedTrader && (
+          <div className=" flex-grow">
+            <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+              {isPseudoNumeric
+                ? 'Estimated value'
+                : isStonk
+                ? 'New stock price'
+                : 'New probability'}
+            </span>
+
+            <span className="text-sm font-semibold">
+              {getFormattedMappedValue(
+                contract,
+                probStayedSame ? probBefore : probAfter
+              )}
+            </span>
+            {!probStayedSame && !isPseudoNumeric && (
+              <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                {getFormattedMappedValue(
+                  contract,
+                  Math.abs(probAfter - probBefore)
+                )}
+              </span>
+            )}
+
+            {!isPseudoNumeric && !isStonk && !isBinaryMC && (
+              <InfoTooltip
+                text={`Your bet will move the probability of Yes from ${getFormattedMappedValue(
+                  contract,
+                  probBefore
+                )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                className="text-ink-600 ml-1 mt-0.5"
+                size="sm"
+              />
+            )}
+
+            {isBinaryMC && (
+              <InfoTooltip
+                text={`Your bet will move the probability from ${getFormattedMappedValue(
+                  contract,
+                  probBefore
+                )} to ${getFormattedMappedValue(contract, probAfter)}.`}
+                className="text-ink-600 ml-1 mt-0.5"
+                size="sm"
+              />
+            )}
+          </div>
+        )}
+
+        <Row className="items-start justify-between">
+          <div className="text-ink-700 text-sm">
+            Fees{' '}
+            <span className="text-ink-700 font-semibold">
+              {formatMoneyWithDecimals(fees)}
+            </span>
+            <InfoTooltip
+              text={`Fees peak at 3.5% of your bet amount when betting at 50% probability and scale down to nothing at 0% and 100% probability.`}
+              className="text-ink-600 ml-1 mt-0.5"
+              size="sm"
+            />
+          </div>
+
+          {user && (
+            <div>
+              <button
+                className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                onClick={() => {
+                  const tradingMode = !advancedTraderMode
+                  setAdvancedTraderMode(tradingMode)
+                  if (!tradingMode) {
+                    setBetType('Market')
+                  }
+                  updateUser(user.id, { isAdvancedTrader: tradingMode })
+                }}
+              >
+                <span className="hover:underline">
+                  {advancedTraderMode ? 'Default' : 'Advanced'}
+                </span>
+                <ChevronDownIcon className="ml-1 h-3 w-3" />
+              </button>
+            </div>
+          )}
+        </Row>
       </Col>
 
       <YourOrders

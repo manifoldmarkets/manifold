@@ -29,3 +29,7 @@ export const noFees: Fees = {
   platformFee: 0,
   liquidityFee: 0,
 }
+
+export const getFeeTotal = (fees: Fees) => {
+  return fees.creatorFee + fees.platformFee + fees.liquidityFee
+}
