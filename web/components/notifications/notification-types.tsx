@@ -67,7 +67,7 @@ import {
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { ManaCoinNumber, ShortManaCoinNumber } from '../widgets/manaCoinNumber'
+import { ShortManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function NotificationItem(props: {
   notification: Notification
