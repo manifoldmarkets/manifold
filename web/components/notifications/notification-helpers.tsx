@@ -163,7 +163,7 @@ export function NotificationIcon(props: {
   )
 }
 
-// the primary skeleton for notificationshttp://localhost:3000/JamesGrugett/manifold-team-march-retro-what-coul#
+// the primary skeleton for notifications
 export function NotificationFrame(props: {
   notification: Notification
   highlighted: boolean
