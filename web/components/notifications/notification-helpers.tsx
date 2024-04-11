@@ -269,7 +269,7 @@ export function ParentNotificationHeader(props: {
   const highlightedClass = getHighlightClass(highlighted)
 
   return (
-    <div className={clsx('line-clamp-3 px-2 pt-3', highlightedClass)}>
+    <div className={clsx('line-clamp-3 px-2 pt-3 text-base', highlightedClass)}>
       {children}
     </div>
   )
