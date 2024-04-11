@@ -323,6 +323,7 @@ export const NEW_USER_HERLPER_IDS = [
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
 ]
 
 export const OPTED_OUT_OF_LEAGUES = [
