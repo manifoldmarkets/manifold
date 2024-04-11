@@ -19,6 +19,8 @@ import { withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { ManaCoinNumber } from '../widgets/manaCoinNumber'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 
@@ -86,9 +88,14 @@ export const InvestmentValueCard = memo(function (props: {
       <Col className={'w-full gap-1.5'}>
         <Col>
           <div className={'text-ink-800 text-2xl sm:text-4xl'}>
-            {portfolio
-              ? formatMoney(netWorth)
-              : `${ENV_CONFIG.moneyMoniker}----`}
+            {portfolio ? (
+              <ManaCoinNumber amount={netWorth} />
+            ) : (
+              <Row className="items-center">
+                <ManaCoin />
+                ----
+              </Row>
+            )}
           </div>
           <div className={'text-ink-800 ml-1'}>Your net worth</div>
         </Col>
