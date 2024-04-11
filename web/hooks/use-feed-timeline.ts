@@ -211,7 +211,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
-        .select('data, importance_score, conversion_score')
+        .select('data, importance_score,view_count, conversion_score')
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)

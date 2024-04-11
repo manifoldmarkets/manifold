@@ -15,11 +15,15 @@ import { Title } from 'web/components/widgets/title'
 import { Row } from '../layout/row'
 import { PROJECT_ID } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
-import { ReferralsButton } from 'web/components/buttons/referrals-button'
+import {
+  Referrals,
+  useReferralCount,
+} from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/firebase/api'
 import SuperBanControl from '../SuperBanControl'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
+import { buildArray } from 'common/util/array'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -28,11 +32,16 @@ export function MoreOptionsUserButton(props: { user: User }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
-  if (!currentPrivateUser || currentPrivateUser.id === userId) return null
+  const numReferrals = useReferralCount(user)
+
+  if (!currentPrivateUser) return <div />
+
   const createdTime = new Date(user.createdTime).toLocaleDateString('en-us', {
     year: 'numeric',
     month: 'short',
   })
+
+  const isYou = currentPrivateUser.id === userId
 
   return (
     <>
@@ -74,7 +83,6 @@ export function MoreOptionsUserButton(props: { user: User }) {
             }
           >
             <span className={'text-sm'}>Joined {createdTime}</span>
-            <ReferralsButton user={user} className={'text-sm'} />
             <Link
               href={`/${user.username}/calibration`}
               className={clsx(linkClass, 'text-sm')}
@@ -107,27 +115,44 @@ export function MoreOptionsUserButton(props: { user: User }) {
           </Row>
           <UncontrolledTabs
             className={'mb-4'}
-            tabs={[
+            tabs={buildArray([
               {
-                title: 'Block',
-                content: (
-                  <BlockUser
-                    user={user}
-                    currentUser={currentPrivateUser}
-                    closeModal={() => setIsModalOpen(false)}
-                  />
-                ),
+                title: `${numReferrals} Referrals`,
+                content: <Referrals user={user} />,
               },
-              {
-                title: 'Report',
-                content: (
-                  <ReportUser
-                    user={user}
-                    closeModal={() => setIsModalOpen(false)}
-                  />
-                ),
-              },
-            ]}
+              // TODO: if isYou include a tab for users you've blocked?
+              isYou
+                ? {
+                    title: 'Delete Account',
+                    content: (
+                      <div className="flex min-h-[300px] items-center justify-center p-4">
+                        To delete your account, message a manifold team member
+                        on discord
+                      </div>
+                    ),
+                  }
+                : [
+                    {
+                      title: 'Block',
+                      content: (
+                        <BlockUser
+                          user={user}
+                          currentUser={currentPrivateUser}
+                          closeModal={() => setIsModalOpen(false)}
+                        />
+                      ),
+                    },
+                    {
+                      title: 'Report',
+                      content: (
+                        <ReportUser
+                          user={user}
+                          closeModal={() => setIsModalOpen(false)}
+                        />
+                      ),
+                    },
+                  ],
+            ])}
           />
         </Col>
       </Modal>

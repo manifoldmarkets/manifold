@@ -75,17 +75,17 @@ export function ResolutionPanel(props: {
         contractId: contract.id,
         probabilityInt: prob,
       })
+      onClose()
     } catch (e) {
       if (e instanceof APIError) {
-        setError(e.toString())
+        setError(e.message.toString())
       } else {
         console.error(e)
         setError('Error resolving question')
       }
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setIsSubmitting(false)
-    onClose()
   }
 
   return (
