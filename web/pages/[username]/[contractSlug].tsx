@@ -88,6 +88,7 @@ import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-sig
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
+import { Title } from 'web/components/widgets/title'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -96,16 +97,16 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract || contract.visibility === 'private' || contract.deleted) {
+  if (!contract || contract.visibility === 'private') {
     return {
-      props: { state: 'not found' },
-      revalidate: 60,
+      notFound: true,
     }
   }
+
   if (contract.deleted) {
     return {
       props: {
-        state: 'not authed',
+        state: 'deleted',
         slug: contract.slug,
         visibility: contract.visibility,
       },
@@ -121,8 +122,14 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: MaybeAuthedContractParams) {
-  if (props.state === 'not found' || props.state === 'not authed') {
-    return <Custom404 />
+  if (props.state === 'deleted') {
+    return (
+      <Page trackPageView={false}>
+        <div className="flex h-[50vh] flex-col items-center justify-center">
+          <Title>Question deleted</Title>
+        </div>
+      </Page>
+    )
   }
 
   return <NonPrivateContractPage contractParams={props.params} />

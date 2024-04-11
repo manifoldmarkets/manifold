@@ -498,10 +498,5 @@ export type MaybeAuthedContractParams =
       params: ContractParams
     }
   | {
-      state: 'not authed'
-      visibility: Visibility
-      slug: string
-    }
-  | {
-      state: 'not found'
+      state: 'deleted'
     }
