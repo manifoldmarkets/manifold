@@ -22,7 +22,6 @@ export function ShortManaCoinNumber(props: {
   className?: string
 }) {
   const { amount, className } = props
-  console.log(amount, shortenNumber(amount))
   return (
     <Row className={clsx('items-center', className)}>
       {amount < 0 && '-'}
