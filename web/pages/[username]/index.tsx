@@ -251,7 +251,6 @@ function UserProfile(props: {
               </div>
 
               <MoreOptionsUserButton user={user} />
-              {isCurrentUser && <div className="w-7" /> /* center the name */}
             </>
           )}
         </Row>
@@ -314,13 +313,15 @@ function UserProfile(props: {
             </Row>
           )}
 
-          {!isCurrentUser && (
-            <Row className={'items-center gap-1 sm:gap-2'}>
-              <SendMessageButton toUser={user} currentUser={currentUser} />
-              <FollowButton userId={user.id} />
-              {!isMobile && <MoreOptionsUserButton user={user} />}
-            </Row>
-          )}
+          <Row className={'items-center gap-1 sm:gap-2'}>
+            {!isCurrentUser && (
+              <>
+                <SendMessageButton toUser={user} currentUser={currentUser} />
+                <FollowButton userId={user.id} />
+              </>
+            )}
+            {!isMobile && <MoreOptionsUserButton user={user} />}
+          </Row>
         </Row>
         {(expandProfileInfo || !isCurrentUser) && (
           <Col className={'mx-4 mt-1 gap-2'}>
@@ -505,16 +506,6 @@ function ProfilePublicStats(props: {
             {DIVISION_NAMES[leagueInfo.division ?? '']}
           </span>{' '}
           Rank {leagueInfo.rank}
-        </Link>
-      )}
-
-      {isCurrentUser && (
-        <Link
-          href={`/${user.username}/calibration`}
-          className={clsx(linkClass, 'text-sm')}
-        >
-          <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
-          Calibration
         </Link>
       )}
 

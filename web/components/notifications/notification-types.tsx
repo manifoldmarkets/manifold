@@ -53,7 +53,7 @@ import { Button } from '../buttons/button'
 import { StarIcon } from '@heroicons/react/solid'
 import { useReview } from 'web/hooks/use-review'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { ReferralsDialog } from 'web/components/buttons/referrals-button'
+import { Referrals } from 'web/components/buttons/referrals-button'
 import { useUser } from 'web/hooks/use-user'
 import {
   MANIFOLD_AVATAR_URL,
@@ -1311,13 +1311,10 @@ function ReferralProgramNotification(props: {
         <span className="text-teal-500">{formatMoney(REFERRAL_AMOUNT)}</span> on
         every sign up!
       </span>
-      {user && (
-        <ReferralsDialog
-          user={user}
-          isOpen={showModal}
-          setIsOpen={setShowModal}
-          defaultTab={2}
-        />
+      {user && showModal && (
+        <Modal open setOpen={setShowModal}>
+          <Referrals user={user} />
+        </Modal>
       )}
     </NotificationFrame>
   )
