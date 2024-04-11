@@ -314,7 +314,7 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   'bounty-amount': {
-    sql: "COALESCE((data->>'bountyLeft')::integer, -1)",
+    sql: "COALESCE((data->>'bountyLeft')::numeric, -1)",
     sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
     order: 'DESC',
   },
