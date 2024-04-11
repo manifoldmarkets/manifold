@@ -687,7 +687,9 @@ export const BuyPanelBody = (props: {
               {formatMoneyWithDecimals(fees)}
             </span>
             <InfoTooltip
-              text={`Fees peak at 3.5% of your bet amount when betting at 50% probability and scale down to nothing at 0% and 100% probability.`}
+              text={`${(betAmount ? (100 * fees) / betAmount : 0).toFixed(
+                2
+              )}% fee. Half of the fee goes to the creator of the market and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing linearly the closer the probability is to 50%.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />
