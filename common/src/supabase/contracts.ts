@@ -137,7 +137,7 @@ export const convertContract = (c: {
     // Only updated in supabase:
     importanceScore: c.importance_score,
     conversionScore: c.conversion_score,
-    uniqueViewCount: Number(c.view_count),
+    viewCount: Number(c.view_count),
   } as Contract)
 
 export const followContract = async (

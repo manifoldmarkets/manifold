@@ -128,7 +128,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   /** @deprecated - not deprecated, only updated in supabase though*/
   conversionScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
-  uniqueViewCount: number
+  viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 
