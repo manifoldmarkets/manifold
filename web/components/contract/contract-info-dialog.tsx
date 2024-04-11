@@ -40,6 +40,7 @@ import { ShareQRButton } from '../buttons/share-qr-button'
 import dayjs from 'dayjs'
 import SuperBanControl from '../SuperBanControl'
 import { BoostButton } from './boost-button'
+import { DeleteNAButton } from '../buttons/delete-na-button'
 
 export const Stats = (props: {
   contract: Contract
@@ -508,6 +509,7 @@ export function ContractInfoDialog(props: {
 
             <BlockMarketButton contract={contract} />
             <DisinterestedButton contract={contract} user={user} />
+            {isCreator && <DeleteNAButton contract={contract} />}
             {isAdmin || isTrusted ? (
               <SuperBanControl userId={contract.creatorId} />
             ) : null}
@@ -517,12 +519,13 @@ export function ContractInfoDialog(props: {
     </Modal>
   )
 }
+
 const DisinterestedButton = (props: {
   contract: Contract
   user: User | null | undefined
 }) => {
   const { contract, user } = props
-  if (!user) return null
+  if (!user || user.id === contract.creatorId) return null
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
       contractId: contract.id,
