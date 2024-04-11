@@ -1,18 +1,14 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { PlusIcon } from '@heroicons/react/outline'
-import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { usePathname } from 'next/navigation'
 
 import { User } from 'web/lib/firebase/users'
-import { formatMoney, formatMoneyNoMoniker } from 'common/util/format'
 import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { Row } from '../layout/row'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
