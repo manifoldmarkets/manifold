@@ -17,7 +17,11 @@ import {
   StonkContract,
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
-import { formatMoney, formatPercent } from 'common/util/format'
+import {
+  formatMoney,
+  formatMoneyWithDecimals,
+  formatPercent,
+} from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { User } from 'web/lib/firebase/users'
@@ -32,10 +36,12 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { MultiBetProps } from 'web/components/bet/bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
-import { removeUndefinedProps } from 'common/util/object'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/firebase/api'
 import clsx from 'clsx'
 import { getVersusColors } from '../charts/contract/choice'
+import { Fees, getFeeTotal, noFees } from 'common/fees'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -213,6 +219,7 @@ export default function LimitOrderPanel(props: {
     currentReturn,
     orderAmount,
     amount: filledAmount,
+    fees,
   } = getBetReturns(
     cpmmState,
     binaryMCOutcome ?? outcome ?? 'YES',
@@ -223,6 +230,7 @@ export default function LimitOrderPanel(props: {
     shouldAnswersSumToOne ? multiProps : undefined
   )
   const returnPercent = formatPercent(currentReturn)
+  const totalFees = getFeeTotal(fees)
 
   return (
     <>
@@ -385,6 +393,22 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
+        <Row className="items-center justify-between gap-2 text-sm">
+          <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+            Fees
+          </Row>
+          <div>
+            <span className="">{formatMoneyWithDecimals(totalFees)}</span>
+            <InfoTooltip
+              text={`${(betAmount ? (100 * totalFees) / betAmount : 0).toFixed(
+                2
+              )}% fee. No fees for resting limit orders. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
+              className="text-ink-600 ml-1 mt-0.5"
+              size="sm"
+            />
+          </div>
+        </Row>
+
         <Row className="items-center justify-between gap-2">
           {user && (
             <Button
@@ -436,9 +460,10 @@ const getBetReturns = (
   const orderAmount = betAmount
   let amount: number
   let shares: number
+  let fees: Fees
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps
-    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome,
@@ -449,8 +474,15 @@ const getBetReturns = (
     )
     amount = sumBy(newBetResult.takers, 'amount')
     shares = sumBy(newBetResult.takers, 'shares')
+    fees = addObjects(
+      newBetResult.totalFees,
+      otherBetResults.reduce(
+        (feeSum, results) => addObjects(feeSum, results.totalFees),
+        noFees
+      )
+    )
   } else {
-    ;({ amount, shares } = computeCpmmBet(
+    ;({ amount, shares, fees } = computeCpmmBet(
       cpmmState,
       outcome,
       betAmount,
@@ -467,5 +499,5 @@ const getBetReturns = (
   const currentPayout = shares + remainingMatched
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
 
-  return { orderAmount, amount, shares, currentPayout, currentReturn }
+  return { orderAmount, amount, shares, currentPayout, currentReturn, fees }
 }

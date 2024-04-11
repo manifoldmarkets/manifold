@@ -279,11 +279,13 @@ export function SellPanel(props: {
         <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
           <span>
-            <span className="text-ink-700">{formatMoneyToDecimal(totalFees)}</span>
+            <span className="text-ink-700">
+              {formatMoneyToDecimal(totalFees)}
+            </span>
             <InfoTooltip
               text={`${(saleValue ? (100 * totalFees) / saleValue : 0).toFixed(
                 2
-              )}% fee. Half of the fee goes to the creator of the market and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing linearly the closer the probability is to 50%.`}
+              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />

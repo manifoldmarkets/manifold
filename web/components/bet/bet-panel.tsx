@@ -631,7 +631,7 @@ export const BuyPanelBody = (props: {
         )}
 
         {!isAdvancedTrader && (
-          <div className=" flex-grow">
+          <div>
             <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
               {isPseudoNumeric
                 ? 'Estimated value'
@@ -640,7 +640,7 @@ export const BuyPanelBody = (props: {
                 : 'New probability'}
             </span>
 
-            <span className="text-sm font-semibold">
+            <span className="text-ink-700 text-sm font-semibold">
               {getFormattedMappedValue(
                 contract,
                 probStayedSame ? probBefore : probAfter
@@ -680,42 +680,42 @@ export const BuyPanelBody = (props: {
           </div>
         )}
 
-        <Row className="items-start justify-between">
-          <div className="text-ink-700 text-sm">
+        {betType !== 'Limit' && (
+          <div className="text-ink-700 mt-1 text-sm">
             Fees{' '}
-            <span className="text-ink-700 font-semibold">
+            <span className="font-semibold">
               {formatMoneyWithDecimals(fees)}
             </span>
             <InfoTooltip
               text={`${(betAmount ? (100 * fees) / betAmount : 0).toFixed(
                 2
-              )}% fee. Half of the fee goes to the creator of the market and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing linearly the closer the probability is to 50%.`}
+              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />
           </div>
+        )}
 
-          {user && (
-            <div>
-              <button
-                className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                onClick={() => {
-                  const tradingMode = !advancedTraderMode
-                  setAdvancedTraderMode(tradingMode)
-                  if (!tradingMode) {
-                    setBetType('Market')
-                  }
-                  updateUser(user.id, { isAdvancedTrader: tradingMode })
-                }}
-              >
-                <span className="hover:underline">
-                  {advancedTraderMode ? 'Default' : 'Advanced'}
-                </span>
-                <ChevronDownIcon className="ml-1 h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </Row>
+        {user && (
+          <div className="absolute bottom-2 right-0">
+            <button
+              className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+              onClick={() => {
+                const tradingMode = !advancedTraderMode
+                setAdvancedTraderMode(tradingMode)
+                if (!tradingMode) {
+                  setBetType('Market')
+                }
+                updateUser(user.id, { isAdvancedTrader: tradingMode })
+              }}
+            >
+              <span className="hover:underline">
+                {advancedTraderMode ? 'Default' : 'Advanced'}
+              </span>
+              <ChevronDownIcon className="ml-1 h-3 w-3" />
+            </button>
+          </div>
+        )}
       </Col>
 
       <YourOrders
