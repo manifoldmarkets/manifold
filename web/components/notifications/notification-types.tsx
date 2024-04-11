@@ -67,6 +67,7 @@ import {
   NewMatchNotification,
 } from 'manifold-love/components/love-notification-types'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { ManaCoinNumber, ShortManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -642,7 +643,7 @@ export function MarketResolvedNotification(props: {
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  const subtitle =
+  const secondaryTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
       <>Your {formatMoney(userInvestment)} invested has been returned to you</>
     ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
@@ -658,9 +659,8 @@ export function MarketResolvedNotification(props: {
         You lost {formatMoney(Math.abs(profit))}
         {comparison ? `, but ${comparison}` : ``}
       </>
-    ) : (
-      <div />
-    )
+    ) : null
+
   const [openRateModal, setOpenRateModal] = useState(false)
 
   const resolutionDescription = () => {
@@ -742,59 +742,107 @@ export function MarketResolvedNotification(props: {
   const showReviewButton = !userReview && !justNowReview
 
   return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      subtitle={
-        <>
-          <div className="mb-1">{subtitle}</div>
-          {!resolvedByAdmin &&
-            (showReviewButton ? (
-              <Button
-                size={'2xs'}
-                color={'gray'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  setOpenRateModal(true)
-                }}
-              >
-                <Row className="gap-1">
+    <Col className="relative">
+      <NotificationFrame
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        subtitle={
+          <>
+            {!resolvedByAdmin &&
+              (showReviewButton ? (
+                <Button
+                  size={'2xs'}
+                  color={'gray'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    setOpenRateModal(true)
+                  }}
+                >
+                  <Row className="gap-1">
+                    <StarIcon className="h-4 w-4" />
+                    Rate {notification.sourceUserName}'s resolution
+                  </Row>
+                </Button>
+              ) : (
+                <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                  You rated this resolution{' '}
+                  {justNowReview ?? userReview?.rating}{' '}
                   <StarIcon className="h-4 w-4" />
-                  Rate {notification.sourceUserName}'s resolution
                 </Row>
-              </Button>
-            ) : (
-              <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                You rated this resolution {justNowReview ?? userReview?.rating}{' '}
-                <StarIcon className="h-4 w-4" />
-              </Row>
-            ))}
-        </>
-      }
-      icon={
-        <AvatarNotificationIcon
+              ))}
+          </>
+        }
+        icon={
+          <>
+            <AvatarNotificationIcon
+              notification={notification}
+              symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
+            />
+            {!!secondaryTitle && (
+              <div
+                className={clsx(
+                  ' h-full w-[1.5px] grow ',
+                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
+                )}
+              />
+            )}
+          </>
+        }
+        link={getSourceUrl(notification)}
+      >
+        {content}
+        <Modal open={openRateModal} setOpen={setOpenRateModal}>
+          <ReviewPanel
+            marketId={notification.sourceId}
+            author={notification.sourceUserName}
+            className="my-2"
+            onSubmit={(rating: Rating) => {
+              setJustNowReview(rating)
+              setOpenRateModal(false)
+            }}
+          />
+        </Modal>
+      </NotificationFrame>
+      {!!secondaryTitle && (
+        <NotificationFrame
           notification={notification}
-          symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
-        />
-      }
-      link={getSourceUrl(notification)}
-    >
-      {content}
-      <Modal open={openRateModal} setOpen={setOpenRateModal}>
-        <ReviewPanel
-          marketId={notification.sourceId}
-          author={notification.sourceUserName}
-          className="my-2"
-          onSubmit={(rating: Rating) => {
-            setJustNowReview(rating)
-            setOpenRateModal(false)
-          }}
-        />
-      </Modal>
-    </NotificationFrame>
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          // subtitle={<div className="mb-1">{subtitle}</div>}
+          icon={
+            <>
+              <div
+                className={clsx(
+                  'absolute -top-4 h-4 w-[1.5px]',
+                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
+                )}
+              />
+
+              <NotificationIcon
+                symbol={
+                  <ShortManaCoinNumber
+                    amount={profit}
+                    className="text-xs font-semibold"
+                  />
+                }
+                symbolBackgroundClass={
+                  profit < 0
+                    ? 'border-ink-300  border-2 ring-4 ring-ink-200'
+                    : 'border-teal-400 border-2 ring-4 ring-teal-200'
+                }
+              />
+            </>
+          }
+          link={getSourceUrl(notification)}
+        >
+          {secondaryTitle}
+        </NotificationFrame>
+      )}
+    </Col>
   )
 }
 
