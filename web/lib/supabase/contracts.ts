@@ -1,4 +1,4 @@
-import { Contract, CPMMContract, Visibility } from 'common/contract'
+import { Contract, CPMMContract } from 'common/contract'
 import { run, selectFrom, SupabaseClient, Tables } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { db } from './db'
@@ -85,28 +85,27 @@ export async function getContracts(
   contractIds: string[],
   pk: 'id' | 'slug' = 'id'
 ) {
-  const q = db.from('contracts').select('data').in(pk, contractIds)
+  const q = db
+    .from('contracts')
+    .select('data, importance_score, view_count, conversion_score')
+    .in(pk, contractIds)
   const { data } = await run(q)
-  return data.map((d) => d.data as Contract)
+  return data.map((d) => convertContract(d))
 }
 
 export const getContract = async (id: string) => {
-  const { data } = await run(db.from('contracts').select('data').eq('id', id))
-  return data && data.length > 0 ? (data[0].data as Contract) : null
+  const { data } = await run(
+    db
+      .from('contracts')
+      .select('data, importance_score, view_count, conversion_score')
+      .eq('id', id)
+  )
+  return data?.[0] ? convertContract(data?.[0]) : null
 }
 
 export const getContractWithFields = async (id: string) => {
   const { data } = await run(db.from('contracts').select('*').eq('id', id))
-  if (data && data.length > 0) {
-    const result = data[0]
-    return {
-      ...(result.data as Contract),
-      visibility: result.visibility,
-      slug: result.slug,
-    }
-  } else {
-    return null
-  }
+  return data?.[0] ? convertContract(data?.[0]) : null
 }
 
 // Only fetches contracts with 'public' visibility
@@ -135,33 +134,7 @@ export async function getYourDailyChangedContracts(
 
   if (!data) return null
 
-  const contracts = filterDefined(data.map((d) => d.data as CPMMContract))
-  return contracts
-}
-
-export async function getContractFromSlug(
-  contractSlug: string,
-  db: SupabaseClient
-) {
-  const { data: contract } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug)
-  )
-  if (contract && contract.length > 0) {
-    return (contract[0] as unknown as { data: Contract }).data
-  }
-  return undefined
-}
-
-export async function getContractVisibilityFromSlug(contractSlug: string) {
-  const { data: contractVisibility } = await run(
-    db.from('contracts').select('visibility').eq('slug', contractSlug)
-  )
-
-  if (contractVisibility && contractVisibility.length > 0) {
-    return (contractVisibility[0] as unknown as { visibility: Visibility })
-      .visibility
-  }
-  return undefined
+  return filterDefined(data.map((d) => d.data as CPMMContract))
 }
 
 export async function getWatchedContracts(userId: string) {
@@ -177,7 +150,7 @@ export async function getWatchedContracts(userId: string) {
       const { data } = await run(
         selectFrom(db, 'contracts', 'id', 'question', 'slug', 'creatorUsername')
           .in('id', ids)
-          .order('data->>createdTime' as any, { ascending: false })
+          .order('created_time' as any, { ascending: false })
       )
       return data
     })

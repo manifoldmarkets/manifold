@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type APIHandler } from './helpers/endpoint'
 import {
@@ -62,7 +61,7 @@ const search = async (
   let contracts
   if (isForYou && !term && sort === 'score' && userId) {
     const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
-    contracts = await pg.map(forYouSql, [term], (r) => r.data as Contract)
+    contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
   } else if (isRecent && !term && userId) {
     contracts = await pg.map(
       'select data from get_your_recent_contracts($1, $2, $3)',

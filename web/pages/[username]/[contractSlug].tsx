@@ -165,7 +165,6 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
@@ -186,6 +185,7 @@ export function ContractPageContent(props: ContractParams) {
       contract.answers = answers
     }
   }
+  const { uniqueViewCount: totalViews } = contract
 
   const cachedContract = useMemo(
     () => contract,

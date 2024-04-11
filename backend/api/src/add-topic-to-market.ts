@@ -38,7 +38,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
 
   const contractQuery = await db
     .from('contracts')
-    .select('data, importance_score')
+    .select('data, importance_score, view_count')
     .eq('id', contractId)
     .single()
 

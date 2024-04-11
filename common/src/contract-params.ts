@@ -7,10 +7,10 @@ import {
   Contract,
   MaybeAuthedContractParams,
   CPMMNumericContract,
+  ContractParams,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
-import { getContractPageViews } from 'common/supabase/contracts'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -61,7 +61,6 @@ export async function getContractParams(
     chartAnnotations,
     topics,
     dashboards,
-    totalViews,
   ] = await Promise.all([
     hasMechanism
       ? isNumber
@@ -105,7 +104,6 @@ export async function getContractParams(
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, db),
-    getContractPageViews(db, contract.id),
   ])
 
   const chartPoints =
@@ -139,7 +137,6 @@ export async function getContractParams(
       userPositionsByOutcome,
       totalPositions,
       totalBets,
-      totalViews,
       topContractMetrics,
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
@@ -151,7 +148,7 @@ export async function getContractParams(
         'desc'
       ),
       dashboards,
-    }),
+    }) as ContractParams,
   }
 }
 

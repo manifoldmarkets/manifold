@@ -12,12 +12,13 @@ import {
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
+import { convertContract } from 'common/supabase/contracts'
 
 export async function getForYouMarkets(userId: string, limit = 25) {
   const searchMarketSQL = getForYouSQL(userId, 'all', 'ALL', limit, 0)
 
   const pg = createSupabaseDirectClient()
-  const contracts = await pg.map(searchMarketSQL, [], (r) => r.data as Contract)
+  const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
 
   return contracts ?? []
 }
@@ -47,7 +48,7 @@ groups AS (
    FROM group_members
    WHERE member_id = '${uid}'
 )
-select data,
+select data, view_count,
 importance_score * (
   0.4
   + (CASE WHEN  EXISTS (
@@ -128,7 +129,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select('data'),
+      select('data, importance_score, view_count'),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -143,7 +144,7 @@ export function getSearchContractSQL(args: {
 
   // Normal full text search
   return renderSql(
-    select('data, importance_score'),
+    select('data, importance_score, view_count'),
     from('contracts'),
     groupId && [
       join('group_contracts gc on gc.contract_id = contracts.id'),
