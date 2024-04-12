@@ -23,10 +23,19 @@ pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
 
-export function createSupabaseClient() {
-  const instanceId =
+export function getInstanceId() {
+  return (
     process.env.SUPABASE_INSTANCE_ID ??
     (isProd() ? PROD_CONFIG.supabaseInstanceId : DEV_CONFIG.supabaseInstanceId)
+  )
+}
+
+export function getInstanceHostname(instanceId: string) {
+  return `${instanceId}.supabase.co`
+}
+
+export function createSupabaseClient() {
+  const instanceId = getInstanceId()
   if (!instanceId) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
@@ -51,10 +60,7 @@ export function createSupabaseDirectClient(
   password?: string
 ) {
   if (pgpDirect) return pgpDirect
-  instanceId =
-    instanceId ??
-    process.env.SUPABASE_INSTANCE_ID ??
-    (isProd() ? PROD_CONFIG.supabaseInstanceId : DEV_CONFIG.supabaseInstanceId)
+  instanceId = instanceId ?? getInstanceId()
   if (!instanceId) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
@@ -75,7 +81,4 @@ export function createSupabaseDirectClient(
     max: 20,
   })
   return pgpDirect
-}
-function getInstanceHostname(instanceId: string) {
-  return `${instanceId}.supabase.co`
 }

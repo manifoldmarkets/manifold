@@ -89,6 +89,7 @@ import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
 import { Title } from 'web/components/widgets/title'
+import { useContractBetBroadcast } from 'web/lib/supabase/realtime/use-broadcast'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
