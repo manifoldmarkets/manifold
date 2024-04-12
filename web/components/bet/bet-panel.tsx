@@ -460,39 +460,42 @@ export const BuyPanelBody = (props: {
         {children}
 
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
-          <Row className="mb-2 items-center space-x-3">
-            <div className="text-ink-700">Outcome</div>
-            <ChoicesToggleGroup
-              currentChoice={outcome}
-              color={outcome === 'YES' ? 'green' : 'red'}
-              choicesMap={choicesMap}
-              setChoice={(outcome) => {
-                setOutcome(outcome as 'YES' | 'NO')
-              }}
-            />
-          </Row>
-        )}
+          <Row className={'mb-2 mr-8 justify-between'}>
+            <Col className=" gap-1">
+              <div className="text-ink-700">Outcome</div>
+              <ChoicesToggleGroup
+                currentChoice={outcome}
+                color={outcome === 'YES' ? 'green' : 'red'}
+                choicesMap={choicesMap}
+                setChoice={(outcome) => {
+                  setOutcome(outcome as 'YES' | 'NO')
+                }}
+              />
+            </Col>
 
-        {isAdvancedTrader && !isStonk && (
-          <Row className="mb-2 items-center space-x-3">
-            <div className="text-ink-700">Bet type</div>
-            <ChoicesToggleGroup
-              currentChoice={betType}
-              choicesMap={{
-                Market: 'Market',
-                Limit: 'Limit',
-              }}
-              setChoice={(val) => {
-                if (val === 'Market' || val === 'Limit') {
-                  handleBetTypeChange(val)
-                }
-              }}
-            />
+            {!isStonk && (
+              <Col className="gap-1">
+                <div className="text-ink-700">Bet type</div>
+                <ChoicesToggleGroup
+                  currentChoice={betType}
+                  choicesMap={{
+                    Market: 'Market',
+                    Limit: 'Limit',
+                  }}
+                  setChoice={(val) => {
+                    if (val === 'Market' || val === 'Limit') {
+                      handleBetTypeChange(val)
+                    }
+                  }}
+                />
+              </Col>
+            )}
           </Row>
         )}
         {onClose && (
           <Button
             color="gray-white"
+            size="sm"
             className="absolute right-1 top-1"
             onClick={onClose}
           >
@@ -525,8 +528,8 @@ export const BuyPanelBody = (props: {
 
               {isAdvancedTrader && (
                 <Col className="gap-3">
-                  <div className="flex-grow">
-                    <span className="text-ink-700 mr-2 whitespace-nowrap">
+                  <Row className=" items-baseline">
+                    <span className="text-ink-700 mr-2 min-w-[120px] whitespace-nowrap">
                       {isPseudoNumeric
                         ? 'Estimated value'
                         : isStonk
@@ -553,9 +556,9 @@ export const BuyPanelBody = (props: {
                           : ''}
                       </span>
                     )}
-                  </div>
+                  </Row>
                   <Row className="min-w-[128px] items-baseline">
-                    <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                    <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
                     <span className="mr-1 whitespace-nowrap text-lg">
@@ -571,6 +574,16 @@ export const BuyPanelBody = (props: {
                         : ' +' + currentReturnPercent}
                     </span>
                   </Row>
+                  {betAmount && !floatingEqual(filledAmount, betAmount) && (
+                    <Row className="min-w-[128px] items-baseline">
+                      <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
+                        Refund amount
+                      </div>
+                      <span className="mr-1 whitespace-nowrap text-lg">
+                        {formatMoney(betAmount - filledAmount)}
+                      </span>
+                    </Row>
+                  )}
                 </Col>
               )}
             </Row>
@@ -637,15 +650,20 @@ export const BuyPanelBody = (props: {
         )}
 
         {user ? (
-          <Row className="mt-3 items-start justify-between">
-            <div className="flex-grow">
-              <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
+          <Row className="mt-5 items-start justify-between text-sm">
+            <Row className={''}>
+              <span
+                className={clsx(
+                  'text-ink-700 mr-1 whitespace-nowrap ',
+                  isAdvancedTrader ? '' : 'min-w-[110px]'
+                )}
+              >
                 Your balance{' '}
-                <span className="text-ink-700 font-semibold">
-                  {formatMoney(user.balance)}
-                </span>
               </span>
-            </div>
+              <span className="text-ink-700 font-semibold">
+                {formatMoney(user.balance)}
+              </span>
+            </Row>
 
             {isAdvancedTrader && (
               <div>
@@ -671,9 +689,19 @@ export const BuyPanelBody = (props: {
         ) : null}
 
         {!isAdvancedTrader && (
-          <Row className=" items-start justify-between">
-            <div className=" flex-grow">
-              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+          <Col>
+            {betAmount && !floatingEqual(filledAmount, betAmount) && (
+              <Row className=" items-start text-sm">
+                <span className=" text-ink-700 mr-1 min-w-[110px] whitespace-nowrap ">
+                  Refund amount
+                </span>
+                <span className=" whitespace-nowrap">
+                  {formatMoney(betAmount - filledAmount)}
+                </span>
+              </Row>
+            )}
+            <Row className="">
+              <span className="text-ink-700 mr-1 min-w-[110px] whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -688,7 +716,7 @@ export const BuyPanelBody = (props: {
                 )}
               </span>
               {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                <span className={clsx('ml-2 text-sm', 'text-ink-700')}>
                   {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
@@ -723,29 +751,30 @@ export const BuyPanelBody = (props: {
                   size="sm"
                 />
               )}
-            </div>
-
-            {user && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
-              </div>
-            )}
-          </Row>
+            </Row>
+            <Row className={'justify-end'}>
+              {user && (
+                <div>
+                  <button
+                    className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+                    onClick={() => {
+                      const tradingMode = !advancedTraderMode
+                      setAdvancedTraderMode(tradingMode)
+                      if (!tradingMode) {
+                        setBetType('Market')
+                      }
+                      updateUser(user.id, { isAdvancedTrader: tradingMode })
+                    }}
+                  >
+                    <span className="hover:underline">
+                      {advancedTraderMode ? 'Default' : 'Advanced'}
+                    </span>
+                    <ChevronDownIcon className="ml-1 h-3 w-3" />
+                  </button>
+                </div>
+              )}
+            </Row>
+          </Col>
         )}
       </Col>
 
