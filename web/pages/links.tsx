@@ -5,7 +5,6 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
 
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -16,12 +15,10 @@ import { Title } from 'web/components/widgets/title'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
-import { REFERRAL_AMOUNT } from 'common/economy'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { linkClaimed, ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import Link from 'next/link'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
