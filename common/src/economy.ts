@@ -46,7 +46,7 @@ export const SMALL_UNIQUE_BETTOR_LIQUIDITY = 5
 export const MAX_TRADERS_FOR_BIG_BONUS = 50
 export const MAX_TRADERS_FOR_BONUS = 10000
 
-export const SUBSIDY_FEE = 0.25
+export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
