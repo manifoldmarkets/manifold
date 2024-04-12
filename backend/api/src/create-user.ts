@@ -141,7 +141,7 @@ export const createuser: APIHandler<'createuser'> = async (
         fromLove,
         fromPolitics,
         signupBonusPaid: 0,
-        verifiedPhone: false, //testUserAKAEmailPasswordUser,
+        verifiedPhone: testUserAKAEmailPasswordUser,
       })
 
       const privateUser: PrivateUser = {
