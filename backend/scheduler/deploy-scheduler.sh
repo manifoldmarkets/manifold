@@ -28,11 +28,12 @@ TIMESTAMP=$(date +"%s")
 IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
 
 yarn build
-
-gcloud compute ssh ${SERVICE_NAME} \
+if [ "${INITIALIZE}" = false ]; then
+  gcloud compute ssh ${SERVICE_NAME} \
        --project ${GCLOUD_PROJECT} \
        --zone ${ZONE} \
        --command 'sudo docker image prune -af'
+       fi
 
 if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
     if ! command -v docker &> /dev/null
@@ -60,7 +61,8 @@ fi
 
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then
-    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
+#    If you just deleted the instance you don't need this line
+#    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
     gcloud compute instances create-with-container ${SERVICE_NAME} \
            --project ${GCLOUD_PROJECT} \
            --zone ${ZONE} \
