@@ -10,6 +10,10 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
+  MAX_CPMM_PROB,
+  MAX_STONK_PROB,
+  MIN_CPMM_PROB,
+  MIN_STONK_PROB,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -51,6 +55,7 @@ import { getVersusColors } from '../charts/contract/choice'
 import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 import { SpecialYesNoSelector } from 'web/components/bet/special-yes-no-selector'
 import { useAudio } from 'web/hooks/use-audio'
+import { floatingEqual } from 'common/util/math'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -359,9 +364,17 @@ export const BuyPanelBody = (props: {
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
+  const limits =
+    contract.outcomeType === 'STONK'
+      ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
+      : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
+  const maxProb = limits.max
+  const minProb = limits.min
+
   let currentPayout: number
   let probBefore: number
   let probAfter: number
+  let filledAmount: number
   if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
     const { answers, answerToBuy } = multiProps
     const { newBetResult } = calculateCpmmMultiArbitrageBet(
@@ -375,6 +388,7 @@ export const BuyPanelBody = (props: {
     )
     const { pool, p } = newBetResult.cpmmState
     currentPayout = sumBy(newBetResult.takers, 'shares')
+    filledAmount = sumBy(newBetResult.takers, 'amount')
     if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
       probBefore = 1 - answerToBuy.prob
       probAfter = 1 - getCpmmProbability(pool, p)
@@ -399,17 +413,20 @@ export const BuyPanelBody = (props: {
       betAmount ?? 0,
       undefined,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      limits
     )
     currentPayout = result.shares
-
+    filledAmount = result.amount
     probBefore = result.probBefore
     probAfter = result.probAfter
   }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
   const probChange = Math.abs(probAfter - probBefore)
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const currentReturn = filledAmount
+    ? (currentPayout - filledAmount) / filledAmount
+    : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
   const displayedAfter = isPseudoNumeric
@@ -529,6 +546,11 @@ export const BuyPanelBody = (props: {
                           contract,
                           Math.abs(probAfter - probBefore)
                         )}
+                        {floatingEqual(probAfter, maxProb)
+                          ? ' (max)'
+                          : floatingEqual(probAfter, minProb)
+                          ? ' (max)'
+                          : ''}
                       </span>
                     )}
                   </div>
@@ -672,6 +694,7 @@ export const BuyPanelBody = (props: {
                     contract,
                     Math.abs(probAfter - probBefore)
                   )}
+                  {probAfter}
                 </span>
               )}
 

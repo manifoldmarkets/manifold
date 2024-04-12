@@ -3,6 +3,8 @@ import {
   CPMMBinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -19,6 +21,7 @@ export function ProbabilityInput(props: {
   className?: string
   inputClassName?: string
   error?: boolean
+  limitProbs?: { max: number; min: number }
 }) {
   const {
     prob,
@@ -28,24 +31,26 @@ export function ProbabilityInput(props: {
     className,
     inputClassName,
     error,
+    limitProbs,
   } = props
-
+  const maxBetProbInt = 100 * (limitProbs?.max ?? 0.99)
+  const minBetProbInt = 100 * (limitProbs?.min ?? 0.01)
   const onProbChange = (str: string) => {
     let prob = parseInt(str.replace(/\D/g, ''))
     const isInvalid = !str || isNaN(prob)
     if (prob.toString().length > 2) {
-      if (prob === 100) prob = 99
-      else if (prob < 1) prob = 1
+      if (prob > maxBetProbInt) prob = maxBetProbInt
+      else if (prob < minBetProbInt) prob = minBetProbInt
       else prob = +prob.toString().slice(-2)
     }
     onChange(isInvalid ? undefined : prob)
   }
   const incrementProb = () => {
-    onChange(Math.min(99, (prob ?? 0) + 1))
+    onChange(Math.min(maxBetProbInt, (prob ?? 0) + 1))
   }
   const decrementProb = () => {
     if (prob === undefined) return
-    if (prob === 1) onChange(undefined)
+    if (prob === minBetProbInt) onChange(undefined)
     else onChange((prob ?? 0) - 1)
   }
 
@@ -106,6 +111,8 @@ export function ProbabilityOrNumericInput(props: {
     onRangeError,
   } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
+  const isSumsToOne =
+    contract.outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne
 
   return isPseudoNumeric ? (
     <AmountInput
@@ -131,6 +138,9 @@ export function ProbabilityOrNumericInput(props: {
       disabled={disabled}
       placeholder={placeholder}
       error={error}
+      limitProbs={
+        !isSumsToOne ? { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB } : undefined
+      }
     />
   )
 }

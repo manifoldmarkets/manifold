@@ -501,3 +501,8 @@ export type MaybeAuthedContractParams =
   | {
       state: 'deleted'
     }
+
+export const MAX_CPMM_PROB = 0.99
+export const MIN_CPMM_PROB = 0.01
+export const MAX_STONK_PROB = 0.95
+export const MIN_STONK_PROB = 0.2

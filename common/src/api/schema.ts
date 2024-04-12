@@ -116,7 +116,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         replyToCommentId: z.string().optional(),
-        limitProb: z.number().gte(0).lte(1).optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
