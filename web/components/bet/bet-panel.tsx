@@ -690,16 +690,6 @@ export const BuyPanelBody = (props: {
 
         {!isAdvancedTrader && (
           <Col>
-            {betAmount && !floatingEqual(filledAmount, betAmount) && (
-              <Row className=" items-start text-sm">
-                <span className=" text-ink-700 mr-1 min-w-[110px] whitespace-nowrap ">
-                  Refund amount
-                </span>
-                <span className=" whitespace-nowrap">
-                  {formatMoney(betAmount - filledAmount)}
-                </span>
-              </Row>
-            )}
             <Row className="">
               <span className="text-ink-700 mr-1 min-w-[110px] whitespace-nowrap text-sm">
                 {isPseudoNumeric
@@ -752,6 +742,16 @@ export const BuyPanelBody = (props: {
                 />
               )}
             </Row>
+            {betAmount && !floatingEqual(filledAmount, betAmount) && (
+              <Row className=" items-start text-sm">
+                <span className=" text-ink-700 mr-1 min-w-[110px] whitespace-nowrap ">
+                  Refund amount
+                </span>
+                <span className=" whitespace-nowrap">
+                  {formatMoney(betAmount - filledAmount)}
+                </span>
+              </Row>
+            )}
             <Row className={'justify-end'}>
               {user && (
                 <div>
