@@ -58,7 +58,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
     <Col className="text-lg">
       {page === 0 && (
         <Col className="items-center justify-center gap-2">
-          <Title>Verify your phone number</Title>
+          <Title>🤖 Prove you're not a robot 🤖</Title>
           <span className={'-mt-2 mb-2 text-center'}>
             Verify your phone number to collect your{' '}
             <span className={'font-bold text-teal-500'}>
@@ -121,7 +121,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
               loading={loading}
               onClick={verifyPhone}
             >
-              Verify code & claim {formatMoney(STARTING_BALANCE)}
+              Verify & claim {formatMoney(STARTING_BALANCE)}
             </Button>
           </Row>
         </Col>

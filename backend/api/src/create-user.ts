@@ -126,8 +126,8 @@ export const createuser: APIHandler<'createuser'> = async (
         name,
         username,
         avatarUrl,
-        balance: STARTING_BALANCE,
-        totalDeposits: STARTING_BALANCE,
+        balance: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
+        totalDeposits: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         nextLoanCached: 0,
@@ -141,6 +141,7 @@ export const createuser: APIHandler<'createuser'> = async (
         fromLove,
         fromPolitics,
         signupBonusPaid: 0,
+        verifiedPhone: false, //testUserAKAEmailPasswordUser,
       })
 
       const privateUser: PrivateUser = {
