@@ -24,6 +24,8 @@ import SuperBanControl from '../SuperBanControl'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { buildArray } from 'common/util/array'
+import { DeleteYourselfButton } from '../profile/delete-yourself'
+import { Settings } from '../profile/settings'
 
 export function MoreOptionsUserButton(props: { user: User }) {
   const { user } = props
@@ -122,15 +124,25 @@ export function MoreOptionsUserButton(props: { user: User }) {
               },
               // TODO: if isYou include a tab for users you've blocked?
               isYou
-                ? {
-                    title: 'Delete Account',
-                    content: (
-                      <div className="flex min-h-[300px] items-center justify-center p-4">
-                        To delete your account, message a manifold team member
-                        on discord
-                      </div>
-                    ),
-                  }
+                ? [
+                    {
+                      title: 'Settings',
+                      content: (
+                        <Settings
+                          user={user}
+                          privateUser={currentPrivateUser}
+                        />
+                      ),
+                    },
+                    {
+                      title: 'Delete Account',
+                      content: (
+                        <div className="flex min-h-[200px] items-center justify-center p-4">
+                          <DeleteYourselfButton userId={userId} />
+                        </div>
+                      ),
+                    },
+                  ]
                 : [
                     {
                       title: 'Block',
