@@ -3,7 +3,7 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
 import { api } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
