@@ -694,7 +694,11 @@ export const BuyPanelBody = (props: {
                     contract,
                     Math.abs(probAfter - probBefore)
                   )}
-                  {probAfter}
+                  {floatingEqual(probAfter, maxProb)
+                    ? ' (max)'
+                    : floatingEqual(probAfter, minProb)
+                    ? ' (max)'
+                    : ''}{' '}
                 </span>
               )}
 
