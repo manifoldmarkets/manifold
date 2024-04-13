@@ -285,7 +285,11 @@ export function SellPanel(props: {
             <InfoTooltip
               text={`${(saleValue ? (100 * totalFees) / saleValue : 0).toFixed(
                 2
-              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
+              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
+                isMultiSumsToOne
+                  ? ' (can be slightly higher on multiple choice)'
+                  : ''
+              } of your bet amount, increasing the closer the probability is to 50%.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />

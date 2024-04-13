@@ -367,7 +367,7 @@ export const BuyPanelBody = (props: {
   let fees: number
   if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
     const { answers, answerToBuy } = multiProps
-    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome ?? 'YES',
@@ -385,7 +385,9 @@ export const BuyPanelBody = (props: {
       probBefore = answerToBuy.prob
       probAfter = getCpmmProbability(pool, p)
     }
-    fees = getFeeTotal(newBetResult.totalFees)
+    fees =
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
   } else {
     const cpmmState = isCpmmMulti
       ? {
@@ -689,7 +691,11 @@ export const BuyPanelBody = (props: {
             <InfoTooltip
               text={`${(betAmount ? (100 * fees) / betAmount : 0).toFixed(
                 2
-              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
+              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
+                shouldAnswersSumToOne
+                  ? ' (can be slightly higher on multiple choice)'
+                  : ''
+              } of your bet amount, increasing the more unlikely your bet is to pay out.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />

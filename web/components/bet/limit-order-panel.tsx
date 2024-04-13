@@ -402,7 +402,11 @@ export default function LimitOrderPanel(props: {
             <InfoTooltip
               text={`${(betAmount ? (100 * totalFees) / betAmount : 0).toFixed(
                 2
-              )}% fee. No fees for resting limit orders. Half goes to the market creator and half is burned. Fees range from 0% to 3.5% of your bet amount, increasing the closer the probability is to 50%.`}
+              )}% fee. No fees for resting limit orders. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
+                shouldAnswersSumToOne
+                  ? ' (can be slightly higher on multiple choice)'
+                  : ''
+              } of your bet amount, increasing the more unlikely your bet is.`}
               className="text-ink-600 ml-1 mt-0.5"
               size="sm"
             />
