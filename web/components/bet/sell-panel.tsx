@@ -22,7 +22,6 @@ import {
   formatPercent,
   formatWithCommas,
   formatMoney,
-  formatMoneyToDecimal,
 } from 'common/util/format'
 import { sumBy } from 'lodash'
 import { useState } from 'react'
@@ -40,7 +39,7 @@ import toast from 'react-hot-toast'
 import { Answer } from 'common/answer'
 import { addObjects } from 'common/util/object'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
-import { InfoTooltip } from '../widgets/info-tooltip'
+import { FeeDisplay } from './fees'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -278,22 +277,11 @@ export function SellPanel(props: {
         </Row>
         <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
-          <span>
-            <span className="text-ink-700">
-              {formatMoneyToDecimal(totalFees)}
-            </span>
-            <InfoTooltip
-              text={`${(saleValue ? (100 * totalFees) / saleValue : 0).toFixed(
-                2
-              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
-                isMultiSumsToOne
-                  ? ' (can be slightly higher on multiple choice)'
-                  : ''
-              } of your bet amount, increasing the closer the probability is to 50%.`}
-              className="text-ink-600 ml-1 mt-0.5"
-              size="sm"
-            />
-          </span>
+          <FeeDisplay
+            totalFees={totalFees}
+            amount={saleValue}
+            isMultiSumsToOne={isMultiSumsToOne}
+          />
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">

@@ -18,7 +18,6 @@ import { Row } from '../layout/row'
 import {
   formatLargeNumber,
   formatMoney,
-  formatMoneyWithDecimals,
   formatOutcomeLabel,
   formatPercent,
 } from 'common/util/format'
@@ -53,6 +52,7 @@ import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 import { SpecialYesNoSelector } from 'web/components/bet/special-yes-no-selector'
 import { useAudio } from 'web/hooks/use-audio'
 import { getFeeTotal } from 'common/fees'
+import { FeeDisplay } from './fees'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -685,19 +685,10 @@ export const BuyPanelBody = (props: {
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
             Fees{' '}
-            <span className="font-semibold">
-              {formatMoneyWithDecimals(fees)}
-            </span>
-            <InfoTooltip
-              text={`${(betAmount ? (100 * fees) / betAmount : 0).toFixed(
-                2
-              )}% fee. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
-                shouldAnswersSumToOne
-                  ? ' (can be slightly higher on multiple choice)'
-                  : ''
-              } of your bet amount, increasing the more unlikely your bet is to pay out.`}
-              className="text-ink-600 ml-1 mt-0.5"
-              size="sm"
+            <FeeDisplay
+              amount={betAmount}
+              totalFees={fees}
+              isMultiSumsToOne={shouldAnswersSumToOne}
             />
           </div>
         )}

@@ -17,11 +17,7 @@ import {
   StonkContract,
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
-import {
-  formatMoney,
-  formatMoneyWithDecimals,
-  formatPercent,
-} from 'common/util/format'
+import { formatMoney, formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { User } from 'web/lib/firebase/users'
@@ -41,7 +37,7 @@ import { api } from 'web/lib/firebase/api'
 import clsx from 'clsx'
 import { getVersusColors } from '../charts/contract/choice'
 import { Fees, getFeeTotal, noFees } from 'common/fees'
-import { InfoTooltip } from '../widgets/info-tooltip'
+import { FeeDisplay } from './fees'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -397,20 +393,11 @@ export default function LimitOrderPanel(props: {
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
-          <div>
-            <span className="">{formatMoneyWithDecimals(totalFees)}</span>
-            <InfoTooltip
-              text={`${(betAmount ? (100 * totalFees) / betAmount : 0).toFixed(
-                2
-              )}% fee. No fees for resting limit orders. Half goes to the market creator and half is burned. Fees range from 0% to 7%${
-                shouldAnswersSumToOne
-                  ? ' (can be slightly higher on multiple choice)'
-                  : ''
-              } of your bet amount, increasing the more unlikely your bet is.`}
-              className="text-ink-600 ml-1 mt-0.5"
-              size="sm"
-            />
-          </div>
+          <FeeDisplay
+            amount={filledAmount}
+            totalFees={totalFees}
+            isMultiSumsToOne={shouldAnswersSumToOne}
+          />
         </Row>
 
         <Row className="items-center justify-between gap-2">
