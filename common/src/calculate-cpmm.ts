@@ -252,7 +252,11 @@ export function calculateAmountToBuySharesFixedP(
     remaningShares,
     outcome
   )
-  return currAmount + fillAmount
+  const fillAmountFees = getTakerFee(
+    remaningShares,
+    fillAmount / remaningShares
+  )
+  return currAmount + fillAmount + fillAmountFees
 }
 
 export function calculateCpmmMultiSumsToOneSale(

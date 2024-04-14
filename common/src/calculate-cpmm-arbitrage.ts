@@ -8,6 +8,7 @@ import {
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
+import { noFees } from './fees'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
@@ -433,6 +434,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: Date.now(),
+      fees: noBetResult.totalFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
@@ -456,6 +458,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
     amount: netNoAmount,
     shares: noShares,
     timestamp: Date.now(),
+    fees: noFees,
   }
   yesBetResult.takers.push(redemptionFill)
 
@@ -607,6 +610,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       amount: -sumBy(yesBetResult.takers, 'amount'),
       shares: -sumBy(yesBetResult.takers, 'shares'),
       timestamp: Date.now(),
+      fees: yesBetResult.totalFees,
     }
     yesBetResult.takers.push(redemptionFill)
   }
@@ -629,6 +633,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
     amount: totalYesAmount,
     shares: yesShares,
     timestamp: Date.now(),
+    fees: noFees,
   }
   noBetResult.takers.push(redemptionFill)
 
@@ -719,6 +724,7 @@ const buyNoSharesInAnswers = (
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: Date.now(),
+      fees: noBetResult.totalFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
@@ -850,6 +856,7 @@ export function calculateCpmmMultiArbitrageSellNo(
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: now,
+      fees: noBetResult.totalFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
@@ -859,6 +866,7 @@ export function calculateCpmmMultiArbitrageSellNo(
     amount: netNoAmount,
     shares: noSharesInOtherAnswers,
     timestamp: now,
+    fees: noFees,
   })
 
   if (DEBUG) {
@@ -1026,6 +1034,7 @@ export function calculateCpmmMultiArbitrageSellYes(
       amount: -sumBy(yesBetResult.takers, 'amount'),
       shares: -sumBy(yesBetResult.takers, 'shares'),
       timestamp: now,
+      fees: yesBetResult.totalFees,
     }
     yesBetResult.takers.push(redemptionFill)
   }
@@ -1035,6 +1044,7 @@ export function calculateCpmmMultiArbitrageSellYes(
     amount: totalYesAmount,
     shares: yesSharesInOtherAnswers,
     timestamp: now,
+    fees: noFees,
   })
 
   if (DEBUG) {
@@ -1134,6 +1144,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
         amount: -sumBy(yesBet.takers, 'amount'),
         shares: -sumBy(yesBet.takers, 'shares'),
         timestamp: first(yesBet.takers)?.timestamp ?? Date.now(),
+        fees: yesBet.totalFees,
       }
       yesBet.takers.push(redemptionFill)
     }
@@ -1157,6 +1168,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
               shares: -sharesToSell,
               timestamp: first(betResult.takers)?.timestamp ?? Date.now(),
               isSale: true,
+              fees: betResult.totalFees,
             },
             //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
           ],
