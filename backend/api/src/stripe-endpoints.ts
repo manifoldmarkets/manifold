@@ -33,11 +33,11 @@ const initStripe = () => {
 // manage at https://dashboard.stripe.com/test/products?active=true
 const manticDollarStripePrice = isProd()
   ? {
-      500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
-      1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
-      2500: 'price_1KFQqNGdoFKoCJW7SDvrSaEB',
-      10000: 'price_1KFQraGdoFKoCJW77I4XCwM3',
-      20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
+      // 500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
+      1399: 'price_1P5bG1GdoFKoCJW7aoWlFYL2',
+      2999: 'price_1P5bIQGdoFKoCJW7MXrOwn7l',
+      10999: 'price_1P5bJ2GdoFKoCJW7YBXcxaEx',
+      // 20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
