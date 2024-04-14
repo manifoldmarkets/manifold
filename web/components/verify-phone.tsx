@@ -10,6 +10,7 @@ import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
+import { track } from 'web/lib/service/analytics'
 
 export function VerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
@@ -48,6 +49,8 @@ export function VerifyPhone(props: { onClose: () => void }) {
       .then(() => onClose())
       .catch((e) => console.error(e))
       .finally(() => setLoading(false))
+
+    await track('verify phone')
   }
   const [loading, setLoading] = useState(false)
   const [otp, setOtp] = useState('')
