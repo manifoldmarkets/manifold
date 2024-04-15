@@ -1,15 +1,19 @@
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
-import { calculateCpmmMultiArbitrageBet } from './calculate-cpmm-arbitrage'
+import {
+  calculateCpmmMultiArbitrageBet,
+  calculateCpmmMultiArbitrageYesBets,
+} from './calculate-cpmm-arbitrage'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getFeeTotal } from './fees'
+import { getMultiNumericAnswerBucketRanges } from './multi-numeric'
 
 describe('calculateCpmmMultiArbitrageBet', () => {
   it('should sum to 1 after bet', async () => {
     const answers: Answer[] = [
-      getAnswer(1, 0.4),
+      getAnswer(1, 0.5),
       getAnswer(2, 0.3),
-      getAnswer(3, 0.1),
+      getAnswer(3, 0.2),
     ]
     const result = calculateCpmmMultiArbitrageBet(
       answers,
@@ -32,9 +36,9 @@ describe('calculateCpmmMultiArbitrageBet', () => {
 
   it('should conserve shares', async () => {
     const answers: Answer[] = [
-      getAnswer(1, 0.4),
+      getAnswer(1, 0.5),
       getAnswer(2, 0.3),
-      getAnswer(3, 0.1),
+      getAnswer(3, 0.2),
     ]
 
     const betAmount = 10
@@ -71,6 +75,68 @@ describe('calculateCpmmMultiArbitrageBet', () => {
   })
 })
 
+describe('calculateCpmmMultiArbitrageYesBets', () => {
+  it('should sum to 1 after bet', async () => {
+    const answers: Answer[] = getNumericAnswers(0, 100, 10)
+    const result = calculateCpmmMultiArbitrageYesBets(
+      answers,
+      answers.slice(0, 3),
+      30,
+      undefined,
+      [],
+      {}
+    )
+    const { newBetResults, otherBetResults } = result
+    const pools = [
+      ...newBetResults.map((r) => r.cpmmState.pool),
+      ...otherBetResults.map((b) => b.cpmmState.pool),
+    ]
+    const probSum = sumBy(pools, (pool) => getCpmmProbability(pool, 0.5))
+
+    expect(probSum).toBeCloseTo(1)
+  })
+
+  it('should conserve shares', async () => {
+    const answers: Answer[] = getNumericAnswers(0, 100, 10)
+    const betAmount = 30
+    const result = calculateCpmmMultiArbitrageYesBets(
+      answers,
+      answers.slice(0, 3),
+      betAmount,
+      undefined,
+      [],
+      {}
+    )
+    const { newBetResults, otherBetResults } = result
+
+    const amountInShares =
+      betAmount -
+      sumBy(newBetResults, (b) => getFeeTotal(b.totalFees)) -
+      sumBy(otherBetResults, (b) => getFeeTotal(b.totalFees))
+    const answerYesShares = convertAnswerPoolsToYesPools(answers)
+    const initialYesShares = answerYesShares.map((a) => a + amountInShares)
+
+    const finalPools = [
+      ...newBetResults.map((r) => r.cpmmState.pool),
+      ...otherBetResults.map((b) => b.cpmmState.pool),
+    ].map(({ YES, NO }) => ({ poolYes: YES, poolNo: NO }))
+    console.log('finalPools', finalPools)
+    const finalAnswerYesShares = convertAnswerPoolsToYesPools(finalPools)
+
+    for (const newBetResult of newBetResults) {
+      const purchasedShares = sumBy(newBetResult.takers, (t) => t.shares)
+      const index = answers.findIndex((a) => a.id === newBetResult.answer.id)
+      finalAnswerYesShares[index] += purchasedShares
+    }
+    console.log('initialYesShares', initialYesShares)
+    console.log('finalYesShares', finalAnswerYesShares)
+
+    for (let i = 0; i < answers.length; i++) {
+      expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
+    }
+  })
+})
+
 // Convert all NO shares into YES shares.
 // E.g. NO shares in answer A will be converted to YES shares in every other answer.
 // Returns an array of YES shares for each answer.
@@ -87,7 +153,7 @@ const convertAnswerPoolsToYesPools = (
   )
 }
 
-const getAnswer = (index: number, prob: number, userId = '1') => {
+const getAnswer = (index: number, prob: number) => {
   const k = 100
   // y * n = k
   // prob = n / (y + n)
@@ -113,4 +179,11 @@ const getAnswer = (index: number, prob: number, userId = '1') => {
     subsidyPool: 0,
     probChanges: { day: 0, week: 0, month: 0 },
   }
+}
+
+const getNumericAnswers = (min: number, max: number, step: number) => {
+  const bucketRanges = getMultiNumericAnswerBucketRanges(min, max, step)
+  const prob = 1 / bucketRanges.length
+  const answers = bucketRanges.map(([min, max], i) => getAnswer(i, prob))
+  return answers
 }

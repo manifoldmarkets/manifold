@@ -9,6 +9,7 @@ import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
 import { noFees } from './fees'
+import { addObjects } from './util/object'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
@@ -96,6 +97,7 @@ export function calculateCpmmMultiArbitrageYesBets(
             pool: { YES: r.answer.poolYes, NO: r.answer.poolNo },
             p: 0.5,
           },
+          totalFees: noFees,
         },
         otherBetResults: [],
       }
@@ -262,6 +264,7 @@ export const combineBetsOnSameAnswers = (
     const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
     const { poolYes, poolNo } = answer
     const bet = betsForAnswer[0]
+    const totalFees = betsForAnswer.reduce((acc, b) => addObjects(acc, b.totalFees), noFees)
     return {
       ...bet,
       takers: fillsFollowingFirstAreFree
@@ -280,6 +283,7 @@ export const combineBetsOnSameAnswers = (
       outcome,
       cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
       answer,
+      totalFees
     }
   })
 }
