@@ -17,7 +17,8 @@ export type User = {
   twitterHandle?: string
   discordHandle?: string
 
-  balance: number
+  balance: number // M$
+  spiceBalance: number
   totalDeposits: number
 
   profitCached: {

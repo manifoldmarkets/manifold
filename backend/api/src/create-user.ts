@@ -127,6 +127,7 @@ export const createuser: APIHandler<'createuser'> = async (
         username,
         avatarUrl,
         balance: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
+        spiceBalance: 0,
         totalDeposits: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },

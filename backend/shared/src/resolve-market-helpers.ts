@@ -12,13 +12,17 @@ import { LiquidityProvision } from 'common/liquidity-provision'
 import {
   Txn,
   CancelUniqueBettorBonusTxn,
-  ContractResolutionPayoutTxn,
+  ContractOldResolutionPayoutTxn,
 } from 'common/txn'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { createContractResolvedNotifications } from './create-notification'
 import { updateContractMetricsForUsers } from './helpers/user-contract-metrics'
-import { runTxn, runContractPayoutTxn } from './txn/run-txn'
+import {
+  runTxn,
+  runContractPayoutTxn,
+  runContractOldPayoutTxn,
+} from './txn/run-txn'
 import {
   revalidateStaticProps,
   isProd,
@@ -34,7 +38,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
 import { acquireLock, releaseLock } from './firestore-lock'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
 export type ResolutionParams = {
   outcome: string
@@ -418,26 +422,43 @@ export const payUsersTransactions = async (
     await firestore
       .runTransaction(async (transaction) => {
         payoutChunk.forEach(({ userId, payout, deposit }) => {
-          const payoutTxn: Omit<
-            ContractResolutionPayoutTxn,
-            'id' | 'createdTime'
-          > = {
-            category: 'CONTRACT_RESOLUTION_PAYOUT',
-            fromType: 'CONTRACT',
-            fromId: contractId,
-            toType: 'USER',
-            toId: userId,
-            amount: payout,
-            token: 'M$',
-            data: removeUndefinedProps({
-              deposit: deposit ?? 0,
-              payoutStartTime,
-              answerId,
-            }),
-            description: 'Contract payout for resolution: ' + contractId,
+          if (SPICE_PRODUCTION_ENABLED) {
+            runContractPayoutTxn(transaction, {
+              category: 'PRODUCE_SPICE',
+              fromType: 'CONTRACT',
+              fromId: contractId,
+              toType: 'USER',
+              toId: userId,
+              amount: payout,
+              token: 'SPICE',
+              data: removeUndefinedProps({
+                deposit: deposit ?? 0,
+                payoutStartTime,
+                answerId,
+              }),
+              description: 'Contract payout for resolution',
+            })
+          } else {
+            const payoutTxn: Omit<
+              ContractOldResolutionPayoutTxn,
+              'id' | 'createdTime'
+            > = {
+              category: 'CONTRACT_RESOLUTION_PAYOUT',
+              fromType: 'CONTRACT',
+              fromId: contractId,
+              toType: 'USER',
+              toId: userId,
+              amount: payout,
+              token: 'M$',
+              data: removeUndefinedProps({
+                deposit: deposit ?? 0,
+                payoutStartTime,
+                answerId,
+              }),
+              description: 'Contract payout for resolution: ' + contractId,
+            }
+            runContractOldPayoutTxn(transaction, payoutTxn)
           }
-
-          runContractPayoutTxn(transaction, payoutTxn)
         })
       })
       .catch((error) => {

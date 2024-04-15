@@ -13,6 +13,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 }
 
 export const PRODUCT_MARKET_FIT_ENABLED = false
+export const SPICE_PRODUCTION_ENABLED = false
 
 export const DASHBOARD_ENABLED = ENV === 'DEV'
 
