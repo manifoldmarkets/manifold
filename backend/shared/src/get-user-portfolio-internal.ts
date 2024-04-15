@@ -108,6 +108,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
     loanTotal,
     investmentValue,
     balance: user.balance,
+    spiceBalance: user.spiceBalance,
     totalDeposits: user.totalDeposits,
     timestamp: Date.now(),
   }

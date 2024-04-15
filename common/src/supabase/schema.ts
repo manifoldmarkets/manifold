@@ -2471,6 +2471,7 @@ export type Database = {
           id: number
           investment_value: number | null
           loan_total: number | null
+          spice_balance: number
           total_deposits: number | null
           ts: string | null
           user_id: string
@@ -2480,6 +2481,7 @@ export type Database = {
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          spice_balance?: number
           total_deposits?: number | null
           ts?: string | null
           user_id: string
@@ -2489,6 +2491,7 @@ export type Database = {
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          spice_balance?: number
           total_deposits?: number | null
           ts?: string | null
           user_id?: string

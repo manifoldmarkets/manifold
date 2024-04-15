@@ -1118,6 +1118,7 @@ export const API = (_apiTypeCheck = {
       loanTotal: number
       investmentValue: number
       balance: number
+      spiceBalance: number
       totalDeposits: number
       timestamp: number
     },
