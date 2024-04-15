@@ -30,8 +30,6 @@ import { NormalizedBet } from 'common/new-bet'
 import { maker } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
-import { FieldValue } from 'firebase-admin/firestore'
-import { FLAT_TRADE_FEE } from 'common/fees'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
@@ -174,19 +172,6 @@ export const onCreateBets = async (
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
     'userId'
-  )
-
-  await Promise.all(
-    uniqueNonRedemptionBetsByUserId
-      .filter((bet) => bet.isApi || BOT_USERNAMES.includes(bet.userUsername))
-      .map(async (bet) => {
-        // assess flat fee for bots
-        const userRef = firestore.doc(`users/${bet.userId}`)
-        await userRef.update({
-          balance: FieldValue.increment(-FLAT_TRADE_FEE),
-          totalDeposits: FieldValue.increment(-FLAT_TRADE_FEE),
-        })
-      })
   )
 
   // NOTE: if place-multi-bet is added for any MULTIPLE_CHOICE question, this won't give multiple bonuses for every answer
