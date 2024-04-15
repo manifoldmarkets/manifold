@@ -17,7 +17,7 @@ import {
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { log } from 'shared/utils'
@@ -298,7 +298,7 @@ export const processNewBetResult = (
     makers,
     ordersToCancel,
   } = newBetResult
-  const { mechanism, collectedFees } = contract
+  const { mechanism } = contract
   if (
     mechanism == 'cpmm-1' &&
     (!newP ||
@@ -426,7 +426,6 @@ export const processNewBetResult = (
           totalShares: newTotalShares,
           totalBets: newTotalBets,
           totalLiquidity: newTotalLiquidity,
-          collectedFees: addObjects(newBet.fees, collectedFees),
         })
       )
     }

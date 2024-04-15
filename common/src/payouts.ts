@@ -7,7 +7,6 @@ import {
   CPMMMultiContract,
   StillOpenDPMContract,
 } from './contract'
-import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getDpmCancelPayouts,
@@ -48,7 +47,6 @@ export type PayoutInfo = {
   payouts: Payout[]
   creatorPayout: number
   liquidityPayouts: Payout[]
-  collectedFees: Fees
 }
 
 export const getPayouts = (

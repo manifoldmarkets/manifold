@@ -6,7 +6,6 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from './contract'
-import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
 export const getFixedCancelPayouts = (
@@ -25,9 +24,11 @@ export const getFixedCancelPayouts = (
       payout: bet.amount,
     }))
 
-  const creatorPayout = 0
+  // Subtract all creator fees.
+  const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)
+  const creatorPayout = -creatorFees
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees: noFees }
+  return { payouts, creatorPayout, liquidityPayouts }
 }
 
 export const getStandardFixedPayouts = (
@@ -45,14 +46,13 @@ export const getStandardFixedPayouts = (
     payout: shares,
   }))
 
-  const { collectedFees } = contract
-  const creatorPayout = collectedFees.creatorFee
+  const creatorPayout = 0
   const liquidityPayouts =
     contract.mechanism === 'cpmm-1'
       ? getLiquidityPoolPayouts(contract, outcome, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
+  return { payouts, creatorPayout, liquidityPayouts }
 }
 
 export const getMultiFixedPayouts = (
@@ -79,7 +79,7 @@ export const getMultiFixedPayouts = (
     liquidities
   )
 
-  return { payouts, liquidityPayouts, creatorPayout: 0, collectedFees: noFees }
+  return { payouts, liquidityPayouts, creatorPayout: 0 }
 }
 
 export const getLiquidityPoolPayouts = (
@@ -127,8 +127,7 @@ export const getMktFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const { collectedFees } = contract
-  const creatorPayout = collectedFees.creatorFee
+  const creatorPayout = 0
 
   const outcomeProbs = {
     YES: resolutionProbability,
@@ -146,7 +145,7 @@ export const getMktFixedPayouts = (
       ? getLiquidityPoolProbPayouts(contract, outcomeProbs, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
+  return { payouts, creatorPayout, liquidityPayouts }
 }
 
 export const getLiquidityPoolProbPayouts = (

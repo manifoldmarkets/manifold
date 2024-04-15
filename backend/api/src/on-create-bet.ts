@@ -66,6 +66,7 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
+import { Fees } from 'common/fees'
 
 const firestore = admin.firestore()
 
@@ -267,15 +268,32 @@ const debouncedContractUpdates = (contract: Contract) => {
         select
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id) from contract_bets where contract_id = $1) as count
+          (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
+
+          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creatorFee
+          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platformFee
+          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidityFee
       `,
       [contract.id]
     )
-    const { volume, time: lastBetTime, count } = result
+    const {
+      volume,
+      time: lastBetTime,
+      count,
+      creatorFee,
+      platformFee,
+      liquidityFee,
+    } = result
+    const collectedFees: Fees = {
+      creatorFee: creatorFee ?? 0,
+      platformFee: platformFee ?? 0,
+      liquidityFee: liquidityFee ?? 0,
+    }
     log('Got updated stats for contract id: ' + contract.id, {
       volume,
       lastBetTime,
       count,
+      collectedFees,
     })
 
     await firestore.doc(`contracts/${contract.id}`).update(
@@ -284,6 +302,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
         lastUpdatedTime: Date.now(),
         uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+        collectedFees,
       })
     )
     log('Wrote debounced updates for contract id: ' + contract.id)

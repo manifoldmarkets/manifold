@@ -77,7 +77,6 @@ export const resolveMarketHelper = async (
 
     const {
       creatorPayout,
-      collectedFees,
       bets,
       resolutionProbability,
       payouts,
@@ -99,7 +98,6 @@ export const resolveMarketHelper = async (
         closeTime: newCloseTime,
         resolutionProbability,
         resolutions,
-        collectedFees,
         resolverId: resolver.id,
         subsidyPool: 0,
         lastUpdatedTime: newCloseTime,
@@ -314,7 +312,6 @@ export const getDataAndPayoutInfo = async (
     payouts: traderPayouts,
     creatorPayout,
     liquidityPayouts,
-    collectedFees,
   } = getPayouts(
     outcome,
     unresolvedContract,
@@ -342,9 +339,8 @@ export const getDataAndPayoutInfo = async (
     )
   const payouts = [...payoutsWithoutLoans, ...loanPayouts]
   return {
-    payoutsWithoutLoans,
     creatorPayout,
-    collectedFees,
+    payoutsWithoutLoans,
     bets,
     resolutionProbs,
     resolutionProbability,
