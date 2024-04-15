@@ -45,7 +45,6 @@ export const groupPayoutsByUser = (payouts: Payout[]) => {
 
 export type PayoutInfo = {
   payouts: Payout[]
-  creatorPayout: number
   liquidityPayouts: Payout[]
 }
 
@@ -96,7 +95,7 @@ export const getPayouts = (
   }
   if (contract.mechanism === 'cpmm-multi-1') {
     if (outcome === 'CANCEL') {
-      return getFixedCancelPayouts(bets, liquidities)
+      return getFixedCancelPayouts(contract, bets, liquidities)
     }
     if (!resolutions) {
       throw new Error('getPayouts: resolutions required for cpmm-multi-1')
@@ -129,7 +128,7 @@ export const getFixedPayouts = (
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(bets, liquidities)
+      return getFixedCancelPayouts(contract, bets, liquidities)
   }
 }
 

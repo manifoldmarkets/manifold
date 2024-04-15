@@ -9,6 +9,7 @@ import {
 import { LiquidityProvision } from './liquidity-provision'
 
 export const getFixedCancelPayouts = (
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -24,11 +25,14 @@ export const getFixedCancelPayouts = (
       payout: bet.amount,
     }))
 
-  // Subtract all creator fees.
+  // Creator pays back all creator fees for N/A resolution.
   const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)
-  const creatorPayout = -creatorFees
+  payouts.push({
+    userId: contract.creatorId,
+    payout: -creatorFees,
+  })
 
-  return { payouts, creatorPayout, liquidityPayouts }
+  return { payouts, liquidityPayouts }
 }
 
 export const getStandardFixedPayouts = (
@@ -46,13 +50,12 @@ export const getStandardFixedPayouts = (
     payout: shares,
   }))
 
-  const creatorPayout = 0
   const liquidityPayouts =
     contract.mechanism === 'cpmm-1'
       ? getLiquidityPoolPayouts(contract, outcome, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts }
+  return { payouts, liquidityPayouts }
 }
 
 export const getMultiFixedPayouts = (
@@ -79,7 +82,7 @@ export const getMultiFixedPayouts = (
     liquidities
   )
 
-  return { payouts, liquidityPayouts, creatorPayout: 0 }
+  return { payouts, liquidityPayouts }
 }
 
 export const getLiquidityPoolPayouts = (
@@ -127,8 +130,6 @@ export const getMktFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const creatorPayout = 0
-
   const outcomeProbs = {
     YES: resolutionProbability,
     NO: 1 - resolutionProbability,
@@ -145,7 +146,7 @@ export const getMktFixedPayouts = (
       ? getLiquidityPoolProbPayouts(contract, outcomeProbs, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts }
+  return { payouts, liquidityPayouts }
 }
 
 export const getLiquidityPoolProbPayouts = (
