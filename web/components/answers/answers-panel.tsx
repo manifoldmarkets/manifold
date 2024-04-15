@@ -613,7 +613,6 @@ export function Answer(props: {
   const canEdit = canEditAnswer(answer, contract, user)
 
   const textColorClass = clsx(
-    'group-hover:text-primary-700 transition-colors',
     resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   )
   return (
