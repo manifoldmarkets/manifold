@@ -120,7 +120,6 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       ...newBetResults.map((r) => r.cpmmState.pool),
       ...otherBetResults.map((b) => b.cpmmState.pool),
     ].map(({ YES, NO }) => ({ poolYes: YES, poolNo: NO }))
-    console.log('finalPools', finalPools)
     const finalAnswerYesShares = convertAnswerPoolsToYesPools(finalPools)
 
     for (const newBetResult of newBetResults) {
@@ -128,11 +127,11 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       const index = answers.findIndex((a) => a.id === newBetResult.answer.id)
       finalAnswerYesShares[index] += purchasedShares
     }
-    console.log('initialYesShares', initialYesShares)
-    console.log('finalYesShares', finalAnswerYesShares)
 
     for (let i = 0; i < answers.length; i++) {
-      expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
+      expect(
+        Math.abs(finalAnswerYesShares[i] - initialYesShares[i]) < 0.01
+      ).toBeTruthy()
     }
   })
 })

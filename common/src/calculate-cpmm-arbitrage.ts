@@ -8,7 +8,7 @@ import {
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
-import { noFees } from './fees'
+import { Fees, noFees } from './fees'
 import { addObjects } from './util/object'
 
 const DEBUG = false
@@ -162,15 +162,26 @@ function calculateCpmmMultiArbitrageBetsYes(
     yesBetResults.push(...yesBets)
   }
 
+  const noBetResultsOnBoughtAnswer = combineBetsOnSameAnswers(
+    noBetResults,
+    'NO',
+    updatedAnswers.filter((r) =>
+      initialAnswersToBuy.map((a) => a.id).includes(r.id)
+    )
+  )
+  const extraFeesPerBoughtAnswer = Object.fromEntries(
+    noBetResultsOnBoughtAnswer.map((r) => [r.answer.id, r.totalFees])
+  )
+
   const newBetResults = combineBetsOnSameAnswers(
     yesBetResults,
     'YES',
     updatedAnswers.filter((a) =>
       initialAnswersToBuy.map((an) => an.id).includes(a.id)
     ),
-    true
+    true,
+    extraFeesPerBoughtAnswer
   )
-
   // TODO: after adding limit orders, we need to keep track of the possible matchedBetIds in the no redemption bets we're throwing away
   const otherBetResults = combineBetsOnSameAnswers(
     noBetResults,
@@ -258,13 +269,18 @@ export const combineBetsOnSameAnswers = (
   outcome: 'YES' | 'NO',
   updatedAnswers: Answer[],
   // The fills after the first are free bc they're due to arbitrage.
-  fillsFollowingFirstAreFree?: boolean
+  fillsFollowingFirstAreFree?: boolean,
+  extraFeesPerAnswer?: { [answerId: string]: Fees }
 ) => {
   return updatedAnswers.map((answer) => {
     const betsForAnswer = bets.filter((bet) => bet.answer.id === answer.id)
     const { poolYes, poolNo } = answer
     const bet = betsForAnswer[0]
-    const totalFees = betsForAnswer.reduce((acc, b) => addObjects(acc, b.totalFees), noFees)
+    const extraFees = extraFeesPerAnswer?.[answer.id] ?? noFees
+    const totalFees = betsForAnswer.reduce(
+      (acc, b) => addObjects(acc, b.totalFees),
+      extraFees
+    )
     return {
       ...bet,
       takers: fillsFollowingFirstAreFree
@@ -283,7 +299,7 @@ export const combineBetsOnSameAnswers = (
       outcome,
       cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
       answer,
-      totalFees
+      totalFees,
     }
   })
 }
