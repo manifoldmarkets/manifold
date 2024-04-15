@@ -70,7 +70,6 @@ export async function updateUserMetricsCore() {
   }
   log(`Loaded ${activeUserIds.length} active users.`)
 
-  log('Loading creator trader counts...')
   const creatorTraders = await maybeGetPeriodTradersByUserId(
     pg,
     activeUserIds,
@@ -79,8 +78,6 @@ export async function updateUserMetricsCore() {
     monthAgo,
     random
   )
-
-  log(`Loaded creator trader counts.`)
 
   const userIdsNeedingUpdate = activeUserIds.filter(
     (id) =>
@@ -348,7 +345,7 @@ const maybeGetPeriodTradersByUserId = async (
   monthAgo: number,
   random: number
 ) => {
-  const recalculateTraders = random < 0.01
+  const recalculateTraders = random < 0.1
   if (!recalculateTraders) {
     return {} as {
       [userId: string]: {
@@ -359,13 +356,14 @@ const maybeGetPeriodTradersByUserId = async (
       }
     }
   }
-
+  log('Loading creator trader counts...')
   const [yesterdayTraders, weeklyTraders, monthlyTraders, allTimeTraders] =
     await Promise.all(
       [yesterday, weekAgo, monthAgo, undefined].map((t) =>
         getCreatorTraders(pg, activeUserIds, t)
       )
     )
+  log(`Loaded creator trader counts.`)
   return Object.fromEntries(
     activeUserIds.map((userId) => {
       const creatorTraders = {
@@ -445,16 +443,13 @@ const getCreatorTraders = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `with contract_traders as (
-        select distinct contract_id, user_id from contract_bets where created_time >= $2
-      )
-      select c.creator_id, count(ct.*)::int as total
-      from contracts as c
-      join contract_traders as ct on c.id = ct.contract_id
-      where c.creator_id in ($1:list)
-      group by c.creator_id`,
+      `select to_id, count(id) as total from txns 
+               where created_time >= $2
+               and category = 'UNIQUE_BETTOR_BONUS'
+               and to_id in ($1:list)
+             group by to_id;`,
       [userIds, new Date(since ?? 0).toISOString()],
-      (r) => [r.creator_id as string, r.total as number]
+      (r) => [r.to_id as string, r.total as number]
     )
   )
 }
