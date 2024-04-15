@@ -26,7 +26,6 @@ import {
   answerToRange,
   getPrecision,
 } from 'common/multi-numeric'
-import { XIcon } from '@heroicons/react/solid'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
@@ -34,6 +33,7 @@ import { scaleLinear } from 'd3-scale'
 import { DoubleDistributionChart } from 'web/components/charts/generic-charts'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { SizedContainer } from 'web/components/sized-container'
+import { XIcon } from '@heroicons/react/solid'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -259,7 +259,16 @@ export const NumericBetPanel = (props: {
     <Col className={'gap-2'}>
       {showDistribution && !!mode && (
         <Col className={'gap-2'}>
-          <span className={' text-xl'}>Probability Distribution</span>
+          <Row className={'justify-between'}>
+            <span className={' text-xl'}>Probability Distribution</span>
+            <IconButton
+              className={'w-12'}
+              onClick={() => setMode(undefined)}
+              disabled={isSubmitting}
+            >
+              <XIcon className={'h-4 w-4'} />
+            </IconButton>
+          </Row>
           <Row className={'gap-4'}>
             <Row className={'gap-1'}>
               <svg width="20" height="20" viewBox="0 0 120 120">
@@ -365,13 +374,15 @@ export const NumericBetPanel = (props: {
               >
                 {showDistribution ? 'Simple' : 'Advanced'}
               </Button>
-              <IconButton
-                className={'w-12'}
-                onClick={() => setMode(undefined)}
-                disabled={isSubmitting}
-              >
-                <XIcon className={'h-4 w-4'} />
-              </IconButton>
+              {!showDistribution && (
+                <IconButton
+                  className={'w-12'}
+                  onClick={() => setMode(undefined)}
+                  disabled={isSubmitting}
+                >
+                  <XIcon className={'h-4 w-4'} />
+                </IconButton>
+              )}
             </Row>
           </Row>
           <QuickBetAmountsRow
@@ -423,7 +434,7 @@ export const NumericBetPanel = (props: {
 
 export const MultiNumericDistributionChart = (props: {
   contract: CPMMNumericContract
-  updatedContract: CPMMNumericContract
+  updatedContract?: CPMMNumericContract
   width: number
   height: number
   range: [number, number]
@@ -442,7 +453,7 @@ export const MultiNumericDistributionChart = (props: {
   const { min, max } = contract
   const data = useMemo(() => getExpectedValuesArray(contract), [contract])
   const otherData = useMemo(
-    () => getExpectedValuesArray(updatedContract),
+    () => (updatedContract ? getExpectedValuesArray(updatedContract) : []),
     [updatedContract]
   )
   const maxY = Math.max(...data.map((d) => d.y))
@@ -463,7 +474,7 @@ export const MultiNumericDistributionChart = (props: {
       data={data}
       otherData={otherData}
       color={NUMERIC_GRAPH_COLOR}
-      verticalLines={range}
+      verticalLines={updatedContract ? range : undefined}
       shadedRanges={shadedRanges}
       newColor={newColor}
     />
