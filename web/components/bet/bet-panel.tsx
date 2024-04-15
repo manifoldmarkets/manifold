@@ -461,7 +461,7 @@ export const BuyPanelBody = (props: {
 
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mr-8 justify-between'}>
-            <Col className=" gap-1">
+            <Col className={clsx(' gap-1', isBinaryMC && 'invisible')}>
               <div className="text-ink-700">Outcome</div>
               <ChoicesToggleGroup
                 currentChoice={outcome}
