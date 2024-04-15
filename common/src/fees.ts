@@ -9,10 +9,6 @@ export const CREATOR_FEE_FRAC = 0.5
 
 export const FLAT_COMMENT_FEE = 1
 
-export const PLATFORM_FEE = 0
-export const CREATOR_FEE = 0
-export const LIQUIDITY_FEE = 0
-
 export const DPM_PLATFORM_FEE = 0.0
 export const DPM_CREATOR_FEE = 0.0
 export const DPM_FEES = DPM_PLATFORM_FEE + DPM_CREATOR_FEE
