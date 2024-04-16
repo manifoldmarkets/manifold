@@ -13,13 +13,15 @@ import { BountyLeft } from './bountied-question'
 import { Row } from 'web/components/layout/row'
 import { EyeIcon } from '@heroicons/react/solid'
 import { CreatorFeesDisplay } from './creator-fees-display'
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractSummaryStats(props: {
   contract: Contract
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { viewCount: views } = contract
+  const { viewCount: views, creatorId } = contract
+  const isCreator = useUser()?.id === creatorId
   return (
     <>
       {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
@@ -83,7 +85,7 @@ export function ContractSummaryStats(props: {
             </Tooltip>
           )}
 
-          <CreatorFeesDisplay className="" contract={contract} />
+          {isCreator && <CreatorFeesDisplay className="" contract={contract} />}
           <CloseOrResolveTime contract={contract} editable={editable} />
         </Row>
       )}
