@@ -1,11 +1,10 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { sum, uniq } from 'lodash'
+import { mean, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/log'
 
-const VIEW_WEIGHT = 0.25
-type groupIdsToActivity = {
-  [groupId: string]: { views: number; interactions: number }
+type groupIdsToConversionScore = {
+  [groupId: string]: { conversionScore: number }
 }
 export async function calculateUserTopicInterests(startTime?: number) {
   const startDate = new Date(startTime ?? Date.now() - DAY_MS)
@@ -31,8 +30,10 @@ export async function calculateUserTopicInterests(startTime?: number) {
       select ucv.user_id, json_agg(gc.group_id) as group_ids from postgres.public.user_contract_views ucv
          join contracts c on ucv.contract_id = c.id
          join group_contracts gc on c.id = gc.contract_id
-           where last_page_view_ts > $1
-           and last_page_view_ts < $2
+           where (last_page_view_ts > $1
+           and last_page_view_ts < $2)
+           or (last_card_view_ts > $1
+            and last_card_view_ts < $2)
       group by ucv.user_id`,
     [start, end],
     (row) => [row.user_id, row.group_ids]
@@ -49,21 +50,23 @@ export async function calculateUserTopicInterests(startTime?: number) {
         userIdsToInteractedGroupIds[userId] ?? []
       const viewedGroupIds: string[] = userIdsToViewedGroupIds[userId] ?? []
       const allGroupIds = uniq([...interactedGroupIds, ...viewedGroupIds])
-      const groupIdsToCounts = Object.fromEntries(
+      const groupIdsToConversionScore = Object.fromEntries(
         allGroupIds.map((groupId) => [
           groupId,
           {
-            views: viewedGroupIds.filter((id) => id === groupId).length,
-            interactions: interactedGroupIds.filter((id) => id === groupId)
-              .length,
+            conversionScore: Math.min(
+              interactedGroupIds.filter((id) => id === groupId).length /
+                (viewedGroupIds.filter((id) => id === groupId).length || 1),
+              1
+            ),
           },
         ])
-      ) as groupIdsToActivity
+      ) as groupIdsToConversionScore
 
       await pg.none(
         `insert into user_topic_interests (user_id, group_ids_to_activity)
          values ($1, $2)`,
-        [userId, groupIdsToCounts]
+        [userId, groupIdsToConversionScore]
       )
     })
   )
@@ -71,40 +74,30 @@ export async function calculateUserTopicInterests(startTime?: number) {
 
 export const userIdToInterests = async (
   userId: string,
-  since: number
+  limit: number
 ): Promise<{ [groupId: string]: number }> => {
   const pg = createSupabaseDirectClient()
   const userInterestsMaps = await pg.map(
     `select group_ids_to_activity from user_topic_interests
             where user_id = $1
-            and created_time > $2`,
-    [userId, new Date(since).toISOString()],
-    (row) => row.group_ids_to_activity as groupIdsToActivity
+            limit $2`,
+    [userId, limit],
+    (row) => row.group_ids_to_activity as groupIdsToConversionScore
   )
   if (!userInterestsMaps) return {}
   const allGroupIds = uniq(
-    userInterestsMaps.flatMap((groupIdsToActivity) =>
-      Object.keys(groupIdsToActivity)
+    userInterestsMaps.flatMap((groupIdsToConversion) =>
+      Object.keys(groupIdsToConversion)
     )
   )
-  const totalActions = sum(
-    userInterestsMaps.map((groupIdsToActivity) =>
-      sum(
-        Object.values(groupIdsToActivity).map(
-          (v) => v.views * VIEW_WEIGHT + v.interactions
-        )
-      )
-    )
-  )
+
   return Object.fromEntries(
     allGroupIds.map((groupId) => [
       groupId,
-      sum(
+      mean(
         userInterestsMaps.map(
-          (groupIdsToActivity) =>
-            (groupIdsToActivity[groupId].interactions +
-              groupIdsToActivity[groupId].views * VIEW_WEIGHT) /
-            totalActions
+          (groupIdsToConversionScores) =>
+            groupIdsToConversionScores[groupId]?.conversionScore ?? 0
         )
       ),
     ])
