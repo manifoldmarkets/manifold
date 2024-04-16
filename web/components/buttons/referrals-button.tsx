@@ -57,7 +57,7 @@ export function Referrals(props: { user: User }) {
           <span className={'text-primary-700 pb-2 text-xl'}>
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
-              ${formatMoney(REFERRAL_AMOUNT)}
+              {formatMoney(REFERRAL_AMOUNT)}
             </span>{' '}
             each!
           </span>
