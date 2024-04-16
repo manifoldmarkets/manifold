@@ -17,7 +17,6 @@ import { usePathname } from 'next/navigation'
 import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -27,6 +26,8 @@ import { Avatar } from '../widgets/avatar'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { formatMoneyNoMoniker } from 'common/util/format'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -148,7 +149,7 @@ function NavBarItem(props: {
   const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
-  const balance = useAnimatedNumber(user?.balance ?? 0)
+
   if (item.name === 'Profile' && user) {
     return (
       <Link
@@ -168,7 +169,14 @@ function NavBarItem(props: {
           <div className="mx-auto my-1">
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
-          <AnimatedManaCoinNumber amount={user?.balance ?? 0} />
+          <div className="flex gap-2">
+            <AnimatedManaCoinNumber amount={user?.balance ?? 0} />
+            {SPICE_PRODUCTION_ENABLED && (
+              <span className="whitespace-nowrap text-xs">
+                SP {formatMoneyNoMoniker(user.spiceBalance)}
+              </span>
+            )}
+          </div>
         </Col>
       </Link>
     )

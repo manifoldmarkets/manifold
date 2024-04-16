@@ -14,10 +14,10 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import Link from 'next/link'
-import { validateIapReceipt } from 'web/lib/firebase/api'
+import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
 import { query, where } from 'firebase/firestore'
 import { coll, listenForValues } from 'web/lib/firebase/utils'
@@ -31,6 +31,7 @@ import { buildArray } from 'common/util/array'
 import { Col } from 'web/components/layout/col'
 import { linkClass } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
+import { AmountInput } from './widgets/amount-input'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -61,6 +62,10 @@ export function AddFundsModal(props: {
                 <OtherWaysToGetMana />
               </>
             ),
+          },
+          SPICE_PRODUCTION_ENABLED && {
+            title: 'Redeem SP',
+            content: <SpiceToManaForm onClose={() => setOpen(false)} />,
           },
           (!isNative || (isNative && platform !== 'ios')) && {
             title: 'Charity',
@@ -127,7 +132,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
       <div className="my-4">
         Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
         questions.
-        <div className="italic">Not redeemable for cash except to charity.</div>
       </div>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
@@ -212,6 +216,50 @@ export const OtherWaysToGetMana = () => {
         per unique trader
       </Item>
     </ul>
+  )
+}
+
+export const SpiceToManaForm = (props: { onClose: () => void }) => {
+  const [amount, setAmount] = useState<number | undefined>(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const onSubmit = async () => {
+    if (!amount) return
+    setLoading(true)
+    try {
+      await api('convert-sp-to-mana', { amount })
+      setLoading(false)
+      setAmount(amount)
+      setError(null)
+      props.onClose()
+    } catch (e) {
+      console.error(e)
+      setError(e instanceof APIError ? e.message : 'Error converting')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="my-4">Convert at a rate of 1 SP to 1 mana.</div>
+      <div className="text-ink-500 mb-2 text-sm">Amount</div>
+      <AmountInput amount={amount} onChangeAmount={setAmount} label="SP" />
+      <div className="mt-4 flex gap-2">
+        <Button color="gray" onClick={props.onClose}>
+          Back
+        </Button>
+        <Button
+          color="gradient"
+          disabled={!amount}
+          loading={loading}
+          onClick={onSubmit}
+        >
+          Convert to {formatMoney(amount ?? 0)}
+        </Button>
+      </div>
+      <Row className="text-error mt-2 text-sm">{error}</Row>
+    </>
   )
 }
 
