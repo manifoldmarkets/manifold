@@ -12,6 +12,7 @@ import { CloseOrResolveTime } from './contract-details'
 import { BountyLeft } from './bountied-question'
 import { Row } from 'web/components/layout/row'
 import { EyeIcon } from '@heroicons/react/solid'
+import { CreatorFeesDisplay } from './creator-fees-display'
 
 export function ContractSummaryStats(props: {
   contract: Contract
@@ -89,6 +90,7 @@ export function ContractSummaryStats(props: {
             </Tooltip>
           )}
 
+          <CreatorFeesDisplay className="" contract={contract} />
           <CloseOrResolveTime contract={contract} editable={editable} />
         </Row>
       )}
