@@ -7,6 +7,7 @@ export const getTakerFee = (shares: number, prob: number) => {
 // Creators take a fraction of the taker fee.
 export const CREATOR_FEE_FRAC = 0.5
 
+export const FLAT_TRADE_FEE = 0.1
 export const FLAT_COMMENT_FEE = 1
 
 export const DPM_PLATFORM_FEE = 0.0

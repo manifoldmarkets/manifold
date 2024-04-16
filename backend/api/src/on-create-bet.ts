@@ -66,7 +66,8 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { Fees } from 'common/fees'
+import { FLAT_TRADE_FEE, Fees } from 'common/fees'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -158,6 +159,19 @@ export const onCreateBets = async (
   const uniqueNonRedemptionBetsByUserId = uniqBy(
     bets.filter((bet) => !bet.isRedemption),
     'userId'
+  )
+
+  await Promise.all(
+    uniqueNonRedemptionBetsByUserId
+      .filter((bet) => bet.isApi || BOT_USERNAMES.includes(bet.userUsername))
+      .map(async (bet) => {
+        // assess flat fee for bots
+        const userRef = firestore.doc(`users/${bet.userId}`)
+        await userRef.update({
+          balance: FieldValue.increment(-FLAT_TRADE_FEE),
+          totalDeposits: FieldValue.increment(-FLAT_TRADE_FEE),
+        })
+      })
   )
 
   // NOTE: if place-multi-bet is added for any MULTIPLE_CHOICE question, this won't give multiple bonuses for every answer
