@@ -22,7 +22,8 @@ export const getFixedCancelPayouts = (
     .filter((b) => !b.isAnte)
     .map((bet) => ({
       userId: bet.userId,
-      payout: bet.amount,
+      // We keep the platform fee.
+      payout: bet.amount - bet.fees.platformFee,
     }))
 
   // Creator pays back all creator fees for N/A resolution.
