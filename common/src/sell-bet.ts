@@ -16,7 +16,7 @@ import {
   CPMMNumericContract,
   DPMContract,
 } from './contract'
-import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees, noFees } from './fees'
+import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import { removeUndefinedProps } from './util/object'
