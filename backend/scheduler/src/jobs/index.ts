@@ -13,6 +13,7 @@ import { calculateConversionScore } from 'shared/conversion-score'
 import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
+import { MINUTE_MS } from 'common/util/time'
 
 export function createJobs() {
   return [
@@ -25,12 +26,14 @@ export function createJobs() {
     createJob(
       'update-contract-metrics-non-multi',
       '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
-      () => updateContractMetricsCore('non-multi')
+      () => updateContractMetricsCore('non-multi'),
+      30 * MINUTE_MS
     ),
     createJob(
       'update-contract-metrics-multi',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
-      () => updateContractMetricsCore('multi')
+      () => updateContractMetricsCore('multi'),
+      30 * MINUTE_MS
     ),
     createJob(
       'update-stats',
@@ -60,7 +63,8 @@ export function createJobs() {
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      updateUserMetricsCore
+      updateUserMetricsCore,
+      10 * MINUTE_MS // The caches take time to build
     ),
     // Daily jobs:
     createJob(

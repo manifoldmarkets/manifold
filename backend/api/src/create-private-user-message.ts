@@ -20,7 +20,6 @@ import { Notification } from 'common/notification'
 import { createPushNotification } from 'shared/create-push-notification'
 import { sendNewMessageEmail } from 'shared/emails'
 import { HOUR_MS } from 'common/util/time'
-import { tsToMillis } from 'common/supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { ChatVisibility } from 'common/chat-message'
 import { manifoldLoveUserId } from 'common/love/constants'
@@ -162,12 +161,12 @@ const notifyOtherUserInChannelIfInactive = async (
   if (previousMessagesThisDayBetweenTheseUsers.count > 0) return
 
   const lastUserEvent = await pg.oneOrNone(
-    `select ts from user_events where user_id = $1 order by ts desc limit 1`,
+    `select coalesce(ts_to_millis(max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts))),0) as ts
+     from user_contract_views ucv where ucv.user_id = $1`,
     [otherUserId.user_id]
   )
-  log('lastUserEvent for user ' + otherUserId.user_id, lastUserEvent)
-  if (lastUserEvent && tsToMillis(lastUserEvent.ts) > Date.now() - HOUR_MS)
-    return
+  log('last user contract view for user ' + otherUserId.user_id, lastUserEvent)
+  if (lastUserEvent && lastUserEvent.ts > Date.now() - HOUR_MS) return
 
   const otherUser = await getUser(otherUserId.user_id)
   if (!otherUser) return

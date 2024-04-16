@@ -1,16 +1,13 @@
 import {
   CashIcon,
   ChatAlt2Icon,
-  PencilIcon,
   ScaleIcon,
   PresentationChartLineIcon,
   ViewListIcon,
-  ChevronUpIcon,
   ChevronDownIcon,
   TagIcon,
 } from '@heroicons/react/outline'
-import { LuCrown } from 'react-icons/lu'
-import { ChartBarIcon } from '@heroicons/react/solid'
+import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { removeUndefinedProps } from 'common/util/object'
@@ -24,15 +21,11 @@ import { SEO } from 'web/components/SEO'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import {
-  CopyLinkOrShareButton,
-  CopyLinkRow,
-} from 'web/components/buttons/copy-link-button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { TextButton } from 'web/components/buttons/text-button'
 import { UserCommentsList } from 'web/components/comments/comments-list'
-import { DailyLeagueStat } from 'web/components/home/daily-league-stat'
 import { FollowList } from 'web/components/follow-list'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -44,12 +37,10 @@ import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { BlockedUser } from 'web/components/profile/blocked-user'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
-import { QuestsOrStreak } from 'web/components/home/quests-or-streak'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
 import { Linkify } from 'web/components/widgets/linkify'
-import { QRCode } from 'web/components/widgets/qr-code'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
@@ -79,15 +70,15 @@ import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
 import { BalanceChangeTable } from 'web/components/portfolio/balance-card'
-import { Button } from 'web/components/buttons/button'
+import { buttonClass } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { buildArray } from 'common/util/array'
-import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FaCrown } from 'react-icons/fa6'
 
 export const getStaticProps = async (props: {
   params: {
@@ -254,6 +245,7 @@ function UserProfile(props: {
                   'self-center opacity-0 transition-opacity first:ml-4',
                   headerStuck && 'opacity-100'
                 )}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               >
                 <UserLink user={user} noLink />
               </div>
@@ -261,108 +253,90 @@ function UserProfile(props: {
               <MoreOptionsUserButton user={user} />
             </>
           )}
-
-          {isCurrentUser && (
-            <Button
-              color="gray-white"
-              className="gap-2 pr-8 max-sm:rounded-none sm:ml-auto"
-              size="xs"
-              onClick={() => {
-                setExpandProfileInfo((v) => !v)
-                if (isMobile) window.scrollTo({ top: 0, behavior: 'smooth' })
-              }}
-            >
-              {expandProfileInfo ? (
-                <ChevronDownIcon className="text-ink-700 h-5 w-5" />
-              ) : (
-                <ChevronUpIcon className="text-ink-700 h-5 w-5" />
-              )}
-              <Avatar
-                username={user.username}
-                avatarUrl={user.avatarUrl}
-                size={'xs'}
-                className="bg-ink-1000"
-                noLink
-              />
-            </Button>
-          )}
         </Row>
 
-        {(!isCurrentUser || expandProfileInfo) && (
-          <Col className="mb-2">
-            <Row className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}>
-              <Row className={clsx('gap-2')} ref={titleRef}>
-                <Col className={'relative max-h-14'}>
-                  <ImageWithBlurredShadow
-                    image={
-                      <Avatar
-                        username={user.username}
-                        avatarUrl={user.avatarUrl}
-                        size={'lg'}
-                        className="bg-ink-1000"
-                        noLink
-                      />
-                    }
-                  />
-                  {isCurrentUser && (
-                    <Link
-                      className=" bg-primary-600 shadow-primary-300 hover:bg-primary-700 text-ink-0 absolute bottom-0 right-0 h-6 w-6 rounded-full p-1.5 shadow-sm"
-                      href="/profile"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <PencilIcon className="text-ink-0 h-3.5 w-3.5 " />
-                    </Link>
-                  )}
-                </Col>
-                <StackedUserNames
-                  usernameClassName={'sm:text-base'}
-                  className={'font-bold sm:mr-0 sm:text-xl'}
-                  user={user}
-                  followsYou={followsYou}
+        <Row
+          className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}
+          ref={titleRef}
+        >
+          {isCurrentUser ? (
+            <button
+              className="group flex gap-2 py-1 pr-2"
+              onClick={() => isCurrentUser && setExpandProfileInfo((v) => !v)}
+            >
+              <Col className={'relative max-h-14'}>
+                <ImageWithBlurredShadow
+                  image={
+                    <Avatar
+                      username={user.username}
+                      avatarUrl={user.avatarUrl}
+                      size={'lg'}
+                      className="bg-ink-1000"
+                      noLink
+                    />
+                  }
                 />
-              </Row>
-              {isCurrentUser ? (
-                <Row className={'items-center gap-1 sm:gap-2'}>
-                  <Link
-                    href={`/${user.username}/partner`}
-                    className={clsx(
-                      'hover:text-primary-500 text-ink-600 text-xs',
-                      dailyStatsClass
-                    )}
-                  >
-                    <LuCrown className="mx-auto text-2xl" />
-                    Partner
-                  </Link>
-                  <DailyLeagueStat user={user} />
-                  <QuestsOrStreak user={user} />
-                </Row>
-              ) : isMobile ? (
-                <Row className={'items-center gap-1 sm:gap-2'}>
-                  <SendMessageButton toUser={user} currentUser={currentUser} />
-                  <FollowButton userId={user.id} />
-                </Row>
-              ) : (
-                <Row className="items-center gap-1 sm:gap-2">
-                  <SendMessageButton toUser={user} currentUser={currentUser} />
-                  <FollowButton userId={user.id} />
-                  <MoreOptionsUserButton user={user} />
-                </Row>
-              )}
-            </Row>
-            <Col className={'mx-4 mt-1'}>
-              <ProfilePublicStats user={user} currentUser={currentUser} />
-              {user.bio && (
-                <div className="sm:text-md mt-1 text-sm">
-                  <Linkify text={user.bio}></Linkify>
-                </div>
-              )}
-              <UserHandles
-                website={user.website}
-                twitterHandle={user.twitterHandle}
-                discordHandle={user.discordHandle}
-                className="mt-2"
+
+                <ChevronDownIcon
+                  className={clsx(
+                    'group-hover:bg-primary-700 bg-primary-600 shadow-primary-300 text-ink-0 absolute bottom-0 right-0 h-5 w-5 rounded-full p-0.5 shadow-sm transition-all',
+                    expandProfileInfo ? 'rotate-180' : 'rotate-0'
+                  )}
+                />
+              </Col>
+              <StackedUserNames
+                usernameClassName={'sm:text-base'}
+                className={'font-bold sm:mr-0 sm:text-xl'}
+                user={user}
+                followsYou={followsYou}
               />
-            </Col>
+            </button>
+          ) : (
+            <Row className="gap-2 py-1">
+              <ImageWithBlurredShadow
+                image={
+                  <Avatar
+                    username={user.username}
+                    avatarUrl={user.avatarUrl}
+                    size={'lg'}
+                    className="bg-ink-1000"
+                    noLink
+                  />
+                }
+              />
+              <StackedUserNames
+                usernameClassName={'sm:text-base'}
+                className={'font-bold sm:mr-0 sm:text-xl'}
+                user={user}
+                followsYou={followsYou}
+              />
+            </Row>
+          )}
+
+          <Row className={'items-center gap-1 sm:gap-2'}>
+            {!isCurrentUser && (
+              <>
+                <SendMessageButton toUser={user} currentUser={currentUser} />
+                <FollowButton userId={user.id} />
+              </>
+            )}
+            {!isMobile && <MoreOptionsUserButton user={user} />}
+          </Row>
+        </Row>
+        {(expandProfileInfo || !isCurrentUser) && (
+          <Col className={'mx-4 mt-1 gap-2'}>
+            <ProfilePublicStats user={user} currentUser={currentUser} />
+            {user.bio && (
+              <div className="sm:text-md mt-1 text-sm">
+                <Linkify text={user.bio}></Linkify>
+              </div>
+            )}
+            <UserHandles
+              website={user.website}
+              twitterHandle={user.twitterHandle}
+              discordHandle={user.discordHandle}
+              className="mt-2"
+            />
           </Col>
         )}
 
@@ -517,7 +491,7 @@ function ProfilePublicStats(props: {
 
       {isCurrentUser && <UserLikedContractsButton user={user} />}
 
-      {!isCurrentUser && leagueInfo && (
+      {leagueInfo && (
         <Link
           className={linkClass}
           href={getLeaguePath(
@@ -535,14 +509,29 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      <Link
-        href={'/' + user.username + '/calibration'}
-        className={clsx(linkClass, 'text-sm')}
-      >
-        <ChartBarIcon className="mb-1 mr-1 inline h-4 w-4" />
-        Calibration
-      </Link>
+      {isCurrentUser && (
+        <Link href={`/${user.username}/partner`} className={linkClass}>
+          <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
+          Partner
+        </Link>
+      )}
+
       <ShareButton user={user} currentUser={currentUser} />
+
+      {isCurrentUser && (
+        <>
+          <Link
+            href="/profile"
+            className={clsx(
+              buttonClass('2xs', 'gray-white'),
+              '-mx-1 gap-0.5 !px-1 !py-0.5'
+            )}
+          >
+            <PencilIcon className="mb-0.5 h-4 w-4" />
+            <span className="text-sm">Edit profile</span>
+          </Link>
+        </>
+      )}
 
       <FollowsDialog
         user={user}
@@ -565,28 +554,19 @@ const ShareButton = (props: {
   const url = `https://${ENV_CONFIG.domain}/${user.username}${
     !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
   }`
-  const [isOpen, setIsOpen] = useState(false)
 
   return (
     <Row className={'items-center'}>
       <CopyLinkOrShareButton
         url={url}
-        iconClassName={'h-3'}
-        className={'gap-1 p-0'}
+        iconClassName={'h-3 !stroke-[3]'}
+        className={'-mx-1 gap-1 !px-1 !py-0.5'}
         eventTrackingName={'share user page'}
         tooltip={'Copy link to profile'}
         size={'2xs'}
       >
         <span className={'text-sm'}>Share</span>
       </CopyLinkOrShareButton>
-
-      <Modal open={isOpen} setOpen={setIsOpen}>
-        <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
-          <div className="px-6 pb-1 text-center text-xl">{user.name}</div>
-          <CopyLinkRow url={url} eventTrackingName="copy referral link" />
-          <QRCode url={url} className="mt-4 self-center" />
-        </Col>
-      </Modal>
     </Row>
   )
 }

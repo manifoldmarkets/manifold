@@ -28,13 +28,13 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
 import { acquireLock, releaseLock } from './firestore-lock'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export type ResolutionParams = {
   outcome: string
@@ -154,13 +154,13 @@ export const resolveMarketHelper = async (
     } as Contract
 
     // handle exploit where users can get negative payouts
-    const negPayoutThreshold = contract.uniqueBettorCount <= 2 ? -500 : -10000
+    const negPayoutThreshold = contract.uniqueBettorCount < 100 ? 0 : -1000
 
     const userPayouts = groupPayoutsByUser(payouts)
     log('user payouts', { userPayouts })
 
     const negativePayouts = Object.values(userPayouts).filter(
-      (p) => p <= negPayoutThreshold
+      (p) => p < negPayoutThreshold
     )
 
     log('negative payouts', { negativePayouts })

@@ -4,6 +4,10 @@ import { runAwardBountyTxn } from './txn/run-bounty-txn'
 import { log } from './log'
 import { createSupabaseDirectClient } from './supabase/init'
 import { updateData } from './supabase/utils'
+import { getUser } from 'shared/utils'
+import { APIError } from 'common/api/utils'
+import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
+import { canSendMana } from 'common/can-send-mana'
 
 export const awardBounty = async (props: {
   contractId: string
@@ -22,6 +26,16 @@ export const awardBounty = async (props: {
     prevBountyAwarded,
     amount,
   } = props
+  const user = await getUser(fromUserId)
+  if (!user) throw new APIError(404, 'User not found')
+  const { canSend, message } = await canSendMana(
+    user,
+    () => getUserPortfolioInternal(user.id),
+    0
+  )
+  if (!canSend) {
+    throw new APIError(403, message)
+  }
 
   const txn = await firestore.runTransaction((transaction) =>
     runAwardBountyTxn(

@@ -1,13 +1,14 @@
 import * as admin from 'firebase-admin'
 
 import { isVerified, User } from 'common/user'
-import { canSendMana, SEND_MANA_REQ } from 'common/can-send-mana'
+import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 
 export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, groupId: passedGroupId } = props
@@ -36,12 +37,11 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       throw new APIError(403, 'You must verify your phone number to send mana.')
     }
 
-    const canCreate = await canSendMana(fromUser)
-    if (!canCreate) {
-      if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
-        throw new APIError(403, 'Your account is banned or deleted.')
-      }
-      throw new APIError(403, SEND_MANA_REQ)
+    const { canSend, message } = await canSendMana(fromUser, () =>
+      getUserPortfolioInternal(fromUser.id)
+    )
+    if (!canSend) {
+      throw new APIError(403, message)
     }
 
     if (toIds.length <= 0) {

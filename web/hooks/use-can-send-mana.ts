@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { canSendMana, SEND_MANA_REQ } from 'common/can-send-mana'
+import { canSendMana } from 'common/can-send-mana'
 import { User } from 'common/user'
+import { api } from 'web/lib/firebase/api'
 
 export const useCanSendMana = (user: User) => {
-  const [canSend, setCanSend] = useState(false)
+  const [canSend, setCanSend] = useState({
+    canSend: false,
+    message: '',
+  })
   useEffect(() => {
-    canSendMana(user).then(setCanSend)
+    canSendMana(user, () =>
+      api('get-user-portfolio', { userId: user.id })
+    ).then(setCanSend)
   }, [user])
-  return {
-    canSend,
-    message: SEND_MANA_REQ,
-  }
+  return canSend
 }

@@ -18,7 +18,6 @@ export const getFollowedGroups: APIHandler<
     (row) => convertGroup(row)
   )
   return {
-    status: 'success',
     groups,
   }
 }

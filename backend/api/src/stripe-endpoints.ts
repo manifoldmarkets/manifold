@@ -2,11 +2,12 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
-import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
+import { getPrivateUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
-import { APIError } from './helpers/endpoint'
+import { APIError } from 'common/api/utils'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { User } from 'common/user'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -32,11 +33,11 @@ const initStripe = () => {
 // manage at https://dashboard.stripe.com/test/products?active=true
 const manticDollarStripePrice = isProd()
   ? {
-      500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
-      1000: 'price_1KFQp1GdoFKoCJW7Iu0dsF65',
-      2500: 'price_1KFQqNGdoFKoCJW7SDvrSaEB',
-      10000: 'price_1KFQraGdoFKoCJW77I4XCwM3',
-      20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
+      // 500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
+      1399: 'price_1P5bG1GdoFKoCJW7aoWlFYL2',
+      2999: 'price_1P5bIQGdoFKoCJW7MXrOwn7l',
+      10999: 'price_1P5bJ2GdoFKoCJW7YBXcxaEx',
+      // 20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
@@ -168,9 +169,15 @@ const issueMoneys = async (session: StripeSession) => {
 
   if (success) {
     log('user', userId, 'paid M$', deposit)
-
-    const user = await getUser(userId)
-    if (!user) throw new APIError(500, 'Your account was not found')
+    const userRef = firestore.collection('users').doc(userId)
+    const userSnap = await userRef.get()
+    if (!userSnap.exists) {
+      throw new APIError(500, 'User not found')
+    }
+    const user = userSnap.data() as User
+    await userRef.update({
+      purchasedMana: true,
+    })
 
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) throw new APIError(500, 'Private user not found')

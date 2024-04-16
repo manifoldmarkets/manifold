@@ -169,7 +169,6 @@ export const MOD_IDS = [
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
   'kbHiTAGBahXdX9Z4sW29JpNrB0l2', // Ernie
   'W4yEF6idSMcNWEVUquowziSCZFI3', // EvanDaniel
-  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Gen
   'y1hb6k7txdZPV5mgyxPFApZ7nQl2', // IsaacKing
@@ -280,7 +279,6 @@ export const PARTNER_USER_IDS: string[] = [
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'xQqqZqlgcoSxTgPe03BiXmVE2JJ2', // Soli
   'Iiok8KHMCRfUiwtMq1tl5PeDbA73', // Lion
-  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere
   'SqOJYkeySMQjqP3UAypw6DxPx4Z2', // Shump
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
@@ -319,10 +317,14 @@ export const NEW_USER_HERLPER_IDS = [
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
   'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
   'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
-  'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
+  'OdBj5DW6PbYtnImvybpyZzfhb133', // @jim
 ]
 
 export const OPTED_OUT_OF_LEAGUES = [

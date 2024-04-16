@@ -23,6 +23,7 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
     if (safeLocalStorage) {
       const storedJson = safeJsonParse(safeLocalStorage.getItem(key))
       const storedValue = storedJson ?? initialValue
+      if (storedJson === null && initialValue === undefined) return
       saveState(storedValue as T)
     }
   }, [key])

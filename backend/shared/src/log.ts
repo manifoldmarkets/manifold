@@ -1,5 +1,5 @@
 import { format } from 'node:util'
-import { pick, omit } from 'lodash'
+import { isError, pick, omit } from 'lodash'
 import { dim, red, yellow } from 'colors/safe'
 import { AsyncLocalStorage } from 'node:async_hooks'
 
@@ -31,16 +31,17 @@ export type Logger = TextLogger & {
 }
 
 function toString(obj: unknown) {
-  if (obj instanceof Error) {
+  if (isError(obj)) {
     return obj.stack ?? obj.message // stack is formatted like "Error: message\n[stack]"
+  } else {
+    return String(obj)
   }
-  return String(obj)
 }
 
 function replacer(_key: string, value: unknown) {
   if (typeof value === 'bigint') {
     return value.toString()
-  } else if (value instanceof Error) {
+  } else if (isError(value)) {
     return {
       // custom enumerable properties on error, like e.g. status code on APIErrors
       ...value,

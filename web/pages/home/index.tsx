@@ -57,7 +57,7 @@ export default function Home(props: { headlines: Headline[] }) {
     <Page
       trackPageView={'home'}
       trackPageProps={{ kind: 'desktop' }}
-      className="!mt-0"
+      className=" !mt-0"
       banner={
         showBanner && olderUser ? (
           <ManifestBanner hideBanner={hideBanner} />
@@ -125,7 +125,7 @@ export function HomeContent(props: {
 
       {user && (
         <DailyStats
-          className="bg-canvas-50 sticky top-9 z-50 mb-1 w-full px-2 pb-2 pt-1"
+          className="bg-canvas-50 z-50 mb-1 w-full px-2 pb-2 pt-1 sm:sticky sm:top-9"
           user={user}
         />
       )}

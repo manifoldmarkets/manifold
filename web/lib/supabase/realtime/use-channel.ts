@@ -1,42 +1,50 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
+import { RealtimeChannel } from '@supabase/realtime-js'
+import { SubscriptionStatus } from 'common/supabase/realtime'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { db } from 'web/lib/supabase/db'
 
-import { db } from '../db'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import { Bet } from 'common/bet'
+// true = channel is always open
+// false = channel is never open
+// foreground = channel is open only when tab is foregrounded
+export type EnabledCondition = true | false | 'foreground'
 
-export const useChannel = <
-  P extends { [event: string]: any },
-  K extends keyof P = keyof P
->(
-  channelId: string,
-  onEvent: {
-    // Note: the key is the event name, and the value is the payload callback.
-    [E in K]: (payload: P[E]) => void
-  }
-) => {
-  const current = useRef(onEvent)
-  current.current = onEvent
-
-  useEffectCheckEquality(() => {
-    const channel = db.channel(channelId)
-    for (const event of Object.keys(onEvent)) {
-      channel.on('broadcast', { event }, (response: { payload: any }) => {
-        const onPayload = (current.current as any)[event]
-        onPayload(response.payload)
-      })
-    }
-    channel.subscribe()
-    return () => {
-      channel.unsubscribe()
-    }
-  }, [channelId, Object.keys(onEvent)])
+export type ChannelOptions = {
+  onStatus?: (status: SubscriptionStatus, err?: Error) => void
+  onEnabled?: (chan: RealtimeChannel) => void
+  onDisabled?: () => void
+  enabled?: EnabledCondition
 }
 
-export const useContractBetChannel = (
-  contractId: string,
-  onBet: (bet: Bet) => void
-) => {
-  return useChannel(`contract:${contractId}`, {
-    bet: onBet,
-  })
+export function useChannel(id: string, opts: ChannelOptions) {
+  const { onStatus, onEnabled, onDisabled } = opts
+
+  const channel = useRef<RealtimeChannel | undefined>()
+
+  // default to foreground -- we typically don't want people with a bunch of
+  // open manifold tabs in their browser to be getting streamed changes in those
+  // tabs forever
+  const enabled = opts.enabled ?? 'foreground'
+  const isVisible = useIsPageVisible()
+  const isActive = enabled === true || (enabled === 'foreground' && isVisible)
+
+  useEffect(() => {
+    if (isActive) {
+      const chan = (channel.current = db.channel(id))
+      onEnabled?.(chan)
+      chan.subscribe((status, err) => {
+        if (err != null) {
+          console.error(err)
+        }
+        onStatus?.(status, err)
+      })
+      return () => {
+        onDisabled?.()
+        db.removeChannel(chan)
+        channel.current = undefined
+      }
+    }
+  }, [id, isActive])
+
+  return channel
 }

@@ -64,6 +64,7 @@ export type User = {
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   verifiedPhone?: boolean
+  purchasedMana?: boolean
 }
 
 export type PrivateUser = {
@@ -199,5 +200,8 @@ export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
 }
 
 export const isVerified = (user: User) => {
+  return user.verifiedPhone !== false || !!user.purchasedMana
+}
+export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }

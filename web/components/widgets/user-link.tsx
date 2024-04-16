@@ -270,7 +270,7 @@ export const StackedUserNames = (props: {
         }
         {user.isBannedFromPosting && <BannedBadge />}
       </div>
-      <Row className={'max-w-[8rem] flex-shrink flex-wrap gap-2 sm:max-w-none'}>
+      <Row className={'flex-shrink flex-wrap gap-x-2'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>
           @{user.username}{' '}
         </span>

@@ -116,7 +116,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         replyToCommentId: z.string().optional(),
-        limitProb: z.number().gte(0).lte(1).optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
@@ -758,6 +758,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
+        embeddingsLimit: z.coerce.number().gte(0).lte(100),
         limitTopics: z.coerce.number().gte(0).lte(10),
         userId: z.string().optional(),
       })
@@ -766,7 +767,7 @@ export const API = (_apiTypeCheck = {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
-    cache: 'public, max-age=300, stale-while-revalidate=10',
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
@@ -1048,6 +1049,7 @@ export const API = (_apiTypeCheck = {
         'card click',
         'promoted click',
         'card like',
+        'page share',
       ]),
       commentId: z.string().optional(),
       feedReasons: z.array(z.string()).optional(),
@@ -1085,7 +1087,6 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
     returns: {} as {
-      status: 'success'
       groups: Group[]
     },
   },
@@ -1097,7 +1098,6 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
     returns: {} as {
-      status: 'success'
       loanTotal: number
       investmentValue: number
       balance: number

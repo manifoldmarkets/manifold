@@ -9,12 +9,17 @@ import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
 import { log } from 'shared/log'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { HOUR_MS } from 'common/util/time'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
+import { ValidatedAPIParams } from 'common/api/schema'
+import { orderBy } from 'lodash'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
 > = async (body) => {
-  const { contractId, limit, limitTopics } = body
-  return getRelatedMarkets(contractId, limit, limitTopics)
+  return getRelatedMarkets(body)
 }
 type cacheType = {
   marketIdsFromEmbeddings: string[]
@@ -26,16 +31,16 @@ const cachedRelatedMarkets = new Map<string, cacheType>()
 // We cache the state of the contracts every 5 minutes via the cache header,
 // and the actual contracts to include for an hour via the internal cachedRelatedMarkets.
 const getRelatedMarkets = async (
-  contractId: string,
-  limit: number,
-  limitTopics: number
+  body: ValidatedAPIParams<'get-related-markets-cache'>
 ) => {
+  const { contractId, limit, limitTopics, embeddingsLimit } = body
   log('getting related markets', { contractId, limit, limitTopics })
   const pg = createSupabaseDirectClient()
   const cachedResults = cachedRelatedMarkets.get(contractId)
   if (cachedResults && cachedResults.lastUpdated > Date.now() - HOUR_MS) {
     return refreshedRelatedMarkets(contractId, cachedResults, pg)
   }
+  const groupsToIgnore = [UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID]
   const [marketsFromEmbeddings, groupContracts, topics] = await Promise.all([
     pg.map(
       `
@@ -44,7 +49,7 @@ const getRelatedMarkets = async (
         match_count := $2,
         similarity_threshold := 0.7
         )`,
-      [contractId, limit],
+      [contractId, embeddingsLimit],
       (row) => row.data as Contract
     ),
     pg.map(
@@ -54,6 +59,7 @@ const getRelatedMarkets = async (
         from groups as g
         join group_contracts as gc on g.id = gc.group_id
         where contract_id = $1
+        and g.id not in (select unnest($3::text[]))
       )
       select gs.slug, c.data, c.importance_score
       from group_slugs as gs
@@ -66,28 +72,31 @@ const getRelatedMarkets = async (
       ) as c
       order by gs.slug, c.importance_score desc
       `,
-      [contractId, (limit ?? 5) + 15],
+      [contractId, (limit ?? 5) + 25, groupsToIgnore],
       (row) => [row.slug, convertContract(row)] as [string, Contract]
     ),
     pg.map(
-      `select slug, importance_score from groups where slug = ANY(
+      `select slug, id, importance_score from groups where slug = ANY(
               select unnest(group_slugs) as slug
               from contracts
               where id = $1
               )
+              and id not in (select unnest($2::text[]))
               order by importance_score desc
           `,
-      [contractId],
+      [contractId, groupsToIgnore],
       (row) => ({
         slug: row.slug as string,
         importanceScore: row.importance_score as number,
       })
     ),
   ])
-
+  const orderByNonStonks = (c: Contract) =>
+    c.outcomeType !== 'STONK' && !c.question.includes('stock') ? 1 : 0
   const marketsByTopicSlug = orderAndDedupeGroupContracts(
     topics,
-    groupContracts
+    orderBy(groupContracts, (c) => orderByNonStonks(c[1]), 'desc'),
+    limit
   )
 
   // Return only the limit for each topic
@@ -115,7 +124,11 @@ const getRelatedMarkets = async (
   })
 
   return {
-    marketsFromEmbeddings,
+    marketsFromEmbeddings: orderBy(
+      marketsFromEmbeddings,
+      orderByNonStonks,
+      'desc'
+    ),
     marketsByTopicSlug,
   }
 }

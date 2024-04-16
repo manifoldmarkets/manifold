@@ -13,6 +13,10 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   DPMContract,
+  MAX_CPMM_PROB,
+  MAX_STONK_PROB,
+  MIN_CPMM_PROB,
+  MIN_STONK_PROB,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
@@ -170,17 +174,27 @@ export const computeFills = (
   state: CpmmState,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  limitProb: number | undefined,
+  initialLimitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number | undefined }
+  balanceByUserId: { [userId: string]: number | undefined },
+  limitProbs?: { max: number; min: number }
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
   }
-  if (isNaN(limitProb ?? 0)) {
+  if (isNaN(initialLimitProb ?? 0)) {
     throw new Error('Invalid limitProb: ${limitProb}')
   }
   const now = Date.now()
+  const { max, min } = limitProbs ?? {}
+  const limit = initialLimitProb ?? (outcome === 'YES' ? max : min)
+  const limitProb = !limit
+    ? undefined
+    : limit > MAX_CPMM_PROB
+    ? MAX_CPMM_PROB
+    : limit < MIN_CPMM_PROB
+    ? MIN_CPMM_PROB
+    : limit
 
   const sortedBets = sortBy(
     unfilledBets.filter(
@@ -258,10 +272,11 @@ export const computeFills = (
 export const computeCpmmBet = (
   cpmmState: CpmmState,
   outcome: 'YES' | 'NO',
-  betAmount: number,
+  initialBetAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  limitProbs?: { max: number; min: number }
 ) => {
   const {
     takers,
@@ -272,16 +287,18 @@ export const computeCpmmBet = (
   } = computeFills(
     cpmmState,
     outcome,
-    betAmount,
+    initialBetAmount,
     limitProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    limitProbs
   )
   const probBefore = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const probAfter = getCpmmProbability(afterCpmmState.pool, afterCpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
+  const betAmount = limitProb ? initialBetAmount : takerAmount
   const isFilled = floatingEqual(betAmount, takerAmount)
 
   return {
@@ -328,7 +345,10 @@ export const getBinaryCpmmBetInfo = (
     betAmount,
     limitProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    contract.outcomeType === 'STONK'
+      ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
+      : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const newBet: CandidateBet = removeUndefinedProps({
     orderAmount,
@@ -451,7 +471,8 @@ export const getNewMultiCpmmBetInfo = (
     betAmount,
     limitProb,
     answerUnfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
 
   const newBet: CandidateBet = removeUndefinedProps({

@@ -6,8 +6,8 @@ import { RealtimeChannel } from '@supabase/realtime-js'
 import { tsToMillis } from 'common/supabase/utils'
 import {
   BindingSpec,
-  useRealtime,
-} from 'web/lib/supabase/realtime/use-realtime'
+  usePostgresChanges,
+} from 'web/lib/supabase/realtime/use-postgres-changes'
 import { usePagination } from 'web/hooks/use-pagination'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { SizedContainer } from 'web/components/sized-container'
@@ -158,7 +158,7 @@ function RealtimeLog<T extends LiveTable>(props: {
   const [records, setRecords] = useState<ChangeRecord<T, Event>[]>([])
   const [status, setStatus] = useState<SubscriptionStatus | undefined>()
   const [error, setError] = useState<Error | undefined>()
-  const chan = useRealtime({
+  const chan = usePostgresChanges({
     bindings,
     enabled,
     onChange: (c) => {

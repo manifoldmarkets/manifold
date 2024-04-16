@@ -33,6 +33,7 @@ import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
+import { ManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export const BalanceCard = (props: {
   user: User
@@ -62,7 +63,7 @@ export const BalanceCard = (props: {
       <Col className={'w-full gap-1.5'}>
         <Col>
           <div className={'text-ink-800 text-4xl'}>
-            {formatMoney(user.balance)}
+            <ManaCoinNumber amount={user.balance} />
           </div>
           <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
             Your balance

@@ -14,6 +14,11 @@ import { revalidateContractStaticProps } from 'shared/utils'
 import { DAY_MS } from 'common/util/time'
 import { addContractToFeed } from 'shared/create-feed'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { isAdminId, isModId } from 'common/envs/constants'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
 
 export const addOrRemoveTopicFromContract: APIHandler<
   'market/:contractId/group'
@@ -33,7 +38,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
 
   const contractQuery = await db
     .from('contracts')
-    .select('data, importance_score')
+    .select('data, importance_score, view_count')
     .eq('id', contractId)
     .single()
 
@@ -49,7 +54,13 @@ export const addOrRemoveTopicFromContract: APIHandler<
     throw new APIError(403, `private groups can't be tagged or untagged`)
   }
 
-  if (!remove && (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET) {
+  if (
+    !remove &&
+    (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET &&
+    !isModId(auth.uid) &&
+    !isAdminId(auth.uid) &&
+    ![UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID].includes(groupId)
+  ) {
     throw new APIError(
       403,
       `A question can only have up to ${MAX_GROUPS_PER_MARKET} topic tags.`

@@ -12,7 +12,6 @@ import { SupabaseSearch } from '../supabase-search'
 import { BalanceCard } from './balance-card'
 import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
 
@@ -34,8 +33,6 @@ export const PortfolioSummary = (props: {
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
   const isNewUser = user.createdTime > Date.now() - DAY_MS
-
-  const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
 
   const { data: portfolioData, refresh: refreshPortfolio } = useAPIGetter(
     'get-user-portfolio',
@@ -60,7 +57,6 @@ export const PortfolioSummary = (props: {
         <InvestmentValueCard
           user={user}
           className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-          weeklyPortfolioData={weeklyPortfolioData}
           portfolio={portfolioData}
           refreshPortfolio={refreshPortfolio}
         />

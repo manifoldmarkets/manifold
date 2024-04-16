@@ -13,6 +13,8 @@ import {
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -479,7 +481,8 @@ const getBetReturns = (
       betAmount,
       limitProb,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
     ))
   }
 

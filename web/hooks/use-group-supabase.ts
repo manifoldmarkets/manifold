@@ -17,7 +17,7 @@ import {
   getMyGroupRoles,
   listGroupsBySlug,
 } from 'web/lib/supabase/groups'
-import { useRealtime } from 'web/lib/supabase/realtime/use-realtime'
+import { usePostgresChanges } from 'web/lib/supabase/realtime/use-postgres-changes'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useIsAuthorized } from './use-user'
@@ -242,7 +242,7 @@ export function useRealtimeGroupMembers(
   }, [hitBottom])
 
   const filter = { k: 'group_id', v: groupId } as const
-  useRealtime({
+  usePostgresChanges({
     bindings: [{ table: 'group_members', event: '*', filter }],
     onChange: (_change) => {
       fetchGroupMembers()

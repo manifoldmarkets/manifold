@@ -1,15 +1,35 @@
 import { isVerified, User } from './user'
 import { formatMoney } from 'common/util/format'
-import { unauthedApi } from 'common/util/api'
 
-export async function canSendMana(user: User) {
-  if (user.userDeleted || user.isBannedFromPosting) return false
-  const { investmentValue } = await unauthedApi('get-user-portfolio', {
-    userId: user.id,
-  })
-  return isVerified(user) && (investmentValue ?? 0) + user.balance > 1000
+export async function canSendMana(
+  user: User,
+  getPortfolio: () => Promise<{
+    investmentValue: number
+  }>,
+  netWorthThreshold = 1000
+) {
+  if (user.userDeleted || user.isBannedFromPosting)
+    return {
+      canSend: false,
+      message: 'Your account is banned or deleted.',
+    }
+  const { investmentValue } = await getPortfolio()
+  if (!isVerified(user))
+    return {
+      canSend: false,
+      message:
+        'You must verify your phone number or purchase mana to send mana.',
+    }
+  if ((investmentValue ?? 0) + user.balance < netWorthThreshold) {
+    return {
+      canSend: false,
+      message: `Your account must have a net worth greater than ${formatMoney(
+        netWorthThreshold
+      )}.`,
+    }
+  }
+  return {
+    canSend: true,
+    message: '',
+  }
 }
-
-export const SEND_MANA_REQ = `Your account must have a verified phone number or purchase, and a net worth greater than ${formatMoney(
-  1000
-)}.`

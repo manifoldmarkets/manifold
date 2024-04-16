@@ -1,6 +1,4 @@
-import Link from 'next/link'
-import clsx from 'clsx'
-import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
+import { Dialog, Transition } from '@headlessui/react'
 import {
   HomeIcon,
   NewspaperIcon,
@@ -8,26 +6,27 @@ import {
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
+import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import Link from 'next/link'
+import { Fragment, useState } from 'react'
 import { BiSearchAlt2 } from 'react-icons/bi'
-import { animated } from '@react-spring/web'
-import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment } from 'react'
 
+import { User } from 'common/user'
+import { usePathname } from 'next/navigation'
+import { GiCapitol } from 'react-icons/gi'
+import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
+import { NotificationsIcon } from 'web/components/notifications-icon'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { useIsIframe } from 'web/hooks/use-is-iframe'
+import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { trackCallback } from 'web/lib/service/analytics'
+import { Col } from '../layout/col'
+import { Avatar } from '../widgets/avatar'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
-import { NotificationsIcon } from 'web/components/notifications-icon'
-import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { trackCallback } from 'web/lib/service/analytics'
-import { User } from 'common/user'
-import { Col } from '../layout/col'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
-import { usePathname } from 'next/navigation'
-import { Avatar } from '../widgets/avatar'
-import { GiCapitol } from 'react-icons/gi'
+import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -165,11 +164,11 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col>
+        <Col className="items-center">
           <div className="mx-auto my-1">
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
-          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+          <AnimatedManaCoinNumber amount={user?.balance ?? 0} />
         </Col>
       </Link>
     )

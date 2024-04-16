@@ -70,6 +70,7 @@ import { getStaticProps as getStaticWebProps } from 'web/pages/[username]/[contr
 import { LovePage } from 'love/components/love-page'
 import { useReview } from 'web/hooks/use-review'
 import { DAY_MS } from 'common/util/time'
+import { Title } from 'web/components/widgets/title'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -82,9 +83,14 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: MaybeAuthedContractParams) {
-  const { state } = props
-  if (state === 'not found' || state === 'not authed') {
-    return <Custom404 />
+  if (props.state === 'deleted') {
+    return (
+      <LovePage trackPageView={false}>
+        <div className="flex h-[50vh] flex-col items-center justify-center">
+          <Title>Question deleted</Title>
+        </div>
+      </LovePage>
+    )
   }
 
   return (

@@ -184,14 +184,16 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
         curve={curve ?? curveLinear}
         shadedRanges={shadedRanges}
       />
-      <AreaWithTopStroke
-        color={newColor}
-        data={otherData}
-        px={px}
-        py0={py0}
-        py1={py1}
-        curve={curve ?? curveLinear}
-      />
+      {otherData.length > 0 && (
+        <AreaWithTopStroke
+          color={newColor}
+          data={otherData}
+          px={px}
+          py0={py0}
+          py1={py1}
+          curve={curve ?? curveLinear}
+        />
+      )}
       {verticalLines && (
         <>
           <path

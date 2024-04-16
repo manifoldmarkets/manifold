@@ -74,9 +74,14 @@ import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { orderBy } from 'lodash'
 import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
-import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
+import {
+  MultiNumericDistributionChart,
+  NumericBetPanel,
+} from 'web/components/answers/numeric-bet-panel'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
+import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
+import { FaChartArea } from 'react-icons/fa'
 
 export const ContractOverview = memo(
   (props: {
@@ -690,11 +695,16 @@ const MultiNumericOverview = (props: {
 }) => {
   const { points, contract, showResolver, resolutionRating, setShowResolver } =
     props
+  const { min, max } = contract
   const user = useUser()
-  const [showZoomer, setShowZoomer] = useState(false)
-  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
-    useTimePicker(contract, () => setShowZoomer(true))
-
+  const {
+    currentTimePeriod,
+    setCustomTimePeriod,
+    setTimePeriod,
+    maxRange,
+    zoomParams,
+  } = useTimePicker(contract, undefined, 'custom')
+  const [showDistribution, setShowDistribution] = useState(true)
   const {
     pointerMode,
     setPointerMode,
@@ -716,11 +726,39 @@ const MultiNumericOverview = (props: {
               setPointerMode={setPointerMode}
             />
           )}
+          <button
+            className={clsx(
+              'text-ink-500 hover:text-ink-700 rounded-l-md ',
+              'border-ink-500 -mr-1.5 border border-opacity-50 px-1.5 '
+            )}
+            onClick={() => {
+              setShowDistribution(true)
+              setCustomTimePeriod('custom')
+            }}
+          >
+            <div
+              className={clsx(
+                'rounded-md px-1 py-1.5',
+                showDistribution && 'bg-indigo-100'
+              )}
+            >
+              <FaChartArea
+                className={clsx(
+                  'h-4 w-4',
+                  showDistribution && 'text-primary-900'
+                )}
+              />
+            </div>
+          </button>
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setTimePeriod}
+            setCurrentTimePeriod={(period) => {
+              setShowDistribution(false)
+              setTimePeriod(period)
+            }}
             maxRange={maxRange}
             color="indigo"
+            className={'rounded-l-none'}
           />
         </Row>
       </Row>
@@ -728,18 +766,32 @@ const MultiNumericOverview = (props: {
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-12'
+            !showDistribution && 'mb-12'
           )}
         >
           {(w, h) => (
-            <MultiNumericContractChart
-              width={w}
-              height={h}
-              multiPoints={points}
-              zoomParams={zoomParams}
-              contract={contract}
-              showZoomer={showZoomer}
-            />
+            <>
+              <div className={clsx(!showDistribution ? 'hidden' : 'block')}>
+                <MultiNumericDistributionChart
+                  newColor={NEW_GRAPH_COLOR}
+                  contract={contract}
+                  width={w}
+                  height={h}
+                  range={[min, max]}
+                />
+              </div>
+              {/*// The chart component must be instantiated for useZoom to work*/}
+              <div className={clsx(showDistribution ? 'hidden' : 'block')}>
+                <MultiNumericContractChart
+                  width={w}
+                  height={h}
+                  multiPoints={points}
+                  zoomParams={zoomParams}
+                  contract={contract}
+                  showZoomer={true}
+                />
+              </div>
+            </>
           )}
         </SizedContainer>
       )}
@@ -1044,9 +1096,13 @@ const BountyPanel = (props: { contract: BountiedQuestionContract }) => {
   )
 }
 
-export const useTimePicker = (contract: Contract, onRescale?: () => void) => {
+export const useTimePicker = (
+  contract: Contract,
+  onRescale?: () => void,
+  defaultTimePeriod?: Period | 'custom'
+) => {
   const [currentTimePeriod, setCurrentTimePeriod] = useState<Period | 'custom'>(
-    'allTime'
+    defaultTimePeriod ?? 'allTime'
   )
 
   const start = contract.createdTime
@@ -1075,5 +1131,11 @@ export const useTimePicker = (contract: Contract, onRescale?: () => void) => {
     setCurrentTimePeriod(period)
   }
 
-  return { currentTimePeriod, setTimePeriod, maxRange, zoomParams }
+  return {
+    currentTimePeriod,
+    setTimePeriod,
+    maxRange,
+    zoomParams,
+    setCustomTimePeriod: setCurrentTimePeriod,
+  }
 }

@@ -39,6 +39,8 @@ import {
   insertLinkPreviews,
 } from 'web/components/editor/link-preview-node-view'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { richTextToString } from 'common/util/parse'
+import { safeLocalStorage } from 'web/lib/util/local'
 
 const DisplayLink = Link.extend({
   renderHTML({ HTMLAttributes }) {
@@ -104,12 +106,23 @@ export function useTextEditor(props: {
   const { placeholder, className, max, defaultValue, size = 'md', key } = props
   const simple = size === 'sm'
 
-  const [content, saveContent] = usePersistentLocalState<
+  const [content, setContent] = usePersistentLocalState<
     JSONContent | undefined
   >(undefined, getEditorLocalStorageKey(key ?? ''))
   const fetchingLinks = useRef<boolean>(false)
 
-  const save = useCallback(debounce(saveContent, 500), [])
+  const save = useCallback(
+    debounce((newContent: JSONContent) => {
+      const oldText = richTextToString(content)
+      const newText = richTextToString(newContent)
+      if (oldText.length === 0 && newText.length === 0) {
+        safeLocalStorage?.removeItem(getEditorLocalStorageKey(key ?? ''))
+      } else {
+        setContent(newContent)
+      }
+    }, 500),
+    []
+  )
 
   const getEditorProps = () => ({
     attributes: {

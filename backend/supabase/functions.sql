@@ -678,12 +678,3 @@ or replace function get_user_manalink_claims (creator_id text) returns table (ma
     join txns as tx on mc.txn_id = tx.id
     where m.creator_id = creator_id
 $$ language sql;
-
-create or replace function get_contract_page_views(contract_id text)
-  returns numeric
-  language sql
-as $$
-  select coalesce(sum(page_views), 0)
-  from user_contract_views as ucv
-  where ucv.contract_id = get_contract_page_views.contract_id
-$$;

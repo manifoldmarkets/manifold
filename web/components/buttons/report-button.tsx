@@ -17,7 +17,7 @@ export function ReportButton(props: { report: ReportProps }) {
   const currentUser = useUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const label = contentType === 'contract' ? 'question' : contentType
-  if (!currentUser || currentUser.id === contentOwnerId) return <div />
+  if (!currentUser || currentUser.id === contentOwnerId) return null
 
   return (
     <>

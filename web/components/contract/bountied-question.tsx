@@ -138,11 +138,16 @@ export function AwardBountyButton(props: {
         contractId: contract.id,
         commentId: comment.id,
         amount: amount,
-      }).finally(() => setLoading(false))
-
-      setOpen(false)
-      setAmount(bountyLeft - amount)
-      onAward((bountyAwarded ?? 0) + amount)
+      })
+        .then(() => {
+          setOpen(false)
+          setAmount(bountyLeft - amount)
+          onAward((bountyAwarded ?? 0) + amount)
+        })
+        .catch((e) => {
+          setError(e.message)
+        })
+      setLoading(false)
     }
   }
   return (

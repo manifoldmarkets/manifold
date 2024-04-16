@@ -55,6 +55,7 @@ const getRecentNonLoverUserIds = async () => {
           where
               millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
               millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'and
+              (data->>'verifiedPhone')::boolean = true and
               (data->>'fromLove' is null or data->>'fromLove' = 'false')
               `,
     // + `and username like '%manifoldtestnewuser%'`,

@@ -10,6 +10,7 @@ import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
+import { track } from 'web/lib/service/analytics'
 
 export function VerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
@@ -48,6 +49,8 @@ export function VerifyPhone(props: { onClose: () => void }) {
       .then(() => onClose())
       .catch((e) => console.error(e))
       .finally(() => setLoading(false))
+
+    await track('verify phone')
   }
   const [loading, setLoading] = useState(false)
   const [otp, setOtp] = useState('')
@@ -58,7 +61,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
     <Col className="text-lg">
       {page === 0 && (
         <Col className="items-center justify-center gap-2">
-          <Title>Verify your phone number</Title>
+          <Title>🤖 Prove you're not a robot 🤖</Title>
           <span className={'-mt-2 mb-2 text-center'}>
             Verify your phone number to collect your{' '}
             <span className={'font-bold text-teal-500'}>
@@ -121,7 +124,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
               loading={loading}
               onClick={verifyPhone}
             >
-              Verify code & claim {formatMoney(STARTING_BALANCE)}
+              Verify & claim {formatMoney(STARTING_BALANCE)}
             </Button>
           </Row>
         </Col>

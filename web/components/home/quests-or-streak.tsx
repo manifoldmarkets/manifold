@@ -122,9 +122,7 @@ export function QuestsModal(props: {
             complete={shareStatus.currentCount >= shareStatus.requiredCount}
             status={`(${shareStatus.currentCount}/${shareStatus.requiredCount})`}
             reward={QUEST_DETAILS.SHARES.rewardAmount}
-            info={
-              'Share a question, comment, group, or your referral link with a friend!'
-            }
+            info={'Share a question with a friend!'}
           />
           <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow

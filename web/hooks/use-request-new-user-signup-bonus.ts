@@ -46,7 +46,9 @@ export const useRequestNewUserSignupBonus = (contractId: string) => {
       newContractIdsVisited.includes(contractId) ||
       remainingBonuses <= 0 ||
       !user ||
-      !isVerified(user)
+      !isVerified(user) ||
+      user.signupBonusPaid === undefined ||
+      user.signupBonusPaid >= MARKET_VISIT_BONUS_TOTAL
     )
       return
     requestNewUserSignupBonus()

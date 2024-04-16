@@ -462,7 +462,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
-                      invested={formatMoney(position.invested)}
+                      invested={position.invested}
                     />
                   )
                 })}
@@ -502,7 +502,7 @@ const BinaryUserPositionsTable = memo(
                             : formatMoney(position.totalShares[outcome] ?? 0)
                           : formatMoney(position.profit)
                       }
-                      invested={formatMoney(position.invested)}
+                      invested={position.invested}
                     />
                   )
                 })}
@@ -523,7 +523,7 @@ const BinaryUserPositionsTable = memo(
 const PositionRow = memo(function PositionRow(props: {
   position: ContractMetric
   numberToShow: string
-  invested: string
+  invested: number
   currentUser: User | undefined | null
   followedUsers: string[] | undefined
   colorClassName: string
@@ -572,13 +572,15 @@ const PositionRow = memo(function PositionRow(props: {
         <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
           {numberToShow}
         </span>
-        <span
-          className={clsx(
-            'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
-          )}
-        >
-          Spent {invested}
-        </span>
+        {invested > -99999999 && invested < 9999999999 && (
+          <span
+            className={clsx(
+              'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
+            )}
+          >
+            Spent {formatMoney(invested)}
+          </span>
+        )}
       </Col>
     </Row>
   )
