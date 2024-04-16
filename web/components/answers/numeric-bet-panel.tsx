@@ -434,16 +434,16 @@ export const NumericBetPanel = (props: {
               Bet {formatMoney(betAmount ?? 0)} on {betLabel}
             </Button>
           </Row>
-              {fees && (
-                <div className="text-ink-700 mt-1 text-sm">
-                  Fees{' '}
-                  <FeeDisplay
-                    amount={betAmount}
-                    totalFees={getFeeTotal(fees)}
-                    isMultiSumsToOne={false}
-                  />
-                </div>
-              )}
+          {fees && (
+            <div className="text-ink-700 mt-1 text-sm">
+              Fees{' '}
+              <FeeDisplay
+                amount={betAmount}
+                totalFees={getFeeTotal(fees)}
+                isMultiSumsToOne={false}
+              />
+            </div>
+          )}
         </Col>
       )}
     </Col>
