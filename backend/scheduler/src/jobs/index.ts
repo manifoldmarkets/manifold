@@ -14,6 +14,7 @@ import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
 import { MINUTE_MS } from 'common/util/time'
+import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 
 export function createJobs() {
   return [
@@ -91,6 +92,11 @@ export function createJobs() {
       'reset-pg-stats',
       '0 0 3 * * *', // 3 AM daily
       resetPgStats
+    ),
+    createJob(
+      'calculate-user-topic-interests',
+      '0 0 3 * * *', // 3 AM daily
+      () => calculateUserTopicInterests()
     ),
     createJob(
       'onboarding-notification',
