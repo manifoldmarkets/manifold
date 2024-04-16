@@ -15,11 +15,7 @@ import { log, getContractSupabase } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
-import {
-  SPICE_PRODUCTION_ENABLED,
-  isAdminId,
-  isModId,
-} from 'common/envs/constants'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
 
 const firestore = admin.firestore()
@@ -92,9 +88,9 @@ const verifyUserCanUnresolve = async (
       )
 
     if (!isMod) {
-      if (SPICE_PRODUCTION_ENABLED) {
-        throw new APIError(403, `Only mods can unresolve`)
-      }
+      // if (SPICE_PRODUCTION_ENABLED) {
+      //   throw new APIError(403, `Only mods can unresolve`)
+      // }
 
       if (
         contract.creatorId === userId &&
@@ -123,9 +119,9 @@ const verifyUserCanUnresolve = async (
       throw new APIError(400, `Answer ${answerId} is not resolved`)
 
     if (!isMod) {
-      if (SPICE_PRODUCTION_ENABLED) {
-        throw new APIError(403, `Only mods can unresolve`)
-      }
+      // if (SPICE_PRODUCTION_ENABLED) {
+      //   throw new APIError(403, `Only mods can unresolve`)
+      // }
 
       if (
         contract.creatorId === userId &&
