@@ -720,7 +720,7 @@ const MultiNumericOverview = (props: {
         <MultiNumericResolutionOrExpectation contract={contract} />
         {resolutionRating}
         <Row className={'gap-1'}>
-          {enableAdd && (
+          {enableAdd && !showDistribution && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
@@ -739,14 +739,11 @@ const MultiNumericOverview = (props: {
             <div
               className={clsx(
                 'rounded-md px-1 py-1.5',
-                showDistribution && 'bg-indigo-100'
+                showDistribution && 'bg-primary-100'
               )}
             >
               <FaChartArea
-                className={clsx(
-                  'h-4 w-4',
-                  showDistribution && 'text-primary-900'
-                )}
+                className={clsx('h-4 w-4', showDistribution && 'text-ink-800')}
               />
             </div>
           </button>
