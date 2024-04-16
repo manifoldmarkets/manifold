@@ -75,20 +75,14 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
-    const {
-      creatorPayout,
-      collectedFees,
-      bets,
-      resolutionProbability,
-      payouts,
-      payoutsWithoutLoans,
-    } = await getDataAndPayoutInfo(
-      outcome,
-      unresolvedContract,
-      resolutions,
-      probabilityInt,
-      answerId
-    )
+    const { bets, resolutionProbability, payouts, payoutsWithoutLoans } =
+      await getDataAndPayoutInfo(
+        outcome,
+        unresolvedContract,
+        resolutions,
+        probabilityInt,
+        answerId
+      )
 
     let updatedContractAttrs: Partial<Contract> | undefined =
       removeUndefinedProps({
@@ -99,7 +93,6 @@ export const resolveMarketHelper = async (
         closeTime: newCloseTime,
         resolutionProbability,
         resolutions,
-        collectedFees,
         resolverId: resolver.id,
         subsidyPool: 0,
         lastUpdatedTime: newCloseTime,
@@ -235,7 +228,7 @@ export const resolveMarketHelper = async (
       {
         userIdToContractMetrics,
         userPayouts: userPayoutsWithoutLoans,
-        creatorPayout,
+        creatorPayout: 0,
         resolutionProbability,
         resolutions,
       }
@@ -254,7 +247,7 @@ export const getDataAndPayoutInfo = async (
   probabilityInt: number | undefined,
   answerId: string | undefined
 ) => {
-  const { id: contractId, creatorId, outcomeType } = unresolvedContract
+  const { id: contractId, outcomeType } = unresolvedContract
   const liquiditiesSnap = await firestore
     .collection(`contracts/${contractId}/liquidity`)
     .get()
@@ -310,12 +303,7 @@ export const getDataAndPayoutInfo = async (
   const openBets = bets.filter((b) => !b.isSold && !b.sale)
   const loanPayouts = getLoanPayouts(openBets)
 
-  const {
-    payouts: traderPayouts,
-    creatorPayout,
-    liquidityPayouts,
-    collectedFees,
-  } = getPayouts(
+  const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
     unresolvedContract,
     bets,
@@ -325,7 +313,6 @@ export const getDataAndPayoutInfo = async (
     answerId
   )
   const payoutsWithoutLoans = [
-    { userId: creatorId, payout: creatorPayout, deposit: creatorPayout },
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
     ...traderPayouts,
   ]
@@ -333,8 +320,6 @@ export const getDataAndPayoutInfo = async (
     console.log(
       'trader payouts:',
       traderPayouts,
-      'creator payout:',
-      creatorPayout,
       'liquidity payout:',
       liquidityPayouts,
       'loan payouts:',
@@ -343,8 +328,6 @@ export const getDataAndPayoutInfo = async (
   const payouts = [...payoutsWithoutLoans, ...loanPayouts]
   return {
     payoutsWithoutLoans,
-    creatorPayout,
-    collectedFees,
     bets,
     resolutionProbs,
     resolutionProbability,

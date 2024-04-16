@@ -109,7 +109,10 @@ export function ResolutionPanel(props: {
           ) : outcome === 'NO' ? (
             <>Pay out {BETTORS} who bought NO.</>
           ) : outcome === 'CANCEL' ? (
-            <>Cancel all trades and return mana back to {BETTORS}.</>
+            <>
+              Cancel all trades and return mana back to {BETTORS}. You repay
+              earned fees.
+            </>
           ) : outcome === 'MKT' ? (
             <Row className="flex-wrap items-center gap-2">
               <span>Pay out at this probability:</span>{' '}

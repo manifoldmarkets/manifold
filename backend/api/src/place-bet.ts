@@ -17,7 +17,7 @@ import {
   getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { log } from 'shared/utils'
@@ -28,6 +28,7 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
+import { formatMoneyWithDecimals } from 'common/util/format'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -297,7 +298,7 @@ export const processNewBetResult = (
     makers,
     ordersToCancel,
   } = newBetResult
-  const { mechanism, collectedFees } = contract
+  const { mechanism } = contract
   if (
     mechanism == 'cpmm-1' &&
     (!newP ||
@@ -384,6 +385,23 @@ export const processNewBetResult = (
   trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
+  const totalCreatorFee =
+    newBet.fees.creatorFee +
+    sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
+  if (totalCreatorFee !== 0) {
+    const creatorUserDoc = firestore.doc(`users/${contract.creatorId}`)
+    trans.update(creatorUserDoc, {
+      balance: FieldValue.increment(totalCreatorFee),
+    })
+    log(
+      `Updated creator ${
+        contract.creatorUsername
+      } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
+        contract.creatorId
+      }.`
+    )
+  }
+
   if (newBet.amount !== 0) {
     if (newBet.answerId) {
       // Multi-cpmm-1 contract
@@ -408,7 +426,6 @@ export const processNewBetResult = (
           totalShares: newTotalShares,
           totalBets: newTotalBets,
           totalLiquidity: newTotalLiquidity,
-          collectedFees: addObjects(newBet.fees, collectedFees),
         })
       )
     }

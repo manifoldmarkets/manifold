@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/firebase/api'
-import { removeUndefinedProps } from 'common/util/object'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
@@ -33,6 +33,8 @@ import { scaleLinear } from 'd3-scale'
 import { DoubleDistributionChart } from 'web/components/charts/generic-charts'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { SizedContainer } from 'web/components/sized-container'
+import { getFeeTotal, noFees } from 'common/fees'
+import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
 
 export const NumericBetPanel = (props: {
@@ -205,6 +207,7 @@ export const NumericBetPanel = (props: {
     potentialPayout,
     potentialExpectedValue,
     potentialContractState,
+    fees,
   } = useMemo(() => {
     if (!betAmount || !answersToBuy || !mode)
       return {
@@ -213,7 +216,7 @@ export const NumericBetPanel = (props: {
         potentialExpectedValue: expectedValue,
         potentialContractState: contract,
       }
-    const { newBetResults, updatedAnswers } =
+    const { newBetResults, updatedAnswers, otherBetResults } =
       calculateCpmmMultiArbitrageYesBets(
         answers,
         answersToBuy,
@@ -222,6 +225,10 @@ export const NumericBetPanel = (props: {
         unfilledBets,
         balanceByUserId
       )
+    const fees = [...newBetResults, ...otherBetResults].reduce(
+      (acc, r) => addObjects(acc, r.totalFees),
+      noFees
+    )
     const potentialPayout = sumBy(
       first(newBetResults)?.takers ?? [],
       (taker) => taker.shares
@@ -244,6 +251,7 @@ export const NumericBetPanel = (props: {
       potentialPayout,
       potentialExpectedValue,
       potentialContractState,
+      fees,
     }
   }, [
     debouncedAmount,
@@ -426,6 +434,16 @@ export const NumericBetPanel = (props: {
               Bet {formatMoney(betAmount ?? 0)} on {betLabel}
             </Button>
           </Row>
+              {fees && (
+                <div className="text-ink-700 mt-1 text-sm">
+                  Fees{' '}
+                  <FeeDisplay
+                    amount={betAmount}
+                    totalFees={getFeeTotal(fees)}
+                    isMultiSumsToOne={false}
+                  />
+                </div>
+              )}
         </Col>
       )}
     </Col>

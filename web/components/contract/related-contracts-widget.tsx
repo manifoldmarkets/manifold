@@ -320,6 +320,7 @@ const RelatedContractCard = memo(function (props: {
   const probChange =
     contract.outcomeType === 'BINARY' &&
     showGraph &&
+    'probChanges' in contract &&
     Math.abs((contract as CPMMBinaryContract).probChanges.day) > 0.03
       ? (contract as CPMMBinaryContract).probChanges.day
       : 0
