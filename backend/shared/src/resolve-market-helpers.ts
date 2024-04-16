@@ -187,7 +187,6 @@ export const resolveMarketHelper = async (
       )
     }
 
-    // Should we combine all the payouts into one txn?
     const contractDoc = firestore.doc(`contracts/${contractId}`)
 
     if (updatedContractAttrs) {
@@ -202,7 +201,12 @@ export const resolveMarketHelper = async (
       await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
     }
     log('processing payouts', { payouts })
-    await payUsersTransactions(payouts, contractId, answerId)
+    await payUsersTransactions(
+      payouts,
+      contractId,
+      answerId,
+      contract.isRanked != false
+    )
 
     await updateContractMetricsForUsers(contract, bets)
     // TODO: we may want to support clawing back trader bonuses on MC markets too
@@ -411,7 +415,8 @@ export const payUsersTransactions = async (
     deposit?: number
   }[],
   contractId: string,
-  answerId?: string
+  answerId: string | undefined,
+  isRanked: boolean
 ) => {
   const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
@@ -422,7 +427,7 @@ export const payUsersTransactions = async (
     await firestore
       .runTransaction(async (transaction) => {
         payoutChunk.forEach(({ userId, payout, deposit }) => {
-          if (SPICE_PRODUCTION_ENABLED) {
+          if (SPICE_PRODUCTION_ENABLED && isRanked) {
             runContractPayoutTxn(transaction, {
               category: 'PRODUCE_SPICE',
               fromType: 'CONTRACT',
