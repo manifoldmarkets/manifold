@@ -692,12 +692,17 @@ export const BuyPanelBody = (props: {
                 )}
               </span>
               {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                <span className={clsx('ml-2 text-sm', 'text-ink-700')}>
                   {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
                     Math.abs(probAfter - probBefore)
                   )}
+                  {floatingEqual(probAfter, maxProb)
+                    ? ' (max)'
+                    : floatingEqual(probAfter, minProb)
+                    ? ' (max)'
+                    : ''}{' '}
                 </span>
               )}
 

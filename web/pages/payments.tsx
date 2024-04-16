@@ -1,6 +1,9 @@
 import { Page } from 'web/components/layout/page'
 import { ManaPayTxn } from 'common/txn'
-import { useManaPayments } from 'web/hooks/use-mana-payments'
+import {
+  useAllManaPayments,
+  useManaPayments,
+} from 'web/hooks/use-mana-payments'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -32,7 +35,7 @@ import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 
 export default function Payments() {
-  const { payments, load } = useManaPayments()
+  const { payments, load } = useAllManaPayments()
   return (
     <Page trackPageView={'managrams page'}>
       <SEO
