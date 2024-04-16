@@ -731,17 +731,6 @@ export const BuyPanelBody = (props: {
           </Col>
         )}
 
-        {betAmount && !floatingEqual(filledAmount, betAmount) && (
-          <Row className=" items-start text-sm">
-            <span className=" text-ink-700 mr-1 min-w-[110px] whitespace-nowrap ">
-              Refund amount
-            </span>
-            <span className=" whitespace-nowrap">
-              {formatMoney(betAmount - filledAmount)}
-            </span>
-          </Row>
-        )}
-
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
             Fees{' '}
