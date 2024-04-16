@@ -270,9 +270,9 @@ const debouncedContractUpdates = (contract: Contract) => {
           (select max(created_time) from contract_bets where contract_id = $1) as time,
           (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
 
-          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creatorFee
-          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platformFee
-          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidityFee
+          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
+          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
+          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
       `,
       [contract.id]
     )
@@ -280,14 +280,14 @@ const debouncedContractUpdates = (contract: Contract) => {
       volume,
       time: lastBetTime,
       count,
-      creatorFee,
-      platformFee,
-      liquidityFee,
+      creator_fee,
+      platform_fee,
+      liquidity_fee,
     } = result
     const collectedFees: Fees = {
-      creatorFee: creatorFee ?? 0,
-      platformFee: platformFee ?? 0,
-      liquidityFee: liquidityFee ?? 0,
+      creatorFee: creator_fee ?? 0,
+      platformFee: platform_fee ?? 0,
+      liquidityFee: liquidity_fee ?? 0,
     }
     log('Got updated stats for contract id: ' + contract.id, {
       volume,
