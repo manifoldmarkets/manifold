@@ -76,6 +76,8 @@ echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
+       --image-project "cos-cloud" \
+       --image-family "cos-109-lts" \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
