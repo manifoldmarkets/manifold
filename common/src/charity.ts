@@ -1044,6 +1044,22 @@ We also host several technical conferences every year, inviting top researchers,
     description:
       'Donate to Racket, a programming language, via the Software Freedom Conservancy which is a nonprofit organization centered around ethical technology',
   },
+  {
+    name: 'Legal Impact for Chickens',
+    website: 'https://www.legalimpactforchickens.org/',
+    photo: 'https://imgur.com/a/VzdSREW',
+    preview:
+      'Legal Impact for Chickens aims to make factory-farm cruelty a liability.',
+    description: `Legal Impact for Chickens focuses on civil litigation as a way to improve animal welfare. 
+
+Why? Companies don’t follow laws that aren’t enforced. And prosecutors rarely enforce cruelty laws on factory farms, even when animal protection groups urge them to.
+
+As a result, while several state cruelty laws technically cover farms, factory farms ignore them. Investigations in such states show rampant, unlawful neglect and abuse. Similarly, the animal movement’s effort to pass confinement bans may be wasted if those new bans aren’t enforced.
+
+Strategic civil litigation offers a solution. Several little-known legal doctrines let plaintiffs sue in civil court for violation of a criminal law. At Legal Impact for Chickens, we focus on systematically developing, refining, and using those doctrines to fight factory-farm cruelty.
+    `,
+        tags: ['New'] as const,
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {
