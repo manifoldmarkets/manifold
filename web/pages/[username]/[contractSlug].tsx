@@ -37,7 +37,7 @@ import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
-import { EditableQuestionTitle } from 'web/components/contract/title-edit'
+import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -460,7 +460,7 @@ export function ContractPageContent(props: ContractParams) {
                   />
                   <EditableQuestionTitle
                     contract={contract}
-                    canEdit={isAdmin || isCreator}
+                    canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
                 <MarketTopics
