@@ -2,18 +2,15 @@ import clsx from 'clsx'
 
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
+import { DAY_MS } from 'common/util/time'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
-import { useUser, usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { SupabaseSearch } from '../supabase-search'
-import { BalanceCard } from './balance-card'
-import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { DAY_MS } from 'common/util/time'
 
 export const PortfolioSummary = (props: {
   user: User

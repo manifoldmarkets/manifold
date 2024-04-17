@@ -61,7 +61,7 @@ export function ProfitWidget(props: {
       : portfolioValue
 
   if (!moreChanges && moreChanges < 1) {
-    return <Spacer h={6} />
+    return <Spacer h={10} />
   }
   return (
     <>
@@ -71,6 +71,8 @@ export function ProfitWidget(props: {
           e.stopPropagation()
           setOpenProfitModal(true)
         }}
+        size="xs"
+        className="gap-1 !px-1 !py-1"
       >
         See {moreChanges} changes today
       </Button>

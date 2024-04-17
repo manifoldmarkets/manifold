@@ -344,7 +344,7 @@ function PortfolioValueSkeleton(props: {
             {graphMode == 'profit' && (
               <ProfitWidget user={user} portfolio={portfolio} />
             )}
-            {graphMode == 'invested' && <Spacer h={6} />}
+            {graphMode == 'invested' && <Spacer h={10} />}
           </div>
 
           {!placement && !hideSwitcher && (

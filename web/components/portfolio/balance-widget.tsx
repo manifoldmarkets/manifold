@@ -1,12 +1,10 @@
-import { formatMoney } from 'common/util/format'
-import { Row } from '../layout/row'
-import { sumBy } from 'lodash'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { DAY_MS } from 'common/util/time'
-import { ManaCoinNumber } from '../widgets/manaCoinNumber'
-import { Button } from '../buttons/button'
-import { useRouter } from 'next/router'
+import { sumBy } from 'lodash'
 import { usePathname } from 'next/navigation'
+import { useRouter } from 'next/router'
+import { Button } from '../buttons/button'
+import { ManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function BalanceWidget(props: {
   balanceChanges: AnyBalanceChangeType[]
@@ -37,13 +35,13 @@ export function BalanceWidget(props: {
           shallow: true,
         })
       }}
-      className="gap-1"
+      size="xs"
+      className="gap-1 !px-1 !py-1"
     >
       <ManaCoinNumber amount={earnedToday} />
       in and
       <ManaCoinNumber amount={spentToday} />
       out today
     </Button>
-    // </Row>
   )
 }

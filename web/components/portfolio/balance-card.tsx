@@ -1,17 +1,5 @@
-import { Col } from 'web/components/layout/col'
-import {
-  formatMoney,
-  getMoneyNumber,
-  shortFormatNumber,
-} from 'common/util/format'
-import { Row } from 'web/components/layout/row'
+import { ScaleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Button } from 'web/components/buttons/button'
-import { AddFundsModal } from 'web/components/add-funds-modal'
-import { User } from 'common/user'
-import { ReactNode, useState } from 'react'
-import { orderBy, sumBy } from 'lodash'
-import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
@@ -19,89 +7,26 @@ import {
   TxnType,
   isTxnChange,
 } from 'common/balance-change'
-import Link from 'next/link'
+import { contractPathWithoutContract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { QuestType } from 'common/quest'
+import { User } from 'common/user'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { DAY_MS } from 'common/util/time'
+import { orderBy } from 'lodash'
+import Link from 'next/link'
+import { ReactNode, useState } from 'react'
 import {
   FaArrowRightArrowLeft,
   FaArrowTrendDown,
   FaArrowTrendUp,
 } from 'react-icons/fa6'
-import { contractPathWithoutContract } from 'common/contract'
-import { linkClass } from 'web/components/widgets/site-link'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { ScaleIcon } from '@heroicons/react/outline'
-import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
+import { linkClass } from 'web/components/widgets/site-link'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
-import { ManaCoinNumber } from '../widgets/manaCoinNumber'
-
-export const BalanceCard = (props: {
-  user: User
-  balanceChanges: AnyBalanceChangeType[]
-  onSeeChanges: () => void
-  className?: string
-}) => {
-  const { user, className, onSeeChanges } = props
-  const balanceChanges = props.balanceChanges.filter(
-    (b) => getMoneyNumber(b.amount) !== 0
-  )
-  const [showAddFunds, setShowAddFunds] = useState(false)
-  const spentToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
-    ),
-    'amount'
-  )
-  const earnedToday = sumBy(
-    balanceChanges.filter(
-      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
-    ),
-    'amount'
-  )
-  return (
-    <Row className={className} onClick={onSeeChanges}>
-      <Col className={'w-full gap-1.5'}>
-        <Col>
-          <div className={'text-ink-800 text-4xl'}>
-            <ManaCoinNumber amount={user.balance} />
-          </div>
-          <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
-            Your balance
-          </div>
-        </Col>
-        <Row className="flex-1 items-center justify-between">
-          <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
-            {formatMoney(earnedToday)} in &{' '}
-            {formatMoney(spentToday).replace('-', '')} out today
-          </Row>
-          <Button
-            color={'gray-white'}
-            onClick={(e) => {
-              e.stopPropagation()
-              onSeeChanges()
-            }}
-          >
-            See log
-          </Button>
-        </Row>
-      </Col>
-      <div className={'absolute right-1 top-1'}>
-        <Button
-          color="gradient"
-          onClick={(e) => {
-            e.stopPropagation()
-            setShowAddFunds(true)
-          }}
-          size="xs"
-          className={'whitespace-nowrap'}
-        >
-          Add funds
-        </Button>
-        <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
-      </div>
-    </Row>
-  )
-}
 
 export const BalanceChangeTable = (props: {
   user: User
