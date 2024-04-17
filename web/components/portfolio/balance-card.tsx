@@ -1,4 +1,18 @@
+import { Col } from 'web/components/layout/col'
+import {
+  formatMoney,
+  formatMoneyNoMoniker,
+  getMoneyNumber,
+  shortFormatNumber,
+} from 'common/util/format'
+import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
+import { Button } from 'web/components/buttons/button'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { User } from 'common/user'
+import { ReactNode, useState } from 'react'
+import { orderBy, sumBy } from 'lodash'
+import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
@@ -6,33 +20,22 @@ import {
   TxnType,
   isTxnChange,
 } from 'common/balance-change'
+import Link from 'next/link'
 import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
-  formatMoney,
-  formatMoneyNoMoniker,
-  getMoneyNumber,
-  shortFormatNumber,
-} from 'common/util/format'
-import Link from 'next/link'
-import {
+  FaBackward,
   FaArrowRightArrowLeft,
   FaArrowTrendDown,
   FaArrowTrendUp,
-  FaBackward,
 } from 'react-icons/fa6'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Input } from 'web/components/widgets/input'
+import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
+import { Avatar } from 'web/components/widgets/avatar'
+import { ScaleIcon } from '@heroicons/react/outline'
+import { QuestType } from 'common/quest'
+import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
 import { ManaCoinNumber } from '../widgets/manaCoinNumber'
-import { User } from 'common/user'
-import { AddFundsModal } from '../add-funds-modal'
-import { Button } from '../buttons/button'
-import { useState } from 'react'
-import { sumBy } from 'lodash'
-import { DAY_MS } from 'common/util/time'
 
 export const BalanceCard = (props: {
   user: User
