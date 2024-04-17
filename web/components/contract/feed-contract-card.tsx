@@ -25,7 +25,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
-import { CardReason } from '../feed/card-reason'
+import { CardReason, EndpointCardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
@@ -64,6 +64,7 @@ export function FeedContractCard(props: {
   hideBottomRow?: boolean
   hideTags?: boolean
   hideReason?: boolean
+  endpointReason?: string
 }) {
   const {
     promotedData,
@@ -77,6 +78,7 @@ export function FeedContractCard(props: {
     size = 'md',
     hideTags,
     hideReason,
+    endpointReason,
   } = props
   const user = useUser()
 
@@ -202,10 +204,17 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {!hideReason && (
+            {!hideReason && !endpointReason && (
               <CardReason
                 item={item}
                 contract={contract}
+                probChange={probChange}
+                since={startTime}
+              />
+            )}
+            {endpointReason && (
+              <EndpointCardReason
+                reason={endpointReason as any}
                 probChange={probChange}
                 since={startTime}
               />

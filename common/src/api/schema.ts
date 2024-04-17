@@ -1123,6 +1123,24 @@ export const API = (_apiTypeCheck = {
       timestamp: number
     },
   },
+  'get-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      contracts: Contract[]
+      comments: ContractComment[]
+      idsToReason: { [id: string]: string }
+    },
+    props: z
+      .object({
+        userId: z.string(),
+        limit: z.coerce.number().gt(0).lte(100).default(100),
+        offset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

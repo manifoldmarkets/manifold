@@ -10,7 +10,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { DAY_MS } from 'common/util/time'
-import { FireIcon } from '@heroicons/react/outline'
+import { FireIcon, UserIcon } from '@heroicons/react/outline'
 import { UserHovercard } from '../user/user-hovercard'
 import { FaGem } from 'react-icons/fa'
 
@@ -114,6 +114,52 @@ export function CardReason(props: {
       </Row>
     )
   }
+  return <div />
+}
+
+export function EndpointCardReason(props: {
+  reason: 'importance' | 'freshness' | 'conversion' | 'followed'
+  probChange?: number
+  since?: number
+}) {
+  const { reason, probChange, since } = props
+
+  if (probChange) {
+    return <ProbabilityChange probChange={probChange} since={since} />
+  } else if (reason === 'freshness') {
+    return (
+      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
+        <HiSparkles className={'h-4 w-4 text-yellow-400'} />
+        trending
+      </Row>
+    )
+  } else if (reason === 'conversion') {
+    return (
+      <Row className={'text-ink-400 items-center gap-1.5 text-sm'}>
+        <FaGem className="h-3 w-3 text-blue-400" />
+        interesting
+      </Row>
+    )
+  } else if (reason === 'importance') {
+    return (
+      <span className="text-ink-400 text-sm">
+        <Row className={'items-center gap-1'}>
+          <FireIcon className="text-ink-400 h-4 w-4" />
+          popular
+        </Row>
+      </span>
+    )
+  } else if (reason === 'followed') {
+    return (
+      <span className="text-ink-400 text-sm">
+        <Row className={'items-center gap-1'}>
+          <UserIcon className="text-ink-400 h-4 w-4" />
+          following
+        </Row>
+      </span>
+    )
+  }
+
   return <div />
 }
 

@@ -163,6 +163,7 @@ import { getPhoneNumber } from 'api/get-phone-number'
 import { multiSell } from 'api/multi-sell'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
+import { getFeed } from 'api/get-feed'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -311,6 +312,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'phone-number': getPhoneNumber,
   'multi-sell': multiSell,
+  'get-feed': getFeed,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
