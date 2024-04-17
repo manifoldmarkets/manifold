@@ -16,8 +16,8 @@ import { buildArray } from 'common/util/array'
 import { log } from 'shared/utils'
 
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
-  const { limit, offset, ignoreContractIds } = props
-  const userId = 'tlmGNz9kjXc2EteizMORes4qvWl2'
+  const { limit, offset, userId, ignoreContractIds } = props
+  // const userId = 'tlmGNz9kjXc2EteizMORes4qvWl2'
   const pg = createSupabaseDirectClient()
   // TODO:
   // at least get reposts from users that the user follows
