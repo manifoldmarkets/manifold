@@ -16,7 +16,7 @@ import {
   CPMMNumericContract,
   DPMContract,
 } from './contract'
-import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees, noFees } from './fees'
+import { DPM_CREATOR_FEE, DPM_PLATFORM_FEE, Fees } from './fees'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
 import { removeUndefinedProps } from './util/object'
@@ -197,7 +197,7 @@ export const getCpmmMultiSellBetInfo = (
     balanceByUserId
   )
 
-  const { cpmmState, makers, takers, ordersToCancel } = newBetResult!
+  const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
 
   const probBefore = answerToSell.prob
   const probAfter = getCpmmProbability(cpmmState.pool, 0.5)
@@ -217,7 +217,7 @@ export const getCpmmMultiSellBetInfo = (
     probAfter,
     createdTime: now,
     loanAmount: -loanPaid,
-    fees: noFees,
+    fees: totalFees,
     fills: takers,
     isFilled: true,
     isCancelled: false,
@@ -229,7 +229,7 @@ export const getCpmmMultiSellBetInfo = (
   }
 
   const otherResultsWithBet = otherBetResults!.map((result) => {
-    const { answer, takers, cpmmState, outcome } = result
+    const { answer, takers, cpmmState, outcome, totalFees } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -247,7 +247,7 @@ export const getCpmmMultiSellBetInfo = (
       probBefore,
       probAfter,
       createdTime: now,
-      fees: noFees,
+      fees: totalFees,
       isAnte: false,
       isRedemption: true,
       isChallenge: false,
@@ -304,7 +304,7 @@ const getNewSellBetInfo = (
   contract: Contract,
   loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
-  const { takers, cpmmState, answer: updatedAnswer, outcome } = newBetResult
+  const { takers, cpmmState, answer: updatedAnswer, outcome, totalFees } = newBetResult
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const amount = sumBy(takers, 'amount')
   const shares = sumBy(takers, 'shares')
@@ -327,7 +327,7 @@ const getNewSellBetInfo = (
     probBefore: oldAnswer.prob,
     probAfter,
     createdTime: now,
-    fees: noFees,
+    fees: totalFees,
     isAnte: false,
     isRedemption,
     isChallenge: false,

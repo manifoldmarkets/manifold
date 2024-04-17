@@ -30,8 +30,6 @@ import { NormalizedBet } from 'common/new-bet'
 import { maker } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
-import { FieldValue } from 'firebase-admin/firestore'
-import { FLAT_TRADE_FEE } from 'common/fees'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
@@ -68,6 +66,8 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
+import { FLAT_TRADE_FEE, Fees } from 'common/fees'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -267,15 +267,32 @@ const debouncedContractUpdates = (contract: Contract) => {
         select
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id) from contract_bets where contract_id = $1) as count
+          (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
+
+          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
+          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
+          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
       `,
       [contract.id]
     )
-    const { volume, time: lastBetTime, count } = result
+    const {
+      volume,
+      time: lastBetTime,
+      count,
+      creator_fee,
+      platform_fee,
+      liquidity_fee,
+    } = result
+    const collectedFees: Fees = {
+      creatorFee: creator_fee ?? 0,
+      platformFee: platform_fee ?? 0,
+      liquidityFee: liquidity_fee ?? 0,
+    }
     log('Got updated stats for contract id: ' + contract.id, {
       volume,
       lastBetTime,
       count,
+      collectedFees,
     })
 
     await firestore.doc(`contracts/${contract.id}`).update(
@@ -284,6 +301,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
         lastUpdatedTime: Date.now(),
         uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+        collectedFees,
       })
     )
     log('Wrote debounced updates for contract id: ' + contract.id)

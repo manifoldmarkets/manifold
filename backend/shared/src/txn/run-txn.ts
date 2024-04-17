@@ -2,7 +2,11 @@ import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
 import { removeUndefinedProps } from 'common/util/object'
-import { ContractResolutionPayoutTxn, Txn } from 'common/txn'
+import {
+  ContractProduceSpiceTxn,
+  ContractOldResolutionPayoutTxn,
+  Txn,
+} from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
@@ -103,9 +107,9 @@ export async function runTxnFromBank(
   return { status: 'success', txn }
 }
 
-export function runContractPayoutTxn(
+export function runContractOldPayoutTxn(
   fbTransaction: admin.firestore.Transaction,
-  txnData: Omit<ContractResolutionPayoutTxn, 'id' | 'createdTime'>
+  txnData: Omit<ContractOldResolutionPayoutTxn, 'id' | 'createdTime'>
 ) {
   const firestore = admin.firestore()
   const { amount, toId, data } = txnData
@@ -113,6 +117,27 @@ export function runContractPayoutTxn(
   const toDoc = firestore.doc(`users/${toId}`)
   fbTransaction.update(toDoc, {
     balance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(deposit ?? 0),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', txn }
+}
+
+export function runContractPayoutTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<ContractProduceSpiceTxn, 'id' | 'createdTime'>
+) {
+  const firestore = admin.firestore()
+  const { amount, toId, data } = txnData
+  const { deposit } = data
+
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    spiceBalance: FieldValue.increment(amount),
     totalDeposits: FieldValue.increment(deposit ?? 0),
   })
 

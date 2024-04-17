@@ -9,7 +9,7 @@ import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/firebase/api'
-import { removeUndefinedProps } from 'common/util/object'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
 import { useFocus } from 'web/hooks/use-focus'
@@ -26,7 +26,6 @@ import {
   answerToRange,
   getPrecision,
 } from 'common/multi-numeric'
-import { XIcon } from '@heroicons/react/solid'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
@@ -34,6 +33,9 @@ import { scaleLinear } from 'd3-scale'
 import { DoubleDistributionChart } from 'web/components/charts/generic-charts'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { SizedContainer } from 'web/components/sized-container'
+import { getFeeTotal, noFees } from 'common/fees'
+import { FeeDisplay } from '../bet/fees'
+import { XIcon } from '@heroicons/react/solid'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -205,6 +207,7 @@ export const NumericBetPanel = (props: {
     potentialPayout,
     potentialExpectedValue,
     potentialContractState,
+    fees,
   } = useMemo(() => {
     if (!betAmount || !answersToBuy || !mode)
       return {
@@ -213,7 +216,7 @@ export const NumericBetPanel = (props: {
         potentialExpectedValue: expectedValue,
         potentialContractState: contract,
       }
-    const { newBetResults, updatedAnswers } =
+    const { newBetResults, updatedAnswers, otherBetResults } =
       calculateCpmmMultiArbitrageYesBets(
         answers,
         answersToBuy,
@@ -222,6 +225,10 @@ export const NumericBetPanel = (props: {
         unfilledBets,
         balanceByUserId
       )
+    const fees = [...newBetResults, ...otherBetResults].reduce(
+      (acc, r) => addObjects(acc, r.totalFees),
+      noFees
+    )
     const potentialPayout = sumBy(
       first(newBetResults)?.takers ?? [],
       (taker) => taker.shares
@@ -244,6 +251,7 @@ export const NumericBetPanel = (props: {
       potentialPayout,
       potentialExpectedValue,
       potentialContractState,
+      fees,
     }
   }, [
     debouncedAmount,
@@ -259,7 +267,16 @@ export const NumericBetPanel = (props: {
     <Col className={'gap-2'}>
       {showDistribution && !!mode && (
         <Col className={'gap-2'}>
-          <span className={' text-xl'}>Probability Distribution</span>
+          <Row className={'justify-between'}>
+            <span className={' text-xl'}>Probability Distribution</span>
+            <IconButton
+              className={'w-12'}
+              onClick={() => setMode(undefined)}
+              disabled={isSubmitting}
+            >
+              <XIcon className={'h-4 w-4'} />
+            </IconButton>
+          </Row>
           <Row className={'gap-4'}>
             <Row className={'gap-1'}>
               <svg width="20" height="20" viewBox="0 0 120 120">
@@ -365,13 +382,15 @@ export const NumericBetPanel = (props: {
               >
                 {showDistribution ? 'Simple' : 'Advanced'}
               </Button>
-              <IconButton
-                className={'w-12'}
-                onClick={() => setMode(undefined)}
-                disabled={isSubmitting}
-              >
-                <XIcon className={'h-4 w-4'} />
-              </IconButton>
+              {!showDistribution && (
+                <IconButton
+                  className={'w-12'}
+                  onClick={() => setMode(undefined)}
+                  disabled={isSubmitting}
+                >
+                  <XIcon className={'h-4 w-4'} />
+                </IconButton>
+              )}
             </Row>
           </Row>
           <QuickBetAmountsRow
@@ -415,6 +434,16 @@ export const NumericBetPanel = (props: {
               Bet {formatMoney(betAmount ?? 0)} on {betLabel}
             </Button>
           </Row>
+          {fees && (
+            <div className="text-ink-700 mt-1 text-sm">
+              Fees{' '}
+              <FeeDisplay
+                amount={betAmount}
+                totalFees={getFeeTotal(fees)}
+                isMultiSumsToOne={false}
+              />
+            </div>
+          )}
         </Col>
       )}
     </Col>
@@ -423,7 +452,7 @@ export const NumericBetPanel = (props: {
 
 export const MultiNumericDistributionChart = (props: {
   contract: CPMMNumericContract
-  updatedContract: CPMMNumericContract
+  updatedContract?: CPMMNumericContract
   width: number
   height: number
   range: [number, number]
@@ -442,7 +471,7 @@ export const MultiNumericDistributionChart = (props: {
   const { min, max } = contract
   const data = useMemo(() => getExpectedValuesArray(contract), [contract])
   const otherData = useMemo(
-    () => getExpectedValuesArray(updatedContract),
+    () => (updatedContract ? getExpectedValuesArray(updatedContract) : []),
     [updatedContract]
   )
   const maxY = Math.max(...data.map((d) => d.y))
@@ -463,7 +492,7 @@ export const MultiNumericDistributionChart = (props: {
       data={data}
       otherData={otherData}
       color={NUMERIC_GRAPH_COLOR}
-      verticalLines={range}
+      verticalLines={updatedContract ? range : undefined}
       shadedRanges={shadedRanges}
       newColor={newColor}
     />

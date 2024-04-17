@@ -11,4 +11,6 @@ RUN yarn install --frozen-lockfile --production
 COPY dist ./
 
 ENV PORT 80
+EXPOSE 80/tcp
+
 ENTRYPOINT [ "node", "--inspect", "--max-old-space-size=14336", "backend/scheduler/lib/index.js" ]

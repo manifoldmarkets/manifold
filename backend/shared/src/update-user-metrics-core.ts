@@ -278,6 +278,7 @@ export async function updateUserMetricsCore() {
         ts: new Date(newPortfolio.timestamp).toISOString(),
         investment_value: newPortfolio.investmentValue,
         balance: newPortfolio.balance,
+        spice_balance: newPortfolio.spiceBalance,
         total_deposits: newPortfolio.totalDeposits,
         loan_total: newPortfolio.loanTotal,
       })

@@ -28,7 +28,13 @@ export const formatApiUrlWithParams = (
 function appendQuery(url: string, props: Record<string, any>) {
   const [base, query] = url.split(/\?(.+)/)
   const params = new URLSearchParams(query)
-  forEach(removeUndefinedProps(props ?? {}), (v, k) => params.set(k, v))
+  forEach(removeUndefinedProps(props ?? {}), (v, k) => {
+    if (Array.isArray(v)) {
+      v.forEach((item) => params.append(k, item))
+    } else {
+      params.set(k, v)
+    }
+  })
   return `${base}?${params.toString()}`
 }
 

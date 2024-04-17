@@ -559,6 +559,23 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  donate: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        amount: z.number().positive().finite().safe(),
+        to: z.string(),
+      })
+      .strict(),
+  },
+  'convert-sp-to-mana': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
+  },
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1101,9 +1118,28 @@ export const API = (_apiTypeCheck = {
       loanTotal: number
       investmentValue: number
       balance: number
+      spiceBalance: number
       totalDeposits: number
       timestamp: number
     },
+  },
+  'get-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      contracts: Contract[]
+      comments: ContractComment[]
+      idsToReason: { [id: string]: string }
+    },
+    props: z
+      .object({
+        userId: z.string(),
+        limit: z.coerce.number().gt(0).lte(100).default(100),
+        offset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
   },
 } as const)
 

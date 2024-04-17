@@ -37,11 +37,11 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       throw new APIError(403, 'You must verify your phone number to send mana.')
     }
 
-    const { canSend, message } = await canSendMana(fromUser, () =>
+    const { canSend, message: errorMessage } = await canSendMana(fromUser, () =>
       getUserPortfolioInternal(fromUser.id)
     )
     if (!canSend) {
-      throw new APIError(403, message)
+      throw new APIError(403, errorMessage)
     }
 
     if (toIds.length <= 0) {

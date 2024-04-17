@@ -6,10 +6,10 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from './contract'
-import { noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 
 export const getFixedCancelPayouts = (
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   bets: Bet[],
   liquidities: LiquidityProvision[]
 ) => {
@@ -22,12 +22,18 @@ export const getFixedCancelPayouts = (
     .filter((b) => !b.isAnte)
     .map((bet) => ({
       userId: bet.userId,
-      payout: bet.amount,
+      // We keep the platform fee.
+      payout: bet.amount - bet.fees.platformFee,
     }))
 
-  const creatorPayout = 0
+  // Creator pays back all creator fees for N/A resolution.
+  const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)
+  payouts.push({
+    userId: contract.creatorId,
+    payout: -creatorFees,
+  })
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees: noFees }
+  return { payouts, liquidityPayouts }
 }
 
 export const getStandardFixedPayouts = (
@@ -45,14 +51,12 @@ export const getStandardFixedPayouts = (
     payout: shares,
   }))
 
-  const { collectedFees } = contract
-  const creatorPayout = collectedFees.creatorFee
   const liquidityPayouts =
     contract.mechanism === 'cpmm-1'
       ? getLiquidityPoolPayouts(contract, outcome, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
+  return { payouts, liquidityPayouts }
 }
 
 export const getMultiFixedPayouts = (
@@ -79,7 +83,7 @@ export const getMultiFixedPayouts = (
     liquidities
   )
 
-  return { payouts, liquidityPayouts, creatorPayout: 0, collectedFees: noFees }
+  return { payouts, liquidityPayouts }
 }
 
 export const getLiquidityPoolPayouts = (
@@ -127,9 +131,6 @@ export const getMktFixedPayouts = (
   liquidities: LiquidityProvision[],
   resolutionProbability: number
 ) => {
-  const { collectedFees } = contract
-  const creatorPayout = collectedFees.creatorFee
-
   const outcomeProbs = {
     YES: resolutionProbability,
     NO: 1 - resolutionProbability,
@@ -146,7 +147,7 @@ export const getMktFixedPayouts = (
       ? getLiquidityPoolProbPayouts(contract, outcomeProbs, liquidities)
       : []
 
-  return { payouts, creatorPayout, liquidityPayouts, collectedFees }
+  return { payouts, liquidityPayouts }
 }
 
 export const getLiquidityPoolProbPayouts = (

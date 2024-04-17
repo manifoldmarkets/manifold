@@ -53,15 +53,17 @@ export const InvestmentValueCard = memo(function (props: {
   const dailyProfit =
     portfolio && dayAgoPortfolio
       ? portfolio.investmentValue +
-        portfolio.balance -
+        portfolio.balance +
+        portfolio.spiceBalance -
         portfolio.totalDeposits -
         (dayAgoPortfolio.investmentValue +
-          dayAgoPortfolio.balance -
+          dayAgoPortfolio.balance +
+          dayAgoPortfolio.spiceBalance -
           dayAgoPortfolio.totalDeposits)
       : dailyProfitFromMetrics
 
   const portfolioValue = portfolio
-    ? portfolio.investmentValue + portfolio.balance
+    ? portfolio.investmentValue + portfolio.balance + portfolio.spiceBalance
     : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))

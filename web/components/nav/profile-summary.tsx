@@ -8,14 +8,14 @@ import { User } from 'web/lib/firebase/users'
 import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { formatMoneyNoMoniker } from 'common/util/format'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
-  const balance = useAnimatedNumber(user.balance)
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
   return (
@@ -55,6 +55,11 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           </button>
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
+        {SPICE_PRODUCTION_ENABLED && (
+          <div className="text-sm">
+            SP {formatMoneyNoMoniker(user.spiceBalance)}
+          </div>
+        )}
       </div>
       <div className="w-2 shrink" />
     </Link>

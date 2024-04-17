@@ -139,7 +139,7 @@ export function CloseDate(props: {
               time={closeTime}
               placement="bottom-end"
               noTap
-              className="flex items-center gap-1"
+              className="flex flex-nowrap items-center gap-1 whitespace-nowrap"
             >
               {dayjs().isBefore(closeTime) ? (
                 <FaClock className="text-ink-500 h-3.5 w-3.5" />

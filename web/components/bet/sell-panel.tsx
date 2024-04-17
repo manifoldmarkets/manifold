@@ -37,6 +37,9 @@ import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { Answer } from 'common/answer'
+import { addObjects } from 'common/util/object'
+import { Fees, getFeeTotal, noFees } from 'common/fees'
+import { FeeDisplay } from './fees'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -161,10 +164,11 @@ export function SellPanel(props: {
     })
   }
 
-  let initialProb, saleValue: number
+  let initialProb: number, saleValue: number
+  let fees: Fees
   let cpmmState
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue } = getSaleResultMultiSumsToOne(
+    ;({ initialProb, cpmmState, saleValue, fees } = getSaleResultMultiSumsToOne(
       contract,
       answerId!,
       sellQuantity,
@@ -173,7 +177,7 @@ export function SellPanel(props: {
       balanceByUserId
     ))
   } else {
-    ;({ initialProb, cpmmState, saleValue } = getSaleResult(
+    ;({ initialProb, cpmmState, saleValue, fees } = getSaleResult(
       contract,
       sellQuantity,
       sharesOutcome,
@@ -183,6 +187,7 @@ export function SellPanel(props: {
     ))
   }
 
+  const totalFees = getFeeTotal(fees)
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -270,6 +275,14 @@ export function SellPanel(props: {
           Profit
           <span className="text-ink-700">{formatMoney(profit)}</span>
         </Row>
+        <Row className="text-ink-500 items-center justify-between gap-2">
+          Fees
+          <FeeDisplay
+            totalFees={totalFees}
+            amount={saleValue}
+            isMultiSumsToOne={isMultiSumsToOne}
+          />
+        </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
             {isPseudoNumeric
@@ -334,7 +347,7 @@ const getSaleResult = (
     ? { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 }
     : { pool: (contract as CPMMContract).pool, p: (contract as CPMMContract).p }
 
-  const { cpmmState, saleValue } = calculateCpmmSale(
+  const { cpmmState, saleValue, fees } = calculateCpmmSale(
     initialCpmmState,
     shares,
     outcome,
@@ -350,6 +363,7 @@ const getSaleResult = (
     initialProb,
     resultProb,
     probChange,
+    fees,
   }
 }
 
@@ -363,18 +377,24 @@ const getSaleResultMultiSumsToOne = (
 ) => {
   const initialProb = getAnswerProbability(contract, answerId)
   const answerToSell = contract.answers.find((a) => a.id === answerId)
-  const { newBetResult, saleValue } = calculateCpmmMultiSumsToOneSale(
-    contract.answers,
-    answerToSell!,
-    shares,
-    outcome,
-    undefined,
-    unfilledBets,
-    balanceByUserId
-  )
-  const { cpmmState } = newBetResult
+  const { newBetResult, saleValue, otherBetResults } =
+    calculateCpmmMultiSumsToOneSale(
+      contract.answers,
+      answerToSell!,
+      shares,
+      outcome,
+      undefined,
+      unfilledBets,
+      balanceByUserId
+    )
+  const { cpmmState, totalFees } = newBetResult
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const probChange = Math.abs(resultProb - initialProb)
+
+  const fees = addObjects(
+    totalFees,
+    otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
+  )
 
   return {
     saleValue,
@@ -382,5 +402,6 @@ const getSaleResultMultiSumsToOne = (
     initialProb,
     resultProb,
     probChange,
+    fees,
   }
 }

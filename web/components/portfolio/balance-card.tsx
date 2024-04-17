@@ -1,4 +1,3 @@
-import { ScaleIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import {
   AnyBalanceChangeType,
@@ -7,19 +6,19 @@ import {
   TxnType,
   isTxnChange,
 } from 'common/balance-change'
-import { contractPathWithoutContract } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { QuestType } from 'common/quest'
-import { User } from 'common/user'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { DAY_MS } from 'common/util/time'
-import { orderBy } from 'lodash'
+import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  formatMoney,
+  formatMoneyNoMoniker,
+  getMoneyNumber,
+  shortFormatNumber,
+} from 'common/util/format'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
 import {
   FaArrowRightArrowLeft,
   FaArrowTrendDown,
   FaArrowTrendUp,
+  FaBackward,
 } from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -27,6 +26,89 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { linkClass } from 'web/components/widgets/site-link'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
+import { ManaCoinNumber } from '../widgets/manaCoinNumber'
+import { User } from 'common/user'
+import { AddFundsModal } from '../add-funds-modal'
+import { Button } from '../buttons/button'
+import { useState } from 'react'
+import { sumBy } from 'lodash'
+import { DAY_MS } from 'common/util/time'
+
+export const BalanceCard = (props: {
+  user: User
+  balanceChanges: AnyBalanceChangeType[]
+  onSeeChanges: () => void
+  className?: string
+}) => {
+  const { user, className, onSeeChanges } = props
+  const balanceChanges = props.balanceChanges.filter(
+    (b) => getMoneyNumber(b.amount) !== 0
+  )
+  const [showAddFunds, setShowAddFunds] = useState(false)
+  const spentToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
+    ),
+    'amount'
+  )
+  const earnedToday = sumBy(
+    balanceChanges.filter(
+      (change) => change.createdTime > Date.now() - DAY_MS && change.amount > 0
+    ),
+    'amount'
+  )
+  return (
+    <Row className={className} onClick={onSeeChanges}>
+      <Col className={'w-full gap-1.5'}>
+        <Col>
+          <div className={'text-ink-800 text-4xl'}>
+            <ManaCoinNumber amount={user.balance} />
+          </div>
+          {SPICE_PRODUCTION_ENABLED && (
+            <div className="text-ink-800 flex items-center text-4xl">
+              <div className="mr-1 rounded-full bg-amber-400 px-1.5 py-1 text-xl">
+                SP
+              </div>
+              {formatMoneyNoMoniker(user.spiceBalance)}
+            </div>
+          )}
+          <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
+            Your balance
+          </div>
+        </Col>
+        <Row className="flex-1 items-center justify-between">
+          <Row className={'text-ink-600 mb-1 ml-1 gap-1'}>
+            {formatMoney(earnedToday)} in &{' '}
+            {formatMoney(spentToday).replace('-', '')} out today
+          </Row>
+          <Button
+            color={'gray-white'}
+            onClick={(e) => {
+              e.stopPropagation()
+              onSeeChanges()
+            }}
+          >
+            See log
+          </Button>
+        </Row>
+      </Col>
+      <div className={'absolute right-1 top-1'}>
+        <Button
+          color="gradient"
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowAddFunds(true)
+          }}
+          size="xs"
+          className={'whitespace-nowrap'}
+        >
+          Add funds
+        </Button>
+        <AddFundsModal open={showAddFunds} setOpen={setShowAddFunds} />
+      </div>
+    </Row>
+  )
+}
 
 export const BalanceChangeTable = (props: {
   user: User
@@ -320,6 +402,9 @@ const TxnBalanceChangeRow = (props: {
     CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
     CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    PRODUCE_SPICE: 'bg-yellow-200',
+    CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
+    CONSUME_SPICE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     STARTING_BALANCE: 'bg-yellow-200',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -361,11 +446,17 @@ const TxnBalanceChangeRow = (props: {
                 '🚀'
               ) : type === 'ADD_SUBSIDY' ? (
                 '💰'
-              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
+              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
+                type === 'PRODUCE_SPICE' ? (
                 '🎉'
+              ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
+                type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
+                <FaBackward className={'h-5 w-5 text-white'} />
               ) : type === 'CREATE_CONTRACT_ANTE' ||
                 type === 'BOUNTY_POSTED' ? (
                 <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+              ) : type === 'CONSUME_SPICE' ? (
+                <FaArrowRightArrowLeft className={'h-4 w-4'} />
               ) : type === 'CHARITY' ? (
                 '❤️'
               ) : (
@@ -405,15 +496,25 @@ const TxnBalanceChangeRow = (props: {
           ) : (
             <div className={clsx('line-clamp-2')}>{txnTitle(change)}</div>
           )}
-          <span
-            className={clsx(
-              'shrink-0',
-              amount > 0 ? 'text-teal-700' : 'text-ink-600'
-            )}
-          >
-            {amount > 0 ? '+' : '-'}
-            {formatMoney(amount).replace('-', '')}
-          </span>
+          {type === 'CONSUME_SPICE' ? (
+            <span className="text-ink-600 shrink-0">
+              SP {formatMoneyNoMoniker(-amount)} &rarr;{' '}
+              <span className="text-teal-700">{formatMoney(-amount)}</span>
+            </span>
+          ) : (
+            <span
+              className={clsx(
+                'shrink-0',
+                amount > 0 ? 'text-teal-700' : 'text-ink-600'
+              )}
+            >
+              {amount > 0 ? '+' : '-'}
+              {type === 'PRODUCE_SPICE' ||
+              type === 'CONTRACT_UNDO_PRODUCE_SPICE'
+                ? 'SP ' + formatMoneyNoMoniker(amount).replace('-', '')
+                : formatMoney(amount).replace('-', '')}
+            </span>
+          )}
         </Row>
         <div className={'text-ink-600'}>{txnTypeToDescription(type)}</div>
         {!simple && (
@@ -456,6 +557,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Question exploration bonus'
     case 'STARTING_BALANCE':
       return 'Starting balance'
+    case 'CONSUME_SPICE':
+      return `Redeem SP for mana`
     default:
       return contract?.question
   }
@@ -465,6 +568,7 @@ const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
+    case 'PRODUCE_SPICE':
     case 'CONTRACT_RESOLUTION_PAYOUT':
       return 'Payout'
     case 'CREATE_CONTRACT_ANTE':
@@ -477,8 +581,11 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Quests'
     case 'QUEST_REWARD':
       return 'Quests'
+    case 'CONTRACT_UNDO_PRODUCE_SPICE':
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return 'Unresolve'
+    case 'CONSUME_SPICE':
+      return ''
     case 'STARTING_BALANCE':
       return ''
     case 'MARKET_BOOST_REDEEM':
