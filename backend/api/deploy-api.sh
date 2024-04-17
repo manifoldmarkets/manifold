@@ -72,6 +72,11 @@ fi
 TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
 GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
+# mqp: if trying to upgrade container OS above 109 LTS, you will need to figure out
+# how to handle iptables correctly, right now it seems like there is some problem
+# where container OS versions >= 113 drop TCP packets, maybe due to an issue related
+# to upgrading from iptables-legacy to iptables-nft
+
 echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
