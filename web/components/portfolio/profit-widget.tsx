@@ -1,7 +1,7 @@
 import { formatMoney } from 'common/util/format'
 import { Row } from '../layout/row'
 import { DailyProfitModal } from '../home/daily-profit'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../buttons/button'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { ContractMetric } from 'common/contract-metric'
@@ -12,24 +12,27 @@ import { sum, minBy } from 'lodash'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { Spacer } from '../layout/spacer'
+import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
+import { db } from 'web/lib/supabase/db'
 
 export function ProfitWidget(props: {
   user: User
   portfolio: PortfolioSnapshot | undefined
 }) {
   const { user, portfolio } = props
-  const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
-    { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
-  >(undefined, `daily-profit-${user.id}`)
-  const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
-    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
-  )
-
   const dailyPortfolioData = usePortfolioHistory(user.id, 'daily') ?? []
   const dayAgoPortfolio = minBy(dailyPortfolioData, 'timestamp')
-  const moreChanges = visibleMetrics.length
+  const [open, setOpen] = useState(false)
 
-  const [openProfitModal, setOpenProfitModal] = useState(false)
+  const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
+    { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
+  >(undefined, `daily-profit-${user?.id}`)
+
+  useEffect(() => {
+    getUserContractMetricsByProfitWithContracts(user.id, db, 'day').then(
+      setContractMetrics
+    )
+  }, [setContractMetrics])
 
   const dailyProfitFromMetrics = Math.round(
     useMemo(() => {
@@ -59,8 +62,12 @@ export function ProfitWidget(props: {
     user.createdTime > Date.now() - DAY_MS
       ? metricsValue + user.balance
       : portfolioValue
+  const visibleMetrics = (contractMetrics?.metrics ?? []).filter(
+    (m) => Math.floor(Math.abs(m.from?.day.profit ?? 0)) !== 0
+  )
+  const moreChanges = visibleMetrics.length
 
-  if (!moreChanges && moreChanges < 1) {
+  if (moreChanges < 1) {
     return <Spacer h={10} />
   }
   return (
@@ -69,17 +76,17 @@ export function ProfitWidget(props: {
         color={'gray-white'}
         onClick={(e) => {
           e.stopPropagation()
-          setOpenProfitModal(true)
+          setOpen(true)
         }}
         size="xs"
         className="gap-1 !px-1 !py-1"
       >
         See {moreChanges} changes today
       </Button>
-      {openProfitModal && (
+      {open && (
         <DailyProfitModal
-          setOpen={setOpenProfitModal}
-          open={openProfitModal}
+          setOpen={setOpen}
+          open={open}
           metrics={contractMetrics?.metrics}
           contracts={contractMetrics?.contracts}
           dailyProfit={dailyProfit}
