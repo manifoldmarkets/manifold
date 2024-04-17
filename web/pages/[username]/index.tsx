@@ -163,6 +163,8 @@ function UserProfile(props: {
     userId: user.id,
     after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
   })
+  // TODO: paginate
+
   const balanceChanges = newBalanceChanges ?? []
   const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'

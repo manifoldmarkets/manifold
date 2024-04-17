@@ -50,6 +50,8 @@ type AnyTxnType =
   | AddSubsidy
   | ReclaimMana
 
+export type AnyTxnCategory = AnyTxnType['category']
+
 export type SourceType =
   | 'USER'
   | 'CONTRACT'
