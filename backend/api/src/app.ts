@@ -218,6 +218,8 @@ app.use(requestContext)
 
 app.options('*', allowCorsUnrestricted)
 
+// NOTE (James): Disabled some read api endpoints.
+// TODO: Reenable these.
 // we define the handlers in this object in order to typecheck that every API has a handler
 const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
@@ -225,24 +227,24 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
-  bets: getBets,
+  // bets: getBets,
   comment: createComment,
   'hide-comment': hideComment,
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
+  // 'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
-  'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
-    getMarkets({ groupId: id, limit }, ...rest),
+  // 'group/by-id/:id/markets': ({ id, limit }, ...rest) =>
+  //   getMarkets({ groupId: id, limit }, ...rest),
   'group/:slug/delete': deleteGroup,
   'group/by-id/:id/delete': deleteGroup,
   groups: getGroups,
-  'market/:id': getMarket,
-  'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
-  'slug/:slug': getMarket,
+  // 'market/:id': getMarket,
+  // 'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
+  // 'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,
   'market/:contractId/close': closeMarket,
   'market/:contractId/resolve': resolveMarket,
@@ -259,10 +261,10 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   manalink: createManalink,
   donate: donate,
   'convert-sp-to-mana': convertSpiceToMana,
-  'market/:id/positions': getPositions,
-  me: getCurrentUser,
+  // 'market/:id/positions': getPositions,
+  // me: getCurrentUser,
   'user/:username': getUser,
-  'user/:username/bets': (...props) => getBets(...props),
+  // 'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id': getUser,
   users: getUsers,
   'search-users': searchUsers,
@@ -313,7 +315,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'phone-number': getPhoneNumber,
   'multi-sell': multiSell,
   'get-feed': getFeed,
-}
+} as any
 
 Object.entries(handlers).forEach(([path, handler]) => {
   const api = API[path as APIPath]
