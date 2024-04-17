@@ -13,7 +13,7 @@ import { DailyLoan } from 'web/components/home/daily-loan'
 import { DailyProfitModal } from 'web/components/home/daily-profit'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'portfolio-summ
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
