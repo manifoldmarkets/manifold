@@ -20,6 +20,10 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   props
 ) => {
   const { userId } = props
+
+  // TODO (James): Enable this endpoint
+  throw new APIError(500, 'This endpoint is disabled for now.')
+
   if (!PARTNER_USER_IDS.includes(userId))
     throw new APIError(403, 'User is not a partner')
 
