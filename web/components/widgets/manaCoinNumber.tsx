@@ -26,7 +26,8 @@ export function ShortManaCoinNumber(props: {
     <Row className={clsx('items-center', className)}>
       {amount < 0 && '-'}
       <ManaCoin />
-      {shortenNumber(Math.abs(amount))}
+
+      {shortenNumber(+formatMoneyNoMoniker(Math.abs(amount)))}
     </Row>
   )
 }
