@@ -28,7 +28,9 @@ export function ShortManaCoinNumber(props: {
         <span className="pr-[0.1em]">-</span>
       )}
       <ManaCoin />
-      {amount !== undefined ? shortenNumber(Math.abs(amount)) : '---'}
+      {amount !== undefined
+        ? shortenNumber(+formatMoneyNoMoniker(Math.abs(amount ?? 0)))
+        : '---'}
     </Row>
   )
 }
