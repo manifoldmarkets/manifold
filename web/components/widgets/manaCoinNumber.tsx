@@ -10,9 +10,9 @@ export function ManaCoinNumber(props: { amount?: number }) {
   const { amount } = props
   return (
     <Row className="items-center whitespace-nowrap">
-      {amount && amount < 0 && '-'}
+      {amount !== undefined && amount < 0 && '-'}
       <ManaCoin />
-      {amount ? formatMoneyNoMoniker(Math.abs(amount)) : '---'}
+      {amount !== undefined ? formatMoneyNoMoniker(Math.abs(amount)) : '---'}
     </Row>
   )
 }
@@ -24,9 +24,11 @@ export function ShortManaCoinNumber(props: {
   const { amount, className } = props
   return (
     <Row className={clsx('items-center whitespace-nowrap', className)}>
-      {amount && amount < 0 && <span className="pr-[0.1em]">-</span>}
+      {amount !== undefined && amount < 0 && (
+        <span className="pr-[0.1em]">-</span>
+      )}
       <ManaCoin />
-      {amount ? shortenNumber(Math.abs(amount)) : '---'}
+      {amount !== undefined ? shortenNumber(Math.abs(amount)) : '---'}
     </Row>
   )
 }

@@ -3,6 +3,10 @@ import { Row } from '../layout/row'
 import { sumBy } from 'lodash'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { DAY_MS } from 'common/util/time'
+import { ManaCoinNumber } from '../widgets/manaCoinNumber'
+import { Button } from '../buttons/button'
+import { useRouter } from 'next/router'
+import { usePathname } from 'next/navigation'
 
 export function BalanceWidget(props: {
   balanceChanges: AnyBalanceChangeType[]
@@ -20,10 +24,26 @@ export function BalanceWidget(props: {
     ),
     'amount'
   )
+
+  const balanceChangesKey = 'balance-changes'
+  const router = useRouter()
+  const pathName = usePathname()
   return (
-    <Row className={'text-ink-600 mt-1 select-none gap-1 text-sm'}>
-      {formatMoney(earnedToday)} in & {formatMoney(spentToday).replace('-', '')}{' '}
+    <Button
+      color={'gray-white'}
+      onClick={(e) => {
+        e.stopPropagation()
+        router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
+          shallow: true,
+        })
+      }}
+      className="gap-1"
+    >
+      <ManaCoinNumber amount={earnedToday} />
+      in and
+      <ManaCoinNumber amount={spentToday} />
       out today
-    </Row>
+    </Button>
+    // </Row>
   )
 }

@@ -1,8 +1,7 @@
 'use client'
 import clsx from 'clsx'
 import { AnyBalanceChangeType } from 'common/balance-change'
-import { DAY_MS } from 'common/util/time'
-import { last, sum } from 'lodash'
+import { last } from 'lodash'
 import { ReactNode, memo, useMemo, useState } from 'react'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
@@ -20,19 +19,13 @@ import { useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { Spacer } from '../layout/spacer'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { ManaCoinNumber, ShortManaCoinNumber } from '../widgets/manaCoinNumber'
+import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
-import { sumBy } from 'lodash'
-import { formatMoney } from 'common/util/format'
-import { ContractMetric } from 'common/contract-metric'
-import { CPMMContract } from 'common/contract'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { DailyProfitModal } from '../home/daily-profit'
 import { ProfitWidget } from './profit-widget'
-import { BalanceWidget } from './balance-widget'
-import { Spacer } from '../layout/spacer'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -334,7 +327,17 @@ function PortfolioValueSkeleton(props: {
       >
         <Row className={clsx('items-start gap-0')}>
           <div className={'text-ink-800 text-4xl'}>
-            <ManaCoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
+            <Row className="items-center gap-3">
+              <ManaCoinNumber
+                amount={graphDisplayNumber ?? currentGraphNumber}
+              />
+              {!hideAddFundsButton && graphMode == 'balance' && (
+                <AddFundsButton
+                  userId={userId}
+                  className=" self-center whitespace-nowrap"
+                />
+              )}
+            </Row>
             {graphMode == 'balance' && (
               <BalanceWidget balanceChanges={balanceChanges} />
             )}
@@ -344,12 +347,6 @@ function PortfolioValueSkeleton(props: {
             {graphMode == 'invested' && <Spacer h={6} />}
           </div>
 
-          {!hideAddFundsButton && (
-            <AddFundsButton
-              userId={userId}
-              className=" self-center whitespace-nowrap"
-            />
-          )}
           {!placement && !hideSwitcher && (
             <TimeRangePicker
               currentTimePeriod={currentTimePeriod}

@@ -43,25 +43,6 @@ export const PortfolioSummary = (props: {
 
   return (
     <Col className={clsx(className, 'gap-4')}>
-      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
-        <BalanceCard
-          onSeeChanges={() => {
-            router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
-              shallow: true,
-            })
-          }}
-          user={user}
-          balanceChanges={balanceChanges}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-        />
-        <InvestmentValueCard
-          user={user}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-          portfolio={portfolioData}
-          refreshPortfolio={refreshPortfolio}
-        />
-      </Row>
-
       {!isNewUser && (
         <PortfolioValueSection
           user={user}
@@ -73,7 +54,6 @@ export const PortfolioSummary = (props: {
               : 'monthly'
           }
           lastUpdatedTime={user.metricsLastUpdated}
-          hideAddFundsButton
           portfolio={portfolioData}
           balanceChanges={balanceChanges}
         />
