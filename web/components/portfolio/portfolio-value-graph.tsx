@@ -72,7 +72,7 @@ export const PortfolioGraph = (props: {
 
   return (
     <SingleValueHistoryChart
-      w={width}
+      w={width > 768 ? 768 : width}
       h={height}
       xScale={xScale}
       yScale={yScale}
