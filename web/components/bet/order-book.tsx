@@ -333,7 +333,7 @@ export function OrderBookPanel(props: {
   if (limitBets.length === 0) return <></>
 
   return (
-    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-200/10 p-4">
+    <Col className="text-ink-800 my-2 gap-2 rounded-lg bg-indigo-50 p-4">
       <Subtitle className="!my-0">
         Order book{' '}
         <InfoTooltip
