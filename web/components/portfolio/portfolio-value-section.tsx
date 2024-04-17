@@ -59,7 +59,7 @@ export const PortfolioValueSection = memo(
       currentTimePeriod,
       preloadPoints
     )
-    const [graphMode, setGraphMode] = useState<GraphMode>('profit')
+    const [graphMode, setGraphMode] = useState<GraphMode>('balance')
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
