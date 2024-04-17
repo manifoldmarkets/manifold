@@ -581,16 +581,17 @@ export const BuyPanelBody = (props: {
                         : ' +' + currentReturnPercent}
                     </span>
                   </Row>
-                  {betAmount && !floatingEqual(filledAmount, betAmount) && (
-                    <Row className="min-w-[128px] items-baseline">
-                      <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
-                        Refund amount
-                      </div>
-                      <span className="mr-1 whitespace-nowrap text-lg">
-                        {formatMoney(betAmount - filledAmount)}
-                      </span>
-                    </Row>
-                  )}
+                  {betAmount != undefined &&
+                    !floatingEqual(filledAmount, betAmount) && (
+                      <Row className="min-w-[128px] items-baseline">
+                        <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
+                          Refund amount
+                        </div>
+                        <span className="mr-1 whitespace-nowrap text-lg">
+                          {formatMoney(betAmount - filledAmount)}
+                        </span>
+                      </Row>
+                    )}
                 </Col>
               )}
             </Row>
