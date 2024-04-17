@@ -11,7 +11,7 @@ export const CreatorFeesDisplay = (props: {
   const { collectedFees } = contract
   return (
     <Tooltip
-      text={"Fees earned from trade volume"}
+      text={'Fees earned from trade volume'}
       placement="bottom"
       noTap
       className={clsx(className, 'text-ink-600 text-sm')}
