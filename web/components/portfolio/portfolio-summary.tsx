@@ -64,7 +64,7 @@ export const PortfolioSummary = (props: {
 
       {!isNewUser && (
         <PortfolioValueSection
-          userId={user.id}
+          user={user}
           defaultTimePeriod={
             isCreatedInLastWeek
               ? 'allTime'
@@ -75,6 +75,7 @@ export const PortfolioSummary = (props: {
           lastUpdatedTime={user.metricsLastUpdated}
           hideAddFundsButton
           portfolio={portfolioData}
+          balanceChanges={balanceChanges}
         />
       )}
 

@@ -10,7 +10,7 @@ import { curveLinear } from 'd3-shape'
 import { ZoomParams } from '../charts/helpers'
 import { Period } from 'web/lib/firebase/users'
 
-export type GraphMode = 'profit' | 'value' | 'balance'
+export type GraphMode = 'profit' | 'value' | 'balance' | 'invested'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -25,7 +25,7 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 }
 
 export const PortfolioGraph = (props: {
-  mode: 'profit' | 'value' | 'balance'
+  mode: GraphMode
   duration?: Period
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
