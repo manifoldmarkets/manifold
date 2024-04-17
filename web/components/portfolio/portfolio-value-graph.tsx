@@ -83,13 +83,7 @@ export const PortfolioGraph = (props: {
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={onMouseOver}
       curve={curveLinear}
-      color={
-        mode === 'profit'
-          ? ['#14b8a6', '#F75836']
-          : mode === 'balance'
-          ? '#3B82F6'
-          : '#4f46e5'
-      }
+      color={mode === 'profit' ? ['#14b8a6', '#F75836'] : '#4f46e5'}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
     />

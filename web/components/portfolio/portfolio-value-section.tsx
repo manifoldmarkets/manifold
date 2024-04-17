@@ -74,8 +74,8 @@ export const PortfolioValueSection = memo(
         y:
           graphMode === 'balance'
             ? p.balance
-            : graphMode === 'value'
-            ? p.balance + p.investmentValue
+            : graphMode === 'invested'
+            ? p.investmentValue
             : p.balance + p.investmentValue - p.totalDeposits - firstProfit,
         obj: p,
       }))
