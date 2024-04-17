@@ -1047,7 +1047,8 @@ We also host several technical conferences every year, inviting top researchers,
   {
     name: 'Legal Impact for Chickens',
     website: 'https://www.legalimpactforchickens.org/',
-    photo: 'https://imgur.com/a/VzdSREW',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/charity%2Flegal-impact-for-chickens.png?alt=media&token=094bd279-4628-4f03-8702-fc7d9962e15e',
     preview:
       'Legal Impact for Chickens aims to make factory-farm cruelty a liability.',
     description: `Legal Impact for Chickens focuses on civil litigation as a way to improve animal welfare. 
@@ -1058,7 +1059,7 @@ As a result, while several state cruelty laws technically cover farms, factory f
 
 Strategic civil litigation offers a solution. Several little-known legal doctrines let plaintiffs sue in civil court for violation of a criminal law. At Legal Impact for Chickens, we focus on systematically developing, refining, and using those doctrines to fight factory-farm cruelty.
     `,
-        tags: ['New'] as const,
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
