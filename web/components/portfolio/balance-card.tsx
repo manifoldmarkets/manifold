@@ -1,6 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
+  formatMoneyNoMoniker,
   getMoneyNumber,
   shortFormatNumber,
 } from 'common/util/format'
@@ -20,8 +21,9 @@ import {
   isTxnChange,
 } from 'common/balance-change'
 import Link from 'next/link'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
+  FaBackward,
   FaArrowRightArrowLeft,
   FaArrowTrendDown,
   FaArrowTrendUp,
@@ -65,6 +67,14 @@ export const BalanceCard = (props: {
           <div className={'text-ink-800 text-4xl'}>
             <ManaCoinNumber amount={user.balance} />
           </div>
+          {SPICE_PRODUCTION_ENABLED && (
+            <div className="text-ink-800 flex items-center text-4xl">
+              <div className="mr-1 rounded-full bg-amber-400 px-1.5 py-1 text-xl">
+                SP
+              </div>
+              {formatMoneyNoMoniker(user.spiceBalance)}
+            </div>
+          )}
           <div className={'text-ink-800 ml-1 w-full flex-wrap gap-2'}>
             Your balance
           </div>
@@ -395,6 +405,9 @@ const TxnBalanceChangeRow = (props: {
     CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
     CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    PRODUCE_SPICE: 'bg-yellow-200',
+    CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
+    CONSUME_SPICE: 'bg-indigo-400',
     SIGNUP_BONUS: 'bg-yellow-200',
     STARTING_BALANCE: 'bg-yellow-200',
     MARKET_BOOST_REDEEM: 'bg-purple-200',
@@ -436,11 +449,17 @@ const TxnBalanceChangeRow = (props: {
                 '🚀'
               ) : type === 'ADD_SUBSIDY' ? (
                 '💰'
-              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ? (
+              ) : type === 'CONTRACT_RESOLUTION_PAYOUT' ||
+                type === 'PRODUCE_SPICE' ? (
                 '🎉'
+              ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
+                type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
+                <FaBackward className={'h-5 w-5 text-white'} />
               ) : type === 'CREATE_CONTRACT_ANTE' ||
                 type === 'BOUNTY_POSTED' ? (
                 <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
+              ) : type === 'CONSUME_SPICE' ? (
+                <FaArrowRightArrowLeft className={'h-4 w-4'} />
               ) : type === 'CHARITY' ? (
                 '❤️'
               ) : (
@@ -480,15 +499,25 @@ const TxnBalanceChangeRow = (props: {
           ) : (
             <div className={clsx('line-clamp-2')}>{txnTitle(change)}</div>
           )}
-          <span
-            className={clsx(
-              'shrink-0',
-              amount > 0 ? 'text-teal-700' : 'text-ink-600'
-            )}
-          >
-            {amount > 0 ? '+' : '-'}
-            {formatMoney(amount).replace('-', '')}
-          </span>
+          {type === 'CONSUME_SPICE' ? (
+            <span className="text-ink-600 shrink-0">
+              SP {formatMoneyNoMoniker(-amount)} &rarr;{' '}
+              <span className="text-teal-700">{formatMoney(-amount)}</span>
+            </span>
+          ) : (
+            <span
+              className={clsx(
+                'shrink-0',
+                amount > 0 ? 'text-teal-700' : 'text-ink-600'
+              )}
+            >
+              {amount > 0 ? '+' : '-'}
+              {type === 'PRODUCE_SPICE' ||
+              type === 'CONTRACT_UNDO_PRODUCE_SPICE'
+                ? 'SP ' + formatMoneyNoMoniker(amount).replace('-', '')
+                : formatMoney(amount).replace('-', '')}
+            </span>
+          )}
         </Row>
         <div className={'text-ink-600'}>{txnTypeToDescription(type)}</div>
         {!simple && (
@@ -531,6 +560,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Question exploration bonus'
     case 'STARTING_BALANCE':
       return 'Starting balance'
+    case 'CONSUME_SPICE':
+      return `Redeem SP for mana`
     default:
       return contract?.question
   }
@@ -540,6 +571,7 @@ const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
+    case 'PRODUCE_SPICE':
     case 'CONTRACT_RESOLUTION_PAYOUT':
       return 'Payout'
     case 'CREATE_CONTRACT_ANTE':
@@ -552,8 +584,11 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Quests'
     case 'QUEST_REWARD':
       return 'Quests'
+    case 'CONTRACT_UNDO_PRODUCE_SPICE':
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return 'Unresolve'
+    case 'CONSUME_SPICE':
+      return ''
     case 'STARTING_BALANCE':
       return ''
     case 'MARKET_BOOST_REDEEM':

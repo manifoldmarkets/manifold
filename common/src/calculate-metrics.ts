@@ -187,6 +187,7 @@ export const calculateNewPortfolioMetrics = (
   return {
     investmentValue: investmentValue,
     balance: user.balance,
+    spiceBalance: user.spiceBalance,
     totalDeposits: user.totalDeposits,
     loanTotal,
     timestamp: Date.now(),

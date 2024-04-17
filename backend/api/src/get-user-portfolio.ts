@@ -37,7 +37,7 @@ export const getUserPortfolio: APIHandler<'get-user-portfolio'> = async (
 // )
 
 // const portfolioHistory = await pg.oneOrNone(
-//   `SELECT DISTINCT ON (user_id) user_id, investment_value, loan_total, balance, total_deposits, ts
+//   `SELECT DISTINCT ON (user_id) user_id, investment_value, loan_total, balance, spice_balance, total_deposits, ts
 //   FROM user_portfolio_history
 //   WHERE user_id = $1
 //   ORDER BY user_id, ts DESC`,
