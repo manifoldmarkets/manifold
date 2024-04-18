@@ -164,6 +164,7 @@ import { multiSell } from 'api/multi-sell'
 import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
+import { getManaSupply } from './get-mana-supply'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -313,6 +314,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'phone-number': getPhoneNumber,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-mana-supply': getManaSupply,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

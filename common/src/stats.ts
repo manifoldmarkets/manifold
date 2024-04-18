@@ -31,3 +31,13 @@ export type Stats = {
   d1Bet3DayAverage: number[]
   dailyNewRealUserSignups: number[]
 }
+
+export type ManaSupply = {
+  balance: number
+  spiceBalance: number
+  investmentValue: number
+  loanTotal: number
+  ammLiquidity: number
+  totalValue: number
+  totalUsdValue: number
+}

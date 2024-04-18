@@ -36,6 +36,7 @@ import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
+import { ManaSupply } from 'common/stats'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1140,6 +1141,13 @@ export const API = (_apiTypeCheck = {
         ignoreContractIds: z.array(z.string()).optional(),
       })
       .strict(),
+  },
+  'get-mana-supply': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as ManaSupply,
+    props: z.object({}).strict(),
   },
 } as const)
 

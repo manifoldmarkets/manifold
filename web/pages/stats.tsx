@@ -5,21 +5,24 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
-import { Stats } from 'common/stats'
+import { Stats, ManaSupply } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
 import { capitalize } from 'lodash'
-import { formatLargeNumber } from 'common/util/format'
+import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
 import { useAdmin } from 'web/hooks/use-admin'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import { api } from '../lib/firebase/api'
+import { Row } from 'web/components/layout/row'
 
 export const getStaticProps = async () => {
   try {
     const stats = await getStats()
+    const manaSupply = await api('get-mana-supply', {})
     return {
-      props: { stats },
+      props: { stats, manaSupply },
       revalidate: 60 * 60, // One hour
     }
   } catch (err) {
@@ -28,8 +31,11 @@ export const getStaticProps = async () => {
   }
 }
 
-export default function Analytics(props: { stats: Stats | null }) {
-  const { stats } = props
+export default function Analytics(props: {
+  stats: Stats | null
+  manaSupply: ManaSupply
+}) {
+  const { stats, manaSupply } = props
   if (!stats) {
     return null
   }
@@ -40,12 +46,15 @@ export default function Analytics(props: { stats: Stats | null }) {
         description="See site-wide usage statistics."
         url="/stats"
       />
-      <CustomAnalytics stats={stats} />
+      <CustomAnalytics stats={stats} manaSupply={manaSupply} />
     </Page>
   )
 }
 
-export function CustomAnalytics(props: { stats: Stats }) {
+export function CustomAnalytics(props: {
+  stats: Stats
+  manaSupply: ManaSupply
+}) {
   const {
     dailyActiveUsers,
     dailyActiveUsersWeeklyAvg,
@@ -76,6 +85,7 @@ export function CustomAnalytics(props: { stats: Stats }) {
     d1BetAverage,
     d1Bet3DayAverage,
   } = props.stats
+  const { manaSupply } = props
 
   const startDate = props.stats.startDate[0]
 
@@ -166,6 +176,54 @@ export function CustomAnalytics(props: { stats: Stats }) {
       <Spacer h={4} />
 
       <DailyChart dailyValues={engagedUsers} startDate={startDate} />
+      <Spacer h={8} />
+
+      <Title>Mana supply</Title>
+      <Col className="max-w-sm gap-2">
+        <Row className="justify-between">
+          <div className="text-ink-700">Balances</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(manaSupply.balance)}
+          </div>
+        </Row>
+        <Row className="justify-between">
+          <div className="text-ink-700">Spice balances</div>
+          <div className="text-ink-700 font-semibold">
+            SP{formatWithCommas(manaSupply.spiceBalance)}
+          </div>
+        </Row>
+        <Row className="justify-between">
+          <div className="text-ink-700">Investment</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(manaSupply.investmentValue)}
+          </div>
+        </Row>
+        {/* <Row className="justify-between">
+          <div className="text-ink-700">Loans</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(manaSupply.loanTotal)}
+          </div>
+        </Row> */}
+        <Row className="justify-between">
+          <div className="text-ink-700">AMM liquidity</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(manaSupply.ammLiquidity)}
+          </div>
+        </Row>
+        <Row className="mt-6 justify-between">
+          <div className="text-ink-700">Total</div>
+          <div className="text-ink-700 font-semibold">
+            {formatMoney(manaSupply.totalValue)}
+          </div>
+        </Row>
+        <Row className="justify-between">
+          <div className="text-ink-700">Total in USD</div>
+          <div className="text-ink-700 font-semibold">
+            ${formatWithCommas(manaSupply.totalUsdValue)}
+          </div>
+        </Row>
+      </Col>
+
       <Spacer h={8} />
 
       <Title>Mana sales</Title>
