@@ -30,7 +30,7 @@ export function ShortManaCoinNumber(props: {
       <ManaCoin />
       {amount !== undefined
         ? shortenNumber(
-            +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replace(',', '')
+            +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
           )
         : '---'}
     </Row>
