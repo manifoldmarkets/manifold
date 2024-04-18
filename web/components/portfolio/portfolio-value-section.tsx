@@ -280,7 +280,7 @@ function PortfolioValueSkeleton(props: {
   return (
     <Col>
       <Row>
-        <Row className={clsx('items-start gap-0')}>
+        <Row className={clsx('grow items-start gap-0')}>
           <PortfolioTab
             onClick={() => setGraphMode('balance')}
             isSelected={graphMode == 'balance'}
@@ -317,12 +317,8 @@ function PortfolioValueSkeleton(props: {
       </Row>
       <Col
         className={clsx(
-          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-lg border-2 p-4',
-          graphMode == 'balance'
-            ? 'rounded-tl-none'
-            : graphMode == 'invested'
-            ? 'rounded-tr-none sm:rounded-lg'
-            : ''
+          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none',
+          graphMode == 'invested' ? 'rounded-tr-none sm:rounded-lg' : ''
         )}
       >
         <Row className={clsx('items-start gap-0')}>
