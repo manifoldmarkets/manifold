@@ -12,7 +12,9 @@ import Link from 'next/link'
 import { Fragment, useState } from 'react'
 import { BiSearchAlt2 } from 'react-icons/bi'
 
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { User } from 'common/user'
+import { formatMoneyNoMoniker } from 'common/util/format'
 import { usePathname } from 'next/navigation'
 import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
@@ -23,11 +25,9 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { Avatar } from '../widgets/avatar'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
-import { formatMoneyNoMoniker } from 'common/util/format'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -170,7 +170,7 @@ function NavBarItem(props: {
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
           <div className="flex gap-2">
-            <AnimatedManaCoinNumber amount={user?.balance ?? 0} />
+            <CoinNumber amount={user?.balance} numberType="animated" />
             {SPICE_PRODUCTION_ENABLED && (
               <span className="whitespace-nowrap text-xs">
                 SP {formatMoneyNoMoniker(user.spiceBalance)}

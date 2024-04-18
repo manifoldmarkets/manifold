@@ -4,7 +4,7 @@ import { sumBy } from 'lodash'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { Button } from '../buttons/button'
-import { ManaCoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 export function BalanceWidget(props: {
   balanceChanges: AnyBalanceChangeType[]
@@ -38,9 +38,9 @@ export function BalanceWidget(props: {
       size="xs"
       className="gap-1 !px-1 !py-1"
     >
-      <ManaCoinNumber amount={earnedToday} />
+      <CoinNumber amount={earnedToday} />
       in and
-      <ManaCoinNumber amount={spentToday} />
+      <CoinNumber amount={spentToday} />
       out today
     </Button>
   )

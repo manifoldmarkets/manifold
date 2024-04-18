@@ -36,7 +36,7 @@ import { ScaleIcon } from '@heroicons/react/outline'
 import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
 import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
-import { ManaCoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 import { assertUnreachable } from 'common/util/types'
 import { AnyTxnCategory } from 'common/txn'
 
@@ -68,7 +68,7 @@ export const BalanceCard = (props: {
       <Col className={'w-full gap-1.5'}>
         <Col>
           <div className={'text-ink-800 text-4xl'}>
-            <ManaCoinNumber amount={user.balance} />
+            <CoinNumber amount={user.balance} />
           </div>
           {SPICE_PRODUCTION_ENABLED && (
             <div className="text-ink-800 flex items-center text-4xl">
