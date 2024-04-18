@@ -5,48 +5,44 @@ import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { shortenNumber } from 'web/lib/util/formatNumber'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
-export function ManaCoinNumber(props: { amount?: number }) {
-  const { amount } = props
-  return (
-    <Row className="items-center whitespace-nowrap">
-      {amount !== undefined && amount < 0 && '-'}
-      <ManaCoin />
-      {amount !== undefined ? formatMoneyNoMoniker(Math.abs(amount)) : '---'}
-    </Row>
-  )
-}
-
-export function ShortManaCoinNumber(props: {
+export function CoinNumber(props: {
   amount?: number
+  isSpice?: boolean
+  numberType?: 'short' | 'animated'
   className?: string
 }) {
-  const { amount, className } = props
+  const { amount, isSpice, numberType, className } = props
   return (
-    <Row className={clsx('items-center whitespace-nowrap', className)}>
-      {amount !== undefined && amount < 0 && (
-        <span className="pr-[0.1em]">-</span>
+    <Row
+      className={clsx(
+        'items-center whitespace-nowrap',
+        className,
+        isSpice ? 'text-sky-600 dark:text-sky-400' : ''
       )}
-      <ManaCoin />
-      {amount !== undefined
-        ? shortenNumber(
-            +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
-          )
-        : '---'}
+    >
+      {amount !== undefined && amount < 0 && '-'}
+      {!!isSpice ? <SpiceCoin /> : <ManaCoin />}
+      {amount == undefined ? (
+        '---'
+      ) : numberType == 'short' ? (
+        shortenNumber(
+          +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
+        )
+      ) : numberType == 'animated' ? (
+        <AnimatedNumber amount={amount} />
+      ) : (
+        formatMoneyNoMoniker(Math.abs(amount))
+      )}
     </Row>
   )
 }
 
-export function AnimatedManaCoinNumber(props: {
-  amount: number
-  className?: string
-}) {
-  const { amount, className } = props
-  const balance = useAnimatedNumber(amount)
+function AnimatedNumber(props: { amount?: number }) {
+  const { amount } = props
+  const balance = useAnimatedNumber(amount ?? 0)
   return (
-    <Row className={clsx('items-center', className)}>
-      <ManaCoin />
-      <animated.div>{balance.to((b) => formatMoneyNoMoniker(b))}</animated.div>
-    </Row>
+    <animated.div>{balance.to((b) => formatMoneyNoMoniker(b))}</animated.div>
   )
 }

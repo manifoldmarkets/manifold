@@ -21,7 +21,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { ManaCoinNumber, ShortManaCoinNumber } from '../widgets/manaCoinNumber'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
@@ -286,9 +286,10 @@ function PortfolioValueSkeleton(props: {
             isSelected={graphMode == 'balance'}
             title="Balance"
           >
-            <ShortManaCoinNumber
+            <CoinNumber
               amount={balance}
               className="text-primary-600 text-xs sm:text-sm"
+              numberType="short"
             />
           </PortfolioTab>
 
@@ -297,9 +298,10 @@ function PortfolioValueSkeleton(props: {
             isSelected={graphMode == 'profit'}
             title={profitLabel}
           >
-            <ShortManaCoinNumber
+            <CoinNumber
               amount={profit}
               className="text-primary-600 text-xs sm:text-sm"
+              numberType="short"
             />
           </PortfolioTab>
 
@@ -308,9 +310,10 @@ function PortfolioValueSkeleton(props: {
             isSelected={graphMode == 'invested'}
             title="Invested"
           >
-            <ShortManaCoinNumber
+            <CoinNumber
               amount={invested}
               className="text-primary-600 text-xs sm:text-sm"
+              numberType="short"
             />
           </PortfolioTab>
         </Row>
@@ -324,9 +327,7 @@ function PortfolioValueSkeleton(props: {
         <Row className={clsx('items-start gap-0')}>
           <div className={'text-ink-800 text-4xl'}>
             <Row className="items-center gap-3">
-              <ManaCoinNumber
-                amount={graphDisplayNumber ?? currentGraphNumber}
-              />
+              <CoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
               {!hideAddFundsButton && graphMode == 'balance' && (
                 <AddFundsButton
                   userId={userId}

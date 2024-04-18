@@ -1,4 +1,7 @@
+import { StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -8,11 +11,22 @@ import {
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
+import {
+  CommentOnLoverNotification,
+  NewMatchNotification,
+} from 'manifold-love/components/love-notification-types'
+import Link from 'next/link'
 import { useState } from 'react'
+import { Referrals } from 'web/components/buttons/referrals-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -33,9 +47,16 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
+import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { Avatar } from 'web/components/widgets/avatar'
+import { useReview } from 'web/hooks/use-review'
+import { useUser } from 'web/hooks/use-user'
+import { canSetReferrer } from 'web/lib/firebase/users'
+import { Button } from '../buttons/button'
+import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
@@ -47,27 +68,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import Link from 'next/link'
-import { Modal } from '../layout/modal'
-import { Button } from '../buttons/button'
-import { StarIcon } from '@heroicons/react/solid'
-import { useReview } from 'web/hooks/use-review'
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { Referrals } from 'web/components/buttons/referrals-button'
-import { useUser } from 'web/hooks/use-user'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-} from 'common/user'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
-import { canSetReferrer } from 'web/lib/firebase/users'
-import {
-  CommentOnLoverNotification,
-  NewMatchNotification,
-} from 'manifold-love/components/love-notification-types'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { ShortManaCoinNumber } from '../widgets/manaCoinNumber'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -823,9 +823,10 @@ export function MarketResolvedNotification(props: {
 
               <NotificationIcon
                 symbol={
-                  <ShortManaCoinNumber
+                  <CoinNumber
                     amount={profit}
                     className="text-xs font-semibold"
+                    numberType="short"
                   />
                 }
                 symbolBackgroundClass={

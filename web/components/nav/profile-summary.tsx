@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import Link from 'next/link'
 import { PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 
-import { User } from 'web/lib/firebase/users'
-import { Avatar } from '../widgets/avatar'
-import { trackCallback } from 'web/lib/service/analytics'
-import { AddFundsModal } from '../add-funds-modal'
-import { AnimatedManaCoinNumber } from '../widgets/manaCoinNumber'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { formatMoneyNoMoniker } from 'common/util/format'
+import { User } from 'web/lib/firebase/users'
+import { trackCallback } from 'web/lib/service/analytics'
+import { AddFundsModal } from '../add-funds-modal'
+import { Avatar } from '../widgets/avatar'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -37,10 +37,11 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
-        <div>{user.name}</div>
+        {!SPICE_PRODUCTION_ENABLED && <div>{user.name}</div>}
         <div className="flex items-center text-sm">
-          <AnimatedManaCoinNumber
-            amount={user?.balance ?? 0}
+          <CoinNumber
+            amount={user?.balance}
+            numberType="animated"
             className="mr-2"
           />
           <button
@@ -56,9 +57,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
         {SPICE_PRODUCTION_ENABLED && (
-          <div className="text-sm">
-            SP {formatMoneyNoMoniker(user.spiceBalance)}
-          </div>
+          <CoinNumber className="text-sm" amount={user.spiceBalance} isSpice />
         )}
       </div>
       <div className="w-2 shrink" />
