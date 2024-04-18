@@ -3,11 +3,21 @@ import {
   ChannelOptions,
   useChannel,
 } from 'web/lib/supabase/realtime/use-channel'
+import { JwtPayload, verify } from 'jsonwebtoken'
+import { ENV_CONFIG } from 'common/envs/constants'
 
-type BroadcastPayload = { [k: string]: any }
-type BroadcastMessage = { event: string; payload: BroadcastPayload }
+type BroadcastData = { [k: string]: any }
+type BroadcastPayload = JwtPayload & { data: BroadcastData }
 type BroadcastOptions = ChannelOptions & {
-  onMessage: (message: BroadcastMessage) => void
+  onMessage: (event: string, data: BroadcastData) => void
+}
+
+function decodePayload(jwt: string) {
+  const claims = verify(
+    jwt,
+    ENV_CONFIG.supabaseBroadcastKey
+  ) as BroadcastPayload
+  return claims.data
 }
 
 export function useBroadcast(channelId: string, opts: BroadcastOptions) {
@@ -16,7 +26,15 @@ export function useBroadcast(channelId: string, opts: BroadcastOptions) {
     onEnabled: (chan) => {
       for (const event of Object.keys(onMessage)) {
         chan.on('broadcast', { event }, (response) => {
-          onMessage(response.payload)
+          try {
+            const jwt = response.payload?.jwt
+            if (!jwt) {
+              console.warn('Bad message from Realtime: ', response.payload)
+            }
+            onMessage(response.event, decodePayload(jwt))
+          } catch (e) {
+            console.warn('Error decoding Realtime JWT: ', e)
+          }
         })
       }
       onEnabled?.(chan)
@@ -31,6 +49,6 @@ export const useContractBetBroadcast = (
   onBet: (bet: Bet) => void
 ) => {
   return useBroadcast(`contract:${contractId}:bets`, {
-    onMessage: (message) => onBet(message.payload as Bet),
+    onMessage: (_event, data) => onBet(data as Bet),
   })
 }
