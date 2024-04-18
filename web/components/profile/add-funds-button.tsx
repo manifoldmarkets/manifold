@@ -1,5 +1,4 @@
 import { AddFundsModal } from '../add-funds-modal'
-import { Button, IconButton } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/solid'

@@ -1,5 +1,3 @@
-import { formatMoney } from 'common/util/format'
-import { Row } from '../layout/row'
 import { DailyProfitModal } from '../home/daily-profit'
 import { useEffect, useMemo, useState } from 'react'
 import { Button } from '../buttons/button'
