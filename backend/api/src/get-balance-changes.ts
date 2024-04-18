@@ -3,15 +3,11 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
-import {
-  BetBalanceChange,
-  TXN_BALANCE_CHANGE_TYPES,
-  TxnBalanceChange,
-} from 'common/balance-change'
+import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { User } from 'common/user'
 import { charities } from 'common/charity'
 
@@ -46,6 +42,7 @@ const getTxnBalanceChanges = async (
       type: 'STARTING_BALANCE',
       amount: STARTING_BALANCE,
       createdTime: user.createdTime,
+      token: 'M$',
     })
   }
 
@@ -55,9 +52,9 @@ const getTxnBalanceChanges = async (
     from txns
     where created_time > millis_to_ts($1)
       and (to_id = $2 or from_id = $2)
-    and category = ANY ($3);
+    order by created_time asc;
     `,
-    [after, userId, TXN_BALANCE_CHANGE_TYPES],
+    [after, userId],
     (row) => row.data as Txn
   )
   const contractIds = filterDefined(
@@ -87,9 +84,11 @@ const getTxnBalanceChanges = async (
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       key: txn.id,
-      type: txn.category as any,
+      type: txn.category,
+      token: txn.token,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
+      description: txn.description,
       contract: contract
         ? {
             question:
@@ -130,22 +129,10 @@ const getContractIdFromTxn = (txn: Txn) => {
     return txn.fromId
   } else if (txn.toType === 'CONTRACT') {
     return txn.toId
-  } else if ('data' in txn && txn.data?.contractId) return txn.data.contractId
-  if (
-    ![
-      'BETTING_STREAK_BONUS',
-      'MARKET_BOOST_REDEEM',
-      'QUEST_REWARD',
-      'MANA_PAYMENT',
-      'LOAN',
-      'MARKET_BOOST_CREATE',
-      'SIGNUP_BONUS',
-      'LEAGUE_PRIZE',
-      'CHARITY',
-      'CONSUME_SPICE',
-    ].includes(txn.category)
-  )
-    log('No contractId in get-balance-changes for txn', txn)
+  } else if ('data' in txn && txn.data?.contractId) {
+    return txn.data.contractId
+  }
+
   return null
 }
 
