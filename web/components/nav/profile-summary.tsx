@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
-import { formatMoneyNoMoniker } from 'common/util/format'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
