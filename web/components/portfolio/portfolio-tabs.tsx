@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { Row } from '../layout/row'
 import { ReactNode } from 'react'
 
 export function PortfolioTab(props: {
@@ -14,7 +13,7 @@ export function PortfolioTab(props: {
   return (
     <button
       className={clsx(
-        'border-ink-200 dark:border-ink-300 z-10  -mb-0.5 flex w-1/3 flex-row gap-2 rounded-t border-2 border-b-0  border-opacity-0 px-4 py-2 transition-all dark:border-opacity-0 sm:w-36',
+        'border-ink-200 dark:border-ink-300 z-10 -mb-0.5 flex w-1/3 flex-row gap-2 rounded-t-lg border-2 border-b-0  border-opacity-0 px-4 py-2 transition-all dark:border-opacity-0 sm:w-36',
         isSelected
           ? ' bg-canvas-0 border-opacity-100 dark:border-opacity-100'
           : ' bg-ink-200 dark:bg-canvas-0/50',
