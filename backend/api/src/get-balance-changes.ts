@@ -7,7 +7,7 @@ import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { STARTING_BALANCE } from 'common/economy'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { User } from 'common/user'
 import { charities } from 'common/charity'
 
@@ -42,6 +42,7 @@ const getTxnBalanceChanges = async (
       type: 'STARTING_BALANCE',
       amount: STARTING_BALANCE,
       createdTime: user.createdTime,
+      token: 'M$',
     })
   }
 
@@ -83,7 +84,8 @@ const getTxnBalanceChanges = async (
     const user = users.find((u) => u.id === getOtherUserIdFromTxn(txn, userId))
     const balanceChange: TxnBalanceChange = {
       key: txn.id,
-      type: txn.category as any,
+      type: txn.category,
+      token: txn.token,
       amount: txn.toId === userId ? txn.amount : -txn.amount,
       createdTime: txn.createdTime,
       description: txn.description,

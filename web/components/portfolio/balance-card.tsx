@@ -2,6 +2,7 @@ import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
   formatMoneyNoMoniker,
+  formatSpice,
   getMoneyNumber,
   shortFormatNumber,
 } from 'common/util/format'
@@ -178,24 +179,29 @@ function RenderBalanceChanges(props: {
   hideBalance?: boolean
 }) {
   const { balanceChanges, user, avatarSize, simple, hideBalance } = props
-  let currBalance = user.balance
+  let currManaBalance = user.balance
+  let currSpiceBalance = user.spiceBalance
   const balanceRunningTotals = [
-    currBalance,
+    { mana: currManaBalance, spice: currSpiceBalance },
     ...balanceChanges.map((change) => {
-      currBalance -= change.amount
-      return currBalance
+      if (isTxnChange(change) && change.token === 'SPICE') {
+        currSpiceBalance -= change.amount
+      } else {
+        currManaBalance -= change.amount
+      }
+      return { mana: currManaBalance, spice: currSpiceBalance }
     }),
   ]
 
   return (
     <>
-      {orderBy(balanceChanges, 'createdTime', 'desc').map((change, i) => {
+      {balanceChanges.map((change, i) => {
         if (isBetChange(change)) {
           return (
             <BetBalanceChangeRow
               key={change.key}
               change={change}
-              balance={balanceRunningTotals[i]}
+              balance={balanceRunningTotals[i].mana}
               avatarSize={avatarSize}
               simple={simple}
               hideBalance={hideBalance}
@@ -384,14 +390,14 @@ const customFormatTime = (time: number) => {
 
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
-  balance: number
+  balance: { mana: number; spice: number }
   avatarUrl: string
   avatarSize: 'sm' | 'md'
   simple?: boolean
   hideBalance?: boolean
 }) => {
   const { change, balance, avatarSize, avatarUrl, simple, hideBalance } = props
-  const { contract, amount, type, user, charity, description } = change
+  const { contract, amount, type, token, user, charity, description } = change
 
   const reasonToBgClassNameMap: Partial<{
     [key in AnyTxnCategory | 'STARTING_BALANCE']: string
@@ -510,25 +516,18 @@ const TxnBalanceChangeRow = (props: {
           ) : (
             <div className={clsx('line-clamp-2')}>{txnTitle(change)}</div>
           )}
-          {type === 'CONSUME_SPICE' ? (
-            <span className="text-ink-600 shrink-0">
-              SP {formatMoneyNoMoniker(-amount)} &rarr;{' '}
-              <span className="text-teal-700">{formatMoney(-amount)}</span>
-            </span>
-          ) : (
-            <span
-              className={clsx(
-                'shrink-0',
-                amount > 0 ? 'text-teal-700' : 'text-ink-600'
-              )}
-            >
-              {amount > 0 ? '+' : '-'}
-              {type === 'PRODUCE_SPICE' ||
-              type === 'CONTRACT_UNDO_PRODUCE_SPICE'
-                ? 'SP ' + formatMoneyNoMoniker(amount).replace('-', '')
-                : formatMoney(amount).replace('-', '')}
-            </span>
-          )}
+
+          <span
+            className={clsx(
+              'shrink-0',
+              amount > 0 ? 'text-teal-700' : 'text-ink-600'
+            )}
+          >
+            {amount > 0 ? '+' : '-'}
+            {token === 'SPICE'
+              ? formatSpice(amount).replace('-', '')
+              : formatMoney(amount).replace('-', '')}
+          </span>
         </Row>
         <div className={'text-ink-600'}>
           {txnTypeToDescription(type) ?? description ?? type}
@@ -537,9 +536,12 @@ const TxnBalanceChangeRow = (props: {
           <Row className={'text-ink-600'}>
             {!hideBalance && (
               <>
-                {formatMoney(balance)} {'·'}
+                {token === 'SPICE'
+                  ? formatSpice(balance.spice)
+                  : formatMoney(balance.mana)}
+                {' · '}
               </>
-            )}{' '}
+            )}
             {customFormatTime(change.createdTime)}
           </Row>
         )}

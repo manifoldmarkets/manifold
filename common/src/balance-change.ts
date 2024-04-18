@@ -3,7 +3,7 @@ import { User } from 'common/user'
 import { Visibility } from 'common/contract'
 import { QuestType } from 'common/quest'
 import { Answer } from 'common/answer'
-import { AnyTxnCategory } from './txn'
+import { AnyTxnCategory, Txn } from './txn'
 
 export type AnyBalanceChangeType = BetBalanceChange | TxnBalanceChange
 
@@ -38,6 +38,7 @@ export type BetBalanceChange = BalanceChange & {
 
 export type TxnBalanceChange = BalanceChange & {
   type: AnyTxnCategory | 'STARTING_BALANCE'
+  token: Txn['token']
   contract?: MinimalContract
   questType?: QuestType
   user?: Pick<User, 'username' | 'name'>
