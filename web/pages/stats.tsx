@@ -216,12 +216,6 @@ export function CustomAnalytics(props: {
             {formatMoney(manaSupply.totalValue)}
           </div>
         </Row>
-        <Row className="justify-between">
-          <div className="text-ink-700">Total in USD</div>
-          <div className="text-ink-700 font-semibold">
-            ${formatWithCommas(manaSupply.totalUsdValue)}
-          </div>
-        </Row>
       </Col>
 
       <Spacer h={8} />
