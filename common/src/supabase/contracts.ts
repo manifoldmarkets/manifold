@@ -131,12 +131,14 @@ export const convertContract = (c: {
   importance_score: number | null
   view_count?: number | null
   conversion_score?: number | null
+  freshness_score?: number | null
 }) =>
   removeUndefinedProps({
     ...(c.data as Contract),
     // Only updated in supabase:
     importanceScore: c.importance_score,
     conversionScore: c.conversion_score,
+    freshnessScore: c.freshness_score,
     viewCount: Number(c.view_count),
   } as Contract)
 

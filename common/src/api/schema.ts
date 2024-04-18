@@ -37,6 +37,7 @@ import { Dashboard } from 'common/dashboard'
 import { ChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
+import { Repost } from 'common/repost'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1131,6 +1132,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       contracts: Contract[]
       comments: ContractComment[]
+      bets: Bet[]
+      reposts: Repost[]
       idsToReason: { [id: string]: string }
     },
     props: z

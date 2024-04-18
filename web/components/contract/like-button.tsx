@@ -39,6 +39,8 @@ export const LikeButton = memo(function LikeButton(props: {
   size?: SizeType
   disabled?: boolean
   feedItem?: FeedTimelineItem
+  contractId?: string
+  commentId?: string
 }) {
   const {
     user,
@@ -51,6 +53,8 @@ export const LikeButton = memo(function LikeButton(props: {
     placement = 'bottom',
     feedItem,
     size,
+    contractId,
+    commentId,
   } = props
   const likes = useLikesOnContent(contentType, contentId)
   const [liked, setLiked] = useState(false)
@@ -78,11 +82,11 @@ export const LikeButton = memo(function LikeButton(props: {
           itemId: contentId,
           location: trackingLocation,
           contractId:
-            feedItem?.contractId ?? contentType === 'contract'
+            feedItem?.contractId ?? contractId ?? contentType === 'contract'
               ? contentId
               : undefined,
           commentId:
-            feedItem?.commentId ?? contentType === 'comment'
+            feedItem?.commentId ?? commentId ?? contentType === 'comment'
               ? contentId
               : undefined,
           feedItem,
