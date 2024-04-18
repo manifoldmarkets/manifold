@@ -7,8 +7,7 @@ import { Row } from './layout/row'
 import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
-import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
