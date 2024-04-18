@@ -376,12 +376,13 @@ function UserProfile(props: {
                     {!isCurrentUser && (
                       <>
                         <PortfolioValueSection
-                          userId={user.id}
+                          user={user}
                           defaultTimePeriod={
                             currentUser?.id === user.id ? 'weekly' : 'monthly'
                           }
                           lastUpdatedTime={user.metricsLastUpdated}
                           hideAddFundsButton
+                          balanceChanges={balanceChanges}
                         />
                         <Spacer h={4} />
                       </>

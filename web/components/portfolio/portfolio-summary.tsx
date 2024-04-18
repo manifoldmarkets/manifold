@@ -2,18 +2,15 @@ import clsx from 'clsx'
 
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
+import { DAY_MS } from 'common/util/time'
 import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
-import { useUser, usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { SupabaseSearch } from '../supabase-search'
-import { BalanceCard } from './balance-card'
-import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { DAY_MS } from 'common/util/time'
 
 export const PortfolioSummary = (props: {
   user: User
@@ -43,28 +40,9 @@ export const PortfolioSummary = (props: {
 
   return (
     <Col className={clsx(className, 'gap-4')}>
-      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
-        <BalanceCard
-          onSeeChanges={() => {
-            router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
-              shallow: true,
-            })
-          }}
-          user={user}
-          balanceChanges={balanceChanges}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-        />
-        <InvestmentValueCard
-          user={user}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-          portfolio={portfolioData}
-          refreshPortfolio={refreshPortfolio}
-        />
-      </Row>
-
       {!isNewUser && (
         <PortfolioValueSection
-          userId={user.id}
+          user={user}
           defaultTimePeriod={
             isCreatedInLastWeek
               ? 'allTime'
@@ -73,8 +51,8 @@ export const PortfolioSummary = (props: {
               : 'monthly'
           }
           lastUpdatedTime={user.metricsLastUpdated}
-          hideAddFundsButton
           portfolio={portfolioData}
+          balanceChanges={balanceChanges}
         />
       )}
 

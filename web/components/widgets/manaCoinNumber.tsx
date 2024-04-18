@@ -6,28 +6,31 @@ import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { shortenNumber } from 'web/lib/util/formatNumber'
 
-export function ManaCoinNumber(props: { amount: number }) {
+export function ManaCoinNumber(props: { amount?: number }) {
   const { amount } = props
   return (
-    <Row className="items-center">
-      {amount < 0 && '-'}
+    <Row className="items-center whitespace-nowrap">
+      {amount !== undefined && amount < 0 && '-'}
       <ManaCoin />
-      {formatMoneyNoMoniker(Math.abs(amount))}
+      {amount !== undefined ? formatMoneyNoMoniker(Math.abs(amount)) : '---'}
     </Row>
   )
 }
 
 export function ShortManaCoinNumber(props: {
-  amount: number
+  amount?: number
   className?: string
 }) {
   const { amount, className } = props
   return (
-    <Row className={clsx('items-center', className)}>
-      {amount < 0 && '-'}
+    <Row className={clsx('items-center whitespace-nowrap', className)}>
+      {amount !== undefined && amount < 0 && (
+        <span className="pr-[0.1em]">-</span>
+      )}
       <ManaCoin />
-
-      {shortenNumber(+formatMoneyNoMoniker(Math.abs(amount)))}
+      {amount !== undefined
+        ? shortenNumber(+formatMoneyNoMoniker(Math.abs(amount ?? 0)))
+        : '---'}
     </Row>
   )
 }

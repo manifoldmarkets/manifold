@@ -10,7 +10,7 @@ import { curveLinear } from 'd3-shape'
 import { ZoomParams } from '../charts/helpers'
 import { Period } from 'web/lib/firebase/users'
 
-export type GraphMode = 'profit' | 'value' | 'balance'
+export type GraphMode = 'profit' | 'invested' | 'balance'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -25,7 +25,7 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 }
 
 export const PortfolioGraph = (props: {
-  mode: 'profit' | 'value' | 'balance'
+  mode: GraphMode
   duration?: Period
   points: HistoryPoint<Partial<PortfolioMetrics>>[]
   width: number
@@ -72,7 +72,7 @@ export const PortfolioGraph = (props: {
 
   return (
     <SingleValueHistoryChart
-      w={width}
+      w={width > 768 ? 768 : width}
       h={height}
       xScale={xScale}
       yScale={yScale}
@@ -83,13 +83,7 @@ export const PortfolioGraph = (props: {
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={onMouseOver}
       curve={curveLinear}
-      color={
-        mode === 'profit'
-          ? ['#14b8a6', '#F75836']
-          : mode === 'balance'
-          ? '#3B82F6'
-          : '#4f46e5'
-      }
+      color={mode === 'profit' ? ['#14b8a6', '#F75836'] : '#4f46e5'}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
     />
