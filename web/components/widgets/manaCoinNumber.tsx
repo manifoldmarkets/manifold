@@ -22,6 +22,8 @@ export function ShortManaCoinNumber(props: {
   className?: string
 }) {
   const { amount, className } = props
+
+  console.log(amount)
   return (
     <Row className={clsx('items-center whitespace-nowrap', className)}>
       {amount !== undefined && amount < 0 && (
@@ -29,7 +31,9 @@ export function ShortManaCoinNumber(props: {
       )}
       <ManaCoin />
       {amount !== undefined
-        ? shortenNumber(+formatMoneyNoMoniker(Math.abs(amount ?? 0)))
+        ? shortenNumber(
+            +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replace(',', '')
+          )
         : '---'}
     </Row>
   )
