@@ -406,7 +406,8 @@ const handleBetReplyToComment = async (
 
   if (!comment) return
 
-  const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+  const allBetReplies = await getBetsRepliedToComment(pg, comment, contract.id)
+  const bets = filterDefined(allBetReplies)
   // This could potentially miss some bets if they're not replicated in time
   if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
   const groupedBetsByOutcome = groupBy(bets, 'outcome')
