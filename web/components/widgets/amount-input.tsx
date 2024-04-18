@@ -159,6 +159,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
+  token?: 'M$' | 'SPICE'
 }) {
   const {
     amount,
@@ -178,13 +179,19 @@ export function BuyAmountInput(props: {
     disregardUserBalance,
     quickButtonValues,
     disableQuickButtons,
+    token = 'M$',
   } = props
   const user = useUser()
 
   // Check for errors.
   useEffect(() => {
     if (amount !== undefined) {
-      if (!disregardUserBalance && user && user.balance < amount) {
+      if (
+        !disregardUserBalance &&
+        user &&
+        ((token === 'M$' && user.balance < amount) ||
+          (token === 'SPICE' && user.spiceBalance < amount))
+      ) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
         setError('Minimum amount: ' + formatMoney(minimumAmount))
@@ -233,9 +240,9 @@ export function BuyAmountInput(props: {
               (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
+          label={token === 'SPICE' ? 'SP' : ENV_CONFIG.moneyMoniker}
           amount={amount}
           onChangeAmount={onChange}
-          label={ENV_CONFIG.moneyMoniker}
           error={!!error}
           disabled={disabled}
           inputRef={inputRef}
@@ -274,7 +281,7 @@ export function BuyAmountInput(props: {
         )}
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
-            {error === 'Insufficient balance' ? (
+            {error === 'Insufficient balance' && token === 'M$' ? (
               <BuyMoreFunds user={user} />
             ) : (
               error
