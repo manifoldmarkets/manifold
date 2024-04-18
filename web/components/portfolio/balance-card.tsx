@@ -12,7 +12,7 @@ import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { User } from 'common/user'
 import { ReactNode, useState } from 'react'
-import { orderBy, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
