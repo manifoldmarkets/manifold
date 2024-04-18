@@ -11,7 +11,6 @@ export const TrustPanel = (props: { className?: string }) => {
     <div className={className}>
       <Col className="mx-auto">
         <WhyNotAlternatives onClick={handleSectionClick} />
-        <PlayMoneyVsRealMoney onClick={handleSectionClick} />
         <ManipulationAndHype onClick={handleSectionClick} />
         <LowTraders onClick={handleSectionClick} />
       </Col>
@@ -59,44 +58,6 @@ export const ManipulationAndHype = ({
         Scott Alexander's failed manipulation attempt
       </a>{' '}
       on Manifold.
-    </div>
-  </ExpandSection>
-)
-
-export const PlayMoneyVsRealMoney = ({
-  onClick,
-}: {
-  onClick: (sectionTitle: string) => void
-}) => (
-  <ExpandSection
-    onClick={() => onClick('How does play-money compare to real money?')}
-    title="💸 How does play-money compare to real money?"
-  >
-    <div className="pb-2">
-      The paper, {''}
-      <a
-        className="text-primary-700 hover:underline"
-        target="_blank"
-        href="https://users.nber.org/~jwolfers/papers/DoesMoneyMatter.pdf"
-      >
-        Prediction Markets: Does Money Matter?
-      </a>
-      , concludes,
-    </div>
-    <blockquote className="border-primary-700 border-l-4  pl-4">
-      <div>
-        “We found that neither type of market was systematically more accurate
-        than the other across 208 games. In other words, prediction markets
-        based on play money can be just as accurate as those based on real
-        money... The essential ingredient seems to be a motivated and
-        knowledgeable community of traders, and money is just one among many
-        practical ways of attracting such traders.”
-      </div>
-    </blockquote>
-    <div className="pt-4">
-      {' '}
-      This aligns with Manifold's high calibration thanks to our users being
-      motivated by social prestige, league ranks, and the fear of losing mana.
     </div>
   </ExpandSection>
 )

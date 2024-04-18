@@ -173,8 +173,7 @@ function TwitchPlaysManifoldMarkets(props: {
           Instead of Twitch channel points we use our own play money, mana (
           {ENV_CONFIG.moneyMoniker}). All viewers start with{' '}
           {formatMoney(STARTING_BALANCE)} and can earn more for free by betting
-          well. Just like channel points, mana cannot be converted to real
-          money.
+          well.
         </div>
       </Col>
     </div>

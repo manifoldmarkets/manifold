@@ -67,6 +67,8 @@ export function BetsSummary(props: {
   const userBets = useUserContractBets(metrics.userId, contract.id)
   const username = metrics.userUsername
 
+  // TODO: get payout from txns, to determine if spice
+
   const {
     payout,
     invested,

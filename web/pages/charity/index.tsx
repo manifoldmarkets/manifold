@@ -10,12 +10,12 @@ import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
@@ -119,18 +119,29 @@ export default function Charity(props: {
           <Title>Manifold for Charity</Title>
 
           <span className="text-ink-500">
-            Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
-            donations at a ratio of{' '}
-            <span className="semibold">{formatMoney(100)} : $1</span>, capped at
-            $10,000 per month.
-            <a
-              href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary-700 ml-2"
-            >
-              Read more here.
-            </a>
+            {SPICE_PRODUCTION_ENABLED ? (
+              <>
+                Convert your prize points into real charitable donations at a
+                ratio of{' '}
+                <span className="semibold">{formatSpice(100)} : $1</span>
+                {/* TODO: update about page copy, then link here? */}
+              </>
+            ) : (
+              <>
+                Convert your {ENV_CONFIG.moneyMoniker} earnings into real
+                charitable donations at a ratio of{' '}
+                <span className="semibold">{formatMoney(100)} : $1</span>,
+                capped at $10,000 per month.
+                <a
+                  href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary-700 ml-2"
+                >
+                  Read more here.
+                </a>
+              </>
+            )}
           </span>
 
           <DonatedStats

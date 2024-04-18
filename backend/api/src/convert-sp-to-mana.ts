@@ -38,7 +38,7 @@ export const convertSpiceToMana: APIHandler<'convert-sp-to-mana'> = async (
       toId: 'BANK',
       amount: amount,
       token: 'SPICE',
-      description: 'Convert SPICE to MANA',
+      description: 'Convert prize points to mana',
       data: {
         siblingId: toYouTxnDoc.id,
       },
@@ -54,7 +54,7 @@ export const convertSpiceToMana: APIHandler<'convert-sp-to-mana'> = async (
       toId: user.id,
       amount: amount,
       token: 'M$',
-      description: 'Convert SPICE to MANA',
+      description: 'Convert prize points to mana',
       data: {
         siblingId: toBankTxnDoc.id,
       },

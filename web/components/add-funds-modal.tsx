@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -242,9 +242,9 @@ export const SpiceToManaForm = (props: { onClose: () => void }) => {
 
   return (
     <>
-      <div className="my-4">Convert at a rate of 1 SP to 1 mana.</div>
+      <div className="my-4">Convert at a rate of 1 prize point to 1 mana.</div>
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
-      <AmountInput amount={amount} onChangeAmount={setAmount} label="SP" />
+      <AmountInput amount={amount} onChangeAmount={setAmount} />
       <div className="mt-4 flex gap-2">
         <Button color="gray" onClick={props.onClose}>
           Back
@@ -255,7 +255,7 @@ export const SpiceToManaForm = (props: { onClose: () => void }) => {
           loading={loading}
           onClick={onSubmit}
         >
-          Convert to {formatMoney(amount ?? 0)}
+          Convert to {formatSpice(amount ?? 0)}
         </Button>
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
