@@ -2,7 +2,6 @@ import clsx from 'clsx'
 
 import {
   getContractsCreatedProgress,
-  getFullUserByUsername,
 } from 'web/lib/supabase/users'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'

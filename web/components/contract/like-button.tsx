@@ -23,7 +23,7 @@ import { buildArray } from 'common/util/array'
 import { UserHovercard } from '../user/user-hovercard'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { removeUndefinedProps } from 'common/util/object'
-import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { useUsers } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
 
 const LIKES_SHOWN = 3
