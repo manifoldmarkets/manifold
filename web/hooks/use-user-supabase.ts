@@ -27,6 +27,8 @@ export function useUserById(userId: string | undefined) {
   return user
 }
 
+const cache = new Map<string, DisplayUser | null>()
+
 export function useDisplayUserById(userId: string | undefined) {
   const [user, setUser] = usePersistentInMemoryState<
     DisplayUser | null | undefined
@@ -34,9 +36,18 @@ export function useDisplayUserById(userId: string | undefined) {
 
   useEffect(() => {
     if (userId) {
-      getUserById(userId).then((result) => {
-        setUser(result)
-      })
+      if (cache.has(userId)) {
+        setUser(cache.get(userId))
+      } else {
+        getUserById(userId)
+          .then((result) => {
+            cache.set(userId, result)
+            setUser(result)
+          })
+          .catch(() => {
+            setUser(null)
+          })
+      }
     }
   }, [userId])
   return user
@@ -51,14 +62,21 @@ export function useUsers(userIds: string[]) {
   useEffectCheckEquality(() => {
     const requestId = ++requestIdRef.current
 
-    getDisplayUsers(userIds).then((users) => {
+    const missing = userIds.filter((id) => !cache.has(id))
+
+    getDisplayUsers(missing).then((users) => {
+      users.forEach((user) => {
+        cache.set(user.id, user)
+      })
       if (requestId !== requestIdRef.current) return
-      setUsers(userIds.map((id) => users.find((u) => u?.id === id) ?? null))
+      setUsers(userIds.map((id) => cache.get(id) ?? null))
     })
   }, [userIds])
 
   return users
 }
+
+// TODO: decide whether in-memory or in-localstorage is better and stick to it
 
 export function useUsersInStore(
   userIds: string[],
