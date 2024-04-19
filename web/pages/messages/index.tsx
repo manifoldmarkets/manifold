@@ -19,6 +19,7 @@ import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { Row as rowFor } from 'common/supabase/utils'
+import { BannedBadge } from 'web/components/widgets/user-link'
 
 export default function MessagesPage() {
   return (
@@ -101,6 +102,7 @@ export const MessageChannelRow = (props: {
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
 
+  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
@@ -132,6 +134,7 @@ export const MessageChannelRow = (props: {
                   </span>
                 )
               )}
+              {isBanned && <BannedBadge />}
             </span>
             <span className={'text-ink-400 dark:text-ink-500 text-xs'}>
               {chat && <RelativeTimestamp time={chat.createdTime} />}

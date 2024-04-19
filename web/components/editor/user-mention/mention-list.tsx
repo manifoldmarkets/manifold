@@ -1,14 +1,12 @@
 import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
-import { User } from 'common/user'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
 import { Avatar } from '../../widgets/avatar'
-
-type LiteUser = Pick<User, 'id' | 'name' | 'username' | 'avatarUrl'>
+import { DisplayUser } from 'web/lib/supabase/users'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const MentionList = forwardRef(
-  (props: SuggestionProps<LiteUser>, ref) => {
+  (props: SuggestionProps<DisplayUser>, ref) => {
     const { items: users, command } = props
 
     const [selectedIndex, setSelectedIndex] = useState(0)

@@ -1,57 +1,43 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
-import { User } from 'common/user'
+import { type User } from 'common/user'
 import { Period } from '../firebase/users'
 import { api } from '../firebase/api'
-
-export type UserDisplay = {
-  id: string
-  name: string
-  username: string
-  avatarUrl?: string
-}
+import { DAY_MS, WEEK_MS } from 'common/util/time'
+export type { DisplayUser } from 'common/api/user-types'
 
 const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
 
-export type DisplayUser = Pick<User, (typeof defaultFields)[number]>
-
 export async function getUserById(id: string) {
-  const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields).eq('id', id)
-  )
-  if (data.length === 0) return null
-
-  return data[0]
+  return api('user/by-id/:id/lite', { id })
 }
 
 export async function getUserByUsername(username: string) {
-  const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields).eq('username', username)
-  )
-  if (data.length === 0) return null
-
-  return data[0]
+  return api('user/:username/lite', { username })
 }
 
 export async function getFullUserByUsername(username: string) {
-  const { data } = await run(
-    db.from('users').select('data').eq('username', username)
-  )
-  if (data.length === 0) return null
-
-  return data[0].data as User
+  return api('user/:username', { username })
 }
 
 export async function getFullUserById(id: string) {
-  const { data } = await run(db.from('users').select('data').eq('id', id))
-  if (data.length === 0) return null
-
-  return data[0].data as User
+  return api('user/by-id/:id', { id })
 }
 
 export async function searchUsers(prompt: string, limit: number) {
-  const users = await api('search-users', { term: prompt, limit: limit })
-  return users
+  return api('search-users', { term: prompt, limit: limit })
+}
+
+export async function getDisplayUsers(userIds: string[]) {
+  // note: random order
+  const { data } = await run(
+    selectFrom(db, 'users', ...defaultFields, 'isBannedFromPosting').in(
+      'id',
+      userIds
+    )
+  )
+
+  return data
 }
 
 // leaderboards
@@ -146,4 +132,17 @@ export const getContractsCreatedProgress = async (
       .gte('data->uniqueBettorCount', minTraders)
   )
   return count
+}
+
+export async function getRecentlyActiveUsers(limit: number) {
+  const { data } = await run(
+    db
+      .from('users')
+      .select('data')
+      .gt('data->>lastBetTime', Date.now() - DAY_MS)
+      .lt('data->>createdTime', Date.now() - WEEK_MS)
+      .limit(limit)
+  )
+  console.log('getRecentlyActiveUsers', data)
+  return data.map((d) => d.data as User)
 }

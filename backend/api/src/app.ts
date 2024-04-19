@@ -107,7 +107,7 @@ import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
 import { getBets } from './get-bets'
-import { getUser } from './get-user'
+import { getDisplayUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
@@ -232,7 +232,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -262,9 +261,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
-  'user/:username': getUser,
-  'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id': getUser,
+  'user/by-id/:id/lite': getDisplayUser,
+  'user/:username': getUser,
+  'user/:username/lite': getDisplayUser,
+  'user/:username/bets': (...props) => getBets(...props),
   users: getUsers,
   'search-users': searchUsers,
   react: addOrRemoveReaction,

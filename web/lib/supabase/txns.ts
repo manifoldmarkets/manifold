@@ -2,7 +2,7 @@ import { uniq } from 'lodash'
 import { db } from './db'
 import { millisToTs, run, selectFrom, tsToMillis } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
-import { getUsers } from './user'
+import { getDisplayUsers } from './users'
 
 export async function getDonationsByCharity() {
   const { data } = await db.rpc('get_donations_by_charity')
@@ -32,7 +32,7 @@ export function getDonationsPageQuery(charityId: string) {
     }
     const txnData = (await run(q)).data
     const userIds = uniq(txnData.map((t) => t.from_id!))
-    const users = await getUsers(userIds)
+    const users = await getDisplayUsers(userIds)
     const usersById = Object.fromEntries(
       filterDefined(users).map((u) => [u.id, u])
     )

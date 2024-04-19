@@ -65,7 +65,6 @@ import { UserPayments } from 'web/pages/payments'
 import { UserHandles } from 'web/components/user/user-handles'
 import { BackButton } from 'web/components/contract/back-button'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { shouldIgnoreUserPage } from 'common/user'
 import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
 import { isBetChange } from 'common/balance-change'
@@ -79,6 +78,7 @@ import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-
 import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { FaCrown } from 'react-icons/fa6'
+import { getUserForStaticProps } from 'common/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -86,7 +86,8 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getFullUserByUsername(username)
+
+  const user = await getUserForStaticProps(db, username)
 
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined

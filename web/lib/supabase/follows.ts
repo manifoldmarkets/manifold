@@ -22,14 +22,6 @@ export async function getUserIdFollows(userId: string) {
   )
   return data
 }
-export async function getUserFollows(userId: string) {
-  const { data } = await run(
-    db.from('user_follows').select().eq('user_id', userId)
-  )
-  const ids = data?.map((d) => d.follow_id)
-  const { data: userData } = await run(db.from('users').select().in('id', ids))
-  return userData?.map((d) => convertSQLtoTS<'users', User>(d, {}))
-}
 
 export async function getUserFollowers(userId: string) {
   const { data } = await run(

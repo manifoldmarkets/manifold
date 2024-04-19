@@ -9,7 +9,7 @@ import { SelectUsers } from 'web/components/select-users'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Button } from './button'
 import { getReferrals } from 'web/lib/supabase/referrals'
-import { UserDisplay } from 'web/lib/supabase/users'
+import { DisplayUser } from 'common/api/user-types'
 import { getReferralCount } from 'common/supabase/referrals'
 import { db } from 'web/lib/supabase/db'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -33,10 +33,10 @@ export const useReferralCount = (user: User) => {
 
 export function Referrals(props: { user: User }) {
   const { user } = props
-  const [referredBy, setReferredBy] = useState<UserDisplay[]>([])
+  const [referredBy, setReferredBy] = useState<DisplayUser[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
-  const [referredUsers, setReferredUsers] = useState<UserDisplay[] | undefined>(
+  const [referredUsers, setReferredUsers] = useState<DisplayUser[] | undefined>(
     undefined
   )
 

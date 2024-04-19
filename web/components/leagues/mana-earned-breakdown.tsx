@@ -5,7 +5,6 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 
 import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
-import { User } from 'common/user'
 import { Row } from '../layout/row'
 import { usePublicContracts } from 'web/hooks/use-contract-supabase'
 import { Col } from '../layout/col'
@@ -23,9 +22,10 @@ import { useBets } from 'web/hooks/use-bets-supabase'
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { DisplayUser } from 'common/api/user-types'
 
 export const ManaEarnedBreakdown = (props: {
-  user: User
+  user: DisplayUser
   season: number
   showDialog: boolean
   setShowDialog: (show: boolean) => void

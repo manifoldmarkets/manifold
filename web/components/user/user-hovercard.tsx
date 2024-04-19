@@ -13,6 +13,7 @@ import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { FullUser } from 'common/api/user-types'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -44,7 +45,7 @@ export function UserHovercard({
 
 const FetchUserHovercardContent = forwardRef(
   ({ userId }: { userId: string }, ref: Ref<HTMLDivElement>) => {
-    const [user, setUser] = useState<User | null>(null)
+    const [user, setUser] = useState<FullUser | null>(null)
 
     useEffect(() => {
       getFullUserById(userId).then(setUser)

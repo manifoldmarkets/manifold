@@ -24,7 +24,7 @@ import { CPMMMultiContract, Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { LiteUser } from './user-types'
+import { DisplayUser, FullUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
 import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
@@ -366,14 +366,6 @@ export const API = (_apiTypeCheck = {
     props: updateMarketProps,
     returns: {} as { success: true },
   },
-  // deprecated. remove after a few days
-  'update-market': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    props: updateMarketProps,
-    returns: {} as { success: true },
-  },
   'market/:contractId/close': {
     method: 'POST',
     visibility: 'public',
@@ -622,14 +614,22 @@ export const API = (_apiTypeCheck = {
     authed: true,
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
   },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
+    props: z.object({ username: z.string() }).strict(),
+  },
+  'user/:username/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as DisplayUser,
     props: z.object({ username: z.string() }).strict(),
   },
   'user/by-id/:id': {
@@ -637,7 +637,15 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'user/by-id/:id/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as DisplayUser,
     props: z.object({ id: z.string() }).strict(),
   },
   users: {
@@ -645,7 +653,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as LiteUser[],
+    returns: [] as FullUser[],
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
@@ -658,7 +666,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as LiteUser[],
+    returns: [] as FullUser[],
     props: z
       .object({
         term: z.string(),

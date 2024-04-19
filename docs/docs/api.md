@@ -100,11 +100,10 @@ Get a user by their username. Remember that usernames may change.
 
 Requires no auth.
 
-Response type: `LiteUser`
+Response type: `User`
 
 ```tsx
-// Basic information about a user
-type LiteUser = {
+type User = {
   id: string // user's unique id
   createdTime: number
 
@@ -139,19 +138,44 @@ type LiteUser = {
 }
 ```
 
+### `GET /v0/user/[username]/lite`
+
+Get basic user display info by username
+
+Requires no auth.
+
+Response type: `DisplayUser`
+
+```tsx
+type DisplayUser = {
+  id: string
+  name: string // display name, may include spaces
+  username: string // username, used in urls
+  avatarUrl?: string
+}
+```
+
 ### `GET /v0/user/by-id/[id]`
 
 Get a user by their unique ID. Many other API endpoints return this as the `userId`.
 
 Requires no auth.
 
-Response type: `LiteUser`
+Response type: `User`
+
+### `GET /v0/user/by-id/[id]/lite`
+
+Get a user's display info by unique ID
+
+Requires no auth
+
+Response type: `DisplayUser`
 
 ### `GET /v0/me`
 
 Return the [authenticated](#authentication) user.
 
-Response type: `LiteUser`
+Response type: `User`
 
 ### `GET /v0/user/[username]/bets` (Deprecated)
 
@@ -641,7 +665,7 @@ Example response:
 ]
 ```
 
-Response type: Array of `LiteUser`
+Response type: Array of `User`
 
 ### `POST /v0/bet`
 
@@ -919,7 +943,7 @@ Example response:
   // Limit bet, partially filled.
   {
     "isFilled": false,
-    "amount": 15.596681605353808,//The amount that has already been filled.
+    "amount": 15.596681605353808, //The amount that has already been filled.
     "userId": "IPTOzEqrpkWmEzh6hwvAyY9PqFb2",
     "contractId": "Tz5dA01GkK5QKiQfZeDL",
     "probBefore": 0.5730753474948571,
@@ -930,7 +954,7 @@ Example response:
     "limitProb": 0.5,
     "id": "yXB8lVbs86TKkhWA1FVi",
     "loanAmount": 0,
-    "orderAmount": 100,//The original amount placed on the limit order when it was created. The amount remaining can be calulated as orderAmount - amount.
+    "orderAmount": 100, //The original amount placed on the limit order when it was created. The amount remaining can be calulated as orderAmount - amount.
     "probAfter": 0.5730753474948571,
     "createdTime": 1659482775970,
     "fills": [

@@ -10,7 +10,6 @@ import { Fragment, useState } from 'react'
 import { Row } from '../layout/row'
 import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
-import { User } from 'common/user'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -18,6 +17,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
 import { Tooltip } from '../widgets/tooltip'
+import { DisplayUser } from 'common/api/user-types'
 
 export const CohortTable = (props: {
   season: number
@@ -169,7 +169,7 @@ export const CohortTable = (props: {
 }
 
 const UserRow = (props: {
-  user: User
+  user: DisplayUser
   season: number
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
