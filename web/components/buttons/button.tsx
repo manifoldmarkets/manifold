@@ -9,6 +9,7 @@ export type ColorType =
   | 'red'
   | 'red-outline'
   | 'blue'
+  | 'sky-outline'
   | 'indigo'
   | 'indigo-outline'
   | 'yellow'
@@ -56,6 +57,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
       'text-yellow-500 hover:bg-yellow-500',
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
+    color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [
       outline,
