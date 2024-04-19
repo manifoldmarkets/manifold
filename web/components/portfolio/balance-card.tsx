@@ -578,7 +578,7 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Question exploration bonus'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
-      return `Redeem SP for mana`
+      return `Redeem prize points for mana`
     default:
       return type
   }

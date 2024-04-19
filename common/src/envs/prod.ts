@@ -22,6 +22,7 @@ export type EnvConfig = {
 
   // Branding
   moneyMoniker: string // e.g. 'Ṁ'
+  spiceMoniker: string // e.g. 'S'
   bettor: string // e.g. 'predictor'
   nounBet: string // e.g. 'prediction'
   verbPastBet: string // e.g. 'predicted'
@@ -89,6 +90,7 @@ export const PROD_CONFIG: EnvConfig = {
   visibility: 'PUBLIC',
 
   moneyMoniker: 'Ṁ',
+  spiceMoniker: 'P',
   bettor: 'trader',
   verbPastBet: 'traded',
   nounBet: 'trade',

@@ -222,7 +222,7 @@ export function FeedContractCard(props: {
             {hide && (
               <FeedDropdown
                 contract={contract}
-                item={item}
+                itemCreatorId={item?.creatorId ?? undefined}
                 interesting={true}
                 toggleInteresting={hide}
                 importanceScore={props.contract.importanceScore}

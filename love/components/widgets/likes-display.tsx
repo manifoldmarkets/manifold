@@ -192,7 +192,7 @@ export const MatchTile = (props: {
         {isYourMatch && (
           <Col className="absolute right-3 top-2 gap-2">
             <SendMessageButton
-              toUser={user}
+              toUser={user as any}
               currentUser={currentUser}
               circleButton
             />

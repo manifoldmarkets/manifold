@@ -12,25 +12,20 @@ import {
 import { onFollowClick } from '../buttons/follow-button'
 import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
 import { Contract } from 'common/contract'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
-import { useAdmin } from 'web/hooks/use-admin'
-import { InformationCircleIcon } from '@heroicons/react/outline'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function FeedDropdown(props: {
   contract: Contract
-  item: FeedTimelineItem | undefined
+  itemCreatorId: string | undefined
   interesting: boolean
   toggleInteresting: () => void
   importanceScore: number
 }) {
-  const { contract, item, importanceScore, interesting, toggleInteresting } =
-    props
+  const { contract, itemCreatorId, interesting, toggleInteresting } = props
   const user = useUser()
-  const isAdmin = useAdmin()
-  const creatorId = item?.creatorId ?? contract.creatorId
+  const creatorId = itemCreatorId ?? contract.creatorId
   const creator = useDisplayUserById(creatorId)
   const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
 
@@ -38,7 +33,6 @@ export function FeedDropdown(props: {
     await updateUserDisinterestEmbedding({
       contractId: contract.id,
       creatorId,
-      feedId: item?.id,
       // Currently interesting, toggling to not remove contract from disinterests
       removeContract: !interesting,
     })
@@ -69,18 +63,6 @@ export function FeedDropdown(props: {
         <TiVolume className="h-5 w-5" aria-hidden />
       ),
       onClick: () => markUninteresting(),
-    },
-    isAdmin && {
-      name: 'Why am I seeing this?',
-      icon: <InformationCircleIcon className="h-5 w-5" aria-hidden />,
-      onClick: () =>
-        toast(
-          item?.dataType +
-            ' : ' +
-            item?.reasons.join(', ') +
-            ', importance: ' +
-            importanceScore.toPrecision(2)
-        ),
     }
   ) as DropdownItem[]
 

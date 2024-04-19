@@ -7,8 +7,7 @@ import { Row } from './layout/row'
 import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
 export const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
@@ -21,7 +20,6 @@ export const ExplainerPanel = (props: { className?: string }) => {
       <Accuracy onClick={handleSectionClick} />
       <WhatAreOdds onClick={handleSectionClick} />
       <WhyShouldI onClick={handleSectionClick} />
-      <PlayMoney onClick={handleSectionClick} />
     </Col>
   )
 }
@@ -88,38 +86,17 @@ const WhyShouldI = ({
     }
     onClick={() => onClick('Why should I bet?')}
   >
+    {SPICE_PRODUCTION_ENABLED && (
+      <div className="pb-2">
+        By betting, you can win prize points which are redeemable for real cash
+        charity donations
+      </div>
+    )}
     <div className="pb-2">
-      Betting on questions provides decision-makers with accurate predictions of
-      the future.
+      Betting on questions provides accurate answers of important real, world
+      questions.
     </div>
-    <div className="pb-2">
-      It’s like combining the accuracy of sports betting and the stock market to
-      answer important, real-world questions.
-    </div>
-  </ExpandSection>
-)
-const PlayMoney = ({
-  onClick,
-}: {
-  onClick: (sectionTitle: string) => void
-}) => (
-  <ExpandSection
-    title={
-      <>
-        <ManaCircleIcon className="mr-2 h-4 w-4" />
-        Why use play money?
-      </>
-    }
-    onClick={() => onClick('Why play money?')}
-  >
-    <div className="pb-2">
-      Our play money, ({ENV_CONFIG.moneyMoniker}) is free to get started with
-      and produces better forecasts.
-    </div>
-    <div className="pb-2">
-      It's just one click to sign up and start forecasting. Plus, you can cash
-      out your winnings to charity!
-    </div>
+    <div className="pb-2">Get started for free! No credit card required.</div>
   </ExpandSection>
 )
 
@@ -145,8 +122,8 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
       the true probability.
     </div>
     <div className="pb-2">
-      By using play money and the combined wisdom of thousands of users, we
-      outperform real-money platforms. For example, in the{' '}
+      By using the combined wisdom of thousands of users, we outperform
+      real-money platforms. For example, in the{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
@@ -154,7 +131,7 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
       >
         2022 US midterm elections
       </a>
-      , we outperformed all real-money prediction markets and were in line with
+      , we outperformed all prediction markets and were in line with
       FiveThirtyEight’s performance.
     </div>
     <div></div>

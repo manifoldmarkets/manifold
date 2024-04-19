@@ -11,12 +11,14 @@ if (LOCAL_DEV) {
 }
 
 import { app } from './app'
+import { initCaches } from 'api/helpers/init-caches'
 
 const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
   : // No explicit credentials needed for deployed service.
     undefined
 loadSecretsToEnv(credentials).then(() => {
+  initCaches()
   const PORT = process.env.PORT ?? 8088
   app.listen(PORT, () => {
     log.info(`Serving API on port ${PORT}.`)

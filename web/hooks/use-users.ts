@@ -1,7 +1,9 @@
 import { PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { getTopUserCreators } from 'web/lib/supabase/users'
-import { getRecentlyActiveUsers } from 'web/lib/supabase/user'
+import {
+  getRecentlyActiveUsers,
+  getTopUserCreators,
+} from 'web/lib/supabase/users'
 import { getPrivateUser } from 'web/lib/firebase/users'
 
 export const useDiscoverUsers = (

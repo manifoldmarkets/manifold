@@ -13,6 +13,7 @@ import { DAY_MS } from 'common/util/time'
 import { FireIcon, UserIcon } from '@heroicons/react/outline'
 import { UserHovercard } from '../user/user-hovercard'
 import { FaGem } from 'react-icons/fa'
+import { Repost } from 'common/repost'
 
 export function CardReason(props: {
   item: FeedTimelineItem | undefined
@@ -118,11 +119,12 @@ export function CardReason(props: {
 }
 
 export function EndpointCardReason(props: {
-  reason: 'importance' | 'freshness' | 'conversion' | 'followed'
+  reason: 'importance' | 'freshness' | 'conversion' | 'followed' | 'reposted'
+  repost?: Repost
   probChange?: number
   since?: number
 }) {
-  const { reason, probChange, since } = props
+  const { reason, repost, probChange, since } = props
 
   if (probChange) {
     return <ProbabilityChange probChange={probChange} since={since} />
@@ -157,6 +159,30 @@ export function EndpointCardReason(props: {
           following
         </Row>
       </span>
+    )
+  } else if (reason === 'reposted' && repost) {
+    return (
+      <Tooltip text={'Reposted by ' + repost.user_name}>
+        <Row className={'text-ink-400 gap-1 text-sm'}>
+          <BiRepost className={'text-ink-400 h-5 w-5'} />
+          <UserHovercard userId={repost.user_id}>
+            <UserLink
+              short={true}
+              user={{
+                id: repost.user_id,
+                username: repost.user_username,
+                name: repost.user_name,
+              }}
+            />
+          </UserHovercard>
+          reposted
+          <RelativeTimestamp
+            time={new Date(repost.created_time).valueOf()}
+            shortened={true}
+            className="text-ink-400 -ml-1"
+          />
+        </Row>
+      </Tooltip>
     )
   }
 

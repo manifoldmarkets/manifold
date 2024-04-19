@@ -16,12 +16,12 @@ import {
 import { db } from 'web/lib/supabase/db'
 import {
   getCreatorRank,
+  getDisplayUsers,
   getProfitRank,
   getTopCreators,
   getTopTraders,
 } from 'web/lib/supabase/users'
 import { Group, TOPIC_KEY } from 'common/group'
-import { getUsers } from 'web/lib/supabase/user'
 import { Row } from 'web/components/layout/row'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import DropdownMenu from 'web/components/comments/dropdown-menu'
@@ -318,7 +318,7 @@ const toTopUsers = async (
   cachedUserIds: { userId: string; score: number }[]
 ): Promise<{ user: User | null; score: number }[]> => {
   const userData = filterDefined(
-    await getUsers(cachedUserIds.map((u) => u.userId))
+    await getDisplayUsers(cachedUserIds.map((u) => u.userId))
   )
   const usersById = Object.fromEntries(userData.map((u) => [u.id, u as User]))
   return cachedUserIds

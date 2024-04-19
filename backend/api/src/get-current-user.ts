@@ -1,7 +1,7 @@
 import { User } from 'common/user'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
-import { toLiteUser } from 'common/api/user-types'
+import { toUserAPIResponse } from 'common/api/user-types'
 
 export const getCurrentUser: APIHandler<'me'> = async (_, auth) => {
   const db = createSupabaseClient()
@@ -14,5 +14,5 @@ export const getCurrentUser: APIHandler<'me'> = async (_, auth) => {
 
   if (!data.length) throw new APIError(401, 'Your account was not found')
 
-  return toLiteUser(data[0].data as unknown as User)
+  return toUserAPIResponse(data[0].data as unknown as User)
 }

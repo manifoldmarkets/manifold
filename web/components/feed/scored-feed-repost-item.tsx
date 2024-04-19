@@ -6,7 +6,6 @@ import clsx from 'clsx'
 import { memo, useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Content } from 'web/components/widgets/editor'
 import { PrivateUser, User } from 'common/user'
@@ -22,31 +21,32 @@ import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import router from 'next/router'
 import { ClickFrame } from 'web/components/widgets/click-frame'
-import { CardReason } from 'web/components/feed/card-reason'
-import { FeedDropdown } from 'web/components/feed/card-dropdown'
+import { EndpointCardReason } from 'web/components/feed/card-reason'
 import { UserHovercard } from '../user/user-hovercard'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
+import { Bet } from 'common/bet'
+import { FeedDropdown } from 'web/components/feed/card-dropdown'
+import { Repost } from 'common/repost'
 
-export const FeedRepost = memo(function (props: {
+export const ScoredFeedRepost = memo(function (props: {
   contract: Contract
   comment: ContractComment
-  item: FeedTimelineItem
+  repost: Repost
+  bet?: Bet
   trackingLocation: string
   user: User | null | undefined
   hide: () => void
 }) {
-  const { contract, user, item, hide, comment } = props
+  const { contract, user, repost, bet, hide, comment } = props
   const privateUser = usePrivateUser()
   const { userUsername, userAvatarUrl, userId } = comment
-  const { bet, dataType } = item
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
-  const commenterIsBettor = item.bet?.userUsername === comment.userUsername
-  const creatorRepostedTheirComment = item.creatorId === comment.userId
+  const commenterIsBettor = bet?.userUsername === comment.userUsername
+  const creatorRepostedTheirComment = repost.user_id === comment.userId
   const showTopLevelRow =
-    (dataType === 'repost' && !commenterIsBettor && bet) ||
-    !creatorRepostedTheirComment
+    (!commenterIsBettor && bet) || !creatorRepostedTheirComment
   const trackClick = () =>
     track(
       'click market card feed',
@@ -54,7 +54,6 @@ export const FeedRepost = memo(function (props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
-        feedItem: item,
         commentId: comment.id,
       })
     )
@@ -83,7 +82,7 @@ export const FeedRepost = memo(function (props: {
             )}
             <FeedDropdown
               contract={contract}
-              itemCreatorId={item?.creatorId ?? undefined}
+              itemCreatorId={repost.user_id}
               interesting={true}
               toggleInteresting={hide}
               importanceScore={props.contract.importanceScore}
@@ -94,10 +93,10 @@ export const FeedRepost = memo(function (props: {
           !creatorRepostedTheirComment && (
             <Col>
               <Row className={'mb-1 justify-end gap-1 pr-2'}>
-                <CardReason item={item} contract={contract} />
+                <EndpointCardReason repost={repost} reason={'reposted'} />
                 <FeedDropdown
                   contract={contract}
-                  itemCreatorId={item?.creatorId ?? undefined}
+                  itemCreatorId={repost.user_id}
                   interesting={true}
                   toggleInteresting={hide}
                   importanceScore={props.contract.importanceScore}
@@ -138,7 +137,7 @@ export const FeedRepost = memo(function (props: {
                 <Row className={' justify-end gap-2'}>
                   <FeedDropdown
                     contract={contract}
-                    itemCreatorId={item?.creatorId ?? undefined}
+                    itemCreatorId={repost.user_id}
                     interesting={true}
                     toggleInteresting={hide}
                     importanceScore={props.contract.importanceScore}
@@ -154,7 +153,6 @@ export const FeedRepost = memo(function (props: {
               <FeedContractCard
                 contract={contract}
                 trackingPostfix="feed"
-                item={item}
                 className="ring-ink-100 dark:ring-ink-300 hover:ring-primary-200 dark:hover:ring-primary-200 max-w-full pb-2 ring-1 "
                 hideBottomRow={true}
                 size={'xs'}
@@ -163,7 +161,6 @@ export const FeedRepost = memo(function (props: {
             </Col>
             <Col>
               <BottomActionRow
-                feedItem={item}
                 className={'ml-4'}
                 contract={contract}
                 user={user}
@@ -184,9 +181,8 @@ const BottomActionRow = (props: {
   user: User | null | undefined
   privateUser: PrivateUser | null | undefined
   className?: string
-  feedItem: FeedTimelineItem
 }) => {
-  const { contract, feedItem, className, comment, privateUser, user } = props
+  const { contract, className, comment, privateUser, user } = props
 
   return (
     <Row className={clsx('justify-between pt-2', 'pb-2', className)}>
@@ -247,7 +243,8 @@ const BottomActionRow = (props: {
           contentText={richTextToString(comment.content)}
           disabled={isBlocked(privateUser, comment.userId)}
           trackingLocation={'feed'}
-          feedItem={feedItem}
+          contractId={contract.id}
+          commentId={comment.id}
         />
       </BottomRowButtonWrapper>
     </Row>

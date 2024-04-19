@@ -13,9 +13,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     content: `${interaction.client.user.toString()} is the official Discord bot of [Manifold](<${
       config.domain
     }>).
- 
-Manifold is a play-money prediction market platform where users can create and settle their own questions. Their token exchange system allows the platform to operate in jurisdictions where anti-gambling laws prohibit real money prediction markets. While users can't cash out to themselves, tokens (aka mana) can be bought and donated to charities at a rate of $1:M100. The Manifold team is heavily involved with the EA community, and also has a platform for *Impact Certificates* called [Manifund](<${'https://manifund.org/'}>). 
-    
+     
 This bot lets you...
  **/create** - Create a prediction market
  **/search** - Search for pre-made markets

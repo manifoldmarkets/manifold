@@ -1,4 +1,4 @@
-import { toLiteUser } from 'common/api/user-types'
+import { toUserAPIResponse } from 'common/api/user-types'
 import { run } from 'common/supabase/utils'
 import { User } from 'common/user'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -24,5 +24,5 @@ export const getUsers: APIHandler<'users'> = async ({ limit, before }) => {
   }
 
   const { data } = await run(q)
-  return data.map((data) => toLiteUser(data.data as unknown as User))
+  return data.map((data) => toUserAPIResponse(data.data as unknown as User))
 }

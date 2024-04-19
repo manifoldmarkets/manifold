@@ -22,7 +22,7 @@ export function formatMoney(amount: number) {
 
 export function formatSpice(amount: number) {
   const newAmount = getMoneyNumber(amount)
-  return formatter.format(newAmount).replace('$', 'SP ')
+  return formatter.format(newAmount).replace('$', 'P ')
 }
 
 export function formatMoneyNoMoniker(amount: number) {
