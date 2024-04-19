@@ -102,10 +102,6 @@ export const MessageChannelRow = (props: {
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
 
-  const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
-
-  if (isBanned) return null
-
   return (
     <Link
       className="hover:bg-canvas-0 rounded p-2 transition-colors"
