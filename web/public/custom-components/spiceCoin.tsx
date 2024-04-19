@@ -1,12 +1,14 @@
+import clsx from 'clsx'
 import { ENV_CONFIG } from 'common/envs/constants'
 import Image from 'next/image'
 
-export function SpiceCoin() {
+export function SpiceCoin(props: { className?: string }) {
+  const { className } = props
   return (
     <img
       src="/spice.svg"
       alt={'P'}
-      className="inline-block"
+      className={clsx('inline-block', className)}
       style={{
         width: '1em',
         height: '1em',
