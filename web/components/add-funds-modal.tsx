@@ -39,7 +39,6 @@ export function AddFundsModal(props: {
 }) {
   const { open, setOpen } = props
   const { isNative, platform } = getNativePlatform()
-
   return (
     <Modal
       open={open}
@@ -63,10 +62,7 @@ export function AddFundsModal(props: {
               </>
             ),
           },
-          SPICE_PRODUCTION_ENABLED && {
-            title: 'Redeem SP',
-            content: <SpiceToManaForm onClose={() => setOpen(false)} />,
-          },
+
           (!isNative || (isNative && platform !== 'ios')) && {
             title: 'Charity',
             content: (
@@ -219,7 +215,10 @@ export const OtherWaysToGetMana = () => {
   )
 }
 
-export const SpiceToManaForm = (props: { onClose: () => void }) => {
+export const SpiceToManaForm = (props: {
+  onBack: () => void
+  onClose: () => void
+}) => {
   const [amount, setAmount] = useState<number | undefined>(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -246,7 +245,7 @@ export const SpiceToManaForm = (props: { onClose: () => void }) => {
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <AmountInput amount={amount} onChangeAmount={setAmount} />
       <div className="mt-4 flex gap-2">
-        <Button color="gray" onClick={props.onClose}>
+        <Button color="gray" onClick={props.onBack}>
           Back
         </Button>
         <Button

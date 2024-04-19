@@ -26,6 +26,8 @@ import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
 import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
@@ -276,7 +278,6 @@ function PortfolioValueSkeleton(props: {
       : graphMode === 'balance'
       ? balance
       : invested
-
   return (
     <Col>
       <Row>
@@ -328,6 +329,7 @@ function PortfolioValueSkeleton(props: {
           <div className={'text-ink-800 text-4xl'}>
             <Row className="items-center gap-3">
               <CoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
+
               {!hideAddFundsButton && graphMode == 'balance' && (
                 <AddFundsButton
                   userId={userId}
@@ -336,7 +338,20 @@ function PortfolioValueSkeleton(props: {
               )}
             </Row>
             {graphMode == 'balance' && (
-              <BalanceWidget balanceChanges={balanceChanges} />
+              <>
+                {SPICE_PRODUCTION_ENABLED && (
+                  <Row className="mt-1 items-center gap-3">
+                    <CoinNumber amount={user.spiceBalance} isSpice={true} />
+                    {!hideAddFundsButton && (
+                      <RedeemSpiceButton
+                        userId={userId}
+                        className=" self-center whitespace-nowrap"
+                      />
+                    )}
+                  </Row>
+                )}
+                <BalanceWidget balanceChanges={balanceChanges} />
+              </>
             )}
             {graphMode == 'profit' && (
               <ProfitWidget user={user} portfolio={portfolio} />
