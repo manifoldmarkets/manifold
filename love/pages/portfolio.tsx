@@ -1,6 +1,5 @@
 import { LovePage } from 'love/components/love-page'
 import { useUser } from 'web/hooks/use-user'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { Spacer } from 'web/components/layout/spacer'
 import { Col } from 'web/components/layout/col'
@@ -12,12 +11,7 @@ export default function PortfolioPage() {
     <LovePage trackPageView="love portfolio">
       {user && (
         <Col className="w-full p-2">
-          <PortfolioValueSection
-            userId={user.id}
-            defaultTimePeriod={'weekly'}
-            lastUpdatedTime={user.metricsLastUpdated}
-            
-          />
+          See full portfolio value history on Manifold main site
           <Spacer h={4} />
           <UserBetsTable user={user} />
         </Col>
