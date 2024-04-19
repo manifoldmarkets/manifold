@@ -78,6 +78,12 @@ const verifyUserCanUnresolve = async (
     contract.mechanism !== 'cpmm-multi-1' ||
     (contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
   ) {
+    if (answerId) {
+      throw new APIError(
+        400,
+        `Specifying answerId is not allowed for unresolving shouldAnswersSumToOne contracts.`
+      )
+    }
     if (!contract.isResolved || !resolutionTime)
       throw new APIError(400, `Contract ${contract.id} is not resolved`)
 
