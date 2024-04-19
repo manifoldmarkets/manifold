@@ -1,41 +1,17 @@
 'use client'
-import { formatMoney, manaToUSD } from 'common/util/format'
-import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { checkoutURL } from 'web/lib/service/stripe'
+import { useState } from 'react'
 import { Button } from './buttons/button'
 import { MODAL_CLASS, Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { Tabs } from './layout/tabs'
-import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import {
-  BETTING_STREAK_BONUS_MAX,
-  REFERRAL_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
-import Link from 'next/link'
-import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
+
+
+import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
 import {
-  ENV_CONFIG,
   SPICE_CONVERSION_RATE,
-  SPICE_PRODUCTION_ENABLED,
 } from 'common/envs/constants'
-import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { query, where } from 'firebase/firestore'
-import { coll, listenForValues } from 'web/lib/firebase/utils'
-import { sum } from 'lodash'
-import { AlertBox } from './widgets/alert-box'
-import { AD_REDEEM_REWARD } from 'common/boost'
-import { Txn } from 'common/txn'
-import { DAY_MS } from 'common/util/time'
-import { postMessageToNative } from 'web/lib/native/post-message'
-import { buildArray } from 'common/util/array'
 import { Col } from 'web/components/layout/col'
-import { linkClass } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { AmountInput } from './widgets/amount-input'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { User } from 'common/user'
 import { CoinNumber } from './widgets/manaCoinNumber'

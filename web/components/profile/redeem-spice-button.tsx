@@ -1,8 +1,5 @@
-import { AddFundsModal } from '../add-funds-modal'
 import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
-import { PlusIcon } from '@heroicons/react/solid'
-import clsx from 'clsx'
 import { Button } from '../buttons/button'
 import { RedeemSpiceModal } from '../redeem-spice-modal'
 
