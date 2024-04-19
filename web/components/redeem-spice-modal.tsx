@@ -4,12 +4,9 @@ import { Button } from './buttons/button'
 import { MODAL_CLASS, Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
-
 import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from 'web/components/layout/row'
-import {
-  SPICE_CONVERSION_RATE,
-} from 'common/envs/constants'
+import { SPICE_CONVERSION_RATE } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
