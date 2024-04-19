@@ -1,8 +1,6 @@
 import clsx from 'clsx'
 
-import {
-  getContractsCreatedProgress,
-} from 'web/lib/supabase/users'
+import { getContractsCreatedProgress } from 'web/lib/supabase/users'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { Col } from 'web/components/layout/col'
