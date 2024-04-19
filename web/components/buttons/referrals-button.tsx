@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -21,6 +21,7 @@ import { canSetReferrer } from 'web/lib/firebase/users'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { Subtitle } from '../widgets/subtitle'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -47,7 +48,7 @@ export function Referrals(props: { user: User }) {
   const currentUser = useUser()
   const isYou = currentUser?.id === user.id
 
-  const referredByUser = useUserById(user.referredByUserId)
+  const referredByUser = useDisplayUserById(user.referredByUserId)
   const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (

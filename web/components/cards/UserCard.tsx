@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { useUserById } from 'web/hooks/use-user'
+import { useUserById } from 'web/hooks/use-user-supabase'
 
 export function GreenCard(props: {
   imageUrl: string

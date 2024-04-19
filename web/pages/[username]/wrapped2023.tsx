@@ -17,7 +17,8 @@ import { Row } from 'web/components/layout/row'
 import { TheEnd } from 'web/components/wrapped/TheEnd'
 import { MaxMinProfit } from 'web/components/wrapped/MaxMinProfit'
 import { SEO } from 'web/components/SEO'
-import { getFullUserByUsername } from 'web/lib/supabase/users'
+import { getUserForStaticProps } from 'common/supabase/users'
+import { db } from 'web/lib/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {
@@ -25,7 +26,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getFullUserByUsername(username)
+  const user = await getUserForStaticProps(db, username)
 
   return {
     props: removeUndefinedProps({

@@ -12,7 +12,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useIsAuthorized, useUsersById } from 'web/hooks/use-user'
+import { useIsAuthorized, useFirebaseUsersById } from 'web/hooks/use-user'
 import { filterDefined } from 'common/util/array'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
@@ -59,7 +59,7 @@ export default function Journeys() {
     (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
   )
   const referrers = filterDefined(
-    useUsersById(
+    useFirebaseUsersById(
       filterDefined(
         uniq(
           unBannedUsers

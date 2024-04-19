@@ -21,8 +21,8 @@ import { db } from 'web/lib/supabase/db'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useCallReferUser } from 'web/hooks/use-call-refer-user'
 import { LoverProfile } from 'love/components/profile/lover-profile'
-import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { User } from 'common/user'
+import { getUserForStaticProps } from 'common/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -30,7 +30,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getFullUserByUsername(username)
+  const user = await getUserForStaticProps(db, username)
   const lover = user ? await getLoverRow(user.id, db) : null
   return {
     props: removeUndefinedProps({

@@ -14,7 +14,7 @@ import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
 import Link from 'next/link'
 
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser, useFirebaseUserById } from 'web/hooks/use-user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -28,6 +28,8 @@ import { EditablePaymentInfo } from 'web/components/contract/editable-payment-in
 import { useAdmin } from 'web/hooks/use-admin'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { APIResponse } from 'common/api/schema'
+import { db } from 'web/lib/supabase/db'
+import { getUserForStaticProps } from 'common/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -36,7 +38,7 @@ export const getStaticProps = async (props: {
 }) => {
   const { username } = props.params
 
-  const user = await getFullUserByUsername(username)
+  const user = await getUserForStaticProps(db, username)
 
   return {
     props: removeUndefinedProps({
@@ -60,7 +62,7 @@ export default function UserPartner(props: {
 }
 
 function UserPartnerDashboard(props: { user: User; username: string }) {
-  const user = useUserById(props.user.id) ?? props.user
+  const user = useFirebaseUserById(props.user.id) ?? props.user
   const userIsPartner = PARTNER_USER_IDS.includes(user.id)
 
   const { data } = useAPIGetter('get-partner-stats', {

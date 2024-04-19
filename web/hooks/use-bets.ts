@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Bet, listenForUnfilledBets } from 'web/lib/firebase/bets'
 import { LimitBet } from 'common/bet'
-import { useUsersById } from './use-user'
+import { useFirebaseUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
@@ -50,7 +50,7 @@ export const useUnfilledBets = (
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   const unfilledBets = useUnfilledBets(contractId) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const users = filterDefined(useUsersById(userIds))
+  const users = filterDefined(useFirebaseUsersById(userIds))
 
   const balanceByUserId = Object.fromEntries(
     users.map((user) => [user.id, user.balance])

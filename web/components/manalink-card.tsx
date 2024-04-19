@@ -6,11 +6,11 @@ import { formatMoney } from 'common/util/format'
 import { fromNow } from 'web/lib/util/time'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useUserById } from 'web/hooks/use-user'
 import { IconButton } from './buttons/button'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { ClaimInfo, ManalinkInfo } from 'web/lib/supabase/manalinks'
 import Logo from 'web/public/logo.svg'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function linkClaimed(info: ManalinkInfo, numClaims: number) {
   return (
@@ -191,7 +191,7 @@ function ClaimsList(props: { claims: ClaimInfo[]; className: string }) {
 
 function Claim(props: { claim: ClaimInfo }) {
   const { claim } = props
-  const who = useUserById(claim.userId)
+  const who = useDisplayUserById(claim.userId)
   return (
     <Row className="my-1 gap-2 text-xs">
       <div>{who?.name || 'Loading...'}</div>

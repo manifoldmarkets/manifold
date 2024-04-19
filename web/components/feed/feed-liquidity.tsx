@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
-import { BETTOR, User } from 'common/user'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { BETTOR } from 'common/user'
+import { useUser } from 'web/hooks/use-user'
 import { Row } from 'web/components/layout/row'
 import { Avatar, EmptyAvatar } from 'web/components/widgets/avatar'
 import { formatMoney } from 'common/util/format'
@@ -8,6 +8,8 @@ import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { DisplayUser } from 'common/api/user-types'
 
 export function FeedLiquidity(props: {
   className?: string
@@ -17,8 +19,8 @@ export function FeedLiquidity(props: {
   const { userId, createdTime } = liquidity
 
   const isBeforeJune2022 = dayjs(createdTime).isBefore('2022-06-01')
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const bettor = isBeforeJune2022 ? undefined : useUserById(userId) ?? undefined
+  const bettor =
+    useDisplayUserById(isBeforeJune2022 ? userId : undefined) ?? undefined
 
   const user = useUser()
   const isSelf = user?.id === userId
@@ -50,7 +52,7 @@ export function FeedLiquidity(props: {
 function LiquidityStatusText(props: {
   liquidity: LiquidityProvision
   isSelf: boolean
-  bettor?: User
+  bettor?: DisplayUser
 }) {
   const { liquidity, bettor, isSelf } = props
   const { amount, createdTime } = liquidity

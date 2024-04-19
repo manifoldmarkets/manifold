@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Avatar } from './widgets/avatar'
 import { FollowButton } from './buttons/follow-button'
 import { Col } from './layout/col'
@@ -7,6 +7,7 @@ import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { LoadingIndicator } from './widgets/loading-indicator'
 import { UserHovercard } from './user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function FollowList(props: { userIds?: string[] }) {
   const { userIds } = props
@@ -38,7 +39,7 @@ function UserFollowItem(props: {
   className?: string
 }) {
   const { userId, hideFollowButton, className } = props
-  const user = useUserById(userId)
+  const user = useDisplayUserById(userId)
 
   return (
     <Row className={clsx('items-center justify-between gap-2 p-2', className)}>
