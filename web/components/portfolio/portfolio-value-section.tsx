@@ -278,8 +278,6 @@ function PortfolioValueSkeleton(props: {
       : graphMode === 'balance'
       ? balance
       : invested
-
-  console.log(user)
   return (
     <Col>
       <Row>
