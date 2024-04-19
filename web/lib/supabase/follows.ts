@@ -1,6 +1,5 @@
-import { convertSQLtoTS, run } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from './db'
-import { User } from 'common/user'
 
 export async function getContractFollows(contractId: string) {
   const { data } = await run(
