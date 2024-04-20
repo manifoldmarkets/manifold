@@ -297,14 +297,20 @@ export const getCpmmMultiSellSharesInfo = (
   }))
 }
 
-const getNewSellBetInfo = (
+export const getNewSellBetInfo = (
   newBetResult: ArbitrageBetArray[number],
   now: number,
   initialAnswers: Answer[],
   contract: Contract,
   loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
-  const { takers, cpmmState, answer: updatedAnswer, outcome, totalFees } = newBetResult
+  const {
+    takers,
+    cpmmState,
+    answer: updatedAnswer,
+    outcome,
+    totalFees,
+  } = newBetResult
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const amount = sumBy(takers, 'amount')
   const shares = sumBy(takers, 'shares')

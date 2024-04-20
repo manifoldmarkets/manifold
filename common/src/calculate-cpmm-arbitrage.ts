@@ -8,7 +8,7 @@ import {
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
-import { Fees, noFees } from './fees'
+import { Fees, noFees, sumAllFees } from './fees'
 import { addObjects } from './util/object'
 
 const DEBUG = false
@@ -733,10 +733,11 @@ const buyNoSharesInAnswers = (
       answer,
     }
   })
-
+  const fees = sumAllFees(noBetResults.map((r) => r.totalFees))
   // Identity: No shares in all other answers is equal to noShares * (n-1) mana
   const redeemedAmount = noShares * (answers.length - 1)
-  const extraMana = redeemedAmount - totalNoAmount
+  // Fees on arbitrage bets are returned
+  const extraMana = fees + redeemedAmount - totalNoAmount
 
   for (const noBetResult of noBetResults) {
     const redemptionFill = {
@@ -1132,70 +1133,87 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
   let updatedAnswers = initialAnswers
   let sharesToSell = minShares
   while (sharesToSell > 0) {
+    const answersToSellNow = allAnswersToSell.filter(
+      (a) => sharesByAnswerId[a.id] >= sharesToSell
+    )
     const answerIdsToSellNow = allAnswersToSell
       .filter((a) => sharesByAnswerId[a.id] >= sharesToSell)
       .map((a) => a.id)
-    // buy yes shares in the answers opposite the answers to sell
+    // Buy yes shares in the answers opposite the answers to sell
     const answersToBuyYesShares = updatedAnswers.filter(
       (a) => !answerIdsToSellNow.includes(a.id)
     )
-    const yesAmounts = answersToBuyYesShares.map(({ id, poolYes, poolNo }) => {
-      return calculateAmountToBuySharesFixedP(
-        { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
-        sharesToSell,
-        'YES',
-        unfilledBetsByAnswer[id] ?? [],
-        balanceByUserId
-      )
-    })
-    const { newUpdatedAnswers, yesBets, noBuyResults } =
-      getBetResultsAndUpdatedAnswers(
-        answersToBuyYesShares,
-        yesAmounts,
-        updatedAnswers,
-        undefined,
-        unfilledBets,
-        balanceByUserId
-      )
-    updatedAnswers = newUpdatedAnswers
-    for (const yesBet of yesBets) {
-      const redemptionFill = {
-        matchedBetId: null,
-        amount: -sumBy(yesBet.takers, 'amount'),
-        shares: -sumBy(yesBet.takers, 'shares'),
-        timestamp: first(yesBet.takers)?.timestamp ?? Date.now(),
-        fees: yesBet.totalFees,
-      }
-      yesBet.takers.push(redemptionFill)
-    }
-    oppositeBuyResults.push(...yesBets)
-    const totalYesAmount = sum(yesAmounts)
-    const { noBetResults, extraMana } = noBuyResults
-    const saleBets = noBetResults
-      // TODO: after adding limit orders, we need to keep track of the matchedBetIds in the redemption bets we're throwing away
-      .filter((betResult) => answerIdsToSellNow.includes(betResult.answer.id))
-      .map((betResult) => {
-        const answer = updatedAnswers.find((a) => a.id === betResult.answer.id)!
-        const { poolYes, poolNo } = answer
-        return {
-          ...betResult,
-          takers: [
-            {
-              matchedBetId: null,
-              amount:
-                -(sharesToSell - totalYesAmount + extraMana) /
-                answerIdsToSellNow.length,
-              shares: -sharesToSell,
-              timestamp: first(betResult.takers)?.timestamp ?? Date.now(),
-              isSale: true,
-              fees: betResult.totalFees,
-            },
-            //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
-          ],
-          cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
-          answer,
+    let saleBets: PreliminaryBetResults[]
+    if (answersToSellNow.length !== initialAnswers.length) {
+      // If we have shares in all answers, just create yes redemption bets in all answers
+      const yesAmounts = answersToBuyYesShares.map(
+        ({ id, poolYes, poolNo }) => {
+          return calculateAmountToBuySharesFixedP(
+            { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
+            sharesToSell,
+            'YES',
+            unfilledBetsByAnswer[id] ?? [],
+            balanceByUserId
+          )
         }
-      })
+      )
+      const { newUpdatedAnswers, yesBets, noBuyResults } =
+        getBetResultsAndUpdatedAnswers(
+          answersToBuyYesShares,
+          yesAmounts,
+          updatedAnswers,
+          undefined,
+          unfilledBets,
+          balanceByUserId
+        )
+      updatedAnswers = newUpdatedAnswers
+      for (const yesBet of yesBets) {
+        const redemptionFill = {
+          matchedBetId: null,
+          amount: -sumBy(yesBet.takers, 'amount'),
+          shares: -sumBy(yesBet.takers, 'shares'),
+          timestamp: first(yesBet.takers)?.timestamp ?? Date.now(),
+          fees: yesBet.totalFees,
+        }
+        yesBet.takers.push(redemptionFill)
+      }
+      oppositeBuyResults.push(...yesBets)
+      const totalYesAmount = sum(yesAmounts)
+      const { noBetResults, extraMana } = noBuyResults
+      saleBets = noBetResults
+        // TODO: after adding limit orders, we need to keep track of the matchedBetIds in the redemption bets we're throwing away
+        .filter((betResult) => answerIdsToSellNow.includes(betResult.answer.id))
+        .map((betResult) => {
+          const answer = updatedAnswers.find(
+            (a) => a.id === betResult.answer.id
+          )!
+          const { poolYes, poolNo } = answer
+          return {
+            ...betResult,
+            takers: [
+              {
+                matchedBetId: null,
+                amount:
+                  -(sharesToSell - totalYesAmount + extraMana) /
+                  answerIdsToSellNow.length,
+                shares: -sharesToSell,
+                timestamp: first(betResult.takers)?.timestamp ?? Date.now(),
+                isSale: true,
+                fees: betResult.totalFees,
+              },
+              //...betResult.takers, these are takers in the opposite outcome, not sure where to put them
+            ],
+            cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
+            answer,
+          }
+        })
+    } else {
+      saleBets = getSellAllRedemptionPreliminaryBets(
+        answersToSellNow,
+        sharesToSell,
+        Date.now()
+      )
+    }
     saleBetResults.push(...saleBets)
     for (const answerIdToSell of answerIdsToSellNow) {
       sharesByAnswerId[answerIdToSell] -= sharesToSell
@@ -1222,6 +1240,37 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
       (r) => !allAnswersToSell.map((a) => a.id).includes(r.id)
     )
   )
+  const totalFee = sumAllFees(
+    newBetResults.concat(otherBetResults).map((r) => r.totalFees)
+  )
 
-  return { newBetResults, otherBetResults, updatedAnswers }
+  return { newBetResults, otherBetResults, updatedAnswers, totalFee }
+}
+
+export const getSellAllRedemptionPreliminaryBets = (
+  answers: Answer[],
+  sharesToSell: number,
+  now: number
+) => {
+  return answers.map((answer) => {
+    const { poolYes, poolNo } = answer
+    return {
+      outcome: 'YES' as const,
+      takers: [
+        {
+          matchedBetId: null,
+          amount: -sharesToSell / answers.length,
+          shares: -sharesToSell,
+          timestamp: now,
+          isSale: true,
+          fees: noFees,
+        },
+      ],
+      makers: [],
+      totalFees: noFees,
+      cpmmState: { p: 0.5, pool: { YES: poolYes, NO: poolNo } },
+      ordersToCancel: [],
+      answer,
+    }
+  })
 }

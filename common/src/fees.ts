@@ -1,3 +1,5 @@
+import { addObjects } from 'common/util/object'
+
 const TAKER_FEE_CONSTANT = 0.07
 
 export const getTakerFee = (shares: number, prob: number) => {
@@ -28,4 +30,10 @@ export const noFees: Fees = {
 
 export const getFeeTotal = (fees: Fees) => {
   return fees.creatorFee + fees.platformFee + fees.liquidityFee
+}
+
+export const sumAllFees = (fees: Fees[]) => {
+  let totalFees = noFees
+  fees.forEach((totalFee) => (totalFees = addObjects(totalFees, totalFee)))
+  return getFeeTotal(totalFees)
 }

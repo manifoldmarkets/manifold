@@ -30,6 +30,7 @@ import { Row } from 'web/components/layout/row'
 import { getInvested } from 'common/calculate'
 import { DiagonalPattern } from 'web/components/charts/generic-charts'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
+import { FeeDisplay } from 'web/components/bet/fees'
 
 export const NumericSellPanel = (props: {
   contract: CPMMNumericContract
@@ -132,6 +133,7 @@ export const NumericSellPanel = (props: {
     potentialContractState,
     loanPaid,
     invested,
+    totalFee,
   } = useMemo(() => {
     const nullRes = {
       potentialPayout: 0,
@@ -139,6 +141,7 @@ export const NumericSellPanel = (props: {
       potentialContractState: contract,
       loanPaid: 0,
       invested: 0,
+      totalFee: 0,
     }
     if (sharesInAnswersToSell <= 0 || !answerIdsToSell.length) return nullRes
     const betsOnAnswersToSell = userBets.filter(
@@ -151,7 +154,7 @@ export const NumericSellPanel = (props: {
       (bet) => bet.answerId
     )
     const loanPaid = sumBy(betsOnAnswersToSell, (bet) => bet.loanAmount ?? 0)
-    const { newBetResults, updatedAnswers } =
+    const { newBetResults, updatedAnswers, totalFee } =
       calculateCpmmMultiArbitrageSellYesEqually(
         contract.answers,
         userBetsToSellByAnswerId,
@@ -177,6 +180,7 @@ export const NumericSellPanel = (props: {
       potentialPayout,
       potentialExpectedValue,
       potentialContractState,
+      totalFee,
     }
   }, [
     JSON.stringify(userBets),
@@ -270,6 +274,7 @@ export const NumericSellPanel = (props: {
           Profit
           <div className="text-ink-500">{'Expected value'}</div>
           Payout
+          <div>Fees</div>
         </Col>
         <Col className={'text-ink-700 items-end gap-2'}>
           <span className="text-ink-700">{formatMoney(potentialPayout)}</span>
@@ -284,6 +289,11 @@ export const NumericSellPanel = (props: {
             )}
           </div>
           <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+          <FeeDisplay
+            totalFees={totalFee}
+            amount={potentialPayout}
+            isMultiSumsToOne={true}
+          />
         </Col>
       </Row>
       <Row className={'justify-between sm:gap-36 md:justify-center'}>
