@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
-import { groupBy, mapValues, maxBy, min, sumBy } from 'lodash'
+import { groupBy, mapValues, maxBy, min, sum, sumBy } from 'lodash'
 
 import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
@@ -75,12 +75,15 @@ export const redeemShares = async (
             betGroupId,
           })
         }
-        const totalAmount = sumBy(sellBetCandidates, (r) => r.bet.amount)
+        const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
+        const loanPaid = sum(Object.values(loanAmountByAnswerId))
         const userDoc = firestore.collection('users').doc(userId)
-        trans.update(userDoc, { balance: FieldValue.increment(-totalAmount) })
+        trans.update(userDoc, {
+          balance: FieldValue.increment(saleValue - loanPaid),
+        })
         log('cpmm-multi-1 redeemed', {
           shares: minShares,
-          totalAmount,
+          totalAmount: saleValue,
         })
         return { status: 'success' }
       }
