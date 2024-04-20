@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Button } from './buttons/button'
+import { Button, baseButtonClasses, buttonClass } from './buttons/button'
 import { MODAL_CLASS, Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
 
@@ -17,6 +17,7 @@ import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { User } from 'common/user'
 import { CoinNumber } from './widgets/manaCoinNumber'
 import { SpiceToManaForm } from './add-funds-modal'
+import Link from 'next/link'
 
 export type RedeemSpicePageType = 'main' | 'customMana'
 
@@ -93,15 +94,12 @@ function MainSpiceRedeemPage(props: {
           </Col>
         </Row>
         <Col className="gap-0.5">
-          <Button
-            onClick={() => {
-              setPage('customMana')
-            }}
-            size="xs"
-            className="text-xs sm:text-sm"
+          <Link
+            className={clsx(baseButtonClasses, buttonClass('xs', 'indigo'))}
+            href="/charity"
           >
             Visit Charity Page
-          </Button>
+          </Link>
           <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
             <span className="font-semibold text-green-600 dark:text-green-500">
               ${user.spiceBalance * SPICE_TO_CHARITY_CONVERSION_RATE}
