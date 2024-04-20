@@ -53,7 +53,7 @@ function MainSpiceRedeemPage(props: {
   const { user, setPage } = props
   const [disableAllButtons, setDisableAllButtons] = useState(false)
   return (
-    <Col className="gap-2">
+    <Col className="gap-4">
       <CoinNumber amount={user.spiceBalance} isSpice className="text-4xl" />
       <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
         <Row className="gap-2">
