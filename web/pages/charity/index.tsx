@@ -10,7 +10,7 @@ import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
@@ -21,7 +21,6 @@ import {
   SPICE_TO_CHARITY_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export async function getStaticProps() {
