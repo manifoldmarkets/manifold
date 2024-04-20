@@ -15,8 +15,14 @@ import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
-import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SPICE_PRODUCTION_ENABLED,
+  SPICE_TO_CHARITY_CONVERSION_RATE,
+} from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export async function getStaticProps() {
   try {
@@ -120,18 +126,27 @@ export default function Charity(props: {
 
           <span className="text-ink-500">
             {SPICE_PRODUCTION_ENABLED ? (
-              <>
+              <span>
                 Convert your prize points into real charitable donations at a
                 ratio of{' '}
-                <span className="semibold">{formatSpice(100)} : $1</span>
+                <span className="semibold">
+                  <CoinNumber
+                    amount={SPICE_TO_CHARITY_CONVERSION_RATE}
+                    isSpice
+                    isInline
+                  />{' '}
+                  : $1
+                </span>
                 {/* TODO: update about page copy, then link here? */}
-              </>
+              </span>
             ) : (
               <>
                 Convert your {ENV_CONFIG.moneyMoniker} earnings into real
                 charitable donations at a ratio of{' '}
-                <span className="semibold">{formatMoney(100)} : $1</span>,
-                capped at $10,000 per month.
+                <span className="semibold">
+                  <CoinNumber amount={100} isInline /> : $1
+                </span>
+                , capped at $10,000 per month.
                 <a
                   href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
                   target="_blank"
