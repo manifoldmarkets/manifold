@@ -95,7 +95,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
   const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(2500)]
+    prices[formatMoney(25000)]
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -130,6 +130,11 @@ export function BuyManaTab(props: { onClose: () => void }) {
         questions.
       </div>
 
+      <AlertBox title="Purchases disabled" className="my-4">
+        Mana purchases are temporarily disabled. They will be re-enabled at a
+        higher purchase rate on May 1st.
+      </AlertBox>
+
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
         fundAmounts={prices}
@@ -157,7 +162,8 @@ export function BuyManaTab(props: { onClose: () => void }) {
           <Button
             color={'gradient'}
             loading={loading}
-            disabled={pastLimit}
+            // disabled={pastLimit}
+            disabled
             onClick={() => {
               setError(null)
               setLoading(true)
@@ -171,7 +177,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
             action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
-            <Button type="submit" color="gradient" disabled={pastLimit}>
+            <Button
+              type="submit"
+              color="gradient"
+              // disabled={pastLimit}
+              disabled
+            >
               Checkout
             </Button>
           </form>
