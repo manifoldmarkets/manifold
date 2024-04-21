@@ -94,6 +94,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     specialLiquidityPerAnswer,
   } = validateMarketBody(body)
 
+  if (outcomeType === 'BOUNTIED_QUESTION') {
+    throw new APIError(400, 'Bountied questions are not currently enabled.')
+  }
+
   const visibility = 'public'
 
   const userId = auth.uid
