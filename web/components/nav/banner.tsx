@@ -5,8 +5,6 @@ import { IconButton } from '../buttons/button'
 import { Row } from '../layout/row'
 import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { useEffect } from 'react'
-import { safeLocalStorage } from 'web/lib/util/local'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -32,11 +30,41 @@ export function Banner(props: {
       </a>
 
       {setShowBanner && (
-        <IconButton onClick={() => setShowBanner(false)}>
+        <IconButton
+          onClick={() => {
+            console.log('banner click')
+            setShowBanner(false)
+          }}
+        >
           <XIcon className="text-ink-700 h-5 w-5 cursor-pointer" />
         </IconButton>
       )}
     </Row>
+  )
+}
+
+export function PivotBanner(props: { hideBanner: () => void }) {
+  const { hideBanner } = props
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
+      link="https://www.notion.so/manifoldmarkets/A-New-Deal-for-Manifold-0512848adef1447eb8087d8226e109a7"
+      setShowBanner={hideBanner}
+    >
+      <Row className="gap-2">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>
+          <span className="font-semibold">A New Deal for Manifold</span> — cash
+          prizes and other changes are coming soon
+        </div>
+      </Row>
+    </Banner>
   )
 }
 
@@ -65,19 +93,11 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
   )
 }
 
-const manifestBannerViewCount = 3
-export const useManifestBanner = () => {
-  const [showBannerCount, setShowBannerCount] = usePersistentLocalState<
-    number | undefined
-  >(undefined, 'show-manifest-banner-count')
-  useEffect(() => {
-    const value =
-      safeLocalStorage?.getItem('show-manifest-banner-count') ?? 'undefined'
-    const count = value === 'undefined' ? manifestBannerViewCount + 1 : +value
-    setShowBannerCount(count - 1)
-  }, [])
-  return [
-    !!showBannerCount && showBannerCount > 0,
-    () => setShowBannerCount(0),
-  ] as const
+export const useBanner = (name: string) => {
+  const [bannerSeen, setBannerSeen] = usePersistentLocalState<number>(
+    0,
+    `${name}-banner-seen`
+  )
+
+  return [!bannerSeen, () => setBannerSeen(1)] as const
 }
