@@ -188,16 +188,17 @@ export const onCreateBets = async (
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
         const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
-        const usersNonRedemptionBets = bets.filter(
-          (b) => b.userId === bettor.id && !b.isRedemption
-        )
-        await giveUniqueBettorAndLiquidityBonus(
-          contract,
-          eventId,
-          bettor,
-          bet,
-          usersNonRedemptionBets
-        )
+
+        // const usersNonRedemptionBets = bets.filter(
+        //   (b) => b.userId === bettor.id && !b.isRedemption
+        // )
+        // await giveUniqueBettorAndLiquidityBonus(
+        //   contract,
+        //   eventId,
+        //   bettor,
+        //   bet,
+        //   usersNonRedemptionBets
+        // )
 
         await Promise.all([
           bet.amount >= 0 &&
@@ -506,7 +507,7 @@ const updateBettingStreak = async (
   }
 }
 
-const giveUniqueBettorAndLiquidityBonus = async (
+export const giveUniqueBettorAndLiquidityBonus = async (
   contract: Contract,
   eventId: string,
   bettor: User,
