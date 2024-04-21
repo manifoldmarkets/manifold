@@ -130,11 +130,11 @@ export default function Charity(props: {
                 ratio of{' '}
                 <span className="semibold">
                   <CoinNumber
-                    amount={SPICE_TO_CHARITY_CONVERSION_RATE}
+                    amount={1000}
                     isSpice
                     isInline
                   />{' '}
-                  : $1
+                  : $0.95
                 </span>
                 {/* TODO: update about page copy, then link here? */}
               </span>

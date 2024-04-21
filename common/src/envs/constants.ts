@@ -15,7 +15,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
-export const SPICE_TO_CHARITY_CONVERSION_RATE = 100
+export const SPICE_TO_CHARITY_CONVERSION_RATE = 1/1000 * 0.95
 export const SPICE_NAME = 'WinPoint'
 
 export const DASHBOARD_ENABLED = ENV === 'DEV'
