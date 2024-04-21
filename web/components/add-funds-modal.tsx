@@ -154,10 +154,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="mt-2 flex gap-2">
-        <Button color="gray" onClick={onClose}>
-          Back
-        </Button>
-
         {isNative && platform === 'ios' ? (
           <Button
             color={'gradient'}
