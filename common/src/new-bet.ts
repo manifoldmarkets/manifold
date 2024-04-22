@@ -3,6 +3,7 @@ import { sortBy, sumBy } from 'lodash'
 import { Bet, fill, LimitBet } from './bet'
 import { calculateDpmShares, getDpmOutcomeProbability } from './calculate-dpm'
 import {
+  calculateCpmmAmountToProb,
   calculateCpmmAmountToProbIncludingFees,
   calculateCpmmPurchase,
   CpmmState,
@@ -97,7 +98,13 @@ const computeFill = (
         ? amount
         : Math.min(
             amount,
-            calculateCpmmAmountToProbIncludingFees(cpmmState, limit, outcome)
+            freeFees
+              ? calculateCpmmAmountToProb(cpmmState, limit, outcome)
+              : calculateCpmmAmountToProbIncludingFees(
+                  cpmmState,
+                  limit,
+                  outcome
+                )
           )
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
@@ -142,11 +149,12 @@ const computeFill = (
   const makerPrice =
     outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb
 
-  const maxTakerShares = amount / (takerPrice + getTakerFee(1, takerPrice))
+  const feesOnOneShare = freeFees ? 0 : getTakerFee(1, takerPrice)
+  const maxTakerShares = amount / (takerPrice + feesOnOneShare)
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
 
-  const takerFee = getTakerFee(shares, takerPrice)
+  const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
   const creatorFee = CREATOR_FEE_FRAC * takerFee
   const platformFee = (1 - CREATOR_FEE_FRAC) * takerFee
   const fees = { creatorFee, platformFee, liquidityFee: 0 }

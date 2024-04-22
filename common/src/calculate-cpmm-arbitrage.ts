@@ -419,7 +419,8 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const totalNoAmount = sum(noAmounts)
@@ -434,7 +435,9 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
         noAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -454,7 +457,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: Date.now(),
-      fees: noBetResult.totalFees,
+      fees: noFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
@@ -598,7 +601,8 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const totalYesAmount = sum(yesAmounts)
@@ -613,7 +617,9 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
         yesAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -630,7 +636,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       amount: -sumBy(yesBetResult.takers, 'amount'),
       shares: -sumBy(yesBetResult.takers, 'shares'),
       timestamp: Date.now(),
-      fees: yesBetResult.totalFees,
+      fees: noFees,
     }
     yesBetResult.takers.push(redemptionFill)
   }
