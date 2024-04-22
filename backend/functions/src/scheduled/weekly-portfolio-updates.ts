@@ -4,12 +4,11 @@ import { sum } from 'lodash'
 
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
 import { createWeeklyPortfolioUpdateNotification } from 'shared/create-notification'
-import { getUsernameById } from 'common/supabase/users'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getUser, log } from 'shared/utils'
+import { getUser, getUsers, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { secrets } from 'common/secrets'
 import { bulkInsert } from 'shared/supabase/utils'
@@ -126,9 +125,9 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
     )
     .get()
   const privateUsers = usersSnap.docs.map((doc) => doc.data() as PrivateUser)
-  const userData = await getUsernameById(
-    privateUsers.map((u) => u.id),
-    db
+  const userData = await getUsers(privateUsers.map((u) => u.id))
+  const usernameById = Object.fromEntries(
+    userData.map((u) => [u.id, u.username])
   )
   log('users to send weekly portfolio updates to', privateUsers.length)
   let count = 0
@@ -145,7 +144,7 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
       if (contractMetrics.length === 0) return
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
-        userData[privateUser.id].username,
+        usernameById[privateUser.id],
         weeklyProfit,
         rangeEndDateSlug
       )
