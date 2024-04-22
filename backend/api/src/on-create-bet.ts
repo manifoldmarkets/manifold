@@ -189,16 +189,16 @@ export const onCreateBets = async (
         const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
 
-        // const usersNonRedemptionBets = bets.filter(
-        //   (b) => b.userId === bettor.id && !b.isRedemption
-        // )
-        // await giveUniqueBettorAndLiquidityBonus(
-        //   contract,
-        //   eventId,
-        //   bettor,
-        //   bet,
-        //   usersNonRedemptionBets
-        // )
+        const usersNonRedemptionBets = bets.filter(
+          (b) => b.userId === bettor.id && !b.isRedemption
+        )
+        await giveUniqueBettorAndLiquidityBonus(
+          contract,
+          eventId,
+          bettor,
+          bet,
+          usersNonRedemptionBets
+        )
 
         await Promise.all([
           bet.amount >= 0 &&
