@@ -20,11 +20,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import {
-  CREATOR_FEE_FRAC,
-  getTakerFee,
-  noFees,
-} from './fees'
+import { CREATOR_FEE_FRAC, getTakerFee, noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
 import {
   floatingEqual,
@@ -64,7 +60,8 @@ const computeFill = (
   limitProb: number | undefined,
   cpmmState: CpmmState,
   matchedBet: LimitBet | undefined,
-  matchedBetUserBalance: number | undefined
+  matchedBetUserBalance: number | undefined,
+  freeFees?: boolean
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -106,7 +103,8 @@ const computeFill = (
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,
       buyAmount,
-      outcome
+      outcome,
+      freeFees
     )
     const newState = { pool: newPool, p: newP }
 
@@ -177,7 +175,8 @@ export const computeFills = (
   initialLimitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number | undefined },
-  limitProbs?: { max: number; min: number }
+  limitProbs?: { max: number; min: number },
+  freeFees?: boolean
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
@@ -228,7 +227,8 @@ export const computeFills = (
       limitProb,
       cpmmState,
       matchedBet,
-      currentBalanceByUserId[matchedBet?.userId ?? '']
+      currentBalanceByUserId[matchedBet?.userId ?? ''],
+      freeFees
     )
 
     if (!fill) break

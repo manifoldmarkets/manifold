@@ -1,7 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import { CREATOR_FEE_FRAC, Fees, getTakerFee } from './fees'
+import { CREATOR_FEE_FRAC, Fees, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -118,10 +118,16 @@ export function calculateCpmmSharesAfterFee(
 export function calculateCpmmPurchase(
   state: CpmmState,
   bet: number,
-  outcome: string
+  outcome: string,
+  freeFees?: boolean
 ) {
   const { pool, p } = state
-  const { remainingBet, fees } = getCpmmFees(state, bet, outcome)
+  const { remainingBet, fees } = freeFees
+    ? {
+        remainingBet: bet,
+        fees: noFees,
+      }
+    : getCpmmFees(state, bet, outcome)
 
   const shares = calculateCpmmShares(pool, p, remainingBet, outcome)
   const { YES: y, NO: n } = pool
@@ -200,16 +206,18 @@ export function calculateAmountToBuySharesFixedP(
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  freeFees?: boolean
 ) {
-  const maxAmount = shares
   const { takers } = computeFills(
     state,
     outcome,
-    maxAmount,
+    shares,
     undefined,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    undefined,
+    freeFees
   )
 
   let currShares = 0
@@ -245,17 +253,18 @@ export function calculateAmountToBuySharesFixedP(
     currAmount,
     undefined,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    undefined,
+    freeFees
   )
   const fillAmount = calculateCpmmAmountToBuySharesFixedP(
     cpmmState,
     remaningShares,
     outcome
   )
-  const fillAmountFees = getTakerFee(
-    remaningShares,
-    fillAmount / remaningShares
-  )
+  const fillAmountFees = freeFees
+    ? 0
+    : getTakerFee(remaningShares, fillAmount / remaningShares)
   return currAmount + fillAmount + fillAmountFees
 }
 
