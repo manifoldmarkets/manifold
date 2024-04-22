@@ -32,7 +32,7 @@ import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import {
   api,
-  changeUserInfo,
+  updateUserApi,
   followTopic,
   followUser,
 } from 'web/lib/firebase/api'
@@ -233,14 +233,14 @@ function WhatIsManifoldPage() {
     if (newName === user?.name) return
     setName(newName)
 
-    await changeUserInfo({ name: newName })
+    await updateUserApi({ name: newName })
 
     let username = cleanUsername(newName)
     try {
-      await changeUserInfo({ username })
+      await updateUserApi({ username })
     } catch (e) {
       username += randomString(5)
-      await changeUserInfo({ username })
+      await updateUserApi({ username })
     }
   }
 
