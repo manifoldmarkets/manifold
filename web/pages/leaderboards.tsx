@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
 import { Page } from 'web/components/layout/page'
-import { Period, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
