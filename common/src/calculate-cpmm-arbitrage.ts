@@ -419,7 +419,8 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const totalNoAmount = sum(noAmounts)
@@ -434,7 +435,9 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
         noAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -454,7 +457,7 @@ const buyNoSharesInOtherAnswersThenYesInAnswer = (
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: Date.now(),
-      fees: noBetResult.totalFees,
+      fees: noFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
@@ -598,7 +601,8 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       yesShares,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const totalYesAmount = sum(yesAmounts)
@@ -613,7 +617,9 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
         yesAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -630,7 +636,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       amount: -sumBy(yesBetResult.takers, 'amount'),
       shares: -sumBy(yesBetResult.takers, 'shares'),
       timestamp: Date.now(),
-      fees: yesBetResult.totalFees,
+      fees: noFees,
     }
     yesBetResult.takers.push(redemptionFill)
   }
@@ -713,7 +719,8 @@ const buyNoSharesInAnswers = (
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const totalNoAmount = sum(noAmounts)
@@ -728,16 +735,17 @@ const buyNoSharesInAnswers = (
         noAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
   })
-  const fees = sumAllFees(noBetResults.map((r) => r.totalFees))
   // Identity: No shares in all other answers is equal to noShares * (n-1) mana
   const redeemedAmount = noShares * (answers.length - 1)
   // Fees on arbitrage bets are returned
-  const extraMana = fees + redeemedAmount - totalNoAmount
+  const extraMana = redeemedAmount - totalNoAmount
 
   for (const noBetResult of noBetResults) {
     const redemptionFill = {

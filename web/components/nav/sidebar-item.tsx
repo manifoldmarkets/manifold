@@ -20,8 +20,13 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
   const { item, currentPage } = props
 
   const currentBasePath = '/' + (currentPage?.split('/')[1] ?? '')
-  const isCurrentPage =
-    item.href != null && currentBasePath === item.href.split('?')[0]
+  const queryCleanedHref =
+    (item.href?.includes('?') ? item.href.split('?')[0] : item.href) ?? ''
+  const segmentCleanedHref =
+    queryCleanedHref.split('/').length > 2
+      ? '/' + queryCleanedHref.split('/')[1]
+      : queryCleanedHref
+  const isCurrentPage = currentBasePath === segmentCleanedHref
 
   const onClick = () => {
     track('sidebar: ' + item.name)

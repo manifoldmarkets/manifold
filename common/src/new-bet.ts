@@ -3,6 +3,7 @@ import { sortBy, sumBy } from 'lodash'
 import { Bet, fill, LimitBet } from './bet'
 import { calculateDpmShares, getDpmOutcomeProbability } from './calculate-dpm'
 import {
+  calculateCpmmAmountToProb,
   calculateCpmmAmountToProbIncludingFees,
   calculateCpmmPurchase,
   CpmmState,
@@ -20,11 +21,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import {
-  CREATOR_FEE_FRAC,
-  getTakerFee,
-  noFees,
-} from './fees'
+import { CREATOR_FEE_FRAC, getTakerFee, noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
 import {
   floatingEqual,
@@ -64,7 +61,8 @@ const computeFill = (
   limitProb: number | undefined,
   cpmmState: CpmmState,
   matchedBet: LimitBet | undefined,
-  matchedBetUserBalance: number | undefined
+  matchedBetUserBalance: number | undefined,
+  freeFees?: boolean
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -100,13 +98,20 @@ const computeFill = (
         ? amount
         : Math.min(
             amount,
-            calculateCpmmAmountToProbIncludingFees(cpmmState, limit, outcome)
+            freeFees
+              ? calculateCpmmAmountToProb(cpmmState, limit, outcome)
+              : calculateCpmmAmountToProbIncludingFees(
+                  cpmmState,
+                  limit,
+                  outcome
+                )
           )
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,
       buyAmount,
-      outcome
+      outcome,
+      freeFees
     )
     const newState = { pool: newPool, p: newP }
 
@@ -144,11 +149,12 @@ const computeFill = (
   const makerPrice =
     outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb
 
-  const maxTakerShares = amount / (takerPrice + getTakerFee(1, takerPrice))
+  const feesOnOneShare = freeFees ? 0 : getTakerFee(1, takerPrice)
+  const maxTakerShares = amount / (takerPrice + feesOnOneShare)
   const maxMakerShares = amountToFill / makerPrice
   const shares = Math.min(maxTakerShares, maxMakerShares)
 
-  const takerFee = getTakerFee(shares, takerPrice)
+  const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
   const creatorFee = CREATOR_FEE_FRAC * takerFee
   const platformFee = (1 - CREATOR_FEE_FRAC) * takerFee
   const fees = { creatorFee, platformFee, liquidityFee: 0 }
@@ -177,7 +183,8 @@ export const computeFills = (
   initialLimitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number | undefined },
-  limitProbs?: { max: number; min: number }
+  limitProbs?: { max: number; min: number },
+  freeFees?: boolean
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
@@ -228,7 +235,8 @@ export const computeFills = (
       limitProb,
       cpmmState,
       matchedBet,
-      currentBalanceByUserId[matchedBet?.userId ?? '']
+      currentBalanceByUserId[matchedBet?.userId ?? ''],
+      freeFees
     )
 
     if (!fill) break

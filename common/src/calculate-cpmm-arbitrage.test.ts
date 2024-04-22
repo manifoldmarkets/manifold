@@ -1,12 +1,15 @@
-import { sumBy } from 'lodash'
+import { groupBy, sumBy } from 'lodash'
 import { Answer } from './answer'
 import {
   calculateCpmmMultiArbitrageBet,
+  calculateCpmmMultiArbitrageSellYesEqually,
   calculateCpmmMultiArbitrageYesBets,
 } from './calculate-cpmm-arbitrage'
 import { getCpmmProbability } from './calculate-cpmm'
 import { getFeeTotal } from './fees'
 import { getMultiNumericAnswerBucketRanges } from './multi-numeric'
+import { Bet } from 'common/bet'
+import { getNewSellBetInfo } from 'common/sell-bet'
 
 describe('calculateCpmmMultiArbitrageBet', () => {
   it('should sum to 1 after bet', async () => {
@@ -107,7 +110,7 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       [],
       {}
     )
-    const { newBetResults, otherBetResults } = result
+    const { newBetResults, otherBetResults, updatedAnswers } = result
 
     const amountInShares =
       betAmount -
@@ -116,21 +119,45 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
     const answerYesShares = convertAnswerPoolsToYesPools(answers)
     const initialYesShares = answerYesShares.map((a) => a + amountInShares)
 
-    const finalPools = [
-      ...newBetResults.map((r) => r.cpmmState.pool),
-      ...otherBetResults.map((b) => b.cpmmState.pool),
-    ].map(({ YES, NO }) => ({ poolYes: YES, poolNo: NO }))
-    const finalAnswerYesShares = convertAnswerPoolsToYesPools(finalPools)
+    const afterBuyAnswerYesShares = convertAnswerPoolsToYesPools(updatedAnswers)
 
     for (const newBetResult of newBetResults) {
       const purchasedShares = sumBy(newBetResult.takers, (t) => t.shares)
       const index = answers.findIndex((a) => a.id === newBetResult.answer.id)
-      finalAnswerYesShares[index] += purchasedShares
+      afterBuyAnswerYesShares[index] += purchasedShares
     }
 
     for (let i = 0; i < answers.length; i++) {
       expect(
-        Math.abs(finalAnswerYesShares[i] - initialYesShares[i]) < 0.01
+        Math.abs(afterBuyAnswerYesShares[i] - initialYesShares[i]) < 0.01
+      ).toBeTruthy()
+    }
+
+    // Make sure selling also conserves shares
+    const bets = newBetResults.map(
+      (r) =>
+        getNewSellBetInfo(
+          r,
+          Date.now(),
+          answers,
+          { id: 'contract1', visibility: 'public' } as any,
+          {}
+        ).bet as Bet
+    )
+    const saleResults = calculateCpmmMultiArbitrageSellYesEqually(
+      updatedAnswers,
+      groupBy(bets, 'answerId'),
+      [],
+      {}
+    )
+    const afterSaleAnswerYesShares = convertAnswerPoolsToYesPools(
+      saleResults.updatedAnswers
+    )
+    const preBuyYesShares = answerYesShares.map((a) => a)
+
+    for (let i = 0; i < answers.length; i++) {
+      expect(
+        Math.abs(afterSaleAnswerYesShares[i] - preBuyYesShares[i]) < 0.01
       ).toBeTruthy()
     }
   })
@@ -183,6 +210,5 @@ const getAnswer = (index: number, prob: number) => {
 const getNumericAnswers = (min: number, max: number, step: number) => {
   const bucketRanges = getMultiNumericAnswerBucketRanges(min, max, step)
   const prob = 1 / bucketRanges.length
-  const answers = bucketRanges.map(([min, max], i) => getAnswer(i, prob))
-  return answers
+  return bucketRanges.map((_, i) => getAnswer(i, prob))
 }
