@@ -119,17 +119,17 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
     const answerYesShares = convertAnswerPoolsToYesPools(answers)
     const initialYesShares = answerYesShares.map((a) => a + amountInShares)
 
-    const postBuyAnswerYesShares = convertAnswerPoolsToYesPools(updatedAnswers)
+    const afterBuyAnswerYesShares = convertAnswerPoolsToYesPools(updatedAnswers)
 
     for (const newBetResult of newBetResults) {
       const purchasedShares = sumBy(newBetResult.takers, (t) => t.shares)
       const index = answers.findIndex((a) => a.id === newBetResult.answer.id)
-      postBuyAnswerYesShares[index] += purchasedShares
+      afterBuyAnswerYesShares[index] += purchasedShares
     }
 
     for (let i = 0; i < answers.length; i++) {
       expect(
-        Math.abs(postBuyAnswerYesShares[i] - initialYesShares[i]) < 0.01
+        Math.abs(afterBuyAnswerYesShares[i] - initialYesShares[i]) < 0.01
       ).toBeTruthy()
     }
 
