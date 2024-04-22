@@ -8,6 +8,7 @@ create table if not exists
     username text not null,
     name_username_vector tsvector generated always as (to_tsvector('english', name || ' ' || username)) stored,
     balance numeric not null default 0,
+    spice_balance numeric not null default 0,
     total_deposits numeric not null default 0,
   );
 
