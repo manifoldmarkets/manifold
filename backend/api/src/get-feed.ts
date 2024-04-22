@@ -22,7 +22,7 @@ import { Row } from 'common/supabase/utils'
 const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
 } = {}
-const DEBUG = false
+const DEBUG = process.platform === 'darwin'
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
