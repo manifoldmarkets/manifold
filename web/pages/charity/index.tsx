@@ -129,12 +129,7 @@ export default function Charity(props: {
                 Convert your prize points into real charitable donations at a
                 ratio of{' '}
                 <span className="semibold">
-                  <CoinNumber
-                    amount={1000}
-                    isSpice
-                    isInline
-                  />{' '}
-                  : $0.95
+                  <CoinNumber amount={1000} isSpice isInline /> : $0.95
                 </span>
                 {/* TODO: update about page copy, then link here? */}
               </span>

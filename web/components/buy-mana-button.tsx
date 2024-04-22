@@ -11,7 +11,9 @@ import { Button } from './buttons/button'
 import { Row } from './layout/row'
 import { Col } from './layout/col'
 
-export function BuyManaButton(props: { amount: 10000 | 25000 | 100000 | 1000000 }) {
+export function BuyManaButton(props: {
+  amount: 10000 | 25000 | 100000 | 1000000
+}) {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES

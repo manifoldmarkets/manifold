@@ -598,7 +598,6 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
-      
       <CostSection
         balance={balance}
         amountSuppliedByUser={amountSuppliedByUser}
