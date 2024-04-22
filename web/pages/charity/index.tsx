@@ -15,9 +15,7 @@ import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
-import {
-  SPICE_PRODUCTION_ENABLED,
-} from 'common/envs/constants'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
