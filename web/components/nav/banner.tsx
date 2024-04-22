@@ -48,7 +48,7 @@ export function PivotBanner(props: { hideBanner: () => void }) {
   return (
     <Banner
       className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
-      link="https://www.notion.so/manifoldmarkets/A-New-Deal-for-Manifold-0512848adef1447eb8087d8226e109a7"
+      link="https://manifoldmarkets.notion.site/A-New-Deal-for-Manifold-c6e9de8f08b549859c64afb3af1dd393"
       setShowBanner={hideBanner}
     >
       <Row className="gap-2">
