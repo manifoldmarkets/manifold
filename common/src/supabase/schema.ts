@@ -3553,6 +3553,24 @@ export type Database = {
         }
         Returns: number
       }
+      creator_leaderboard: {
+        Args: {
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          total_traders: number
+          name: string
+          username: string
+          avatar_url: string
+        }[]
+      }
+      creator_rank: {
+        Args: {
+          uid: string
+        }
+        Returns: number
+      }
       extract_text_from_rich_text_json: {
         Args: {
           description: Json
@@ -4248,6 +4266,25 @@ export type Database = {
           millis: number
         }
         Returns: string
+      }
+      profit_leaderboard: {
+        Args: {
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          profit: number
+          name: string
+          username: string
+          avatar_url: string
+        }[]
+      }
+      profit_rank: {
+        Args: {
+          uid: string
+          excluded_ids?: string[]
+        }
+        Returns: number
       }
       random_alphanumeric: {
         Args: {

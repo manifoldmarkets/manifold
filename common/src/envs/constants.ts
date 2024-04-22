@@ -323,6 +323,11 @@ export const OPTED_OUT_OF_LEAGUES = [
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
+export const HIDE_FROM_LEADERBOARD_USER_IDS = [
+  'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
+  'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
+]
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
 export function firestoreConsolePath(contractId: string) {

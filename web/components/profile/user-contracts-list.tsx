@@ -32,7 +32,7 @@ export function UserContractsList(props: {
 
   useEffect(() => {
     getTotalContractsCreated(creator.id).then(setMarketsCreated)
-    getCreatorRank(allTime, 'allTime').then(setCreatorRank)
+    getCreatorRank(creator.id).then(setCreatorRank)
     getUnresolvedContractsCount(creator.id, db).then((count) =>
       setUnresolvedMarkets(count)
     )
