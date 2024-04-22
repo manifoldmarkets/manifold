@@ -1,10 +1,8 @@
-import { formatMoney } from 'common/util/format'
 import {
   BsFillCheckCircleFill,
   BsFillXCircleFill,
   BsUiChecks,
 } from 'react-icons/bs'
-import { GiReceiveMoney } from 'react-icons/gi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'

@@ -16,9 +16,7 @@ import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import {
-  ENV_CONFIG,
   SPICE_PRODUCTION_ENABLED,
-  SPICE_TO_CHARITY_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
