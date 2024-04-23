@@ -56,6 +56,7 @@ const processViewQueue = async () => {
         const { userId, kind, contractId } = viewEvent
         const [ts_column, count_column] = VIEW_COLUMNS[kind]
 
+        // Ignores consecutive views by the same user on same contract within 1 minute
         const userPageViews = await pg.oneOrNone(
           `insert into user_contract_views as ucv (user_id, contract_id, $3:name, $4:name)
              values ($1, $2, now(), 1)
@@ -69,7 +70,13 @@ const processViewQueue = async () => {
           [userId ?? null, contractId, ts_column, count_column],
           (r) => r?.page_views
         )
-        // Ignores consecutive views by the same user on same contract within 1 minute
+        if (userId && userPageViews) {
+          await pg.none(
+            `insert into user_view_events(user_id, contract_id, name)
+             values ($1, $2, $3)`,
+            [userId, contractId, kind]
+          )
+        }
         if (userPageViews && kind === 'page') {
           await pg.none(
             `update contracts set view_count = view_count + 1 where id = $1`,
