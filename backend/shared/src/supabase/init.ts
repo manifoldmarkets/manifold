@@ -1,12 +1,11 @@
 import * as pgPromise from 'pg-promise'
 import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
-import { DEV_CONFIG } from 'common/envs/dev'
-import { PROD_CONFIG } from 'common/envs/prod'
-import { log, isProd } from '../utils'
+import { log } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -24,10 +23,7 @@ pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
 
 export function getInstanceId() {
-  return (
-    process.env.SUPABASE_INSTANCE_ID ??
-    (isProd() ? PROD_CONFIG.supabaseInstanceId : DEV_CONFIG.supabaseInstanceId)
-  )
+  return process.env.SUPABASE_INSTANCE_ID ?? ENV_CONFIG.supabaseInstanceId
 }
 
 export function getInstanceHostname(instanceId: string) {

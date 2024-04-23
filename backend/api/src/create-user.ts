@@ -10,14 +10,13 @@ import { getDefaultNotificationPreferences } from 'common/user-notification-pref
 import { removeUndefinedProps } from 'common/util/object'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { getStorage } from 'firebase-admin/storage'
-import { DEV_CONFIG } from 'common/envs/dev'
-import { PROD_CONFIG } from 'common/envs/prod'
 import {
+  ENV_CONFIG,
   LOVE_DOMAIN,
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
 } from 'common/envs/constants'
-import { log, isProd } from 'shared/utils'
+import { log } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
@@ -264,9 +263,7 @@ async function upsertNewUserEmbeddings(
 }
 
 function getStorageBucketId() {
-  return isProd()
-    ? PROD_CONFIG.firebaseConfig.storageBucket
-    : DEV_CONFIG.firebaseConfig.storageBucket
+  return ENV_CONFIG.firebaseConfig.storageBucket
 }
 
 // Automatically ban users with these device tokens or ip addresses.
