@@ -11,11 +11,13 @@ import { Col } from 'web/components/layout/col'
 import { EmptyAvatar, Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Subtitle } from './lover-subtitle'
 import { ShipButton } from './ship-button'
 import { hasShipped } from 'love/lib/util/ship-util'
 import { ShipData } from 'common/api/love-types'
+import { useUserById } from 'web/hooks/use-user-supabase'
+import { User } from 'common/user'
 
 export const ShipsList = (props: {
   label: string
@@ -73,7 +75,7 @@ const ShipsTargetDisplay = (props: {
   const { targetId } = ships[0]
 
   const targetLover = useLoverByUserId(targetId)
-  const targetUser = useUserById(targetId)
+  const targetUser = useUserById(targetId) as (User | null | undefined)
   const [open, setOpen] = useState(false)
 
   const currentUser = useUser()
