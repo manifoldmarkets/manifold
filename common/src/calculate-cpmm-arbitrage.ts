@@ -200,7 +200,8 @@ export const getBetResultsAndUpdatedAnswers = (
   updatedAnswers: Answer[],
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  answerIdsWithFees?: string[]
 ) => {
   const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
   const yesBetResultsAndUpdatedAnswers = answersToBuy.map((answerToBuy, i) => {
@@ -212,7 +213,9 @@ export const getBetResultsAndUpdatedAnswers = (
         yesAmounts[i],
         limitProb,
         unfilledBetsByAnswer[answerToBuy.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        !answerIdsWithFees?.includes(answerToBuy.id)
       ),
       answer: answerToBuy,
     }
@@ -241,7 +244,8 @@ export const getBetResultsAndUpdatedAnswers = (
         ) ?? answer
     ),
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    answerIdsWithFees
   )
   // Update new answer states from bets placed on all answers
   const newUpdatedAnswers = noBuyResults.noBetResults.map((noBetResult) => {
@@ -669,7 +673,8 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
 export const buyNoSharesUntilAnswersSumToOne = (
   answers: Answer[],
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  answerIdsWithFees?: string[]
 ) => {
   const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
 
@@ -679,7 +684,8 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answers,
       unfilledBetsByAnswer,
       balanceByUserId,
-      maxNoShares
+      maxNoShares,
+      answerIdsWithFees
     )
     const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
     const probSum = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
@@ -692,7 +698,8 @@ export const buyNoSharesUntilAnswersSumToOne = (
       answers,
       unfilledBetsByAnswer,
       balanceByUserId,
-      noShares
+      noShares,
+      answerIdsWithFees
     )
     const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
     const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
@@ -703,7 +710,8 @@ export const buyNoSharesUntilAnswersSumToOne = (
     answers,
     unfilledBetsByAnswer,
     balanceByUserId,
-    noShares
+    noShares,
+    answerIdsWithFees
   )
 }
 
@@ -711,7 +719,8 @@ const buyNoSharesInAnswers = (
   answers: Answer[],
   unfilledBetsByAnswer: Dictionary<LimitBet[]>,
   balanceByUserId: { [userId: string]: number },
-  noShares: number
+  noShares: number,
+  answerIdsWithFees?: string[]
 ) => {
   const noAmounts = answers.map(({ id, poolYes, poolNo }) =>
     calculateAmountToBuySharesFixedP(
@@ -720,7 +729,7 @@ const buyNoSharesInAnswers = (
       'NO',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId,
-      true
+      !answerIdsWithFees?.includes(id)
     )
   )
   const totalNoAmount = sum(noAmounts)
@@ -737,7 +746,7 @@ const buyNoSharesInAnswers = (
         unfilledBetsByAnswer[answer.id] ?? [],
         balanceByUserId,
         undefined,
-        true
+        !answerIdsWithFees?.includes(answer.id)
       ),
       answer,
     }
@@ -1148,31 +1157,34 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
       .filter((a) => sharesByAnswerId[a.id] >= sharesToSell)
       .map((a) => a.id)
     // Buy yes shares in the answers opposite the answers to sell
-    const answersToBuyYesShares = updatedAnswers.filter(
+    const oppositeAnswersFromSaleToBuyYesShares = updatedAnswers.filter(
       (a) => !answerIdsToSellNow.includes(a.id)
     )
     let saleBets: PreliminaryBetResults[]
     if (answersToSellNow.length !== initialAnswers.length) {
-      // If we have shares in all answers, just create yes redemption bets in all answers
-      const yesAmounts = answersToBuyYesShares.map(
+      const yesAmounts = oppositeAnswersFromSaleToBuyYesShares.map(
         ({ id, poolYes, poolNo }) => {
           return calculateAmountToBuySharesFixedP(
             { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
             sharesToSell,
             'YES',
             unfilledBetsByAnswer[id] ?? [],
-            balanceByUserId
+            balanceByUserId,
+            // Zero fees on arbitrage bets
+            true
           )
         }
       )
       const { newUpdatedAnswers, yesBets, noBuyResults } =
         getBetResultsAndUpdatedAnswers(
-          answersToBuyYesShares,
+          oppositeAnswersFromSaleToBuyYesShares,
           yesAmounts,
           updatedAnswers,
           undefined,
           unfilledBets,
-          balanceByUserId
+          balanceByUserId,
+          // Charge fees on sale bets
+          answerIdsToSellNow
         )
       updatedAnswers = newUpdatedAnswers
       for (const yesBet of yesBets) {
@@ -1216,6 +1228,7 @@ export const calculateCpmmMultiArbitrageSellYesEqually = (
           }
         })
     } else {
+      // If we have yes shares in ALL answers, redeem them for mana
       saleBets = getSellAllRedemptionPreliminaryBets(
         answersToSellNow,
         sharesToSell,
