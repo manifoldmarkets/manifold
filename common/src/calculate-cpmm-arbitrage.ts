@@ -215,7 +215,7 @@ export const getBetResultsAndUpdatedAnswers = (
         unfilledBetsByAnswer[answerToBuy.id] ?? [],
         balanceByUserId,
         undefined,
-        !answerIdsWithFees?.includes(answerToBuy.id)
+        answerIdsWithFees && !answerIdsWithFees?.includes(answerToBuy.id)
       ),
       answer: answerToBuy,
     }
