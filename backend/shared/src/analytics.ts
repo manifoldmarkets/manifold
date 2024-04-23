@@ -1,10 +1,14 @@
 import * as Amplitude from '@amplitude/node'
 import { Request } from 'express'
-import { tryOrLogError } from 'shared/helpers/try-or-log-error'
-import { trackAuditEvent } from 'shared/audit-events'
-import { ENV_CONFIG } from 'common/envs/constants'
 
-const key = ENV_CONFIG.amplitudeApiKey
+import { DEV_CONFIG } from 'common/envs/dev'
+import { PROD_CONFIG } from 'common/envs/prod'
+import { tryOrLogError } from 'shared/helpers/try-or-log-error'
+
+import { isProd } from 'shared/utils'
+import { trackAuditEvent } from 'shared/audit-events'
+
+const key = isProd() ? PROD_CONFIG.amplitudeApiKey : DEV_CONFIG.amplitudeApiKey
 
 const amp = Amplitude.init(key ?? '')
 

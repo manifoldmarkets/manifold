@@ -28,8 +28,6 @@ import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { log, Logger } from 'shared/log'
 export { log, Logger }
-import { isProd } from 'common/envs/is-prod'
-export { isProd }
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -209,6 +207,17 @@ export const processPartitioned = async <T extends DocumentData, U>(
     )
   }
   return results
+}
+
+// TODO: deprecate in favor of common/src/envs/is-prod.ts
+export const isProd = () => {
+  // mqp: kind of hacky rn. the first clause is for cloud run API service,
+  // second clause is for local scripts and cloud functions
+  if (process.env.ENVIRONMENT) {
+    return process.env.ENVIRONMENT == 'PROD'
+  } else {
+    return admin.app().options.projectId === 'mantic-markets'
+  }
 }
 
 export const getDoc = async <T>(collection: string, doc: string) => {
