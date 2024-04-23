@@ -1,9 +1,4 @@
-import {
-  CashIcon,
-  HomeIcon,
-  QuestionMarkCircleIcon,
-  ChartBarIcon,
-} from '@heroicons/react/outline'
+import { HomeIcon, QuestionMarkCircleIcon } from '@heroicons/react/outline'
 import {
   QuestionMarkCircleIcon as SolidQuestionIcon,
   HomeIcon as SolidHomeIcon,
@@ -104,7 +99,7 @@ export function LovePage(props: {
       </Col>
       {!hideBottomBar && (
         <BottomNavBar
-          sidebarNavigationOptions={mobileSidebarOptions}
+          sidebarNavigationOptions={mobileSidebarOptions as any[]}
           navigationOptions={bottomNavOptions}
         />
       )}
@@ -177,11 +172,6 @@ const getDesktopNav = (user: User | null | undefined) => {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
-      },
-      {
-        name: 'Markets',
-        href: '/markets',
-        icon: ChartBarIcon,
       }
     )
 
@@ -193,9 +183,8 @@ const getDesktopNav = (user: User | null | undefined) => {
 
 // No sidebar when signed out
 const getSidebarNavigation = (_toggleModal: () => void) => {
-  return buildArray(
-    { name: 'Markets', icon: ChartBarIcon, href: '/markets' }
-    // TODO: Renable get mana dialog once we add back prediction markets.
-    // { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
-  )
+  return buildArray()
+  // { name: 'Markets', icon: ChartBarIcon, href: '/markets' }
+  // TODO: Renable get mana dialog once we add back prediction markets.
+  // { name: 'Get mana', icon: CashIcon, onClick: toggleModal }
 }
