@@ -13,7 +13,6 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import {
-  ENV_CONFIG,
   LOVE_DOMAIN,
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
