@@ -232,7 +232,6 @@ export function ContractPageContent(props: ContractParams) {
   const isNumber = contract.outcomeType === 'NUMBER'
 
   const rows = useRealtimeBetsPolling(
-    contract.id,
     {
       contractId: contract.id,
       afterTime: lastBetTime,
@@ -240,7 +239,8 @@ export function ContractPageContent(props: ContractParams) {
         contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
       order: 'asc',
     },
-    500
+    500,
+    `contract-bets-${contract.id}-500ms-v1`
   )
 
   const newBets = rows ?? []
