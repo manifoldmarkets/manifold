@@ -1,5 +1,9 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient, getInstanceId } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  getInstanceId,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { convertContract } from 'common/supabase/contracts'
 import { PrivateUser } from 'common/user'
 import { chunk, orderBy, uniqBy } from 'lodash'
@@ -248,8 +252,8 @@ export const buildUserInterestsCache = async (userId?: string) => {
   log('building cache for users: ', activeUserIds.length)
   const chunks = chunk(activeUserIds, 500)
   for (const userIds of chunks) {
-    await Promise.all(
-      userIds.map(async (userId) => {
+    await Promise.all([
+      ...userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
         await pg.map(
           `SELECT * FROM get_user_topic_interests($1, 50) LIMIT 100`,
@@ -259,12 +263,32 @@ export const buildUserInterestsCache = async (userId?: string) => {
               r.avg_conversion_score
           }
         )
-      })
-    )
+      }),
+      addScoreForFollowedTopics(pg, userIds),
+    ])
     log(
       'built topic interests cache for users: ',
       Object.keys(userIdsToAverageTopicConversionScores).length
     )
   }
   log('built user topic interests cache')
+}
+
+const addScoreForFollowedTopics = async (
+  pg: SupabaseDirectClient,
+  userIds: string[]
+) => {
+  await pg.map(
+    `select member_id, group_id from group_members where member_id = any($1)`,
+    [userIds],
+    (row) => {
+      if (!userIdsToAverageTopicConversionScores[row.member_id]) {
+        userIdsToAverageTopicConversionScores[row.member_id] = {}
+      }
+      if (!userIdsToAverageTopicConversionScores[row.member_id][row.group_id]) {
+        userIdsToAverageTopicConversionScores[row.member_id][row.group_id] = 0
+      }
+      userIdsToAverageTopicConversionScores[row.member_id][row.group_id] += 1
+    }
+  )
 }
