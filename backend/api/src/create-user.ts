@@ -68,11 +68,6 @@ export const createuser: APIHandler<'createuser'> = async (
       : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
     undefined
 
-  const fromPolitics =
-    (host?.includes('localhost')
-      ? process.env.IS_MANIFOLD_POLITICS === 'true'
-      : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
-
   const ip = getIp(req)
   const deviceToken = testUserAKAEmailPasswordUser
     ? randomString(20)
@@ -140,7 +135,6 @@ export const createuser: APIHandler<'createuser'> = async (
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
-        fromPolitics,
         signupBonusPaid: 0,
         verifiedPhone: testUserAKAEmailPasswordUser,
       })
