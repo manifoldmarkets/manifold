@@ -61,8 +61,7 @@ export const invokeFunction = async (name: string, body?: unknown) => {
 
 export const revalidateStaticProps = async (
   // Path after domain: e.g. "/JamesGrugett/will-pete-buttigieg-ever-be-us-pres"
-  pathToRevalidate: string,
-  domain?: string
+  pathToRevalidate: string
 ) => {
   if (isProd()) {
     const apiSecret = process.env.API_SECRET as string
@@ -71,34 +70,25 @@ export const revalidateStaticProps = async (
 
     const queryStr = `?pathToRevalidate=${pathToRevalidate}&apiSecret=${apiSecret}`
     const resp = await fetch(
-      `https://${domain ?? ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
+      `https://${ENV_CONFIG.domain}/api/v0/revalidate` + queryStr
     )
 
     if (resp.ok) {
       log('Revalidated', pathToRevalidate)
     } else {
-      const body = await resp.text()
-      log.error(`HTTP ${resp.status} revalidating ${queryStr}: ${body}`)
+      try {
+        const json = await resp.json()
+        log.error(
+          `HTTP ${
+            resp.status
+          } revalidating ${pathToRevalidate}: ${JSON.stringify(json)}`
+        )
+      } catch (e) {
+        const error = e as Error
+        log.error(`failed to parse response: ${error.message ?? error}`)
+        log.error(`HTTP ${resp.status} revalidating ${pathToRevalidate}`)
+      }
     }
-  }
-}
-
-export const revalidateCachedTag = async (tag: string, domain: string) => {
-  if (isProd()) {
-    const apiSecret = process.env.API_SECRET as string
-    if (!apiSecret)
-      throw new Error('Revalidation failed because of missing API_SECRET.')
-
-    const queryStr = `?tag=${tag}&apiSecret=${apiSecret}`
-    const { ok, status, statusText } = await fetch(
-      `https://${domain}/api/v0/revalidate${queryStr}`
-    )
-    if (!ok)
-      throw new Error(
-        'Error revalidating: ' + queryStr + ': ' + status + ' ' + statusText
-      )
-
-    log('Revalidated tag', tag)
   }
 }
 
