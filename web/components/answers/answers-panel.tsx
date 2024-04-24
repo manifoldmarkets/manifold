@@ -73,6 +73,8 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
+import { getBets } from 'common/supabase/bets'
+import { db } from 'web/lib/supabase/db'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_ANSWERS = 20
@@ -510,9 +512,17 @@ export function SimpleAnswerBars(props: {
     true,
     SHOW_LIMIT_ORDER_CHARTS_KEY
   )
-  const unfilledBets = useUnfilledBets(contract.id, {
-    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
-  })
+
+  // fetch once since only for display
+  const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
+  useEffect(() => {
+    if (isAdvancedTrader && shouldShowLimitOrderChart) {
+      getBets(db, {
+        contractId: contract.id,
+        isOpenLimitOrder: true,
+      }).then((bets) => setUnfilledBets(bets as LimitBet[]))
+    }
+  }, [contract.id, isAdvancedTrader, shouldShowLimitOrderChart])
 
   return (
     <Col className="mx-[2px] gap-2">
