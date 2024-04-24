@@ -51,23 +51,22 @@ export async function updateUserMetricsCore() {
   log('Loading active users...')
   const random = Math.random()
   const activeUserIds = await pg.map(
-    `select distinct users.id, users.data->'metricsLastUpdated' as last_updated
-     from users where (
+    `
+      select distinct users.id, uph.ts
+      from users
+        left join user_portfolio_history_latest uph on uph.user_id = users.id
+      where (
        users.id in (
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '2 weeks'
        )
          or ($1 < 0.01 and users.data->'lastBetTime' is not null)
        )
-     order by last_updated nulls first limit 400`,
+        order by uph.ts nulls first limit 400`,
     [random],
     (r) => r.id as string
   )
 
-  for (const userId of activeUserIds) {
-    const doc = firestore.collection('users').doc(userId)
-    writer.update(doc, { metricsLastUpdated: now })
-  }
   log(`Loaded ${activeUserIds.length} active users.`)
 
   const creatorTraders = await maybeGetPeriodTradersByUserId(

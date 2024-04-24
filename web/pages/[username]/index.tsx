@@ -380,7 +380,6 @@ function UserProfile(props: {
                           defaultTimePeriod={
                             currentUser?.id === user.id ? 'weekly' : 'monthly'
                           }
-                          lastUpdatedTime={user.metricsLastUpdated}
                           hideAddFundsButton
                           balanceChanges={balanceChanges}
                         />

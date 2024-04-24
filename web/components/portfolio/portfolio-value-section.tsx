@@ -5,12 +5,8 @@ import { last } from 'lodash'
 import { ReactNode, memo, useMemo, useState } from 'react'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
-import { useEvent } from 'web/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import {
-  PeriodToSnapshots,
-  usePortfolioHistory,
-} from 'web/hooks/use-portfolio-history'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 import { Period, User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
@@ -33,12 +29,10 @@ export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     user: User
     defaultTimePeriod: Period
-    lastUpdatedTime: number | undefined
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
-    preloadPoints?: PeriodToSnapshots
     size?: 'sm' | 'md'
     balanceChanges: AnyBalanceChangeType[]
   }) {
@@ -46,21 +40,15 @@ export const PortfolioValueSection = memo(
       user,
       hideAddFundsButton,
       defaultTimePeriod,
-      lastUpdatedTime,
       portfolio,
       onlyShowProfit,
       graphContainerClassName,
-      preloadPoints,
       size = 'md',
       balanceChanges,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
-    const portfolioHistory = usePortfolioHistory(
-      user.id,
-      currentTimePeriod,
-      preloadPoints
-    )
+    const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
     const [graphMode, setGraphMode] = useState<GraphMode>('balance')
 
     const first = portfolioHistory?.[0]
@@ -90,10 +78,6 @@ export const PortfolioValueSection = memo(
       setGraphDisplayNumber(p != null ? p.y : null)
     }
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
-    const onClickNumber = useEvent((mode: GraphMode) => {
-      setGraphMode(mode)
-      setGraphDisplayNumber(null)
-    })
 
     const zoomParams = useZoom()
 
@@ -111,19 +95,14 @@ export const PortfolioValueSection = memo(
 
     const isMobile = useIsMobile()
 
-    if (
-      !portfolioHistory ||
-      graphPoints.length <= 1 ||
-      !lastUpdatedTime ||
-      !lastPortfolioMetrics
-    ) {
-      const showDisclaimer = portfolioHistory || !lastUpdatedTime
+    console.log(portfolioHistory)
+    if (!portfolioHistory || graphPoints.length <= 1 || !lastPortfolioMetrics) {
+      const showDisclaimer = portfolioHistory
       return (
         <PortfolioValueSkeleton
           hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
           graphMode={graphMode}
-          onClickNumber={onClickNumber}
           hideSwitcher={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
@@ -170,7 +149,6 @@ export const PortfolioValueSection = memo(
         hideAddFundsButton={hideAddFundsButton}
         userId={user.id}
         graphMode={graphMode}
-        onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={
@@ -211,7 +189,6 @@ export const PortfolioValueSection = memo(
 
 function PortfolioValueSkeleton(props: {
   graphMode: GraphMode
-  onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   graphElement: (width: number, height: number) => ReactNode
@@ -235,7 +212,6 @@ function PortfolioValueSkeleton(props: {
 }) {
   const {
     graphMode,
-    onClickNumber,
     currentTimePeriod,
     setCurrentTimePeriod,
     graphElement,

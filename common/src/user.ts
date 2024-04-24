@@ -57,7 +57,6 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
-  metricsLastUpdated?: number
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
   fromLove?: boolean
