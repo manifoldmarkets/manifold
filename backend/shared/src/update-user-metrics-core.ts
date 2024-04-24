@@ -69,15 +69,6 @@ export async function updateUserMetricsCore() {
 
   log(`Loaded ${activeUserIds.length} active users.`)
 
-  const creatorTraders = await maybeGetPeriodTradersByUserId(
-    pg,
-    activeUserIds,
-    yesterday,
-    weekAgo,
-    monthAgo,
-    random
-  )
-
   const userIdsNeedingUpdate = activeUserIds.filter(
     (id) =>
       !userToPortfolioMetrics[id]?.currentPortfolio ||
@@ -287,7 +278,6 @@ export async function updateUserMetricsCore() {
     userUpdates.push({
       user: user,
       fields: removeUndefinedProps({
-        creatorTraders: creatorTraders[user.id],
         profitCached: newProfit,
         nextLoanCached: nextLoanPayout ?? 0,
       }),
@@ -334,46 +324,6 @@ const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
     `select data from contracts where id in ($1:list)`,
     [betContractIds],
     (r) => r.data as Contract
-  )
-}
-
-const maybeGetPeriodTradersByUserId = async (
-  pg: SupabaseDirectClient,
-  activeUserIds: string[],
-  yesterday: number,
-  weekAgo: number,
-  monthAgo: number,
-  random: number
-) => {
-  const recalculateTraders = random < 0.1
-  if (!recalculateTraders) {
-    return {} as {
-      [userId: string]: {
-        daily: number
-        weekly: number
-        monthly: number
-        allTime: number
-      }
-    }
-  }
-  log('Loading creator trader counts...')
-  const [yesterdayTraders, weeklyTraders, monthlyTraders, allTimeTraders] =
-    await Promise.all(
-      [yesterday, weekAgo, monthAgo, undefined].map((t) =>
-        getCreatorTraders(pg, activeUserIds, t)
-      )
-    )
-  log(`Loaded creator trader counts.`)
-  return Object.fromEntries(
-    activeUserIds.map((userId) => {
-      const creatorTraders = {
-        daily: yesterdayTraders[userId] ?? 0,
-        weekly: weeklyTraders[userId] ?? 0,
-        monthly: monthlyTraders[userId] ?? 0,
-        allTime: allTimeTraders[userId] ?? 0,
-      }
-      return [userId, creatorTraders]
-    })
   )
 }
 
@@ -432,24 +382,6 @@ const getPortfolioHistoricalProfits = async (
       order by user_id, ts desc`,
       [userIds, new Date(when).toISOString()],
       (r) => [r.user_id as string, parseFloat(r.profit as string)]
-    )
-  )
-}
-
-const getCreatorTraders = async (
-  pg: SupabaseDirectClient,
-  userIds: string[],
-  since?: number
-) => {
-  return Object.fromEntries(
-    await pg.map(
-      `select to_id, count(id) as total from txns 
-               where created_time >= $2
-               and category = 'UNIQUE_BETTOR_BONUS'
-               and to_id in ($1:list)
-             group by to_id;`,
-      [userIds, new Date(since ?? 0).toISOString()],
-      (r) => [r.to_id as string, r.total as number]
     )
   )
 }

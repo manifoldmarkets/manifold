@@ -440,7 +440,6 @@ export type Database = {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
-          view_count: number
           is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
@@ -455,6 +454,7 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          view_count: number | null
           visibility: string | null
         }
         Insert: {
@@ -470,7 +470,6 @@ export type Database = {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
-          view_count?: number | null
           is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -485,6 +484,7 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
         }
         Update: {
@@ -500,7 +500,6 @@ export type Database = {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
-          view_count?: number | null
           is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -515,7 +514,38 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
+        }
+        Relationships: []
+      }
+      creator_portfolio_history: {
+        Row: {
+          fees_earned: number
+          id: number
+          ts: string
+          unique_bettors: number
+          user_id: string
+          views: number
+          volume: number
+        }
+        Insert: {
+          fees_earned: number
+          id?: never
+          ts?: string | null
+          unique_bettors: number
+          user_id: string
+          views: number
+          volume: number
+        }
+        Update: {
+          fees_earned?: number
+          id?: never
+          ts?: string | null
+          unique_bettors?: number
+          user_id?: string
+          views?: number
+          volume?: number
         }
         Relationships: []
       }
