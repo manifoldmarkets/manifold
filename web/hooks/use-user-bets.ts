@@ -1,17 +1,23 @@
-import { useRealtimeBetsPolling } from './use-bets-supabase'
+import { useEffect } from 'react'
+import { Bet, listenForBets } from 'web/lib/firebase/bets'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useUserContractBets = (
   userId: string | undefined,
   contractId: string | undefined
 ) => {
-  const bets = !contractId
-    ? undefined
-    : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useRealtimeBetsPolling(
-        { contractId, userId },
-        5_000,
-        `user-bets-${userId}-${contractId}`
-      )
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `bets-${userId}-${contractId}`
+  )
+
+  useEffect(() => {
+    if (userId && contractId)
+      return listenForBets(setBets, {
+        contractId: contractId,
+        userId: userId,
+      })
+  }, [userId, contractId])
 
   return bets
 }
