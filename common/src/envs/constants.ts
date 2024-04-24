@@ -159,7 +159,6 @@ export const BOT_USERNAMES = [
 
 export const MOD_IDS = [
   'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
-  'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
