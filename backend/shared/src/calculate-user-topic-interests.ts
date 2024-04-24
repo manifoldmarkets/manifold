@@ -11,6 +11,7 @@ export async function calculateUserTopicInterests(startTime?: number) {
   const startDate = new Date(startTime ?? Date.now() - DAY_MS)
   const end = new Date(startDate.valueOf() + DAY_MS).toISOString()
   const start = startDate.toISOString()
+  log(`Calculating user topic interests for ${start}`)
   const pg = createSupabaseDirectClient()
   const userGroupIdsToInteractions = await pg.map(
     `
@@ -80,16 +81,16 @@ export async function calculateUserTopicInterests(startTime?: number) {
   log(`Writing user topic interests for ${allUserIds.length} users`)
   await Promise.all(
     allUserIds.map(async (userId) => {
-      const interactedGroupIds: string[] =
-        Object.keys(userIdsToGroupIdInteractionWeights[userId]) ?? []
-      const viewedGroupIds: string[] = userIdsToViewedGroupIds[userId] ?? []
+      const myGroupWeights = userIdsToGroupIdInteractionWeights?.[userId] ?? {}
+      const interactedGroupIds: string[] = Object.keys(myGroupWeights) ?? []
+      const viewedGroupIds: string[] = userIdsToViewedGroupIds?.[userId] ?? []
       const allGroupIds = uniq([...interactedGroupIds, ...viewedGroupIds])
       const groupIdsToConversionScore = Object.fromEntries(
         allGroupIds.map((groupId) => [
           groupId,
           {
             conversionScore:
-              userIdsToGroupIdInteractionWeights[userId][groupId] /
+              (myGroupWeights[groupId] ?? 0) /
               (viewedGroupIds.filter((id) => id === groupId).length || 1),
           },
         ])
@@ -97,7 +98,7 @@ export async function calculateUserTopicInterests(startTime?: number) {
 
       await pg.none(
         `insert into user_topic_interests (user_id, group_ids_to_activity)
-         values ($1, $2)`,
+           values ($1, $2)`,
         [userId, groupIdsToConversionScore]
       )
     })
