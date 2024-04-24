@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Bet, LimitBet } from 'common/bet'
+import { Bet, listenForUnfilledBets } from 'web/lib/firebase/bets'
+import { LimitBet } from 'common/bet'
 import { useFirebaseUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
+import { getUnfilledLimitOrders } from 'web/lib/supabase/bets'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { useRealtimeBetsPolling } from './use-bets-supabase'
 
 export const useUnfilledBets = (
   contractId: string,
@@ -14,19 +15,36 @@ export const useUnfilledBets = (
     waitUntilAdvancedTrader: boolean
   }
 ) => {
-  const [now] = useState(Date.now())
+  const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
 
-  const unfilledBets = useRealtimeBetsPolling(
-    {
-      contractId,
-      isOpenLimitOrder: true,
-      order: 'desc',
-    },
-    options?.waitUntilAdvancedTrader ? Infinity : 5_000,
-    `unfilled-bets-${contractId}`
-  )?.filter((bet) => (bet.expiresAt ? bet.expiresAt > now : true))
+  const getUnfilledUnexpiredBets = (bets: LimitBet[]) => {
+    const now = Date.now()
+    return bets.filter((bet) => (bet.expiresAt ? bet.expiresAt > now : true))
+  }
 
-  return unfilledBets as LimitBet[] | undefined
+  useEffect(() => {
+    if (options?.waitUntilAdvancedTrader) return
+    // Load first with supabase b/c it's faster.
+    getUnfilledLimitOrders(contractId).then((b) =>
+      setUnfilledBets(getUnfilledUnexpiredBets(b))
+    )
+    // Then listen for updates w/ firebase.
+    return listenForUnfilledBets(contractId, (b) =>
+      setUnfilledBets(getUnfilledUnexpiredBets(b))
+    )
+  }, [contractId, options?.waitUntilAdvancedTrader])
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (!unfilledBets?.length) return
+      const unExpiredBetsOnly = getUnfilledUnexpiredBets(unfilledBets)
+      if (unExpiredBetsOnly.length !== unfilledBets.length)
+        setUnfilledBets(unExpiredBetsOnly)
+    }, 5000)
+    return () => clearInterval(intervalId)
+  }, [unfilledBets?.length])
+
+  return unfilledBets
 }
 
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
