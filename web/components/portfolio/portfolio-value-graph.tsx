@@ -1,16 +1,18 @@
-import { useEffect, useMemo } from 'react'
-import { scaleTime, scaleLinear } from 'd3-scale'
-import { min, max } from 'lodash'
-import dayjs from 'dayjs'
-import { Col } from '../layout/col'
-import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { HistoryPoint } from 'common/chart'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
-import { ZoomParams } from '../charts/helpers'
+import dayjs from 'dayjs'
+import { max, min } from 'lodash'
+import { useEffect, useMemo } from 'react'
+import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { Period } from 'web/lib/firebase/users'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { ZoomParams } from '../charts/helpers'
+import { Col } from '../layout/col'
+import { PortfolioChart } from './portfolio-chart'
 
-export type GraphMode = 'profit' | 'invested' | 'balance'
+export type GraphMode = 'portfolio' | 'profit'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -27,18 +29,22 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 export const PortfolioGraph = (props: {
   mode: GraphMode
   duration?: Period
-  points: HistoryPoint<Partial<PortfolioMetrics>>[]
+  // points: HistoryPoint<Partial<PortfolioMetrics>>[]
+  portfolioHistory: PortfolioSnapshot[]
   width: number
   height: number
   zoomParams?: ZoomParams
   onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
   hideXAxis?: boolean
+  firstProfit: number
 }) => {
   const {
     mode,
     duration,
-    points,
+    // points,
+    firstProfit,
+    portfolioHistory,
     onMouseOver,
     width,
     height,
@@ -46,18 +52,80 @@ export const PortfolioGraph = (props: {
     negativeThreshold,
     hideXAxis,
   } = props
+
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    useMemo(() => {
+      if (!portfolioHistory?.length) {
+        return {
+          profitPoints: [],
+          investmentPoints: [],
+          balancePoints: [],
+          networthPoints: [],
+        }
+      }
+
+      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+
+      portfolioHistory.forEach((p) => {
+        profitPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+          obj: p,
+        })
+        investmentPoints.push({
+          x: p.timestamp,
+          y: p.investmentValue,
+          obj: p,
+        })
+        balancePoints.push({
+          x: p.timestamp,
+          y: p.balance,
+          obj: p,
+        })
+        networthPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue,
+          obj: p,
+        })
+      })
+
+      return { profitPoints, investmentPoints, balancePoints, networthPoints }
+    }, [portfolioHistory])
+
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minDate = min(points.map((d) => d.x))!
+    const minDate =
+      mode == 'portfolio'
+        ? min([
+            min(balancePoints.map((d) => d.x)!),
+            min(investmentPoints.map((d) => d.x)!),
+          ])!
+        : min(profitPoints.map((d) => d.x))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxDate = max(points.map((d) => d.x))!
+    const maxDate =
+      mode == 'portfolio'
+        ? max([
+            max(balancePoints.map((d) => d.x)!),
+            max(investmentPoints.map((d) => d.x)!),
+          ])!
+        : max(profitPoints.map((d) => d.x))!
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minValue = min(points.map((d) => d.y))!
+    const minValue =
+      mode == 'portfolio'
+        ? min(balancePoints.map((d) => d.y))!
+        : min(profitPoints.map((d) => d.y))!
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxValue = max(points.map((d) => d.y))!
+    const maxValue =
+      mode == 'portfolio'
+        ? max(networthPoints.map((d) => d.y))!
+        : max(profitPoints.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
-  }, [points])
+  }, [mode])
+
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear(
@@ -70,6 +138,21 @@ export const PortfolioGraph = (props: {
     zoomParams?.setXScale(xScale)
   }, [mode, duration])
 
+  if (mode == 'portfolio') {
+    return (
+      <PortfolioChart
+        data={{
+          balance: { points: balancePoints, color: '#4f46e5' },
+          investment: { points: investmentPoints, color: '#818cf8' },
+        }}
+        w={width > 768 ? 768 : width}
+        h={height}
+        xScale={xScale}
+        yScale={yScale}
+        yKind="Ṁ"
+      />
+    )
+  }
   return (
     <SingleValueHistoryChart
       w={width > 768 ? 768 : width}
@@ -78,7 +161,7 @@ export const PortfolioGraph = (props: {
       yScale={yScale}
       zoomParams={zoomParams}
       yKind="Ṁ"
-      data={points}
+      data={profitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={onMouseOver}

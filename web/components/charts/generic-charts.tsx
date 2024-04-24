@@ -64,7 +64,7 @@ const interpolateY = (
   }
 }
 
-const getTickValues = (min: number, max: number, n: number) => {
+export const getTickValues = (min: number, max: number, n: number) => {
   let step = (max - min) / (n - 1)
   let theMin = min
   let theMax = max
@@ -76,7 +76,7 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [theMin, ...range(1, n - 1).map((i) => theMin + step * i), theMax]
 }
 
-const dataAtXSelector = <Y, P extends Point<number, Y>>(
+export const dataAtXSelector = <Y, P extends Point<number, Y>>(
   data: P[],
   xScale?: ScaleTime<number, number>
 ) => {
@@ -90,7 +90,9 @@ const dataAtXSelector = <Y, P extends Point<number, Y>>(
     return { prev, next, nearest, x: posX }
   }
 }
-const dataAtTimeSelector = <Y, P extends Point<number, Y>>(data: P[]) => {
+export const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
+  data: P[]
+) => {
   return dataAtXSelector(data)
 }
 

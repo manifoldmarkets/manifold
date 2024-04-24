@@ -11,6 +11,7 @@ import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { SupabaseSearch } from '../supabase-search'
 import { PortfolioValueSection } from './portfolio-value-section'
+import { useEffect } from 'react'
 
 export const PortfolioSummary = (props: {
   user: User
