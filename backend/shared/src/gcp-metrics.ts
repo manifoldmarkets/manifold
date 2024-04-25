@@ -162,6 +162,9 @@ class MetricsWriter {
     const freshEntries = store.data.filter((e) => e.fresh)
     if (freshEntries.length > 0) {
       log.debug('Writing GCP metrics.', { entries: freshEntries })
+      for (const entry of freshEntries) {
+        entry.fresh = false
+      }
       if (!LOCAL_DEV) {
         if (this.instance == null) {
           this.instance = await getInstanceInfo()
@@ -170,9 +173,6 @@ class MetricsWriter {
           })
         }
         // if we start using gauge or delta metrics, we will need to reset them here
-        for (const entry of freshEntries) {
-          entry.fresh = false
-        }
         const body = this.serialize(this.instance, freshEntries, now)
         await this.client.createTimeSeries(body)
       }
