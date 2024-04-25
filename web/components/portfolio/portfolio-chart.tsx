@@ -18,12 +18,18 @@ import {
 } from '../charts/helpers'
 import { ZoomSlider } from '../charts/zoom-slider'
 import clsx from 'clsx'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 type AreaPointType = {
   x: number // The x-coordinate
   y0: number // Lower boundary of the area
   y1: number // Upper boundary of the area
 }
+
+// hacky solution
+const BALANCE_IDX = 0
+const INVESTED_IDX = 1
+
 // multi line chart
 export const PortfolioChart = <P extends HistoryPoint>(props: {
   data: Record<string, { points: P[]; color: string }>
@@ -40,6 +46,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
+  setGraphBalance: (balance: number | undefined) => void
+  setGraphInvested: (invested: number | undefined) => void
 }) => {
   const {
     data,
@@ -53,6 +61,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     hoveredAnnotation,
     setHoveredAnnotation,
     yKind,
+    setGraphBalance,
+    setGraphInvested,
   } = props
 
   useEffect(() => {
@@ -62,7 +72,11 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   }, [w])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
-  const [ttParams, setTTParams] = useState<TooltipProps<P> & { ans: string }>()
+  const [ttParams, setTTParams] = useState<
+    TooltipProps<P> & {
+      ans: string
+    }
+  >()
   const curve = props.curve ?? curveStepAfter
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
@@ -109,11 +123,34 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     )
   }, [stackedData, xScale])
 
+  const unstackedSelectors = useMemo(() => {
+    // Create a new object where keys are the IDs of each dataset and values are the selector functions
+    return Object.fromEntries(
+      Object.entries(data).map(([id, { points, color }]) => {
+        // For each dataset, create a selector function that can find the data point based on the x-value
+        return [id, dataAtXSelector(points, xScale)]
+      })
+    )
+  }, [data, xScale])
+
   const getMarkerPosition = useEvent((mouseX: number, mouseY: number) => {
     const valueY = yScale.invert(mouseY)
     const ps = stackedData.map((data) => selectors[data.id](mouseX))
+    const unstackedPs = Object.entries(data).map(([id, { points, color }]) => {
+      return unstackedSelectors[id](mouseX)
+    })
     let closestIdx = stackedData.length - 1
     const topmostIdx = stackedData.length - 1
+
+    unstackedPs.forEach((p, i) => {
+      if (i == BALANCE_IDX && p.prev?.y) {
+        setGraphBalance(p.prev.y)
+      }
+      if (i == INVESTED_IDX && p.prev?.y) {
+        setGraphInvested(p.prev.y)
+      }
+    })
+
     ps.forEach((p, i) => {
       const closePrev = ps[closestIdx].prev
       const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
@@ -140,6 +177,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
+    setGraphBalance(undefined)
+    setGraphInvested(undefined)
   })
 
   const hoveringId = props.hoveringId ?? ttParams?.ans

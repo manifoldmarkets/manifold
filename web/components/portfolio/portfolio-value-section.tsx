@@ -163,6 +163,8 @@ export const PortfolioValueSection = memo(
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
+        portfolioFocus={portfolioFocus}
+        setPortfolioFocus={setPortfolioFocus}
         graphElement={(width, height) => (
           <PortfolioGraph
             mode={graphMode}
@@ -220,6 +222,8 @@ function PortfolioValueSkeleton(props: {
   setGraphMode: (mode: GraphMode) => void
   balanceChanges: AnyBalanceChangeType[]
   portfolio: PortfolioSnapshot | undefined
+  portfolioFocus?: PortfolioMode
+  setPortfolioFocus?: (mode: PortfolioMode) => void
   user: User
 }) {
   const {
@@ -244,6 +248,8 @@ function PortfolioValueSkeleton(props: {
     graphInvested,
     setGraphMode,
     balanceChanges,
+    portfolioFocus,
+    setPortfolioFocus,
     portfolio,
     user,
   } = props
@@ -309,8 +315,14 @@ function PortfolioValueSkeleton(props: {
             </Row> */}
             {graphMode == 'portfolio' && (
               <>
-                <CoinNumber amount={invested} className="text-indigo-400" />
-                <CoinNumber amount={balance} className="text-indigo-600" />
+                <CoinNumber
+                  amount={graphInvested ?? invested}
+                  className="text-indigo-400"
+                />
+                <CoinNumber
+                  amount={graphBalance ?? balance}
+                  className="text-indigo-600"
+                />
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />

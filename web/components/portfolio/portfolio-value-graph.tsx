@@ -48,7 +48,6 @@ export const PortfolioGraph = (props: {
     // points,
     firstProfit,
     portfolioHistory,
-    onMouseOver,
     width,
     height,
     zoomParams,
@@ -156,6 +155,8 @@ export const PortfolioGraph = (props: {
         xScale={xScale}
         yScale={yScale}
         yKind="Ṁ"
+        setGraphBalance={setGraphBalance}
+        setGraphInvested={setGraphInvested}
       />
     )
   }
