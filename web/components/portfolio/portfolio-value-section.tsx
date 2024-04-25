@@ -98,11 +98,22 @@ export const PortfolioValueSection = memo(
     }
 
     const isMobile = useIsMobile()
-
+    const { balance, investmentValue, totalDeposits } =
+      lastPortfolioMetrics ?? {
+        balance: user.balance,
+        investmentValue: 0,
+        totalDeposits: 0,
+      }
+    const totalValue = balance + investmentValue
+    const profit = totalValue - totalDeposits - firstProfit
     if (!portfolioHistory || graphPoints.length <= 1 || !lastPortfolioMetrics) {
       const showDisclaimer = portfolioHistory
+
       return (
         <PortfolioValueSkeleton
+          balance={balance}
+          profit={profit}
+          invested={investmentValue}
           hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
           graphMode={graphMode}
@@ -143,10 +154,6 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
-    const totalValue = balance + investmentValue
-
-    const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
         hideAddFundsButton={hideAddFundsButton}
@@ -306,9 +313,8 @@ function PortfolioValueSkeleton(props: {
       >
         <Row className={clsx('items-start gap-0')}>
           <div className={'text-ink-800 text-4xl'}>
-            <Row className="items-center gap-3">
+            <Row className="flex-wrap items-center gap-3">
               <CoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
-
               {!hideAddFundsButton && graphMode == 'balance' && (
                 <AddFundsButton
                   userId={userId}

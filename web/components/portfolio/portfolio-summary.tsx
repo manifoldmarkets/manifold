@@ -2,7 +2,6 @@ import clsx from 'clsx'
 
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
-import { DAY_MS } from 'common/util/time'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
@@ -22,7 +21,6 @@ export const PortfolioSummary = (props: {
   const isCurrentUser = currentUser?.id === user.id
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
-  const isNewUser = user.createdTime > Date.now() - DAY_MS
 
   const { data: portfolioData } = useAPIGetter('get-user-portfolio', {
     userId: user.id,
@@ -30,21 +28,19 @@ export const PortfolioSummary = (props: {
 
   return (
     <Col className={clsx(className, 'gap-4')}>
-      {!isNewUser && (
-        <PortfolioValueSection
-          user={user}
-          currentUser={currentUser}
-          defaultTimePeriod={
-            isCreatedInLastWeek
-              ? 'allTime'
-              : currentUser?.id === user.id
-              ? 'weekly'
-              : 'monthly'
-          }
-          portfolio={portfolioData}
-          balanceChanges={balanceChanges}
-        />
-      )}
+      <PortfolioValueSection
+        user={user}
+        currentUser={currentUser}
+        defaultTimePeriod={
+          isCreatedInLastWeek
+            ? 'allTime'
+            : currentUser?.id === user.id
+            ? 'weekly'
+            : 'monthly'
+        }
+        portfolio={portfolioData}
+        balanceChanges={balanceChanges}
+      />
 
       {isCurrentUser && (
         <Col className="mb-6 mt-2 gap-2">
