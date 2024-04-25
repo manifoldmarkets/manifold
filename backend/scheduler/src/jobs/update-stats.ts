@@ -496,7 +496,7 @@ export const updateStatsCore = async () => {
 
   // Total mana divided by 100.
   const manaBetDaily = dailyBets.map((bets) => {
-    return Math.round(sumBy(bets, (bet) => bet.amount) / 100)
+    return Math.round(sumBy(bets, (bet) => Math.abs(bet.amount)) / 100)
   })
   const manaBetWeekly = manaBetDaily.map((_, i) => {
     const start = Math.max(0, i - 6)
