@@ -19,6 +19,7 @@ type PollingState =
   | { state: 'polling'; version: number; timeout: NodeJS.Timeout }
   | { state: 'error'; version: number; timeout?: NodeJS.Timeout }
 
+/** Assumes append-only */
 export function usePersistentSupabasePolling<T extends TableName>(
   table: T,
   allRowsQ: PostgrestBuilder<Row<T>[]>,

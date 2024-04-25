@@ -104,7 +104,7 @@ export function useBets(options?: BetFilter) {
 }
 
 export function useRealtimeBetsPolling(
-  options: BetFilter,
+  options: Omit<BetFilter, 'isOpenLimitOrder'>,
   ms: number,
   key: string
 ) {

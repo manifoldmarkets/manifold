@@ -6,7 +6,6 @@ import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { useRealtimeBetsPolling } from './use-bets-supabase'
 
 export const useUnfilledBets = (
   contractId: string,
@@ -14,19 +13,36 @@ export const useUnfilledBets = (
     waitUntilAdvancedTrader: boolean
   }
 ) => {
-  const [now] = useState(Date.now())
+  const [now, setNow] = useState(Date.now())
+  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
+    undefined,
+    `unfilled-bets-${contractId}`
+  )
 
-  const unfilledBets = useRealtimeBetsPolling(
-    {
+  const onPoll = () => {
+    setNow(Date.now())
+    getBets(db, {
       contractId,
       isOpenLimitOrder: true,
       order: 'desc',
-    },
-    options?.waitUntilAdvancedTrader ? Infinity : 5_000,
-    `unfilled-bets-${contractId}`
-  )?.filter((bet) => (bet.expiresAt ? bet.expiresAt > now : true))
+    }).then((result) =>
+      setBets(
+        result.filter((bet) => !bet.expiresAt || bet.expiresAt > now) as
+          | LimitBet[]
+          | undefined
+      )
+    )
+  }
 
-  return unfilledBets as LimitBet[] | undefined
+  useEffect(() => {
+    // poll every 5 seconds
+    if (!options?.waitUntilAdvancedTrader) {
+      const interval = setInterval(onPoll, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [contractId, !!options?.waitUntilAdvancedTrader])
+
+  return bets
 }
 
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
