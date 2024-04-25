@@ -28,6 +28,7 @@ import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     user: User
+    currentUser: User | null | undefined
     defaultTimePeriod: Period
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
@@ -38,6 +39,7 @@ export const PortfolioValueSection = memo(
   }) {
     const {
       user,
+      currentUser,
       hideAddFundsButton,
       defaultTimePeriod,
       portfolio,
@@ -49,7 +51,9 @@ export const PortfolioValueSection = memo(
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>('balance')
+    const [graphMode, setGraphMode] = useState<GraphMode>(
+      currentUser?.id === user.id ? 'balance' : 'profit'
+    )
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
@@ -95,7 +99,6 @@ export const PortfolioValueSection = memo(
 
     const isMobile = useIsMobile()
 
-    console.log(portfolioHistory)
     if (!portfolioHistory || graphPoints.length <= 1 || !lastPortfolioMetrics) {
       const showDisclaimer = portfolioHistory
       return (

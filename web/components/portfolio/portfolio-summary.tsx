@@ -33,6 +33,7 @@ export const PortfolioSummary = (props: {
       {!isNewUser && (
         <PortfolioValueSection
           user={user}
+          currentUser={currentUser}
           defaultTimePeriod={
             isCreatedInLastWeek
               ? 'allTime'
