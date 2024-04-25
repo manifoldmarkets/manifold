@@ -27,6 +27,9 @@ import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { log, Logger } from 'shared/log'
+import { metrics } from 'shared/gcp-metrics'
+
+export { metrics }
 export { log, Logger }
 
 export const logMemory = () => {
@@ -74,8 +77,10 @@ export const revalidateStaticProps = async (
     )
 
     if (resp.ok) {
+      metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
       log('Revalidated', pathToRevalidate)
     } else {
+      metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
       try {
         const json = await resp.json()
         log.error(

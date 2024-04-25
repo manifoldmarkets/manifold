@@ -20,7 +20,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { log } from 'shared/utils'
+import { log, metrics } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
@@ -199,6 +199,7 @@ export const placeBetMain = async (
   )
 
   log(`Main transaction finished - auth ${uid}.`)
+  metrics.inc('app/bet_count', { contract_id: contractId })
 
   const {
     newBet,

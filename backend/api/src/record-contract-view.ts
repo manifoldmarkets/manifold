@@ -3,6 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
+import { metrics } from 'shared/gcp-metrics'
 
 const VIEW_COLUMNS = {
   card: ['last_card_view_ts', 'card_views'],
@@ -26,6 +27,7 @@ export const recordContractView: APIHandler<'record-contract-view'> = async (
   }
   if (!viewsByContract[contractId]) viewsByContract[contractId] = []
   viewsByContract[contractId].push(body)
+  metrics.inc('app/contract_view_count', { contract_id: contractId })
   return {
     result: { status: 'success' },
     continue: async () => {
