@@ -7,16 +7,16 @@ import { formatMoney } from 'common/util/format'
 import { BuyManaTab } from 'web/components/add-funds-modal'
 
 export const WEB_PRICES = {
-  [formatMoney(10000)]: 1399,
-  [formatMoney(25000)]: 2999,
-  [formatMoney(100000)]: 10999,
-  [formatMoney(1000000)]: 100000,
+  [formatMoney(1000)]: 1399,
+  [formatMoney(2500)]: 2999,
+  [formatMoney(10000)]: 10999,
+  [formatMoney(100000)]: 100000,
 }
 
 export const IOS_PRICES = {
-  [formatMoney(10000)]: 1499,
-  [formatMoney(25000)]: 3499,
-  [formatMoney(100000)]: 14299,
+  [formatMoney(1000)]: 1499,
+  [formatMoney(2500)]: 3499,
+  [formatMoney(10000)]: 14299,
 }
 
 export default function AddFundsPage() {
