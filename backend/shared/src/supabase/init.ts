@@ -60,7 +60,7 @@ export function createSupabaseClient() {
 }
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: IDatabase<IClient> | null = null
+let pgpDirect: IDatabase<{}, IClient> | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
