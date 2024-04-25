@@ -24,7 +24,11 @@ import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
-import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
+import {
+  GraphMode,
+  PortfolioGraph,
+  PortfolioMode,
+} from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
@@ -63,38 +67,25 @@ export const PortfolioValueSection = memo(
     )
 
     const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
+    const [portfolioFocus, setPortfolioFocus] = useState<PortfolioMode>('all')
+
+    const [graphBalance, setGraphBalance] = useState<number | undefined>(
+      undefined
+    )
+    const [graphInvested, setGraphInvested] = useState<number | undefined>(
+      undefined
+    )
+
+    const [graphProfit, setGraphProfit] = useState<number | undefined>(
+      undefined
+    )
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
       ? first.balance + first.investmentValue - first.totalDeposits
       : 0
 
-    // const graphPoints = useMemo(() => {
-    //   if (!portfolioHistory?.length) return []
-
-    //   return portfolioHistory.map((p) => ({
-    //     x: p.timestamp,
-    //     y:
-    //       graphMode === 'portfolio'
-    //         ? p.balance
-    //         : graphMode === 'invested'
-    //         ? p.investmentValue
-    //         : p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-    //     obj: p,
-    //   }))
-    // }, [portfolioHistory, graphMode])
-
-    const [graphDisplayNumber, setGraphDisplayNumber] = useState<number | null>(
-      null
-    )
-    const handleGraphDisplayChange = (p: { y: number } | undefined) => {
-      setGraphDisplayNumber(p != null ? p.y : null)
-    }
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
-    const onClickNumber = useEvent((mode: GraphMode) => {
-      setGraphMode(mode)
-      setGraphDisplayNumber(null)
-    })
 
     const zoomParams = useZoom()
 
@@ -124,7 +115,6 @@ export const PortfolioValueSection = memo(
           hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
           graphMode={graphMode}
-          onClickNumber={onClickNumber}
           hideSwitcher={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
@@ -154,7 +144,6 @@ export const PortfolioValueSection = memo(
           placement={isMobile ? 'bottom' : undefined}
           size={size}
           setGraphMode={setGraphMode}
-          graphDisplayNumber={graphDisplayNumber}
           balanceChanges={balanceChanges}
           portfolio={portfolio}
           user={user}
@@ -171,7 +160,6 @@ export const PortfolioValueSection = memo(
         hideAddFundsButton={hideAddFundsButton}
         userId={user.id}
         graphMode={graphMode}
-        onClickNumber={onClickNumber}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
@@ -183,9 +171,11 @@ export const PortfolioValueSection = memo(
             width={width}
             height={height}
             zoomParams={zoomParams}
-            onMouseOver={handleGraphDisplayChange}
             hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
             firstProfit={firstProfit}
+            setGraphBalance={setGraphBalance}
+            setGraphInvested={setGraphInvested}
+            setGraphProfit={setGraphProfit}
           />
         )}
         onlyShowProfit={onlyShowProfit}
@@ -195,8 +185,10 @@ export const PortfolioValueSection = memo(
         balance={balance}
         profit={profit}
         invested={investmentValue}
+        graphBalance={graphBalance}
+        graphProfit={graphProfit}
+        graphInvested={graphInvested}
         setGraphMode={setGraphMode}
-        graphDisplayNumber={graphDisplayNumber}
         balanceChanges={balanceChanges}
         portfolio={undefined}
         user={user}
@@ -207,7 +199,6 @@ export const PortfolioValueSection = memo(
 
 function PortfolioValueSkeleton(props: {
   graphMode: GraphMode
-  onClickNumber: (mode: GraphMode) => void
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   graphElement: (width: number, height: number) => ReactNode
@@ -223,15 +214,16 @@ function PortfolioValueSkeleton(props: {
   balance?: number
   profit?: number
   invested?: number
+  graphBalance?: number
+  graphProfit?: number
+  graphInvested?: number
   setGraphMode: (mode: GraphMode) => void
-  graphDisplayNumber: number | null
   balanceChanges: AnyBalanceChangeType[]
   portfolio: PortfolioSnapshot | undefined
   user: User
 }) {
   const {
     graphMode,
-    onClickNumber,
     currentTimePeriod,
     setCurrentTimePeriod,
     graphElement,
@@ -247,8 +239,10 @@ function PortfolioValueSkeleton(props: {
     balance,
     profit,
     invested,
+    graphBalance,
+    graphProfit,
+    graphInvested,
     setGraphMode,
-    graphDisplayNumber,
     balanceChanges,
     portfolio,
     user,
@@ -267,12 +261,6 @@ function PortfolioValueSkeleton(props: {
         allTime: 'Profit',
       }[currentTimePeriod]
 
-  // const currentGraphNumber =
-  //   graphMode === 'profit'
-  //     ? profit
-  //     : graphMode === 'balance'
-  //     ? balance
-  //     : invested
   return (
     <Col>
       <Row>
@@ -321,6 +309,8 @@ function PortfolioValueSkeleton(props: {
             </Row> */}
             {graphMode == 'portfolio' && (
               <>
+                <CoinNumber amount={invested} className="text-indigo-400" />
+                <CoinNumber amount={balance} className="text-indigo-600" />
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />
@@ -336,7 +326,13 @@ function PortfolioValueSkeleton(props: {
               </>
             )}
             {graphMode == 'profit' && (
-              <ProfitWidget user={user} portfolio={portfolio} />
+              <>
+                <CoinNumber
+                  amount={graphProfit ?? profit}
+                  className="text-indigo-600"
+                />
+                <ProfitWidget user={user} portfolio={portfolio} />
+              </>
             )}
           </div>
 

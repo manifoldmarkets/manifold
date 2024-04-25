@@ -13,6 +13,7 @@ import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
 
 export type GraphMode = 'portfolio' | 'profit'
+export type PortfolioMode = 'balance' | 'investment' | 'all'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -34,10 +35,12 @@ export const PortfolioGraph = (props: {
   width: number
   height: number
   zoomParams?: ZoomParams
-  onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
   hideXAxis?: boolean
   firstProfit: number
+  setGraphBalance: (balance: number | undefined) => void
+  setGraphInvested: (invested: number | undefined) => void
+  setGraphProfit: (profit: number | undefined) => void
 }) => {
   const {
     mode,
@@ -51,6 +54,9 @@ export const PortfolioGraph = (props: {
     zoomParams,
     negativeThreshold,
     hideXAxis,
+    setGraphBalance,
+    setGraphInvested,
+    setGraphProfit,
   } = props
 
   const { profitPoints, investmentPoints, balancePoints, networthPoints } =
@@ -164,7 +170,9 @@ export const PortfolioGraph = (props: {
       data={profitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
-      onMouseOver={onMouseOver}
+      onMouseOver={(p) => {
+        setGraphProfit(p ? p.y : undefined)
+      }}
       curve={curveLinear}
       color={mode === 'profit' ? ['#14b8a6', '#F75836'] : '#4f46e5'}
       negativeThreshold={negativeThreshold}
