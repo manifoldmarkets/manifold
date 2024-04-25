@@ -83,7 +83,7 @@ export const FeedRepost = memo(function (props: {
             )}
             <FeedDropdown
               contract={contract}
-              item={item}
+              itemCreatorId={item?.creatorId ?? undefined}
               interesting={true}
               toggleInteresting={hide}
               importanceScore={props.contract.importanceScore}
@@ -97,7 +97,7 @@ export const FeedRepost = memo(function (props: {
                 <CardReason item={item} contract={contract} />
                 <FeedDropdown
                   contract={contract}
-                  item={item}
+                  itemCreatorId={item?.creatorId ?? undefined}
                   interesting={true}
                   toggleInteresting={hide}
                   importanceScore={props.contract.importanceScore}
@@ -138,7 +138,7 @@ export const FeedRepost = memo(function (props: {
                 <Row className={' justify-end gap-2'}>
                   <FeedDropdown
                     contract={contract}
-                    item={item}
+                    itemCreatorId={item?.creatorId ?? undefined}
                     interesting={true}
                     toggleInteresting={hide}
                     importanceScore={props.contract.importanceScore}

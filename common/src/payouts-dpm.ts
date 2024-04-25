@@ -2,8 +2,7 @@ import { sum, groupBy, sumBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
 import { DPMContract, StillOpenDPMContract } from './contract'
-import { DPM_CREATOR_FEE, DPM_FEES, DPM_PLATFORM_FEE } from './fees'
-import { addObjects } from './util/object'
+import { DPM_CREATOR_FEE, DPM_FEES } from './fees'
 
 export const getDpmCancelPayouts = (contract: DPMContract, bets: Bet[]) => {
   const { pool } = contract
@@ -20,7 +19,6 @@ export const getDpmCancelPayouts = (contract: DPMContract, bets: Bet[]) => {
     payouts,
     creatorPayout: 0,
     liquidityPayouts: [],
-    collectedFees: contract.collectedFees,
   }
 }
 
@@ -45,18 +43,11 @@ export const getDpmStandardPayouts = (
 
   const profits = sumBy(payouts, (po) => Math.max(0, po.profit))
   const creatorFee = DPM_CREATOR_FEE * profits
-  const platformFee = DPM_PLATFORM_FEE * profits
-  const collectedFees = addObjects(contract.collectedFees, {
-    creatorFee,
-    platformFee,
-    liquidityFee: 0,
-  })
 
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
     creatorPayout: creatorFee,
     liquidityPayouts: [],
-    collectedFees,
   }
 }
 
@@ -87,17 +78,10 @@ export const getPayoutsMultiOutcome = (
   const profits = sumBy(payouts, (po) => po.profit)
 
   const creatorFee = DPM_CREATOR_FEE * profits
-  const platformFee = DPM_PLATFORM_FEE * profits
-  const collectedFees = addObjects(contract.collectedFees, {
-    creatorFee,
-    platformFee,
-    liquidityFee: 0,
-  })
 
   return {
     payouts: payouts.map(({ userId, payout }) => ({ userId, payout })),
     creatorPayout: creatorFee,
     liquidityPayouts: [],
-    collectedFees,
   }
 }

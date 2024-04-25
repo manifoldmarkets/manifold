@@ -15,3 +15,5 @@ create table if not exists
 alter table user_contract_interactions enable row level security;
 
 create index user_contract_interactions_name_contract_id_user_id on user_contract_interactions (name, contract_id, user_id);
+
+create index user_contract_interactions_user_id_created_time on user_contract_interactions (user_id, created_time desc);

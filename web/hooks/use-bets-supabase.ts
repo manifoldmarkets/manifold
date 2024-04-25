@@ -104,9 +104,9 @@ export function useBets(options?: BetFilter) {
 }
 
 export function useRealtimeBetsPolling(
-  contractId: string,
-  options: BetFilter,
-  ms: number
+  options: Omit<BetFilter, 'isOpenLimitOrder'>,
+  ms: number,
+  key: string
 ) {
   let allRowsQ = db.from('contract_bets').select('*')
   allRowsQ = allRowsQ.order('created_time', {
@@ -133,10 +133,10 @@ export function useRealtimeBetsPolling(
     'contract_bets',
     allRowsQ,
     newRowsOnlyQ,
-    `contract-bets-${contractId}-${ms}ms-v1`,
+    key,
     {
       ms,
-      deps: [contractId],
+      deps: [options.contractId, ms],
       shouldUseLocalStorage: false,
     }
   )

@@ -16,6 +16,9 @@ import {
   IncrementDecrementAmountButton,
 } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { User, verifiedPhone } from 'common/user'
+import { STARTING_BALANCE } from 'common/economy'
+import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 
 export function AmountInput(
   props: {
@@ -156,6 +159,7 @@ export function BuyAmountInput(props: {
   disregardUserBalance?: boolean
   quickButtonValues?: number[] | 'large'
   disableQuickButtons?: boolean
+  token?: 'M$' | 'SPICE'
 }) {
   const {
     amount,
@@ -175,13 +179,19 @@ export function BuyAmountInput(props: {
     disregardUserBalance,
     quickButtonValues,
     disableQuickButtons,
+    token = 'M$',
   } = props
   const user = useUser()
 
   // Check for errors.
   useEffect(() => {
     if (amount !== undefined) {
-      if (!disregardUserBalance && user && user.balance < amount) {
+      if (
+        !disregardUserBalance &&
+        user &&
+        ((token === 'M$' && user.balance < amount) ||
+          (token === 'SPICE' && user.spiceBalance < amount))
+      ) {
         setError('Insufficient balance')
       } else if (minimumAmount && amount < minimumAmount) {
         setError('Minimum amount: ' + formatMoney(minimumAmount))
@@ -230,9 +240,9 @@ export function BuyAmountInput(props: {
               (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
+          label={token === 'SPICE' ? 'SP' : ENV_CONFIG.moneyMoniker}
           amount={amount}
           onChangeAmount={onChange}
-          label={ENV_CONFIG.moneyMoniker}
           error={!!error}
           disabled={disabled}
           inputRef={inputRef}
@@ -271,7 +281,11 @@ export function BuyAmountInput(props: {
         )}
         {error ? (
           <div className="text-scarlet-500 mt-4 flex-wrap text-sm">
-            {error === 'Insufficient balance' ? <BuyMoreFunds /> : error}
+            {error === 'Insufficient balance' && token === 'M$' ? (
+              <BuyMoreFunds user={user} />
+            ) : (
+              error
+            )}
           </div>
         ) : (
           showBalance &&
@@ -287,8 +301,10 @@ export function BuyAmountInput(props: {
   )
 }
 
-const BuyMoreFunds = () => {
+const BuyMoreFunds = (props: { user: User | null | undefined }) => {
+  const { user } = props
   const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
+  const [showVerifyPhone, setShowVerifyPhone] = useState(false)
   return (
     <>
       Not enough funds.
@@ -298,6 +314,15 @@ const BuyMoreFunds = () => {
       >
         Buy more?
       </button>
+      {user && !verifiedPhone(user) && (
+        <button
+          className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
+          onClick={() => setShowVerifyPhone(true)}
+        >
+          Verify your phone number for {formatMoney(STARTING_BALANCE)}
+        </button>
+      )}
+      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
       <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
     </>
   )

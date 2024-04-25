@@ -122,7 +122,7 @@ export function DashboardPage(props: {
         </>
       )}
 
-      <Col className={clsx('w-full max-w-3xl px-1 sm:px-2', className)}>
+      <Col className={clsx('w-full px-1 sm:px-2', className)}>
         <div className="my-2 sm:mt-4 lg:mt-0">
           {editMode ? (
             <InputWithLimit

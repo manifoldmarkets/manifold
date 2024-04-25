@@ -75,17 +75,17 @@ export function ResolutionPanel(props: {
         contractId: contract.id,
         probabilityInt: prob,
       })
+      onClose()
     } catch (e) {
       if (e instanceof APIError) {
-        setError(e.toString())
+        setError(e.message.toString())
       } else {
         console.error(e)
         setError('Error resolving question')
       }
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setIsSubmitting(false)
-    onClose()
   }
 
   return (
@@ -109,7 +109,10 @@ export function ResolutionPanel(props: {
           ) : outcome === 'NO' ? (
             <>Pay out {BETTORS} who bought NO.</>
           ) : outcome === 'CANCEL' ? (
-            <>Cancel all trades and return mana back to {BETTORS}.</>
+            <>
+              Cancel all trades and return mana back to {BETTORS}. You repay
+              earned fees.
+            </>
           ) : outcome === 'MKT' ? (
             <Row className="flex-wrap items-center gap-2">
               <span>Pay out at this probability:</span>{' '}

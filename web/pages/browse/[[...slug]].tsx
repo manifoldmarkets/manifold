@@ -23,9 +23,8 @@ import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { BETTORS, User } from 'common/user'
+import { BETTORS } from 'common/user'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { getUser, getUsers } from 'web/lib/supabase/user'
 import Custom404 from 'web/pages/404'
 import { removeUndefinedProps } from 'common/util/object'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
@@ -36,21 +35,23 @@ import { Content } from 'web/components/widgets/editor'
 import Image from 'next/image'
 import LoadingUserRows from 'web/components/loading-user-rows'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { type DisplayUser } from 'common/api/user-types'
+import { getDisplayUsers } from 'web/lib/supabase/users'
 
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 
-type UserStat = { user: User; score: number }
+type UserStat = { user: DisplayUser; score: number }
 type TopicParams = {
-  topic: Group
-  creator: User
+  name: string
+  slug: string
   topTraders: UserStat[]
   topCreators: UserStat[]
 }
 const toTopUsers = async (
   cachedUserIds: { userId: string; score: number }[]
-): Promise<{ user: User | null; score: number }[]> => {
-  const userData = await getUsers(cachedUserIds.map((u) => u.userId))
-  const usersById = Object.fromEntries(userData.map((u) => [u?.id, u as User]))
+): Promise<{ user: DisplayUser; score: number }[]> => {
+  const userData = await getDisplayUsers(cachedUserIds.map((u) => u.userId))
+  const usersById = Object.fromEntries(userData.map((u) => [u?.id, u]))
   return cachedUserIds
     .map((e) => ({
       user: usersById[e.userId],
@@ -83,19 +84,17 @@ export async function getStaticProps(props: { params: { slug: string[] } }) {
     }
   }
 
-  const creatorPromise = getUser(topic.creatorId)
   const cachedTopTraderIds = topic.cachedLeaderboard?.topTraders ?? []
   const cachedTopCreatorIds = topic.cachedLeaderboard?.topCreators ?? []
   const topTraders = await toTopUsers(cachedTopTraderIds)
   const topCreators = await toTopUsers(cachedTopCreatorIds)
-  const creator = await creatorPromise
 
   return {
     props: removeUndefinedProps({
       slug: slug ?? null,
       staticTopicParams: {
-        topic,
-        creator,
+        name: topic.name,
+        slug: topic.slug,
         topTraders: topTraders ?? [],
         topCreators: topCreators ?? [],
       },
@@ -116,13 +115,13 @@ export default function BrowseGroupPage(props: {
   if (!staticTopicParams && slug !== null && !NON_GROUP_SLUGS.includes(slug)) {
     return <Custom404 />
   }
-  const topic = staticTopicParams?.topic
+
   return (
     <>
       <SEO
-        title={`${topic?.name ?? 'Browse'}`}
-        description={`Browse ${topic?.name ?? 'all'} questions`}
-        url={`/browse${topic ? `/${topic.slug}` : ''}`}
+        title={`${staticTopicParams?.name ?? 'Browse'}`}
+        description={`Browse ${staticTopicParams?.name ?? 'all'} questions`}
+        url={`/browse${staticTopicParams ? `/${staticTopicParams.slug}` : ''}`}
       />
       <GroupPageContent slug={slug} staticTopicParams={staticTopicParams} />
     </>
@@ -193,8 +192,7 @@ export function GroupPageContent(props: {
 
   const currentTopic = allTopics.find((t) => t.slug === topicSlug)
   const { ref, headerStuck } = useHeaderIsStuck()
-  const staticTopicIsCurrent =
-    staticTopicParams?.topic.slug === currentTopic?.slug
+  const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
 
   const searchComponent = (
     <SupabaseSearch

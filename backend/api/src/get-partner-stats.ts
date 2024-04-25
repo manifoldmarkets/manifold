@@ -20,6 +20,7 @@ export const getPartnerStats: APIHandler<'get-partner-stats'> = async (
   props
 ) => {
   const { userId } = props
+
   if (!PARTNER_USER_IDS.includes(userId))
     throw new APIError(403, 'User is not a partner')
 

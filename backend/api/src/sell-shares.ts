@@ -15,6 +15,7 @@ import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { log } from 'shared/utils'
 import * as crypto from 'crypto'
+import { formatMoneyWithDecimals } from 'common/util/format'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -201,6 +202,23 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     transaction.update(userDoc, {
       balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
     })
+
+    const totalCreatorFee =
+      newBet.fees.creatorFee +
+      sumBy(otherResultsWithBet, (r) => r.bet.fees.creatorFee)
+    if (totalCreatorFee !== 0) {
+      const creatorUserDoc = firestore.doc(`users/${contract.creatorId}`)
+      transaction.update(creatorUserDoc, {
+        balance: FieldValue.increment(totalCreatorFee),
+      })
+      log(
+        `Updated creator ${
+          contract.creatorUsername
+        } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
+          contract.creatorId
+        }.`
+      )
+    }
 
     const isApi = auth.creds.kind === 'key'
     const fullBet: Bet = {

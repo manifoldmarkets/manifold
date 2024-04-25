@@ -7,7 +7,6 @@ import {
   CPMMMultiContract,
   StillOpenDPMContract,
 } from './contract'
-import { Fees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getDpmCancelPayouts,
@@ -46,9 +45,7 @@ export const groupPayoutsByUser = (payouts: Payout[]) => {
 
 export type PayoutInfo = {
   payouts: Payout[]
-  creatorPayout: number
   liquidityPayouts: Payout[]
-  collectedFees: Fees
 }
 
 export const getPayouts = (
@@ -98,7 +95,7 @@ export const getPayouts = (
   }
   if (contract.mechanism === 'cpmm-multi-1') {
     if (outcome === 'CANCEL') {
-      return getFixedCancelPayouts(bets, liquidities)
+      return getFixedCancelPayouts(contract, bets, liquidities)
     }
     if (!resolutions) {
       throw new Error('getPayouts: resolutions required for cpmm-multi-1')
@@ -131,7 +128,7 @@ export const getFixedPayouts = (
       )
     default:
     case 'CANCEL':
-      return getFixedCancelPayouts(bets, liquidities)
+      return getFixedCancelPayouts(contract, bets, liquidities)
   }
 }
 

@@ -1,15 +1,14 @@
 import * as admin from 'firebase-admin'
 
 import { isVerified, User } from 'common/user'
-import { SEND_MANA_REQ } from 'common/manalink'
-import { canSendManaDirect } from 'shared/supabase/manalink'
+import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 
 export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, groupId: passedGroupId } = props
@@ -20,47 +19,59 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     )
   }
   const fromId = auth.uid
-
-  const pg = createSupabaseDirectClient()
-  if (!isVerified(fromUser)) {
-    throw new APIError(403, 'You must verify your phone number to send mana.')
-  }
-
-  if (toIds.length <= 0) {
-    throw new APIError(400, 'Destination users not found.')
-  }
-
-  const fromDoc = firestore.doc(`users/${fromId}`)
-  const fromSnap = await fromDoc.get()
-  if (!fromSnap.exists) {
-    throw new APIError(404, `User ${fromId} not found`)
-  }
-  const fromUser = fromSnap.data() as User
-
-  if (fromUser.balance < amount * toIds.length) {
-    throw new APIError(
-      403,
-      `Insufficient balance: ${fromUser.name} needed ${
-        amount * toIds.length
-      } but only had ${fromUser.balance} `
-    )
-  }
-
-  const canCreate = await canSendManaDirect(fromUser, pg)
-  if (!canCreate) {
-    if (fromUser.isBannedFromPosting || fromUser.userDeleted) {
-      throw new APIError(403, 'Your account is banned or deleted.')
+  // Run as transaction to prevent race conditions.
+  return await firestore.runTransaction(async (transaction) => {
+    if (!isAdminId(fromId) && amount < 10) {
+      throw new APIError(400, 'Only admins can send less than 10 mana')
     }
-    throw new APIError(403, SEND_MANA_REQ)
-  }
+    if (toIds.includes(fromId)) {
+      throw new APIError(400, 'Cannot send mana to yourself.')
+    }
+    const fromDoc = firestore.doc(`users/${fromId}`)
+    const fromSnap = await transaction.get(fromDoc)
+    if (!fromSnap.exists) {
+      throw new APIError(404, `User ${fromId} not found`)
+    }
+    const fromUser = fromSnap.data() as User
+    if (!isVerified(fromUser)) {
+      throw new APIError(403, 'You must verify your phone number to send mana.')
+    }
 
-  const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
+    const { canSend, message: errorMessage } = await canSendMana(fromUser, () =>
+      getUserPortfolioInternal(fromUser.id)
+    )
+    if (!canSend) {
+      throw new APIError(403, errorMessage)
+    }
 
-  // It is possible for some of these to fail, but we check from user balance again on every send.
-  // This also ensures that if a user is credited, then the txn must have been created
-  await Promise.allSettled(
-    toIds.map(async (toId) => {
-      await pg.tx(async (tx) => {
+    if (toIds.length <= 0) {
+      throw new APIError(400, 'Destination users not found.')
+    }
+    if (fromUser.balance < amount * toIds.length) {
+      throw new APIError(
+        403,
+        `Insufficient balance: ${fromUser.name} needed ${
+          amount * toIds.length
+        } but only had ${fromUser.balance} `
+      )
+    }
+    const toUsers = await Promise.all(
+      toIds.map(async (toId) => {
+        const toDoc = firestore.doc(`users/${toId}`)
+        const toSnap = await transaction.get(toDoc)
+        if (!toSnap.exists) {
+          throw new APIError(404, `User ${toId} not found`)
+        }
+        return toSnap.data() as User
+      })
+    )
+    if (toUsers.some((toUser) => !isVerified(toUser))) {
+      throw new APIError(403, 'All destination users must be verified.')
+    }
+
+    const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
+    await Promise.all(
+      toIds.map(async (toId) => {
         const data = {
           fromId: auth.uid,
           fromType: 'USER',
@@ -76,13 +87,22 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
           },
           description: `Mana payment ${amount} from ${fromUser.username} to ${auth.uid}`,
         } as const
-
-        await runTxn(tx, data)
+        const result = await runTxn(transaction, data)
+        const txnId = result.txn?.id
+        if (!txnId) {
+          throw new APIError(
+            500,
+            result.message ?? 'An error occurred posting the transaction.'
+          )
+        }
       })
-
-      createManaPaymentNotification(fromUser, toId, amount, message)
-    })
-  )
+    )
+    await Promise.all(
+      toIds.map((toId) =>
+        createManaPaymentNotification(fromUser, toId, amount, message)
+      )
+    )
+  })
 }
 
 const firestore = admin.firestore()

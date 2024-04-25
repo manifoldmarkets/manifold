@@ -37,7 +37,7 @@ import {
 } from './contract/contract-table-col-formats'
 import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { LiteUser } from 'common/api/user-types'
+import { FullUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Avatar } from './widgets/avatar'
@@ -228,7 +228,7 @@ export function SupabaseSearch(props: {
   const contractType = searchParams[CONTRACT_TYPE_KEY]
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
-    LiteUser[] | undefined
+    FullUser[] | undefined
   >(undefined, `${persistPrefix}-queried-user-results`)
 
   const { contracts, loading, queryContracts, shouldLoadMore } =

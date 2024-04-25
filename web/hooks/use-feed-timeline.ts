@@ -34,7 +34,7 @@ import { Json } from 'common/supabase/schema'
 import { Bet } from 'common/bet'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
 import { shuffle } from 'common/util/random'
-import { DisplayUser } from 'web/lib/supabase/users'
+import { DisplayUser, getDisplayUsers } from 'web/lib/supabase/users'
 
 export const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -211,7 +211,7 @@ export const useFeedTimeline = (
         .then((res) => res.data?.map(convertContractComment)),
       db
         .from('contracts')
-        .select('data, importance_score, conversion_score')
+        .select('data, importance_score,view_count, conversion_score')
         .in('id', newContractIds)
         .not('visibility', 'eq', 'unlisted')
         .is('resolution_time', null)
@@ -223,18 +223,7 @@ export const useFeedTimeline = (
         .eq('user_id', userId)
         .in('contract_id', newContractIds)
         .then((res) => res.data?.map((c) => c.contract_id)),
-      db
-        .from('users')
-        .select('id, data->>avatarUrl, name, username')
-        .in('id', userIds)
-        .then((res) =>
-          res.data?.map(
-            (u) =>
-              ({
-                ...u,
-              } as DisplayUser)
-          )
-        ),
+      getDisplayUsers(userIds),
       getSeenContractIds(newContractIds, Date.now() - 3 * DAY_MS, [
         'card',
         'promoted',

@@ -2,14 +2,22 @@ import { BOT_USERNAMES, ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 
-export type LiteUser = {
+export type DisplayUser = {
+  id: string
+  name: string
+  username: string
+  avatarUrl: string
+  isBannedFromPosting?: boolean
+}
+
+export type FullUser = {
   id: string
   createdTime: number
 
   name: string
   username: string
   url: string
-  avatarUrl?: string
+  avatarUrl: string
 
   bio?: string
   website?: string
@@ -34,7 +42,7 @@ export type LiteUser = {
   }
 }
 
-export function toLiteUser(user: User): LiteUser {
+export function toUserAPIResponse(user: User): FullUser {
   const {
     id,
     createdTime,

@@ -1,15 +1,14 @@
 import * as admin from 'firebase-admin'
 import {
-  ContractResolutionPayoutTxn,
-  ContractUndoResolutionPayoutTxn,
+  ContractOldResolutionPayoutTxn,
+  ContractProduceSpiceTxn,
+  ContractUndoOldResolutionPayoutTxn,
+  ContractUndoProduceSpiceTxn,
 } from 'common/txn'
 import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
-import { chunk, max } from 'lodash'
-import {
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { chunk } from 'lodash'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
 import { log, getContractSupabase } from 'shared/utils'
@@ -18,12 +17,6 @@ import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
-import {
-  TxnData,
-  insertTxn,
-  insertTxns,
-  logFailedTxn,
-} from 'shared/txn/run-txn'
 
 const firestore = admin.firestore()
 
@@ -85,6 +78,12 @@ const verifyUserCanUnresolve = async (
     contract.mechanism !== 'cpmm-multi-1' ||
     (contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
   ) {
+    if (answerId) {
+      throw new APIError(
+        400,
+        `Specifying answerId is not allowed for unresolving shouldAnswersSumToOne contracts.`
+      )
+    }
     if (!contract.isResolved || !resolutionTime)
       throw new APIError(400, `Contract ${contract.id} is not resolved`)
 
@@ -94,12 +93,20 @@ const verifyUserCanUnresolve = async (
         `Contract ${contract.id} was resolved before payouts were unresolvable transactions.`
       )
 
-    if (
-      contract.creatorId === userId &&
-      resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
-      !isMod
-    ) {
-      throw new APIError(400, `Contract was resolved more than 10 minutes ago.`)
+    if (!isMod) {
+      // if (SPICE_PRODUCTION_ENABLED) {
+      //   throw new APIError(403, `Only mods can unresolve`)
+      // }
+
+      if (
+        contract.creatorId === userId &&
+        resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
+      ) {
+        throw new APIError(
+          400,
+          `Contract was resolved more than 10 minutes ago.`
+        )
+      }
     }
   } else if (contract.mechanism === 'cpmm-multi-1') {
     if (!answerId) {
@@ -116,13 +123,19 @@ const verifyUserCanUnresolve = async (
     )
     if (!answerResolutionTime)
       throw new APIError(400, `Answer ${answerId} is not resolved`)
-    if (
-      contract.creatorId === userId &&
-      answerResolutionTime <
-        Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS &&
-      !isMod
-    ) {
-      throw new APIError(400, `Answer was resolved more than 10 minutes ago.`)
+
+    if (!isMod) {
+      // if (SPICE_PRODUCTION_ENABLED) {
+      //   throw new APIError(403, `Only mods can unresolve`)
+      // }
+
+      if (
+        contract.creatorId === userId &&
+        answerResolutionTime <
+          Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
+      ) {
+        throw new APIError(400, `Answer was resolved more than 10 minutes ago.`)
+      }
     }
   }
 
@@ -137,110 +150,144 @@ const undoResolution = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const contractId = contract.id
-  const uniqueStartTimes = await pg.map(
-    `select distinct data->'data'->'payoutStartTime' as payout_start_time
-            FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
-             AND from_type = 'CONTRACT'
-             AND from_id = $1
-             and ( $2 is null or data ->'data'->>'answerId' = $2)
-           `,
+  // spice payouts
+  const maxSpicePayoutStartTime = await pg.oneOrNone(
+    `select max((data->'data'->'payoutStartTime')::numeric) as max
+      FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+      AND from_type = 'CONTRACT'
+      AND from_id = $1
+      and ($2 is null or data ->'data'->>'answerId' = $2)`,
     [contractId, answerId],
-    (r) => r.payout_start_time as number | null
+    (r) => r?.max as number | undefined
   )
-  const maxPayoutStartTime = max(uniqueStartTimes)
-  let txns: ContractResolutionPayoutTxn[]
-  if (maxPayoutStartTime) {
-    txns = await pg.map(
-      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
-                      AND from_type = 'CONTRACT'
-                      AND from_id = $1
-                      AND (data->'data'->>'payoutStartTime')::numeric = $2
-                      and ( $3 is null or data ->'data'->>'answerId' = $3)
-                      `,
-      [contractId, maxPayoutStartTime, answerId],
-      (r) => r.data as ContractResolutionPayoutTxn
-    )
-  } else {
-    txns = await pg.map(
-      `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
-                     AND from_type = 'CONTRACT'
-                     AND from_id = $1
-                     and ( $2 is null or data ->'data'->>'answerId' = $2)
-                     `,
-      [contractId, answerId],
-      (r) => r.data as ContractResolutionPayoutTxn
-    )
-  }
-  log('Reverting txns ' + txns.length)
-  log('With max payout start time ' + maxPayoutStartTime)
-  const chunkedTxns = chunk(txns, 250)
+  const spiceTxns = await pg.map(
+    `SELECT * FROM txns WHERE category = 'PRODUCE_SPICE'
+      AND from_type = 'CONTRACT'
+      AND from_id = $1
+      and ($2 is null or (data->'data'->>'payoutStartTime')::numeric = $2)
+      and ($3 is null or data ->'data'->>'answerId' = $3)`,
+    [contractId, maxSpicePayoutStartTime, answerId],
+    (r) => r.data as ContractProduceSpiceTxn
+  )
+
+  log('Reverting spice txns ' + spiceTxns.length)
+  log('With max payout start time ' + maxSpicePayoutStartTime)
+  const chunkedTxns = chunk(spiceTxns, 250)
   for (const chunk of chunkedTxns) {
-    await firestore
-      .runTransaction(async (fsTrans) => {
-        await pg.tx(async (pgTrans) => {
-          for (const txn of chunk) {
-            undoContractPayoutTxnBalance(fsTrans, txn)
-          }
-          insertTxns(pgTrans, chunk.map(constructUndoContractPayoutTxn))
-        })
-      })
-      .catch((e) => {
-        for (const txn of chunk) {
-          log.error('Failed chunk')
-          logFailedTxn(txn)
-        }
-        throw e
-      })
-
-    log('reverted txns')
-
-    if (contract.isResolved || contract.resolutionTime) {
-      const updatedAttrs = {
-        isResolved: false,
-        resolutionTime: admin.firestore.FieldValue.delete(),
-        resolution: admin.firestore.FieldValue.delete(),
-        resolutions: admin.firestore.FieldValue.delete(),
-        resolutionProbability: admin.firestore.FieldValue.delete(),
-        closeTime: Date.now(),
+    await firestore.runTransaction(async (transaction) => {
+      for (const txn of chunk) {
+        undoContractPayoutSpiceTxn(transaction, txn)
       }
-      await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
-      await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
-    }
-    if (answerId) {
-      const updatedAttrs = {
-        resolution: admin.firestore.FieldValue.delete(),
-        resolutionTime: admin.firestore.FieldValue.delete(),
-        resolutionProbability: admin.firestore.FieldValue.delete(),
-        resolverId: admin.firestore.FieldValue.delete(),
-      }
-      await firestore
-        .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
-        .update(updatedAttrs)
-    }
-
-    log('updated contract')
+    })
   }
+  log('reverted txns')
+
+  // old payouts
+  const maxManaPayoutStartTime = await pg.oneOrNone(
+    `select max((data->'data'->'payoutStartTime')::numeric) as max
+      FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+      AND from_type = 'CONTRACT'
+      AND from_id = $1
+      and ($2 is null or data ->'data'->>'answerId' = $2)`,
+    [contractId, answerId],
+    (r) => r?.max as number | undefined
+  )
+  const manaTxns = await pg.map(
+    `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+      AND from_type = 'CONTRACT'
+      AND from_id = $1
+      and ($2 is null or (data->'data'->>'payoutStartTime')::numeric = $2)
+      and ($3 is null or data ->'data'->>'answerId' = $3)`,
+    [contractId, maxSpicePayoutStartTime, answerId],
+    (r) => r.data as ContractOldResolutionPayoutTxn
+  )
+
+  log('Reverting mana txns ' + manaTxns.length)
+  log('With max payout start time ' + maxManaPayoutStartTime)
+  const chunkedManaTxns = chunk(manaTxns, 250)
+  for (const chunk of chunkedManaTxns) {
+    await firestore.runTransaction(async (transaction) => {
+      for (const txn of chunk) {
+        undoOldContractPayoutTxn(transaction, txn)
+      }
+    })
+  }
+  log('reverted txns')
+
+  if (contract.isResolved || contract.resolutionTime) {
+    const updatedAttrs = {
+      isResolved: false,
+      resolutionTime: admin.firestore.FieldValue.delete(),
+      resolution: admin.firestore.FieldValue.delete(),
+      resolutions: admin.firestore.FieldValue.delete(),
+      resolutionProbability: admin.firestore.FieldValue.delete(),
+      closeTime: Date.now(),
+    }
+    await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
+    await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
+  }
+  if (answerId) {
+    const updatedAttrs = {
+      resolution: admin.firestore.FieldValue.delete(),
+      resolutionTime: admin.firestore.FieldValue.delete(),
+      resolutionProbability: admin.firestore.FieldValue.delete(),
+      resolverId: admin.firestore.FieldValue.delete(),
+    }
+    await firestore
+      .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
+      .update(updatedAttrs)
+  }
+
+  log('updated contract')
 }
 
-function undoContractPayoutTxnBalance(
-  fbTrans: admin.firestore.Transaction,
-  txnData: ContractResolutionPayoutTxn
+export function undoContractPayoutSpiceTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: ContractProduceSpiceTxn
 ) {
-  const { amount, toId, data } = txnData
+  const { amount, toId, data, fromId, id } = txnData
   const { deposit } = data ?? {}
   const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    spiceBalance: FieldValue.increment(-amount),
+    totalDeposits: FieldValue.increment(-(deposit ?? 0)),
+  })
 
-  fbTrans.update(toDoc, {
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn: ContractUndoProduceSpiceTxn = {
+    id: newTxnDoc.id,
+    createdTime: Date.now(),
+    amount: amount,
+    toId: fromId,
+    fromType: 'USER',
+    fromId: toId,
+    toType: 'CONTRACT',
+    category: 'CONTRACT_UNDO_PRODUCE_SPICE',
+    token: 'SPICE',
+    description: `Undo contract resolution payout from contract ${fromId}`,
+    data: { revertsTxnId: id },
+  }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', data: txnData }
+}
+
+export function undoOldContractPayoutTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: ContractOldResolutionPayoutTxn
+) {
+  const { amount, toId, data, fromId, id } = txnData
+  const { deposit } = data ?? {}
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
     balance: FieldValue.increment(-amount),
     totalDeposits: FieldValue.increment(-(deposit ?? 0)),
   })
-}
 
-function constructUndoContractPayoutTxn(
-  txnData: ContractResolutionPayoutTxn
-): Omit<ContractUndoResolutionPayoutTxn, 'id' | 'createdTime'> {
-  const { amount, toId, fromId, id } = txnData
-  return {
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn: ContractUndoOldResolutionPayoutTxn = {
+    id: newTxnDoc.id,
+    createdTime: Date.now(),
     amount: amount,
     toId: fromId,
     fromType: 'USER',
@@ -251,4 +298,7 @@ function constructUndoContractPayoutTxn(
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', data: txnData }
 }

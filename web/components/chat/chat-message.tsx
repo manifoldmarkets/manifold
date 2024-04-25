@@ -4,7 +4,6 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Content } from 'web/components/widgets/editor'
-import { User } from 'common/user'
 import { ChatMessage } from 'common/chat-message'
 import { first, last } from 'lodash'
 import { memo, useState } from 'react'
@@ -16,11 +15,12 @@ import DropdownMenu from 'web/components/comments/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
 import { manifoldLoveUserId } from 'common/love/constants'
 import { UserHovercard } from '../user/user-hovercard'
+import { DisplayUser } from 'common/api/user-types'
 
 export const ChatMessageItem = memo(function ChatMessageItem(props: {
   chats: ChatMessage[]
-  currentUser: User | undefined | null
-  otherUser?: User | null
+  currentUser: DisplayUser | undefined | null
+  otherUser?: DisplayUser | null
   onReplyClick?: (chat: ChatMessage) => void
   beforeSameUser: boolean
   firstOfUser: boolean
@@ -35,7 +35,6 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
   } = props
   const chat = first(chats)
   if (!chat) return null
-  if (otherUser?.isBannedFromPosting) return null
 
   const isMe = currentUser?.id === chat.userId
   const { username, avatarUrl, id, name } =
@@ -123,7 +122,7 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
 export const SystemChatMessageItem = memo(
   function SystemChatMessageItem(props: {
     chats: ChatMessage[]
-    otherUsers: User[] | undefined
+    otherUsers: DisplayUser[] | undefined
   }) {
     const { chats, otherUsers } = props
     const chat = last(chats)
@@ -180,7 +179,7 @@ export const SystemChatMessageItem = memo(
 export const MultiUserModal = (props: {
   showUsers: boolean
   setShowUsers: (show: boolean) => void
-  otherUsers: User[]
+  otherUsers: DisplayUser[]
 }) => {
   const { showUsers, setShowUsers, otherUsers } = props
   return (

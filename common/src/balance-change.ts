@@ -3,15 +3,14 @@ import { User } from 'common/user'
 import { Visibility } from 'common/contract'
 import { QuestType } from 'common/quest'
 import { Answer } from 'common/answer'
-export type AnyBalanceChangeType =
-  | BalanceChange
-  | BetBalanceChange
-  | TxnBalanceChange
+import { AnyTxnCategory, Txn } from './txn'
+
+export type AnyBalanceChangeType = BetBalanceChange | TxnBalanceChange
 
 export type BalanceChange = {
+  type: string
   key: string
   amount: number
-  type: string
   createdTime: number
 }
 
@@ -22,7 +21,6 @@ type MinimalContract = {
   creatorUsername: string
 }
 
-type CustomBalanceChange = Omit<BalanceChange, 'type'>
 export const BET_BALANCE_CHANGE_TYPES = [
   'create_bet',
   'sell_shares',
@@ -31,51 +29,28 @@ export const BET_BALANCE_CHANGE_TYPES = [
   'loan_payment',
 ] as const
 
-export type BetBalanceChange = CustomBalanceChange & {
+export type BetBalanceChange = BalanceChange & {
   type: (typeof BET_BALANCE_CHANGE_TYPES)[number]
   bet: Pick<Bet, 'outcome' | 'shares'>
   answer: Pick<Answer, 'text' | 'id'> | undefined
   contract: MinimalContract
 }
 
-export const TXN_BALANCE_CHANGE_TYPES = [
-  'UNIQUE_BETTOR_BONUS',
-  'BETTING_STREAK_BONUS',
-  'SIGNUP_BONUS',
-  'CONTRACT_RESOLUTION_PAYOUT',
-  'CONTRACT_UNDO_RESOLUTION_PAYOUT',
-  'MARKET_BOOST_REDEEM',
-  'MARKET_BOOST_CREATE',
-  'QUEST_REWARD',
-  'LEAGUE_PRIZE',
-  'BOUNTY_POSTED',
-  'BOUNTY_AWARDED',
-  'CREATE_CONTRACT_ANTE',
-  'MANA_PAYMENT',
-  'LOAN',
-  'STARTING_BALANCE',
-  'ADD_SUBSIDY',
-  'CHARITY',
-] as const
-
-export type TxnType = (typeof TXN_BALANCE_CHANGE_TYPES)[number]
-export type TxnBalanceChange = CustomBalanceChange & {
-  type: TxnType
+export type TxnBalanceChange = BalanceChange & {
+  type: AnyTxnCategory | 'STARTING_BALANCE'
+  token: Txn['token']
   contract?: MinimalContract
   questType?: QuestType
   user?: Pick<User, 'username' | 'name'>
   charity?: { name: string; slug: string }
+  description?: string
 }
 
 export const isBetChange = (
   change: AnyBalanceChangeType
-): change is BetBalanceChange => 'bet' in change
+): change is BetBalanceChange =>
+  BET_BALANCE_CHANGE_TYPES.includes(change.type as any)
 
 export const isTxnChange = (
   change: AnyBalanceChangeType
-): change is TxnBalanceChange =>
-  TXN_BALANCE_CHANGE_TYPES.includes(change.type as any)
-
-export const isRawBalanceChange = (
-  change: AnyBalanceChangeType
-): change is BalanceChange => 'key' in change
+): change is TxnBalanceChange => !('bet' in change)

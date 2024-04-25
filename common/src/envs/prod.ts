@@ -2,7 +2,6 @@ export type EnvConfig = {
   domain: string
   loveDomain: string
   loveDomainAlternate: string
-  politicsDomain: string
   firebaseConfig: FirebaseConfig
   amplitudeApiKey: string
   supabaseInstanceId: string
@@ -22,6 +21,7 @@ export type EnvConfig = {
 
   // Branding
   moneyMoniker: string // e.g. 'Ṁ'
+  spiceMoniker: string // e.g. 'S'
   bettor: string // e.g. 'predictor'
   nounBet: string // e.g. 'prediction'
   verbPastBet: string // e.g. 'predicted'
@@ -49,7 +49,6 @@ export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
   loveDomain: 'manifold.love',
   loveDomainAlternate: 'manifoldlove.com',
-  politicsDomain: 'manifoldpolitics.com',
   amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
@@ -89,6 +88,7 @@ export const PROD_CONFIG: EnvConfig = {
   visibility: 'PUBLIC',
 
   moneyMoniker: 'Ṁ',
+  spiceMoniker: 'P',
   bettor: 'trader',
   verbPastBet: 'traded',
   nounBet: 'trade',

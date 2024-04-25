@@ -1,22 +1,19 @@
-import { useState } from 'react'
-import Link from 'next/link'
 import { PlusIcon } from '@heroicons/react/outline'
-import { animated } from '@react-spring/web'
 import clsx from 'clsx'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-
+import { useState } from 'react'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { User } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
-import { Avatar } from '../widgets/avatar'
 import { trackCallback } from 'web/lib/service/analytics'
 import { AddFundsModal } from '../add-funds-modal'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { Avatar } from '../widgets/avatar'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
 
   const [buyModalOpen, setBuyModalOpen] = useState(false)
-  const balance = useAnimatedNumber(user.balance)
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
   return (
@@ -38,11 +35,13 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
-        <div>{user.name}</div>
+        {!SPICE_PRODUCTION_ENABLED && <div>{user.name}</div>}
         <div className="flex items-center text-sm">
-          <span className="mr-2">
-            <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
-          </span>
+          <CoinNumber
+            amount={user?.balance}
+            numberType="animated"
+            className="mr-2"
+          />
           <button
             className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
             onClick={(e) => {
@@ -55,6 +54,9 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           </button>
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
+        {SPICE_PRODUCTION_ENABLED && (
+          <CoinNumber className="text-sm" amount={user.spiceBalance} isSpice />
+        )}
       </div>
       <div className="w-2 shrink" />
     </Link>

@@ -5,8 +5,7 @@ import { log, getUser } from 'shared/utils'
 import { HOUR_MS } from 'common/util/time'
 import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
-import { getIp } from 'shared/analytics'
-import { onboardLover } from 'shared/love/onboard-lover'
+import { getIp, track } from 'shared/analytics'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -85,7 +84,12 @@ export const createlover = authEndpoint(async (req, auth) => {
   }
 
   log('Created user', data[0])
-  await onboardLover(user, getIp(req))
+  await track(
+    user.id,
+    'create lover',
+    { username: user.username },
+    { ip: getIp(req) }
+  )
 
   return {
     success: true,

@@ -1,4 +1,7 @@
+import { StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { REFERRAL_AMOUNT } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -8,11 +11,22 @@ import {
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
+import {
+  CommentOnLoverNotification,
+  NewMatchNotification,
+} from 'manifold-love/components/love-notification-types'
+import Link from 'next/link'
 import { useState } from 'react'
+import { Referrals } from 'web/components/buttons/referrals-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -33,9 +47,16 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
+import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
 import { Avatar } from 'web/components/widgets/avatar'
+import { useReview } from 'web/hooks/use-review'
+import { useUser } from 'web/hooks/use-user'
+import { canSetReferrer } from 'web/lib/firebase/users'
+import { Button } from '../buttons/button'
+import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
 import { Linkify } from '../widgets/linkify'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
@@ -47,26 +68,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import Link from 'next/link'
-import { Modal } from '../layout/modal'
-import { Button } from '../buttons/button'
-import { StarIcon } from '@heroicons/react/solid'
-import { useReview } from 'web/hooks/use-review'
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { ReferralsDialog } from 'web/components/buttons/referrals-button'
-import { useUser } from 'web/hooks/use-user'
-import {
-  MANIFOLD_AVATAR_URL,
-  MANIFOLD_USER_NAME,
-  MANIFOLD_USER_USERNAME,
-} from 'common/user'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
-import { canSetReferrer } from 'web/lib/firebase/users'
-import {
-  CommentOnLoverNotification,
-  NewMatchNotification,
-} from 'manifold-love/components/love-notification-types'
-import { ENV_CONFIG } from 'common/envs/constants'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -642,7 +643,7 @@ export function MarketResolvedNotification(props: {
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  const subtitle =
+  const secondaryTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
       <>Your {formatMoney(userInvestment)} invested has been returned to you</>
     ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
@@ -658,9 +659,8 @@ export function MarketResolvedNotification(props: {
         You lost {formatMoney(Math.abs(profit))}
         {comparison ? `, but ${comparison}` : ``}
       </>
-    ) : (
-      <div />
-    )
+    ) : null
+
   const [openRateModal, setOpenRateModal] = useState(false)
 
   const resolutionDescription = () => {
@@ -742,59 +742,107 @@ export function MarketResolvedNotification(props: {
   const showReviewButton = !userReview && !justNowReview
 
   return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      subtitle={
-        <>
-          <div className="mb-1">{subtitle}</div>
-          {!resolvedByAdmin &&
-            (showReviewButton ? (
-              <Button
-                size={'2xs'}
-                color={'gray'}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  e.preventDefault()
-                  setOpenRateModal(true)
-                }}
-              >
-                <Row className="gap-1">
+    <Col className="relative">
+      <NotificationFrame
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        subtitle={
+          <>
+            {!resolvedByAdmin &&
+              (showReviewButton ? (
+                <Button
+                  size={'2xs'}
+                  color={'gray'}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    setOpenRateModal(true)
+                  }}
+                >
+                  <Row className="gap-1">
+                    <StarIcon className="h-4 w-4" />
+                    Rate {notification.sourceUserName}'s resolution
+                  </Row>
+                </Button>
+              ) : (
+                <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                  You rated this resolution{' '}
+                  {justNowReview ?? userReview?.rating}{' '}
                   <StarIcon className="h-4 w-4" />
-                  Rate {notification.sourceUserName}'s resolution
                 </Row>
-              </Button>
-            ) : (
-              <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                You rated this resolution {justNowReview ?? userReview?.rating}{' '}
-                <StarIcon className="h-4 w-4" />
-              </Row>
-            ))}
-        </>
-      }
-      icon={
-        <AvatarNotificationIcon
+              ))}
+          </>
+        }
+        icon={
+          <>
+            <AvatarNotificationIcon
+              notification={notification}
+              symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
+            />
+            {!!secondaryTitle && (
+              <div
+                className={clsx(
+                  ' h-full w-[1.5px] grow ',
+                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
+                )}
+              />
+            )}
+          </>
+        }
+        link={getSourceUrl(notification)}
+      >
+        {content}
+        <Modal open={openRateModal} setOpen={setOpenRateModal}>
+          <ReviewPanel
+            marketId={notification.sourceId}
+            author={notification.sourceUserName}
+            className="my-2"
+            onSubmit={(rating: Rating) => {
+              setJustNowReview(rating)
+              setOpenRateModal(false)
+            }}
+          />
+        </Modal>
+      </NotificationFrame>
+      {!!secondaryTitle && (
+        <NotificationFrame
           notification={notification}
-          symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
-        />
-      }
-      link={getSourceUrl(notification)}
-    >
-      {content}
-      <Modal open={openRateModal} setOpen={setOpenRateModal}>
-        <ReviewPanel
-          marketId={notification.sourceId}
-          author={notification.sourceUserName}
-          className="my-2"
-          onSubmit={(rating: Rating) => {
-            setJustNowReview(rating)
-            setOpenRateModal(false)
-          }}
-        />
-      </Modal>
-    </NotificationFrame>
+          isChildOfGroup={isChildOfGroup}
+          highlighted={highlighted}
+          setHighlighted={setHighlighted}
+          icon={
+            <>
+              <div
+                className={clsx(
+                  'absolute -top-4 h-4 w-[1.5px]',
+                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
+                )}
+              />
+
+              <NotificationIcon
+                symbol={
+                  <CoinNumber
+                    amount={profit}
+                    className="text-xs font-semibold"
+                    numberType="short"
+                  />
+                }
+                symbolBackgroundClass={
+                  profit < 0
+                    ? 'border-ink-300  border-2 ring-4 ring-ink-200'
+                    : 'border-teal-400 border-2 ring-4 ring-teal-200'
+                }
+              />
+            </>
+          }
+          link={getSourceUrl(notification)}
+        >
+          {secondaryTitle}
+        </NotificationFrame>
+      )}
+    </Col>
   )
 }
 
@@ -1311,13 +1359,10 @@ function ReferralProgramNotification(props: {
         <span className="text-teal-500">{formatMoney(REFERRAL_AMOUNT)}</span> on
         every sign up!
       </span>
-      {user && (
-        <ReferralsDialog
-          user={user}
-          isOpen={showModal}
-          setIsOpen={setShowModal}
-          defaultTab={2}
-        />
+      {user && showModal && (
+        <Modal open setOpen={setShowModal}>
+          <Referrals user={user} />
+        </Modal>
       )}
     </NotificationFrame>
   )

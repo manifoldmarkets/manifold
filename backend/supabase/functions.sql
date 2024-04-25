@@ -293,11 +293,15 @@ limit match_count;
 end;
 $$;
 
-create function close_contract_embeddings(input_contract_id text, similarity_threshold double precision, match_count integer)
-    returns TABLE(contract_id text, similarity double precision, data jsonb)
-    language sql
-as
-$$ WITH embedding AS (
+create function close_contract_embeddings (
+  input_contract_id text,
+  similarity_threshold double precision,
+  match_count integer
+) returns table (
+  contract_id text,
+  similarity double precision,
+  data jsonb
+) language sql as $$ WITH embedding AS (
     SELECT embedding
     FROM contract_embeddings
     WHERE contract_id = input_contract_id
@@ -662,6 +666,56 @@ or replace function top_creators_for_user (uid text, excluded_ids text[], limit_
 $$;
 
 create
+or replace function profit_rank (
+  uid text,
+  excluded_ids text[] default array[]::text[]
+) returns int language sql stable parallel safe as $$
+  select count(*) + 1
+  from user_portfolio_history_latest
+  where not user_id = any(excluded_ids)
+  and balance + spice_balance + investment_value - total_deposits > (
+    select balance + spice_balance + investment_value - total_deposits
+    from user_portfolio_history_latest u
+    where u.user_id = uid
+  )
+$$;
+
+create
+or replace function creator_rank (uid text) returns int language sql stable parallel safe as $$
+  select count(*) + 1
+  from users
+  where data->'creatorTraders'->'allTime' > (select data->'creatorTraders'->'allTime' from users where id = uid)
+$$;
+
+create
+or replace function profit_leaderboard (limit_n int) returns table (
+  user_id text,
+  profit numeric,
+  name text,
+  username text,
+  avatar_url text
+) language sql stable parallel safe as $$
+  select p.user_id, p.balance + p.spice_balance + p.investment_value - p.total_deposits as profit, u.username, u.name, u.data->>'avatarUrl' as avatar_url
+  from user_portfolio_history_latest p join users u on p.user_id = u.id
+  order by profit desc
+  limit limit_n
+$$;
+
+create
+or replace function creator_leaderboard (limit_n int) returns table (
+  user_id text,
+  total_traders int,
+  name text,
+  username text,
+  avatar_url text
+) language sql stable parallel safe as $$
+  select id as user_id, (data->'creatorTraders'->'allTime')::int as total_traders, name, username, data->>'avatarUrl' as avatar_url
+  from users
+  order by total_traders desc
+  limit limit_n
+$$;
+
+create
 or replace function get_notifications (uid text, unseen_only boolean, max_num integer) returns setof user_notifications language sql stable parallel SAFE as $$
 select *
 from user_notifications as n
@@ -678,12 +732,3 @@ or replace function get_user_manalink_claims (creator_id text) returns table (ma
     join txns as tx on mc.txn_id = tx.id
     where m.creator_id = creator_id
 $$ language sql;
-
-create or replace function get_contract_page_views(contract_id text)
-  returns numeric
-  language sql
-as $$
-  select coalesce(sum(page_views), 0)
-  from user_contract_views as ucv
-  where ucv.contract_id = get_contract_page_views.contract_id
-$$;

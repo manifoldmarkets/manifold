@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { memo, useEffect, useState } from 'react'
+import { memo, useState } from 'react'
 
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -22,9 +22,6 @@ import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { linkClass } from 'web/components/widgets/site-link'
 import { removeEmojis } from 'common/topics'
-import { useRemainingNewUserSignupBonuses } from 'web/hooks/use-request-new-user-signup-bonus'
-import { useIsVisible } from 'web/hooks/use-is-visible'
-import { BOTTOM_NAV_BAR_HEIGHT } from 'web/components/nav/bottom-nav-bar'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const SidebarRelatedContractsList = memo(function (props: {
@@ -117,25 +114,6 @@ export const RelatedContractsGrid = memo(function (props: {
     justBet,
   } = props
 
-  // Show related contracts after a user bets, like Google shows related searches.
-  const [isVisible, setIsVisible] = useState(false)
-  const { ref } = useIsVisible(() => setIsVisible(true))
-  const remainingMarketsToVisit = useRemainingNewUserSignupBonuses()
-
-  useEffect(() => {
-    if (!justBet || remainingMarketsToVisit <= 0) return
-    if (isVisible || !ref.current) return
-    const rect = ref.current.getBoundingClientRect()
-    const relatedMarketTitleBottom = rect.bottom + 200
-    const windowHeight = window.innerHeight
-    if (relatedMarketTitleBottom > windowHeight) {
-      window.scrollTo({
-        top: relatedMarketTitleBottom - windowHeight + BOTTOM_NAV_BAR_HEIGHT,
-        behavior: 'smooth',
-      })
-    }
-  }, [justBet])
-
   const [showMore, setShowMore] = useState(showAll ?? false)
   const relatedContractsByTopic =
     topics &&
@@ -157,7 +135,6 @@ export const RelatedContractsGrid = memo(function (props: {
 
   return (
     <Col
-      ref={ref}
       className={clsx(
         className,
         'bg-canvas-50 -mx-4 flex-1 px-4 pt-6 lg:-mx-8 xl:hidden',
@@ -343,6 +320,7 @@ const RelatedContractCard = memo(function (props: {
   const probChange =
     contract.outcomeType === 'BINARY' &&
     showGraph &&
+    'probChanges' in contract &&
     Math.abs((contract as CPMMBinaryContract).probChanges.day) > 0.03
       ? (contract as CPMMBinaryContract).probChanges.day
       : 0

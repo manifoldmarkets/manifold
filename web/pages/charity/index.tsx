@@ -10,13 +10,14 @@ import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export async function getStaticProps() {
   try {
@@ -118,20 +119,32 @@ export default function Charity(props: {
         <Col className="">
           <Title>Manifold for Charity</Title>
 
-          <span className="text-ink-500">
-            Convert your {ENV_CONFIG.moneyMoniker} earnings into real charitable
-            donations at a ratio of{' '}
-            <span className="semibold">{formatMoney(100)} : $1</span>, capped at
-            $10,000 per month.
-            <a
-              href="https://manifoldmarkets.notion.site/Charitable-donation-program-668d55f4ded147cf8cf1282a007fb005"
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary-700 ml-2"
-            >
-              Read more here.
-            </a>
-          </span>
+          <div className="text-ink-500">
+            {SPICE_PRODUCTION_ENABLED ? (
+              <span>
+                Convert your prize points into real charitable donations at a
+                ratio of{' '}
+                <span className="semibold">
+                  <CoinNumber amount={1000} isSpice isInline /> : $0.95
+                </span>
+                {/* TODO: update about page copy, then link here? */}
+              </span>
+            ) : (
+              <>
+                Convert your mana earnings into real charitable donations at a
+                ratio of{' '}
+                <span className="semibold">
+                  <CoinNumber amount={100} isInline /> : $1
+                </span>
+                .
+              </>
+            )}
+          </div>
+
+          <div className="text-ink-500 mt-2">
+            Starting May 1st, only Win Points (not mana) will be redeemable for
+            charity.
+          </div>
 
           <DonatedStats
             stats={[

@@ -1,8 +1,7 @@
 'use client'
 import { Dictionary, groupBy, max, sortBy, sum, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
-
-import { LimitBet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
 import { contractPath, CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -11,7 +10,6 @@ import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Input } from 'web/components/widgets/input'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { Bet } from 'web/lib/firebase/bets'
 import { Contract } from 'web/lib/firebase/contracts'
 import { User } from 'web/lib/firebase/users'
 import { getOpenLimitOrdersWithContracts } from 'web/lib/supabase/bets'
@@ -384,7 +382,8 @@ function BetsTable(props: {
       header: { sort: 'closeTime', label: 'Close' },
       span: 3,
       renderCell: (c: Contract) => {
-        const date = new Date(c.resolutionTime ?? c.closeTime ?? Infinity)
+        const closeTime = c.resolutionTime ?? c.closeTime
+        const date = new Date(closeTime ?? Infinity)
         const isThisYear = new Date().getFullYear() === date.getFullYear()
         const dateString = date.toLocaleDateString('en-US', {
           month: '2-digit',
@@ -393,7 +392,9 @@ function BetsTable(props: {
         })
         return (
           <Row className={'justify-end'}>
-            <span className={'text-ink-500'}>{dateString}</span>
+            <span className={'text-ink-500'}>
+              {closeTime ? dateString : 'N/A'}
+            </span>
           </Row>
         )
       },

@@ -53,6 +53,7 @@ import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet
 import { Button } from '../buttons/button'
 import DropdownMenu from '../comments/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function ContractTabs(props: {
   contract: Contract
@@ -203,20 +204,25 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   } = props
   const user = useUser()
 
-  // Firebase useComments
-  // const comments = (useComments(contract.id, 0) ?? props.comments).filter(
-  //   (c) => !blockedUserIds.includes(c.userId)
-  // )
+  // Load all comments once
+  const { data: fetchedComments } = useAPIGetter('comments', {
+    contractId: contract.id,
+  })
 
-  // Supabase use realtime comments
-  const rows = useRealtimeCommentsPolling(
+  // Poll for new comments
+  const realtimeComments = useRealtimeCommentsPolling(
     contract.id,
     maxBy(props.comments, 'createdTime')?.createdTime ?? 0,
     500
   )
-  const comments = [...props.comments, ...(rows ?? [])].filter(
-    (c) => !blockedUserIds.includes(c.userId)
-  )
+  const comments = uniqBy(
+    [
+      ...(realtimeComments ?? []),
+      ...(fetchedComments ?? []),
+      ...props.comments,
+    ],
+    'id'
+  ).filter((c) => !blockedUserIds.includes(c.userId))
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length

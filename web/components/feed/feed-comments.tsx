@@ -64,7 +64,7 @@ import { FeedReplyBet } from 'web/components/feed/feed-bets'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { HOUR_MS } from 'common/util/time'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
-import { last, orderBy } from 'lodash'
+import { last, orderBy, sumBy } from 'lodash'
 import { AnnotateChartModal } from 'web/components/annotate-chart'
 import { BiRepost } from 'react-icons/bi'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -229,6 +229,9 @@ export const FeedComment = memo(function FeedComment(props: {
     isPinned,
     showParentLine,
   } = props
+  // for optimistic updates
+  const [comment, updateComment] = usePartialUpdater(props.comment)
+  useEffect(() => updateComment(props.comment), [props.comment])
 
   const groupedBets = useMemo(() => {
     // Sort the bets by createdTime
@@ -260,13 +263,20 @@ export const FeedComment = memo(function FeedComment(props: {
       }
       if (!foundGroup) tempGrouped.push([currentBet])
     })
-
+    updateComment({
+      betReplyAmountsByOutcome: {
+        YES: sumBy(
+          bets?.filter((bet) => bet.outcome === 'YES'),
+          'amount'
+        ),
+        NO: sumBy(
+          bets?.filter((bet) => bet.outcome === 'NO'),
+          'amount'
+        ),
+      },
+    })
     return tempGrouped
   }, [bets?.length])
-
-  // for optimistic updates
-  const [comment, updateComment] = usePartialUpdater(props.comment)
-  useEffect(() => updateComment(props.comment), [props.comment])
 
   const { userUsername, userAvatarUrl, userId } = comment
   const ref = useRef<HTMLDivElement>(null)

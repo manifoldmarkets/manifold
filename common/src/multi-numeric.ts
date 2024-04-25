@@ -78,6 +78,9 @@ export const answerTextToMidpoint = (answerText: string) => {
   const [min, max] = answerTextToRange(answerText)
   return (max + min) / 2
 }
+export const answerToMidpoint = (answer: Answer) => {
+  return answerTextToMidpoint(answer.text)
+}
 
 export function getExpectedValue(
   contract: CPMMNumericContract,
@@ -145,10 +148,10 @@ export const getRangeContainingValue = (
 
 export const getRangeContainingValues = (
   values: number[],
-  answerTexts: string[],
-  min: number,
-  max: number
+  contract: CPMMNumericContract
 ) => {
+  const { answers, min, max } = contract
+  const answerTexts = answers.map((a) => a.text)
   const ranges = values.map((amount) =>
     getRangeContainingValue(amount, answerTexts, min, max)
   )
@@ -166,3 +169,5 @@ export const getExpectedValuesArray = (contract: CPMMNumericContract) => {
     }))
   )
 }
+
+export const NEW_GRAPH_COLOR = '#d968ff'

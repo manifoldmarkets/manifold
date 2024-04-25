@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Bet, listenForUnfilledBets } from 'web/lib/firebase/bets'
-import { LimitBet } from 'common/bet'
-import { useUsersById } from './use-user'
+import { Bet, LimitBet } from 'common/bet'
+import { useFirebaseUsersById } from './use-user'
 import { uniq } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
-import { getUnfilledLimitOrders } from 'web/lib/supabase/bets'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 
 export const useUnfilledBets = (
@@ -15,42 +13,42 @@ export const useUnfilledBets = (
     waitUntilAdvancedTrader: boolean
   }
 ) => {
-  const [unfilledBets, setUnfilledBets] = useState<LimitBet[] | undefined>()
+  const [now, setNow] = useState(Date.now())
+  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
+    undefined,
+    `unfilled-bets-${contractId}`
+  )
 
-  const getUnfilledUnexpiredBets = (bets: LimitBet[]) => {
-    const now = Date.now()
-    return bets.filter((bet) => (bet.expiresAt ? bet.expiresAt > now : true))
+  const onPoll = () => {
+    setNow(Date.now())
+    getBets(db, {
+      contractId,
+      isOpenLimitOrder: true,
+      order: 'desc',
+    }).then((result) =>
+      setBets(
+        result.filter((bet) => !bet.expiresAt || bet.expiresAt > now) as
+          | LimitBet[]
+          | undefined
+      )
+    )
   }
 
   useEffect(() => {
-    if (options?.waitUntilAdvancedTrader) return
-    // Load first with supabase b/c it's faster.
-    getUnfilledLimitOrders(contractId).then((b) =>
-      setUnfilledBets(getUnfilledUnexpiredBets(b))
-    )
-    // Then listen for updates w/ firebase.
-    return listenForUnfilledBets(contractId, (b) =>
-      setUnfilledBets(getUnfilledUnexpiredBets(b))
-    )
-  }, [contractId, options?.waitUntilAdvancedTrader])
+    // poll every 5 seconds
+    if (!options?.waitUntilAdvancedTrader) {
+      const interval = setInterval(onPoll, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [contractId, !!options?.waitUntilAdvancedTrader])
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (!unfilledBets?.length) return
-      const unExpiredBetsOnly = getUnfilledUnexpiredBets(unfilledBets)
-      if (unExpiredBetsOnly.length !== unfilledBets.length)
-        setUnfilledBets(unExpiredBetsOnly)
-    }, 5000)
-    return () => clearInterval(intervalId)
-  }, [unfilledBets?.length])
-
-  return unfilledBets
+  return bets
 }
 
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   const unfilledBets = useUnfilledBets(contractId) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const users = filterDefined(useUsersById(userIds))
+  const users = filterDefined(useFirebaseUsersById(userIds))
 
   const balanceByUserId = Object.fromEntries(
     users.map((user) => [user.id, user.balance])

@@ -47,7 +47,8 @@ export const getGroupsWithTopContracts: APIHandler<
 
   const marketsByTopicSlug = orderAndDedupeGroupContracts(
     topics,
-    groupContracts
+    groupContracts,
+    CONTRACTS_PER_TOPIC
   )
 
   return topics.map((topic) => ({

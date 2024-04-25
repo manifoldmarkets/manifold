@@ -72,15 +72,23 @@ fi
 TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
 GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
+# mqp: if trying to upgrade container OS above 109 LTS, you will need to figure out
+# how to handle iptables correctly, right now it seems like there is some problem
+# where container OS versions >= 113 drop TCP packets, maybe due to an issue related
+# to upgrading from iptables-legacy to iptables-nft
+
 echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
+       --image-project "cos-cloud" \
+       --image-family "cos-109-lts" \
        --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --container-env ENVIRONMENT=${ENVIRONMENT},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
        --no-user-output-enabled \
-       --scopes default,cloud-platform
+       --scopes default,cloud-platform \
+       --tags lb-health-check
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \

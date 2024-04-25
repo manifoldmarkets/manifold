@@ -8,7 +8,9 @@ export async function getPortfolioHistory(
 ) {
   let query = db
     .from('user_portfolio_history')
-    .select('ts, investment_value, total_deposits, balance, loan_total')
+    .select(
+      'ts, investment_value, total_deposits, balance, spice_balance, loan_total'
+    )
     .eq('user_id', userId)
     .gt('ts', millisToTs(start))
   if (end) {
@@ -23,7 +25,9 @@ export async function getPortfolioHistory(
 export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
   const query = db
     .from('user_portfolio_history')
-    .select('ts, investment_value, total_deposits, balance, loan_total')
+    .select(
+      'ts, investment_value, total_deposits, balance, spice_balance, loan_total'
+    )
     .eq('user_id', userId)
     .order('ts', { ascending: false })
     .limit(1)
@@ -43,6 +47,7 @@ export const convertPortfolioHistory = (row: any) => {
     investmentValue: +row.investment_value,
     totalDeposits: +row.total_deposits,
     balance: +row.balance,
+    spiceBalance: +row.spice_balance,
     loanTotal: +row.loan_total,
   }
 }

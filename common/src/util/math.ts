@@ -29,6 +29,9 @@ export const EPSILON = 0.00000001
 export function floatingEqual(a: number, b: number, epsilon = EPSILON) {
   return Math.abs(a - b) < epsilon
 }
+export function floatingGreater(a: number, b: number, epsilon = EPSILON) {
+  return a - epsilon > b
+}
 
 export function floatingGreaterEqual(a: number, b: number, epsilon = EPSILON) {
   return a + epsilon >= b

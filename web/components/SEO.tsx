@@ -36,6 +36,8 @@ export function SEO<P extends Record<string, string | undefined>>(props: {
         key="description2"
       />
 
+      {url && <link rel="canonical" href={absUrl} />}
+
       {url && <meta property="og:url" content={absUrl} key="url" />}
 
       {url && (

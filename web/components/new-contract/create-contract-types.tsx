@@ -1,10 +1,8 @@
-import { formatMoney } from 'common/util/format'
 import {
   BsFillCheckCircleFill,
   BsFillXCircleFill,
   BsUiChecks,
 } from 'react-icons/bs'
-import { GiReceiveMoney } from 'react-icons/gi'
 import { Col } from '../layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'
@@ -51,24 +49,24 @@ export const PREDICTIVE_CONTRACT_TYPES = {
 } as const
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
-  BOUNTIED_QUESTION: {
-    label: 'Bounty',
-    value: 'BOUNTIED_QUESTION',
-    name: 'bounty',
-    descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
-    example: `Recommend me sci-fi books, ${formatMoney(
-      100
-    )} for each good submission.`,
-    visual: (
-      <Col className="relative my-auto h-12 w-12 text-teal-400">
-        <GiReceiveMoney className="h-12 w-12" />
-      </Col>
-    ),
-    className: 'hover:ring-teal-500/50',
-    backgroundColor: 'bg-teal-500/5',
-    selectClassName:
-      'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
-  },
+  // BOUNTIED_QUESTION: {
+  //   label: 'Bounty',
+  //   value: 'BOUNTIED_QUESTION',
+  //   name: 'bounty',
+  //   descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
+  //   example: `Recommend me sci-fi books, ${formatMoney(
+  //     100
+  //   )} for each good submission.`,
+  //   visual: (
+  //     <Col className="relative my-auto h-12 w-12 text-teal-400">
+  //       <GiReceiveMoney className="h-12 w-12" />
+  //     </Col>
+  //   ),
+  //   className: 'hover:ring-teal-500/50',
+  //   backgroundColor: 'bg-teal-500/5',
+  //   selectClassName:
+  //     'dark:from-teal-500/20 from-teal-500/30 ring-teal-500 bg-gradient-to-br to-transparent ring-2',
+  // },
   POLL: {
     label: 'Poll',
     value: 'POLL',

@@ -13,7 +13,6 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import {
-  ENV_CONFIG,
   LOVE_DOMAIN,
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
@@ -35,8 +34,8 @@ import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
 import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
 import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
-import { onboardLover } from 'shared/love/onboard-lover'
 import { onCreateUser } from 'api/helpers/on-create-user'
+import { STARTING_BALANCE } from 'common/economy'
 
 export const createuser: APIHandler<'createuser'> = async (
   props,
@@ -67,11 +66,6 @@ export const createuser: APIHandler<'createuser'> = async (
       ? process.env.IS_MANIFOLD_LOVE === 'true'
       : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
     undefined
-
-  const fromPolitics =
-    (host?.includes('localhost')
-      ? process.env.IS_MANIFOLD_POLITICS === 'true'
-      : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
 
   const ip = getIp(req)
   const deviceToken = testUserAKAEmailPasswordUser
@@ -126,8 +120,9 @@ export const createuser: APIHandler<'createuser'> = async (
         name,
         username,
         avatarUrl,
-        balance: testUserAKAEmailPasswordUser ? 100 : 0,
-        totalDeposits: testUserAKAEmailPasswordUser ? 100 : 0,
+        balance: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
+        spiceBalance: 0,
+        totalDeposits: testUserAKAEmailPasswordUser ? STARTING_BALANCE : 0,
         createdTime: Date.now(),
         profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
         nextLoanCached: 0,
@@ -139,7 +134,6 @@ export const createuser: APIHandler<'createuser'> = async (
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
-        fromPolitics,
         signupBonusPaid: 0,
         verifiedPhone: testUserAKAEmailPasswordUser,
       })
@@ -169,30 +163,38 @@ export const createuser: APIHandler<'createuser'> = async (
   )
 
   log('created user ', { username: user.username, firebaseId: auth.uid })
-  const pg = createSupabaseDirectClient()
-  if (fromLove) await onboardLover(user, ip)
-  await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
-  await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
-  const interestingContractIds = await getImportantContractsForNewUsers(30, pg)
-  await generateNewUserFeedFromContracts(
-    auth.uid,
-    pg,
-    DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
-    interestingContractIds,
-    0.5
-  )
 
-  await track(auth.uid, 'create user', { username: user.username }, { ip })
-
-  if (process.env.FB_ACCESS_TOKEN)
-    await trackSignupFB(
-      process.env.FB_ACCESS_TOKEN,
-      user.id,
-      email ?? '',
-      ip
-    ).catch((e) => log('error fb tracking:', e))
-  else log('no FB_ACCESS_TOKEN')
   const continuation = async () => {
+    const pg = createSupabaseDirectClient()
+    await track(
+      user.id,
+      fromLove ? 'create lover' : 'create user',
+      { username: user.username },
+      { ip }
+    )
+
+    await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
+    await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
+    const interestingContractIds = await getImportantContractsForNewUsers(
+      30,
+      pg
+    )
+    await generateNewUserFeedFromContracts(
+      auth.uid,
+      pg,
+      DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
+      interestingContractIds,
+      0.5
+    )
+
+    if (process.env.FB_ACCESS_TOKEN)
+      await trackSignupFB(
+        process.env.FB_ACCESS_TOKEN,
+        user.id,
+        email ?? '',
+        ip
+      ).catch((e) => log('error fb tracking:', e))
+    else log('no FB_ACCESS_TOKEN')
     await onCreateUser(user, privateUser)
   }
 

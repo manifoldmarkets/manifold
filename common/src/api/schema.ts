@@ -24,7 +24,7 @@ import { CPMMMultiContract, Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { LiteUser } from './user-types'
+import { DisplayUser, FullUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
 import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
@@ -36,6 +36,8 @@ import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
+import { ManaSupply } from 'common/stats'
+import { Repost } from 'common/repost'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -116,7 +118,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         replyToCommentId: z.string().optional(),
-        limitProb: z.number().gte(0).lte(1).optional(),
+        limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
@@ -149,7 +151,18 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
         expiresAt: z.number().optional(),
-        // Multi-buy
+        answerIds: z.array(z.string()).min(1),
+      })
+      .strict(),
+  },
+  'multi-sell': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as (CandidateBet & { betId: string })[],
+    props: z
+      .object({
+        contractId: z.string(),
         answerIds: z.array(z.string()).min(1),
       })
       .strict(),
@@ -353,14 +366,6 @@ export const API = (_apiTypeCheck = {
     props: updateMarketProps,
     returns: {} as { success: true },
   },
-  // deprecated. remove after a few days
-  'update-market': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    props: updateMarketProps,
-    returns: {} as { success: true },
-  },
   'market/:contractId/close': {
     method: 'POST',
     visibility: 'public',
@@ -548,6 +553,23 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  donate: {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        amount: z.number().positive().finite().safe(),
+        to: z.string(),
+      })
+      .strict(),
+  },
+  'convert-sp-to-mana': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
+  },
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',
@@ -592,14 +614,22 @@ export const API = (_apiTypeCheck = {
     authed: true,
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
   },
   'user/:username': {
     method: 'GET',
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
+    props: z.object({ username: z.string() }).strict(),
+  },
+  'user/:username/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as DisplayUser,
     props: z.object({ username: z.string() }).strict(),
   },
   'user/by-id/:id': {
@@ -607,7 +637,15 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: {} as LiteUser,
+    returns: {} as FullUser,
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'user/by-id/:id/lite': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as DisplayUser,
     props: z.object({ id: z.string() }).strict(),
   },
   users: {
@@ -615,7 +653,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as LiteUser[],
+    returns: [] as FullUser[],
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
@@ -628,7 +666,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as LiteUser[],
+    returns: [] as FullUser[],
     props: z
       .object({
         term: z.string(),
@@ -747,6 +785,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
+        embeddingsLimit: z.coerce.number().gte(0).lte(100),
         limitTopics: z.coerce.number().gte(0).lte(10),
         userId: z.string().optional(),
       })
@@ -755,7 +794,7 @@ export const API = (_apiTypeCheck = {
       marketsFromEmbeddings: Contract[]
       marketsByTopicSlug: { [topicSlug: string]: Contract[] }
     },
-    cache: 'public, max-age=300, stale-while-revalidate=10',
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
   },
   'unlist-and-cancel-user-contracts': {
     method: 'POST',
@@ -1037,6 +1076,7 @@ export const API = (_apiTypeCheck = {
         'card click',
         'promoted click',
         'card like',
+        'page share',
       ]),
       commentId: z.string().optional(),
       feedReasons: z.array(z.string()).optional(),
@@ -1074,7 +1114,6 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
     returns: {} as {
-      status: 'success'
       groups: Group[]
     },
   },
@@ -1086,13 +1125,40 @@ export const API = (_apiTypeCheck = {
       userId: z.string(),
     }),
     returns: {} as {
-      status: 'success'
       loanTotal: number
       investmentValue: number
       balance: number
+      spiceBalance: number
       totalDeposits: number
       timestamp: number
     },
+  },
+  'get-feed': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      contracts: Contract[]
+      comments: ContractComment[]
+      bets: Bet[]
+      reposts: Repost[]
+      idsToReason: { [id: string]: string }
+    },
+    props: z
+      .object({
+        userId: z.string(),
+        limit: z.coerce.number().gt(0).lte(100).default(100),
+        offset: z.coerce.number().gte(0).default(0),
+        ignoreContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'get-mana-supply': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as ManaSupply,
+    props: z.object({}).strict(),
   },
 } as const)
 

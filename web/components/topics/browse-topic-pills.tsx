@@ -18,8 +18,7 @@ export const BrowseTopicPills = (props: {
   const { topics, className, setTopicSlug, currentTopicSlug } = props
   const isAuth = useIsAuthorized()
   const [showMore, setShowMore] = usePersistentLocalState<boolean>(
-    // The first time user lands on browse it should be obvious that there topics to choose from
-    true,
+    false,
     'showMoreMobileBrowseTopicPills'
   )
   const router = useRouter()

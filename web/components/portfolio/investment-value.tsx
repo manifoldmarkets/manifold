@@ -2,7 +2,6 @@ import { ArrowUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { CPMMContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
@@ -18,7 +17,9 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
-import { getCutoff } from 'web/lib/util/time'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 const DAILY_INVESTMENT_CLICK_EVENT = 'click daily investment button'
 
@@ -26,15 +27,11 @@ export const InvestmentValueCard = memo(function (props: {
   user: User
   className: string
   portfolio: PortfolioSnapshot | undefined
-  weeklyPortfolioData: PortfolioSnapshot[]
   refreshPortfolio: () => void
 }) {
-  const { user, className, portfolio, weeklyPortfolioData, refreshPortfolio } =
-    props
-  const dayAgoPortfolio = minBy(
-    weeklyPortfolioData.filter((p) => p.timestamp >= getCutoff('daily')),
-    'timestamp'
-  )
+  const { user, className, portfolio, refreshPortfolio } = props
+  const dailyPortfolioData = usePortfolioHistory(user.id, 'daily') ?? []
+  const dayAgoPortfolio = minBy(dailyPortfolioData, 'timestamp')
   const [open, setOpen] = useState(false)
 
   const [contractMetrics, setContractMetrics] = usePersistentInMemoryState<
@@ -56,15 +53,17 @@ export const InvestmentValueCard = memo(function (props: {
   const dailyProfit =
     portfolio && dayAgoPortfolio
       ? portfolio.investmentValue +
-        portfolio.balance -
+        portfolio.balance +
+        portfolio.spiceBalance -
         portfolio.totalDeposits -
         (dayAgoPortfolio.investmentValue +
-          dayAgoPortfolio.balance -
+          dayAgoPortfolio.balance +
+          dayAgoPortfolio.spiceBalance -
           dayAgoPortfolio.totalDeposits)
       : dailyProfitFromMetrics
 
   const portfolioValue = portfolio
-    ? portfolio.investmentValue + portfolio.balance
+    ? portfolio.investmentValue + portfolio.balance + portfolio.spiceBalance
     : 0
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
@@ -90,9 +89,14 @@ export const InvestmentValueCard = memo(function (props: {
       <Col className={'w-full gap-1.5'}>
         <Col>
           <div className={'text-ink-800 text-2xl sm:text-4xl'}>
-            {portfolio
-              ? formatMoney(netWorth)
-              : `${ENV_CONFIG.moneyMoniker}----`}
+            {portfolio ? (
+              <CoinNumber amount={netWorth} />
+            ) : (
+              <Row className="items-center">
+                <ManaCoin />
+                ----
+              </Row>
+            )}
           </div>
           <div className={'text-ink-800 ml-1'}>Your net worth</div>
         </Col>

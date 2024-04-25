@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney, manaToUSD } from 'common/util/format'
+import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -14,12 +14,14 @@ import {
   UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import Link from 'next/link'
-import { validateIapReceipt } from 'web/lib/firebase/api'
+import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { sumBy } from 'lodash'
+import { query, where } from 'firebase/firestore'
+import { coll, listenForValues } from 'web/lib/firebase/utils'
+import { sum } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
 import { AD_REDEEM_REWARD } from 'common/boost'
 import { Txn } from 'common/txn'
@@ -29,8 +31,7 @@ import { buildArray } from 'common/util/array'
 import { Col } from 'web/components/layout/col'
 import { linkClass } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
-import { db } from 'web/lib/supabase/db'
-import { run } from 'common/supabase/utils'
+import { AmountInput } from './widgets/amount-input'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -38,7 +39,6 @@ export function AddFundsModal(props: {
 }) {
   const { open, setOpen } = props
   const { isNative, platform } = getNativePlatform()
-
   return (
     <Modal
       open={open}
@@ -62,6 +62,7 @@ export function AddFundsModal(props: {
               </>
             ),
           },
+
           (!isNative || (isNative && platform !== 'ios')) && {
             title: 'Charity',
             content: (
@@ -94,7 +95,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
   const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(2500)]
+    prices[formatMoney(25000)]
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -127,8 +128,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
       <div className="my-4">
         Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
         questions.
-        <div className="italic">Not redeemable for cash except to charity.</div>
       </div>
+
+      <AlertBox title="Purchases disabled" className="my-4">
+        Mana purchases are temporarily disabled. They will be re-enabled at a
+        higher purchase rate on May 1st.
+      </AlertBox>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
@@ -149,15 +154,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
       )}
 
       <div className="mt-2 flex gap-2">
-        <Button color="gray" onClick={onClose}>
-          Back
-        </Button>
-
         {isNative && platform === 'ios' ? (
           <Button
             color={'gradient'}
             loading={loading}
-            disabled={pastLimit}
+            // disabled={pastLimit}
+            disabled
             onClick={() => {
               setError(null)
               setLoading(true)
@@ -171,7 +173,12 @@ export function BuyManaTab(props: { onClose: () => void }) {
             action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
-            <Button type="submit" color="gradient" disabled={pastLimit}>
+            <Button
+              type="submit"
+              color="gradient"
+              // disabled={pastLimit}
+              disabled
+            >
               Checkout
             </Button>
           </form>
@@ -215,6 +222,53 @@ export const OtherWaysToGetMana = () => {
   )
 }
 
+export const SpiceToManaForm = (props: {
+  onBack: () => void
+  onClose: () => void
+}) => {
+  const [amount, setAmount] = useState<number | undefined>(0)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const onSubmit = async () => {
+    if (!amount) return
+    setLoading(true)
+    try {
+      await api('convert-sp-to-mana', { amount })
+      setLoading(false)
+      setAmount(amount)
+      setError(null)
+      props.onClose()
+    } catch (e) {
+      console.error(e)
+      setError(e instanceof APIError ? e.message : 'Error converting')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="my-4">Convert at a rate of 1 prize point to 1 mana.</div>
+      <div className="text-ink-500 mb-2 text-sm">Amount</div>
+      <AmountInput amount={amount} onChangeAmount={setAmount} />
+      <div className="mt-4 flex gap-2">
+        <Button color="gray" onClick={props.onBack}>
+          Back
+        </Button>
+        <Button
+          color="gradient"
+          disabled={!amount}
+          loading={loading}
+          onClick={onSubmit}
+        >
+          Convert to {formatSpice(amount ?? 0)}
+        </Button>
+      </div>
+      <Row className="text-error mt-2 text-sm">{error}</Row>
+    </>
+  )
+}
+
 const Item = (props: { children: React.ReactNode; url?: string }) => {
   const { children, url } = props
   return (
@@ -251,17 +305,23 @@ const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    run(
-      db
-        .from('txns')
-        .select('data')
-        .eq('data->>category', 'MANA_PURCHASE')
-        .eq('data->>toId', userId)
-        .gt('data->createdTime', Date.now() - DAY_MS)
-    ).then((res) => {
-      setPurchases(res.data.map((r) => r.data as Txn))
-    })
+    return listenForValues(
+      query(
+        coll<Txn>('txns'),
+        where('category', '==', 'MANA_PURCHASE'),
+        where('toId', '==', userId)
+      ),
+      setPurchases
+    )
   }, [userId])
 
-  return sumBy(purchases, 'amount') / 100
+  //  TODO: include ios purchases
+
+  return (
+    sum(
+      purchases
+        .filter((t) => t.createdTime > Date.now() - DAY_MS)
+        .map((t) => t.amount)
+    ) / 100
+  )
 }

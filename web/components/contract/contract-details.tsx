@@ -19,13 +19,13 @@ import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
-import { useUserById } from 'web/hooks/use-user'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function AuthorInfo(props: { contract: Contract }) {
   const { contract } = props
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
-  const resolver = useUserById(contract.resolverId)
+  const resolver = useDisplayUserById(contract.resolverId)
   return (
     <Row className="grow flex-wrap items-center gap-1">
       <div className="relative">
@@ -54,13 +54,7 @@ export function AuthorInfo(props: { contract: Contract }) {
           <>
             <span className={'ml-1'}>resolved by </span>
             <UserHovercard userId={resolver.id}>
-              <UserLink
-                user={{
-                  id: resolver.id,
-                  name: resolver.name,
-                  username: resolver.username,
-                }}
-              />
+              <UserLink user={resolver} />
             </UserHovercard>
           </>
         )}
@@ -139,7 +133,7 @@ export function CloseDate(props: {
               time={closeTime}
               placement="bottom-end"
               noTap
-              className="flex items-center gap-1"
+              className="flex flex-nowrap items-center gap-1 whitespace-nowrap"
             >
               {dayjs().isBefore(closeTime) ? (
                 <FaClock className="text-ink-500 h-3.5 w-3.5" />

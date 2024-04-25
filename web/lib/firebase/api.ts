@@ -65,8 +65,8 @@ export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
 }
 
-export function changeUserInfo(params: any) {
-  return call(getApiUrl('changeuserinfo'), 'POST', params)
+export function updateUserApi(params: any) {
+  return call(getApiUrl('update-user'), 'POST', params)
 }
 
 export function swapCert(params: any) {

@@ -1,4 +1,4 @@
-import { LiteUser } from 'common/api/user-types'
+import { FullUser } from 'common/api/user-types'
 import Link from 'next/link'
 import { FollowButton } from '../buttons/follow-button'
 import { Col } from '../layout/col'
@@ -6,7 +6,7 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { StackedUserNames } from '../widgets/user-link'
 
-export const UserResults = (props: { users: LiteUser[] }) => {
+export const UserResults = (props: { users: FullUser[] }) => {
   const { users } = props
 
   return (
@@ -22,7 +22,7 @@ export const UserResults = (props: { users: LiteUser[] }) => {
   )
 }
 
-function UserResult(props: { user: LiteUser }) {
+function UserResult(props: { user: FullUser }) {
   const {
     id,
     name,

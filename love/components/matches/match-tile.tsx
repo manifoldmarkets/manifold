@@ -10,7 +10,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { useUser, useUserById } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -22,6 +22,7 @@ import { MatchTracker } from './match-tracker'
 import { linkClass } from 'web/components/widgets/site-link'
 import { CommentsButton } from '../comments/love-comments-button'
 import { MatchAvatars } from './match-avatars'
+import { useUserById } from 'web/hooks/use-user-supabase'
 
 const relationshipStages = [
   '1st date',

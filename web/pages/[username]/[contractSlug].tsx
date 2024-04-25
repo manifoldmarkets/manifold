@@ -37,7 +37,7 @@ import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
-import { EditableQuestionTitle } from 'web/components/contract/title-edit'
+import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -88,6 +88,7 @@ import { useRequestNewUserSignupBonus } from 'web/hooks/use-request-new-user-sig
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
+import { Title } from 'web/components/widgets/title'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -96,16 +97,16 @@ export async function getStaticProps(ctx: {
   const adminDb = await initSupabaseAdmin()
   const contract = (await getContractFromSlug(contractSlug, adminDb)) ?? null
 
-  if (!contract || contract.visibility === 'private' || contract.deleted) {
+  if (!contract || contract.visibility === 'private') {
     return {
-      props: { state: 'not found' },
-      revalidate: 60,
+      notFound: true,
     }
   }
+
   if (contract.deleted) {
     return {
       props: {
-        state: 'not authed',
+        state: 'deleted',
         slug: contract.slug,
         visibility: contract.visibility,
       },
@@ -121,8 +122,14 @@ export async function getStaticPaths() {
 }
 
 export default function ContractPage(props: MaybeAuthedContractParams) {
-  if (props.state === 'not found' || props.state === 'not authed') {
-    return <Custom404 />
+  if (props.state === 'deleted') {
+    return (
+      <Page trackPageView={false}>
+        <div className="flex h-[50vh] flex-col items-center justify-center">
+          <Title>Question deleted</Title>
+        </div>
+      </Page>
+    )
   }
 
   return <NonPrivateContractPage contractParams={props.params} />
@@ -158,7 +165,6 @@ export function ContractPageContent(props: ContractParams) {
     userPositionsByOutcome,
     comments,
     totalPositions,
-    totalViews,
     relatedContracts,
     historyData,
     chartAnnotations,
@@ -178,6 +184,9 @@ export function ContractPageContent(props: ContractParams) {
     if (answers) {
       contract.answers = answers
     }
+  }
+  if (!contract.viewCount) {
+    contract.viewCount = props.contract.viewCount
   }
 
   const cachedContract = useMemo(
@@ -223,7 +232,6 @@ export function ContractPageContent(props: ContractParams) {
   const isNumber = contract.outcomeType === 'NUMBER'
 
   const rows = useRealtimeBetsPolling(
-    contract.id,
     {
       contractId: contract.id,
       afterTime: lastBetTime,
@@ -231,10 +239,12 @@ export function ContractPageContent(props: ContractParams) {
         contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
       order: 'asc',
     },
-    500
+    500,
+    `contract-bets-${contract.id}-500ms-v1`
   )
 
   const newBets = rows ?? []
+  const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
     props.totalBets +
@@ -242,11 +252,15 @@ export function ContractPageContent(props: ContractParams) {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => [
-      ...historyData.bets,
-      ...(isNumber ? newBets : newBetsWithoutRedemptions),
-    ],
-    [historyData.bets, newBets]
+    () =>
+      uniqBy(
+        [
+          ...historyData.bets,
+          ...(isNumber ? newBets : newBetsWithoutRedemptions),
+        ],
+        'id'
+      ),
+    [historyData.bets, stringifiedNewBets]
   )
 
   const betPoints = useMemo(() => {
@@ -271,7 +285,7 @@ export function ContractPageContent(props: ContractParams) {
       }))
       return [...points, ...newPoints]
     }
-  }, [historyData.points, newBets])
+  }, [historyData.points, stringifiedNewBets])
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
@@ -386,7 +400,7 @@ export function ContractPageContent(props: ContractParams) {
             )}
             <Row
               className={clsx(
-                'sticky -top-px z-50 flex h-12 w-full transition-colors',
+                'sticky -top-px z-50 h-12 w-full transition-colors',
                 headerStuck
                   ? 'dark:bg-canvas-50/80 bg-white/80 backdrop-blur-sm'
                   : ''
@@ -422,7 +436,9 @@ export function ContractPageContent(props: ContractParams) {
           </div>
           {coverImageUrl && (
             <Row className="h-10 w-full justify-between">
-              <BackButton className="pr-8" />
+              <div>
+                <BackButton className="pr-8" />
+              </div>
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
@@ -444,7 +460,7 @@ export function ContractPageContent(props: ContractParams) {
                   />
                   <EditableQuestionTitle
                     contract={contract}
-                    canEdit={isAdmin || isCreator}
+                    canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
                 <MarketTopics
@@ -459,7 +475,6 @@ export function ContractPageContent(props: ContractParams) {
 
                 <ContractSummaryStats
                   contract={contract}
-                  views={totalViews}
                   editable={isCreator || isAdmin || isMod}
                 />
               </div>
@@ -555,7 +570,7 @@ export function ContractPageContent(props: ContractParams) {
               />
             )}
             {showExplainerPanel && (
-              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 xl:hidden" />
+              <ExplainerPanel className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden" />
             )}
             {comments.length > 3 && (
               <RelatedContractsGrid

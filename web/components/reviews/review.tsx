@@ -1,6 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { useContract } from 'web/hooks/use-contract-supabase'
-import { useUserById } from 'web/hooks/use-user-supabase'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { JSONEmpty } from '../contract/contract-description'
 import { ContractMention } from '../contract/contract-mention'
 import { Row } from '../layout/row'
@@ -19,7 +19,7 @@ export const Review = (props: {
   text?: JSONContent
 }) => {
   const { rating, created, text } = props
-  const user = useUserById(props.userId)
+  const user = useDisplayUserById(props.userId)
   const contract = useContract(props.contractId)
 
   if (!user || !contract) return null

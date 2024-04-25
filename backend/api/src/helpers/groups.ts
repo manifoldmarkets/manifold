@@ -4,7 +4,8 @@ import { Topic } from 'common/group'
 
 export const orderAndDedupeGroupContracts = (
   topics: Pick<Topic, 'importanceScore' | 'slug'>[],
-  groupContracts: [string, Contract][]
+  groupContracts: [string, Contract][],
+  limitPerTopic: number
 ) => {
   // Order so we can remove duplicates from less important groups
   const orderedGroupContracts = orderBy(
@@ -19,7 +20,10 @@ export const orderAndDedupeGroupContracts = (
     const addedMarketIds = Object.values(marketsByTopicSlug)
       .flat()
       .map((c) => c.id)
-    if (!addedMarketIds.includes(contract.id))
+    if (
+      !addedMarketIds.includes(contract.id) &&
+      marketsByTopicSlug[slug].length < limitPerTopic
+    )
       marketsByTopicSlug[slug].push(contract)
   }
   return marketsByTopicSlug

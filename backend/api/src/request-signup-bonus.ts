@@ -3,6 +3,7 @@ import { getUser } from 'shared/utils'
 import { MARKET_VISIT_BONUS, MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { sendOnboardingMarketVisitBonus } from 'shared/onboarding-helpers'
 import * as admin from 'firebase-admin'
+import { isVerified } from 'common/user'
 
 export const requestSignupBonus: APIHandler<'request-signup-bonus'> = async (
   _,
@@ -20,6 +21,9 @@ export const requestSignupBonus: APIHandler<'request-signup-bonus'> = async (
         MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
       } signup bonuses`
     )
+  }
+  if (!isVerified(user)) {
+    throw new APIError(400, 'User not yet verified phone number.')
   }
   const firestore = admin.firestore()
   const txn = await sendOnboardingMarketVisitBonus(firestore, auth.uid)

@@ -44,6 +44,7 @@ export function HeaderActions(props: {
         className="text-ink-500 hover:text-ink-600"
         size="xs"
         eventTrackingName="copy market link"
+        trackingInfo={{ contractId: contract.id }}
       />
 
       <Tooltip text="Question details" placement="bottom" noTap>

@@ -10,6 +10,10 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   isBinaryMulti,
+  MAX_CPMM_PROB,
+  MAX_STONK_PROB,
+  MIN_CPMM_PROB,
+  MIN_STONK_PROB,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -51,6 +55,9 @@ import { getVersusColors } from '../charts/contract/choice'
 import { PRODUCT_MARKET_FIT_ENABLED } from 'common/envs/constants'
 import { SpecialYesNoSelector } from 'web/components/bet/special-yes-no-selector'
 import { useAudio } from 'web/hooks/use-audio'
+import { getFeeTotal } from 'common/fees'
+import { FeeDisplay } from './fees'
+import { floatingEqual } from 'common/util/math'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -359,12 +366,21 @@ export const BuyPanelBody = (props: {
   const betDisabled =
     isSubmitting || !betAmount || !!error || outcome === undefined
 
+  const limits =
+    contract.outcomeType === 'STONK'
+      ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
+      : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
+  const maxProb = limits.max
+  const minProb = limits.min
+
   let currentPayout: number
   let probBefore: number
   let probAfter: number
+  let fees: number
+  let filledAmount: number
   if (isCpmmMulti && multiProps && contract.shouldAnswersSumToOne) {
     const { answers, answerToBuy } = multiProps
-    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome ?? 'YES',
@@ -375,6 +391,7 @@ export const BuyPanelBody = (props: {
     )
     const { pool, p } = newBetResult.cpmmState
     currentPayout = sumBy(newBetResult.takers, 'shares')
+    filledAmount = sumBy(newBetResult.takers, 'amount')
     if (multiProps.answerToBuy.text !== multiProps.answerText && isBinaryMC) {
       probBefore = 1 - answerToBuy.prob
       probAfter = 1 - getCpmmProbability(pool, p)
@@ -382,6 +399,9 @@ export const BuyPanelBody = (props: {
       probBefore = answerToBuy.prob
       probAfter = getCpmmProbability(pool, p)
     }
+    fees =
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (result) => getFeeTotal(result.totalFees))
   } else {
     const cpmmState = isCpmmMulti
       ? {
@@ -399,17 +419,21 @@ export const BuyPanelBody = (props: {
       betAmount ?? 0,
       undefined,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      limits
     )
     currentPayout = result.shares
-
+    filledAmount = result.amount
     probBefore = result.probBefore
     probAfter = result.probAfter
+    fees = getFeeTotal(result.fees)
   }
 
   const probStayedSame = formatPercent(probAfter) === formatPercent(probBefore)
   const probChange = Math.abs(probAfter - probBefore)
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
+  const currentReturn = filledAmount
+    ? (currentPayout - filledAmount) / filledAmount
+    : 0
   const currentReturnPercent = formatPercent(currentReturn)
 
   const displayedAfter = isPseudoNumeric
@@ -434,48 +458,51 @@ export const BuyPanelBody = (props: {
     ? `Are you sure you want to move the market to ${displayedAfter}?`
     : undefined
 
+  const choicesMap: { [key: string]: string } = isStonk
+    ? { Buy: 'YES', Short: 'NO' }
+    : { Yes: 'YES', No: 'NO' }
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
         {children}
 
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
-          <Row className="mb-2 items-center space-x-3">
-            <div className="text-ink-700">Outcome</div>
-            <ChoicesToggleGroup
-              currentChoice={outcome}
-              color={outcome === 'YES' ? 'green' : 'red'}
-              choicesMap={{
-                Yes: 'YES',
-                No: 'NO',
-              }}
-              setChoice={(outcome) => {
-                setOutcome(outcome as 'YES' | 'NO')
-              }}
-            />
+          <Row className={'mb-2 mr-8 justify-between'}>
+            <Col className={clsx(' gap-1', isBinaryMC && 'invisible')}>
+              <div className="text-ink-700">Outcome</div>
+              <ChoicesToggleGroup
+                currentChoice={outcome}
+                color={outcome === 'YES' ? 'green' : 'red'}
+                choicesMap={choicesMap}
+                setChoice={(outcome) => {
+                  setOutcome(outcome as 'YES' | 'NO')
+                }}
+              />
+            </Col>
+            {isAdvancedTrader && !isStonk && (
+              <Col className="gap-1">
+                <div className="text-ink-700">Bet type</div>
+                <ChoicesToggleGroup
+                  currentChoice={betType}
+                  choicesMap={{
+                    Market: 'Market',
+                    Limit: 'Limit',
+                  }}
+                  setChoice={(val) => {
+                    if (val === 'Market' || val === 'Limit') {
+                      handleBetTypeChange(val)
+                    }
+                  }}
+                />
+              </Col>
+            )}
           </Row>
         )}
 
-        {isAdvancedTrader && !isStonk && (
-          <Row className="mb-2 items-center space-x-3">
-            <div className="text-ink-700">Bet type</div>
-            <ChoicesToggleGroup
-              currentChoice={betType}
-              choicesMap={{
-                Market: 'Market',
-                Limit: 'Limit',
-              }}
-              setChoice={(val) => {
-                if (val === 'Market' || val === 'Limit') {
-                  handleBetTypeChange(val)
-                }
-              }}
-            />
-          </Row>
-        )}
         {onClose && (
           <Button
             color="gray-white"
+            size="sm"
             className="absolute right-1 top-1"
             onClick={onClose}
           >
@@ -508,8 +535,8 @@ export const BuyPanelBody = (props: {
 
               {isAdvancedTrader && (
                 <Col className="gap-3">
-                  <div className="flex-grow">
-                    <span className="text-ink-700 mr-2 whitespace-nowrap">
+                  <Row className=" items-baseline">
+                    <span className="text-ink-700 mr-2 min-w-[120px] whitespace-nowrap">
                       {isPseudoNumeric
                         ? 'Estimated value'
                         : isStonk
@@ -529,11 +556,16 @@ export const BuyPanelBody = (props: {
                           contract,
                           Math.abs(probAfter - probBefore)
                         )}
+                        {floatingEqual(probAfter, maxProb)
+                          ? ' (max)'
+                          : floatingEqual(probAfter, minProb)
+                          ? ' (max)'
+                          : ''}
                       </span>
                     )}
-                  </div>
+                  </Row>
                   <Row className="min-w-[128px] items-baseline">
-                    <div className="text-ink-700 mr-2 flex-nowrap whitespace-nowrap">
+                    <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
                     <span className="mr-1 whitespace-nowrap text-lg">
@@ -549,6 +581,17 @@ export const BuyPanelBody = (props: {
                         : ' +' + currentReturnPercent}
                     </span>
                   </Row>
+                  {betAmount != undefined &&
+                    !floatingEqual(filledAmount, betAmount) && (
+                      <Row className="min-w-[128px] items-baseline">
+                        <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
+                          Refund amount
+                        </div>
+                        <span className="mr-1 whitespace-nowrap text-lg">
+                          {formatMoney(betAmount - filledAmount)}
+                        </span>
+                      </Row>
+                    )}
                 </Col>
               )}
             </Row>
@@ -591,7 +634,9 @@ export const BuyPanelBody = (props: {
                         'YES'
                       )} or ${formatOutcomeLabel(contract, 'NO')}`
                     : isStonk
-                    ? formatOutcomeLabel(contract, outcome)
+                    ? formatOutcomeLabel(contract, outcome) +
+                      ' ' +
+                      formatMoney(betAmount)
                     : `Bet ${
                         binaryMCOutcomeLabel ??
                         formatOutcomeLabel(contract, outcome)
@@ -612,44 +657,28 @@ export const BuyPanelBody = (props: {
           </Col>
         )}
 
-        {user ? (
-          <Row className="mt-3 items-start justify-between">
-            <div className="flex-grow">
-              <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
+        {user && (
+          <Row className="mt-5 items-start justify-between text-sm">
+            <Row className={''}>
+              <span
+                className={clsx(
+                  'text-ink-700 mr-1 whitespace-nowrap ',
+                  isAdvancedTrader ? '' : 'min-w-[110px]'
+                )}
+              >
                 Your balance{' '}
-                <span className="text-ink-700 font-semibold">
-                  {formatMoney(user.balance)}
-                </span>
               </span>
-            </div>
-
-            {isAdvancedTrader && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
-              </div>
-            )}
+              <span className="text-ink-700 font-semibold">
+                {formatMoney(user.balance)}
+              </span>
+            </Row>
           </Row>
-        ) : null}
+        )}
 
         {!isAdvancedTrader && (
-          <Row className=" items-start justify-between">
-            <div className=" flex-grow">
-              <span className="text-ink-700 mr-1 whitespace-nowrap text-sm">
+          <Col>
+            <Row className="">
+              <span className="text-ink-700 mr-1 min-w-[110px] whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -657,19 +686,24 @@ export const BuyPanelBody = (props: {
                   : 'New probability'}
               </span>
 
-              <span className="text-sm font-semibold">
+              <span className="text-ink-700 text-sm font-semibold">
                 {getFormattedMappedValue(
                   contract,
                   probStayedSame ? probBefore : probAfter
                 )}
               </span>
               {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-1 text-sm', 'text-ink-700')}>
+                <span className={clsx('ml-2 text-sm', 'text-ink-700')}>
                   {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
                     Math.abs(probAfter - probBefore)
                   )}
+                  {floatingEqual(probAfter, maxProb)
+                    ? ' (max)'
+                    : floatingEqual(probAfter, minProb)
+                    ? ' (max)'
+                    : ''}{' '}
                 </span>
               )}
 
@@ -694,29 +728,40 @@ export const BuyPanelBody = (props: {
                   size="sm"
                 />
               )}
-            </div>
+            </Row>
+          </Col>
+        )}
 
-            {user && (
-              <div>
-                <button
-                  className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
-                  onClick={() => {
-                    const tradingMode = !advancedTraderMode
-                    setAdvancedTraderMode(tradingMode)
-                    if (!tradingMode) {
-                      setBetType('Market')
-                    }
-                    updateUser(user.id, { isAdvancedTrader: tradingMode })
-                  }}
-                >
-                  <span className="hover:underline">
-                    {advancedTraderMode ? 'Default' : 'Advanced'}
-                  </span>
-                  <ChevronDownIcon className="ml-1 h-3 w-3" />
-                </button>
-              </div>
-            )}
-          </Row>
+        {betType !== 'Limit' && (
+          <div className="text-ink-700 mt-1 text-sm">
+            Fees{' '}
+            <FeeDisplay
+              amount={betAmount}
+              totalFees={fees}
+              isMultiSumsToOne={shouldAnswersSumToOne}
+            />
+          </div>
+        )}
+
+        {user && (
+          <div className="absolute bottom-2 right-0">
+            <button
+              className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+              onClick={() => {
+                const tradingMode = !advancedTraderMode
+                setAdvancedTraderMode(tradingMode)
+                if (!tradingMode) {
+                  setBetType('Market')
+                }
+                updateUser(user.id, { isAdvancedTrader: tradingMode })
+              }}
+            >
+              <span className="hover:underline">
+                {advancedTraderMode ? 'Default' : 'Advanced'}
+              </span>
+              <ChevronDownIcon className="ml-1 h-3 w-3" />
+            </button>
+          </div>
         )}
       </Col>
 

@@ -3,7 +3,7 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { useState } from 'react'
 import { api } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
@@ -106,22 +106,8 @@ export function AddLiquidityPanel(props: {
         Subsidize
       </Button>
 
-      {amount ? (
-        <div className="text-ink-700 text-xs">
-          Pay {formatMoney(payAmount)} to add {formatMoney(amount)} to the
-          subsidy pool after fees.
-        </div>
-      ) : (
-        <div className="text-ink-700 text-xs">
-          Note: Manifold charges a {formatPercent(SUBSIDY_FEE)} fee on
-          subsidies.
-        </div>
-      )}
-
       {isSuccess && amount && (
-        <div>
-          Success! Added {formatMoney(amount)} to the subsidy pool, after fees.
-        </div>
+        <div>Success! Added {formatMoney(amount)} to the subsidy pool.</div>
       )}
 
       {isLoading && <div>Processing...</div>}

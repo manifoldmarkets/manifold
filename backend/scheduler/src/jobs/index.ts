@@ -12,6 +12,10 @@ import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 import { autoAwardBounty } from './auto-award-bounty'
+import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
+import { MINUTE_MS } from 'common/util/time'
+import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
+import { updateCreatorMetricsCore } from 'shared/update-creator-metrics-core'
 
 export function createJobs() {
   return [
@@ -22,9 +26,16 @@ export function createJobs() {
       addTrendingFeedContracts
     ),
     createJob(
-      'update-contract-metrics',
-      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
-      updateContractMetricsCore
+      'update-contract-metrics-non-multi',
+      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
+      () => updateContractMetricsCore('non-multi'),
+      30 * MINUTE_MS
+    ),
+    createJob(
+      'update-contract-metrics-multi',
+      '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
+      () => updateContractMetricsCore('multi'),
+      30 * MINUTE_MS
     ),
     createJob(
       'update-stats',
@@ -52,15 +63,17 @@ export function createJobs() {
       addConvertingContractsToFeed
     ),
     createJob(
-      'onboarding-notification',
-      '0 0 11 * * *', // 11 AM daily
-      sendOnboardingNotificationsInternal
-    ),
-    createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      updateUserMetricsCore
+      updateUserMetricsCore,
+      10 * MINUTE_MS // The caches take time to build
     ),
+    createJob(
+      'update-creator-metrics',
+      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
+      updateCreatorMetricsCore
+    ),
+    // Daily jobs:
     createJob(
       'truncate-incoming-writes',
       '0 0 0 * * *', // midnight daily
@@ -80,6 +93,21 @@ export function createJobs() {
       'clean-old-notifications',
       '0 0 2 * * *', // 2 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'reset-pg-stats',
+      '0 0 3 * * *', // 3 AM daily
+      resetPgStats
+    ),
+    createJob(
+      'calculate-user-topic-interests',
+      '0 0 3 * * *', // 3 AM daily
+      () => calculateUserTopicInterests()
+    ),
+    createJob(
+      'onboarding-notification',
+      '0 0 11 * * *', // 11 AM daily
+      sendOnboardingNotificationsInternal
     ),
   ]
 }

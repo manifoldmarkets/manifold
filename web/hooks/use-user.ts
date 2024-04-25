@@ -22,16 +22,14 @@ export const useIsAuthorized = () => {
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
-export const useUserById = (userId: string | undefined) => {
+/** @deprecated */
+export const useFirebaseUserById = (userId: string | undefined) => {
   return useStore(userId, listenForUser)
 }
 
-export const useUsersById = (userIds: string[]) => {
+/** @deprecated */
+export const useFirebaseUsersById = (userIds: string[]) => {
   return useStoreItems(userIds, listenForUser)
-}
-
-export const usePrefetchUsers = (userIds: string[]) => {
-  useStoreItems(userIds, listenForUser)
 }
 
 export const isBlocked = (

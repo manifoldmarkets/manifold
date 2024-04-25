@@ -68,7 +68,7 @@ export async function runAwardBountyTxn(
     contract.outcomeType !== 'BOUNTIED_QUESTION'
   ) {
     throw new APIError(
-      403,
+      400,
       'Invalid contract, only bountied questions are supported'
     )
   }
@@ -85,7 +85,7 @@ export async function runAwardBountyTxn(
   const { bountyLeft } = contract
   if (bountyLeft < amount) {
     throw new APIError(
-      403,
+      400,
       `There is only M${bountyLeft} of bounty left to award, which is less than M${amount}`
     )
   }

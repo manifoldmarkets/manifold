@@ -1,7 +1,6 @@
 import { JSONContent } from '@tiptap/core'
 import { contractPath } from 'common/contract'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
-import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { groupBy } from 'lodash'
 import Link from 'next/link'
@@ -18,7 +17,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { getComment } from 'web/lib/supabase/comments'
 import { getContract } from 'web/lib/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { getUser } from 'web/lib/supabase/user'
+import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 export async function getStaticProps() {
   try {
@@ -130,7 +129,7 @@ type LiteReport = {
   slug: string
   id: string
   text: string | JSONContent
-  owner: User
+  owner: DisplayUser
   reasonsDescription: string | null
   contentId: string
   contentType: string
@@ -181,14 +180,14 @@ const getReports = async (
             }
           }
         } else if (contentType === 'user') {
-          const reportedUser = await getUser(contentId)
+          const reportedUser = await getUserById(contentId)
           partialReport = {
             slug: `/${reportedUser?.username}`,
             text: reportedUser?.name ?? '',
           }
         }
 
-        const owner = await getUser(contentOwnerId)
+        const owner = await getUserById(contentOwnerId)
 
         return partialReport && owner
           ? {

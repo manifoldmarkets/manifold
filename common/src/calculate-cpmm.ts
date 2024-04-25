@@ -1,7 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import { CREATOR_FEE, Fees, LIQUIDITY_FEE, PLATFORM_FEE } from './fees'
+import { CREATOR_FEE_FRAC, Fees, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -59,31 +59,47 @@ function calculateCpmmShares(
     [outcome: string]: number
   },
   p: number,
-  bet: number,
+  betAmount: number,
   betChoice: string
 ) {
-  if (bet === 0) return 0
+  if (betAmount === 0) return 0
 
   const { YES: y, NO: n } = pool
   const k = y ** p * n ** (1 - p)
 
   return betChoice === 'YES'
     ? // https://www.wolframalpha.com/input?i=%28y%2Bb-s%29%5E%28p%29*%28n%2Bb%29%5E%281-p%29+%3D+k%2C+solve+s
-      y + bet - (k * (bet + n) ** (p - 1)) ** (1 / p)
-    : n + bet - (k * (bet + y) ** -p) ** (1 / (1 - p))
+      y + betAmount - (k * (betAmount + n) ** (p - 1)) ** (1 / p)
+    : n + betAmount - (k * (betAmount + y) ** -p) ** (1 / (1 - p))
 }
 
-export function getCpmmFees(state: CpmmState, bet: number, outcome: string) {
-  const prob = getCpmmProbabilityAfterBetBeforeFees(state, outcome, bet)
-  const betP = outcome === 'YES' ? 1 - prob : prob
+export function getCpmmFees(
+  state: CpmmState,
+  betAmount: number,
+  outcome: string
+) {
+  // Do a few iterations toward average probability of the bet minus fees.
+  // Charging fees means the bet amount is lower and the average probability moves slightly less far.
+  let fee = 0
+  for (let i = 0; i < 10; i++) {
+    const betAmountAfterFee = betAmount - fee
+    const shares = calculateCpmmShares(
+      state.pool,
+      state.p,
+      betAmountAfterFee,
+      outcome
+    )
+    const averageProb = betAmountAfterFee / shares
+    fee = getTakerFee(shares, averageProb)
+  }
 
-  const liquidityFee = LIQUIDITY_FEE * betP * bet
-  const platformFee = PLATFORM_FEE * betP * bet
-  const creatorFee = CREATOR_FEE * betP * bet
+  const totalFees = betAmount === 0 ? 0 : fee
+  const creatorFee = totalFees * CREATOR_FEE_FRAC
+  const platformFee = totalFees * (1 - CREATOR_FEE_FRAC)
+  const liquidityFee = 0
   const fees: Fees = { liquidityFee, platformFee, creatorFee }
 
-  const totalFees = liquidityFee + platformFee + creatorFee
-  const remainingBet = bet - totalFees
+  const remainingBet = betAmount - totalFees
 
   return { remainingBet, totalFees, fees }
 }
@@ -102,10 +118,16 @@ export function calculateCpmmSharesAfterFee(
 export function calculateCpmmPurchase(
   state: CpmmState,
   bet: number,
-  outcome: string
+  outcome: string,
+  freeFees?: boolean
 ) {
   const { pool, p } = state
-  const { remainingBet, fees } = getCpmmFees(state, bet, outcome)
+  const { remainingBet, fees } = freeFees
+    ? {
+        remainingBet: bet,
+        fees: noFees,
+      }
+    : getCpmmFees(state, bet, outcome)
 
   const shares = calculateCpmmShares(pool, p, remainingBet, outcome)
   const { YES: y, NO: n } = pool
@@ -143,6 +165,18 @@ export function calculateCpmmAmountToProb(
         (k - y * (((1 - p) * (prob - 1)) / (-p * prob)) ** (1 - p))
 }
 
+export function calculateCpmmAmountToProbIncludingFees(
+  state: CpmmState,
+  prob: number,
+  outcome: 'YES' | 'NO'
+) {
+  const amount = calculateCpmmAmountToProb(state, prob, outcome)
+  const shares = calculateCpmmShares(state.pool, state.p, amount, outcome)
+  const averageProb = amount / shares
+  const fees = getTakerFee(shares, averageProb)
+  return amount + fees
+}
+
 export function calculateCpmmAmountToBuySharesFixedP(
   state: CpmmState,
   shares: number,
@@ -172,16 +206,18 @@ export function calculateAmountToBuySharesFixedP(
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  freeFees?: boolean
 ) {
-  const maxAmount = shares
   const { takers } = computeFills(
     state,
     outcome,
-    maxAmount,
+    shares,
     undefined,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    undefined,
+    freeFees
   )
 
   let currShares = 0
@@ -217,14 +253,19 @@ export function calculateAmountToBuySharesFixedP(
     currAmount,
     undefined,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    undefined,
+    freeFees
   )
   const fillAmount = calculateCpmmAmountToBuySharesFixedP(
     cpmmState,
     remaningShares,
     outcome
   )
-  return currAmount + fillAmount
+  const fillAmountFees = freeFees
+    ? 0
+    : getTakerFee(remaningShares, fillAmount / remaningShares)
+  return currAmount + fillAmount + fillAmountFees
 }
 
 export function calculateCpmmMultiSumsToOneSale(

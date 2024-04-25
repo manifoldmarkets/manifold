@@ -1,6 +1,5 @@
-import { convertSQLtoTS, run } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { db } from './db'
-import { User } from 'common/user'
 
 export async function getContractFollows(contractId: string) {
   const { data } = await run(
@@ -21,14 +20,6 @@ export async function getUserIdFollows(userId: string) {
     db.from('user_follows').select().eq('user_id', userId)
   )
   return data
-}
-export async function getUserFollows(userId: string) {
-  const { data } = await run(
-    db.from('user_follows').select().eq('user_id', userId)
-  )
-  const ids = data?.map((d) => d.follow_id)
-  const { data: userData } = await run(db.from('users').select().in('id', ids))
-  return userData?.map((d) => convertSQLtoTS<'users', User>(d, {}))
 }
 
 export async function getUserFollowers(userId: string) {

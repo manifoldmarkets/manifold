@@ -26,9 +26,8 @@ import {
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { useABTest } from 'web/hooks/use-ab-test'
-import { NewUserGoals } from 'web/components/home/new-user-goals'
-import { ManifestBanner, useManifestBanner } from 'web/components/nav/banner'
+import { PivotBanner, useBanner } from 'web/components/nav/banner'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 
 export async function getStaticProps() {
   try {
@@ -51,16 +50,20 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const [showBanner, hideBanner] = useManifestBanner()
+  const [showBanner, hideBanner] = useBanner('pivot') // in a week, go back to 'manifest'
   const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (
     <Page
       trackPageView={'home'}
       trackPageProps={{ kind: 'desktop' }}
-      className="!mt-0"
+      className=" !mt-0"
       banner={
-        showBanner && olderUser && <ManifestBanner hideBanner={hideBanner} />
+        showBanner && olderUser ? (
+          <PivotBanner hideBanner={hideBanner} />
+        ) : (
+          <VerifyPhoneNumberBanner user={user} />
+        )
       }
     >
       <HeadlineTabs
@@ -96,58 +99,39 @@ export function HomeContent(props: {
     welcomeTopicsEnabled
   )
 
-  const hasAgedOutOfNewUserGoals =
-    (user?.createdTime ?? 0) + DAY_MS * 1 < Date.now()
-  const newUserGoalsVariant = useABTest('new user goals', [
-    'enabled',
-    'disabled',
-  ])
-  const newUserGoalsEnabled =
-    !hasAgedOutOfNewUserGoals && newUserGoalsVariant === 'enabled'
-
   if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
     return <LoadingIndicator />
   }
   return (
-    <Col className="w-full max-w-[800px] items-center self-center pb-4 sm:px-2">
-      {user &&
-        !newUserGoalsEnabled &&
-        freeQuestionsEnabled &&
-        remaining > 0 && (
-          <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
-            <Row className="flex-1 flex-wrap gap-x-1">
-              <span>🎉 You've got {remaining} free questions!</span>
-              <span>
-                Expires in{' '}
-                {simpleFromNow(
-                  user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
-                )}
-              </span>
-            </Row>
-            <CreateQuestionButton
-              className={'flex-1'}
-              color="indigo-outline"
-              size="xs"
-            />
-          </Col>
-        )}
+    <Col className="w-full items-center self-center pb-4 sm:px-2">
+      {user && freeQuestionsEnabled && remaining > 0 && (
+        <Col className="text-md mb-2 w-full items-stretch justify-stretch gap-2 self-center rounded-md bg-indigo-100 px-4 py-2 dark:bg-indigo-900 sm:flex-row sm:items-center">
+          <Row className="flex-1 flex-wrap gap-x-1">
+            <span>🎉 You've got {remaining} free questions!</span>
+            <span>
+              Expires in{' '}
+              {simpleFromNow(
+                user.createdTime + DAY_MS * DAYS_TO_USE_FREE_QUESTIONS
+              )}
+            </span>
+          </Row>
+          <CreateQuestionButton
+            className={'flex-1'}
+            color="indigo-outline"
+            size="xs"
+          />
+        </Col>
+      )}
 
-      {hasAgedOutOfNewUserGoals && user && (
+      {user && (
         <DailyStats
-          className="bg-canvas-50 sticky top-9 z-50 mb-1 w-full px-2 pb-2 pt-1"
+          className="bg-canvas-50 z-50 mb-1 w-full px-2 pb-2 pt-1 sm:sticky sm:top-9"
           user={user}
         />
       )}
 
       {privateUser && (
         <Col className={clsx('w-full sm:px-2')}>
-          {user && newUserGoalsEnabled && (
-            <>
-              <NewUserGoals user={user} />
-              <div className="mt-4" />
-            </>
-          )}
-
           {welcomeTopicsEnabled && memberTopicsWithContracts && (
             <WelcomeTopicSections
               memberTopicsWithContracts={memberTopicsWithContracts}

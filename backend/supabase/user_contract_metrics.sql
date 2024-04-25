@@ -32,5 +32,3 @@ create index if not exists user_contract_metrics_recent_bets on user_contract_me
 create index idx_user_contract_metrics_contract_profit on user_contract_metrics (contract_id, profit);
 
 create index contract_metrics_answer_id on user_contract_metrics (contract_id, answer_id);
-
-create index idx_user_id_fs_updated_time on public.user_contract_metrics (user_id, fs_updated_time);

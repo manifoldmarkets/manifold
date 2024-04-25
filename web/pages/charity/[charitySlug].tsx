@@ -11,7 +11,7 @@ import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { usePagination } from 'web/hooks/use-pagination'
 import { Linkify } from 'web/components/widgets/linkify'
-import { transact } from 'web/lib/firebase/api'
+import { APIError, api, transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
 import Custom404 from '../404'
 import {
@@ -26,6 +26,7 @@ import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
 type DonationItem = { user: User; ts: number; amount: number }
 
@@ -177,16 +178,23 @@ function DonationBox(props: {
     setIsSubmitting(true)
     setError(undefined)
 
-    await transact({
-      amount,
-      fromId: user.id,
-      fromType: 'USER',
-      toId: charity.id,
-      toType: 'CHARITY',
-      token: 'M$',
-      category: 'CHARITY',
-      description: `${user.name} donated M$ ${amount} to ${charity.name}`,
-    }).catch((err) => console.log('Error', err))
+    if (SPICE_PRODUCTION_ENABLED) {
+      await api('donate', { amount, to: charity.id }).catch((e) => {
+        console.error(e)
+        if (e instanceof APIError) setError(e.message)
+      })
+    } else {
+      await transact({
+        amount,
+        fromId: user.id,
+        fromType: 'USER',
+        toId: charity.id,
+        toType: 'CHARITY',
+        token: 'M$',
+        category: 'CHARITY',
+        description: `${user.name} donated M$ ${amount} to ${charity.name}`,
+      }).catch((err) => console.error(err))
+    }
 
     setIsSubmitting(false)
     setAmount(undefined)
@@ -205,6 +213,7 @@ function DonationBox(props: {
         onChange={setAmount}
         error={error}
         setError={setError}
+        token={SPICE_PRODUCTION_ENABLED ? 'SPICE' : 'M$'}
       />
 
       <Col className="mt-3 w-full gap-3">

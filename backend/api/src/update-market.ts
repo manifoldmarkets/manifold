@@ -43,12 +43,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
 
-  const modOnlyFields = ['isPolitics']
-  const modOnlyFieldsChanged = Object.keys(fields).some((key) =>
-    modOnlyFields.includes(key)
-  )
-  if (modOnlyFieldsChanged) await throwErrorIfNotMod(auth.uid)
-
   await trackPublicEvent(
     auth.uid,
     'update market',

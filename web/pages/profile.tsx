@@ -1,42 +1,21 @@
-import { RefreshIcon } from '@heroicons/react/outline'
-import {
-  ChevronUpIcon,
-  ChevronDownIcon,
-  TrashIcon,
-} from '@heroicons/react/solid'
 import { PrivateUser, User } from 'common/user'
 import Link from 'next/link'
 import { ReactNode, useState } from 'react'
-import { Button, buttonClass } from 'web/components/buttons/button'
-import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { SEO } from 'web/components/SEO'
+import { buttonClass } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { generateNewApiKey } from 'web/lib/api/api-key'
-import { changeUserInfo } from 'web/lib/firebase/api'
+import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
+import { useUser } from 'web/hooks/use-user'
+import { updateUserApi } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
-import {
-  auth,
-  getUserAndPrivateUser,
-  updatePrivateUser,
-  updateUser,
-} from 'web/lib/firebase/users'
-import { deleteField } from 'firebase/firestore'
-import { toast } from 'react-hot-toast'
-import router from 'next/router'
-import { useUser } from 'web/hooks/use-user'
-import ShortToggle from 'web/components/widgets/short-toggle'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { AiOutlineCopy } from 'react-icons/ai'
-import clsx from 'clsx'
+import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -85,13 +64,7 @@ export default function ProfilePage(props: {
   const user = useUser() ?? props.auth.user
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '')
   const [avatarLoading, setAvatarLoading] = useState(false)
-  const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
-  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('')
-  const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(
-    !!user.isAdvancedTrader
-  )
-  const [showAdvanced, setShowAdvanced] = useState(false)
+
   const { updateUsername, updateDisplayName, userInfo, updateUserState } =
     useEditableUserInfo(user)
   const {
@@ -102,30 +75,6 @@ export default function ProfilePage(props: {
     loadingName,
     errorName,
   } = userInfo
-  const updateApiKey = async (e?: React.MouseEvent) => {
-    const newApiKey = await generateNewApiKey(user.id)
-    setApiKey(newApiKey ?? '')
-    e?.preventDefault()
-
-    if (!privateUser.twitchInfo) return
-    await updatePrivateUser(privateUser.id, {
-      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
-    })
-  }
-
-  const deleteAccount = async () => {
-    // if you change this, be sure to update firestore.rules. it's pretty exact to prevent self-unbanning. or better, turn this to API call
-    await updateUser(user.id, { userDeleted: true, isBannedFromPosting: true })
-    await updatePrivateUser(privateUser.id, {
-      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      email: deleteField(),
-      //eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      twitchInfo: deleteField(),
-    })
-    await auth.signOut()
-  }
 
   const fileHandler = async (event: any) => {
     const file = event.target.files[0]
@@ -134,7 +83,7 @@ export default function ProfilePage(props: {
 
     await uploadImage(user.username, file)
       .then(async (url) => {
-        await changeUserInfo({ avatarUrl: url })
+        await updateUserApi({ avatarUrl: url })
         setAvatarUrl(url)
         setAvatarLoading(false)
       })
@@ -245,163 +194,6 @@ export default function ProfilePage(props: {
           >
             Done
           </Link>
-
-          <Button
-            color={'gray-white'}
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            {showAdvanced ? 'Hide' : 'Show'} advanced
-            {showAdvanced ? (
-              <ChevronUpIcon className="ml-1 h-5 w-5" />
-            ) : (
-              <ChevronDownIcon className="ml-1 h-5 w-5" />
-            )}
-          </Button>
-          <Col className={clsx('gap-2', showAdvanced ? '' : 'hidden')}>
-            <div>
-              <label className="mb-1 block">
-                Advanced trader mode{' '}
-                <InfoTooltip text={'More advanced betting UI'} />
-              </label>
-              <ShortToggle
-                on={advancedTraderMode}
-                setOn={(enabled) => {
-                  setAdvancedTraderMode(enabled)
-                  updateUser(user.id, { isAdvancedTrader: enabled })
-                }}
-              />
-            </div>
-            <div>
-              <label className="mb-1 block">
-                Bet warnings{' '}
-                <InfoTooltip
-                  text={
-                    'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
-                  }
-                />
-              </label>
-              <ShortToggle
-                on={betWarnings}
-                setOn={(enabled) => {
-                  setBetWarnings(enabled)
-                  updateUser(user.id, { optOutBetWarnings: !enabled })
-                }}
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block">API key</label>
-              <Row className="items-stretch gap-3">
-                <Input
-                  type="text"
-                  placeholder="Click refresh to generate key"
-                  value={apiKey}
-                  readOnly
-                  className={'w-24'}
-                />
-                <Button
-                  color={'indigo'}
-                  onClick={() => {
-                    copyToClipboard(apiKey)
-                    toast.success('Copied to clipboard')
-                  }}
-                >
-                  <AiOutlineCopy className="h-5 w-5" />
-                </Button>
-                <ConfirmationButton
-                  openModalBtn={{
-                    className: 'p-2',
-                    label: '',
-                    icon: <RefreshIcon className="h-5 w-5" />,
-                    color: 'red',
-                  }}
-                  submitBtn={{
-                    label: 'Update key',
-                  }}
-                  onSubmitWithSuccess={async () => {
-                    updateApiKey()
-                    return true
-                  }}
-                >
-                  <Col>
-                    <Title>Are you sure?</Title>
-                    <div>
-                      Updating your API key will break any existing applications
-                      connected to your account, <b>including the Twitch bot</b>
-                      . You will need to go to the{' '}
-                      <Link
-                        href="/twitch"
-                        className="underline focus:outline-none"
-                      >
-                        Twitch page
-                      </Link>{' '}
-                      to relink your account.
-                    </div>
-                  </Col>
-                </ConfirmationButton>
-              </Row>
-            </div>
-            <div>
-              <label className="mb-1 block">Delete Account</label>
-              <div className="flex w-full items-stretch space-x-1">
-                <ConfirmationButton
-                  openModalBtn={{
-                    className: 'p-2',
-                    label: 'Permanently delete this account',
-                    icon: <TrashIcon className="mr-1 h-5 w-5" />,
-                    color: 'red',
-                  }}
-                  submitBtn={{
-                    label: 'Delete account',
-                    color:
-                      deleteAccountConfirmation == 'delete my account'
-                        ? 'red'
-                        : 'gray',
-                  }}
-                  onSubmitWithSuccess={async () => {
-                    if (deleteAccountConfirmation == 'delete my account') {
-                      toast
-                        .promise(deleteAccount(), {
-                          loading: 'Deleting account...',
-                          success: () => {
-                            router.push('/')
-                            return 'Account deleted'
-                          },
-                          error: () => {
-                            return 'Failed to delete account'
-                          },
-                        })
-                        .then(() => {
-                          return true
-                        })
-                        .catch(() => {
-                          return false
-                        })
-                    }
-                    return false
-                  }}
-                >
-                  <Col>
-                    <Title>Are you sure?</Title>
-                    <div>
-                      Deleting your account means you will no longer be able to
-                      use your account. You will lose access to all of your
-                      data.
-                    </div>
-                    <Input
-                      type="text"
-                      placeholder="Type 'delete my account' to confirm"
-                      className="w-full"
-                      value={deleteAccountConfirmation}
-                      onChange={(e) =>
-                        setDeleteAccountConfirmation(e.target.value)
-                      }
-                    />
-                  </Col>
-                </ConfirmationButton>
-              </div>
-            </div>
-          </Col>
         </Col>
       </Col>
     </Page>

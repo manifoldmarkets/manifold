@@ -2,19 +2,13 @@ import clsx from 'clsx'
 
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
-import { usePathname } from 'next/navigation'
-import { useRouter } from 'next/router'
-import { useUser, usePrivateUser, useIsAuthorized } from 'web/hooks/use-user'
+import { DAY_MS } from 'common/util/time'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 import { SupabaseSearch } from '../supabase-search'
-import { BalanceCard } from './balance-card'
-import { InvestmentValueCard } from './investment-value'
 import { PortfolioValueSection } from './portfolio-value-section'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { DAY_MS } from 'common/util/time'
 
 export const PortfolioSummary = (props: {
   user: User
@@ -22,53 +16,23 @@ export const PortfolioSummary = (props: {
   className?: string
 }) => {
   const { user, balanceChanges, className } = props
-  const router = useRouter()
-  const pathName = usePathname()
   const currentUser = useUser()
   const privateUser = usePrivateUser()
-  const CARD_CLASS =
-    'h-fit relative w-full min-w-[300px] cursor-pointer justify-between px-0 py-0 sm:w-[48%]'
-  const balanceChangesKey = 'balance-changes'
   const isAuthed = useIsAuthorized()
   const isCurrentUser = currentUser?.id === user.id
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
   const isNewUser = user.createdTime > Date.now() - DAY_MS
 
-  const weeklyPortfolioData = usePortfolioHistory(user.id, 'weekly') ?? []
-
-  const { data: portfolioData, refresh: refreshPortfolio } = useAPIGetter(
-    'get-user-portfolio',
-    {
-      userId: user.id,
-    }
-  )
+  const { data: portfolioData } = useAPIGetter('get-user-portfolio', {
+    userId: user.id,
+  })
 
   return (
     <Col className={clsx(className, 'gap-4')}>
-      <Row className={'flex-wrap gap-x-6 gap-y-3 px-3 lg:px-0 '}>
-        <BalanceCard
-          onSeeChanges={() => {
-            router.replace(pathName + '?tab=' + balanceChangesKey, undefined, {
-              shallow: true,
-            })
-          }}
-          user={user}
-          balanceChanges={balanceChanges}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-        />
-        <InvestmentValueCard
-          user={user}
-          className={clsx(CARD_CLASS, 'border-ink-200 border-b pb-1')}
-          weeklyPortfolioData={weeklyPortfolioData}
-          portfolio={portfolioData}
-          refreshPortfolio={refreshPortfolio}
-        />
-      </Row>
-
       {!isNewUser && (
         <PortfolioValueSection
-          userId={user.id}
+          user={user}
           defaultTimePeriod={
             isCreatedInLastWeek
               ? 'allTime'
@@ -76,9 +40,8 @@ export const PortfolioSummary = (props: {
               ? 'weekly'
               : 'monthly'
           }
-          lastUpdatedTime={user.metricsLastUpdated}
-          hideAddFundsButton
           portfolio={portfolioData}
+          balanceChanges={balanceChanges}
         />
       )}
 

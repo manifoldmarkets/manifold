@@ -11,7 +11,7 @@ import {
 import { type APIHandler } from './helpers/endpoint'
 import { convertUser } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { toLiteUser } from 'common/api/user-types'
+import { toUserAPIResponse } from 'common/api/user-types'
 import { uniqBy } from 'lodash'
 
 export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
@@ -29,7 +29,7 @@ export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
   ])
 
   return uniqBy([...followers, ...all], 'id')
-    .map(toLiteUser)
+    .map(toUserAPIResponse)
     .slice(0, limit)
 }
 

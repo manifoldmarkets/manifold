@@ -7,7 +7,7 @@ import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
+import { updateUser } from './update-user'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -107,7 +107,7 @@ import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
 import { getBets } from './get-bets'
-import { getUser } from './get-user'
+import { getDisplayUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
@@ -160,6 +160,11 @@ import { createuser } from 'api/create-user'
 import { verifyPhoneNumber } from 'api/verify-phone-number'
 import { requestOTP } from 'api/request-phone-otp'
 import { getPhoneNumber } from 'api/get-phone-number'
+import { multiSell } from 'api/multi-sell'
+import { convertSpiceToMana } from './convert-sp-to-mana'
+import { donate } from './donate'
+import { getFeed } from 'api/get-feed'
+import { getManaSupply } from './get-mana-supply'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -227,7 +232,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
-  'update-market': (...props) => updateMarket(...props), // @deprecated remove after a few days
   'market/:contractId/group': addOrRemoveTopicFromContract,
   'group/:slug': getGroup,
   'group/by-id/:id': getGroup,
@@ -253,11 +257,15 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   managram: sendMana,
   managrams: getManagrams,
   manalink: createManalink,
+  donate: donate,
+  'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
-  'user/:username': getUser,
-  'user/:username/bets': (...props) => getBets(...props),
   'user/by-id/:id': getUser,
+  'user/by-id/:id/lite': getDisplayUser,
+  'user/:username': getUser,
+  'user/:username/lite': getDisplayUser,
+  'user/:username/bets': (...props) => getBets(...props),
   users: getUsers,
   'search-users': searchUsers,
   react: addOrRemoveReaction,
@@ -305,6 +313,9 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'verify-phone-number': verifyPhoneNumber,
   'request-otp': requestOTP,
   'phone-number': getPhoneNumber,
+  'multi-sell': multiSell,
+  'get-feed': getFeed,
+  'get-mana-supply': getManaSupply,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -335,7 +346,7 @@ Object.entries(handlers).forEach(([path, handler]) => {
 app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
-app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
+app.post('/update-user', ...apiRoute(updateUser))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))

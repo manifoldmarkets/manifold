@@ -128,7 +128,7 @@ const LikeConfimationDialog = (props: {
         {youLover && user && (
           <MatchAvatars
             profileLover={youLover}
-            matchedLover={{ ...targetLover, user }}
+            matchedLover={{ ...targetLover, user: user as any }}
           />
         )}
 

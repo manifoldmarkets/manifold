@@ -25,7 +25,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
-import { CardReason } from '../feed/card-reason'
+import { CardReason, EndpointCardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
@@ -47,6 +47,8 @@ import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { removeUndefinedProps } from 'common/util/object'
+import { removeEmojis } from 'common/util/string'
+import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -63,6 +65,7 @@ export function FeedContractCard(props: {
   hideBottomRow?: boolean
   hideTags?: boolean
   hideReason?: boolean
+  endpointReason?: string
 }) {
   const {
     promotedData,
@@ -76,6 +79,7 @@ export function FeedContractCard(props: {
     size = 'md',
     hideTags,
     hideReason,
+    endpointReason,
   } = props
   const user = useUser()
 
@@ -94,6 +98,8 @@ export function FeedContractCard(props: {
   } = contract
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
+  const isStonk = outcomeType === 'STONK'
+  const isNumber = outcomeType === 'NUMBER'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -172,12 +178,7 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      <Col
-        className={clsx(
-          'w-full flex-col pt-2',
-          size === 'xs' ? '' : 'gap-1.5 '
-        )}
-      >
+      <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>
@@ -205,7 +206,7 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {!hideReason && (
+            {!hideReason && !endpointReason && (
               <CardReason
                 item={item}
                 contract={contract}
@@ -213,10 +214,17 @@ export function FeedContractCard(props: {
                 since={startTime}
               />
             )}
+            {endpointReason && (
+              <EndpointCardReason
+                reason={endpointReason as any}
+                probChange={probChange}
+                since={startTime}
+              />
+            )}
             {hide && (
               <FeedDropdown
                 contract={contract}
-                item={item}
+                itemCreatorId={item?.creatorId ?? undefined}
                 interesting={true}
                 toggleInteresting={hide}
                 importanceScore={props.contract.importanceScore}
@@ -225,37 +233,43 @@ export function FeedContractCard(props: {
           </Row>
         </Row>
 
-        <div
-          className={clsx(
-            'flex flex-col sm:flex-row sm:justify-between sm:gap-4',
-            size === 'xs' ? '' : 'gap-1'
-          )}
-        >
+        <Col className={clsx(size === 'xs' ? '' : 'gap-4')}>
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className="hover:text-primary-700 grow items-start transition-colors sm:text-lg"
             href={path}
             onClick={trackClick}
+            style={{ fontWeight: 500 }}
           >
-            <VisibilityIcon contract={contract} /> {contract.question}
+            <VisibilityIcon contract={contract} />{' '}
+            {removeEmojis(contract.question)}
           </Link>
-          <Row className="w-full items-center justify-end gap-3 whitespace-nowrap sm:w-fit">
-            {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-              <ContractStatusLabel
-                className="text-lg font-bold"
-                contract={contract}
-              />
-            )}
-            {isBinaryCpmm && !isClosed && (
-              <BetButton
-                feedItem={item}
-                contract={contract}
-                user={user}
-                className="h-min"
-              />
-            )}
-          </Row>
-        </div>
+          {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
+            <ContractStatusLabel
+              className="text-lg font-bold"
+              contract={contract}
+              chanceLabel
+            />
+          )}
+          {isBinaryCpmm && !isClosed && (
+            <BetButton
+              feedItem={item}
+              contract={contract}
+              user={user}
+              className="h-min"
+            />
+          )}
+          {!isClosed && isStonk && (
+            <BetButton
+              feedItem={item}
+              contract={contract}
+              user={user}
+              className="h-min"
+              labels={{ yes: 'Buy', no: 'Short' }}
+            />
+          )}
+          {isNumber && <NumericBetButton contract={contract} user={user} />}
+        </Col>
       </Col>
 
       <div

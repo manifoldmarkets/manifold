@@ -5,7 +5,6 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 dayjs.extend(customParseFormat)
 
 import { User } from 'common/user'
-import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
@@ -16,12 +15,10 @@ import { Title } from 'web/components/widgets/title'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
-import { REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { linkClaimed, ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import Link from 'next/link'
 import { useCanSendMana } from 'web/hooks/use-can-send-mana'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import {
@@ -77,7 +74,7 @@ export default function LinkPage(props: {
       <Col className="mt-6 w-full px-8">
         <Row className="items-start justify-between">
           <Title>Manalinks</Title>
-          {user && (
+          {user && isAdminId(user.id) && (
             <CreateLinksButton
               user={user}
               highlightedSlug={highlightedSlug}
@@ -86,12 +83,9 @@ export default function LinkPage(props: {
           )}
         </Row>
         <p>
-          You can use manalinks to send mana ({ENV_CONFIG.moneyMoniker}) to
-          other people, even if they don&apos;t yet have a Manifold account.{' '}
-          <Link href="/referrals">
-            Eligible for {formatMoney(REFERRAL_AMOUNT)} referral bonus if a new
-            user signs up and places a trade!!
-          </Link>
+          Manalinks can send mana ({ENV_CONFIG.moneyMoniker}) to other people,
+          even if they don&apos;t yet have a Manifold account. As of April 2024
+          only the Manifold team can create new manalinks.
         </p>
 
         <Row className="items-baseline justify-between">

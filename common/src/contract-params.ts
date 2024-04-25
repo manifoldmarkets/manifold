@@ -7,10 +7,10 @@ import {
   Contract,
   MaybeAuthedContractParams,
   CPMMNumericContract,
+  ContractParams,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import { getBets, getBetPoints, getTotalBetCount } from 'common/supabase/bets'
-import { getContractPageViews } from 'common/supabase/contracts'
 import {
   getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
@@ -20,9 +20,8 @@ import {
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
-import { getTopicsOnContract, userCanAccess } from 'common/supabase/groups'
+import { getTopicsOnContract } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
-import { getIsAdmin } from 'common/supabase/is-admin'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
@@ -35,9 +34,7 @@ import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 
 export async function getContractParams(
   contract: Contract,
-  db: SupabaseClient,
-  checkAccess?: boolean,
-  userId?: string | undefined
+  db: SupabaseClient
 ): Promise<MaybeAuthedContractParams> {
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
@@ -51,7 +48,6 @@ export async function getContractParams(
     }).then((res) => res.count)
 
   const [
-    canAccessContract,
     totalBets,
     betsToPass,
     allBetPoints,
@@ -65,9 +61,7 @@ export async function getContractParams(
     chartAnnotations,
     topics,
     dashboards,
-    totalViews,
   ] = await Promise.all([
-    checkAccess ? getCanAccessContract(contract, userId, db) : true,
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
@@ -96,10 +90,10 @@ export async function getContractParams(
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets-cache', {
       contractId: contract.id,
-      limit: 4,
+      limit: 2,
+      embeddingsLimit: 10,
       limitTopics: 4,
     }),
-    // getRelatedContracts(contract, 20, db),
     // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
     isCpmm1
       ? getBets(db, {
@@ -110,24 +104,17 @@ export async function getContractParams(
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, db),
-    getContractPageViews(db, contract.id),
   ])
-  if (!canAccessContract) {
-    return contract && !contract.deleted
-      ? {
-          state: 'not authed',
-          slug: contract.slug,
-          visibility: contract.visibility,
-        }
-      : { state: 'not found' }
-  }
 
   const chartPoints =
     isCpmm1 || isBinaryDpm
       ? getSingleBetPoints(allBetPoints, contract)
       : isMulti
       ? isNumber
-        ? getMultiNumericBetPoints(allBetPoints, contract)
+        ? getFilledInMultiNumericBetPoints(
+            groupBy(allBetPoints, 'answerId'),
+            contract
+          )
         : getMultiBetPoints(allBetPoints, contract)
       : []
 
@@ -150,7 +137,6 @@ export async function getContractParams(
       userPositionsByOutcome,
       totalPositions,
       totalBets,
-      totalViews,
       topContractMetrics,
       relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
       relatedContractsByTopicSlug: relatedContracts.marketsByTopicSlug,
@@ -162,7 +148,7 @@ export async function getContractParams(
         'desc'
       ),
       dashboards,
-    }),
+    }) as ContractParams,
   }
 }
 
@@ -209,13 +195,11 @@ export const getMultiBetPoints = (
 
   return serializeMultiPoints(pointsByAns)
 }
-export const getMultiNumericBetPoints = (
-  betPoints: { x: number; y: number; answerId: string }[],
+export const getFilledInMultiNumericBetPoints = (
+  pointsByAnswerId: { [answerId: string]: { x: number; y: number }[] },
   contract: CPMMNumericContract
 ) => {
   const { answers } = contract
-
-  const rawPointsByAns = groupBy(betPoints, 'answerId')
 
   const subsetOfAnswers = sortBy(
     answers,
@@ -223,12 +207,14 @@ export const getMultiNumericBetPoints = (
     (a) => -a.totalLiquidity
   ).slice(0, MAX_ANSWERS)
 
-  const allUniqueCreatedTimes = new Set(betPoints.map((a) => a.x))
+  const allUniqueCreatedTimes = new Set(
+    Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
+  )
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
   subsetOfAnswers.forEach((ans) => {
     const startY = getInitialAnswerProbability(contract, ans)
 
-    const rawPoints = rawPointsByAns[ans.id] ?? []
+    const rawPoints = pointsByAnswerId[ans.id] ?? []
     const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
     // Bc we sometimes don't create low prob bets, we need to fill in the gaps
     const missingTimes = Array.from(allUniqueCreatedTimes).filter(
@@ -247,19 +233,4 @@ export const getMultiNumericBetPoints = (
   })
 
   return serializeMultiPoints(pointsByAns)
-}
-
-const getCanAccessContract = async (
-  contract: Contract,
-  uid: string | undefined,
-  db: SupabaseClient
-): Promise<boolean> => {
-  const isAdmin = uid ? await getIsAdmin(db, uid) : false
-
-  return (
-    (!contract.deleted || isAdmin) &&
-    (contract.visibility !== 'private' ||
-      (uid !== undefined &&
-        (isAdmin || (await userCanAccess(db, contract.id, uid)))))
-  )
 }

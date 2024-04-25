@@ -4,13 +4,13 @@ import {
   millisToTs,
   Row,
   run,
-  selectJson,
   SupabaseClient,
   tsToMillis,
 } from './utils'
 import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { Json } from 'common/supabase/schema'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const CONTRACTS_PER_SEARCH_PAGE = 40
 export const getContractFromSlug = async (
@@ -18,10 +18,12 @@ export const getContractFromSlug = async (
   db: SupabaseClient
 ) => {
   const { data } = await run(
-    db.from('contracts').select('data').eq('slug', contractSlug)
+    db
+      .from('contracts')
+      .select('data, importance_score, view_count, conversion_score')
+      .eq('slug', contractSlug)
   )
-  if (data.length === 0) return null
-  return data[0].data as Contract
+  return data?.[0] ? convertContract(data?.[0]) : null
 }
 
 export const getContracts = async (
@@ -33,10 +35,15 @@ export const getContracts = async (
   }
   const chunks = chunk(contractIds, 300)
   const promises = chunks.map((chunk) =>
-    run(selectJson(db, 'contracts').in('id', chunk))
+    run(
+      db
+        .from('contracts')
+        .select('data, importance_score, view_count, conversion_score')
+        .in('id', chunk)
+    )
   )
   const results = await Promise.all(promises)
-  return results.flatMap((result) => result.data.map((r) => r.data))
+  return results.flatMap((result) => result.data.map((r) => convertContract(r)))
 }
 
 export const getUnresolvedContractsCount = async (
@@ -122,14 +129,17 @@ export const convertAnswer = (row: Row<'answers'>) =>
 export const convertContract = (c: {
   data: Json
   importance_score: number | null
+  view_count?: number | null
   conversion_score?: number | null
+  freshness_score?: number | null
 }) =>
-  ({
+  removeUndefinedProps({
     ...(c.data as Contract),
-    // importance_score is only updated in Supabase
+    // Only updated in supabase:
     importanceScore: c.importance_score,
-    // conversion_score is only updated in Supabase
     conversionScore: c.conversion_score,
+    freshnessScore: c.freshness_score,
+    viewCount: Number(c.view_count),
   } as Contract)
 
 export const followContract = async (
@@ -158,13 +168,4 @@ export const unfollowContract = async (
     .delete()
     .eq('contract_id', contractId)
     .eq('follow_id', userId)
-}
-
-export const getContractPageViews = async (
-  db: SupabaseClient,
-  contractId: string
-) => {
-  return (
-    await run(db.rpc('get_contract_page_views', { contract_id: contractId }))
-  ).data
 }

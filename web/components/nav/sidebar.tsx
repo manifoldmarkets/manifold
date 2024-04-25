@@ -39,6 +39,7 @@ import { DAY_MS } from 'common/util/time'
 import { LiveTVIcon } from '../tv-icon'
 import { useTVisActive } from '../tv/tv-schedule'
 import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
+import { FaDiscord } from 'react-icons/fa6'
 
 export default function Sidebar(props: {
   className?: string
@@ -151,11 +152,11 @@ const getDesktopNav = (
         href: '/ai',
         icon: PiRobotBold,
       },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
+      // },
       {
         name: 'Messages',
         href: '/messages',
@@ -236,6 +237,11 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     !loggedIn && { name: 'Sign in', icon: LoginIcon, onClick: firebaseLogin },
+    {
+      name: 'Discord',
+      href: 'https://discord.com/invite/eHQBNBqXuh',
+      icon: FaDiscord,
+    },
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name: theme ?? 'auto',

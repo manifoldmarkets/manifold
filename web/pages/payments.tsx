@@ -1,6 +1,9 @@
 import { Page } from 'web/components/layout/page'
 import { ManaPayTxn } from 'common/txn'
-import { useManaPayments } from 'web/hooks/use-mana-payments'
+import {
+  useAllManaPayments,
+  useManaPayments,
+} from 'web/hooks/use-mana-payments'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -8,13 +11,13 @@ import { Button } from 'web/components/buttons/button'
 import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { SelectUsers } from 'web/components/select-users'
-import { UserDisplay } from 'web/lib/supabase/users'
+import { DisplayUser } from 'common/api/user-types'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { api } from 'web/lib/firebase/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
-import { useUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
@@ -32,7 +35,7 @@ import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 
 export default function Payments() {
-  const { payments, load } = useManaPayments()
+  const { payments, load } = useAllManaPayments()
   return (
     <Page trackPageView={'managrams page'}>
       <SEO
@@ -53,7 +56,7 @@ export default function Payments() {
 }
 export const UserPayments = (props: { userId: string }) => {
   const { userId } = props
-  const user = useUserById(userId)
+  const user = useDisplayUserById(userId)
   const { payments, load } = useManaPayments(userId)
   return (
     <div className="flex h-full flex-col items-center justify-center">
@@ -67,7 +70,7 @@ export const UserPayments = (props: { userId: string }) => {
 }
 export const PaymentsContent = (props: {
   payments: ManaPayTxn[]
-  forUser: User | undefined | null
+  forUser: DisplayUser | undefined | null
   refresh: () => void
 }) => {
   const { payments, forUser, refresh } = props
@@ -153,8 +156,8 @@ export const PaymentsContent = (props: {
 
 const PaymentCards = (props: {
   payments: ManaPayTxn[]
-  users: User[] | undefined
-  forUser: User | undefined | null
+  users: DisplayUser[] | undefined
+  forUser: DisplayUser | undefined | null
 }) => {
   const { payments, users, forUser } = props
   return (
@@ -227,7 +230,7 @@ const PaymentCards = (props: {
 
 export const PaymentsModal = (props: {
   fromUser: User
-  toUser?: UserDisplay
+  toUser?: DisplayUser
   show: boolean
   setShow: (show: boolean) => void
   defaultMessage?: string
@@ -247,7 +250,7 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [toUsers, setToUsers] = useState<UserDisplay[]>([])
+  const [toUsers, setToUsers] = useState<DisplayUser[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
   const isAdmin = isAdminId(fromUser.id)
@@ -358,7 +361,7 @@ export const PaymentsModal = (props: {
 export const QRModal = (props: {
   show: boolean
   setShow: (show: boolean) => void
-  user: User
+  user: DisplayUser
 }) => {
   const { show, setShow, user } = props
 

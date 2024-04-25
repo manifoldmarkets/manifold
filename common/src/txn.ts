@@ -20,7 +20,11 @@ type AnyTxnType =
   | CertPayMana
   | CertDividend
   | CertBurn
-  | ContractResolutionPayout
+  | ContractOldResolutionPayout
+  | ContractProduceSpice
+  | ContractUndoProduceSpice
+  | ConsumeSpice
+  | ConsumeSpiceDone
   | QfPayment
   | QfAddPool
   | QfDividend
@@ -41,10 +45,12 @@ type AnyTxnType =
   | Loan
   | PushNotificationBonus
   | LikePurchase
-  | ContractUndoResolutionPayout
+  | ContractUndoOldResolutionPayout
   | ContractAnte
   | AddSubsidy
   | ReclaimMana
+
+export type AnyTxnCategory = AnyTxnType['category']
 
 export type SourceType =
   | 'USER'
@@ -65,7 +71,7 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE'
+  token: 'M$' | 'SHARE' | 'SPICE'
 
   category: AnyTxnType['category']
 
@@ -128,6 +134,7 @@ type Donation = {
   fromType: 'USER'
   toType: 'CHARITY'
   category: 'CHARITY'
+  token: 'SPICE' | 'M$'
 }
 
 type Tip = {
@@ -207,7 +214,7 @@ type SignupBonus = {
   category: 'SIGNUP_BONUS'
 }
 
-type ContractResolutionPayout = {
+type ContractOldResolutionPayout = {
   fromType: 'CONTRACT'
   toType: 'USER'
   category: 'CONTRACT_RESOLUTION_PAYOUT'
@@ -220,6 +227,40 @@ type ContractResolutionPayout = {
     answerId?: string
   }
 }
+
+// destroys mana in contract
+type ContractProduceSpice = {
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  category: 'PRODUCE_SPICE'
+  token: 'SPICE'
+  data: {
+    deposit?: number
+    payoutStartTime?: number
+    answerId?: string
+  }
+}
+
+// these come in pairs to convert spice to mana
+type ConsumeSpice = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CONSUME_SPICE'
+  token: 'SPICE'
+  data: {
+    siblingId: string
+  }
+}
+type ConsumeSpiceDone = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CONSUME_SPICE_DONE'
+  token: 'M$'
+  data: {
+    siblingId: string
+  }
+}
+
 type ContractAnte = {
   fromType: 'USER' | 'BANK'
   toType: 'CONTRACT'
@@ -227,11 +268,21 @@ type ContractAnte = {
   token: 'M$'
 }
 
-type ContractUndoResolutionPayout = {
+type ContractUndoOldResolutionPayout = {
   fromType: 'USER'
   toType: 'CONTRACT'
   category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
   token: 'M$'
+  data: {
+    revertsTxnId: string
+  }
+}
+
+type ContractUndoProduceSpice = {
+  fromType: 'USER'
+  toType: 'CONTRACT'
+  category: 'CONTRACT_UNDO_PRODUCE_SPICE'
+  token: 'SPICE'
   data: {
     revertsTxnId: string
   }
@@ -421,8 +472,14 @@ export type CertTransferTxn = CertTxn & CertTransfer
 export type CertPayManaTxn = CertTxn & CertPayMana
 export type CertDividendTxn = CertTxn & CertDividend
 export type CertBurnTxn = CertTxn & CertBurn
-export type ContractResolutionPayoutTxn = Txn & ContractResolutionPayout
-export type ContractUndoResolutionPayoutTxn = Txn & ContractUndoResolutionPayout
+export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
+export type ContractUndoOldResolutionPayoutTxn = Txn &
+  ContractUndoOldResolutionPayout
+export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
+export type ContractUndoProduceSpiceTxn = Txn & ContractUndoProduceSpice
+export type ConsumeSpiceTxn = Txn & ConsumeSpice
+export type ConsumeSpiceDoneTxn = Txn & ConsumeSpiceDone
+
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool

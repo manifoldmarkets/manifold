@@ -30,8 +30,6 @@ import { NormalizedBet } from 'common/new-bet'
 import { maker } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
-import { FieldValue } from 'firebase-admin/firestore'
-import { FLAT_TRADE_FEE } from 'common/fees'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
@@ -68,6 +66,8 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
+import { FLAT_TRADE_FEE, Fees } from 'common/fees'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const firestore = admin.firestore()
 
@@ -78,21 +78,6 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
-  // Temporarily disable joining contract channel.
-  // TODO: I think mqp was going to change this to broadcast the bet without joining a channel.
-  // joinContractChannel(contract.id)
-  //   .then(async (channel) => {
-  //     await channel.send({
-  //       type: 'broadcast',
-  //       event: 'bet',
-  //       payload: normalBets.length === 1 ? normalBets[0] : normalBets,
-  //     })
-  //     await channel.unsubscribe()
-  //   })
-  //   .catch((e) => {
-  //     log('Failed to send bet event to channel', e)
-  //   })
-
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
     const userIds = uniq([
@@ -203,6 +188,7 @@ export const onCreateBets = async (
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
         const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
+
         const usersNonRedemptionBets = bets.filter(
           (b) => b.userId === bettor.id && !b.isRedemption
         )
@@ -282,15 +268,32 @@ const debouncedContractUpdates = (contract: Contract) => {
         select
           (select sum(abs(amount)) from contract_bets where contract_id = $1) as volume,
           (select max(created_time) from contract_bets where contract_id = $1) as time,
-          (select count(distinct user_id) from contract_bets where contract_id = $1) as count
+          (select count(distinct user_id) from contract_bets where contract_id = $1) as count,
+
+          (select sum((data->'fees'->>'creatorFee')::numeric) from contract_bets where contract_id = $1) as creator_fee,
+          (select sum((data->'fees'->>'platformFee')::numeric) from contract_bets where contract_id = $1) as platform_fee,
+          (select sum((data->'fees'->>'liquidityFee')::numeric) from contract_bets where contract_id = $1) as liquidity_fee
       `,
       [contract.id]
     )
-    const { volume, time: lastBetTime, count } = result
+    const {
+      volume,
+      time: lastBetTime,
+      count,
+      creator_fee,
+      platform_fee,
+      liquidity_fee,
+    } = result
+    const collectedFees: Fees = {
+      creatorFee: creator_fee ?? 0,
+      platformFee: platform_fee ?? 0,
+      liquidityFee: liquidity_fee ?? 0,
+    }
     log('Got updated stats for contract id: ' + contract.id, {
       volume,
       lastBetTime,
       count,
+      collectedFees,
     })
 
     await firestore.doc(`contracts/${contract.id}`).update(
@@ -299,6 +302,7 @@ const debouncedContractUpdates = (contract: Contract) => {
         lastBetTime: lastBetTime ? new Date(lastBetTime).valueOf() : undefined,
         lastUpdatedTime: Date.now(),
         uniqueBettorCount: uniqueBettorCount !== count ? count : undefined,
+        collectedFees,
       })
     )
     log('Wrote debounced updates for contract id: ' + contract.id)
@@ -403,7 +407,8 @@ const handleBetReplyToComment = async (
 
   if (!comment) return
 
-  const bets = filterDefined(await getBetsRepliedToComment(pg, comment.id))
+  const allBetReplies = await getBetsRepliedToComment(pg, comment, contract.id)
+  const bets = filterDefined(allBetReplies)
   // This could potentially miss some bets if they're not replicated in time
   if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
   const groupedBetsByOutcome = groupBy(bets, 'outcome')
@@ -502,7 +507,7 @@ const updateBettingStreak = async (
   }
 }
 
-const giveUniqueBettorAndLiquidityBonus = async (
+export const giveUniqueBettorAndLiquidityBonus = async (
   contract: Contract,
   eventId: string,
   bettor: User,

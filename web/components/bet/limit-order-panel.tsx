@@ -13,6 +13,8 @@ import {
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -32,10 +34,12 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { MultiBetProps } from 'web/components/bet/bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
-import { removeUndefinedProps } from 'common/util/object'
+import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/firebase/api'
 import clsx from 'clsx'
 import { getVersusColors } from '../charts/contract/choice'
+import { Fees, getFeeTotal, noFees } from 'common/fees'
+import { FeeDisplay } from './fees'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -213,6 +217,7 @@ export default function LimitOrderPanel(props: {
     currentReturn,
     orderAmount,
     amount: filledAmount,
+    fees,
   } = getBetReturns(
     cpmmState,
     binaryMCOutcome ?? outcome ?? 'YES',
@@ -223,6 +228,7 @@ export default function LimitOrderPanel(props: {
     shouldAnswersSumToOne ? multiProps : undefined
   )
   const returnPercent = formatPercent(currentReturn)
+  const totalFees = getFeeTotal(fees)
 
   return (
     <>
@@ -385,6 +391,17 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
+        <Row className="items-center justify-between gap-2 text-sm">
+          <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+            Fees
+          </Row>
+          <FeeDisplay
+            amount={filledAmount}
+            totalFees={totalFees}
+            isMultiSumsToOne={shouldAnswersSumToOne}
+          />
+        </Row>
+
         <Row className="items-center justify-between gap-2">
           {user && (
             <Button
@@ -436,9 +453,10 @@ const getBetReturns = (
   const orderAmount = betAmount
   let amount: number
   let shares: number
+  let fees: Fees
   if (arbitrageProps) {
     const { answers, answerToBuy } = arbitrageProps
-    const { newBetResult } = calculateCpmmMultiArbitrageBet(
+    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
       answers,
       answerToBuy,
       outcome,
@@ -449,14 +467,22 @@ const getBetReturns = (
     )
     amount = sumBy(newBetResult.takers, 'amount')
     shares = sumBy(newBetResult.takers, 'shares')
+    fees = addObjects(
+      newBetResult.totalFees,
+      otherBetResults.reduce(
+        (feeSum, results) => addObjects(feeSum, results.totalFees),
+        noFees
+      )
+    )
   } else {
-    ;({ amount, shares } = computeCpmmBet(
+    ;({ amount, shares, fees } = computeCpmmBet(
       cpmmState,
       outcome,
       betAmount,
       limitProb,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
     ))
   }
 
@@ -467,5 +493,5 @@ const getBetReturns = (
   const currentPayout = shares + remainingMatched
   const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
 
-  return { orderAmount, amount, shares, currentPayout, currentReturn }
+  return { orderAmount, amount, shares, currentPayout, currentReturn, fees }
 }

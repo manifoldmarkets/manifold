@@ -51,13 +51,9 @@ If you are interested in hearing more please get in touch at hello@balsaresearch
     preview:
       'Accelerating the development of each vaccine by even a couple of days via COVID-19 human challenge trials could save thousands of lives.',
     photo: 'https://i.imgur.com/bUDdzUE.png',
-    description: `1Day Sooner is a non-profit that advocates on behalf of COVID-19 challenge trial volunteers.
-      
-    After a vaccine candidate is created in a lab, it is developed through a combination of pre-clinical evaluation and three phases of clinical trials that test its safety and efficacy. In traditional Phase III trials, participants receive the vaccine candidate or a placebo/active comparator, and efficacy is judged by comparing the prevalence of infection in the vaccine group and the placebo/comparator group, to test the hypothesis that significantly fewer participants in the vaccine group get infected. In these traditional trials, after receiving the treatment, participants return to their homes and their normal daily lives so as to test the treatment under real world conditions. Since only a small proportion of these participants may encounter the disease, it may take a large number of participants and a good deal of time for these trials to reveal differences between the vaccine and placebo groups.
-      
-    In a human challenge trial (HCT), willing participants would receive the vaccine candidate or placebo and, after some time for the vaccine to take effect, be deliberately exposed to live coronavirus. Since exposure to the virus is guaranteed in HCTs, it may be possible to judge a vaccine candidate’s efficacy more quickly and with far fewer participants than a standard Phase III trial. While HCT efficacy results do not traditionally provide sufficient basis for licensure on their own, they could allow us to (1) more quickly weed out disappointing vaccine candidates or (2) promote the development of promising candidates in conjunction with traditional Phase III studies.
-      
-    In addition, by gathering detailed data on the process of infection and vaccine protection in a clinical setting, researchers could learn information that proves extremely useful for broader vaccine and therapeutic development efforts. Altogether, there are scenarios in which the speed of HCTs and the richness of the data they provide accelerate the development of an effective and broadly accessible COVID-19 vaccine, with thousands of lives spared (depending on the pandemic’s long-term trajectory).`,
+    description: `1Day Sooner is a nonprofit that advocates for people who participate and want to participate in high-impact medical studies, particularly human challenge trials, where healthy volunteers are infected with a disease to test a vaccine, treatment, or to learn other important information. 1Day Sooner began as grassroots movement of people who were willing to join human challenge studies for COVID-19 in the early stages of the pandemic.
+
+    In line with the altruism of healthy volunteers in infectious disease research, we more broadly work towards a world that prioritizes efficient development of life-saving medical research, distributed equitably so as to minimize the global suffering caused by infectious disease. This includes campaigns covering hepatitis C human challenge studies, malaria vaccine distribution, US FDA regulatory optimization, and the use of human challenge studies to augment pandemic preparedness efforts, and other projects.`,
   },
   {
     name: 'QURI',
@@ -1043,6 +1039,23 @@ We also host several technical conferences every year, inviting top researchers,
       'Donate to Racket, a programming language, via the Software Freedom Conservancy which is a nonprofit organization centered around ethical technology',
     description:
       'Donate to Racket, a programming language, via the Software Freedom Conservancy which is a nonprofit organization centered around ethical technology',
+  },
+  {
+    name: 'Legal Impact for Chickens',
+    website: 'https://www.legalimpactforchickens.org/',
+    photo:
+      'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/charity%2Flegal-impact-for-chickens.png?alt=media&token=094bd279-4628-4f03-8702-fc7d9962e15e',
+    preview:
+      'Legal Impact for Chickens aims to make factory-farm cruelty a liability.',
+    description: `Legal Impact for Chickens focuses on civil litigation as a way to improve animal welfare. 
+
+Why? Companies don’t follow laws that aren’t enforced. And prosecutors rarely enforce cruelty laws on factory farms, even when animal protection groups urge them to.
+
+As a result, while several state cruelty laws technically cover farms, factory farms ignore them. Investigations in such states show rampant, unlawful neglect and abuse. Similarly, the animal movement’s effort to pass confinement bans may be wasted if those new bans aren’t enforced.
+
+Strategic civil litigation offers a solution. Several little-known legal doctrines let plaintiffs sue in civil court for violation of a criminal law. At Legal Impact for Chickens, we focus on systematically developing, refining, and using those doctrines to fight factory-farm cruelty.
+    `,
+    tags: ['New'] as const,
   },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')

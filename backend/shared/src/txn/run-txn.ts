@@ -1,7 +1,12 @@
 import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
-import { Txn } from 'common/txn'
+import { removeUndefinedProps } from 'common/util/object'
+import {
+  ContractProduceSpiceTxn,
+  ContractOldResolutionPayoutTxn,
+  Txn,
+} from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
@@ -158,4 +163,25 @@ export function logFailedTxn(txn: Txn) {
   log.error(
     `Failed to run ${txn.category} txn ${txn.id}: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toId} `
   )
+}
+
+export function runContractPayoutTxn(
+  fbTransaction: admin.firestore.Transaction,
+  txnData: Omit<ContractProduceSpiceTxn, 'id' | 'createdTime'>
+) {
+  const firestore = admin.firestore()
+  const { amount, toId, data } = txnData
+  const { deposit } = data
+
+  const toDoc = firestore.doc(`users/${toId}`)
+  fbTransaction.update(toDoc, {
+    spiceBalance: FieldValue.increment(amount),
+    totalDeposits: FieldValue.increment(deposit ?? 0),
+  })
+
+  const newTxnDoc = firestore.collection(`txns/`).doc()
+  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
+  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
+
+  return { status: 'success', txn }
 }

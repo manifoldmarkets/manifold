@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { User } from 'common/user'
+import { isVerified, User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -32,7 +32,7 @@ import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import {
   api,
-  changeUserInfo,
+  updateUserApi,
   followTopic,
   followUser,
 } from 'web/lib/firebase/api'
@@ -85,19 +85,17 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
       userBetInTopics={userBetInTopics}
-      onNext={() => increasePage()}
+      onNext={increasePage}
       setFeedKey={setFeedKey}
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !user?.verifiedPhone && (
-      <VerifyPhone onClose={() => increasePage()} />
-    ),
+    user && !isVerified(user) && <VerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
   useEffect(() => {
-    if (!authed || !user || !user.verifiedPhone) return
+    if (!authed || !user || !isVerified(user)) return
     // Wait until after they've had the opportunity to change their name
     setCachedReferralInfoForUser(user)
   }, [user, authed])
@@ -186,8 +184,8 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} size={'xl'} position={'bottom'}>
-      <Col className="bg-canvas-0 w-screen rounded-md px-4 py-6 text-sm sm:px-8 md:text-lg lg:w-full">
+    <Modal open={open} size={'lg'} position={'bottom'}>
+      <Col className="bg-canvas-0 rounded-md px-4 py-6 text-sm md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
           {showBottomButtons && (
@@ -235,14 +233,14 @@ function WhatIsManifoldPage() {
     if (newName === user?.name) return
     setName(newName)
 
-    await changeUserInfo({ name: newName })
+    await updateUserApi({ name: newName })
 
     let username = cleanUsername(newName)
     try {
-      await changeUserInfo({ username })
+      await updateUserApi({ username })
     } catch (e) {
       username += randomString(5)
-      await changeUserInfo({ username })
+      await updateUserApi({ username })
     }
   }
 
@@ -312,7 +310,11 @@ function PredictionMarketPage() {
       <div className="text-primary-700 mb-6 mt-3 text-center text-2xl font-normal">
         How it works
       </div>
-      <div className="mt-2 text-lg">Bet on the answer you think is right.</div>
+      <div className="mt-2 text-lg">
+        We've sent you{' '}
+        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
+        play money. Bet on the answer you think is right.
+      </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than
         polls.
@@ -390,6 +392,12 @@ function TopicsPage(props: {
     ) {
       await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
     }
+    if (
+      intersection(selectedTopics, ['0d39aa2b-1447-4298-bc60-5ef67d9cea4f'])
+        .length > 0
+    ) {
+      await followUser('fBFdG15kdfeBmjRVEajSMLayZ2y1') // follow @JasonTweenieMemes
+    }
 
     onNext?.()
   }
@@ -418,19 +426,16 @@ function TopicsPage(props: {
         What interests you?
       </div>
       <div className="mb-4 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. Now select 3 or more topics to help use curate your home
-        page.
+        Select 3 or more topics to personalize your experience.
       </div>
-      <Col className="h-[25rem] overflow-y-auto sm:h-[32rem]">
-        <Col className={''}>
+      <Col className="h-[25rem] gap-2 overflow-y-auto sm:h-[32rem]">
+        <Col className={'gap-1'}>
           <div className="text-ink-700 text-sm">
             {userInterestedTopics.length > 0 || userBetInTopics.length > 0
               ? 'Suggested'
               : 'Trending now'}
           </div>
-          <Row className={'flex-wrap gap-1 '}>
+          <Row className={'flex-wrap gap-1'}>
             {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
                 {pillButton(group.name, removeEmojis(group.name), [group.id])}
@@ -440,7 +445,7 @@ function TopicsPage(props: {
         </Col>
 
         {topics.map((topic) => (
-          <div className="mb-3 " key={topic + '-section'}>
+          <Col className="mb-3 gap-1" key={topic + '-section'}>
             <div className="text-ink-700 text-sm">{topic.slice(3)}</div>
             <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
               {getSubtopics(topic)
@@ -449,7 +454,7 @@ function TopicsPage(props: {
                   return pillButton(subtopicWithEmoji, subtopic, groupIds)
                 })}
             </Row>
-          </div>
+          </Col>
         ))}
       </Col>
       <Row className={'mt-4 justify-between'}>

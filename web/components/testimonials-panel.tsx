@@ -52,7 +52,7 @@ export function TestimonialsPanel() {
             </Button>
             <div
               className={clsx(
-                'text-ink-900 rounded-md bg-teal-200',
+                'text-ink-900 rounded-md bg-teal-200 dark:bg-teal-800',
                 isMobile
                   ? 'px-6 py-2.5 text-base font-semibold'
                   : 'px-6 py-3 text-xl font-semibold'
@@ -129,10 +129,10 @@ function Testimonial(props: {
   const { testimonial, name, credit, icon, src } = props
   return (
     <div className="animate-slide-up-1 sm:animate-slide-in-1 absolute left-8 top-[20%] z-20 w-4/5 select-none text-white sm:top-2 sm:z-0">
-      <QuoteIcon className="h-10 w-10 text-teal-200" />
+      <QuoteIcon className="h-10 w-10 text-teal-200 dark:text-teal-800" />
       <div className="ml-8">{testimonial}</div>
       <Row className="justify-end">
-        <QuoteIcon className="h-10 w-10 rotate-180 text-teal-200" />
+        <QuoteIcon className="h-10 w-10 rotate-180 text-teal-200 dark:text-teal-800" />
       </Row>
       <Link href={src} target="_blank">
         <Row className="group mt-2 justify-end gap-2 ">

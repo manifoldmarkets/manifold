@@ -5,17 +5,18 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
-import { CPMMBinaryContract } from 'common/contract'
+import { CPMMBinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function BetButton(props: {
-  contract: CPMMBinaryContract
+  contract: CPMMBinaryContract | StonkContract
   user: User | null | undefined
   feedItem?: FeedTimelineItem
   className?: string
+  labels?: { yes: string; no: string }
 }) {
-  const { contract, user, className, feedItem } = props
+  const { contract, labels, user, className, feedItem } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
@@ -37,19 +38,19 @@ export function BetButton(props: {
     <div className={className}>
       <Button
         color="green-outline"
-        size="2xs"
+        size="xs"
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        Yes
+        {labels?.yes ?? 'Bet Yes'}
       </Button>
 
       <Button
         color="red-outline"
-        size="2xs"
+        size="xs"
         onClick={() => handleBetButtonClick('NO')}
       >
-        No
+        {labels?.no ?? 'Bet No'}
       </Button>
 
       {open && (

@@ -4,6 +4,7 @@ import { Bet, fill, LimitBet } from './bet'
 import { calculateDpmShares, getDpmOutcomeProbability } from './calculate-dpm'
 import {
   calculateCpmmAmountToProb,
+  calculateCpmmAmountToProbIncludingFees,
   calculateCpmmPurchase,
   CpmmState,
   getCpmmProbability,
@@ -13,10 +14,14 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   DPMContract,
+  MAX_CPMM_PROB,
+  MAX_STONK_PROB,
+  MIN_CPMM_PROB,
+  MIN_STONK_PROB,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import { noFees } from './fees'
+import { CREATOR_FEE_FRAC, getTakerFee, noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
 import {
   floatingEqual,
@@ -56,7 +61,8 @@ const computeFill = (
   limitProb: number | undefined,
   cpmmState: CpmmState,
   matchedBet: LimitBet | undefined,
-  matchedBetUserBalance: number | undefined
+  matchedBetUserBalance: number | undefined,
+  freeFees?: boolean
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -90,12 +96,22 @@ const computeFill = (
     const buyAmount =
       limit === undefined
         ? amount
-        : Math.min(amount, calculateCpmmAmountToProb(cpmmState, limit, outcome))
+        : Math.min(
+            amount,
+            freeFees
+              ? calculateCpmmAmountToProb(cpmmState, limit, outcome)
+              : calculateCpmmAmountToProbIncludingFees(
+                  cpmmState,
+                  limit,
+                  outcome
+                )
+          )
 
     const { shares, newPool, newP, fees } = calculateCpmmPurchase(
       cpmmState,
       buyAmount,
-      outcome
+      outcome,
+      freeFees
     )
     const newState = { pool: newPool, p: newP }
 
@@ -105,7 +121,6 @@ const computeFill = (
         shares,
         amount: buyAmount,
         state: newState,
-        fees,
         timestamp,
       },
       taker: {
@@ -113,6 +128,7 @@ const computeFill = (
         shares,
         amount: buyAmount,
         timestamp,
+        fees,
       },
     }
   }
@@ -127,29 +143,35 @@ const computeFill = (
     amountRemaining,
     matchableUserBalance ?? amountRemaining
   )
-  const shares = Math.min(
-    amount /
-      (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
-    amountToFill /
-      (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb)
-  )
+
+  const takerPrice =
+    outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb
+  const makerPrice =
+    outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb
+
+  const feesOnOneShare = freeFees ? 0 : getTakerFee(1, takerPrice)
+  const maxTakerShares = amount / (takerPrice + feesOnOneShare)
+  const maxMakerShares = amountToFill / makerPrice
+  const shares = Math.min(maxTakerShares, maxMakerShares)
+
+  const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
+  const creatorFee = CREATOR_FEE_FRAC * takerFee
+  const platformFee = (1 - CREATOR_FEE_FRAC) * takerFee
+  const fees = { creatorFee, platformFee, liquidityFee: 0 }
 
   const maker = {
     bet: matchedBet,
     matchedBetId: 'taker',
-    amount:
-      shares *
-      (outcome === 'YES' ? 1 - matchedBet.limitProb : matchedBet.limitProb),
+    amount: shares * makerPrice,
     shares,
     timestamp,
   }
   const taker = {
     matchedBetId: matchedBet.id,
-    amount:
-      shares *
-      (outcome === 'YES' ? matchedBet.limitProb : 1 - matchedBet.limitProb),
+    amount: shares * takerPrice + takerFee,
     shares,
     timestamp,
+    fees,
   }
   return { maker, taker }
 }
@@ -158,17 +180,28 @@ export const computeFills = (
   state: CpmmState,
   outcome: 'YES' | 'NO',
   betAmount: number,
-  limitProb: number | undefined,
+  initialLimitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number | undefined }
+  balanceByUserId: { [userId: string]: number | undefined },
+  limitProbs?: { max: number; min: number },
+  freeFees?: boolean
 ) => {
   if (isNaN(betAmount)) {
     throw new Error('Invalid bet amount: ${betAmount}')
   }
-  if (isNaN(limitProb ?? 0)) {
+  if (isNaN(initialLimitProb ?? 0)) {
     throw new Error('Invalid limitProb: ${limitProb}')
   }
   const now = Date.now()
+  const { max, min } = limitProbs ?? {}
+  const limit = initialLimitProb ?? (outcome === 'YES' ? max : min)
+  const limitProb = !limit
+    ? undefined
+    : limit > MAX_CPMM_PROB
+    ? MAX_CPMM_PROB
+    : limit < MIN_CPMM_PROB
+    ? MIN_CPMM_PROB
+    : limit
 
   const sortedBets = sortBy(
     unfilledBets.filter(
@@ -202,8 +235,10 @@ export const computeFills = (
       limitProb,
       cpmmState,
       matchedBet,
-      currentBalanceByUserId[matchedBet?.userId ?? '']
+      currentBalanceByUserId[matchedBet?.userId ?? ''],
+      freeFees
     )
+
     if (!fill) break
 
     const { taker, maker } = fill
@@ -211,7 +246,6 @@ export const computeFills = (
     if (maker.matchedBetId === null) {
       // Matched against pool.
       cpmmState = maker.state
-      totalFees = addObjects(totalFees, maker.fees)
       takers.push(taker)
     } else {
       // Matched against bet.
@@ -234,6 +268,7 @@ export const computeFills = (
       makers.push(maker)
     }
 
+    totalFees = addObjects(totalFees, taker.fees)
     amount -= taker.amount
 
     if (floatingEqual(amount, 0)) break
@@ -245,29 +280,33 @@ export const computeFills = (
 export const computeCpmmBet = (
   cpmmState: CpmmState,
   outcome: 'YES' | 'NO',
-  betAmount: number,
+  initialBetAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  limitProbs?: { max: number; min: number }
 ) => {
   const {
     takers,
     makers,
     cpmmState: afterCpmmState,
     ordersToCancel,
+    totalFees,
   } = computeFills(
     cpmmState,
     outcome,
-    betAmount,
+    initialBetAmount,
     limitProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    limitProbs
   )
   const probBefore = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const probAfter = getCpmmProbability(afterCpmmState.pool, afterCpmmState.p)
 
   const takerAmount = sumBy(takers, 'amount')
   const takerShares = sumBy(takers, 'shares')
+  const betAmount = limitProb ? initialBetAmount : takerAmount
   const isFilled = floatingEqual(betAmount, takerAmount)
 
   return {
@@ -280,6 +319,7 @@ export const computeCpmmBet = (
     probAfter,
     makers,
     ordersToCancel,
+    fees: totalFees,
     ...afterCpmmState,
   }
 }
@@ -306,13 +346,17 @@ export const getBinaryCpmmBetInfo = (
     ordersToCancel,
     pool,
     p,
+    fees,
   } = computeCpmmBet(
     cpmmState,
     outcome,
     betAmount,
     limitProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    contract.outcomeType === 'STONK'
+      ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
+      : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const newBet: CandidateBet = removeUndefinedProps({
     orderAmount,
@@ -328,7 +372,7 @@ export const getBinaryCpmmBetInfo = (
     probAfter,
     loanAmount: 0,
     createdTime: Date.now(),
-    fees: noFees,
+    fees,
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
@@ -428,13 +472,15 @@ export const getNewMultiCpmmBetInfo = (
     probBefore,
     shares,
     pool: newPool,
+    fees,
   } = computeCpmmBet(
     cpmmState,
     outcome,
     betAmount,
     limitProb,
     answerUnfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
 
   const newBet: CandidateBet = removeUndefinedProps({
@@ -452,7 +498,7 @@ export const getNewMultiCpmmBetInfo = (
     probBefore,
     probAfter,
     createdTime: Date.now(),
-    fees: noFees,
+    fees,
     isAnte: false,
     isRedemption: false,
     isChallenge: false,
@@ -533,7 +579,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   }
   const now = Date.now()
   return newBetResults.map((newBetResult, i) => {
-    const { takers, cpmmState, answer: updatedAnswer } = newBetResult
+    const { takers, cpmmState, answer: updatedAnswer, totalFees } = newBetResult
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
     const amount = sumBy(takers, 'amount')
     const shares = sumBy(takers, 'shares')
@@ -560,7 +606,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       probBefore: answer.prob,
       probAfter,
       createdTime: now,
-      fees: noFees,
+      fees: totalFees,
       isAnte: false,
       isRedemption: false,
       isChallenge: false,
@@ -569,7 +615,13 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
     })
 
     const otherResultsWithBet = otherBetsResults.map((result) => {
-      const { answer: updatedAnswer, takers, cpmmState, outcome } = result
+      const {
+        answer: updatedAnswer,
+        takers,
+        cpmmState,
+        outcome,
+        totalFees,
+      } = result
       const answer = answers.find((a) => a.id === updatedAnswer.id) as Answer
       const probBefore = answer.prob
       const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -588,7 +640,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
         probBefore,
         probAfter,
         createdTime: now,
-        fees: noFees,
+        fees: totalFees,
         isAnte: false,
         isRedemption: true,
         isChallenge: false,
@@ -625,7 +677,7 @@ export const getBetDownToOneMultiBetInfo = (
   const now = Date.now()
 
   const betResults = noBetResults.map((result) => {
-    const { answer, takers, cpmmState } = result
+    const { answer, takers, cpmmState, totalFees } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
 
@@ -643,7 +695,7 @@ export const getBetDownToOneMultiBetInfo = (
       probBefore,
       probAfter,
       createdTime: now,
-      fees: noFees,
+      fees: totalFees,
       isAnte: false,
       isRedemption: true,
       isChallenge: false,

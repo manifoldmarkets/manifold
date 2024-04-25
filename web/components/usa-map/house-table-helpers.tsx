@@ -3,14 +3,18 @@ import { CheckIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
-import { CPMMMultiContract, isBinaryMulti } from 'common/contract'
+import {
+  CPMMMultiContract,
+  isBinaryMulti,
+  MAX_CPMM_PROB,
+  MIN_CPMM_PROB,
+} from 'common/contract'
 import { formatPercent, formatPercentShort } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useUser } from 'web/hooks/use-user'
 import { APIError, api } from 'web/lib/firebase/api'
 import { isAndroid, isIOS } from 'web/lib/util/device'
@@ -38,6 +42,7 @@ import {
   REP_LIGHT_HEX,
   hexToRgb,
 } from './state-election-map'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract
@@ -149,7 +154,7 @@ export function HouseBuyPanel(props: {
   initialOutcome?: BinaryOutcomes
   children?: React.ReactNode
 }) {
-  const { contract, initialOutcome, inModal, children } = props
+  const { initialOutcome, children } = props
 
   return (
     <Col>
@@ -213,21 +218,7 @@ export const BuyPanelBody = (props: {
       ? // Always filter to answer for non-sum-to-one cpmm multi
         unfilledBetsMatchingAnswer
       : allUnfilledBets
-
-  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
-    setBetType(type)
-  }
-
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
-
-  const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
-
-  useEffect(() => {
-    if (user) {
-      setAdvancedTraderMode(user.isAdvancedTrader ?? false)
-    }
-  }, [user])
 
   useEffect(() => {
     if (!isIOS() && !isAndroid()) {
@@ -314,7 +305,8 @@ export const BuyPanelBody = (props: {
     betAmount ?? 0,
     undefined,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const currentPayout = result.shares
 
@@ -492,13 +484,8 @@ export const houseProbToColor = (prob: number) => {
 
   const probDemocratic = 1 - prob
   const probRepublican = prob
-  const probOther = 0
 
-  if (
-    probDemocratic === undefined ||
-    probRepublican === undefined ||
-    probOther === undefined
-  )
+  if (probDemocratic === undefined || probRepublican === undefined)
     return undefined
 
   // Calculate the difference

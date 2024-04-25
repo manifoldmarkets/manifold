@@ -92,7 +92,7 @@ export const post: APIHandler<'post'> = async (props, auth) => {
         `,
     [
       contractId,
-      commentId,
+      comment.id,
       betId,
       poster.id,
       poster.name,

@@ -2,7 +2,7 @@ import { initAdmin } from 'shared/init-admin'
 initAdmin()
 
 import { getUserByUsername } from 'shared/utils'
-import { changeUser } from 'api/change-user-info'
+import { updateUserInternal } from 'api/update-user'
 
 async function main() {
   const username = process.argv[2]
@@ -23,7 +23,7 @@ async function main() {
     return
   }
 
-  await changeUser(user, { username: newUsername, name, avatarUrl })
+  await updateUserInternal(user, { username: newUsername, name, avatarUrl })
     .then(() =>
       console.log(
         'successfully changed',

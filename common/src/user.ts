@@ -17,7 +17,8 @@ export type User = {
   twitterHandle?: string
   discordHandle?: string
 
-  balance: number
+  balance: number // M$
+  spiceBalance: number
   totalDeposits: number
 
   profitCached: {
@@ -56,14 +57,15 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
-  metricsLastUpdated?: number
   optOutBetWarnings?: boolean
   freeQuestionsCreated?: number
   fromLove?: boolean
+  /**  @deprecated - users created from manifoldpolitics.com site*/
   fromPolitics?: boolean
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   verifiedPhone?: boolean
+  purchasedMana?: boolean
 }
 
 export type PrivateUser = {
@@ -199,5 +201,8 @@ export const shouldIgnoreUserPage = async (user: User, db: SupabaseClient) => {
 }
 
 export const isVerified = (user: User) => {
+  return user.verifiedPhone !== false || !!user.purchasedMana
+}
+export const verifiedPhone = (user: User) => {
   return user.verifiedPhone !== false
 }

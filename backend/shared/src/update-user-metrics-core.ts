@@ -3,7 +3,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { revalidateStaticProps } from 'shared/utils'
+import { log, revalidateStaticProps } from 'shared/utils'
 import { User } from 'common/user'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 import { Contract, CPMMMultiContract } from 'common/contract'
@@ -13,17 +13,21 @@ import {
 } from 'common/calculate-metrics'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
-import { filterDefined } from 'common/util/array'
-import { hasChanges } from 'common/util/object'
+import { buildArray, filterDefined } from 'common/util/array'
+import {
+  hasChanges,
+  hasSignificantDeepChanges,
+  removeUndefinedProps,
+} from 'common/util/object'
 import { bulkInsert } from 'shared/supabase/utils'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import * as admin from 'firebase-admin'
-import { log } from 'shared/utils'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { convertBet } from 'common/supabase/bets'
+import { ContractMetric } from 'common/contract-metric'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -44,30 +48,28 @@ export async function updateUserMetricsCore() {
   const pg = createSupabaseDirectClient()
   const writer = new SafeBulkWriter(undefined, firestore)
 
-  log('Loading users...')
-  const userIds = await pg.map(
-    `select id from users
-            order by data->'metricsLastUpdated' nulls first limit 2000`,
-    [],
+  log('Loading active users...')
+  const random = Math.random()
+  const activeUserIds = await pg.map(
+    `
+      select distinct users.id, uph.ts
+      from users
+        left join user_portfolio_history_latest uph on uph.user_id = users.id
+      where (
+       users.id in (
+           select distinct user_id from user_contract_interactions
+           where created_time > now() - interval '2 weeks'
+       )
+         or ($1 < 0.01 and users.data->'lastBetTime' is not null)
+       )
+        order by uph.ts nulls first limit 400`,
+    [random],
     (r) => r.id as string
   )
 
-  for (const userId of userIds) {
-    const doc = firestore.collection('users').doc(userId)
-    writer.update(doc, { metricsLastUpdated: now })
-  }
-  log(`Loaded ${userIds.length} users.`)
+  log(`Loaded ${activeUserIds.length} active users.`)
 
-  log('Loading creator trader counts...')
-  const [yesterdayTraders, weeklyTraders, monthlyTraders, allTimeTraders] =
-    await Promise.all(
-      [yesterday, weekAgo, monthAgo, undefined].map((t) =>
-        getCreatorTraders(pg, userIds, t)
-      )
-    )
-  log(`Loaded creator trader counts.`)
-
-  const userIdsNeedingUpdate = userIds.filter(
+  const userIdsNeedingUpdate = activeUserIds.filter(
     (id) =>
       !userToPortfolioMetrics[id]?.currentPortfolio ||
       (userToPortfolioMetrics[id]?.timeCachedPeriodProfits ?? 0) <
@@ -82,7 +84,7 @@ export async function updateUserMetricsCore() {
         Object.keys(userToPortfolioMetrics).length
       } users.`
     )
-    const userIdsMissingPortfolio = userIds.filter(
+    const userIdsMissingPortfolio = activeUserIds.filter(
       (id) => !userToPortfolioMetrics[id]?.currentPortfolio
     )
     log(
@@ -121,7 +123,7 @@ export async function updateUserMetricsCore() {
   // for the purposes of computing the daily/weekly/monthly profit on them
   const metricRelevantBets = await getMetricRelevantUserBets(
     pg,
-    userIds,
+    activeUserIds,
     monthAgo
   )
   log(
@@ -139,6 +141,7 @@ export async function updateUserMetricsCore() {
     pg,
     contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
   )
+  log(`Loaded ${contracts.length} contracts and their answers.`)
 
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
 
@@ -148,7 +151,21 @@ export async function updateUserMetricsCore() {
     ;(contractsById[contractId] as CPMMMultiContract).answers = answers
   }
 
-  log(`Loaded ${contracts.length} contracts and their answers.`)
+  log('Loading current contract metrics...')
+  const currentContractMetrics = await pg.map(
+    `select data from user_contract_metrics
+            where user_id in ($1:list)
+            and contract_id in ($2:list)
+            `,
+    [activeUserIds, contracts.map((c) => c.id)],
+    (r) => r.data as ContractMetric
+  )
+  log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
+
+  const currentMetricsByUserId = groupBy(
+    currentContractMetrics,
+    (m) => m.userId
+  )
 
   const userUpdates = []
   const portfolioUpdates = []
@@ -160,19 +177,13 @@ export async function updateUserMetricsCore() {
   const users = await pg.map(
     `select data from users
             where id in ($1:list)`,
-    [userIds],
+    [activeUserIds],
     (r) => r.data as User
   )
   log('Computing metric updates...')
   for (const user of users) {
     const userMetricRelevantBets = metricRelevantBets[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
-    const creatorTraders = {
-      daily: yesterdayTraders[user.id] ?? 0,
-      weekly: weeklyTraders[user.id] ?? 0,
-      monthly: monthlyTraders[user.id] ?? 0,
-      allTime: allTimeTraders[user.id] ?? 0,
-    }
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
       if (contractsById[b.contractId].isResolved) return false
       const answers = answersByContractId[b.contractId]
@@ -228,14 +239,24 @@ export async function updateUserMetricsCore() {
       userMetricRelevantBets,
       (b) => b.contractId
     )
-    // TODO: we could only calculate metrics for answers that users have bet on
-    const metricsByContract = calculateMetricsByContractAndAnswer(
+    const freshMetrics = calculateMetricsByContractAndAnswer(
       metricRelevantBetsByContract,
       contractsById,
       user,
       answersByContractId
     ).flat()
-    contractMetricUpdates.push(...metricsByContract)
+    const currentMetricsForUser = currentMetricsByUserId[user.id] ?? []
+    contractMetricUpdates.push(
+      ...freshMetrics.filter((freshMetric) => {
+        const currentMetric = currentMetricsForUser.find(
+          (m) =>
+            freshMetric.contractId === m.contractId &&
+            freshMetric.answerId === m.answerId
+        )
+        if (!currentMetric) return true
+        return hasSignificantDeepChanges(freshMetric, currentMetric, 0.1)
+      })
+    )
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
@@ -247,6 +268,7 @@ export async function updateUserMetricsCore() {
         ts: new Date(newPortfolio.timestamp).toISOString(),
         investment_value: newPortfolio.investmentValue,
         balance: newPortfolio.balance,
+        spice_balance: newPortfolio.spiceBalance,
         total_deposits: newPortfolio.totalDeposits,
         loan_total: newPortfolio.loanTotal,
       })
@@ -255,11 +277,10 @@ export async function updateUserMetricsCore() {
 
     userUpdates.push({
       user: user,
-      fields: {
-        creatorTraders: creatorTraders,
+      fields: removeUndefinedProps({
         profitCached: newProfit,
         nextLoanCached: nextLoanPayout ?? 0,
-      },
+      }),
     })
   }
   log(`Computed ${contractMetricUpdates.length} metric updates.`)
@@ -272,19 +293,25 @@ export async function updateUserMetricsCore() {
   }
   log('Finished user updates.')
 
-  log('Updating contract metrics...')
-  await bulkUpdateContractMetrics(contractMetricUpdates).catch((e) => {
-    log('Error upserting contract metrics', e)
-  })
-  log('Finished updating contract metrics.')
-
-  log('Inserting Supabase portfolio history entries...')
-  if (portfolioUpdates.length > 0) {
-    await bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
-  }
-
-  log('Committing Firestore writes...')
-  await writer.close()
+  log('Writing updates and inserts...')
+  await Promise.all(
+    buildArray(
+      contractMetricUpdates.length > 0 &&
+        bulkUpdateContractMetrics(contractMetricUpdates)
+          .catch((e) => log.error('Error upserting contract metrics', e))
+          .then(() => log('Finished updating contract metrics.')),
+      portfolioUpdates.length > 0 &&
+        bulkInsert(pg, 'user_portfolio_history', portfolioUpdates)
+          .catch((e) => log.error('Error inserting user portfolio history', e))
+          .then(() =>
+            log('Finished creating Supabase portfolio history entries...')
+          ),
+      writer
+        .close()
+        .catch((e) => log.error('Error bulk writing user updates', e))
+        .then(() => log('Committed Firestore writes.'))
+    )
+  )
 
   await revalidateStaticProps('/leaderboards')
 
@@ -333,7 +360,7 @@ const getPortfolioSnapshot = async (
   return Object.fromEntries(
     await pg.map(
       `select distinct on (user_id) user_id, investment_value, balance, total_deposits, loan_total
-      from user_portfolio_history
+      from user_portfolio_history_latest
       where user_id in ($1:list)
       order by user_id, ts desc`,
       [userIds],
@@ -355,27 +382,6 @@ const getPortfolioHistoricalProfits = async (
       order by user_id, ts desc`,
       [userIds, new Date(when).toISOString()],
       (r) => [r.user_id as string, parseFloat(r.profit as string)]
-    )
-  )
-}
-
-const getCreatorTraders = async (
-  pg: SupabaseDirectClient,
-  userIds: string[],
-  since?: number
-) => {
-  return Object.fromEntries(
-    await pg.map(
-      `with contract_traders as (
-        select distinct contract_id, user_id from contract_bets where created_time >= $2
-      )
-      select c.creator_id, count(ct.*)::int as total
-      from contracts as c
-      join contract_traders as ct on c.id = ct.contract_id
-      where c.creator_id in ($1:list)
-      group by c.creator_id`,
-      [userIds, new Date(since ?? 0).toISOString()],
-      (r) => [r.creator_id as string, r.total as number]
     )
   )
 }

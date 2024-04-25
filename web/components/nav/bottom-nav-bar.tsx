@@ -1,6 +1,4 @@
-import Link from 'next/link'
-import clsx from 'clsx'
-import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
+import { Dialog, Transition } from '@headlessui/react'
 import {
   HomeIcon,
   NewspaperIcon,
@@ -8,26 +6,27 @@ import {
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
+import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import Link from 'next/link'
+import { Fragment, useState } from 'react'
 import { BiSearchAlt2 } from 'react-icons/bi'
-import { animated } from '@react-spring/web'
-import { Transition, Dialog } from '@headlessui/react'
-import { useState, Fragment } from 'react'
-
-import Sidebar from './sidebar'
-import { NavItem } from './sidebar-item'
-import { useUser } from 'web/hooks/use-user'
-import { formatMoney } from 'common/util/format'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { User } from 'common/user'
+import { usePathname } from 'next/navigation'
+import { GiCapitol } from 'react-icons/gi'
+import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
-import { trackCallback } from 'web/lib/service/analytics'
-import { User } from 'common/user'
-import { Col } from '../layout/col'
+import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
-import { usePathname } from 'next/navigation'
+import { trackCallback } from 'web/lib/service/analytics'
+import { Col } from '../layout/col'
 import { Avatar } from '../widgets/avatar'
-import { GiCapitol } from 'react-icons/gi'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import Sidebar from './sidebar'
+import { NavItem } from './sidebar-item'
+import { formatSpice } from 'common/util/format'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -149,7 +148,7 @@ function NavBarItem(props: {
   const { item, currentPage, children, user, className } = props
   const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
   const [touched, setTouched] = useState(false)
-  const balance = useAnimatedNumber(user?.balance ?? 0)
+
   if (item.name === 'Profile' && user) {
     return (
       <Link
@@ -165,11 +164,18 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col>
+        <Col className="items-center">
           <div className="mx-auto my-1">
             <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
           </div>
-          <animated.div>{balance.to((b) => formatMoney(b))}</animated.div>
+          <div className="flex gap-2">
+            <CoinNumber amount={user?.balance} numberType="animated" />
+            {SPICE_PRODUCTION_ENABLED && (
+              <span className="whitespace-nowrap text-xs">
+                {formatSpice(user.spiceBalance)}
+              </span>
+            )}
+          </div>
         </Col>
       </Link>
     )

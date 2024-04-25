@@ -214,7 +214,7 @@ function AnswersResolveOptions(props: {
 
       {!!error && <div className="text-scarlet-500">{error}</div>}
       {resolveOption === 'CANCEL' && (
-        <div className="text-warning">{`Cancel all trades and return mana back to ${BETTORS}.`}</div>
+        <div className="text-warning">{`Cancel all trades and return mana back to ${BETTORS}. You repay earned fees.`}</div>
       )}
     </>
   )

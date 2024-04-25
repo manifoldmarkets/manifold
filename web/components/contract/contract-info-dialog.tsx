@@ -78,7 +78,6 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
-    isPolitics,
   } = contract
 
   const typeDisplay =
@@ -331,6 +330,7 @@ export const Stats = (props: {
                   tooltip="Copy sql query to contract id"
                   eventTrackingName={'admin copy contract id'}
                   className="!py-0 align-middle"
+                  trackingInfo={{ contractId: id }}
                 />
               </td>
             </tr>

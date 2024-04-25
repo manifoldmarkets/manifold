@@ -85,7 +85,7 @@ const ShareLinkButton = (props: {
     copyToClipboard(url)
     if (!isNative) toast.success('Link copied!')
 
-    trackShareEvent('copy market link', url)
+    trackShareEvent('copy market link', url, { contractId: contract.id })
   }
 
   return (
