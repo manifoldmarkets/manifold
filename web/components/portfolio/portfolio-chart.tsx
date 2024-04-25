@@ -1,51 +1,29 @@
-import { bisector } from 'd3-array'
+import { HistoryPoint, ValueKind } from 'common/chart'
+import { formatMoneyNumber } from 'common/util/format'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import {
-  CurveFactory,
-  curveLinear,
-  curveStepAfter,
-  curveStepBefore,
-  line,
-} from 'd3-shape'
-import { last, mapValues, range } from 'lodash'
-import {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from 'react'
-import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
-import { formatMoneyNumber } from 'common/util/format'
+import { CurveFactory, curveStepAfter } from 'd3-shape'
+import { mapValues } from 'lodash'
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
+import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   AreaPath,
-  AreaWithTopStroke,
-  formatPct,
   LinePath,
   PointerMode,
-  SliceMarker,
   SVGChart,
+  SliceMarker,
   TooltipProps,
   ZoomParams,
 } from '../charts/helpers'
-import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from '../charts/zoom-slider'
 import clsx from 'clsx'
-import {
-  AnnotateChartModal,
-  ReadChartAnnotationModal,
-} from 'web/components/annotate-chart'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import {
-  dataAtTimeSelector,
-  dataAtXSelector,
-  getTickValues,
-} from '../charts/generic-charts'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 
+type AreaPointType = {
+  x: number // The x-coordinate
+  y0: number // Lower boundary of the area
+  y1: number // Upper boundary of the area
+}
 // multi line chart
 export const PortfolioChart = <P extends HistoryPoint>(props: {
   data: Record<string, { points: P[]; color: string }>
@@ -99,9 +77,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     return { xAxis, yAxis }
   }, [w, h, xScale, yScale])
 
-  const selectors = mapValues(data, (data) =>
-    dataAtXSelector(data.points, xScale)
-  )
   const timeSelectors = mapValues(data, (data) =>
     dataAtTimeSelector(data.points)
   )
@@ -128,25 +103,25 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     }, [])
   }, [data])
 
+  const selectors = useMemo(() => {
+    return Object.fromEntries(
+      stackedData.map(({ id, points }) => [id, dataAtXSelector(points, xScale)])
+    )
+  }, [stackedData, xScale])
+
   const getMarkerPosition = useEvent((mouseX: number, mouseY: number) => {
     const valueY = yScale.invert(mouseY)
     const ps = stackedData.map((data) => selectors[data.id](mouseX))
-    let closestIdx = 0
+    let closestIdx = stackedData.length - 1
+    const topmostIdx = stackedData.length - 1
     ps.forEach((p, i) => {
       const closePrev = ps[closestIdx].prev
       const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
       if (p.prev && p.next && Math.abs(p.prev.y - valueY) < closestDist) {
         closestIdx = i
       }
-      console.log(
-        closePrev,
-        p.prev,
-        p.next,
-        closestDist,
-        Math.abs(p.prev.y - valueY)
-      )
     })
-    const p = ps[closestIdx]
+    const p = ps[topmostIdx]
     if (p?.prev) {
       return {
         ...p,
@@ -158,6 +133,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
       return undefined
     }
   })
+
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
     setTTParams(getMarkerPosition(mouseX, mouseY))
   })
@@ -199,63 +175,38 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
           answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
         }
       >
-        {stackedData.map(
-          ({ id, points, color }) =>
-            (!hoveringId || hoveringId !== id) && (
-              <g key={id}>
-                <LinePath
-                  data={points}
-                  px={px}
-                  py={py}
-                  curve={curve}
-                  className={clsx(
-                    ' stroke-canvas-0 transition-[stroke-width]',
-                    hoveringId && hoveringId !== id
-                      ? 'stroke-[0px] opacity-50'
-                      : 'stroke-[4px]'
-                  )}
-                />
-                <LinePath
-                  data={points}
-                  px={px}
-                  py={py}
-                  curve={curve}
-                  className={clsx(
-                    ' transition-[stroke-width]',
-                    hoveringId && hoveringId !== id
-                      ? 'stroke-1 opacity-50'
-                      : 'stroke-2'
-                  )}
-                  stroke={color}
-                />
-              </g>
-            )
-        )}
-        {/* show hovering line on top */}
-        {hoveringId && hoverData && (
-          <g key={`${hoveringId}-front`}>
-            <LinePath
-              data={hoverData.points}
-              px={px}
-              py={py}
-              curve={curve}
-              className={clsx(' transition-[stroke-width]', 'stroke-2')}
-              stroke={data[hoveringId].color}
-            />
-          </g>
-        )}
-        {/* hover effect put last so it shows on top */}
-        {hoveringId && hoverData && (
-          <AreaPath
-            data={data[hoveringId].points}
-            px={px}
-            py0={yScale(0)}
-            py1={py}
-            curve={curve}
-            fill={data[hoveringId].color}
-            opacity={0.5}
-          />
-        )}
+        {stackedData.map(({ id, points, color }, i) => {
+          const { points: previousPoints } =
+            i > 0 ? stackedData[i - 1] : { points: undefined }
+          const areaData = points.map((point, idx) => ({
+            x: point.x,
+            y0: previousPoints ? previousPoints[idx].y : yScale(0), // Use previous dataset's y if available, otherwise use 0
+            y1: point.y,
+          }))
+          return (
+            <>
+              <LinePath
+                data={points}
+                px={px}
+                py={py}
+                curve={curve}
+                className={clsx(' transition-[stroke-width]', 'stroke-2')}
+                stroke={color}
+              />
+              <AreaPath<AreaPointType>
+                key={id}
+                data={areaData}
+                px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
+                py0={(d) => yScale(d.y0)} // Lower boundary
+                py1={(d) => yScale(d.y1)} // Upper boundary
+                fill={color}
+                curve={curve}
+                opacity={hoveringId == id ? 1 : 0.5}
+                className="transition-opacity"
+              />
+            </>
+          )
+        })}
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"
