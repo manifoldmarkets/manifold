@@ -99,7 +99,6 @@ export const PortfolioGraph = (props: {
 
       return { profitPoints, investmentPoints, balancePoints, networthPoints }
     }, [portfolioHistory])
-
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minDate =

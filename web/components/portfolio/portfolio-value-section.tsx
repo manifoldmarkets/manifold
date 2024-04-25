@@ -315,14 +315,20 @@ function PortfolioValueSkeleton(props: {
             </Row> */}
             {graphMode == 'portfolio' && (
               <>
-                <CoinNumber
-                  amount={graphInvested ?? invested}
-                  className="text-indigo-400"
-                />
-                <CoinNumber
-                  amount={graphBalance ?? balance}
-                  className="text-indigo-600"
-                />
+                <Row className="items-center gap-1">
+                  <CoinNumber
+                    amount={graphInvested ?? invested}
+                    className="text-indigo-400"
+                  />
+                  <span className="text-ink-400 text-base">invested</span>
+                </Row>
+                <Row className="items-center gap-1">
+                  <CoinNumber
+                    amount={graphBalance ?? balance}
+                    className="text-indigo-600"
+                  />
+                  <span className="text-ink-400 text-base">balance</span>
+                </Row>
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />
