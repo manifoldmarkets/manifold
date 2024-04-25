@@ -2,7 +2,6 @@ import * as admin from 'firebase-admin'
 import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { log } from 'shared/log'
-import { startWriter } from 'shared/gcp-metrics'
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
@@ -23,8 +22,5 @@ loadSecretsToEnv(credentials).then(() => {
   const PORT = process.env.PORT ?? 8088
   app.listen(PORT, () => {
     log.info(`Serving API on port ${PORT}.`)
-    if (!LOCAL_DEV) {
-      startWriter()
-    }
   })
 })

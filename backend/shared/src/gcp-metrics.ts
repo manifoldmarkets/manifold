@@ -3,6 +3,8 @@ import { MetricServiceClient } from '@google-cloud/monitoring'
 import * as metadata from 'gcp-metadata'
 import { log } from 'shared/utils'
 
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
+
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricKind
 type MetricKind = 'GAUGE' | 'CUMULATIVE' | 'DELTA'
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue
@@ -11,12 +13,17 @@ type MetricValueKind =
   | 'doubleValue'
   | 'stringValue'
   | 'boolValue'
-type MetricDescriptor = {
-  metricKind: MetricKind
-  valueKind: MetricValueKind
-}
+type MetricDescriptor = { metricKind: MetricKind; valueKind: MetricValueKind }
 
 const CUSTOM_METRICS = {
+  'app/bet_count': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'app/contract_view_count': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'pg/query_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
@@ -71,11 +78,14 @@ type MetricStoreEntry = {
   type: MetricType
   fresh: boolean // whether this metric was touched since last time
   labels?: Record<string, string>
+  startTime: number
   value: number
 }
 
 class MetricsStore {
+  // depending on how many labels we make we might want to use a real data structure here
   data: MetricStoreEntry[]
+
   constructor() {
     this.data = []
   }
@@ -101,7 +111,7 @@ class MetricsStore {
       }
     }
     // none exists, so create it
-    const entry = { type, labels, fresh: true, value: 0 }
+    const entry = { type, labels, startTime: Date.now(), fresh: true, value: 0 }
     this.data.push(entry)
     return entry
   }
@@ -109,6 +119,7 @@ class MetricsStore {
 
 class MetricsWriter {
   client: MetricServiceClient
+  instance?: InstanceInfo
   runInterval?: NodeJS.Timeout
 
   constructor() {
@@ -119,6 +130,7 @@ class MetricsWriter {
     return {
       name: this.client.projectPath(instance.projectId),
       timeSeries: entries.map((entry) => ({
+        metricKind: CUSTOM_METRICS[entry.type].metricKind,
         resource: {
           type: 'gce_instance',
           labels: {
@@ -128,12 +140,16 @@ class MetricsWriter {
           },
         },
         metric: {
-          type: `custom.googleapis.com/${name}`,
+          type: `custom.googleapis.com/${entry.type}`,
           labels: entry.labels ?? {},
         },
         points: [
           {
-            interval: { endTime: { seconds: ts / 1000 } },
+            // if we support non-cumulative metrics this might need to be changed
+            interval: {
+              startTime: { seconds: entry.startTime / 1000 },
+              endTime: { seconds: ts / 1000 },
+            },
             value: serializeValue(entry.type, entry.value),
           },
         ],
@@ -141,32 +157,33 @@ class MetricsWriter {
     }
   }
 
-  async write(instance: InstanceInfo, store: MetricsStore) {
-    if (store.data.length === 0) {
-      log.debug('No metrics to write.')
-    } else {
-      const now = Date.now()
-      const freshEntries = store.data.filter((e) => e.fresh)
-      const body = this.serialize(instance, freshEntries, now)
-      log.debug('Writing GCP metrics.', { body })
-      // if we start using gauge or delta metrics, we will need to reset them here
-      for (const entry of freshEntries) {
-        entry.fresh = false
+  async write(store: MetricsStore) {
+    const now = Date.now()
+    const freshEntries = store.data.filter((e) => e.fresh)
+    if (freshEntries.length > 0) {
+      log.debug('Writing GCP metrics.', { entries: freshEntries })
+      if (!LOCAL_DEV) {
+        if (this.instance == null) {
+          this.instance = await getInstanceInfo()
+          log.debug('Retrieved instance metadata.', {
+            instance: this.instance,
+          })
+        }
+        // if we start using gauge or delta metrics, we will need to reset them here
+        for (const entry of freshEntries) {
+          entry.fresh = false
+        }
+        const body = this.serialize(this.instance, freshEntries, now)
+        await this.client.createTimeSeries(body)
       }
-      await this.client.createTimeSeries(body)
     }
   }
 
   async start(store: MetricsStore, intervalMs: number) {
     if (!this.runInterval) {
-      let instance: InstanceInfo | undefined
       this.runInterval = setInterval(async () => {
         try {
-          if (!instance) {
-            instance = await getInstanceInfo()
-            log.debug('Retrieved instance metadata.', { instance })
-          }
-          await this.write(instance, store)
+          await this.write(store)
         } catch (error) {
           log.error('Failed to write metrics.', { error })
         }
@@ -186,3 +203,5 @@ export function startWriter() {
   writer.start(metrics, 5000)
   return writer
 }
+
+startWriter()
