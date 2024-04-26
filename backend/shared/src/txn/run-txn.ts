@@ -1,12 +1,7 @@
 import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { FieldValue } from 'firebase-admin/firestore'
-import { removeUndefinedProps } from 'common/util/object'
-import {
-  ContractProduceSpiceTxn,
-  ContractOldResolutionPayoutTxn,
-  Txn,
-} from 'common/txn'
+import { Txn } from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
@@ -22,7 +17,7 @@ export async function runTxn(
   pgTransaction: SupabaseTransaction,
   data: TxnData & { fromType: 'USER' }
 ) {
-  const { amount, fromType, fromId, toId, toType } = data
+  const { amount, fromType, fromId, toId, toType, token } = data
 
   if (!isFinite(amount)) {
     throw new APIError(400, 'Invalid amount')
@@ -38,17 +33,36 @@ export async function runTxn(
 
   const firestore = admin.firestore()
 
-  const txn = await insertTxn(pgTransaction, data)
+  await firestore.runTransaction(async (fbTransaction) => {
+    const fromDoc = firestore.doc(`users/${fromId}`)
+    const fromSnap = await fbTransaction.get(fromDoc)
+    if (!fromSnap.exists) {
+      throw new APIError(404, 'User not found')
+    }
+    const fromUser = fromSnap.data() as User
 
-  await firestore
-    .runTransaction(async (fbTransaction) => {
-      const fromDoc = firestore.doc(`users/${fromId}`)
-      const fromSnap = await fbTransaction.get(fromDoc)
-      if (!fromSnap.exists) {
-        throw new APIError(404, 'User not found')
+    if (token === 'SPICE') {
+      if (fromUser.spiceBalance < amount) {
+        throw new APIError(
+          403,
+          `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.spiceBalance}`
+        )
       }
-      const fromUser = fromSnap.data() as User
 
+      // TODO: Track payments received by charities, bank, contracts too.
+      if (toType === 'USER') {
+        const toDoc = firestore.doc(`users/${toId}`)
+        fbTransaction.update(toDoc, {
+          spiceBalance: FieldValue.increment(amount),
+          totalDeposits: FieldValue.increment(amount),
+        })
+      }
+
+      fbTransaction.update(fromDoc, {
+        spiceBalance: FieldValue.increment(-amount),
+        totalDeposits: FieldValue.increment(-amount),
+      })
+    } else if (token === 'M$') {
       if (fromUser.balance < amount) {
         throw new APIError(
           403,
@@ -69,11 +83,12 @@ export async function runTxn(
         balance: FieldValue.increment(-amount),
         totalDeposits: FieldValue.increment(-amount),
       })
-    })
-    .catch((e) => {
-      logFailedTxn(txn)
-      throw e
-    })
+    } else {
+      throw new APIError(400, `Invalid token type: ${token}`)
+    }
+  })
+
+  const txn = await insertTxn(pgTransaction, data)
 
   return txn
 }
@@ -84,7 +99,7 @@ export async function runTxnFromBank(
   affectsProfit = false
 ) {
   const firestore = admin.firestore()
-  const { amount, fromType, toId, toType } = data
+  const { amount, fromType, toId, toType, token } = data
   if (fromType !== 'BANK') {
     throw new APIError(400, 'This method is only for transfers from banks')
   }
@@ -93,21 +108,26 @@ export async function runTxnFromBank(
     throw new APIError(400, 'Invalid amount')
   }
 
+  if (token !== 'SPICE' && token !== 'M$') {
+    throw new APIError(400, `Invalid token type: ${token}`)
+  }
+
   const txn = await insertTxn(pgTransaction, { fromId: 'BANK', ...data })
 
+  const update: { [key: string]: any } = {}
+
+  if (token === 'SPICE') {
+    update.spiceBalance = FieldValue.increment(amount)
+  } else {
+    update.balance = FieldValue.increment(amount)
+  }
+
+  if (!affectsProfit) {
+    update.totalDeposits = FieldValue.increment(amount)
+  }
+
   if (toType === 'USER') {
-    await firestore
-      .doc(`users/${toId}`)
-      .update({
-        balance: FieldValue.increment(amount),
-        ...(affectsProfit
-          ? {}
-          : { totalDeposits: FieldValue.increment(amount) }),
-      })
-      .catch((e) => {
-        logFailedTxn(txn)
-        throw e
-      })
+    await firestore.doc(`users/${toId}`).update(update)
   }
 
   return txn
@@ -118,22 +138,28 @@ export async function insertTxn(
   pgTransaction: SupabaseTransaction,
   txn: TxnData
 ) {
-  const row = await pgTransaction.one<Row<'txns'>>(
-    `insert into txns 
-    (data, amount, from_id, to_id, from_type, to_type, category, token) 
-    values ($1, $2, $3, $4, $5, $6, $7, $8) 
-    returning *`,
-    [
-      JSON.stringify(txn),
-      txn.amount,
-      txn.fromId,
-      txn.toId,
-      txn.fromType,
-      txn.toType,
-      txn.category,
-      txn.token,
-    ]
-  )
+  const row = await pgTransaction
+    .one<Row<'txns'>>(
+      `insert into txns 
+      (data, amount, from_id, to_id, from_type, to_type, category, token) 
+      values ($1, $2, $3, $4, $5, $6, $7, $8) 
+      returning *`,
+      [
+        JSON.stringify(txn),
+        txn.amount,
+        txn.fromId,
+        txn.toId,
+        txn.fromType,
+        txn.toType,
+        txn.category,
+        txn.token,
+      ]
+    )
+    .catch((e) => {
+      logFailedToRecordTxn(txn)
+      throw e
+    })
+
   return convertTxn(row)
 }
 
@@ -155,33 +181,17 @@ export async function insertTxns(
       category: txn.category,
       token: txn.token,
     }))
-  )
-}
-
-/** Throw if insert succeeds but*/
-export function logFailedTxn(txn: Txn) {
-  log.error(
-    `Failed to run ${txn.category} txn ${txn.id}: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toId} `
-  )
-}
-
-export function runContractPayoutTxn(
-  fbTransaction: admin.firestore.Transaction,
-  txnData: Omit<ContractProduceSpiceTxn, 'id' | 'createdTime'>
-) {
-  const firestore = admin.firestore()
-  const { amount, toId, data } = txnData
-  const { deposit } = data
-
-  const toDoc = firestore.doc(`users/${toId}`)
-  fbTransaction.update(toDoc, {
-    spiceBalance: FieldValue.increment(amount),
-    totalDeposits: FieldValue.increment(deposit ?? 0),
+  ).catch((e) => {
+    for (const txn of txns) {
+      logFailedToRecordTxn(txn)
+    }
+    throw e
   })
+}
 
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = { id: newTxnDoc.id, createdTime: Date.now(), ...txnData }
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-
-  return { status: 'success', txn }
+export function logFailedToRecordTxn(txn: TxnData) {
+  log.error(
+    `Failed to record ${txn.category} txn: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toId}`,
+    txn
+  )
 }

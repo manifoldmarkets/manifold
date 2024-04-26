@@ -68,6 +68,7 @@ import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
 import { FLAT_TRADE_FEE, Fees } from 'common/fees'
 import { FieldValue } from 'firebase-admin/firestore'
+import { APIError } from './helpers/endpoint'
 
 const firestore = admin.firestore()
 
@@ -440,26 +441,36 @@ const updateBettingStreak = async (
   contract: Contract,
   eventId: string
 ) => {
-  const ineligibleMessage = 'User has already bet after the reset time'
-  const result = await firestore.runTransaction(async (trans) => {
-    const userDoc = firestore.collection('users').doc(user.id)
-    const bettor = (await trans.get(userDoc)).data() as User
-    const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
-    const lastBetTime = bettor.lastBetTime ?? 0
+  const pg = createSupabaseDirectClient()
 
-    // If they've already bet after the reset time
-    if (lastBetTime > betStreakResetTime)
-      return {
-        message: ineligibleMessage,
-        status: 'error',
+  const { status, newBettingStreak } = await firestore.runTransaction(
+    async (trans) => {
+      const userDoc = firestore.collection('users').doc(user.id)
+      const bettor = (await trans.get(userDoc)).data() as User
+      const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+      const lastBetTime = bettor.lastBetTime ?? 0
+
+      // If they've already bet after the reset time
+      if (lastBetTime > betStreakResetTime) {
+        return { status: 'error', newBettingStreak: 0 }
       }
 
-    const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
-    // Otherwise, add 1 to their betting streak
-    trans.update(userDoc, {
-      currentBettingStreak: newBettingStreak,
-      lastBetTime: bet.createdTime,
-    })
+      const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
+      // Otherwise, add 1 to their betting streak
+      trans.update(userDoc, {
+        currentBettingStreak: newBettingStreak,
+        lastBetTime: bet.createdTime,
+      })
+
+      return { status: 'success', newBettingStreak }
+    }
+  )
+
+  if (status === 'error') {
+    return
+  }
+
+  const result = await pg.tx(async (tx) => {
     // Send them the bonus times their streak
     const bonusAmount = Math.min(
       BETTING_STREAK_BONUS_AMOUNT * newBettingStreak,
@@ -484,16 +495,33 @@ const updateBettingStreak = async (
       description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
     }
-    const { message, txn, status } = await runTxnFromBank(trans, bonusTxn)
-    return { message, txn, status, bonusAmount, newBettingStreak }
+
+    const { message, txn, status } = await runTxnFromBank(tx, bonusTxn)
+      .then((txn) => {
+        return { status: 'success', txn, message: undefined }
+      })
+      .catch((e) => {
+        if (e instanceof APIError) {
+          return { status: 'error', message: e.message, txn: undefined }
+        } else {
+          return {
+            status: 'error',
+            message: e?.message ?? 'Unknown Error',
+            txn: undefined,
+          }
+        }
+      })
+
+    return { message, txn, status, bonusAmount }
   })
 
-  if (result.status != 'success' && result.message != ineligibleMessage) {
+  if (result.status != 'success') {
     log("betting streak bonus txn couldn't be made")
     log('status:', result.status)
     log('message:', result.message)
     return
   }
+
   if (result.txn) {
     await createBettingStreakBonusNotification(
       user,
@@ -501,7 +529,7 @@ const updateBettingStreak = async (
       bet,
       contract,
       result.bonusAmount,
-      result.newBettingStreak,
+      newBettingStreak,
       eventId
     )
   }
@@ -573,20 +601,18 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   // They may still have bet on this previously, use a transaction to be sure
   // we haven't sent creator a bonus already
-  const uniqueBonusResult = await firestore.runTransaction(async (trans) => {
-    const query = firestore
-      .collection('txns')
-      .where('fromType', '==', 'BANK')
-      .where('toId', '==', creatorId)
-      .where('category', '==', 'UNIQUE_BETTOR_BONUS')
-      .where('data.uniqueNewBettorId', '==', bettor.id)
-      .where('data.contractId', '==', contract.id)
-    const queryWithMaybeAnswer = answerId
-      ? query.where('data.answerId', '==', answerId)
-      : query
-    const txnsSnap = await queryWithMaybeAnswer.get()
-    const bonusGivenAlready = txnsSnap.docs.length > 0
-    if (bonusGivenAlready) return undefined
+  const uniqueBonusResult = await pg.tx(async (tx) => {
+    const previousTxn = await tx.oneOrNone(
+      `select * from txns where to_id = $1 
+       and category = 'UNIQUE_BETTOR_BONUS' 
+       and data->data->>'uniqueNewBettorId' = $2
+       and data->data->>'contractId' = $3
+       ${answerId ? `and data->data->>'answerId' = $4` : ''}
+       limit 1`,
+      [creatorId, bettor.id, contract.id, answerId]
+    )
+
+    if (previousTxn) return undefined
 
     const bonusAmount =
       uniqueBettorIds.length > MAX_TRADERS_FOR_BIG_BONUS
@@ -616,11 +642,19 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       data: bonusTxnData,
     }
 
-    return await runTxnFromBank(trans, bonusTxn)
+    try {
+      const txn = await runTxnFromBank(tx, bonusTxn)
+      return { status: 'success', txn, amount: bonusAmount, data: bonusTxnData }
+    } catch (e) {
+      if (e instanceof APIError) {
+        return { status: 'error', message: e.message, txn: undefined }
+      } else {
+        return { status: 'error', message: 'Unknown Error', txn: undefined }
+      }
+    }
   })
 
   if (!uniqueBonusResult) return
-
   if (uniqueBonusResult.status != 'success' || !uniqueBonusResult.txn) {
     log(
       `No bonus for user: ${contract.creatorId} - status:`,

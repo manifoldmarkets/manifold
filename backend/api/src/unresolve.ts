@@ -5,7 +5,6 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { removeUndefinedProps } from 'common/util/object'
 import { FieldValue } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -17,6 +16,7 @@ import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
+import { TxnData, insertTxns } from 'shared/txn/run-txn'
 
 const firestore = admin.firestore()
 
@@ -206,11 +206,13 @@ const undoResolution = async (
   log('With max payout start time ' + maxManaPayoutStartTime)
   const chunkedManaTxns = chunk(manaTxns, 250)
   for (const chunk of chunkedManaTxns) {
+    const txns: TxnData[] = []
     await firestore.runTransaction(async (transaction) => {
       for (const txn of chunk) {
-        undoOldContractPayoutTxn(transaction, txn)
+        txns.push(undoOldContractPayoutTxn(transaction, txn))
       }
     })
+    await pg.tx((tx) => insertTxns(tx, txns))
   }
   log('reverted txns')
 
@@ -253,10 +255,7 @@ export function undoContractPayoutSpiceTxn(
     totalDeposits: FieldValue.increment(-(deposit ?? 0)),
   })
 
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn: ContractUndoProduceSpiceTxn = {
-    id: newTxnDoc.id,
-    createdTime: Date.now(),
+  const txn: Omit<ContractUndoProduceSpiceTxn, 'id' | 'createdTime'> = {
     amount: amount,
     toId: fromId,
     fromType: 'USER',
@@ -267,9 +266,7 @@ export function undoContractPayoutSpiceTxn(
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-
-  return { status: 'success', data: txnData }
+  return txn
 }
 
 export function undoOldContractPayoutTxn(
@@ -284,10 +281,7 @@ export function undoOldContractPayoutTxn(
     totalDeposits: FieldValue.increment(-(deposit ?? 0)),
   })
 
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn: ContractUndoOldResolutionPayoutTxn = {
-    id: newTxnDoc.id,
-    createdTime: Date.now(),
+  const txn: Omit<ContractUndoOldResolutionPayoutTxn, 'id' | 'createdTime'> = {
     amount: amount,
     toId: fromId,
     fromType: 'USER',
@@ -298,7 +292,5 @@ export function undoOldContractPayoutTxn(
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-
-  return { status: 'success', data: txnData }
+  return txn
 }

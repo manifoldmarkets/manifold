@@ -1,8 +1,5 @@
-import * as admin from 'firebase-admin'
-const firestore = admin.firestore()
 import { User } from 'common/user'
 import { QUEST_DETAILS, QuestType } from 'common/quest'
-
 import { QuestRewardTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -20,8 +17,6 @@ import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
 import { WEEK_MS } from 'common/util/time'
-import { as } from 'pg-promise'
-import { API } from 'common/api/schema'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -173,11 +168,11 @@ const awardQuestBonus = async (
     // make sure we don't already have a txn for this user/questType
     const previousTxn = await tx.oneOrNone(
       `select data from txns
-      where data->>'toId' = $1
-      and data->>'category' = 'QUEST_REWARD'
+      where to_id = $1
+      and category = 'QUEST_REWARD'
       and data->data->>'questType' = $2
       and data->data->>'questCount' = $3
-      and data->'createdTime' >= $4
+      and created_time >= millis_to_ts($4)
       limit 1`,
       [user.id, questType, newCount, startOfDay],
       (r: any) => r.data
