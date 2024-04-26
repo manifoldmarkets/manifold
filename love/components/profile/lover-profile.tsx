@@ -21,7 +21,6 @@ import { LikeData, ShipData } from 'common/api/love-types'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
-import { CreateYourMarketButton } from '../widgets/create-your-market-button'
 import { MarketsDisplay } from '../widgets/markets-display'
 import { APIResponse } from 'common/api/schema'
 import { useCompatibleLovers } from 'love/hooks/use-lovers'
@@ -73,9 +72,6 @@ export function LoverProfile(props: {
 
   return (
     <>
-      {isCurrentUser && !fromLoverPage && contractData?.contract === null && (
-        <CreateYourMarketButton className="absolute right-2 top-2 self-end" />
-      )}
       {lover.photo_urls && <ProfileCarousel lover={lover} />}
       <LoverProfileHeader
         user={user}
@@ -186,7 +182,11 @@ function LoverContent(props: {
         mutualLikesBig={!contractData?.contract}
       />
       {!fromLoverPage && lover.looking_for_matches && (
-        <Matches profileLover={lover} profileUserId={user.id} browseData={data} />
+        <Matches
+          profileLover={lover}
+          profileUserId={user.id}
+          browseData={data}
+        />
       )}
       <LoverAbout lover={lover} />
       <LoverBio

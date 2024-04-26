@@ -1,9 +1,9 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { type User } from 'common/user'
-import { Period } from '../firebase/users'
 import { api } from '../firebase/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
+import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 export type { DisplayUser } from 'common/api/user-types'
 
 const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
@@ -42,45 +42,29 @@ export async function getDisplayUsers(userIds: string[]) {
 
 // leaderboards
 
-export async function getProfitRank(profit: number, period: Period) {
-  const { count } = await run(
-    db
-      .from('users')
-      .select('*', { head: true, count: 'exact' })
-      .gt(`data->profitCached->${period}`, profit)
-  )
-  return count + 1
-}
-
-export async function getCreatorRank(traders: number, period: Period) {
-  const { count } = await run(
-    db
-      .from('users')
-      .select('*', { head: true, count: 'exact' })
-      .gt(`data->creatorTraders->${period}`, traders)
-  )
-  return count + 1
-}
-
-export async function getTopTraders(period: Period) {
+export async function getProfitRank(userId: string) {
   const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields, 'profitCached', 'creatorTraders')
-      .order(`data->profitCached->${period}`, {
-        ascending: false,
-      } as any)
-      .limit(25) // add extra for @acc, excluded users
+    db.rpc('profit_rank', {
+      uid: userId,
+      excluded_ids: HIDE_FROM_LEADERBOARD_USER_IDS,
+    })
   )
   return data
 }
 
-export async function getTopCreators(period: Period) {
-  const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields, 'profitCached', 'creatorTraders')
-      .order(`data->creatorTraders->${period}`, {
-        ascending: false,
-      } as any)
-      .limit(20)
-  )
+export async function getCreatorRank(userId: string) {
+  const { data } = await run(db.rpc('creator_rank', { uid: userId }))
+  return data
+}
+
+export async function getTopTraders() {
+  // add extra for @acc, excluded users
+  const { data } = await run(db.rpc('profit_leaderboard', { limit_n: 25 }))
+  return data
+}
+
+export async function getTopCreators() {
+  const { data } = await run(db.rpc('creator_leaderboard', { limit_n: 20 }))
   return data
 }
 

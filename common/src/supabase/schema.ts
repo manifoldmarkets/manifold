@@ -440,7 +440,6 @@ export type Database = {
           group_slugs: string[] | null
           id: string
           importance_score: number | null
-          view_count: number
           is_politics: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
@@ -455,6 +454,7 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
+          view_count: number | null
           visibility: string | null
         }
         Insert: {
@@ -470,7 +470,6 @@ export type Database = {
           group_slugs?: string[] | null
           id: string
           importance_score?: number | null
-          view_count?: number | null
           is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -485,6 +484,7 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
         }
         Update: {
@@ -500,7 +500,6 @@ export type Database = {
           group_slugs?: string[] | null
           id?: string
           importance_score?: number | null
-          view_count?: number | null
           is_politics?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
@@ -515,7 +514,38 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
+          view_count?: number | null
           visibility?: string | null
+        }
+        Relationships: []
+      }
+      creator_portfolio_history: {
+        Row: {
+          fees_earned: number
+          id: number
+          ts: string
+          unique_bettors: number
+          user_id: string
+          views: number
+          volume: number
+        }
+        Insert: {
+          fees_earned: number
+          id?: never
+          ts?: string | null
+          unique_bettors: number
+          user_id: string
+          views: number
+          volume: number
+        }
+        Update: {
+          fees_earned?: number
+          id?: never
+          ts?: string | null
+          unique_bettors?: number
+          user_id?: string
+          views?: number
+          volume?: number
         }
         Relationships: []
       }
@@ -2498,6 +2528,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_portfolio_history_latest: {
+        Row: {
+          balance: number
+          investment_value: number
+          last_calculated: string
+          loan_total: number | null
+          spice_balance: number
+          total_deposits: number
+          ts: string
+          user_id: string
+        }
+        Insert: {
+          balance: number
+          investment_value: number
+          last_calculated: string
+          loan_total?: number | null
+          spice_balance?: number
+          total_deposits: number
+          ts: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          investment_value?: number
+          last_calculated?: string
+          loan_total?: number | null
+          spice_balance?: number
+          total_deposits?: number
+          ts?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_quest_metrics: {
         Row: {
           idempotency_key: string | null
@@ -3553,6 +3616,24 @@ export type Database = {
         }
         Returns: number
       }
+      creator_leaderboard: {
+        Args: {
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          total_traders: number
+          name: string
+          username: string
+          avatar_url: string
+        }[]
+      }
+      creator_rank: {
+        Args: {
+          uid: string
+        }
+        Returns: number
+      }
       extract_text_from_rich_text_json: {
         Args: {
           description: Json
@@ -4248,6 +4329,25 @@ export type Database = {
           millis: number
         }
         Returns: string
+      }
+      profit_leaderboard: {
+        Args: {
+          limit_n: number
+        }
+        Returns: {
+          user_id: string
+          profit: number
+          name: string
+          username: string
+          avatar_url: string
+        }[]
+      }
+      profit_rank: {
+        Args: {
+          uid: string
+          excluded_ids?: string[]
+        }
+        Returns: number
       }
       random_alphanumeric: {
         Args: {

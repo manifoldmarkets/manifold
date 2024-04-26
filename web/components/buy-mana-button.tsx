@@ -11,7 +11,9 @@ import { Button } from './buttons/button'
 import { Row } from './layout/row'
 import { Col } from './layout/col'
 
-export function BuyManaButton(props: { amount: 1000 | 2500 | 10000 | 100000 }) {
+export function BuyManaButton(props: {
+  amount: 10000 | 25000 | 100000 | 1000000
+}) {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
@@ -50,12 +52,13 @@ export function BuyManaButton(props: { amount: 1000 | 2500 | 10000 | 100000 }) {
             setLoading(true)
             postMessageToNative('checkout', { amount })
           }}
+          disabled
         >
           Continue to pay ${amount / 100}
         </Button>
       ) : (
         <form action={checkoutURL(user?.id || '', amount, url)} method="POST">
-          <Button type="submit" color="gradient">
+          <Button type="submit" color="gradient" disabled>
             Continue to pay ${amount / 100}
           </Button>
         </form>

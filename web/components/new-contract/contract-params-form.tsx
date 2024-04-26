@@ -598,24 +598,6 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
-      <Row className="mt-2 items-center gap-2">
-        <span>
-          Publicly listed{' '}
-          <InfoTooltip
-            text={
-              visibility === 'public'
-                ? 'Visible on home page and search results'
-                : "Only visible via link. Won't notify followers"
-            }
-          />
-        </span>
-        <ShortToggle
-          on={visibility === 'public'}
-          setOn={(on) => {
-            setVisibility(on ? 'public' : 'unlisted')
-          }}
-        />
-      </Row>
       <CostSection
         balance={balance}
         amountSuppliedByUser={amountSuppliedByUser}

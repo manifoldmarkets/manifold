@@ -3,7 +3,7 @@ import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { log, isProd } from '../utils'
+import { metrics, log, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
@@ -15,6 +15,12 @@ export const pgp = pgPromise({
       error: err,
       event: e,
     })
+  },
+  query() {
+    metrics.inc('pg/query_count')
+  },
+  connect() {
+    metrics.inc('pg/connections_established')
   },
 })
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt

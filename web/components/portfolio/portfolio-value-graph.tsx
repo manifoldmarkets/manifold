@@ -30,7 +30,6 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 export const PortfolioGraph = (props: {
   mode: GraphMode
   duration?: Period
-  // points: HistoryPoint<Partial<PortfolioMetrics>>[]
   portfolioHistory: PortfolioSnapshot[]
   width: number
   height: number

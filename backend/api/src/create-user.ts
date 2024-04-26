@@ -13,7 +13,6 @@ import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import {
-  ENV_CONFIG,
   LOVE_DOMAIN,
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
@@ -67,11 +66,6 @@ export const createuser: APIHandler<'createuser'> = async (
       ? process.env.IS_MANIFOLD_LOVE === 'true'
       : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
     undefined
-
-  const fromPolitics =
-    (host?.includes('localhost')
-      ? process.env.IS_MANIFOLD_POLITICS === 'true'
-      : host?.includes(ENV_CONFIG.politicsDomain)) || undefined
 
   const ip = getIp(req)
   const deviceToken = testUserAKAEmailPasswordUser
@@ -140,7 +134,6 @@ export const createuser: APIHandler<'createuser'> = async (
             (ip && bannedIpAddresses.includes(ip))
         ),
         fromLove,
-        fromPolitics,
         signupBonusPaid: 0,
         verifiedPhone: testUserAKAEmailPasswordUser,
       })

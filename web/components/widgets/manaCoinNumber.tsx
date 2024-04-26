@@ -24,7 +24,7 @@ export function CoinNumber(props: {
         isInline && 'relative ml-[1.1em] inline-flex items-baseline'
       )}
     >
-      {amount !== undefined && amount < 0 && '-'}
+      {amount !== undefined && amount <= -1 && '-'}
       {!!isSpice ? (
         <SpiceCoin
           className={clsx(isInline && 'absolute -left-[1.1em] top-[0.25em]')}

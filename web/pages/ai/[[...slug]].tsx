@@ -26,12 +26,11 @@ import { getContract } from 'web/lib/supabase/contracts'
 import { contractPath, CPMMNumericContract } from 'common/contract'
 import { getExpectedValue } from 'common/multi-numeric'
 import { Clock } from 'web/components/clock/clock'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import Link from 'next/link'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
+import { useMultiNumericContract } from 'web/hooks/use-multi-numeric-contract'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -126,13 +125,7 @@ function MultiDashboard(props: MultiDashboardProps) {
     ENDPOINT,
     TOP_SLUG
   )
-  const whenAgi =
-    (useFirebasePublicContract(
-      'public',
-      props.whenAgi.id
-    ) as CPMMNumericContract) ?? props.whenAgi
-  const answers = useAnswersCpmm(whenAgi.id)
-  if (answers) whenAgi.answers = answers
+  const whenAgi = useMultiNumericContract(props.whenAgi)
 
   const user = useUser()
   const expectedValueAGI = getExpectedValue(whenAgi)

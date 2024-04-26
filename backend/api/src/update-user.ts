@@ -28,7 +28,7 @@ const bodySchema = z
   })
   .strict()
 
-export const changeuserinfo = authEndpoint(async (req, auth) => {
+export const updateUser = authEndpoint(async (req, auth) => {
   const { username, name, avatarUrl } = validate(bodySchema, req.body)
 
   const user = await getUser(auth.uid)
@@ -44,7 +44,7 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
   }
 
   try {
-    await changeUser(user, {
+    await updateUserInternal(user, {
       username: cleanedUsername,
       name,
       avatarUrl,
@@ -56,7 +56,7 @@ export const changeuserinfo = authEndpoint(async (req, auth) => {
   }
 })
 
-export const changeUser = async (
+export const updateUserInternal = async (
   user: User,
   update: {
     username?: string
@@ -89,6 +89,25 @@ export const changeUser = async (
     bulkWriter.update(ref, contractUpdate)
   }
   log(`Updated ${contractRows.length} contracts.`)
+  const commentIds = await pg.map(
+    `update contract_comments
+     set data = jsonb_set(jsonb_set(jsonb_set(
+             data, 
+             '{userName}',$2::jsonb,true),
+             '{userUsername}',$3::jsonb,true),
+             '{userAvatarUrl}',$4::jsonb,true)
+     where user_id = $1
+     returning comment_id
+     `,
+    [
+      user.id,
+      JSON.stringify(update.name ?? user.name),
+      JSON.stringify(update.username ?? user.username),
+      JSON.stringify(update.avatarUrl ?? user.avatarUrl),
+    ],
+    (row) => row.comment_id
+  )
+  log(`Updated ${commentIds.length} comments.`)
 
   log('Updating denormalized user data on bets...')
   const betRows = await pg.manyOrNone(

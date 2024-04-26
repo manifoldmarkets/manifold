@@ -48,6 +48,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
+import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -98,6 +99,7 @@ export function FeedContractCard(props: {
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isStonk = outcomeType === 'STONK'
+  const isNumber = outcomeType === 'NUMBER'
   const isClosed = closeTime && closeTime < Date.now()
   const path = contractPath(contract)
   const metrics = useSavedContractMetrics(contract)
@@ -266,6 +268,7 @@ export function FeedContractCard(props: {
               labels={{ yes: 'Buy', no: 'Short' }}
             />
           )}
+          {isNumber && <NumericBetButton contract={contract} user={user} />}
         </Col>
       </Col>
 

@@ -15,7 +15,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
-export const SPICE_TO_CHARITY_CONVERSION_RATE = 100
+export const SPICE_TO_CHARITY_CONVERSION_RATE = (1 / 1000) * 0.95
 export const SPICE_NAME = 'WinPoint'
 
 export const DASHBOARD_ENABLED = ENV === 'DEV'
@@ -159,7 +159,7 @@ export const BOT_USERNAMES = [
 
 export const MOD_IDS = [
   'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
-  'uyzAXSRdCCUWs4KstCLq2GfzAip2', // BoltonBailey
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //bayesian
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
@@ -185,6 +185,7 @@ export const MOD_IDS = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
   'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
+  'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
 ]
@@ -321,6 +322,11 @@ export const OPTED_OUT_OF_LEAGUES = [
   'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
   'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+]
+
+export const HIDE_FROM_LEADERBOARD_USER_IDS = [
+  'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
+  'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
 ]
 
 export const HOUSE_BOT_USERNAME = 'acc'

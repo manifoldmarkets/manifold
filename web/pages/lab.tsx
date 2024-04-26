@@ -28,26 +28,16 @@ export default function LabsPage() {
           </LabLink>
         </div>
       </div>
-      <LabCard
-        title="💌 Manifold.love"
-        description="Crowd source your long term matches!"
-        href="https://manifold.love"
-      />
       <LabSection>
         <LabCard
-          title="🎁 Loot Box"
-          description="Invest in random questions"
-          href="/lootbox"
+          title="💌 Manifold.love"
+          description="Crowd source your long term matches!"
+          href="https://manifold.love"
         />
         <LabCard
           title="📂 Portfolios"
           description="Curate in a set of positions to invest in"
           href="/portfolios"
-        />
-        <LabCard
-          title="💸 Manalinks"
-          description={`Send mana via QR code`}
-          href="/links"
         />
         <LabCard
           title="🎤 Mana-chan"

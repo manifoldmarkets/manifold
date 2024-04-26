@@ -15,6 +15,7 @@ import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
 import { MINUTE_MS } from 'common/util/time'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
+import { updateCreatorMetricsCore } from 'shared/update-creator-metrics-core'
 
 export function createJobs() {
   return [
@@ -66,6 +67,11 @@ export function createJobs() {
       '0 * * * * *', // every minute
       updateUserMetricsCore,
       10 * MINUTE_MS // The caches take time to build
+    ),
+    createJob(
+      'update-creator-metrics',
+      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
+      updateCreatorMetricsCore
     ),
     // Daily jobs:
     createJob(

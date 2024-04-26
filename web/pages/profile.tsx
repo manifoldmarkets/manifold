@@ -12,7 +12,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
-import { changeUserInfo } from 'web/lib/firebase/api'
+import { updateUserApi } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
 import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
@@ -83,7 +83,7 @@ export default function ProfilePage(props: {
 
     await uploadImage(user.username, file)
       .then(async (url) => {
-        await changeUserInfo({ avatarUrl: url })
+        await updateUserApi({ avatarUrl: url })
         setAvatarUrl(url)
         setAvatarLoading(false)
       })

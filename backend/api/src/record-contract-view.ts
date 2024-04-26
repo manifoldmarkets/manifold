@@ -3,6 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
+import { metrics } from 'shared/gcp-metrics'
 
 const VIEW_COLUMNS = {
   card: ['last_card_view_ts', 'card_views'],
@@ -26,6 +27,7 @@ export const recordContractView: APIHandler<'record-contract-view'> = async (
   }
   if (!viewsByContract[contractId]) viewsByContract[contractId] = []
   viewsByContract[contractId].push(body)
+  metrics.inc('app/contract_view_count', { contract_id: contractId })
   return {
     result: { status: 'success' },
     continue: async () => {
@@ -56,6 +58,7 @@ const processViewQueue = async () => {
         const { userId, kind, contractId } = viewEvent
         const [ts_column, count_column] = VIEW_COLUMNS[kind]
 
+        // Ignores consecutive views by the same user on same contract within 1 minute
         const userPageViews = await pg.oneOrNone(
           `insert into user_contract_views as ucv (user_id, contract_id, $3:name, $4:name)
              values ($1, $2, now(), 1)
@@ -69,7 +72,13 @@ const processViewQueue = async () => {
           [userId ?? null, contractId, ts_column, count_column],
           (r) => r?.page_views
         )
-        // Ignores consecutive views by the same user on same contract within 1 minute
+        if (userId && userPageViews) {
+          await pg.none(
+            `insert into user_view_events(user_id, contract_id, name)
+             values ($1, $2, $3)`,
+            [userId, contractId, kind]
+          )
+        }
         if (userPageViews && kind === 'page') {
           await pg.none(
             `update contracts set view_count = view_count + 1 where id = $1`,

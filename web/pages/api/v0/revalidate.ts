@@ -37,6 +37,7 @@ export default async function handler(
     res.revalidate(pathToRevalidate)
     return res.json({ revalidated: true })
   } catch (err) {
-    return res.status(500).send('Error revalidating')
+    console.error('Unknown error revalidating:', err)
+    return res.status(500).json({ error: 'Unknown error revalidating' })
   }
 }

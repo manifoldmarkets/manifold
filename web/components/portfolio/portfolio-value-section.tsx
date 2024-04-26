@@ -35,9 +35,10 @@ import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
+    currentUser: User | null | undefined
     user: User
     defaultTimePeriod: Period
-    lastUpdatedTime: number | undefined
+    lastUpdatedTime?: number | undefined
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
@@ -57,6 +58,7 @@ export const PortfolioValueSection = memo(
       preloadPoints,
       size = 'md',
       balanceChanges,
+      currentUser,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)

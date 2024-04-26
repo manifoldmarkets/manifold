@@ -1,7 +1,7 @@
 import { Col } from 'web/components/layout/col'
 import { Leaderboard } from 'web/components/leaderboard'
 import { Page } from 'web/components/layout/page'
-import { Period, User } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
 import { formatMoney, formatWithCommas } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { Title } from 'web/components/widgets/title'
@@ -32,9 +32,10 @@ import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
 import { filterDefined } from 'common/util/array'
+import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 
 export async function getStaticProps() {
-  const allTime = await queryLeaderboardUsers('allTime').catch(() => ({
+  const allTime = await queryLeaderboardUsers().catch(() => ({
     topTraders: [],
     topCreators: [],
   }))
@@ -50,14 +51,14 @@ export async function getStaticProps() {
   }
 }
 
-const EXCLUDED_USERNAMES = ['acc', 'ManifoldLove']
-
-const queryLeaderboardUsers = async (period: Period) => {
+const queryLeaderboardUsers = async () => {
   const [topTraders, topCreators] = await Promise.all([
-    getTopTraders(period).then((users) =>
-      users.filter((u) => !EXCLUDED_USERNAMES.includes(u.username)).slice(0, 20)
+    getTopTraders().then((users) =>
+      users
+        .filter((u) => !HIDE_FROM_LEADERBOARD_USER_IDS.includes(u.user_id))
+        .slice(0, 20)
     ),
-    getTopCreators(period),
+    getTopCreators(),
   ])
   return {
     topTraders,
@@ -65,10 +66,9 @@ const queryLeaderboardUsers = async (period: Period) => {
   }
 }
 
-type Leaderboard = {
-  topTraders: User[]
-  topCreators: User[]
-}
+type Leaderboard = Awaited<ReturnType<typeof queryLeaderboardUsers>>
+type ReferralLeaderboard = Awaited<ReturnType<typeof getTopReferrals>>
+
 type Ranking = {
   profitRank: number
   tradersRank: number
@@ -77,7 +77,7 @@ type Ranking = {
 
 export default function Leaderboards(props: {
   allTime: Leaderboard
-  topReferrals: Awaited<ReturnType<typeof getTopReferrals>>
+  topReferrals: ReferralLeaderboard
 }) {
   const [myRanks, setMyRanks] = useState<Ranking>()
   const [userReferralInfo, setUserReferralInfo] =
@@ -89,14 +89,9 @@ export default function Leaderboards(props: {
     if (!user?.profitCached) return
     ;(async () => {
       const rankings = {} as Ranking
-      const myProfit = user.profitCached?.allTime
-      if (myProfit != null) {
-        rankings.profitRank = await getProfitRank(myProfit, 'allTime')
-      }
-      const myTraders = user.creatorTraders?.allTime
-      if (myTraders != null) {
-        rankings.tradersRank = await getCreatorRank(myTraders, 'allTime')
-      }
+      rankings.profitRank = await getProfitRank(user.id)
+      rankings.tradersRank = await getCreatorRank(user.id)
+
       const referrerInfo = await getUserReferralsInfo(user.id, db)
       setUserReferralInfo(referrerInfo)
       rankings.referralsRank = referrerInfo.rank
@@ -133,13 +128,35 @@ export default function Leaderboards(props: {
   const { topTraders, topCreators } = props.allTime
 
   const topTraderEntries = (
-    topic && topTopicTraders ? topTopicTraders : topTraders
+    topic && topTopicTraders
+      ? topTopicTraders.map((u) => ({
+          ...u,
+          score: u.profitCached.allTime,
+        }))
+      : topTraders.map((u) => ({
+          name: u.name,
+          username: u.username,
+          avatarUrl: u.avatar_url,
+          score: u.profit,
+          id: u.user_id,
+        }))
   ).map((user, i) => ({
     ...user,
     rank: i + 1,
   }))
   const topCreatorEntries = (
-    topic && topTopicCreators ? topTopicCreators : topCreators
+    topic && topTopicCreators
+      ? topTopicCreators.map((u) => ({
+          ...u,
+          score: u.creatorTraders.allTime,
+        }))
+      : topCreators.map((u) => ({
+          name: u.name,
+          username: u.username,
+          avatarUrl: u.avatar_url,
+          score: u.total_traders,
+          id: u.user_id,
+        }))
   ).map((user, i) => ({
     ...user,
     rank: i + 1,
@@ -150,13 +167,21 @@ export default function Leaderboards(props: {
       myRanks.profitRank != null &&
       !topTraderEntries.find((x) => x.id === user.id)
     ) {
-      topTraderEntries.push({ ...user, rank: myRanks.profitRank })
+      topTraderEntries.push({
+        ...user,
+        score: user.profitCached.allTime,
+        rank: myRanks.profitRank,
+      })
     }
     if (
       myRanks.tradersRank != null &&
       !topCreatorEntries.find((x) => x.id === user.id)
     ) {
-      topCreatorEntries.push({ ...user, rank: myRanks.tradersRank })
+      topCreatorEntries.push({
+        ...user,
+        score: user.creatorTraders.allTime,
+        rank: myRanks.tradersRank,
+      })
     }
     // Currently only set for allTime
     if (
@@ -217,7 +242,7 @@ export default function Leaderboards(props: {
             columns={[
               {
                 header: 'Profit',
-                renderCell: (user) => formatMoney(user.profitCached.allTime),
+                renderCell: (user) => formatMoney(user.score),
               },
             ]}
             highlightUsername={user?.username}
@@ -229,8 +254,7 @@ export default function Leaderboards(props: {
             columns={[
               {
                 header: 'Traders',
-                renderCell: (user) =>
-                  formatWithCommas(user.creatorTraders.allTime),
+                renderCell: (user) => formatWithCommas(user.score),
               },
             ]}
             highlightUsername={user?.username}

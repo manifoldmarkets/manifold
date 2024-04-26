@@ -75,7 +75,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     closeTime: closeTimeRaw,
     outcomeType,
     groupIds,
-    visibility,
     extraLiquidity,
     isTwitchContract,
     utcOffset,
@@ -94,6 +93,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     isLove,
     specialLiquidityPerAnswer,
   } = validateMarketBody(body)
+
+  if (outcomeType === 'BOUNTIED_QUESTION') {
+    throw new APIError(400, 'Bountied questions are not currently enabled.')
+  }
+
+  const visibility = 'public'
 
   const userId = auth.uid
   const user = await getUser(userId)

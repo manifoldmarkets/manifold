@@ -3,7 +3,7 @@ import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { Answer } from 'common/answer'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { capitalize, debounce, find, first, minBy, sumBy } from 'lodash'
 import clsx from 'clsx'
 import { formatMoney, formatPercent } from 'common/util/format'
@@ -36,6 +36,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
+import { useMultiNumericContract } from 'web/hooks/use-multi-numeric-contract'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -44,15 +45,16 @@ export const NumericBetPanel = (props: {
     about: string
     higher: string
   }
+  mode?: 'less than' | 'more than' | 'about right'
 }) => {
   const {
-    contract,
     labels = {
       lower: 'Lower',
       about: 'About right',
       higher: 'Higher',
     },
   } = props
+  const contract = useMultiNumericContract(props.contract)
   const { answers, min: minimum, max: maximum } = contract
   const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
@@ -64,7 +66,10 @@ export const NumericBetPanel = (props: {
   const [debouncedAmount, setDebouncedAmount] = useState(betAmount)
   const [mode, setMode] = useState<
     'less than' | 'more than' | 'about right' | undefined
-  >(undefined)
+  >(props.mode)
+  useEffect(() => {
+    if (props.mode) changeMode(props.mode)
+  }, [props.mode])
   const isAdvancedTrader = useIsAdvancedTrader()
   const [showDistribution, setShowDistribution] = useState(true)
   const [error, setError] = useState<string | undefined>()

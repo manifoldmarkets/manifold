@@ -7,7 +7,7 @@ import { log, withLogContext } from 'shared/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
-import { changeuserinfo } from './change-user-info'
+import { updateUser } from './update-user'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -346,7 +346,7 @@ Object.entries(handlers).forEach(([path, handler]) => {
 app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
-app.post('/changeuserinfo', ...apiRoute(changeuserinfo))
+app.post('/update-user', ...apiRoute(updateUser))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
