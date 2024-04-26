@@ -18,6 +18,8 @@ import { Input } from 'web/components/widgets/input'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { AlertBox } from 'web/components/widgets/alert-box'
+import { ExternalLink } from 'web/components/widgets/external-link'
 
 export async function getStaticProps() {
   try {
@@ -141,10 +143,14 @@ export default function Charity(props: {
             )}
           </div>
 
-          <div className="text-ink-500 mt-2">
-            Starting May 1st, only Win Points (not mana) will be redeemable for
-            charity.
-          </div>
+          <AlertBox title="Charity program is changing" className="mt-4">
+            In preparation for the upcoming move to real cash prizes, after May
+            15th, only Prize Points (not mana) will be donatable. <br />
+            <ExternalLink
+              title="Read more here"
+              href="https://manifoldmarkets.notion.site/A-New-Deal-for-Manifold-c6e9de8f08b549859c64afb3af1dd393"
+            />
+          </AlertBox>
 
           <DonatedStats
             stats={[
