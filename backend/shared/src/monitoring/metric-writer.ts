@@ -108,7 +108,7 @@ class MetricWriter {
     }
   }
 
-  async start() {
+  start() {
     if (!this.runInterval) {
       this.runInterval = setInterval(async () => {
         try {
@@ -120,9 +120,9 @@ class MetricWriter {
     }
   }
 
-  async stop() {
+  stop() {
     clearTimeout(this.runInterval)
   }
 }
 
-export const writer = new MetricWriter(metrics, METRICS_INTERVAL_MS)
+export const METRIC_WRITER = new MetricWriter(metrics, METRICS_INTERVAL_MS)

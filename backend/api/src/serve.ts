@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin'
 import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { log } from 'shared/utils'
+import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
@@ -9,6 +10,8 @@ if (LOCAL_DEV) {
 } else {
   admin.initializeApp()
 }
+
+METRIC_WRITER.start()
 
 import { app } from './app'
 import { initCaches } from 'api/helpers/init-caches'

@@ -1,5 +1,6 @@
 import { Cron, CronOptions } from 'croner'
-import { log, withLogContext } from 'shared/monitoring/log'
+import { log } from 'shared/monitoring/log'
+import { withMonitoringContext } from 'shared/monitoring/context'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 
@@ -34,8 +35,8 @@ export function createJob(
   const opts = { name, ...DEFAULT_OPTS }
   return Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
-    const logContext = { job: name, traceId }
-    return await withLogContext(logContext, async () => {
+    const context = { job: name, traceId }
+    return await withMonitoringContext(context, async () => {
       log('Starting up.')
       const db = createSupabaseClient()
 

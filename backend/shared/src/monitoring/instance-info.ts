@@ -1,5 +1,3 @@
-/// Gets GCP instance info from the local instance metadata service.
-
 import { last } from 'lodash'
 import * as metadata from 'gcp-metadata'
 
@@ -9,6 +7,7 @@ export type InstanceInfo = {
   zone: string
 }
 
+/** Gets GCP instance info from the local instance metadata service. */
 export async function getInstanceInfo() {
   const [projectId, instanceId, fqZone] = await Promise.all([
     metadata.project('project-id'),
