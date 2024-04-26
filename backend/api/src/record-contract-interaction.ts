@@ -1,6 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 
 export const recordContractInteraction: APIHandler<
   'record-contract-interaction'
@@ -18,7 +18,7 @@ export const recordContractInteraction: APIHandler<
   const pg = createSupabaseDirectClient()
   await pg.none(
     `
-    insert into user_contract_interactions 
+    insert into user_contract_interactions
         (
           user_id,
           contract_id,

@@ -1,7 +1,7 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { sum, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
 
 type groupIdsToConversionScore = {

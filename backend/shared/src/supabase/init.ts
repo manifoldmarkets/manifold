@@ -7,7 +7,7 @@ import { metrics, log, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
-import { METRICS_INTERVAL_MS } from 'shared/gcp-metrics'
+import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {

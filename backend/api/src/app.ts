@@ -3,7 +3,7 @@ import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log, withLogContext } from 'shared/log'
+import { log, withLogContext } from 'shared/monitoring/log'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'

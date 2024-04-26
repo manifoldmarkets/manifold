@@ -1,7 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { log } from 'shared/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isProd } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const twilio = require('twilio')

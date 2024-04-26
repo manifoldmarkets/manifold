@@ -1,6 +1,6 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { run } from 'common/supabase/utils'
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,

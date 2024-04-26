@@ -1,5 +1,5 @@
 import { Cron, CronOptions } from 'croner'
-import { log, withLogContext } from 'shared/log'
+import { log, withLogContext } from 'shared/monitoring/log'
 import * as crypto from 'crypto'
 import { createSupabaseClient } from 'shared/supabase/init'
 
