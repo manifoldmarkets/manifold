@@ -105,12 +105,8 @@ class MetricsStore {
   }
   set(type: MetricType, val: number, labels?: Record<string, string>) {
     const entry = this.getOrCreate(type, labels)
-    // mqp: not sure whether there is value to marking data as fresh when it
-    // didn't change and sending a no-op update to GCP, but default to terse
-    if (entry.value != val) {
-      entry.value = val
-      entry.fresh = true
-    }
+    entry.value = val
+    entry.fresh = true
   }
   inc(type: MetricType, labels?: Record<string, string>) {
     const entry = this.getOrCreate(type, labels)
@@ -205,11 +201,11 @@ class MetricsWriter {
     const now = Date.now()
     const freshEntries = store.freshEntries()
     if (freshEntries.length > 0) {
-      log.debug('Writing GCP metrics.', { entries: freshEntries })
       for (const entry of freshEntries) {
         entry.fresh = false
       }
       if (!LOCAL_DEV) {
+        log.debug('Writing GCP metrics.', { entries: freshEntries })
         if (this.instance == null) {
           this.instance = await getInstanceInfo()
           log.debug('Retrieved instance metadata.', {
