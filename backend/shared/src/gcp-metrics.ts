@@ -36,6 +36,22 @@ const CUSTOM_METRICS = {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
+  'pg/connections_terminated': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'pg/connections_acquired': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'pg/connections_released': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'pg/pool_connections': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
   'vercel/revalidations_succeeded': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',

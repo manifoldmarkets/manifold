@@ -7,6 +7,7 @@ import { metrics, log, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
+import { METRICS_INTERVAL_MS } from 'shared/gcp-metrics'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -18,9 +19,6 @@ export const pgp = pgPromise({
   },
   query() {
     metrics.inc('pg/query_count')
-  },
-  connect() {
-    metrics.inc('pg/connections_established')
   },
 })
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
@@ -78,7 +76,7 @@ export function createSupabaseDirectClient(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
-  pgpDirect = pgp({
+  const client = pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
     user: `postgres`,
@@ -86,5 +84,16 @@ export function createSupabaseDirectClient(
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
-  return pgpDirect
+  const pool = client.$pool
+  pool.on('connect', () => metrics.inc('pg/connections_established'))
+  pool.on('remove', () => metrics.inc('pg/connections_terminated'))
+  pool.on('acquire', () => metrics.inc('pg/connections_acquired'))
+  pool.on('release', () => metrics.inc('pg/connections_released'))
+  setInterval(() => {
+    metrics.set('pg/pool_connections', pool.waitingCount, { state: 'waiting' })
+    metrics.set('pg/pool_connections', pool.idleCount, { state: 'idle' })
+    metrics.set('pg/pool_connections', pool.expiredCount, { state: 'expired' })
+    metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
+  }, METRICS_INTERVAL_MS)
+  return (pgpDirect = client)
 }
