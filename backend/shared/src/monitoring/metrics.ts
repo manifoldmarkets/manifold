@@ -73,6 +73,7 @@ export type MetricStoreEntry = {
   value: number
 }
 
+/** Records metric values by type and labels for later export. */
 export class MetricStore {
   // { name: [...entries of that metric with different label values] }
   data: Map<MetricType, MetricStoreEntry[]>
@@ -120,4 +121,5 @@ export class MetricStore {
   }
 }
 
+/** The global metric store. */
 export const metrics = new MetricStore()

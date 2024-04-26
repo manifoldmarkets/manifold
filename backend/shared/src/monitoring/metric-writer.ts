@@ -71,7 +71,8 @@ function serializeEntries(
   }))
 }
 
-class MetricWriter {
+/** Writes metrics out to GCP's API from a metric store on an interval. */
+export class MetricWriter {
   client: MetricServiceClient
   store: MetricStore
   intervalMs: number
