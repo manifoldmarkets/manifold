@@ -1,12 +1,11 @@
 import { ITask } from 'pg-promise'
-import { IClient } from 'pg-promise/typescript/pg-subset'
 import { pgp } from './init'
 
 // assumes dashboard exists, user authed
 export const updateDashboardGroups = async (
   dashboardId: string,
   groupsIds: string[],
-  txn: ITask<IClient>
+  txn: ITask<{}>
 ) => {
   // delete all dashboard_groups
   txn.none(`delete from dashboard_groups where dashboard_id = $1`, [
