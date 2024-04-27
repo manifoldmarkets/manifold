@@ -25,8 +25,6 @@ export const pgp = pgPromise({
     } else if (ctx?.job) {
       metrics.inc('pg/query_count', { job: ctx.job })
     } else {
-      // mqp: not sure what these queries are. so log them
-      log.debug(`Query: ${ev.query}`)
       metrics.inc('pg/query_count')
     }
   },
