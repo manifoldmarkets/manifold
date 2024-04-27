@@ -1,9 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { log } from 'shared/utils'
+import { log, metrics } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
-import { metrics } from 'shared/gcp-metrics'
 
 const VIEW_COLUMNS = {
   card: ['last_card_view_ts', 'card_views'],
