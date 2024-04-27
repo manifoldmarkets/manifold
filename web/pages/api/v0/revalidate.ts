@@ -24,7 +24,13 @@ export default async function handler(
       return res.status(400).json(e)
     }
     console.error(`Unknown error during validation: ${e}`)
-    return res.status(500).json({ error: 'Unknown error during validation' })
+    return res.status(500).json({
+      error: e,
+      message:
+        typeof e === 'object' && e && 'message' in e
+          ? e.message
+          : 'Unknown error revalidating',
+    })
   }
 
   const { apiSecret, pathToRevalidate } = params
@@ -37,7 +43,13 @@ export default async function handler(
     res.revalidate(pathToRevalidate)
     return res.json({ revalidated: true })
   } catch (err) {
-    console.error('Unknown error revalidating:', err)
-    return res.status(500).json({ error: 'Unknown error revalidating' })
+    console.error('Error revalidating:', err)
+    return res.status(500).json({
+      error: err,
+      message:
+        typeof err === 'object' && err && 'message' in err
+          ? err.message
+          : 'Unknown error revalidating',
+    })
   }
 }
