@@ -39,17 +39,19 @@ export default async function handler(
     return res.status(401).json({ message: 'Invalid api secret' })
   }
 
-  try {
-    res.revalidate(pathToRevalidate)
-    return res.json({ revalidated: true })
-  } catch (err) {
-    console.error('Error revalidating:', err)
-    return res.status(500).json({
-      error: err,
-      message:
-        typeof err === 'object' && err && 'message' in err
-          ? err.message
-          : 'Unknown error revalidating',
+  return await res
+    .revalidate(pathToRevalidate)
+    .then(() => {
+      return res.json({ revalidated: true })
     })
-  }
+    .catch((err) => {
+      console.error('Error revalidating:', err)
+      return res.status(500).json({
+        error: err,
+        message:
+          typeof err === 'object' && err && 'message' in err
+            ? err.message
+            : 'Unknown error revalidating',
+      })
+    })
 }
