@@ -3,7 +3,7 @@ import pgPromise = require('pg-promise')
 import pg = require('pg-promise/typescript/pg-subset')
 
 export const saveCalibrationData = async (
-  pg: pgPromise.IDatabase<pg.IClient, pg.IClient>
+  pg: pgPromise.IDatabase<{}, pg.IClient>
 ) => {
   const bets = await pg.many('select * from sample_resolved_bets(15, 0.02)')
   const n = bets?.length ?? 0
