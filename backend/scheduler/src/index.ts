@@ -11,6 +11,7 @@ import { isProd } from 'shared/utils'
 import { log } from 'shared/utils'
 import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
+import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
@@ -22,6 +23,8 @@ const indexTemplate = loadTemplate('index.hbs')
 
 const app = express()
 app.use(express.json())
+
+METRIC_WRITER.start()
 
 const server = app.listen(PORT, async () => {
   await initSecrets()
