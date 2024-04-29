@@ -131,6 +131,24 @@ At Topos, we pioneer emerging mathematical sciences of connection and integratio
     The Fund manager recommends grants to GiveWell top charities as a baseline, but will recommend higher-risk grants they believe to be more effective (in expectation) than GiveWell top charities. As such, the fund makes grants with a variety of different risk profiles.`,
   },
   {
+    name: 'Qualia Research Institute',
+    website: 'https://qri.org/',
+    photo: 'https://i.imgur.com/vBeACn7.png',
+    preview: 'Building a New Science of Consciousness',
+    description:
+      'Founded in 2018, the Qualia Research Institute (QRI) is a 501(c)(3) non-profit developing a mathematical formalization for subjective experience and its emotional valence. Our rigorous research and theoretical insights, driven by the Importance-Tractability-Neglectedness (ITN) framework, are directed towards mapping the state-space of consciousness. We maintain a collaborative network of academics, independent researchers, and thought leaders, all dedicated to suffering-focused ethics and creating technologies optimizing the well-being of sentient beings.',
+  },
+  {
+    name: 'Karin Foundation',
+    website: 'https://buraoacademy.org/give',
+    photo: 'https://i.imgur.com/Rlhqm6M.png',
+    preview:
+      'Dedicating to providing a rigorous STEM curriculum to Somali youth.',
+    description:
+      "It's our mission to provide Somali youth with a rigorous STEM curriculum, supported by environmental studies and stewardship, career training and community service.",
+    ein: '26-4466118',
+  },
+  {
     name: 'Animal Welfare Fund',
     website: 'https://funds.effectivealtruism.org/funds/animal-welfare',
     photo: 'https://i.imgur.com/C2qka9g.png',
