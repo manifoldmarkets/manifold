@@ -36,7 +36,7 @@ export const awardBounty = async (props: {
   }
 
   const pg = createSupabaseDirectClient()
-  await pg
+  return await pg
     .tx(async (tx) => {
       const txn = await runAwardBountyTxn(
         tx,

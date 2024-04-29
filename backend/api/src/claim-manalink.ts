@@ -18,10 +18,9 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
+  await pg.tx(async (tx) => {
     // Look up the manalink
-    const manalink = await pg.oneOrNone<Row<'manalinks'>>(
+    const manalink = await tx.oneOrNone<Row<'manalinks'>>(
       `select * from manalinks where id = $1`,
       [slug]
     )
@@ -32,7 +31,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
     const { amount, creator_id, expires_time, max_uses } = manalink
 
-    const claimedUserIds = await pg.map(
+    const claimedUserIds = await tx.map(
       `select txns.data from manalink_claims
          join txns on txns.id = manalink_claims.txn_id
          where manalink_id = $1`,
@@ -42,20 +41,6 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
     if (auth.uid === creator_id)
       throw new APIError(403, `You can't claim your own manalink`)
-
-    const fromDoc = firestore.doc(`users/${creator_id}`)
-    const fromSnap = await transaction.get(fromDoc)
-    if (!fromSnap.exists) {
-      throw new APIError(500, `User ${creator_id} not found`)
-    }
-    const fromUser = fromSnap.data() as User
-
-    const { canSend, message } = await canSendMana(fromUser, () =>
-      getUserPortfolioInternal(fromUser.id)
-    )
-    if (!canSend) {
-      throw new APIError(403, message)
-    }
 
     // Only permit one redemption per user per link
     if (claimedUserIds.includes(auth.uid)) {
@@ -76,29 +61,38 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       )
     }
 
-    if (fromUser.balance < amount) {
-      throw new APIError(
-        403,
-        `Insufficient balance: ${fromUser.name} needed ${amount} for this manalink but only had ${fromUser.balance} `
+    const toUser = await firestore.runTransaction(async (transaction) => {
+      const fromDoc = firestore.doc(`users/${creator_id}`)
+      const fromSnap = await transaction.get(fromDoc)
+      if (!fromSnap.exists) {
+        throw new APIError(500, `User ${creator_id} not found`)
+      }
+      const fromUser = fromSnap.data() as User
+
+      const { canSend, message } = await canSendMana(fromUser, () =>
+        getUserPortfolioInternal(fromUser.id)
       )
-    }
+      if (!canSend) {
+        throw new APIError(403, message)
+      }
 
-    const toDoc = firestore.doc(`users/${auth.uid}`)
-    const toSnap = await transaction.get(toDoc)
-    if (!toSnap.exists) {
-      throw new APIError(500, `User ${auth.uid} not found`)
-    }
-    const toUser = toSnap.data() as User
+      const toDoc = firestore.doc(`users/${auth.uid}`)
+      const toSnap = await transaction.get(toDoc)
+      if (!toSnap.exists) {
+        throw new APIError(500, `User ${auth.uid} not found`)
+      }
+      const toUser = toSnap.data() as User
 
-    const canReceive = isVerified(toUser)
-    if (!canReceive) {
-      throw new APIError(
-        403,
-        'You must verify your phone number to claim mana.'
-      )
-    }
+      const canReceive = isVerified(toUser)
+      if (!canReceive) {
+        throw new APIError(
+          403,
+          'You must verify your phone number to claim mana.'
+        )
+      }
+      return toUser
+    })
 
-    // Actually execute the txn
     const data = {
       fromId: creator_id,
       fromType: 'USER',
@@ -110,22 +104,14 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       description: `Manalink ${slug} claimed: ${amount} from ${toUser.username} to ${auth.uid}`,
     } as const
 
-    const result = await runTxn(transaction, data)
-    const txnId = result.txn?.id
-    if (!txnId) {
-      throw new APIError(
-        500,
-        result.message ?? 'An error occurred posting the transaction.'
-      )
-    }
-
-    await pg.none(
+    const txn = await runTxn(tx, data)
+    await tx.none(
       `insert into manalink_claims (txn_id, manalink_id) values ($1, $2)`,
-      [txnId, slug]
+      [txn.id, slug]
     )
-
-    return { message: 'Manalink claimed' }
   })
+
+  return { message: 'Manalink claimed' }
 })
 
 const firestore = admin.firestore()

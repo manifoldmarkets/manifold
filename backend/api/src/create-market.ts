@@ -144,87 +144,89 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     utcOffset
   )
 
-  const contract = await firestore.runTransaction(async (trans) => {
-    const userDoc = await trans.get(firestore.collection('users').doc(userId))
-    if (!userDoc.exists) throw new APIError(401, 'Your account was not found')
+  const pg = createSupabaseDirectClient()
 
-    const user = userDoc.data() as User
+  const { contract, amountSuppliedByUser, amountSuppliedByHouse } =
+    await firestore.runTransaction(async (trans) => {
+      const userDoc = await trans.get(firestore.collection('users').doc(userId))
+      if (!userDoc.exists) throw new APIError(401, 'Your account was not found')
 
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+      const user = userDoc.data() as User
 
-    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
-      user,
-      ante,
-      !!specialLiquidityPerAnswer
-    )
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    if (amountSuppliedByUser > user.balance)
-      throw new APIError(
-        403,
-        `Balance must be at least ${amountSuppliedByUser}.`
+      const { amountSuppliedByUser, amountSuppliedByHouse } =
+        marketCreationCosts(user, ante, !!specialLiquidityPerAnswer)
+
+      if (amountSuppliedByUser > user.balance)
+        throw new APIError(
+          403,
+          `Balance must be at least ${amountSuppliedByUser}.`
+        )
+
+      const slug = await getSlug(trans, question)
+
+      let answerLoverUserIds: string[] = []
+      if (isLove && answers) {
+        answerLoverUserIds = await getLoveAnswerUserIds(answers)
+        console.log('answerLoverUserIds', answerLoverUserIds)
+      }
+
+      const contract = getNewContract(
+        removeUndefinedProps({
+          id: contractRef.id,
+          slug,
+          creator: user,
+          question,
+          outcomeType,
+          description:
+            typeof description !== 'string' && description
+              ? description
+              : anythingToRichText({
+                  raw: description,
+                  html: descriptionHtml,
+                  markdown: descriptionMarkdown,
+                  jsonString: descriptionJson,
+                  // default: use a single empty space as the description
+                }) ?? htmlToRichText(`<p> </p>`),
+          initialProb: initialProb ?? 50,
+          ante,
+          closeTime,
+          visibility,
+          isTwitchContract,
+          min: min ?? 0,
+          max: max ?? 0,
+          isLogScale: isLogScale ?? false,
+          answers: answers ?? [],
+          addAnswersMode,
+          shouldAnswersSumToOne,
+          loverUserId1,
+          loverUserId2,
+          matchCreatorId,
+          isLove,
+          answerLoverUserIds,
+          specialLiquidityPerAnswer,
+          isAutoBounty,
+        })
       )
 
-    const slug = await getSlug(trans, question)
+      if (amountSuppliedByHouse > 0)
+        trans.update(userDoc.ref, {
+          freeQuestionsCreated: FieldValue.increment(1),
+        })
 
-    let answerLoverUserIds: string[] = []
-    if (isLove && answers) {
-      answerLoverUserIds = await getLoveAnswerUserIds(answers)
-      console.log('answerLoverUserIds', answerLoverUserIds)
-    }
+      trans.create(contractRef, contract)
+      return { contract, amountSuppliedByUser, amountSuppliedByHouse }
+    })
 
-    const contract = getNewContract(
-      removeUndefinedProps({
-        id: contractRef.id,
-        slug,
-        creator: user,
-        question,
-        outcomeType,
-        description:
-          typeof description !== 'string' && description
-            ? description
-            : anythingToRichText({
-                raw: description,
-                html: descriptionHtml,
-                markdown: descriptionMarkdown,
-                jsonString: descriptionJson,
-                // default: use a single empty space as the description
-              }) ?? htmlToRichText(`<p> </p>`),
-        initialProb: initialProb ?? 50,
-        ante,
-        closeTime,
-        visibility,
-        isTwitchContract,
-        min: min ?? 0,
-        max: max ?? 0,
-        isLogScale: isLogScale ?? false,
-        answers: answers ?? [],
-        addAnswersMode,
-        shouldAnswersSumToOne,
-        loverUserId1,
-        loverUserId2,
-        matchCreatorId,
-        isLove,
-        answerLoverUserIds,
-        specialLiquidityPerAnswer,
-        isAutoBounty,
-      })
-    )
-
+  await pg.tx(async (tx) => {
     await runCreateMarketTxn({
-      contractId: contractRef.id,
+      contractId: contract.id,
       userId,
       amountSuppliedByUser,
       amountSuppliedByHouse,
-      transaction: trans,
+      transaction: tx,
     })
-
-    if (amountSuppliedByHouse > 0)
-      trans.update(userDoc.ref, {
-        freeQuestionsCreated: FieldValue.increment(1),
-      })
-
-    trans.create(contractRef, contract)
-    return contract
   })
 
   log('created contract ', {
@@ -237,7 +239,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   if (answers && contract.mechanism === 'cpmm-multi-1')
     await createAnswers(contract)
 
-  const pg = createSupabaseDirectClient()
   if (groups) {
     await Promise.all(
       groups.map(async (g) => {

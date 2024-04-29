@@ -15,6 +15,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
   rateLimitByUser(async (props, auth) => {
     const pg = createSupabaseDirectClient()
 
+    // TODO: transaction over this sql query rather than over user properties
     const { phoneNumber, code: otpCode } = props
     const userHasPhoneNumber = await pg.oneOrNone(
       `select phone_number from private_user_phone_numbers where user_id = $1
@@ -91,20 +92,14 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
         token: 'M$',
         toType: 'USER',
         description: 'Signup bonus for verifying phone number',
-        data: {},
       }
-      const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-      if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-        transaction.update(toDoc, {
-          verifiedPhone: true,
-        })
-        log(`Sent phone verification bonus to user ${auth.uid}`)
-      } else {
-        log(
-          `No phone verification bonus sent to user ${auth.uid}: ${manaBonusTxn.message}`
-        )
-        throw new APIError(400, 'Error sending phone verification bonus')
-      }
+      // note: does not award balance as part of firebase transaction
+      await pg.tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+
+      transaction.update(toDoc, {
+        verifiedPhone: true,
+      })
+      log(`Sent phone verification bonus to user ${auth.uid}`)
     })
 
     return { status: 'success' }

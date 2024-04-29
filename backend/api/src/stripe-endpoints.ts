@@ -8,6 +8,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { User } from 'common/user'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -127,7 +128,8 @@ const issueMoneys = async (session: StripeSession) => {
   }
   const deposit = Number.parseInt(manticDollarQuantity)
 
-  const success = await firestore.runTransaction(async (trans) => {
+  // TODO kill firestore collection when we get off stripe. too lazy to do it now
+  const id = await firestore.runTransaction(async (trans) => {
     const query = await trans.get(
       firestore
         .collection('stripe-transactions')
@@ -146,26 +148,37 @@ const issueMoneys = async (session: StripeSession) => {
       timestamp: Date.now(),
     })
 
-    const manaPurchaseTxn = {
-      fromId: 'EXTERNAL',
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: deposit,
-      token: 'M$',
-      category: 'MANA_PURCHASE',
-      data: { stripeTransactionId: stripeDoc.id, type: 'stripe' },
-      description: `Deposit M$${deposit} from BANK for mana purchase`,
-    } as const
-
-    const result = await runTxnFromBank(trans, manaPurchaseTxn)
-
-    if (result.status === 'error') {
-      throw new APIError(500, result.message ?? 'An unknown error occurred')
-    }
-
-    return result
+    return stripeDoc.id
   })
+  if (!id) return
+
+  const pg = createSupabaseDirectClient()
+
+  const manaPurchaseTxn = {
+    fromId: 'EXTERNAL',
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    amount: deposit,
+    token: 'M$',
+    category: 'MANA_PURCHASE',
+    data: { stripeTransactionId: id, type: 'stripe' },
+    description: `Deposit M$${deposit} from BANK for mana purchase`,
+  } as const
+
+  let success = false
+  try {
+    await pg.tx((tx) => runTxnFromBank(tx, manaPurchaseTxn))
+    success = true
+  } catch (e) {
+    console.error(
+      'Must reconcile stripe-transactions with purchase txns. User may not have received mana!'
+    )
+    if (e instanceof APIError) {
+      console.error('APIError in runTxnFromBank.', e)
+    }
+    console.error('Unknown error in runTxnFromBank', e)
+  }
 
   if (success) {
     log('user', userId, 'paid M$', deposit)
