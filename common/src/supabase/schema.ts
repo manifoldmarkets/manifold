@@ -2193,7 +2193,7 @@ export type Database = {
         Row: {
           amount: number
           category: string
-          created_time: string | null
+          created_time: string
           data: Json
           from_id: string
           from_type: string
@@ -2205,7 +2205,7 @@ export type Database = {
         Insert: {
           amount: number
           category: string
-          created_time?: string | null
+          created_time?: string
           data: Json
           from_id: string
           from_type: string
@@ -2217,7 +2217,7 @@ export type Database = {
         Update: {
           amount?: number
           category?: string
-          created_time?: string | null
+          created_time?: string
           data?: Json
           from_id?: string
           from_type?: string

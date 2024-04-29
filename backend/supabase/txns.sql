@@ -2,7 +2,7 @@ create table if not exists
   txns (
     id text not null primary key default random_alphanumeric (8),
     data jsonb not null,
-    created_time timestamptz default now(),
+    created_time timestamptz not null default now(),
     from_id text not null,
     from_type text not null,
     to_id text not null,
