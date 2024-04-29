@@ -59,7 +59,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   } = privateUser
   const blockedIds = blockedUserIds.concat(blockedByUserIds)
 
-  const leftJoinClause = renderSql(
+  const viewedContractsQuery = renderSql(
     select(
       `contract_id, max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)) AS latest_seen_time`
     ),
@@ -67,6 +67,15 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     where(`ucv.user_id = $1`, [userId]),
     groupBy(`contract_id`)
   )
+
+  const blockedGroupsQuery = renderSql(
+    select('1'),
+    from(`group_contracts gc`),
+    join(`groups g on gc.group_id = g.id`),
+    where(`gc.contract_id = contracts.id`),
+    where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
+  )
+
   const baseQueryArray = buildArray(
     select(`contracts.*, uti.avg_conversion_score as topic_conversion_score`),
     from(
@@ -82,7 +91,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     join(`group_contracts on group_contracts.group_id = uti.group_id`),
     join(`contracts on contracts.id = group_contracts.contract_id`),
     // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
-    leftJoin(`(${leftJoinClause}) cv ON cv.contract_id = contracts.id`),
+    leftJoin(`(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`),
     where(`contracts.close_time > now() and contracts.visibility = 'public'`),
     where(
       `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
@@ -94,8 +103,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
     blockedContractIds.length > 0 &&
       where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
-    blockedGroupSlugs.length > 0 &&
-      where(`groups.slug <> any(array[$1])`, [blockedGroupSlugs]),
+    blockedGroupSlugs.length > 0 && where(`not exists (${blockedGroupsQuery})`),
     lim(limit, offset)
   )
 
