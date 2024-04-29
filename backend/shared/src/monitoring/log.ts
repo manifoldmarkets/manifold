@@ -1,7 +1,7 @@
 import { format } from 'node:util'
 import { isError, pick, omit } from 'lodash'
 import { dim, red, yellow } from 'colors/safe'
-import { AsyncLocalStorage } from 'node:async_hooks'
+import { getMonitoringContext } from './context'
 
 // mapping JS log levels (e.g. functions on console object) to GCP log levels
 const JS_TO_GCP_LEVELS = {
@@ -14,7 +14,6 @@ const JS_TO_GCP_LEVELS = {
 const JS_LEVELS = Object.keys(JS_TO_GCP_LEVELS) as LogLevel[]
 const DEFAULT_LEVEL = 'info'
 const IS_GCP = process.env.GOOGLE_CLOUD_PROJECT != null
-const LOG_CONTEXT_STORE = new AsyncLocalStorage<LogDetails>()
 
 // keys to put in front to categorize a log line in the console
 const DISPLAY_CATEGORY_KEYS = ['endpoint', 'job'] as const
@@ -70,7 +69,7 @@ function writeLog(
 ) {
   try {
     const { props, rest } = opts ?? {}
-    const contextData = LOG_CONTEXT_STORE.getStore()
+    const contextData = getMonitoringContext()
     const message = format(toString(msg), ...(rest ?? []))
     const data = { ...(contextData ?? {}), ...(props ?? {}) }
     if (IS_GCP) {
@@ -111,10 +110,6 @@ export function getLogger(): Logger {
       writeLog(level, msg, { props })
   }
   return logger
-}
-
-export function withLogContext<R>(props: LogDetails, fn: () => R) {
-  return LOG_CONTEXT_STORE.run(props, fn)
 }
 
 export const log = getLogger()

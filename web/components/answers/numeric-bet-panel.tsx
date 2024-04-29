@@ -172,29 +172,13 @@ export const NumericBetPanel = (props: {
   const changeMode = (newMode: 'less than' | 'more than' | 'about right') => {
     const newExpectedValue = getExpectedValue(contract)
     setExpectedValue(newExpectedValue)
-    const answerTexts = answers.map((a) => a.text)
-    const midPointBucket = getRangeContainingValue(
-      newExpectedValue,
-      answerTexts,
-      minimum,
-      maximum
-    )
+    const midPointBucket = getRangeContainingValue(newExpectedValue, contract)
     if (newMode === 'about right') {
       const quarterRange = (maximum - minimum) / 4
       const quarterAbove = Math.min(newExpectedValue + quarterRange, maximum)
       const quarterBelow = Math.max(newExpectedValue - quarterRange, minimum)
-      const start = getRangeContainingValue(
-        quarterBelow,
-        answerTexts,
-        minimum,
-        maximum
-      )
-      const end = getRangeContainingValue(
-        quarterAbove,
-        answerTexts,
-        minimum,
-        maximum
-      )
+      const start = getRangeContainingValue(quarterBelow, contract)
+      const end = getRangeContainingValue(quarterAbove, contract)
       setRange([start[0], end[1]])
     } else if (newMode === 'less than') {
       setRange([minimum, midPointBucket[1]])
@@ -490,6 +474,7 @@ export const MultiNumericDistributionChart = (props: {
 
   return (
     <DoubleDistributionChart
+      contract={contract}
       w={width}
       h={height}
       xScale={xScale}

@@ -3,7 +3,8 @@ import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log, withLogContext } from 'shared/log'
+import { log } from 'shared/monitoring/log'
+import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
@@ -181,7 +182,7 @@ const requestContext: RequestHandler = (req, _res, next) => {
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
-  withLogContext(context, () => {
+  withMonitoringContext(context, () => {
     log(`${req.method} ${req.url}`)
     next()
   })

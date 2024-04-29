@@ -18,7 +18,7 @@ import {
   useState,
 } from 'react'
 import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
-import { formatMoneyNumber } from 'common/util/format'
+import { formatMoneyNumber, formatPercent } from 'common/util/format'
 import { useEvent } from 'web/hooks/use-event'
 import {
   AreaPath,
@@ -39,6 +39,12 @@ import {
   ReadChartAnnotationModal,
 } from 'web/components/annotate-chart'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
+import {
+  getAnswerContainingValue,
+  getDecimalPlaces,
+} from 'common/multi-numeric'
+import { CPMMNumericContract } from 'common/contract'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -139,6 +145,7 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
   newColor: string
   xScale: ScaleContinuousNumeric<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  contract: CPMMNumericContract
   curve?: CurveFactory
   verticalLines?: [number, number]
   shadedRanges?: [number, number][]
@@ -155,6 +162,7 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
     yScale,
     curve,
     verticalLines,
+    contract,
   } = props
 
   const px = useCallback((p: P) => xScale(p.x), [xScale])
@@ -175,8 +183,51 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
     .x((d) => xScale(d[0]))
     .y((d) => yScale(d[1]))
 
+  const [mouse, setMouse] = useState<{
+    x: number
+    y: number
+  }>()
+  const onMouseOver = useEvent((p: { x: number; y: number } | undefined) => {
+    const mouseX = p?.x
+    if (!mouseX) {
+      setMouse(undefined)
+      return
+    }
+    const scaledX = xScale.invert(mouseX)
+    const y = getAnswerContainingValue(scaledX, contract)?.prob ?? 0
+    setMouse({
+      x: scaledX,
+      y,
+    })
+  })
+
   return (
-    <SVGChart w={w} h={h} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart
+      w={w}
+      h={h}
+      xAxis={xAxis}
+      yAxis={yAxis}
+      ttParams={mouse}
+      onMouseOver={(x, y) => onMouseOver({ x, y } as P)}
+      Tooltip={(props) =>
+        props && (
+          <DistributionChartTooltip
+            getX={(x) =>
+              x.toFixed(
+                getDecimalPlaces(
+                  contract.min,
+                  contract.max,
+                  contract.answers.length
+                )
+              )
+            }
+            formatY={(y) => formatPercent(y)}
+            ttProps={props}
+          />
+        )
+      }
+      onMouseLeave={() => onMouseOver(undefined)}
+    >
       <AreaWithTopStrokeAndRange
         color={color}
         data={data}
@@ -221,6 +272,14 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
             strokeDasharray={4}
           />
         </>
+      )}
+      {mouse && (
+        <SliceMarker
+          color="#5BCEFF"
+          x={xScale(mouse.x)}
+          y0={py0}
+          y1={yScale(mouse.y)}
+        />
       )}
     </SVGChart>
   )

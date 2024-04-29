@@ -50,7 +50,7 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const [showBanner, hideBanner] = useBanner('pivot') // in a week, go back to 'manifest'
+  const [showBanner, hideBanner] = useBanner('pivot2') // in a week, go back to 'manifest'
   const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (

@@ -7,7 +7,8 @@ import { metrics, log, isProd } from '../utils'
 import { IDatabase } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
-import { METRICS_INTERVAL_MS } from 'shared/gcp-metrics'
+import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
+import { getMonitoringContext } from 'shared/monitoring/context'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -17,8 +18,15 @@ export const pgp = pgPromise({
       event: e,
     })
   },
-  query() {
-    metrics.inc('pg/query_count')
+  query(ev) {
+    const ctx = getMonitoringContext()
+    if (ctx?.endpoint) {
+      metrics.inc('pg/query_count', { endpoint: ctx.endpoint })
+    } else if (ctx?.job) {
+      metrics.inc('pg/query_count', { job: ctx.job })
+    } else {
+      metrics.inc('pg/query_count')
+    }
   },
 })
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt

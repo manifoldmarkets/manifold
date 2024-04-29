@@ -14,6 +14,7 @@ import {
 } from 'common/multi-numeric'
 import { MultiPoints } from 'common/chart'
 import { getFilledInMultiNumericBetPoints } from 'common/contract-params'
+import { Row } from 'web/components/layout/row'
 
 const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
   const filledInBetPoints = getFilledInMultiNumericBetPoints(bets, contract)
@@ -30,6 +31,22 @@ const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
     y: sum(group.map((pt) => pt.y)) ?? 0,
     x: group[0].x,
   }))
+}
+export const DistributionChartTooltip = (props: {
+  ttProps: { x: number; y: number }
+  getX: (x: number) => string
+  formatY: (y: number) => string
+}) => {
+  const { ttProps, formatY } = props
+  const { y } = ttProps
+  const x = props.getX(ttProps.x)
+
+  return (
+    <Row className="items-center gap-2">
+      <span className="font-semibold">{x}</span>
+      <span className="text-ink-600">{formatY(y)}</span>
+    </Row>
+  )
 }
 
 export const MultiNumericContractChart = (props: {

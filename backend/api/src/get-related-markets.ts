@@ -6,7 +6,7 @@ import {
 import { Contract } from 'common/contract'
 import { convertContract } from 'common/supabase/contracts'
 import { orderAndDedupeGroupContracts } from 'api/helpers/groups'
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { HOUR_MS } from 'common/util/time'
 import {
