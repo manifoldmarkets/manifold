@@ -679,6 +679,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
   hideXAxis?: boolean
+  onGraphClick?: () => void
 }) => {
   const {
     contractId,
@@ -697,6 +698,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     pointerMode = 'zoom',
     chartAnnotations = [],
     hideXAxis,
+    onGraphClick,
   } = props
 
   useEffect(() => {
@@ -800,7 +802,10 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
-        onClick={onClick}
+        onClick={(x: number, y: number) => {
+          onClick(x, y)
+          onGraphClick && onGraphClick()
+        }}
         xScale={xScale}
         y0={py0}
         yAtTime={(x: number) => getMarkerPosition(x, undefined, true)?.y ?? 0}

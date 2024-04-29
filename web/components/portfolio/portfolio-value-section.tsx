@@ -25,7 +25,9 @@ import { CoinNumber } from '../widgets/manaCoinNumber'
 import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
 import {
+  BALANCE_COLOR,
   GraphMode,
+  INVESTMENT_COLOR,
   PortfolioGraph,
   PortfolioMode,
 } from './portfolio-value-graph'
@@ -137,6 +139,8 @@ export const PortfolioValueSection = memo(
           balanceChanges={balanceChanges}
           portfolio={portfolio}
           user={user}
+          portfolioFocus={portfolioFocus}
+          setPortfolioFocus={setPortfolioFocus}
         />
       )
     }
@@ -168,6 +172,8 @@ export const PortfolioValueSection = memo(
             setGraphBalance={setGraphBalance}
             setGraphInvested={setGraphInvested}
             setGraphProfit={setGraphProfit}
+            portfolioFocus={portfolioFocus}
+            setPortfolioFocus={setPortfolioFocus}
           />
         )}
         onlyShowProfit={onlyShowProfit}
@@ -212,8 +218,8 @@ function PortfolioValueSkeleton(props: {
   setGraphMode: (mode: GraphMode) => void
   balanceChanges: AnyBalanceChangeType[]
   portfolio: PortfolioSnapshot | undefined
-  portfolioFocus?: PortfolioMode
-  setPortfolioFocus?: (mode: PortfolioMode) => void
+  portfolioFocus: PortfolioMode
+  setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
 }) {
   const {
@@ -256,6 +262,10 @@ function PortfolioValueSkeleton(props: {
         monthly: 'Profit 1M',
         allTime: 'Profit',
       }[currentTimePeriod]
+
+  function togglePortfolioFocus(toggleTo: PortfolioMode) {
+    setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
+  }
 
   return (
     <Col>
@@ -305,20 +315,54 @@ function PortfolioValueSkeleton(props: {
             </Row> */}
             {graphMode == 'portfolio' && (
               <>
-                <Row className="items-center gap-1">
-                  <CoinNumber
-                    amount={graphInvested ?? invested}
-                    className="text-indigo-400"
-                  />
-                  <span className="text-ink-400 text-base">invested</span>
-                </Row>
-                <Row className="items-center gap-1">
-                  <CoinNumber
-                    amount={graphBalance ?? balance}
-                    className="text-indigo-600"
-                  />
-                  <span className="text-ink-400 text-base">balance</span>
-                </Row>
+                <div
+                  className={clsx(
+                    'group cursor-pointer',
+                    portfolioFocus !== 'all' &&
+                      portfolioFocus !== 'investment' &&
+                      'opacity-50'
+                  )}
+                  onClick={() => togglePortfolioFocus('investment')}
+                >
+                  <span>
+                    <CoinNumber
+                      amount={graphInvested ?? invested}
+                      className={clsx(
+                        portfolioFocus == 'investment' && 'font-bold'
+                      )}
+                      isInline
+                      coinClassName="top-[0.1rem]"
+                      style={{
+                        color: INVESTMENT_COLOR,
+                      }}
+                    />
+                    <span className="text-ink-400 text-base"> invested</span>
+                  </span>
+                </div>
+                <div
+                  className={clsx(
+                    'group cursor-pointer',
+                    portfolioFocus !== 'all' &&
+                      portfolioFocus !== 'balance' &&
+                      'opacity-50'
+                  )}
+                  onClick={() => togglePortfolioFocus('balance')}
+                >
+                  <span>
+                    <CoinNumber
+                      amount={graphBalance ?? balance}
+                      className={clsx(
+                        portfolioFocus == 'balance' && 'font-bold'
+                      )}
+                      isInline
+                      coinClassName="top-[0.1rem]"
+                      style={{
+                        color: BALANCE_COLOR,
+                      }}
+                    />
+                    <span className="text-ink-400 text-base"> balance</span>
+                  </span>
+                </div>
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />

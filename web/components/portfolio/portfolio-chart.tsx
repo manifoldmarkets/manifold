@@ -19,6 +19,7 @@ import {
 import { ZoomSlider } from '../charts/zoom-slider'
 import clsx from 'clsx'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { PortfolioMode } from './portfolio-value-graph'
 
 type AreaPointType = {
   x: number // The x-coordinate
@@ -48,6 +49,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   pointerMode?: PointerMode
   setGraphBalance: (balance: number | undefined) => void
   setGraphInvested: (invested: number | undefined) => void
+  setPortfolioFocus: (mode: PortfolioMode) => void
 }) => {
   const {
     data,
@@ -63,6 +65,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     yKind,
     setGraphBalance,
     setGraphInvested,
+    setPortfolioFocus,
   } = props
 
   useEffect(() => {
@@ -190,7 +193,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   }
 
   const hoverData = stackedData.find((data) => data.id == hoveringId)
-
   return (
     <>
       <SVGChart
@@ -242,6 +244,13 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
                 curve={curve}
                 opacity={hoveringId == id ? 1 : 0.5}
                 className="transition-opacity"
+                onClick={() => {
+                  if (hoveringId) {
+                    setPortfolioFocus(hoveringId as PortfolioMode)
+                  } else {
+                    setPortfolioFocus(id as PortfolioMode)
+                  }
+                }}
               />
             </>
           )
