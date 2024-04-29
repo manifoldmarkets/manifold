@@ -98,6 +98,7 @@ export const PortfolioGraph = (props: {
 
       return { profitPoints, investmentPoints, balancePoints, networthPoints }
     }, [portfolioHistory])
+
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const minDate =
@@ -127,7 +128,7 @@ export const PortfolioGraph = (props: {
         ? max(networthPoints.map((d) => d.y))!
         : max(profitPoints.map((d) => d.y))!
     return { minDate, maxDate, minValue, maxValue }
-  }, [mode])
+  }, [duration])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])

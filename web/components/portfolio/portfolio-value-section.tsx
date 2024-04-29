@@ -38,7 +38,6 @@ export const PortfolioValueSection = memo(
     currentUser: User | null | undefined
     user: User
     defaultTimePeriod: Period
-    lastUpdatedTime?: number | undefined
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
@@ -51,7 +50,6 @@ export const PortfolioValueSection = memo(
       user,
       hideAddFundsButton,
       defaultTimePeriod,
-      lastUpdatedTime,
       portfolio,
       onlyShowProfit,
       graphContainerClassName,
@@ -62,11 +60,7 @@ export const PortfolioValueSection = memo(
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
-    const portfolioHistory = usePortfolioHistory(
-      user.id,
-      currentTimePeriod,
-      preloadPoints
-    )
+    const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
 
     const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
     const [portfolioFocus, setPortfolioFocus] = useState<PortfolioMode>('all')
@@ -104,14 +98,8 @@ export const PortfolioValueSection = memo(
     }
 
     const isMobile = useIsMobile()
-
-    if (
-      !portfolioHistory ||
-      // graphPoints.length <= 1 ||
-      !lastUpdatedTime ||
-      !lastPortfolioMetrics
-    ) {
-      const showDisclaimer = portfolioHistory || !lastUpdatedTime
+    if (!portfolioHistory || !lastPortfolioMetrics) {
+      const showDisclaimer = portfolioHistory
       return (
         <PortfolioValueSkeleton
           hideAddFundsButton={hideAddFundsButton}
