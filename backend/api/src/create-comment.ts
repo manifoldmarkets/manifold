@@ -130,16 +130,15 @@ export const createCommentOnContractInternal = async (
           totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
         })
       }
+      if (replyToBetId) return
 
-      const bet = replyToBetId
-        ? undefined
-        : await getMostRecentCommentableBet(
-            pg,
-            contract.id,
-            creator.id,
-            now,
-            replyToAnswerId
-          )
+      const bet = await getMostRecentCommentableBet(
+        pg,
+        contract.id,
+        creator.id,
+        now,
+        replyToAnswerId
+      )
 
       const position = await getLargestPosition(pg, contract.id, creator.id)
 
