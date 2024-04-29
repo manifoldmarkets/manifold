@@ -170,12 +170,12 @@ const awardQuestBonus = async (
       `select data from txns
       where to_id = $1
       and category = 'QUEST_REWARD'
-      and data->data->>'questType' = $2
-      and data->data->>'questCount' = $3
+      and data->'data'->>'questType' = $2
+      and (data->'data'->>'questCount')::integer = $3
       and created_time >= millis_to_ts($4)
       limit 1`,
       [user.id, questType, newCount, startOfDay],
-      (r: any) => r.data
+      (r: any) => r?.data
     )
 
     if (previousTxn) {

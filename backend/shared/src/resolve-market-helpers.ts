@@ -344,7 +344,7 @@ async function undoUniqueBettorRewardsIfCancelResolution(
     const bonusTxnsOnThisContract = await pg.map<Txn>(
       `select * from txns where category = 'UNIQUE_BETTOR_BONUS'
       and to_id = $1
-      and data->data->>'contractId' = $2`,
+      and data->'data'->>'contractId' = $2`,
       [contract.creatorId, contract.id],
       (row) => convertTxn(row)
     )

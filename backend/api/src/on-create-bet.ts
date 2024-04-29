@@ -492,7 +492,6 @@ const updateBettingStreak = async (
       amount: bonusAmount,
       token: 'M$',
       category: 'BETTING_STREAK_BONUS',
-      description: JSON.stringify(bonusTxnDetails),
       data: bonusTxnDetails,
     }
 
@@ -605,9 +604,9 @@ export const giveUniqueBettorAndLiquidityBonus = async (
     const previousTxn = await tx.oneOrNone(
       `select * from txns where to_id = $1 
        and category = 'UNIQUE_BETTOR_BONUS' 
-       and data->data->>'uniqueNewBettorId' = $2
-       and data->data->>'contractId' = $3
-       ${answerId ? `and data->data->>'answerId' = $4` : ''}
+       and data->'data'->>'uniqueNewBettorId' = $2
+       and data->'data'->>'contractId' = $3
+       ${answerId ? `and data->'data'->>'answerId' = $4` : ''}
        limit 1`,
       [creatorId, bettor.id, contract.id, answerId]
     )
@@ -638,7 +637,6 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       amount: bonusAmount,
       token: 'M$',
       category: 'UNIQUE_BETTOR_BONUS',
-      description: JSON.stringify(bonusTxnData),
       data: bonusTxnData,
     }
 
@@ -649,6 +647,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       if (e instanceof APIError) {
         return { status: 'error', message: e.message, txn: undefined }
       } else {
+        log.error(e)
         return { status: 'error', message: 'Unknown Error', txn: undefined }
       }
     }
