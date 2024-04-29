@@ -141,8 +141,8 @@ export async function insertTxn(
   const row = await pgTransaction
     .one<Row<'txns'>>(
       `insert into txns 
-      (data, amount, from_id, to_id, from_type, to_type, category, token) 
-      values ($1, $2, $3, $4, $5, $6, $7, $8) 
+      (data, amount, from_id, to_id, from_type, to_type, category) 
+      values ($1, $2, $3, $4, $5, $6, $7) 
       returning *`,
       [
         JSON.stringify(txn),
@@ -152,7 +152,6 @@ export async function insertTxn(
         txn.fromType,
         txn.toType,
         txn.category,
-        txn.token,
       ]
     )
     .catch((e) => {
@@ -179,7 +178,6 @@ export async function insertTxns(
       from_type: txn.fromType,
       to_type: txn.toType,
       category: txn.category,
-      token: txn.token,
     }))
   ).catch((e) => {
     for (const txn of txns) {
@@ -191,7 +189,7 @@ export async function insertTxns(
 
 export function logFailedToRecordTxn(txn: TxnData) {
   log.error(
-    `Failed to record ${txn.category} txn: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toId}`,
+    `Failed to record ${txn.category} txn: send ${txn.amount} from ${txn.fromType} ${txn.fromId} to ${txn.toType} ${txn.toId}`,
     txn
   )
 }
