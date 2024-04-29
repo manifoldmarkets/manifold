@@ -32,6 +32,7 @@ import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
 import clsx from 'clsx'
+import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 
 export type DashboardEndpoints = 'news' | 'politics' | 'ai'
 
@@ -48,6 +49,8 @@ export function DashboardPage(props: {
 }) {
   const user = useUser()
   useSaveReferral(user)
+  useSaveCampaign()
+
   const router = useRouter()
   const pathName = usePathname() ?? ''
 
