@@ -124,7 +124,6 @@ export function BuyPanel(props: {
     <Col>
       {!isPanelBodyVisible && (
         <Row className={clsx('mb-2 w-full items-center gap-2')}>
-          (
           <YesNoSelector
             className="flex-1"
             btnClassName="flex-1 px-2 sm:px-6"
@@ -140,7 +139,6 @@ export function BuyPanel(props: {
               isPseudoNumeric ? 'Bet LOWER' : isStonk ? STONK_NO : 'Bet NO'
             }
           />
-          )
         </Row>
       )}
       {isPanelBodyVisible && (
