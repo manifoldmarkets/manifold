@@ -2193,38 +2193,38 @@ export type Database = {
         Row: {
           amount: number
           category: string
-          created_time: string
+          created_time: string | null
           data: Json
           from_id: string
           from_type: string
           fs_updated_time: string | null
           id: string
           to_id: string
-          to_type: string
+          to_type: string | null
         }
         Insert: {
-          amount?: number
-          category?: string
+          amount: number
+          category: string
           created_time?: string | null
           data: Json
-          from_id?: string
-          from_type?: string
+          from_id: string
+          from_type: string
           fs_updated_time?: string | null
-          id?: string | null
-          to_id?: string
-          to_type?: string
+          id?: string
+          to_id: string
+          to_type?: string | null
         }
         Update: {
           amount?: number
           category?: string
-          created_time?: string
+          created_time?: string | null
           data?: Json
           from_id?: string
           from_type?: string
           fs_updated_time?: string | null
           id?: string
           to_id?: string
-          to_type?: string
+          to_type?: string | null
         }
         Relationships: []
       }
