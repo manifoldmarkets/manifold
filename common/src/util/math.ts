@@ -24,6 +24,16 @@ export function average(xs: number[]) {
   return xs.length === 0 ? 0 : sum(xs) / xs.length
 }
 
+export function sumOfSquaredError(xs: number[]) {
+  const mean = average(xs)
+  let total = 0
+  for (const x of xs) {
+    const error = x - mean
+    total += error * error
+  }
+  return total
+}
+
 export const EPSILON = 0.00000001
 
 export function floatingEqual(a: number, b: number, epsilon = EPSILON) {

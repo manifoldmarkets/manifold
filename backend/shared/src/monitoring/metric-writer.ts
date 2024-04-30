@@ -1,11 +1,11 @@
 import { MetricServiceClient } from '@google-cloud/monitoring'
+import { average, sumOfSquaredError } from 'common/util/math'
 import { log } from 'shared/utils'
 import { InstanceInfo, getInstanceInfo } from './instance-info'
 import {
   CUSTOM_METRICS,
   MetricStore,
   MetricStoreEntry,
-  MetricType,
   metrics,
 } from './metrics'
 
@@ -15,35 +15,40 @@ export const METRICS_INTERVAL_MS = 5000
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-// see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue
-function serializeValue(type: MetricType, val: number) {
-  switch (CUSTOM_METRICS[type].valueKind) {
-    case 'int64Value':
-      return { int64Value: val }
-    default:
-      throw new Error('Other value kinds not yet implemented.')
-  }
-}
-
-// see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TimeSeries#Point
-function serializePoint(entry: MetricStoreEntry, ts: number) {
+// see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.snoozes#timeinterval
+function serializeInterval(entry: MetricStoreEntry, ts: number) {
   switch (CUSTOM_METRICS[entry.type].metricKind) {
     case 'CUMULATIVE':
       return {
-        interval: {
-          startTime: { seconds: entry.startTime / 1000 },
-          endTime: { seconds: ts / 1000 },
-        },
-        value: serializeValue(entry.type, entry.value),
+        startTime: { seconds: entry.startTime / 1000 },
+        endTime: { seconds: ts / 1000 },
       }
     case 'GAUGE': {
-      return {
-        interval: { endTime: { seconds: ts / 1000 } },
-        value: serializeValue(entry.type, entry.value),
+      return { endTime: { seconds: ts / 1000 } }
+    }
+  }
+}
+
+// see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue
+function serializeValue(entry: MetricStoreEntry) {
+  switch (CUSTOM_METRICS[entry.type].valueKind) {
+    case 'int64Value':
+      return { int64Value: entry.value }
+    case 'distributionValue': {
+      const points = entry.points ?? []
+      // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#distribution
+      const result = {
+        count: points.length,
+        mean: average(points),
+        sumOfSquaredDeviation: sumOfSquaredError(points),
+      } as any
+      if (points.length > 0) {
+        result['range'] = { min: Math.min(...points), max: Math.max(...points) }
       }
+      return result
     }
     default:
-      throw new Error('Other metric kinds not yet implemented.')
+      throw new Error('Other value kinds not yet implemented.')
   }
 }
 
@@ -67,7 +72,12 @@ function serializeEntries(
       type: `custom.googleapis.com/${entry.type}`,
       labels: entry.labels ?? {},
     },
-    points: [serializePoint(entry, ts)],
+    points: [
+      {
+        interval: serializeInterval(entry, ts),
+        value: serializeValue(entry),
+      },
+    ],
   }))
 }
 
