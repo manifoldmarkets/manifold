@@ -9,6 +9,7 @@ import { SupabaseTransaction } from 'shared/supabase/init'
 import { log } from 'shared/log'
 import { Row } from 'common/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
@@ -145,7 +146,7 @@ export async function insertTxn(
       values ($1, $2, $3, $4, $5, $6, $7) 
       returning *`,
       [
-        JSON.stringify(txn),
+        JSON.stringify(removeUndefinedProps(txn)),
         txn.amount,
         txn.fromId,
         txn.toId,
@@ -171,7 +172,7 @@ export async function insertTxns(
     pgTransaction,
     'txns',
     txns.map((txn) => ({
-      data: JSON.stringify(txn),
+      data: JSON.stringify(removeUndefinedProps(txn)),
       amount: txn.amount,
       from_id: txn.fromId,
       to_id: txn.toId,
