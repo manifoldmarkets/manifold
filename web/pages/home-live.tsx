@@ -26,7 +26,6 @@ import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { PivotBanner, useBanner } from 'web/components/nav/banner'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { ScoredFeed } from 'web/components/feed/scored-feed'
 
 export async function getStaticProps() {
@@ -63,7 +62,8 @@ export default function Home(props: { headlines: Headline[] }) {
         showBanner && olderUser ? (
           <PivotBanner hideBanner={hideBanner} />
         ) : (
-          <VerifyPhoneNumberBanner user={user} />
+          // <VerifyPhoneNumberBanner user={user} />
+          null
         )
       }
     >

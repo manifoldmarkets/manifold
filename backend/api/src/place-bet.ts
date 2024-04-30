@@ -9,7 +9,7 @@ import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
-import { isVerified, User } from 'common/user'
+import { User } from 'common/user'
 import {
   BetInfo,
   CandidateBet,
@@ -514,9 +514,9 @@ export const validateBet = async (
   ) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
-  if (!isVerified(user)) {
-    throw new APIError(403, 'You must verify your phone number to bet.')
-  }
+  // if (!isVerified(user)) {
+  //   throw new APIError(403, 'You must verify your phone number to bet.')
+  // }
   log(
     `Loaded user ${user.username} with id ${user.id} betting on slug ${contract.slug} with contract id: ${contract.id}.`
   )

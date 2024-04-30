@@ -11,7 +11,6 @@ import { Row } from 'web/components/layout/row'
 import { STARTING_BALANCE } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { useABTest } from 'web/hooks/use-ab-test'
 
 export function VerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
@@ -58,25 +57,19 @@ export function VerifyPhone(props: { onClose: () => void }) {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [page, setPage] = useState(0)
 
-  const showSkipVariant = useABTest('hide-verify-phone-skip', [
-    'show-skip',
-    'hide-skip',
-  ])
-
   return (
     <Col className="text-lg">
       {page === 0 && (
         <Col className="items-center justify-center gap-2">
-          <Title>🤖 Prove you're not a robot 🤖</Title>
-          <span className={'-mt-2 mb-2 text-center'}>
-            Verify your phone number to collect your{' '}
+          <span className={'mb-2 mt-2 text-center text-xl'}>
+            Verify your phone number to collect a{' '}
             <span className={'font-bold text-teal-500'}>
               {formatMoney(STARTING_BALANCE)}
             </span>{' '}
             signup bonus.
             <br />
             <br />
-            <span className={'italic'}>
+            <span className={'text-lg italic'}>
               (We won't send you any other messages.)
             </span>
           </span>
@@ -92,13 +85,9 @@ export function VerifyPhone(props: { onClose: () => void }) {
               'mb-4 mt-4 w-full justify-between px-8 sm:mt-8 sm:justify-center sm:gap-8'
             }
           >
-            {showSkipVariant === 'show-skip' ? (
-              <Button color={'gray-white'} onClick={onClose}>
-                Skip
-              </Button>
-            ) : (
-              <div />
-            )}
+            <Button color={'gray-white'} onClick={onClose}>
+              Skip
+            </Button>
             <Button
               disabled={phoneNumber.length < 7 || loading}
               loading={loading}
