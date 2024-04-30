@@ -93,7 +93,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     where(`contracts.close_time > now()`),
     where(`not exists (${claimedAdsQuery})`),
     order(`cost_per_view desc`),
-    lim(500)
+    lim(50)
   )
 
   const baseQueryArray = (boosts = false) =>
