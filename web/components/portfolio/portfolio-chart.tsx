@@ -147,7 +147,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     const unstackedPs = Object.entries(data).map(([id, { points, color }]) => {
       return unstackedSelectors[id](mouseX)
     })
-    let closestIdx = stackedData.length - 1
     const topmostIdx = stackedData.length - 1
 
     unstackedPs.forEach((p, i) => {
@@ -159,18 +158,11 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
       }
     })
 
-    ps.forEach((p, i) => {
-      const closePrev = ps[closestIdx].prev
-      const closestDist = closePrev ? Math.abs(closePrev.y - valueY) : 1
-      if (p.prev && p.next && Math.abs(p.prev.y - valueY) < closestDist) {
-        closestIdx = i
-      }
-    })
     const p = ps[topmostIdx]
     if (p?.prev) {
       return {
         ...p,
-        ans: stackedData[closestIdx].id,
+        ans: stackedData[topmostIdx].id,
         x: mouseX,
         y: yScale(p.prev.y),
       }
@@ -189,7 +181,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     setGraphInvested(undefined)
   })
 
-  const hoveringId = props.hoveringId ?? ttParams?.ans
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
     const selector = timeSelectors[answerId]
     if (!selector) return null
@@ -246,8 +237,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
                   py1={(d) => yScale(d.y1)} // Upper boundary
                   fill={color}
                   curve={curve}
-                  // opacity={hoveringId == id ? 1 : 0.9}
-                  // className="transition-opacity"
+                  opacity={portfolioHoveredGraph == id ? 1 : 0.85}
+                  className="transition-opacity"
                   onClick={() => {
                     setPortfolioFocus(id as PortfolioMode)
                   }}
@@ -262,7 +253,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             )
           }
         })}
-        <LinePath
+        {/* <LinePath
           data={data.net.points}
           px={px}
           py={py}
@@ -270,7 +261,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
           className={clsx(' transition-[stroke-width]', 'stroke-2')}
           stroke={BALANCE_COLOR}
           strokeDasharray={'5 3 '}
-        />
+        /> */}
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"

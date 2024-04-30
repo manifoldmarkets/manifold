@@ -804,12 +804,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={Tooltip}
-        onClick={(x: number, y: number) => {
-          onClick(x, y)
-          if (onGraphClick) {
-            onGraphClick()
-          }
-        }}
+        onClick={onClick}
         xScale={xScale}
         y0={py0}
         yAtTime={(x: number) => getMarkerPosition(x, undefined, true)?.y ?? 0}
@@ -841,6 +836,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           py1={py1}
           curve={curve}
           areaOpacity={areaOpacity}
+          onClick={onGraphClick}
         />
         {mouse && (
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />

@@ -34,6 +34,7 @@ import {
 import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
+import { PortfolioGraphNumber } from './portfolio-graph-number'
 
 export type PortfolioHoveredGraphType = 'balance' | 'investment' | undefined
 
@@ -105,6 +106,13 @@ export const PortfolioValueSection = memo(
     }
 
     const isMobile = useIsMobile()
+
+    function onSetPortfolioFocus(mode: PortfolioMode) {
+      setPortfolioFocus(mode)
+      setPortfolioHoveredGraph(undefined)
+      setGraphBalance(undefined)
+      setGraphInvested(undefined)
+    }
     if (!portfolioHistory || !lastPortfolioMetrics) {
       const showDisclaimer = portfolioHistory
       return (
@@ -145,7 +153,7 @@ export const PortfolioValueSection = memo(
           portfolio={portfolio}
           user={user}
           portfolioFocus={portfolioFocus}
-          setPortfolioFocus={setPortfolioFocus}
+          setPortfolioFocus={onSetPortfolioFocus}
         />
       )
     }
@@ -163,7 +171,7 @@ export const PortfolioValueSection = memo(
         setCurrentTimePeriod={setTimePeriod}
         switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
         portfolioFocus={portfolioFocus}
-        setPortfolioFocus={setPortfolioFocus}
+        setPortfolioFocus={onSetPortfolioFocus}
         portfolioHoveredGraph={portfolioHoveredGraph}
         graphElement={(width, height) => (
           <PortfolioGraph
@@ -179,7 +187,7 @@ export const PortfolioValueSection = memo(
             setGraphInvested={setGraphInvested}
             setGraphProfit={setGraphProfit}
             portfolioFocus={portfolioFocus}
-            setPortfolioFocus={setPortfolioFocus}
+            setPortfolioFocus={onSetPortfolioFocus}
             portfolioHoveredGraph={portfolioHoveredGraph}
             setPortfolioHoveredGraph={setPortfolioHoveredGraph}
           />
@@ -325,60 +333,24 @@ function PortfolioValueSkeleton(props: {
             </Row> */}
             {graphMode == 'portfolio' && (
               <>
-                <div
-                  className={clsx(
-                    'group cursor-pointer',
-                    portfolioFocus !== 'all' &&
-                      portfolioFocus !== 'investment' &&
-                      'opacity-50'
-                  )}
+                <PortfolioGraphNumber
+                  numberType={'investment'}
+                  descriptor="invested"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={graphInvested ?? invested}
+                  color={INVESTMENT_COLOR}
                   onClick={() => togglePortfolioFocus('investment')}
-                >
-                  <span>
-                    <CoinNumber
-                      amount={graphInvested ?? invested}
-                      className={clsx(
-                        'transition-all',
-                        (portfolioFocus == 'investment' ||
-                          portfolioHoveredGraph == 'investment') &&
-                          'font-bold'
-                      )}
-                      isInline
-                      coinClassName="top-[0.1rem]"
-                      style={{
-                        color: INVESTMENT_COLOR,
-                      }}
-                    />
-                    <span className="text-ink-400 text-base"> invested</span>
-                  </span>
-                </div>
-                <div
-                  className={clsx(
-                    'group cursor-pointer',
-                    portfolioFocus !== 'all' &&
-                      portfolioFocus !== 'balance' &&
-                      'opacity-50'
-                  )}
+                />
+                <PortfolioGraphNumber
+                  numberType={'balance'}
+                  descriptor="balance"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={graphBalance ?? balance}
+                  color={BALANCE_COLOR}
                   onClick={() => togglePortfolioFocus('balance')}
-                >
-                  <span>
-                    <CoinNumber
-                      amount={graphBalance ?? balance}
-                      className={clsx(
-                        'transition-all',
-                        (portfolioFocus == 'balance' ||
-                          portfolioHoveredGraph == 'balance') &&
-                          'font-bold'
-                      )}
-                      isInline
-                      coinClassName="top-[0.1rem]"
-                      style={{
-                        color: BALANCE_COLOR,
-                      }}
-                    />
-                    <span className="text-ink-400 text-base"> balance</span>
-                  </span>
-                </div>
+                />
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />

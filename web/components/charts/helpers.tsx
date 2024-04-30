@@ -118,6 +118,7 @@ export const AreaWithTopStroke = <P,>(props: {
   curve: CurveFactory
   className?: string
   areaOpacity?: number
+  onClick?: () => void
 }) => {
   const {
     data,
@@ -128,6 +129,7 @@ export const AreaWithTopStroke = <P,>(props: {
     curve,
     className,
     areaOpacity = 0.2,
+    onClick,
   } = props
   const last = data[data.length - 1]
   const lastX = typeof px === 'function' ? px(last) : px
@@ -144,6 +146,7 @@ export const AreaWithTopStroke = <P,>(props: {
         fill={color}
         opacity={areaOpacity}
         className={className}
+        onClick={onClick}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
       {/* a little extension so that the current value is always visible */}
