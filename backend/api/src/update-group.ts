@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { GroupAboutSchema, GroupNameSchema } from 'common/group'
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 
 const schema = z
   .object({

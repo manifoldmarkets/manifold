@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 import { redeemBoost } from 'web/lib/firebase/api'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button } from '../buttons/button'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 
 export function ClaimButton(props: {
   adId: string
@@ -16,7 +17,10 @@ export function ClaimButton(props: {
 }) {
   const { adId, reward, disabled, className, onClaim } = props
 
-  const [claimed, setClaimed] = useState(false)
+  const [claimed, setClaimed] = usePersistentInMemoryState(
+    false,
+    `claimed-boost-${adId}`
+  )
   const [loading, setLoading] = useState(false)
 
   return (

@@ -2528,6 +2528,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_portfolio_history_latest: {
+        Row: {
+          balance: number
+          investment_value: number
+          last_calculated: string
+          loan_total: number | null
+          spice_balance: number
+          total_deposits: number
+          ts: string
+          user_id: string
+        }
+        Insert: {
+          balance: number
+          investment_value: number
+          last_calculated: string
+          loan_total?: number | null
+          spice_balance?: number
+          total_deposits: number
+          ts: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          investment_value?: number
+          last_calculated?: string
+          loan_total?: number | null
+          spice_balance?: number
+          total_deposits?: number
+          ts?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_quest_metrics: {
         Row: {
           idempotency_key: string | null

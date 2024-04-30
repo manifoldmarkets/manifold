@@ -9,7 +9,7 @@ create table if not exists user_contract_views (
     last_promoted_view_ts timestamptz null,
     last_card_view_ts timestamptz null,
     last_page_view_ts timestamptz null,
-    check (promoted_views + card_views + page_views > 0)
+    check (promoted_views + card_views + page_views > 0),
     check (last_page_view_ts is not null or
            last_card_view_ts is not null or
            last_promoted_view_ts is not null)
@@ -23,6 +23,10 @@ create policy "self and admin read" on user_contract_views for select
 create unique index if not exists user_contract_views_user_id on user_contract_views (user_id, contract_id) nulls not distinct;
 
 create index if not exists user_contract_views_contract_id on user_contract_views (contract_id, user_id);
+
+create index if not exists user_contract_views_user_contract_ts
+    on user_contract_views (user_id, contract_id)
+    include (last_page_view_ts, last_promoted_view_ts, last_card_view_ts);
 
 -- insert into user_contract_views (user_id, contract_id, last_promoted_view_ts, promoted_views, last_card_view_ts, card_views, last_page_view_ts, page_views)
 --     select

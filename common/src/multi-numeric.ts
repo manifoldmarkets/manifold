@@ -14,7 +14,7 @@ export const getMultiNumericAnswerMidpoints = (
 }
 
 export const getPrecision = (min: number, max: number, buckets: number) =>
-  (max - min) / buckets
+  Math.abs(max - min) / buckets
 
 export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
   getPrecision(min, max, buckets) % 1 === 0 ? 0 : 2
@@ -119,14 +119,23 @@ export function formatExpectedValue(
   })
   return formatter.format(value).replace('$', '')
 }
+export const getAnswerContainingValue = (
+  value: number,
+  contract: CPMMNumericContract
+) => {
+  const { answers } = contract
+  return find(answers, (a) => {
+    const [start, end] = answerToRange(a)
+    return value >= start && value <= end
+  })
+}
 
 export const getRangeContainingValue = (
   value: number,
-  answerTexts: string[],
-  min: number,
-  max: number
+  contract: CPMMNumericContract
 ) => {
-  const buckets = answerTexts.map((a) => answerTextToRange(a))
+  const { min, max } = contract
+  const buckets = contract.answers.map((a) => answerToRange(a))
   const containingBucket = find(buckets, (bucket) => {
     const [start, end] = bucket
     return value >= start && value <= end
@@ -150,10 +159,8 @@ export const getRangeContainingValues = (
   values: number[],
   contract: CPMMNumericContract
 ) => {
-  const { answers, min, max } = contract
-  const answerTexts = answers.map((a) => a.text)
   const ranges = values.map((amount) =>
-    getRangeContainingValue(amount, answerTexts, min, max)
+    getRangeContainingValue(amount, contract)
   )
   const overallMin = Math.min(...ranges.map((r) => r[0]))
   const overallMax = Math.max(...ranges.map((r) => r[1]))

@@ -28,6 +28,7 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+import { Row } from 'common/supabase/utils'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -52,7 +53,7 @@ export async function updateUserMetricsCore() {
   const random = Math.random()
   const activeUserIds = await pg.map(
     `
-      select distinct users.id, uph.ts
+      select distinct users.id, uph.last_calculated
       from users
         left join user_portfolio_history_latest uph on uph.user_id = users.id
       where (
@@ -62,7 +63,7 @@ export async function updateUserMetricsCore() {
        )
          or ($1 < 0.01 and users.data->'lastBetTime' is not null)
        )
-        order by uph.ts nulls first limit 400`,
+        order by uph.last_calculated nulls first limit 400`,
     [random],
     (r) => r.id as string
   )
@@ -168,7 +169,7 @@ export async function updateUserMetricsCore() {
   )
 
   const userUpdates = []
-  const portfolioUpdates = []
+  const portfolioUpdates = [] as Omit<Row<'user_portfolio_history'>, 'id'>[]
   const contractMetricUpdates = []
 
   log('Loading user balances & deposit information...')
@@ -306,6 +307,15 @@ export async function updateUserMetricsCore() {
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
+      pg.query(
+        `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
+        [
+          new Date(now).toISOString(),
+          activeUserIds.filter(
+            (id) => !portfolioUpdates.some((p) => p.user_id === id)
+          ),
+        ]
+      ),
       writer
         .close()
         .catch((e) => log.error('Error bulk writing user updates', e))

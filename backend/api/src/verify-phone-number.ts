@@ -1,7 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { log } from 'shared/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isProd } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { STARTING_BALANCE, SUS_STARTING_BALANCE } from 'common/economy'
 import { PrivateUser, User } from 'common/user'

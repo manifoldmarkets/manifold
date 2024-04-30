@@ -186,7 +186,7 @@ export function EndpointCardReason(props: {
     )
   }
 
-  return <div />
+  return null
 }
 
 function ProbabilityChange(props: { probChange: number; since?: number }) {

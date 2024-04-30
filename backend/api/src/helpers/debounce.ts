@@ -1,4 +1,4 @@
-import { log } from 'shared/log'
+import { log } from 'shared/utils'
 
 const debouncer: {
   [key: string]: {

@@ -3,10 +3,12 @@ import { createClient } from 'common/supabase/utils'
 export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { log, isProd } from '../utils'
+import { metrics, log, isProd } from '../utils'
 import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
+import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
+import { getMonitoringContext } from 'shared/monitoring/context'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -15,6 +17,16 @@ export const pgp = pgPromise({
       error: err,
       event: e,
     })
+  },
+  query(ev) {
+    const ctx = getMonitoringContext()
+    if (ctx?.endpoint) {
+      metrics.inc('pg/query_count', { endpoint: ctx.endpoint })
+    } else if (ctx?.job) {
+      metrics.inc('pg/query_count', { job: ctx.job })
+    } else {
+      metrics.inc('pg/query_count')
+    }
   },
 })
 // Note: Bigint is not === numeric, so e.g. 0::bigint === 0 is false, but 0::bigint == 0n is true. See more: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt
@@ -57,7 +69,7 @@ export function createSupabaseClient() {
 }
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
-let pgpDirect: IDatabase<IClient> | null = null
+let pgpDirect: IDatabase<{}, IClient> | null = null
 export function createSupabaseDirectClient(
   instanceId?: string,
   password?: string
@@ -75,7 +87,7 @@ export function createSupabaseDirectClient(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
-  pgpDirect = pgp({
+  const client = pgp({
     host: `db.${getInstanceHostname(instanceId)}`,
     port: 5432,
     user: `postgres`,
@@ -83,5 +95,16 @@ export function createSupabaseDirectClient(
     query_timeout: HOUR_MS, // mqp: debugging scheduled job behavior
     max: 20,
   })
-  return pgpDirect
+  const pool = client.$pool
+  pool.on('connect', () => metrics.inc('pg/connections_established'))
+  pool.on('remove', () => metrics.inc('pg/connections_terminated'))
+  pool.on('acquire', () => metrics.inc('pg/connections_acquired'))
+  pool.on('release', () => metrics.inc('pg/connections_released'))
+  setInterval(() => {
+    metrics.set('pg/pool_connections', pool.waitingCount, { state: 'waiting' })
+    metrics.set('pg/pool_connections', pool.idleCount, { state: 'idle' })
+    metrics.set('pg/pool_connections', pool.expiredCount, { state: 'expired' })
+    metrics.set('pg/pool_connections', pool.totalCount, { state: 'total' })
+  }, METRICS_INTERVAL_MS)
+  return (pgpDirect = client)
 }

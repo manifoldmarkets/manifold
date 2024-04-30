@@ -27,7 +27,6 @@ import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { PivotBanner, useBanner } from 'web/components/nav/banner'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 
 export async function getStaticProps() {
   try {
@@ -50,7 +49,7 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const [showBanner, hideBanner] = useBanner('pivot') // in a week, go back to 'manifest'
+  const [showBanner, hideBanner] = useBanner('pivot2') // in a week, go back to 'manifest'
   const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (
@@ -61,9 +60,8 @@ export default function Home(props: { headlines: Headline[] }) {
       banner={
         showBanner && olderUser ? (
           <PivotBanner hideBanner={hideBanner} />
-        ) : (
-          <VerifyPhoneNumberBanner user={user} />
-        )
+        ) : // <VerifyPhoneNumberBanner user={user} />
+        null
       }
     >
       <HeadlineTabs

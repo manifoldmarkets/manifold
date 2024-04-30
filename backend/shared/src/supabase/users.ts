@@ -3,7 +3,6 @@ import { NEW_USER_FEED_DATA_TYPES } from 'common/feed'
 import { Row, SupabaseClient } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { ITask } from 'pg-promise'
-import { IClient } from 'pg-promise/typescript/pg-subset'
 import { MINUTE_MS, WEEK_MS } from 'common/util/time'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { createManualTrendingFeedRow } from 'shared/create-feed'
@@ -106,7 +105,7 @@ export const generateNewUserFeedFromContracts = async (
 const copyOverFeedItems = async (
   userId: string,
   relatedFeedItems: Row<'user_feed'>[],
-  pg: ITask<IClient> & IClient,
+  pg: ITask<{}>,
   timeOffset?: number
 ) => {
   if (relatedFeedItems.length === 0) return []
@@ -162,7 +161,7 @@ export const getMostlyActiveUserIds = async (
          ((data->'lastBetTime')::bigint is null and users.created_time >= $2) or
          (ucv.max_created_time >= $2) or
          ($3 is null or (random() <=  $3))
-         ) 
+         )
         and ($4 is null or id = any($4))
        `,
     [longAgo, new Date(longAgo).toISOString(), randomNumberThreshold, userIds],

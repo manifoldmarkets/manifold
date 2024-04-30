@@ -61,16 +61,15 @@ export function VerifyPhone(props: { onClose: () => void }) {
     <Col className="text-lg">
       {page === 0 && (
         <Col className="items-center justify-center gap-2">
-          <Title>🤖 Prove you're not a robot 🤖</Title>
-          <span className={'-mt-2 mb-2 text-center'}>
-            Verify your phone number to collect your{' '}
+          <span className={'mb-2 mt-2 text-center text-xl'}>
+            Verify your phone number to collect a{' '}
             <span className={'font-bold text-teal-500'}>
               {formatMoney(STARTING_BALANCE)}
             </span>{' '}
             signup bonus.
             <br />
             <br />
-            <span className={'italic'}>
+            <span className={'text-lg italic'}>
               (We won't send you any other messages.)
             </span>
           </span>

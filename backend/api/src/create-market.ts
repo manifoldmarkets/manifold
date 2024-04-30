@@ -14,7 +14,7 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { isVerified, marketCreationCosts, User } from 'common/user'
+import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
@@ -105,12 +105,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (!isVerified(user)) {
-    throw new APIError(
-      403,
-      'You must verify your phone number to create a market.'
-    )
-  }
+  // if (!isVerified(user)) {
+  //   throw new APIError(
+  //     403,
+  //     'You must verify your phone number to create a market.'
+  //   )
+  // }
 
   if (loverUserId1 || loverUserId2) {
     if (auth.uid !== manifoldLoveUserId) {

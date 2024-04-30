@@ -376,6 +376,7 @@ function UserProfile(props: {
                     {!isCurrentUser && (
                       <>
                         <PortfolioValueSection
+                          currentUser={currentUser}
                           user={user}
                           defaultTimePeriod={
                             currentUser?.id === user.id ? 'weekly' : 'monthly'

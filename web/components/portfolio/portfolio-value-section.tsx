@@ -28,6 +28,7 @@ import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     user: User
+    currentUser: User | null | undefined
     defaultTimePeriod: Period
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
@@ -38,6 +39,7 @@ export const PortfolioValueSection = memo(
   }) {
     const {
       user,
+      currentUser,
       hideAddFundsButton,
       defaultTimePeriod,
       portfolio,
@@ -49,7 +51,9 @@ export const PortfolioValueSection = memo(
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>('balance')
+    const [graphMode, setGraphMode] = useState<GraphMode>(
+      currentUser?.id === user.id ? 'balance' : 'profit'
+    )
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
@@ -94,12 +98,22 @@ export const PortfolioValueSection = memo(
     }
 
     const isMobile = useIsMobile()
-
-    console.log(portfolioHistory)
+    const { balance, investmentValue, totalDeposits } =
+      lastPortfolioMetrics ?? {
+        balance: user.balance,
+        investmentValue: 0,
+        totalDeposits: 0,
+      }
+    const totalValue = balance + investmentValue
+    const profit = totalValue - totalDeposits - firstProfit
     if (!portfolioHistory || graphPoints.length <= 1 || !lastPortfolioMetrics) {
       const showDisclaimer = portfolioHistory
+
       return (
         <PortfolioValueSkeleton
+          balance={balance}
+          profit={profit}
+          invested={investmentValue}
           hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
           graphMode={graphMode}
@@ -140,10 +154,6 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
-    const totalValue = balance + investmentValue
-
-    const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
         hideAddFundsButton={hideAddFundsButton}
@@ -303,9 +313,8 @@ function PortfolioValueSkeleton(props: {
       >
         <Row className={clsx('items-start gap-0')}>
           <div className={'text-ink-800 text-4xl'}>
-            <Row className="items-center gap-3">
+            <Row className="flex-wrap items-center gap-3">
               <CoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
-
               {!hideAddFundsButton && graphMode == 'balance' && (
                 <AddFundsButton
                   userId={userId}
