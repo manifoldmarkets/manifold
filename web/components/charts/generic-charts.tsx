@@ -40,10 +40,7 @@ import {
 } from 'web/components/annotate-chart'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
-import {
-  getAnswerContainingValue,
-  getDecimalPlaces,
-} from 'common/multi-numeric'
+import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
 import { CPMMNumericContract } from 'common/contract'
 
 const interpolateY = (
@@ -201,6 +198,21 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
     })
   })
 
+  function getDecimalPlaces(precision: number): number {
+    if (Number.isInteger(precision)) {
+      return 0
+    } else {
+      return Math.floor(Math.abs(Math.log10(precision)))
+    }
+  }
+
+  function formatNumber(num: number, precision: number): string {
+    const decimalPlaces = getDecimalPlaces(precision)
+    const factor = Math.pow(10, decimalPlaces)
+    const roundedNum = Math.floor(num * factor) / factor
+    return roundedNum.toFixed(decimalPlaces)
+  }
+
   return (
     <SVGChart
       w={w}
@@ -212,15 +224,14 @@ export const DoubleDistributionChart = <P extends DistributionPoint>(props: {
       Tooltip={(props) =>
         props && (
           <DistributionChartTooltip
-            getX={(x) =>
-              x.toFixed(
-                getDecimalPlaces(
-                  contract.min,
-                  contract.max,
-                  contract.answers.length
-                )
+            getX={(x) => {
+              const precision = getPrecision(
+                contract.min,
+                contract.max,
+                contract.answers.length
               )
-            }
+              return formatNumber(x, precision)
+            }}
             formatY={(y) => formatPercent(y)}
             ttProps={props}
           />

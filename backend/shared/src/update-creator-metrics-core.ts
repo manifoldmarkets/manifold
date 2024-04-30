@@ -23,13 +23,15 @@ export async function updateCreatorMetricsCore() {
 
   log('Loading active creators...')
   // TODO: check on the timeliness of this query after we fill out the creator_portfolio_history table
+  // Also, once we've computed scores for all old markets, we could focus just on the recent ones
   const activeUserIds = await pg.map(
     `
       select contracts.creator_id, latest_cph.ts
       from (
         select distinct creator_id
         from contracts
-        where close_time > now() - interval '1 month'
+        where outcome_type != 'POLL'
+--         and close_time > now() - interval '1 month'
       ) contracts
         left join lateral (
         select ts

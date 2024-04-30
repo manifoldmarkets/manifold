@@ -14,7 +14,7 @@ export const getMultiNumericAnswerMidpoints = (
 }
 
 export const getPrecision = (min: number, max: number, buckets: number) =>
-  (max - min) / buckets
+  Math.abs(max - min) / buckets
 
 export const getDecimalPlaces = (min: number, max: number, buckets: number) =>
   getPrecision(min, max, buckets) % 1 === 0 ? 0 : 2

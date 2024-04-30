@@ -49,6 +49,13 @@ const manticDollarStripePrice = isProd()
       100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
+const mappedDollarAmounts = {
+  1399: 1000,
+  2999: 2500,
+  10999: 10000,
+  100000: 100000,
+} as { [key: string]: number }
+
 export const createcheckoutsession = async (req: Request, res: Response) => {
   const userId = req.query.userId?.toString()
 
@@ -125,7 +132,9 @@ const issueMoneys = async (session: StripeSession) => {
     console.log('skipping session', sessionId, '; no mana amount')
     return
   }
-  const deposit = Number.parseInt(manticDollarQuantity)
+  const price = Number.parseInt(manticDollarQuantity)
+  const deposit = mappedDollarAmounts[price] ?? price
+  console.log('manticDollarQuantity', manticDollarQuantity, 'deposit', deposit)
 
   const success = await firestore.runTransaction(async (trans) => {
     const query = await trans.get(

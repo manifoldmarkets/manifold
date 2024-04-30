@@ -47,11 +47,16 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
   '💻 Tech': [
     {
+      name: '💻 Technology',
+      groupIds: [
+        'IlzY3moWwOcpsVZXCVej', // Technology
+        'SmJk6RHToaLxLk0I1ZSC', // Space
+      ],
+    },
+    {
       name: '🔬 Science',
       groupIds: [
-        'IlzY3moWwOcpsVZXCVej', // Technology,
         'XMhZ5LbQoLMZiOpQJRnj', // Science
-        'SmJk6RHToaLxLk0I1ZSC', // Space
         '97oNExy8iFftY2EgdkLw', // Climate
         'JpUqUqRn9sSWxrk0Sq35', // Health
       ],
