@@ -225,6 +225,7 @@ export const PortfolioGraph = (props: {
             console.log('click')
             setPortfolioFocus('all')
           }}
+          areaOpacity={1}
         />
       )
     }

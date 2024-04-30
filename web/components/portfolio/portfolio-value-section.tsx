@@ -338,8 +338,10 @@ function PortfolioValueSkeleton(props: {
                     <CoinNumber
                       amount={graphInvested ?? invested}
                       className={clsx(
-                        portfolioFocus == 'investment' && 'font-bold',
-                        portfolioHoveredGraph == 'investment' && 'font-bold'
+                        'transition-all',
+                        (portfolioFocus == 'investment' ||
+                          portfolioHoveredGraph == 'investment') &&
+                          'font-bold'
                       )}
                       isInline
                       coinClassName="top-[0.1rem]"
@@ -363,8 +365,10 @@ function PortfolioValueSkeleton(props: {
                     <CoinNumber
                       amount={graphBalance ?? balance}
                       className={clsx(
-                        portfolioFocus == 'balance' && 'font-bold',
-                        portfolioHoveredGraph == 'balance' && 'font-bold'
+                        'transition-all',
+                        (portfolioFocus == 'balance' ||
+                          portfolioHoveredGraph == 'balance') &&
+                          'font-bold'
                       )}
                       isInline
                       coinClassName="top-[0.1rem]"
