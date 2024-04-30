@@ -21,7 +21,7 @@ select
   using (true);
 
 create
-or replace function txns populate_cols () returns trigger language plpgsql as $$
+or replace function txns_populate_cols () returns trigger language plpgsql as $$
 begin
     if new.data is not null then
     new.created_time :=
@@ -37,10 +37,10 @@ begin
 end
 $$;
 
-create trigger txns populate before insert
-or
-update on txns for each row
-execute function txns populate_cols ();
+create trigger txns_populate before insert
+    or
+    update on txns for each row
+    execute function txns_populate_cols ();
 
 create
 or replace function get_daily_claimed_boosts (user_id text) returns table (total numeric) as $$
@@ -72,4 +72,17 @@ or replace function get_donations_by_charity () returns table (
     order by total desc
 $$ language sql;
 
-tegory
+create index if not exists txns_category_to_id
+    on txns (category, to_id);
+
+create index if not exists  txns_category_native
+    on txns (category);
+
+create index if not exists  txns_to_created_time
+    on txns (to_id, created_time);
+
+create index if not exists  txns_from_created_time
+    on txns (from_id, created_time);
+
+create index if not exists txns_category_to_id_from_id
+    on txns (category,to_id,from_id)

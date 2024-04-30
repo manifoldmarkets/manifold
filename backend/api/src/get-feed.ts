@@ -86,9 +86,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   )
 
   const adsJoin = renderSql(
-    select(`id, market_id, funds, cost_per_view`),
+    select(`market_ads.id, market_id, funds, cost_per_view`),
     from(`market_ads`),
+    join(`contracts on market_ads.market_id = contracts.id`),
     where(`funds >= cost_per_view`),
+    where(`contracts.close_time > now()`),
     where(`not exists (${claimedAdsQuery})`),
     order(`cost_per_view desc`),
     lim(500)
