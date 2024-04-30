@@ -207,8 +207,8 @@ export const PortfolioGraph = (props: {
           zoomParams={zoomParams}
           yKind="Ṁ"
           data={portfolioFocus == 'balance' ? balancePoints : investmentPoints}
-          // eslint-disable-next-line react/prop-types
           Tooltip={(props) => (
+            // eslint-disable-next-line react/prop-types
             <PortfolioTooltip date={xScale.invert(props.x)} />
           )}
           onMouseOver={(p) => {

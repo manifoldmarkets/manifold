@@ -200,6 +200,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
         Tooltip={(props) => {
+          // eslint-disable-next-line react/prop-types
           const date = xScale.invert(props.x)
           const d = dayjs(date)
           return (
@@ -241,14 +242,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
           }))
           return (
             <>
-              {/* <LinePath
-                  data={points}
-                  px={px}
-                  py={py}
-                  curve={curve}
-                  className={clsx(' transition-[stroke-width]', 'stroke-2')}
-                  stroke={color}
-                /> */}
               <AreaPath<AreaPointType>
                 key={id}
                 data={areaData}

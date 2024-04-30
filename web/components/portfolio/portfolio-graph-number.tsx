@@ -24,7 +24,7 @@ export function PortfolioGraphNumber(props: {
   return (
     <div
       className={clsx(
-        'group cursor-pointer select-none  transition-opacity',
+        'group cursor-pointer select-none text-2xl transition-opacity sm:text-4xl',
         portfolioFocus == numberType
           ? 'opacity-100'
           : portfolioFocus !== 'all' && portfolioFocus !== numberType
@@ -33,7 +33,7 @@ export function PortfolioGraphNumber(props: {
       )}
       onClick={onClick}
     >
-      <span>
+      <span className="whitespace-nowrap">
         <CoinNumber
           amount={displayedAmount}
           className={clsx(
@@ -43,14 +43,14 @@ export function PortfolioGraphNumber(props: {
               'font-bold'
           )}
           isInline
-          coinClassName="top-[0.1rem]"
+          coinClassName="top-[0.25rem] sm:top-[0.1rem]"
           style={{
             color: color,
           }}
         />
         <span
           className={clsx(
-            'text-ink-600 group-hover:text-ink-700 text-base transition-all'
+            'text-ink-600 group-hover:text-ink-700 text-sm transition-all sm:text-base'
           )}
         >
           {' '}

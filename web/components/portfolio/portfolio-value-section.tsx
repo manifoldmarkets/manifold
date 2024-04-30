@@ -287,7 +287,7 @@ function PortfolioValueSkeleton(props: {
 
   return (
     <Col>
-      <Row>
+      <Row className="justify-between">
         <Row className={clsx('grow items-start gap-0')}>
           <PortfolioTab
             onClick={() => setGraphMode('portfolio')}
@@ -313,24 +313,20 @@ function PortfolioValueSkeleton(props: {
             />
           </PortfolioTab>
         </Row>
+        {!hideAddFundsButton && (
+          <AddFundsButton
+            userId={userId}
+            className=" hidden self-center whitespace-nowrap sm:flex"
+          />
+        )}
       </Row>
       <Col
         className={clsx(
           'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none'
-          // graphMode == 'invested' ? 'rounded-tr-none sm:rounded-lg' : ''
         )}
       >
-        <Row className={clsx('items-start gap-0')}>
-          <div className={'text-ink-800 text-4xl'}>
-            {/* <Row className="items-center gap-3">
-              {!hideAddFundsButton && graphMode == 'portfolio' && (
-                <
-                <AddFundsButton
-                  userId={userId}
-                  className=" self-center whitespace-nowrap"
-                />
-              )}
-            </Row> */}
+        <Row className={clsx('justify-between gap-0')}>
+          <div>
             {graphMode == 'portfolio' && (
               <>
                 <PortfolioGraphNumber
@@ -382,9 +378,17 @@ function PortfolioValueSkeleton(props: {
               setCurrentTimePeriod={setCurrentTimePeriod}
               color={switcherColor}
               disabled={disabled}
-              className="bg-canvas-50 ml-auto border-0"
+              className="bg-canvas-50 ml-auto h-fit border-0"
               toggleClassName={'w-12 justify-center'}
             />
+          )}
+          {!hideAddFundsButton && (
+            <Col>
+              <AddFundsButton
+                userId={userId}
+                className=" self-center whitespace-nowrap sm:hidden"
+              />
+            </Col>
           )}
         </Row>
         <SizedContainer
