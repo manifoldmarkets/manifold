@@ -57,7 +57,7 @@ export const PortfolioGraph = (props: {
     width,
     height,
     zoomParams,
-    negativeThreshold,
+    negativeThreshold = 0,
     hideXAxis,
     setGraphBalance,
     setGraphInvested,
@@ -184,7 +184,6 @@ export const PortfolioGraph = (props: {
           data={{
             balance: { points: balancePoints, color: BALANCE_COLOR },
             investment: { points: investmentPoints, color: INVESTMENT_COLOR },
-            net: { points: networthPoints, color: '#4f46e5' },
           }}
           w={width > 768 ? 768 : width}
           h={height}

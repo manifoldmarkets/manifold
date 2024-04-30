@@ -21,6 +21,9 @@ import clsx from 'clsx'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { BALANCE_COLOR, PortfolioMode } from './portfolio-value-graph'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import { Col } from '../layout/col'
+import dayjs from 'dayjs'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 type AreaPointType = {
   x: number // The x-coordinate
@@ -44,7 +47,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   yKind?: ValueKind
   curve?: CurveFactory
   hoveringId?: string
-  Tooltip?: (props: TooltipProps<P> & { ans: string }) => ReactNode
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
@@ -61,7 +63,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     yScale,
     zoomParams,
     showZoomer,
-    Tooltip,
     pointerMode = 'zoom',
     hoveredAnnotation,
     setHoveredAnnotation,
@@ -134,7 +135,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   const unstackedSelectors = useMemo(() => {
     // Create a new object where keys are the IDs of each dataset and values are the selector functions
     return Object.fromEntries(
-      Object.entries(data).map(([id, { points, color }]) => {
+      Object.entries(data).map(([id, { points }]) => {
         // For each dataset, create a selector function that can find the data point based on the x-value
         return [id, dataAtXSelector(points, xScale)]
       })
@@ -142,9 +143,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   }, [data, xScale])
 
   const getMarkerPosition = useEvent((mouseX: number, mouseY: number) => {
-    const valueY = yScale.invert(mouseY)
     const ps = stackedData.map((data) => selectors[data.id](mouseX))
-    const unstackedPs = Object.entries(data).map(([id, { points, color }]) => {
+    const unstackedPs = Object.entries(data).map(([id]) => {
       return unstackedSelectors[id](mouseX)
     })
     const topmostIdx = stackedData.length - 1
@@ -187,6 +187,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     const point = selector(time)
     return point ? yScale(point.nearest.y) : null
   }
+
   return (
     <>
       <SVGChart
@@ -198,7 +199,27 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         zoomParams={zoomParams}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
-        Tooltip={Tooltip}
+        Tooltip={(props) => {
+          const date = xScale.invert(props.x)
+          const d = dayjs(date)
+          return (
+            <Col className="text-xs sm:text-sm">
+              {ttParams && ttParams.prev && (
+                <span className="text-ink-900">
+                  <CoinNumber
+                    amount={ttParams.prev.y}
+                    isInline
+                    className="font-semibold"
+                  />{' '}
+                  <span>net</span>
+                </span>
+              )}
+              <div className="text-2xs text-ink-600 font-normal sm:text-xs">
+                {d.format('MMM/D/YY')} {d.format('h:mm A')}
+              </div>
+            </Col>
+          )
+        }}
         noGridlines
         className="group"
         pointerMode={pointerMode}
@@ -211,17 +232,16 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         }
       >
         {stackedData.map(({ id, points, color }, i) => {
-          if (id !== 'net') {
-            const { points: previousPoints } =
-              i > 0 ? stackedData[i - 1] : { points: undefined }
-            const areaData = points.map((point, idx) => ({
-              x: point.x,
-              y0: previousPoints ? previousPoints[idx].y : 0, // Use previous dataset's y if available, otherwise use 0
-              y1: point.y,
-            }))
-            return (
-              <>
-                {/* <LinePath
+          const { points: previousPoints } =
+            i > 0 ? stackedData[i - 1] : { points: undefined }
+          const areaData = points.map((point, idx) => ({
+            x: point.x,
+            y0: previousPoints ? previousPoints[idx].y : 0, // Use previous dataset's y if available, otherwise use 0
+            y1: point.y,
+          }))
+          return (
+            <>
+              {/* <LinePath
                   data={points}
                   px={px}
                   py={py}
@@ -229,39 +249,29 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
                   className={clsx(' transition-[stroke-width]', 'stroke-2')}
                   stroke={color}
                 /> */}
-                <AreaPath<AreaPointType>
-                  key={id}
-                  data={areaData}
-                  px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
-                  py0={(d) => yScale(d.y0)} // Lower boundary
-                  py1={(d) => yScale(d.y1)} // Upper boundary
-                  fill={color}
-                  curve={curve}
-                  opacity={portfolioHoveredGraph == id ? 1 : 0.85}
-                  className="transition-opacity"
-                  onClick={() => {
-                    setPortfolioFocus(id as PortfolioMode)
-                  }}
-                  onMouseEnter={() => {
-                    setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
-                  }}
-                  onMouseLeave={() => {
-                    setPortfolioHoveredGraph(undefined)
-                  }}
-                />
-              </>
-            )
-          }
+              <AreaPath<AreaPointType>
+                key={id}
+                data={areaData}
+                px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
+                py0={(d) => yScale(d.y0)} // Lower boundary
+                py1={(d) => yScale(d.y1)} // Upper boundary
+                fill={color}
+                curve={curve}
+                opacity={portfolioHoveredGraph == id ? 1 : 0.85}
+                className="transition-opacity"
+                onClick={() => {
+                  setPortfolioFocus(id as PortfolioMode)
+                }}
+                onMouseEnter={() => {
+                  setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
+                }}
+                onMouseLeave={() => {
+                  setPortfolioHoveredGraph(undefined)
+                }}
+              />
+            </>
+          )
         })}
-        <LinePath
-          data={data.net.points}
-          px={px}
-          py={py}
-          curve={curve}
-          className={clsx(' transition-[stroke-width]', 'stroke-2')}
-          // stroke={'#4f46e5'}
-          stroke={'var(--color-ink-1000)'}
-        />
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"
