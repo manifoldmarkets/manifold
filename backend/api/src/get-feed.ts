@@ -120,7 +120,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
       !boosts &&
         leftJoin(
-          `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`
+          `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id and cv.latest_seen_time is null`
         ),
       where(`contracts.close_time > now() and contracts.visibility = 'public'`),
       where(
@@ -152,12 +152,12 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       `contracts.creator_id in (select follow_id from user_follows where user_id = $1)`,
       [userId]
     ),
-    order(`cv.latest_seen_time nulls first, contracts.conversion_score desc`)
+    order(`contracts.conversion_score desc`)
   )
   const sorts = {
-    conversion: `cv.latest_seen_time nulls first, uti.avg_conversion_score  * contracts.conversion_score desc`,
-    importance: `cv.latest_seen_time nulls first, uti.avg_conversion_score  * contracts.importance_score desc`,
-    freshness: `cv.latest_seen_time nulls first, uti.avg_conversion_score  * contracts.freshness_score desc`,
+    conversion: `uti.avg_conversion_score  * contracts.conversion_score desc`,
+    importance: `uti.avg_conversion_score  * contracts.importance_score desc`,
+    freshness: `uti.avg_conversion_score  * contracts.freshness_score desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
     renderSql(...baseQueryArray(), order(orderQ))
@@ -173,6 +173,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   if (DEBUG) {
     const explain = await pg.many(`explain analyze ${sortQueries[0]}`, [])
     log('explain:', explain.map((q) => q['QUERY PLAN']).join('\n'))
+    const explainAds = await pg.many(`explain analyze ${adsQuery}`, [])
+    log('explain:', explainAds.map((q) => q['QUERY PLAN']).join('\n'))
   }
   const startTime = Date.now()
   const [
