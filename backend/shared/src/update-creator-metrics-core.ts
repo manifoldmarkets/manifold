@@ -30,7 +30,8 @@ export async function updateCreatorMetricsCore() {
       from (
         select distinct creator_id
         from contracts
---        where close_time > now() - interval '1 month'
+        where outcome_type != 'POLL'
+--         and close_time > now() - interval '1 month'
       ) contracts
         left join lateral (
         select ts
