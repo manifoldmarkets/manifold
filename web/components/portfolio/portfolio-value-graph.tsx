@@ -11,6 +11,7 @@ import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
+import { PortfolioHoveredGraphType } from './portfolio-value-section'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all'
@@ -44,6 +45,8 @@ export const PortfolioGraph = (props: {
   setGraphProfit: (profit: number | undefined) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
+  portfolioHoveredGraph: PortfolioHoveredGraphType
+  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) => {
   const {
     mode,
@@ -61,6 +64,8 @@ export const PortfolioGraph = (props: {
     setGraphProfit,
     portfolioFocus,
     setPortfolioFocus,
+    portfolioHoveredGraph,
+    setPortfolioHoveredGraph,
   } = props
 
   const { profitPoints, investmentPoints, balancePoints, networthPoints } =
@@ -179,6 +184,7 @@ export const PortfolioGraph = (props: {
           data={{
             balance: { points: balancePoints, color: BALANCE_COLOR },
             investment: { points: investmentPoints, color: INVESTMENT_COLOR },
+            net: { points: networthPoints, color: '#4f46e5' },
           }}
           w={width > 768 ? 768 : width}
           h={height}
@@ -188,6 +194,8 @@ export const PortfolioGraph = (props: {
           setGraphBalance={setGraphBalance}
           setGraphInvested={setGraphInvested}
           setPortfolioFocus={setPortfolioFocus}
+          portfolioHoveredGraph={portfolioHoveredGraph}
+          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
         />
       )
     } else {

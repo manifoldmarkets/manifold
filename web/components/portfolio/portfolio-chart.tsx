@@ -19,7 +19,8 @@ import {
 import { ZoomSlider } from '../charts/zoom-slider'
 import clsx from 'clsx'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import { PortfolioMode } from './portfolio-value-graph'
+import { BALANCE_COLOR, PortfolioMode } from './portfolio-value-graph'
+import { PortfolioHoveredGraphType } from './portfolio-value-section'
 
 type AreaPointType = {
   x: number // The x-coordinate
@@ -50,6 +51,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   setGraphBalance: (balance: number | undefined) => void
   setGraphInvested: (invested: number | undefined) => void
   setPortfolioFocus: (mode: PortfolioMode) => void
+  portfolioHoveredGraph: PortfolioHoveredGraphType
+  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) => {
   const {
     data,
@@ -66,6 +69,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     setGraphBalance,
     setGraphInvested,
     setPortfolioFocus,
+    portfolioHoveredGraph,
+    setPortfolioHoveredGraph,
   } = props
 
   useEffect(() => {
@@ -191,8 +196,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     const point = selector(time)
     return point ? yScale(point.nearest.y) : null
   }
-
-  const hoverData = stackedData.find((data) => data.id == hoveringId)
   return (
     <>
       <SVGChart
@@ -217,44 +220,61 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         }
       >
         {stackedData.map(({ id, points, color }, i) => {
-          const { points: previousPoints } =
-            i > 0 ? stackedData[i - 1] : { points: undefined }
-          const areaData = points.map((point, idx) => ({
-            x: point.x,
-            y0: previousPoints ? previousPoints[idx].y : yScale(0), // Use previous dataset's y if available, otherwise use 0
-            y1: point.y,
-          }))
-          return (
-            <>
-              <LinePath
-                data={points}
-                px={px}
-                py={py}
-                curve={curve}
-                className={clsx(' transition-[stroke-width]', 'stroke-2')}
-                stroke={color}
-              />
-              <AreaPath<AreaPointType>
-                key={id}
-                data={areaData}
-                px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
-                py0={(d) => yScale(d.y0)} // Lower boundary
-                py1={(d) => yScale(d.y1)} // Upper boundary
-                fill={color}
-                curve={curve}
-                opacity={hoveringId == id ? 1 : 0.5}
-                className="transition-opacity"
-                onClick={() => {
-                  if (hoveringId) {
-                    setPortfolioFocus(hoveringId as PortfolioMode)
-                  } else {
-                    setPortfolioFocus(id as PortfolioMode)
-                  }
-                }}
-              />
-            </>
-          )
+          if (id !== 'net') {
+            const { points: previousPoints } =
+              i > 0 ? stackedData[i - 1] : { points: undefined }
+            const areaData = points.map((point, idx) => ({
+              x: point.x,
+              y0: previousPoints ? previousPoints[idx].y : 0, // Use previous dataset's y if available, otherwise use 0
+              y1: point.y,
+            }))
+            return (
+              <>
+                {/* <LinePath
+                  data={points}
+                  px={px}
+                  py={py}
+                  curve={curve}
+                  className={clsx(' transition-[stroke-width]', 'stroke-2')}
+                  stroke={color}
+                /> */}
+                <AreaPath<AreaPointType>
+                  key={id}
+                  data={areaData}
+                  px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
+                  py0={(d) => yScale(d.y0)} // Lower boundary
+                  py1={(d) => yScale(d.y1)} // Upper boundary
+                  fill={color}
+                  curve={curve}
+                  // opacity={hoveringId == id ? 1 : 0.9}
+                  // className="transition-opacity"
+                  onClick={() => {
+                    if (hoveringId) {
+                      setPortfolioFocus(hoveringId as PortfolioMode)
+                    } else {
+                      setPortfolioFocus(id as PortfolioMode)
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
+                  }}
+                  onMouseLeave={() => {
+                    setPortfolioHoveredGraph(undefined)
+                  }}
+                />
+              </>
+            )
+          }
         })}
+        <LinePath
+          data={data.net.points}
+          px={px}
+          py={py}
+          curve={curve}
+          className={clsx(' transition-[stroke-width]', 'stroke-2')}
+          stroke={BALANCE_COLOR}
+          strokeDasharray={'5 3 '}
+        />
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"

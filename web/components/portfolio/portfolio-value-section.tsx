@@ -35,6 +35,8 @@ import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 
+export type PortfolioHoveredGraphType = 'balance' | 'investment' | undefined
+
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
     currentUser: User | null | undefined
@@ -77,6 +79,9 @@ export const PortfolioValueSection = memo(
     const [graphProfit, setGraphProfit] = useState<number | undefined>(
       undefined
     )
+
+    const [portfolioHoveredGraph, setPortfolioHoveredGraph] =
+      useState<PortfolioHoveredGraphType>(undefined)
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
@@ -159,6 +164,7 @@ export const PortfolioValueSection = memo(
         switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={setPortfolioFocus}
+        portfolioHoveredGraph={portfolioHoveredGraph}
         graphElement={(width, height) => (
           <PortfolioGraph
             mode={graphMode}
@@ -174,6 +180,8 @@ export const PortfolioValueSection = memo(
             setGraphProfit={setGraphProfit}
             portfolioFocus={portfolioFocus}
             setPortfolioFocus={setPortfolioFocus}
+            portfolioHoveredGraph={portfolioHoveredGraph}
+            setPortfolioHoveredGraph={setPortfolioHoveredGraph}
           />
         )}
         onlyShowProfit={onlyShowProfit}
@@ -221,6 +229,7 @@ function PortfolioValueSkeleton(props: {
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
+  portfolioHoveredGraph?: PortfolioHoveredGraphType
 }) {
   const {
     graphMode,
@@ -248,6 +257,7 @@ function PortfolioValueSkeleton(props: {
     setPortfolioFocus,
     portfolio,
     user,
+    portfolioHoveredGraph,
   } = props
   const profitLabel = onlyShowProfit
     ? {
@@ -328,7 +338,8 @@ function PortfolioValueSkeleton(props: {
                     <CoinNumber
                       amount={graphInvested ?? invested}
                       className={clsx(
-                        portfolioFocus == 'investment' && 'font-bold'
+                        portfolioFocus == 'investment' && 'font-bold',
+                        portfolioHoveredGraph == 'investment' && 'font-bold'
                       )}
                       isInline
                       coinClassName="top-[0.1rem]"
@@ -352,7 +363,8 @@ function PortfolioValueSkeleton(props: {
                     <CoinNumber
                       amount={graphBalance ?? balance}
                       className={clsx(
-                        portfolioFocus == 'balance' && 'font-bold'
+                        portfolioFocus == 'balance' && 'font-bold',
+                        portfolioHoveredGraph == 'balance' && 'font-bold'
                       )}
                       isInline
                       coinClassName="top-[0.1rem]"
