@@ -45,7 +45,7 @@ function serializeValue(entry: MetricStoreEntry) {
       if (points.length > 0) {
         result['range'] = { min: Math.min(...points), max: Math.max(...points) }
       }
-      return result
+      return { distributionValue: result }
     }
     default:
       throw new Error('Other value kinds not yet implemented.')

@@ -19,6 +19,14 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'http/request_count': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'http/request_latency': {
+    metricKind: 'GAUGE',
+    valueKind: 'distributionValue',
+  },
   'app/bet_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',

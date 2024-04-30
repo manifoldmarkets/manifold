@@ -1,9 +1,10 @@
+import { hrtime } from 'node:process'
 import * as cors from 'cors'
 import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/monitoring/log'
+import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
@@ -170,15 +171,20 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestContext: RequestHandler = (req, _res, next) => {
+const requestMonitoring: RequestHandler = (req, _res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
   withMonitoringContext(context, () => {
+    const startTs = hrtime.bigint()
     log(`${req.method} ${req.url}`)
+    metrics.inc('http/request_count', { endpoint: req.path })
     next()
+    const endTs = hrtime.bigint()
+    const latencyMs = Number(endTs - startTs) / 1e6
+    metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
   })
 }
 
@@ -210,7 +216,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestContext)
+app.use(requestMonitoring)
 
 app.options('*', allowCorsUnrestricted)
 
