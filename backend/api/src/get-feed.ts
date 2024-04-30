@@ -30,6 +30,7 @@ const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
 } = {}
 const DEBUG = process.platform === 'darwin'
+const DEBUG_TIME_FRAME = '30 minutes'
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
@@ -37,9 +38,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const userId = DEBUG
     ? await pg.one(
         `select user_id from user_contract_interactions
-            where created_time > now() - interval '10 minutes'
+            where created_time > now() - interval $1
             order by random() limit 1`,
-        [],
+        [DEBUG_TIME_FRAME],
         (r) => r.user_id as string
       )
     : props.userId
@@ -320,7 +321,7 @@ export const buildUserInterestsCache = async (userId?: string) => {
     const recentlyActiveUserIds = await pg.map(
       `select distinct user_id from user_contract_interactions
               where created_time > now() - interval $1`,
-      [DEBUG ? '10 minutes' : '1 month'],
+      [DEBUG ? DEBUG_TIME_FRAME : '1 month'],
       (r) => r.user_id as string
     )
     activeUserIds.push(...recentlyActiveUserIds)
