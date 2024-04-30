@@ -23,8 +23,9 @@ import { log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
-import { Row } from 'common/supabase/utils'
 import { adContract } from 'common/boost'
+import { Repost } from 'common/repost'
+import { DAY_MS } from 'common/util/time'
 
 const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
@@ -168,7 +169,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     topicConversionScore: number
     adId?: string
     comment?: ContractComment
-    repost?: Row<'posts'>
+    repost?: Repost
     bet?: Bet
   }
   if (DEBUG) {
@@ -224,6 +225,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
          contracts.conversion_score,
          contracts.freshness_score,
          contract_comments.data as comment,
+         contract_comments.likes as comment_likes,
          contract_bets.data as bet_data,
          posts.*
         from posts
@@ -233,9 +235,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
            left join contract_bets on contract_comments.data->>'betId' = contract_bets.bet_id
             where posts.user_id in ( select follow_id from user_follows where user_id = $1)
             and posts.created_time > greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
-            and posts.created_time > now() - interval '1 week';
+            and posts.created_time > now() - interval '1 week'
+        order by posts.created_time desc
+        offset $2 limit $3
 `,
-      [userId],
+      [userId, offset, limit],
       (r) => {
         const {
           contract_data,
@@ -245,18 +249,26 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           conversion_score,
           comment,
           bet_data,
+          comment_likes,
           ...rest
         } = r as any
+        const timeDelta = Date.now() - new Date(r.created_time).getTime()
+        const daysDelta = Math.max(Math.round(timeDelta / DAY_MS), 1)
+
         return {
           contract: convertContract({
             data: contract_data,
-            importance_score,
+            importance_score: (importance_score + comment_likes) / daysDelta,
             view_count,
-            freshness_score,
+            freshness_score: (freshness_score + 1) / daysDelta,
             conversion_score,
           }),
-          comment: comment as ContractComment,
+          comment: {
+            ...comment,
+            likes: comment_likes,
+          },
           bet: bet_data as Bet,
+          // TODO: get topic conversion score to rank reposts as well
           topicConversionScore: 1,
           repost: rest,
         } as contractAndMore
