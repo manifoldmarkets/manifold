@@ -806,7 +806,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         Tooltip={Tooltip}
         onClick={(x: number, y: number) => {
           onClick(x, y)
-          onGraphClick && onGraphClick()
+          if (onGraphClick) {
+            onGraphClick()
+          }
         }}
         xScale={xScale}
         y0={py0}

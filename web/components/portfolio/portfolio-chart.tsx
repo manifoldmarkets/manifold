@@ -249,11 +249,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
                   // opacity={hoveringId == id ? 1 : 0.9}
                   // className="transition-opacity"
                   onClick={() => {
-                    if (hoveringId) {
-                      setPortfolioFocus(hoveringId as PortfolioMode)
-                    } else {
-                      setPortfolioFocus(id as PortfolioMode)
-                    }
+                    setPortfolioFocus(id as PortfolioMode)
                   }}
                   onMouseEnter={() => {
                     setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
