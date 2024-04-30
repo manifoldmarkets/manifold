@@ -34,9 +34,7 @@ pgp.pg.types.setTypeParser(20, BigInt) // Type Id 20 = BIGINT | BIGSERIAL
 pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 
 export type SupabaseTransaction = ITask<IClient>
-export type SupabaseDirectClient =
-  | IDatabase<IClient, IClient>
-  | SupabaseTransaction
+export type SupabaseDirectClient = IDatabase<{}, IClient> | SupabaseTransaction
 
 export function getInstanceId() {
   return (
