@@ -19,8 +19,8 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 
-export function ScoredFeed(props: { userId: string; className?: string }) {
-  const { userId, className } = props
+export function ScoredFeed(props: { userId: string }) {
+  const { userId } = props
   const user = useUser()
   const [offset, setOffset] = usePersistentInMemoryState(
     0,
@@ -49,6 +49,11 @@ export function ScoredFeed(props: { userId: string; className?: string }) {
     },
     ['ignoreContractIds']
   )
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setLoading(false)
+  }, [feedData.contracts.length])
 
   if (error) {
     console.error(error.message)
@@ -67,11 +72,10 @@ export function ScoredFeed(props: { userId: string; className?: string }) {
   }, [data])
   const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
 
-  if (data === undefined && contracts.length === 0)
-    return <LoadingIndicator className={className} />
+  if (data === undefined && contracts.length === 0) return <LoadingIndicator />
 
   return (
-    <Col className={clsx('relative w-full gap-4', className)}>
+    <Col className={clsx('relative w-full gap-4')}>
       {contracts.map((contract, i) => {
         const repost = reposts.find((r) => r.contract_id === contract.id)
         const comment = comments.find((c) => c.contractId === contract.id)
@@ -105,11 +109,15 @@ export function ScoredFeed(props: { userId: string; className?: string }) {
         )
       })}
       <div className="relative">
+        {loading && <LoadingIndicator />}
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-          onVisibilityUpdated={(visible) =>
-            visible && setOffset(offset + limit)
-          }
+          onVisibilityUpdated={(visible) => {
+            if (visible) {
+              setLoading(true)
+              setOffset(offset + limit)
+            }
+          }}
         />
       </div>
       {contracts.length === 0 && (
