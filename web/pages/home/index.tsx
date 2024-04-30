@@ -6,8 +6,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { FeedTimeline } from 'web/components/feed-timeline'
+import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/firebase/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
@@ -18,15 +17,12 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { useSaveScroll } from 'web/hooks/use-save-scroll'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { simpleFromNow } from 'web/lib/util/shortenedFromNow'
-import {
-  PrivateUser,
-  freeQuestionRemaining,
-  DAYS_TO_USE_FREE_QUESTIONS,
-} from 'common/user'
+import { freeQuestionRemaining, DAYS_TO_USE_FREE_QUESTIONS } from 'common/user'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { PivotBanner, useBanner } from 'web/components/nav/banner'
+import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export async function getStaticProps() {
   try {
@@ -45,7 +41,6 @@ export async function getStaticProps() {
 export default function Home(props: { headlines: Headline[] }) {
   useRedirectIfSignedOut()
   const user = useUser()
-  const privateUser = usePrivateUser()
   useSaveReferral(user)
   useSaveScroll('home')
 
@@ -70,20 +65,13 @@ export default function Home(props: { headlines: Headline[] }) {
         currentSlug={'home'}
         hideEmoji
       />
-      {!user ? (
-        <LoadingIndicator />
-      ) : (
-        <HomeContent user={user} privateUser={privateUser} />
-      )}
+      {!user ? <LoadingIndicator /> : <HomeContent user={user} />}
     </Page>
   )
 }
 
-export function HomeContent(props: {
-  user: User | undefined | null
-  privateUser: PrivateUser | undefined | null
-}) {
-  const { user, privateUser } = props
+export function HomeContent(props: { user: User | undefined | null }) {
+  const { user } = props
   const remaining = freeQuestionRemaining(
     user?.freeQuestionsCreated,
     user?.createdTime
@@ -128,7 +116,7 @@ export function HomeContent(props: {
         />
       )}
 
-      {privateUser && (
+      {user && (
         <Col className={clsx('w-full sm:px-2')}>
           {welcomeTopicsEnabled && memberTopicsWithContracts && (
             <WelcomeTopicSections
@@ -136,7 +124,7 @@ export function HomeContent(props: {
             />
           )}
 
-          <FeedTimeline user={user} privateUser={privateUser} />
+          <LiveGeneratedFeed userId={user.id} />
         </Col>
       )}
       <button
