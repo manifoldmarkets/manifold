@@ -1,4 +1,3 @@
-import * as Sprig from 'web/lib/service/sprig'
 // eslint-disable-next-line no-restricted-imports
 import * as amplitude from '@amplitude/analytics-browser'
 import { ENV, ENV_CONFIG } from 'common/envs/constants'
@@ -73,7 +72,6 @@ export const withTracking =
 
 export function identifyUser(userId: string | null) {
   if (userId) {
-    Sprig.setUserId(userId)
     amplitude.setUserId(userId)
   } else {
     amplitude.setUserId(null as any)
@@ -81,7 +79,6 @@ export function identifyUser(userId: string | null) {
 }
 
 export async function setUserProperty(property: string, value: string) {
-  Sprig.setAttributes({ [property]: value })
   const identifyObj = new amplitude.Identify()
   identifyObj.set(property, value)
   await amplitude.identify(identifyObj).promise
