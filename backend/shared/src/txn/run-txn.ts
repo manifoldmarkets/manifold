@@ -6,10 +6,10 @@ import { isAdminId } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 import { SupabaseTransaction } from 'shared/supabase/init'
-import { log } from 'shared/log'
 import { Row } from 'common/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
+import { log } from 'shared/utils'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
