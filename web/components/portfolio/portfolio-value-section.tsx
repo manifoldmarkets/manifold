@@ -406,7 +406,7 @@ function PortfolioValueSkeleton(props: {
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="bg-canvas-50 mt-1 border-0"
+            className="bg-canvas-50 mt-8 border-0"
             toggleClassName="grow justify-center"
           />
         )}

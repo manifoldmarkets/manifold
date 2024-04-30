@@ -12,6 +12,7 @@ import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import { Spacer } from '../layout/spacer'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all'
