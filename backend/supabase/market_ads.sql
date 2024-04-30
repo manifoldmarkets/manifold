@@ -22,3 +22,5 @@ create policy "public read" on market_ads for
 drop policy if exists "admin write access" on market_ads;
 
 create policy "admin write access" on market_ads as PERMISSIVE for all to service_role;
+
+create index concurrently market_ad_cost on market_ads (cost_per_view desc);

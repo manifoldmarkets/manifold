@@ -24,6 +24,7 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { Row } from 'common/supabase/utils'
+import { adContract } from 'common/boost'
 
 const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
@@ -76,39 +77,75 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
   )
 
-  const baseQueryArray = buildArray(
-    select(`contracts.*, uti.avg_conversion_score as topic_conversion_score`),
-    from(
-      `(select
+  const claimedAdsQuery = renderSql(
+    select('1'),
+    from(`txns`),
+    where(`category = 'MARKET_BOOST_REDEEM'`),
+    where(`to_id = $1`, [userId]),
+    where(`from_id = market_ads.id`)
+  )
+
+  const adsJoin = renderSql(
+    select(`id, market_id, funds, cost_per_view`),
+    from(`market_ads`),
+    where(`funds >= cost_per_view`),
+    where(`not exists (${claimedAdsQuery})`),
+    order(`cost_per_view desc`),
+    lim(500)
+  )
+
+  const baseQueryArray = (boosts = false) =>
+    buildArray(
+      !boosts
+        ? select(
+            `contracts.*, uti.avg_conversion_score as topic_conversion_score`
+          )
+        : select(
+            `contracts.*, uti.avg_conversion_score as topic_conversion_score, ma.id as ad_id`
+          ),
+      from(
+        `(select
                unnest(array[$1]) as group_id,
                unnest(array[$2]) as avg_conversion_score) as uti`,
-      [
-        Object.keys(userIdsToAverageTopicConversionScores[userId]),
-        Object.values(userIdsToAverageTopicConversionScores[userId]),
-      ]
-    ),
-    join(`groups on groups.id = uti.group_id`),
-    join(`group_contracts on group_contracts.group_id = uti.group_id`),
-    join(`contracts on contracts.id = group_contracts.contract_id`),
-    // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
-    leftJoin(`(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`),
-    where(`contracts.close_time > now() and contracts.visibility = 'public'`),
-    where(
-      `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
-      [userId]
-    ),
-    (ignoreContractIds?.length ?? 0) > 0 &&
-      where(`contracts.id <> any(array[$1])`, [ignoreContractIds]),
-    blockedIds.length > 0 &&
-      where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
-    blockedContractIds.length > 0 &&
-      where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
-    blockedGroupSlugs.length > 0 && where(`not exists (${blockedGroupsQuery})`),
-    lim(limit, offset)
+        [
+          Object.keys(userIdsToAverageTopicConversionScores[userId]),
+          Object.values(userIdsToAverageTopicConversionScores[userId]),
+        ]
+      ),
+      join(`groups on groups.id = uti.group_id`),
+      join(`group_contracts on group_contracts.group_id = uti.group_id`),
+      join(`contracts on contracts.id = group_contracts.contract_id`),
+      // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
+      !boosts &&
+        leftJoin(
+          `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`
+        ),
+      where(`contracts.close_time > now() and contracts.visibility = 'public'`),
+      where(
+        `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
+        [userId]
+      ),
+      (ignoreContractIds?.length ?? 0) > 0 &&
+        where(`contracts.id <> any(array[$1])`, [ignoreContractIds]),
+      blockedIds.length > 0 &&
+        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
+      blockedContractIds.length > 0 &&
+        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
+      blockedGroupSlugs.length > 0 &&
+        where(`not exists (${blockedGroupsQuery})`),
+      lim(limit, offset)
+    )
+
+  const adsQuery = renderSql(
+    ...baseQueryArray(true),
+    join(`(${adsJoin}) ma on ma.market_id = contracts.id`),
+    order(
+      `uti.avg_conversion_score  * contracts.conversion_score * ma.cost_per_view desc`
+    )
   )
 
   const followedQuery = renderSql(
-    ...baseQueryArray,
+    ...baseQueryArray(),
     where(
       `contracts.creator_id in (select follow_id from user_follows where user_id = $1)`,
       [userId]
@@ -121,11 +158,12 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     freshness: `cv.latest_seen_time nulls first, uti.avg_conversion_score  * contracts.freshness_score desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
-    renderSql(...baseQueryArray, order(orderQ))
+    renderSql(...baseQueryArray(), order(orderQ))
   )
-  type contractWithTopicScore = {
+  type contractAndMore = {
     contract: Contract
     topicConversionScore: number
+    adId?: string
     comment?: ContractComment
     repost?: Row<'posts'>
     bet?: Bet
@@ -140,6 +178,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     importantContracts,
     freshContracts,
     followedContracts,
+    adContracts,
     repostData,
   ] = await Promise.all([
     ...sortQueries.map((sortQuery) =>
@@ -150,7 +189,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           ({
             contract: convertContract(r),
             topicConversionScore: r.topic_conversion_score as number,
-          } as contractWithTopicScore)
+          } as contractAndMore)
       )
     ),
     pg.map(
@@ -160,7 +199,17 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ({
           contract: convertContract(r),
           topicConversionScore: r.topic_conversion_score as number,
-        } as contractWithTopicScore)
+        } as contractAndMore)
+    ),
+    pg.map(
+      adsQuery,
+      [],
+      (r) =>
+        ({
+          adId: r.ad_id as string,
+          contract: convertContract(r),
+          topicConversionScore: r.topic_conversion_score as number,
+        } as contractAndMore)
     ),
     pg.map(
       `select
@@ -205,7 +254,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           bet: bet_data as Bet,
           topicConversionScore: 1,
           repost: rest,
-        } as contractWithTopicScore
+        } as contractAndMore
       }
     ),
   ])
@@ -245,9 +294,12 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         : '',
     ])
   )
-
+  const ads = (adContracts as adContract[]).filter(
+    (c) => !contracts.map((c) => c.id).includes(c.contract.id)
+  )
   return {
     contracts,
+    ads,
     idsToReason,
     comments: filterDefined(repostData.map((c) => c.comment)),
     bets: filterDefined(repostData.map((c) => c.bet)),

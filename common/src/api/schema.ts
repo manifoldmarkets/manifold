@@ -38,6 +38,7 @@ import { ChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
+import { adContract } from 'common/boost'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1140,6 +1141,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       contracts: Contract[]
       comments: ContractComment[]
+      ads: adContract[]
       bets: Bet[]
       reposts: Repost[]
       idsToReason: { [id: string]: string }
