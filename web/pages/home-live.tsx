@@ -61,10 +61,8 @@ export default function Home(props: { headlines: Headline[] }) {
       banner={
         showBanner && olderUser ? (
           <PivotBanner hideBanner={hideBanner} />
-        ) : (
-          // <VerifyPhoneNumberBanner user={user} />
-          null
-        )
+        ) : // <VerifyPhoneNumberBanner user={user} />
+        null
       }
     >
       <HeadlineTabs
