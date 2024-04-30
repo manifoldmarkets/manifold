@@ -680,7 +680,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   chartAnnotations?: ChartAnnotation[]
   hideXAxis?: boolean
   onGraphClick?: () => void
-  areaOpacity?: number
+  areaClassName?: string
+  className?: string
 }) => {
   const {
     contractId,
@@ -700,7 +701,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     chartAnnotations = [],
     hideXAxis,
     onGraphClick,
-    areaOpacity,
+    areaClassName,
   } = props
 
   useEffect(() => {
@@ -835,7 +836,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           py0={py0}
           py1={py1}
           curve={curve}
-          areaOpacity={areaOpacity}
+          className={areaClassName}
           onClick={onGraphClick}
         />
         {mouse && (

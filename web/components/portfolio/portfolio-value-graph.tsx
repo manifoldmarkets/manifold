@@ -222,10 +222,9 @@ export const PortfolioGraph = (props: {
           hideXAxis={hideXAxis}
           color={portfolioFocus == 'balance' ? BALANCE_COLOR : INVESTMENT_COLOR}
           onGraphClick={() => {
-            console.log('click')
             setPortfolioFocus('all')
           }}
-          areaOpacity={1}
+          areaClassName="hover:opacity-100 opacity-[0.85] transition-opacity"
         />
       )
     }

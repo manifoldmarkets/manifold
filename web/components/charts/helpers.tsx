@@ -117,20 +117,9 @@ export const AreaWithTopStroke = <P,>(props: {
   py1: number | ((p: P) => number)
   curve: CurveFactory
   className?: string
-  areaOpacity?: number
   onClick?: () => void
 }) => {
-  const {
-    data,
-    color,
-    px,
-    py0,
-    py1,
-    curve,
-    className,
-    areaOpacity = 0.2,
-    onClick,
-  } = props
+  const { data, color, px, py0, py1, curve, className, onClick } = props
   const last = data[data.length - 1]
   const lastX = typeof px === 'function' ? px(last) : px
   const lastY = typeof py1 === 'function' ? py1(last) : py1
@@ -144,8 +133,7 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        opacity={areaOpacity}
-        className={className}
+        className={clsx('opacity-20', className)}
         onClick={onClick}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />

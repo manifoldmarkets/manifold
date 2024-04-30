@@ -253,15 +253,15 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             )
           }
         })}
-        {/* <LinePath
+        <LinePath
           data={data.net.points}
           px={px}
           py={py}
           curve={curve}
           className={clsx(' transition-[stroke-width]', 'stroke-2')}
-          stroke={BALANCE_COLOR}
-          strokeDasharray={'5 3 '}
-        /> */}
+          // stroke={'#4f46e5'}
+          stroke={'var(--color-ink-1000)'}
+        />
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"
