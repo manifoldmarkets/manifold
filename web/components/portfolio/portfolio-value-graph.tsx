@@ -11,6 +11,7 @@ import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { getPortfolioPointsFromHistory } from 'common/supabase/portfolio-metrics'
+import { findMinMax } from 'web/lib/util/minMax'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all'
@@ -70,58 +71,56 @@ export const PortfolioGraph = (props: {
     getPortfolioPointsFromHistory(portfolioHistory, firstProfit)
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minDate =
-      mode == 'portfolio'
-        ? portfolioFocus == 'all'
-          ? min([
-              min(balancePoints.map((d) => d.x)!),
-              min(investmentPoints.map((d) => d.x)!),
-            ])!
-          : min(
-              portfolioFocus == 'balance'
-                ? balancePoints.map((d) => d.x)!
-                : investmentPoints.map((d) => d.x)!
-            )!
-        : min(profitPoints.map((d) => d.x))!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxDate =
-      mode == 'portfolio'
-        ? portfolioFocus == 'all'
-          ? max([
-              max(balancePoints.map((d) => d.x)!),
-              max(investmentPoints.map((d) => d.x)!),
-            ])!
-          : max(
-              portfolioFocus == 'balance'
-                ? balancePoints.map((d) => d.x)!
-                : investmentPoints.map((d) => d.x)!
-            )!
-        : max(profitPoints.map((d) => d.x))!
+    if (mode == 'portfolio') {
+      const balanceXPoints = balancePoints.map((d) => d.x)!
+      const { min: balanceXMin, max: balanceXMax } = findMinMax(balanceXPoints)
+      const balanceYPoints = balancePoints.map((d) => d.y)!
+      const { min: balanceYMin, max: balanceYMax } = findMinMax(balanceYPoints)
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minValue =
-      mode == 'portfolio'
-        ? portfolioFocus == 'all'
-          ? min(balancePoints.map((d) => d.y))!
-          : min(
-              portfolioFocus == 'balance'
-                ? balancePoints.map((d) => d.y)!
-                : investmentPoints.map((d) => d.y)!
-            )!
-        : min(profitPoints.map((d) => d.y))!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxValue =
-      mode == 'portfolio'
-        ? portfolioFocus == 'all'
+      const investmentXPoints = investmentPoints.map((d) => d.x)!
+      const { min: investmentXMin, max: investmentXMax } =
+        findMinMax(investmentXPoints)
+      const investmentYPoints = investmentPoints.map((d) => d.y)!
+      const { min: investmentYMin, max: investmentYMax } =
+        findMinMax(investmentYPoints)
+
+      const minDate =
+        portfolioFocus == 'all'
+          ? min([balanceXMin, investmentXMin])!
+          : portfolioFocus == 'balance'
+          ? balanceXMin
+          : investmentXMin
+      const maxDate =
+        portfolioFocus == 'all'
+          ? max([balanceXMax, investmentXMax])!
+          : portfolioFocus == 'balance'
+          ? balanceXMax
+          : investmentXMax
+      const minValue =
+        portfolioFocus == 'all'
+          ? balanceYMin
+          : portfolioFocus == 'balance'
+          ? balanceYMin
+          : investmentYMin
+      const maxValue =
+        portfolioFocus == 'all'
           ? max(networthPoints.map((d) => d.y))!
-          : max(
-              portfolioFocus == 'balance'
-                ? balancePoints.map((d) => d.y)!
-                : investmentPoints.map((d) => d.y)!
-            )!
-        : max(profitPoints.map((d) => d.y))!
-    return { minDate, maxDate, minValue, maxValue }
+          : portfolioFocus == 'balance'
+          ? balanceYMax
+          : investmentYMax
+      return { minDate, maxDate, minValue, maxValue }
+    } else {
+      const profitXPoints = profitPoints.map((d) => d.x)!
+      const { min: profitXMin, max: profitXMax } = findMinMax(profitXPoints)
+      const profitYPoints = profitPoints.map((d) => d.y)!
+      const { min: profitYMin, max: profitYMax } = findMinMax(profitYPoints)
+      return {
+        minDate: profitXMin,
+        maxDate: profitXMax,
+        minValue: profitYMin,
+        maxValue: profitYMax,
+      }
+    }
   }, [duration, portfolioFocus, mode])
 
   const tinyDiff = Math.abs(maxValue - minValue) < 20
