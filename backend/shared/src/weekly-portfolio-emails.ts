@@ -1,4 +1,8 @@
-import { CPMMBinaryContract, CPMMContract } from 'common/contract'
+import {
+  CPMMBinaryContract,
+  CPMMContract,
+  CPMMMultiContract,
+} from 'common/contract'
 import {
   getPrivateUsersNotSent,
   getPrivateUser,
@@ -170,10 +174,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         const investmentValueDifferences = sortBy(
           filterDefined(
             weeklyMoverContracts.map((contract) => {
-              const cpmmContract = contract as CPMMContract
-              const marketProbAWeekAgo = cpmmContract.probChanges
-                ? cpmmContract.prob - cpmmContract.probChanges.week
-                : 0
+              const cpmmContract = contract as CPMMContract | CPMMMultiContract
 
               const cm = usersToContractMetrics[user.id].filter(
                 (cm) => cm.contractId === contract.id
@@ -182,18 +183,28 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
               const fromWeek = cm.from.week
               const profit = fromWeek.profit
               const currentValue = cm.payout
-
+              const { resolution, mechanism } = cpmmContract
+              const resolutionTitle =
+                mechanism === 'cpmm-multi-1' &&
+                resolution &&
+                cpmmContract.shouldAnswersSumToOne
+                  ? cpmmContract.answers.find((a) => a.id === resolution)?.text
+                  : resolution
               return {
                 currentValue,
                 pastValue: fromWeek.prevValue,
                 profit,
                 contractSlug: contract.slug,
-                marketProbAWeekAgo,
                 questionTitle: contract.question,
                 questionUrl: contractUrl(contract),
-                questionProb: cpmmContract.resolution
-                  ? cpmmContract.resolution
-                  : Math.round(cpmmContract.prob * 100) + '%',
+                questionProb:
+                  resolutionTitle && resolutionTitle !== 'MKT'
+                    ? resolutionTitle.length > 7
+                      ? resolutionTitle.slice(0, 5) + '...'
+                      : resolutionTitle
+                    : mechanism === 'cpmm-1'
+                    ? Math.round(cpmmContract.prob * 100) + '%'
+                    : '',
                 profitStyle: `color: ${
                   profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
                 };`,
