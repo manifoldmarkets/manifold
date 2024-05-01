@@ -16,6 +16,9 @@ import {
   CREATOR_UPDATE_FREQUENCY,
   updateCreatorMetricsCore,
 } from 'shared/update-creator-metrics-core'
+import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
+import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
+import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
 
 export function createJobs() {
   return [
@@ -93,6 +96,21 @@ export function createJobs() {
       'onboarding-notification',
       '0 0 11 * * *', // 11 AM daily
       sendOnboardingNotificationsInternal
+    ),
+    createJob(
+      'weekly-portfolio-emails',
+      '0 * 12-14 * * 5',
+      sendPortfolioUpdateEmailsToAllUsers
+    ),
+    createJob(
+      'weekly-markets-emails',
+      '0 * 12-14 * * 1',
+      sendWeeklyMarketsEmails
+    ),
+    createJob(
+      'reset-weekly-email-flags',
+      '0 0 0 * * 6',
+      resetWeeklyEmailsFlags
     ),
   ]
 }

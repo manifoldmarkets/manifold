@@ -1,5 +1,5 @@
 import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
-import { Row, run, selectFrom, selectJson, SupabaseClient } from './utils'
+import { Row, run, selectJson, SupabaseClient } from './utils'
 import { getContracts } from './contracts'
 import { Contract, CPMMContract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -212,28 +212,6 @@ export async function getUsersContractMetricsOrderedByProfit(
     allContractMetrics[id] = uniqBy(topAndLowestMetrics, 'contractId')
   })
   return allContractMetrics
-}
-
-export async function getUsersRecentBetContractIds(
-  userIds: string[],
-  db: SupabaseClient,
-  lastBetTime = 0
-) {
-  const chunks = chunk(userIds, 200)
-  const promises = chunks.map(async (chunk) => {
-    const { data } = await run(
-      selectFrom(db, 'user_contract_metrics', 'userId', 'contractId')
-        .in('user_id', chunk)
-        .is('answer_id', null)
-        .gt('data->lastBetTime', lastBetTime)
-    )
-    return data.map((d) => ({
-      userId: d.userId,
-      contractId: d.contractId,
-    })) as Partial<ContractMetric>[]
-  })
-  const results = await Promise.all(promises)
-  return groupBy(flatMap(results), 'userId')
 }
 
 export async function getContractMetricsForContractIds(

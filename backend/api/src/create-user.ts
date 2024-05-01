@@ -145,8 +145,6 @@ export const createuser: APIHandler<'createuser'> = async (
         blockedByUserIds: [],
         blockedContractIds: [],
         blockedGroupSlugs: [],
-        weeklyTrendingEmailSent: false,
-        weeklyPortfolioUpdateEmailSent: false,
       }
 
       trans.create(userRef, user)

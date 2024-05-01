@@ -17,7 +17,10 @@ import {
 import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import {
   ENV_CONFIG,
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
@@ -293,17 +296,19 @@ export const getAllPrivateUsers = async () => {
 export const getPrivateUsersNotSent = async (
   type: 'weeklyTrendingEmailSent' | 'weeklyPortfolioUpdateEmailSent',
   preference: 'trending_markets' | 'profit_loss_updates',
-  limit: number
+  limit: number,
+  pg: SupabaseDirectClient
 ) => {
-  const firestore = admin.firestore()
-  // Unfortunately firestore can't do 'array-not-contains' for the opt_out_all preference
-  const users = await firestore
-    .collection('private-users')
-    .where(`notificationPreferences.${preference}`, 'array-contains', 'email')
-    .where(type, '==', false)
-    .limit(limit)
-    .get()
-  return users.docs.map((doc) => doc.data() as PrivateUser)
+  return await pg.map(
+    `select data from private_users 
+         where (data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
+         and data->>'${type}' = 'false'
+         and (data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
+         and data->>'email' is not null
+         limit $1`,
+    [limit],
+    (row) => row.data as PrivateUser
+  )
 }
 
 export const getUserByUsername = async (username: string) => {
