@@ -192,7 +192,7 @@ export const onCreateBets = async (
         const usersNonRedemptionBets = bets.filter(
           (b) => b.userId === bettor.id && !b.isRedemption
         )
-        await giveUniqueBettorAndLiquidityBonus(
+        await giveUniqueBettorBonus(
           contract,
           eventId,
           bettor,
@@ -507,7 +507,7 @@ const updateBettingStreak = async (
   }
 }
 
-export const giveUniqueBettorAndLiquidityBonus = async (
+export const giveUniqueBettorBonus = async (
   contract: Contract,
   eventId: string,
   bettor: User,
@@ -646,7 +646,13 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       uniqueBonusResult.txn?.data?.isPartner
     )
   }
+}
 
+export const injectLiquidityBonus = async (
+  contract: Contract,
+  bet: Bet,
+  uniqueBettorIds: string[]
+) => {
   const subsidy =
     uniqueBettorIds.length <= MAX_TRADERS_FOR_BIG_BONUS
       ? UNIQUE_BETTOR_LIQUIDITY
@@ -654,7 +660,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
 
   if (contract.mechanism === 'cpmm-1') {
     await addHouseSubsidy(contract.id, subsidy)
-  } else if (contract.mechanism === 'cpmm-multi-1' && answerId) {
+  } else if (contract.mechanism === 'cpmm-multi-1' && bet.answerId) {
     if (
       contract.shouldAnswersSumToOne &&
       (bet.probAfter < 0.15 || bet.probAfter > 0.95)
@@ -666,7 +672,7 @@ export const giveUniqueBettorAndLiquidityBonus = async (
       // liquidity in a more traded answer. (Liquidity in less traded or unlikely answers is not that important.)
       await addHouseSubsidy(contract.id, subsidy)
     } else {
-      await addHouseSubsidyToAnswer(contract.id, answerId, subsidy)
+      await addHouseSubsidyToAnswer(contract.id, bet.answerId, subsidy)
     }
   }
 }
