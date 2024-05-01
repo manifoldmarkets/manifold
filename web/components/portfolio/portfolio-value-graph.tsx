@@ -52,7 +52,6 @@ export const PortfolioGraph = (props: {
   const {
     mode,
     duration,
-    // points,
     firstProfit,
     portfolioHistory,
     width,
