@@ -29,6 +29,7 @@ import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
+import { BOT_USERNAMES } from 'common/envs/constants'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -60,11 +61,15 @@ export async function updateUserMetricsCore() {
        users.id in (
            select distinct user_id from user_contract_interactions
            where created_time > now() - interval '2 weeks'
-       )
-         or ($1 < 0.01 and users.data->'lastBetTime' is not null)
+       ) or
+       users.id in (
+           select id from users where username in ($2:list) and
+           (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '2 weeks')
+        ) or
+       ($1 < 0.01 and users.data->'lastBetTime' is not null)
        )
         order by uph.last_calculated nulls first limit 400`,
-    [random],
+    [random, BOT_USERNAMES],
     (r) => r.id as string
   )
 
