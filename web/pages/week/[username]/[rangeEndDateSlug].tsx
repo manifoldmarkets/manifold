@@ -22,9 +22,7 @@ import { ProfitChangeTable } from 'web/components/home/daily-profit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import {
-  PortfolioTooltip,
-} from 'web/components/portfolio/portfolio-value-graph'
+import { PortfolioTooltip } from 'web/components/portfolio/portfolio-value-graph'
 import { SEO } from 'web/components/SEO'
 import { SizedContainer } from 'web/components/sized-container'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
