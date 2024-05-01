@@ -365,7 +365,12 @@ function PortfolioValueSkeleton(props: {
               <>
                 <CoinNumber
                   amount={graphProfit ?? profit}
-                  className="text-indigo-600"
+                  className={clsx(
+                    'text-2xl transition-colors sm:text-4xl',
+                    (graphProfit ?? profit ?? 0) < 0
+                      ? 'text-scarlet-500'
+                      : 'text-teal-500'
+                  )}
                 />
                 <ProfitWidget user={user} portfolio={portfolio} />
               </>
