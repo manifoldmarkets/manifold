@@ -5,8 +5,12 @@ import { last } from 'lodash'
 import { ReactNode, memo, useMemo, useState } from 'react'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
+import { useEvent } from 'web/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
+import {
+  PeriodToSnapshots,
+  usePortfolioHistory,
+} from 'web/hooks/use-portfolio-history'
 import { Period, User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
@@ -20,67 +24,71 @@ import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
-import { GraphMode, PortfolioGraph } from './portfolio-value-graph'
+import {
+  BALANCE_COLOR,
+  GraphMode,
+  INVESTMENT_COLOR,
+  PortfolioGraph,
+  PortfolioMode,
+} from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
+import { PortfolioGraphNumber } from './portfolio-graph-number'
+
+export type PortfolioHoveredGraphType = 'balance' | 'investment' | undefined
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
-    user: User
     currentUser: User | null | undefined
+    user: User
     defaultTimePeriod: Period
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
+    preloadPoints?: PeriodToSnapshots
     size?: 'sm' | 'md'
     balanceChanges: AnyBalanceChangeType[]
   }) {
     const {
       user,
-      currentUser,
       hideAddFundsButton,
       defaultTimePeriod,
       portfolio,
       onlyShowProfit,
       graphContainerClassName,
+      preloadPoints,
       size = 'md',
       balanceChanges,
+      currentUser,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
-    const [graphMode, setGraphMode] = useState<GraphMode>(
-      currentUser?.id === user.id ? 'balance' : 'profit'
+
+    const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
+    const [portfolioFocus, setPortfolioFocus] = useState<PortfolioMode>('all')
+
+    const [graphBalance, setGraphBalance] = useState<number | undefined>(
+      undefined
     )
+    const [graphInvested, setGraphInvested] = useState<number | undefined>(
+      undefined
+    )
+
+    const [graphProfit, setGraphProfit] = useState<number | undefined>(
+      undefined
+    )
+
+    const [portfolioHoveredGraph, setPortfolioHoveredGraph] =
+      useState<PortfolioHoveredGraphType>(undefined)
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
       ? first.balance + first.investmentValue - first.totalDeposits
       : 0
 
-    const graphPoints = useMemo(() => {
-      if (!portfolioHistory?.length) return []
-
-      return portfolioHistory.map((p) => ({
-        x: p.timestamp,
-        y:
-          graphMode === 'balance'
-            ? p.balance
-            : graphMode === 'invested'
-            ? p.investmentValue
-            : p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-        obj: p,
-      }))
-    }, [portfolioHistory, graphMode])
-
-    const [graphDisplayNumber, setGraphDisplayNumber] = useState<number | null>(
-      null
-    )
-    const handleGraphDisplayChange = (p: { y: number } | undefined) => {
-      setGraphDisplayNumber(p != null ? p.y : null)
-    }
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
 
     const zoomParams = useZoom()
@@ -98,22 +106,17 @@ export const PortfolioValueSection = memo(
     }
 
     const isMobile = useIsMobile()
-    const { balance, investmentValue, totalDeposits } =
-      lastPortfolioMetrics ?? {
-        balance: user.balance,
-        investmentValue: 0,
-        totalDeposits: 0,
-      }
-    const totalValue = balance + investmentValue
-    const profit = totalValue - totalDeposits - firstProfit
-    if (!portfolioHistory || graphPoints.length <= 1 || !lastPortfolioMetrics) {
-      const showDisclaimer = portfolioHistory
 
+    function onSetPortfolioFocus(mode: PortfolioMode) {
+      setPortfolioFocus(mode)
+      setPortfolioHoveredGraph(undefined)
+      setGraphBalance(undefined)
+      setGraphInvested(undefined)
+    }
+    if (!portfolioHistory || !lastPortfolioMetrics) {
+      const showDisclaimer = portfolioHistory
       return (
         <PortfolioValueSkeleton
-          balance={balance}
-          profit={profit}
-          invested={investmentValue}
           hideAddFundsButton={hideAddFundsButton}
           userId={user.id}
           graphMode={graphMode}
@@ -146,14 +149,19 @@ export const PortfolioValueSection = memo(
           placement={isMobile ? 'bottom' : undefined}
           size={size}
           setGraphMode={setGraphMode}
-          graphDisplayNumber={graphDisplayNumber}
           balanceChanges={balanceChanges}
           portfolio={portfolio}
           user={user}
+          portfolioFocus={portfolioFocus}
+          setPortfolioFocus={onSetPortfolioFocus}
         />
       )
     }
 
+    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
+    const totalValue = balance + investmentValue
+
+    const profit = totalValue - totalDeposits - firstProfit
     return (
       <PortfolioValueSkeleton
         hideAddFundsButton={hideAddFundsButton}
@@ -161,23 +169,27 @@ export const PortfolioValueSection = memo(
         graphMode={graphMode}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
-        switcherColor={
-          graphMode === 'profit'
-            ? 'green'
-            : graphMode === 'balance'
-            ? 'indigo'
-            : 'indigo-dark'
-        }
+        switcherColor={graphMode === 'profit' ? 'green' : 'indigo'}
+        portfolioFocus={portfolioFocus}
+        setPortfolioFocus={onSetPortfolioFocus}
+        portfolioHoveredGraph={portfolioHoveredGraph}
         graphElement={(width, height) => (
           <PortfolioGraph
             mode={graphMode}
             duration={currentTimePeriod}
-            points={graphPoints}
+            portfolioHistory={portfolioHistory}
             width={width}
             height={height}
             zoomParams={zoomParams}
-            onMouseOver={handleGraphDisplayChange}
             hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
+            firstProfit={firstProfit}
+            setGraphBalance={setGraphBalance}
+            setGraphInvested={setGraphInvested}
+            setGraphProfit={setGraphProfit}
+            portfolioFocus={portfolioFocus}
+            setPortfolioFocus={onSetPortfolioFocus}
+            portfolioHoveredGraph={portfolioHoveredGraph}
+            setPortfolioHoveredGraph={setPortfolioHoveredGraph}
           />
         )}
         onlyShowProfit={onlyShowProfit}
@@ -187,8 +199,10 @@ export const PortfolioValueSection = memo(
         balance={balance}
         profit={profit}
         invested={investmentValue}
+        graphBalance={graphBalance}
+        graphProfit={graphProfit}
+        graphInvested={graphInvested}
         setGraphMode={setGraphMode}
-        graphDisplayNumber={graphDisplayNumber}
         balanceChanges={balanceChanges}
         portfolio={undefined}
         user={user}
@@ -214,11 +228,16 @@ function PortfolioValueSkeleton(props: {
   balance?: number
   profit?: number
   invested?: number
+  graphBalance?: number
+  graphProfit?: number
+  graphInvested?: number
   setGraphMode: (mode: GraphMode) => void
-  graphDisplayNumber: number | null
   balanceChanges: AnyBalanceChangeType[]
   portfolio: PortfolioSnapshot | undefined
+  portfolioFocus: PortfolioMode
+  setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
+  portfolioHoveredGraph?: PortfolioHoveredGraphType
 }) {
   const {
     graphMode,
@@ -237,13 +256,17 @@ function PortfolioValueSkeleton(props: {
     balance,
     profit,
     invested,
+    graphBalance,
+    graphProfit,
+    graphInvested,
     setGraphMode,
-    graphDisplayNumber,
     balanceChanges,
+    portfolioFocus,
+    setPortfolioFocus,
     portfolio,
     user,
+    portfolioHoveredGraph,
   } = props
-
   const profitLabel = onlyShowProfit
     ? {
         daily: 'Daily profit',
@@ -258,20 +281,18 @@ function PortfolioValueSkeleton(props: {
         allTime: 'Profit',
       }[currentTimePeriod]
 
-  const currentGraphNumber =
-    graphMode === 'profit'
-      ? profit
-      : graphMode === 'balance'
-      ? balance
-      : invested
+  function togglePortfolioFocus(toggleTo: PortfolioMode) {
+    setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
+  }
+
   return (
     <Col>
-      <Row>
+      <Row className="justify-between">
         <Row className={clsx('grow items-start gap-0')}>
           <PortfolioTab
-            onClick={() => setGraphMode('balance')}
-            isSelected={graphMode == 'balance'}
-            title="Balance"
+            onClick={() => setGraphMode('portfolio')}
+            isSelected={graphMode == 'portfolio'}
+            title="Portfolio"
           >
             <CoinNumber
               amount={balance}
@@ -291,39 +312,41 @@ function PortfolioValueSkeleton(props: {
               numberType="short"
             />
           </PortfolioTab>
-
-          <PortfolioTab
-            onClick={() => setGraphMode('invested')}
-            isSelected={graphMode == 'invested'}
-            title="Invested"
-          >
-            <CoinNumber
-              amount={invested}
-              className="text-primary-600 text-xs sm:text-sm"
-              numberType="short"
-            />
-          </PortfolioTab>
         </Row>
+        {!hideAddFundsButton && (
+          <AddFundsButton
+            userId={userId}
+            className=" hidden self-center whitespace-nowrap sm:flex"
+          />
+        )}
       </Row>
       <Col
         className={clsx(
-          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none',
-          graphMode == 'invested' ? 'rounded-tr-none sm:rounded-lg' : ''
+          'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none'
         )}
       >
-        <Row className={clsx('items-start gap-0')}>
-          <div className={'text-ink-800 text-4xl'}>
-            <Row className="flex-wrap items-center gap-3">
-              <CoinNumber amount={graphDisplayNumber ?? currentGraphNumber} />
-              {!hideAddFundsButton && graphMode == 'balance' && (
-                <AddFundsButton
-                  userId={userId}
-                  className=" self-center whitespace-nowrap"
-                />
-              )}
-            </Row>
-            {graphMode == 'balance' && (
+        <Row className={clsx('justify-between gap-0')}>
+          <div>
+            {graphMode == 'portfolio' && (
               <>
+                <PortfolioGraphNumber
+                  numberType={'investment'}
+                  descriptor="invested"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={graphInvested ?? invested}
+                  color={INVESTMENT_COLOR}
+                  onClick={() => togglePortfolioFocus('investment')}
+                />
+                <PortfolioGraphNumber
+                  numberType={'balance'}
+                  descriptor="balance"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={graphBalance ?? balance}
+                  color={BALANCE_COLOR}
+                  onClick={() => togglePortfolioFocus('balance')}
+                />
                 {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />
@@ -339,9 +362,19 @@ function PortfolioValueSkeleton(props: {
               </>
             )}
             {graphMode == 'profit' && (
-              <ProfitWidget user={user} portfolio={portfolio} />
+              <>
+                <CoinNumber
+                  amount={graphProfit ?? profit}
+                  className={clsx(
+                    'text-2xl transition-colors sm:text-4xl',
+                    (graphProfit ?? profit ?? 0) < 0
+                      ? 'text-scarlet-500'
+                      : 'text-teal-500'
+                  )}
+                />
+                <ProfitWidget user={user} portfolio={portfolio} />
+              </>
             )}
-            {graphMode == 'invested' && <Spacer h={10} />}
           </div>
 
           {!placement && !hideSwitcher && (
@@ -350,9 +383,17 @@ function PortfolioValueSkeleton(props: {
               setCurrentTimePeriod={setCurrentTimePeriod}
               color={switcherColor}
               disabled={disabled}
-              className="bg-canvas-50 ml-auto border-0"
+              className="bg-canvas-50 ml-auto h-fit border-0"
               toggleClassName={'w-12 justify-center'}
             />
+          )}
+          {!hideAddFundsButton && (
+            <Col>
+              <AddFundsButton
+                userId={userId}
+                className=" self-center whitespace-nowrap sm:hidden"
+              />
+            </Col>
           )}
         </Row>
         <SizedContainer
@@ -370,7 +411,7 @@ function PortfolioValueSkeleton(props: {
             setCurrentTimePeriod={setCurrentTimePeriod}
             color={switcherColor}
             disabled={disabled}
-            className="bg-canvas-50 mt-1 border-0"
+            className="bg-canvas-50 mt-8 border-0"
             toggleClassName="grow justify-center"
           />
         )}

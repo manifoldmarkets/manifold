@@ -117,8 +117,9 @@ export const AreaWithTopStroke = <P,>(props: {
   py1: number | ((p: P) => number)
   curve: CurveFactory
   className?: string
+  onClick?: () => void
 }) => {
-  const { data, color, px, py0, py1, curve, className } = props
+  const { data, color, px, py0, py1, curve, className, onClick } = props
   const last = data[data.length - 1]
   const lastX = typeof px === 'function' ? px(last) : px
   const lastY = typeof py1 === 'function' ? py1(last) : py1
@@ -132,8 +133,8 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        opacity={0.2}
-        className={className}
+        className={clsx('opacity-20', className)}
+        onClick={onClick}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
       {/* a little extension so that the current value is always visible */}
@@ -154,7 +155,7 @@ export const SliceMarker = (props: {
 }) => {
   const { color, x, y0, y1 } = props
   return (
-    <g>
+    <g className="pointer-events-none">
       <line stroke="white" strokeWidth={1} x1={x} x2={x} y1={y0} y2={y1} />
       <circle
         stroke="white"

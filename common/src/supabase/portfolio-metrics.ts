@@ -1,4 +1,8 @@
-import { run, millisToTs, tsToMillis, SupabaseClient } from './utils'
+import { HistoryPoint } from 'common/chart'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { useMemo } from 'react'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { SupabaseClient, millisToTs, run, tsToMillis } from './utils'
 
 export async function getPortfolioHistory(
   userId: string,
@@ -50,4 +54,53 @@ export const convertPortfolioHistory = (row: any) => {
     spiceBalance: +row.spice_balance,
     loanTotal: +row.loan_total,
   }
+}
+
+export function getPortfolioPointsFromHistory(
+  portfolioHistory: PortfolioSnapshot[],
+  firstProfit: number
+) {
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    useMemo(() => {
+      if (!portfolioHistory?.length) {
+        return {
+          profitPoints: [],
+          investmentPoints: [],
+          balancePoints: [],
+          networthPoints: [],
+        }
+      }
+
+      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+
+      portfolioHistory.forEach((p) => {
+        profitPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+          obj: p,
+        })
+        investmentPoints.push({
+          x: p.timestamp,
+          y: p.investmentValue,
+          obj: p,
+        })
+        balancePoints.push({
+          x: p.timestamp,
+          y: p.balance,
+          obj: p,
+        })
+        networthPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue,
+          obj: p,
+        })
+      })
+
+      return { profitPoints, investmentPoints, balancePoints, networthPoints }
+    }, [portfolioHistory])
+
+  return { profitPoints, investmentPoints, balancePoints, networthPoints }
 }
