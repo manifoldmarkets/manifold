@@ -112,7 +112,7 @@ export const stripewebhook = async (req: Request, res: Response) => {
       process.env.STRIPE_WEBHOOKSECRET as string
     )
   } catch (e: any) {
-    console.log(`Webhook Error: ${e.message}`)
+    log(`Webhook Error: ${e.message}`)
     res.status(400).send(`Webhook Error: ${e.message}`)
     return
   }
@@ -129,12 +129,12 @@ const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
   const { userId, manticDollarQuantity } = session.metadata
   if (manticDollarQuantity === undefined) {
-    console.log('skipping session', sessionId, '; no mana amount')
+    log('skipping session', sessionId, '; no mana amount')
     return
   }
   const price = Number.parseInt(manticDollarQuantity)
   const deposit = mappedDollarAmounts[price] ?? price
-  console.log('manticDollarQuantity', manticDollarQuantity, 'deposit', deposit)
+  log('manticDollarQuantity', manticDollarQuantity, 'deposit', deposit)
 
   const success = await firestore.runTransaction(async (trans) => {
     const query = await trans.get(
@@ -143,7 +143,7 @@ const issueMoneys = async (session: StripeSession) => {
         .where('sessionId', '==', sessionId)
     )
     if (!query.empty) {
-      console.log('session', sessionId, 'already processed')
+      log('session', sessionId, 'already processed')
       return false
     }
     const stripeDoc = firestore.collection('stripe-transactions').doc()
