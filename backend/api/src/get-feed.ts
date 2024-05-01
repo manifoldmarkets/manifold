@@ -93,6 +93,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     join(`contracts on market_ads.market_id = contracts.id`),
     where(`funds >= cost_per_view`),
     where(`contracts.close_time > now()`),
+    where(`contracts.visibility = 'public'`),
     where(`not exists (${claimedAdsQuery})`),
     order(`cost_per_view desc`),
     lim(50)
