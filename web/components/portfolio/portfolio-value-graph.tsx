@@ -147,7 +147,7 @@ export const PortfolioGraph = (props: {
             balance: { points: balancePoints, color: BALANCE_COLOR },
             investment: { points: investmentPoints, color: INVESTMENT_COLOR },
           }}
-          w={width > 768 ? 768 : width}
+          w={width}
           h={height}
           xScale={xScale}
           yScale={yScale}
@@ -162,7 +162,7 @@ export const PortfolioGraph = (props: {
     } else {
       return (
         <SingleValueHistoryChart
-          w={width > 768 ? 768 : width}
+          w={width}
           h={height}
           xScale={xScale}
           yScale={yScale}

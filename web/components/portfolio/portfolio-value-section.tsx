@@ -397,7 +397,7 @@ function PortfolioValueSkeleton(props: {
         <SizedContainer
           className={clsx(
             className,
-            'pr-11 lg:pr-0',
+            'pr-11',
             size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
           )}
         >
