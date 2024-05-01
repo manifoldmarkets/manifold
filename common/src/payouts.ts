@@ -15,11 +15,14 @@ import {
 } from './payouts-dpm'
 import {
   getFixedCancelPayouts,
+  getIndependentMultiMktPayouts,
   getMktFixedPayouts,
   getMultiFixedPayouts,
   getStandardFixedPayouts,
+  getIndependentMultiYesNoPayouts,
 } from './payouts-fixed'
 import { getProbability } from './calculate'
+import { Answer } from './answer'
 
 export type Payout = {
   userId: string
@@ -81,15 +84,12 @@ export const getPayouts = (
     if (!answer) {
       throw new Error('getPayouts: answer not found')
     }
-    const mappedLiquidities = liquidities.map((l) => ({
-      ...l,
-      amount: l.amount / contract.answers.length,
-    }))
-    return getFixedPayouts(
+    return getIndependentMultiFixedPayouts(
+      answer,
       outcome,
       contract as any,
       bets,
-      mappedLiquidities,
+      liquidities,
       resolutionProbability ?? answer.prob
     )
   }
@@ -129,6 +129,44 @@ export const getFixedPayouts = (
     default:
     case 'CANCEL':
       return getFixedCancelPayouts(contract, bets, liquidities)
+  }
+}
+
+export const getIndependentMultiFixedPayouts = (
+  answer: Answer,
+  outcome: string | undefined,
+  contract: CPMMMultiContract & { shouldAnswersSumToOne: true },
+  bets: Bet[],
+  liquidities: LiquidityProvision[],
+  resolutionProbability: number
+) => {
+  const filteredLiquidities = liquidities
+    .filter((l) => l.answerId === answer.id)
+    // Also include liquidity that is not assigned to an answer, and divide it by the number of answers.
+    .concat(
+      liquidities
+        .filter((l) => !l.answerId)
+        .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
+    )
+  switch (outcome) {
+    case 'YES':
+    case 'NO':
+      return getIndependentMultiYesNoPayouts(
+        answer,
+        outcome,
+        bets,
+        filteredLiquidities
+      )
+    case 'MKT':
+      return getIndependentMultiMktPayouts(
+        answer,
+        bets,
+        filteredLiquidities,
+        resolutionProbability
+      )
+    default:
+    case 'CANCEL':
+      return getFixedCancelPayouts(contract, bets, filteredLiquidities)
   }
 }
 

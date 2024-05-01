@@ -7,6 +7,7 @@ import {
   CPMMNumericContract,
 } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
+import { Answer } from './answer'
 
 export const getFixedCancelPayouts = (
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
@@ -82,6 +83,28 @@ export const getMultiFixedPayouts = (
     resolutions,
     liquidities
   )
+  return { payouts, liquidityPayouts }
+}
+
+export const getIndependentMultiYesNoPayouts = (
+  answer: Answer,
+  outcome: string,
+  bets: Bet[],
+  liquidities: LiquidityProvision[]
+) => {
+  const winningBets = bets.filter((bet) => bet.outcome === outcome)
+
+  const payouts = winningBets.map(({ userId, shares }) => ({
+    userId,
+    payout: shares,
+  }))
+
+  const resolution = outcome === 'YES' ? 1 : 0
+  const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
+    answer,
+    resolution,
+    liquidities
+  )
 
   return { payouts, liquidityPayouts }
 }
@@ -101,6 +124,21 @@ export const getLiquidityPoolPayouts = (
     userId: providerId,
     payout: weight * finalPool,
   }))
+}
+
+export const getIndependentMultiLiquidityPoolPayouts = (
+  answer: Answer,
+  resolution: number,
+  liquidities: LiquidityProvision[]
+) => {
+  const payout = resolution * answer.poolYes + (1 - resolution) * answer.poolNo
+  const weightsByUser = getCpmmLiquidityPoolWeights(liquidities)
+  return Object.entries(weightsByUser)
+    .map(([userId, weight]) => ({
+      userId,
+      payout: weight * payout,
+    }))
+    .filter(({ payout }) => payout >= 1e-3)
 }
 
 export const getMultiLiquidityPoolPayouts = (
@@ -146,6 +184,32 @@ export const getMktFixedPayouts = (
     contract.mechanism === 'cpmm-1'
       ? getLiquidityPoolProbPayouts(contract, outcomeProbs, liquidities)
       : []
+
+  return { payouts, liquidityPayouts }
+}
+
+export const getIndependentMultiMktPayouts = (
+  answer: Answer,
+  bets: Bet[],
+  liquidities: LiquidityProvision[],
+  resolutionProbability: number
+) => {
+  const outcomeProbs = {
+    YES: resolutionProbability,
+    NO: 1 - resolutionProbability,
+  }
+
+  const payouts = bets.map(({ userId, outcome, shares }) => {
+    const p = outcomeProbs[outcome as 'YES' | 'NO'] ?? 0
+    const payout = p * shares
+    return { userId, payout }
+  })
+
+  const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
+    answer,
+    resolutionProbability,
+    liquidities
+  )
 
   return { payouts, liquidityPayouts }
 }
