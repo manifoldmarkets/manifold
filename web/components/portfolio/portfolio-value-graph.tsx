@@ -102,7 +102,7 @@ export const PortfolioGraph = (props: {
           : investmentXMax
       const minValue =
         portfolioFocus == 'all'
-          ? min([balanceYMin, networthYMin])
+          ? min([balanceYMin, networthYMin])!
           : portfolioFocus == 'balance'
           ? balanceYMin
           : investmentYMin
