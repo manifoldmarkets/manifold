@@ -21,7 +21,7 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   }
   const fromId = auth.uid
   // Run as transaction to prevent race conditions.
-  return await firestore.runTransaction(async (transaction) => {
+  const fromUser = await firestore.runTransaction(async (transaction) => {
     if (!isAdminId(fromId) && amount < 10) {
       throw new APIError(400, 'Only admins can send less than 10 mana')
     }
@@ -88,36 +88,37 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       )
     )
 
-    const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
-
-    const pg = createSupabaseDirectClient()
-
-    const txns = toIds.map(
-      (toId) =>
-        ({
-          fromId: auth.uid,
-          fromType: 'USER',
-          toId,
-          toType: 'USER',
-          amount,
-          token: 'M$',
-          category: 'MANA_PAYMENT',
-          data: {
-            message,
-            groupId,
-            visibility: 'public',
-          },
-          description: `Mana payment ${amount} from ${fromUser.username} to ${auth.uid}`,
-        } as const)
-    )
-    await pg.tx((tx) => insertTxns(tx, txns))
-
-    await Promise.all(
-      toIds.map((toId) =>
-        createManaPaymentNotification(fromUser, toId, amount, message)
-      )
-    )
+    return fromUser
   })
+
+  const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
+  const pg = createSupabaseDirectClient()
+
+  const txns = toIds.map(
+    (toId) =>
+      ({
+        fromId: auth.uid,
+        fromType: 'USER',
+        toId,
+        toType: 'USER',
+        amount,
+        token: 'M$',
+        category: 'MANA_PAYMENT',
+        data: {
+          message,
+          groupId,
+          visibility: 'public',
+        },
+        description: message || 'Mana payment',
+      } as const)
+  )
+  await pg.tx((tx) => insertTxns(tx, txns))
+
+  await Promise.all(
+    toIds.map((toId) =>
+      createManaPaymentNotification(fromUser, toId, amount, message)
+    )
+  )
 }
 
 const firestore = admin.firestore()

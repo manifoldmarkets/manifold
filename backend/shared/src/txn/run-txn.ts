@@ -94,6 +94,7 @@ export async function runTxn(
   return txn
 }
 
+/** This creates does a firestore write within. DO NOT run within another firestore transaction! */
 export async function runTxnFromBank(
   pgTransaction: SupabaseTransaction,
   data: Omit<TxnData, 'fromId'> & { fromType: 'BANK' },
@@ -113,8 +114,6 @@ export async function runTxnFromBank(
     throw new APIError(400, `Invalid token type: ${token}`)
   }
 
-  const txn = await insertTxn(pgTransaction, { fromId: 'BANK', ...data })
-
   const update: { [key: string]: any } = {}
 
   if (token === 'SPICE') {
@@ -131,7 +130,7 @@ export async function runTxnFromBank(
     await firestore.doc(`users/${toId}`).update(update)
   }
 
-  return txn
+  return await insertTxn(pgTransaction, { fromId: 'BANK', ...data })
 }
 
 // inserts into supabase

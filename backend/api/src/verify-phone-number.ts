@@ -70,16 +70,25 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
     const deviceUsedBefore =
       !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
     const amount = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
-    await firestore.runTransaction(async (transaction) => {
-      const toDoc = firestore.doc(`users/${auth.uid}`)
-      const toUserSnap = await transaction.get(toDoc)
-      if (!toUserSnap.exists)
-        throw new APIError(400, 'User not found', { userId: auth.uid })
-      const user = toUserSnap.data() as User
-      const { verifiedPhone } = user
-      if (verifiedPhone === true || verifiedPhone === undefined)
-        throw new APIError(400, 'User already verified')
 
+    const deservesSignupBonus = await firestore.runTransaction(
+      async (transaction) => {
+        const toDoc = firestore.doc(`users/${auth.uid}`)
+        const toUserSnap = await transaction.get(toDoc)
+        if (!toUserSnap.exists)
+          throw new APIError(400, 'User not found', { userId: auth.uid })
+        const user = toUserSnap.data() as User
+        const { verifiedPhone } = user
+        const deservesSignupBonus = verifiedPhone === false
+
+        transaction.update(toDoc, {
+          verifiedPhone: true,
+        })
+        return deservesSignupBonus
+      }
+    )
+
+    if (deservesSignupBonus) {
       const signupBonusTxn: Omit<
         SignupBonusTxn,
         'fromId' | 'id' | 'createdTime'
@@ -92,14 +101,19 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
         toType: 'USER',
         description: 'Signup bonus for verifying phone number',
       }
-      // note: does not award balance as part of firebase transaction
-      await pg.tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+      await pg
+        .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+        .catch((e) => {
+          log.error(
+            `User ${auth.uid} verified phone but may not have recieved mana! Must manually reconcile`
+          )
+          log.error(
+            e && typeof e === 'object' && 'message' in e ? e.message : e
+          )
+        })
 
-      transaction.update(toDoc, {
-        verifiedPhone: true,
-      })
       log(`Sent phone verification bonus to user ${auth.uid}`)
-    })
+    }
 
     return { status: 'success' }
   })

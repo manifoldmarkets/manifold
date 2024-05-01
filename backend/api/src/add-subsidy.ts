@@ -4,13 +4,16 @@ import { User } from 'common/user'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
-import { runTxn } from 'shared/txn/run-txn'
+import { insertTxn } from 'shared/txn/run-txn'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
 > = async ({ contractId, amount }, auth) => {
+  const pg = createSupabaseDirectClient()
+
   // run as transaction to prevent race conditions
-  return await firestore.runTransaction(async (transaction) => {
+  const provision = await firestore.runTransaction(async (transaction) => {
     const userDoc = firestore.doc(`users/${auth.uid}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
@@ -33,7 +36,16 @@ export const addLiquidity: APIHandler<
     if (closeTime && Date.now() > closeTime)
       throw new APIError(403, 'Trading is closed')
 
+    if (!isFinite(amount)) {
+      throw new APIError(400, 'Invalid amount')
+    }
+
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
+
+    transaction.update(userDoc, {
+      balance: admin.firestore.FieldValue.increment(-amount),
+      totalDeposits: admin.firestore.FieldValue.increment(-amount),
+    })
 
     const newLiquidityProvisionDoc = firestore
       .collection(`contracts/${contractId}/liquidity`)
@@ -43,36 +55,34 @@ export const addLiquidity: APIHandler<
 
     const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
       getNewLiquidityProvision(
-        user.id,
+        auth.uid,
         subsidyAmount,
         contract,
         newLiquidityProvisionDoc.id
       )
 
-    await runTxn(transaction as any, {
-      fromId: user.id,
-      amount: amount,
-      toId: contractId,
-      toType: 'CONTRACT',
-      category: 'ADD_SUBSIDY',
-      token: 'M$',
-      fromType: 'USER',
-    })
+    await pg.tx((tx) =>
+      insertTxn(tx, {
+        fromId: auth.uid,
+        amount: amount,
+        toId: contractId,
+        toType: 'CONTRACT',
+        category: 'ADD_SUBSIDY',
+        token: 'M$',
+        fromType: 'USER',
+      })
+    )
 
     transaction.update(contractDoc, {
       subsidyPool: newSubsidyPool,
       totalLiquidity: newTotalLiquidity,
     } as Partial<CPMMContract>)
 
-    const newBalance = user.balance - amount
-
-    if (!isFinite(newBalance)) {
-      throw new APIError(500, 'Invalid user balance for ' + user.username)
-    }
-
     transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
     return newLiquidityProvision
   })
+
+  return provision
 }
 
 const firestore = admin.firestore()
