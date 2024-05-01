@@ -1,5 +1,4 @@
 import { createJob } from './helpers'
-import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
@@ -10,7 +9,6 @@ import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
-import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
 import { MINUTE_MS } from 'common/util/time'
@@ -23,11 +21,6 @@ import {
 export function createJobs() {
   return [
     // Hourly jobs:
-    createJob(
-      'add-trending-feed-contracts',
-      '0 10 * * * *', // on the 10th minute of every hour
-      addTrendingFeedContracts
-    ),
     createJob(
       'update-contract-metrics-non-multi',
       '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
@@ -59,11 +52,6 @@ export function createJobs() {
       'update-group-metrics',
       '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
       updateGroupMetricsCore
-    ),
-    createJob(
-      'add-converting-feed-contracts',
-      '0 15 * * * *', // on the 15th minute of every hour
-      addConvertingContractsToFeed
     ),
     createJob(
       'update-user-metrics',

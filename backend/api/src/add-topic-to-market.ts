@@ -11,8 +11,6 @@ import {
 } from 'shared/update-group-contracts-internal'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { revalidateContractStaticProps } from 'shared/utils'
-import { DAY_MS } from 'common/util/time'
-import { addContractToFeed } from 'shared/create-feed'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
@@ -87,22 +85,6 @@ export const addOrRemoveTopicFromContract: APIHandler<
   const continuation = async () => {
     await revalidateContractStaticProps(contract)
 
-    // Adding a contract to a group is ~similar~ to creating a new contract in that group
-    if (
-      !remove &&
-      contract.createdTime > Date.now() - 2 * DAY_MS &&
-      contract.visibility === 'public'
-    ) {
-      await addContractToFeed(
-        contract,
-        ['contract_in_group_you_are_in'],
-        'new_contract',
-        [contract.creatorId],
-        {
-          idempotencyKey: contract.id + '_new_contract',
-        }
-      )
-    }
     await upsertGroupEmbedding(createSupabaseDirectClient(), groupId)
   }
 

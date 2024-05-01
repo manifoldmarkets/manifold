@@ -8,7 +8,6 @@ import { parseMentions, richTextToString } from 'common/util/parse'
 import { addUserToContractFollowers } from 'shared/follow-market'
 
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
-import { addContractToFeed } from 'shared/create-feed'
 import { createNewContractNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
@@ -84,19 +83,6 @@ export const onCreateMarket = async (
     log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
-    await addContractToFeed(
-      {
-        ...contract,
-        isRanked: !isNonPredictive,
-        isSubsidized: !isNonPredictive,
-      },
-      ['follow_user', 'contract_in_group_you_are_in'],
-      'new_contract',
-      [contractCreator.id],
-      {
-        idempotencyKey: contract.id + '_new_contract',
-      }
-    )
     const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
     await Promise.all(
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))

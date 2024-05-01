@@ -6,7 +6,6 @@ import {
 } from 'shared/supabase/init'
 import { getComment } from 'shared/supabase/contract_comments'
 import { createCommentOnContractInternal } from 'api/create-comment'
-import { repostContractToFeed } from 'shared/create-feed'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
@@ -113,14 +112,6 @@ export const post: APIHandler<'post'> = async (props, auth) => {
     result: comment,
     continue: async () => {
       await commentContinuation()
-      await repostContractToFeed(
-        contract,
-        comment,
-        poster.id,
-        result.id,
-        [auth.uid],
-        betId
-      )
     },
   }
 }
