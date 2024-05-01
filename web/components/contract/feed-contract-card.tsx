@@ -16,7 +16,6 @@ import {
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { DEBUG_FEED_CARDS, FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -25,7 +24,7 @@ import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-marke
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
-import { CardReason, EndpointCardReason } from '../feed/card-reason'
+import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
@@ -35,7 +34,6 @@ import { ClickFrame } from '../widgets/click-frame'
 import { LikeButton } from './like-button'
 import { TradesButton } from './trades-button'
 import { FeedDropdown } from '../feed/card-dropdown'
-import { CategoryTags } from '../feed/feed-timeline-items'
 import { JSONEmpty } from 'web/components/contract/contract-description'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
@@ -49,6 +47,11 @@ import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-ans
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
+import { TopicTag } from 'web/components/topics/topic-tag'
+
+const DEBUG_FEED_CARDS =
+  typeof window != 'undefined' &&
+  window.location.toString().includes('localhost:3000')
 
 export function FeedContractCard(props: {
   contract: Contract
@@ -56,7 +59,6 @@ export function FeedContractCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  item?: FeedTimelineItem
   className?: string
   /** whether this card is small, like in card grids.*/
   size?: 'md' | 'sm' | 'xs'
@@ -64,13 +66,11 @@ export function FeedContractCard(props: {
   showGraph?: boolean
   hideBottomRow?: boolean
   hideTags?: boolean
-  hideReason?: boolean
   feedReason?: string
 }) {
   const {
     promotedData,
     trackingPostfix,
-    item,
     className,
     children,
     hide,
@@ -78,7 +78,6 @@ export function FeedContractCard(props: {
     hideBottomRow,
     size = 'md',
     hideTags,
-    hideReason,
     feedReason,
   } = props
   const user = useUser()
@@ -114,7 +113,6 @@ export function FeedContractCard(props: {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          feedId: item?.id,
           isPromoted: !!promotedData,
         } as ContractCardView)
       setVisible(true)
@@ -139,10 +137,7 @@ export function FeedContractCard(props: {
     }
   }, [adId])
 
-  const { probChange, startTime, ignore } = getMarketMovementInfo(
-    contract,
-    item
-  )
+  const { probChange, startTime, ignore } = getMarketMovementInfo(contract)
 
   const trackClick = () =>
     track(
@@ -153,7 +148,6 @@ export function FeedContractCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
         feedReason: feedReason,
-        commentId: item?.commentId,
       })
     )
 
@@ -206,16 +200,8 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {!hideReason && !feedReason && (
-              <CardReason
-                item={item}
-                contract={contract}
-                probChange={probChange}
-                since={startTime}
-              />
-            )}
             {feedReason && (
-              <EndpointCardReason
+              <CardReason
                 reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
@@ -224,7 +210,7 @@ export function FeedContractCard(props: {
             {hide && (
               <FeedDropdown
                 contract={contract}
-                itemCreatorId={item?.creatorId ?? undefined}
+                itemCreatorId={undefined}
                 interesting={true}
                 toggleInteresting={hide}
                 importanceScore={props.contract.importanceScore}
@@ -321,14 +307,12 @@ export function FeedContractCard(props: {
           <YourMetricsFooter metrics={metrics} />
         )}
 
-        {size === 'md' &&
-          item?.dataType == 'new_contract' &&
-          nonTextDescription && (
-            <FeedContractCardDescription
-              contract={contract}
-              nonTextDescription={nonTextDescription}
-            />
-          )}
+        {size === 'md' && feedReason == 'freshness' && nonTextDescription && (
+          <FeedContractCardDescription
+            contract={contract}
+            nonTextDescription={nonTextDescription}
+          />
+        )}
         {!hideBottomRow && (
           <Col>
             {!hideTags && (
@@ -458,6 +442,22 @@ export function YourMetricsFooter(props: { metrics: ContractMetric }) {
           {profit ? formatMoney(profit) : '--'}
         </div>
       </Row>
+    </Row>
+  )
+}
+
+export function CategoryTags(props: {
+  categories?: { slug: string; name: string }[]
+  className?: string
+  maxGroups?: number
+}) {
+  const { categories, className, maxGroups = 3 } = props
+  if (!categories || categories.length <= 0) return null
+  return (
+    <Row className={clsx(className)}>
+      {categories.slice(0, maxGroups).map((category) => (
+        <TopicTag location={'feed card'} key={category.slug} topic={category} />
+      ))}
     </Row>
   )
 }

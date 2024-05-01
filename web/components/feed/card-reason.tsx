@@ -1,124 +1,17 @@
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
 import { HiSparkles } from 'react-icons/hi'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { Row } from '../layout/row'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import dayjs from 'dayjs'
 import { UserLink } from 'web/components/widgets/user-link'
 import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { DAY_MS } from 'common/util/time'
 import { FireIcon, UserIcon } from '@heroicons/react/outline'
 import { UserHovercard } from '../user/user-hovercard'
 import { FaGem } from 'react-icons/fa'
 import { Repost } from 'common/repost'
 
 export function CardReason(props: {
-  item: FeedTimelineItem | undefined
-  contract: Contract
-  probChange?: number
-  since?: number
-}) {
-  const { item, contract, probChange, since } = props
-
-  if (!item) {
-    if (contract.resolutionTime) {
-      return (
-        <span className="text-ink-400 text-sm">
-          resolved
-          <RelativeTimestamp
-            time={contract.resolutionTime}
-            shortened={true}
-            className="text-ink-400"
-          />
-        </span>
-      )
-    } else if (probChange) {
-      return <ProbabilityChange probChange={probChange} since={since} />
-    } else if (contract.createdTime > Date.now() - 2 * DAY_MS) {
-      return (
-        <Row className={'text-ink-400 items-center gap-1 text-sm'}>
-          <HiSparkles className={'h-4 w-4 text-yellow-400'} />
-          <span>
-            created
-            <RelativeTimestamp
-              time={contract.createdTime}
-              shortened={true}
-              className="text-ink-400"
-            />
-          </span>
-        </Row>
-      )
-    }
-    return (
-      <span className="text-ink-400 text-sm">
-        <Row className={'items-center gap-1'}>
-          <FireIcon className="text-ink-400 h-4 w-4" />
-          trending
-        </Row>
-      </span>
-    )
-  }
-
-  if (item.isCopied) {
-    return <div />
-  }
-  if (item.dataType === 'repost' && item.creatorDetails) {
-    return (
-      <Tooltip text={'Reposted by ' + item.creatorDetails.name}>
-        <Row className={'text-ink-400 gap-1 text-sm'}>
-          <BiRepost className={'text-ink-400 h-5 w-5'} />
-          <UserHovercard userId={item.creatorDetails.id}>
-            <UserLink short={true} user={item.creatorDetails} />
-          </UserHovercard>
-          reposted
-          <RelativeTimestamp
-            time={item.createdTime}
-            shortened={true}
-            className="text-ink-400 -ml-1"
-          />
-        </Row>
-      </Tooltip>
-    )
-  }
-  if (probChange) {
-    return <ProbabilityChange probChange={probChange} since={since} />
-  }
-
-  if (item.dataType == 'new_contract') {
-    const diff = dayjs(item.createdTime).diff(
-      dayjs(contract.createdTime),
-      'day'
-    )
-
-    return (
-      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
-        <HiSparkles className={'h-4 w-4 text-yellow-400'} />
-        <span>
-          {diff >= 1 ? 'updated' : 'created'}
-          <RelativeTimestamp
-            time={item.createdTime}
-            shortened={true}
-            className="text-ink-400"
-          />
-        </span>
-      </Row>
-    )
-  }
-  if (item.dataType == 'high_conversion') {
-    return (
-      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
-        <FaGem className="h-3 w-3 text-blue-400" />
-        popular
-      </Row>
-    )
-  }
-  return <div />
-}
-
-export function EndpointCardReason(props: {
   reason: 'importance' | 'freshness' | 'conversion' | 'followed' | 'reposted'
   repost?: Repost
   probChange?: number

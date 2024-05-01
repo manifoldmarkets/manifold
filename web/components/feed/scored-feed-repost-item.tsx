@@ -21,7 +21,7 @@ import { isBlocked, usePrivateUser } from 'web/hooks/use-user'
 import { CommentsButton } from 'web/components/comments/comments-button'
 import router from 'next/router'
 import { ClickFrame } from 'web/components/widgets/click-frame'
-import { EndpointCardReason } from 'web/components/feed/card-reason'
+import { CardReason } from 'web/components/feed/card-reason'
 import { UserHovercard } from '../user/user-hovercard'
 import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
@@ -93,7 +93,7 @@ export const ScoredFeedRepost = memo(function (props: {
           !creatorRepostedTheirComment && (
             <Col>
               <Row className={'mb-1 justify-end gap-1 pr-2'}>
-                <EndpointCardReason repost={repost} reason={'reposted'} />
+                <CardReason repost={repost} reason={'reposted'} />
                 <FeedDropdown
                   contract={contract}
                   itemCreatorId={repost.user_id}
@@ -156,7 +156,6 @@ export const ScoredFeedRepost = memo(function (props: {
                 className="ring-ink-100 dark:ring-ink-300 hover:ring-primary-200 dark:hover:ring-primary-200 max-w-full pb-2 ring-1 "
                 hideBottomRow={true}
                 size={'xs'}
-                hideReason={true}
               />
             </Col>
             <Col>

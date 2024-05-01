@@ -13,7 +13,6 @@ import {
 } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
 import { ClickFrame } from 'web/components/widgets/click-frame'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { track } from 'web/lib/service/analytics'
 import { DATA, StateDataType } from '../../usa-map/usa-map-data'
 import { PartyPanel } from './party-panel/party-panel'
@@ -27,7 +26,6 @@ export function StateContractCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  item?: FeedTimelineItem
   className?: string
   /** whether this card is small, like in card grids.*/
   small?: boolean
@@ -41,7 +39,6 @@ export function StateContractCard(props: {
   const {
     promotedData,
     trackingPostfix,
-    item,
     className,
 
     customTitle,
@@ -57,7 +54,6 @@ export function StateContractCard(props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
-      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
