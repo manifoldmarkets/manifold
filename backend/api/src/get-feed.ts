@@ -230,7 +230,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
          posts.*
         from posts
            join user_contract_views ucv on posts.contract_id = ucv.contract_id and ucv.user_id = $1
-           join contracts on posts.contract_id = contracts.id
+           join contracts on posts.contract_id = contracts.id and contracts.close_time > now()
            join contract_comments on posts.contract_comment_id = contract_comments.comment_id
            left join contract_bets on contract_comments.data->>'betId' = contract_bets.bet_id
             where posts.user_id in ( select follow_id from user_follows where user_id = $1)
