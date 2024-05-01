@@ -5,7 +5,7 @@ export type MinMax = {
 
 export function findMinMax(array: number[]): MinMax {
   if (array.length === 0) {
-    throw new Error('Array cannot be empty')
+    return { min: 0, max: 0 }
   }
   return array.reduce(
     (result: MinMax, value: number) => {
