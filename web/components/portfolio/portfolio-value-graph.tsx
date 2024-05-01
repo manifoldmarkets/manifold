@@ -1,5 +1,3 @@
-import { HistoryPoint } from 'common/chart'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
 import dayjs from 'dayjs'
@@ -12,7 +10,7 @@ import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
-import { Spacer } from '../layout/spacer'
+import { getPortfolioPointsFromHistory } from 'common/supabase/portfolio-metrics'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all'
@@ -69,46 +67,7 @@ export const PortfolioGraph = (props: {
   } = props
 
   const { profitPoints, investmentPoints, balancePoints, networthPoints } =
-    useMemo(() => {
-      if (!portfolioHistory?.length) {
-        return {
-          profitPoints: [],
-          investmentPoints: [],
-          balancePoints: [],
-          networthPoints: [],
-        }
-      }
-
-      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-
-      portfolioHistory.forEach((p) => {
-        profitPoints.push({
-          x: p.timestamp,
-          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-          obj: p,
-        })
-        investmentPoints.push({
-          x: p.timestamp,
-          y: p.investmentValue,
-          obj: p,
-        })
-        balancePoints.push({
-          x: p.timestamp,
-          y: p.balance,
-          obj: p,
-        })
-        networthPoints.push({
-          x: p.timestamp,
-          y: p.balance + p.investmentValue,
-          obj: p,
-        })
-      })
-
-      return { profitPoints, investmentPoints, balancePoints, networthPoints }
-    }, [portfolioHistory])
+    getPortfolioPointsFromHistory(portfolioHistory, firstProfit)
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
