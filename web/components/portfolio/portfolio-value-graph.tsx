@@ -84,6 +84,10 @@ export const PortfolioGraph = (props: {
       const { min: investmentYMin, max: investmentYMax } =
         findMinMax(investmentYPoints)
 
+      const networthYPoints = networthPoints.map((d) => d.y)!
+      const { min: networthYMin, max: networthYMax } =
+        findMinMax(networthYPoints)
+
       const minDate =
         portfolioFocus == 'all'
           ? min([balanceXMin, investmentXMin])!
@@ -98,13 +102,13 @@ export const PortfolioGraph = (props: {
           : investmentXMax
       const minValue =
         portfolioFocus == 'all'
-          ? balanceYMin
+          ? min([balanceYMin, networthYMin])!
           : portfolioFocus == 'balance'
           ? balanceYMin
           : investmentYMin
       const maxValue =
         portfolioFocus == 'all'
-          ? max(networthPoints.map((d) => d.y))!
+          ? max([networthYMax, balanceYMax])!
           : portfolioFocus == 'balance'
           ? balanceYMax
           : investmentYMax
