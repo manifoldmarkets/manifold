@@ -4,12 +4,11 @@ import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   AreaPath,
-  LinePath,
   PointerMode,
   SVGChart,
   SliceMarker,
@@ -17,9 +16,7 @@ import {
   ZoomParams,
 } from '../charts/helpers'
 import { ZoomSlider } from '../charts/zoom-slider'
-import clsx from 'clsx'
-import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import { BALANCE_COLOR, PortfolioMode } from './portfolio-value-graph'
+import { PortfolioMode } from './portfolio-value-graph'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { Col } from '../layout/col'
 import dayjs from 'dayjs'
