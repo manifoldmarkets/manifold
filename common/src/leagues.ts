@@ -117,7 +117,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 5, doublePromotion: 0 }
   }
   if (division === 5) {
-    return { demotion: 12, promotion: 3, doublePromotion: 0 }
+    return { demotion: 12, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
     return { demotion: 30, promotion: 0, doublePromotion: 0 }
@@ -129,6 +129,10 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season > 8 && season < 13) {
+    if (division === 5)
+      return { demotion: 12, promotion: 3, doublePromotion: 0 }
+  }
   if (season === 8) {
     if (division === 6)
       return { demotion: 34, promotion: 0, doublePromotion: 0 }
