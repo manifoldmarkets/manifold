@@ -135,14 +135,21 @@ export async function runCancelBountyTxn(
     totalDeposits: FieldValue.increment(amount),
   })
 
+  const resolutionTime = Date.now()
+  const closeTime =
+    !contractCloseTime || contractCloseTime > resolutionTime
+      ? resolutionTime
+      : contractCloseTime
+
   // update bountied contract
   fbTransaction.update(contractRef, {
     bountyLeft: FieldValue.increment(-amount),
     bountyTxns: FieldValue.arrayUnion(newTxnDoc.id),
-    closeTime:
-      !contractCloseTime || contractCloseTime > Date.now()
-        ? Date.now()
-        : contractCloseTime,
+    closeTime,
+    isResolved: true,
+    resolutionTime,
+    resolverId: txn.toId,
+    lastUpdatedTime: resolutionTime,
   })
 
   return { status: 'success', txn }
