@@ -3,7 +3,6 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
-import { cleanOldFeedRows } from './clean-old-feed-rows'
 import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
@@ -74,11 +73,6 @@ export function createJobs() {
       'clean-old-tombstones',
       '0 0 0 * * *', // midnight daily
       cleanOldTombstones
-    ),
-    createJob(
-      'clean-old-feed-rows',
-      '0 0 1 * * *', // 1 AM daily
-      cleanOldFeedRows
     ),
     createJob(
       'clean-old-notifications',

@@ -2396,66 +2396,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_feed: {
-        Row: {
-          bet_id: string | null
-          comment_id: string | null
-          contract_id: string | null
-          created_time: string
-          creator_id: string | null
-          data: Json | null
-          data_type: string
-          event_time: string
-          id: number
-          idempotency_key: string | null
-          is_copied: boolean
-          post_id: number | null
-          reasons: string[] | null
-          relevance_score: number | null
-          seen_duration: number | null
-          seen_time: string | null
-          user_id: string
-        }
-        Insert: {
-          bet_id?: string | null
-          comment_id?: string | null
-          contract_id?: string | null
-          created_time?: string
-          creator_id?: string | null
-          data?: Json | null
-          data_type: string
-          event_time: string
-          id?: never
-          idempotency_key?: string | null
-          is_copied?: boolean
-          post_id?: number | null
-          reasons?: string[] | null
-          relevance_score?: number | null
-          seen_duration?: number | null
-          seen_time?: string | null
-          user_id: string
-        }
-        Update: {
-          bet_id?: string | null
-          comment_id?: string | null
-          contract_id?: string | null
-          created_time?: string
-          creator_id?: string | null
-          data?: Json | null
-          data_type?: string
-          event_time?: string
-          id?: never
-          idempotency_key?: string | null
-          is_copied?: boolean
-          post_id?: number | null
-          reasons?: string[] | null
-          relevance_score?: number | null
-          seen_duration?: number | null
-          seen_time?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_follows: {
         Row: {
           created_time: string
