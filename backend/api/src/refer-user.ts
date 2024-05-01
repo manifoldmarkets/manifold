@@ -16,6 +16,7 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
+import { convertTxn } from 'common/supabase/txns'
 
 const bodySchema = z
   .object({
@@ -91,15 +92,16 @@ async function handleReferral(
   const pg = createSupabaseDirectClient()
 
   log(`referredByUserId: ${referredByUserId}`)
-  const res = await pg.tx(async (tx) => {
-    const txns = await tx.manyOrNone(
-      `select * from txns where data->>'toId' = $1 and data->>'category' = 'REFERRAL' limit 1`,
-      [referredByUserId]
+  const txn = await pg.tx(async (tx) => {
+    const txns = await tx.map(
+      `select * from txns where to_id = $1 and category = 'REFERRAL'`,
+      [referredByUserId],
+      convertTxn
     )
 
     // If the referring user already has a referral txn due to referring this user, halt
     // TODO: store in data instead
-    if (txns.some((txn) => txn.data()?.description.includes(user.id))) {
+    if (txns.some((txn) => txn.description?.includes(user.id))) {
       throw new APIError(
         404,
         'Existing referral bonus found with matching details'
@@ -108,9 +110,7 @@ async function handleReferral(
     log('creating referral txns')
 
     // if they're updating their referredId, create a txn for both
-    const txnData: Omit<ReferralTxn, 'fromId'> = {
-      id: crypto.randomUUID(),
-      createdTime: Date.now(),
+    const txnData = {
       fromType: 'BANK',
       toId: referredByUserId,
       toType: 'USER',
@@ -118,7 +118,8 @@ async function handleReferral(
       token: 'M$',
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
-    }
+    } as const
+
     const txn = await runTxnFromBank(tx, txnData)
 
     userDoc.update(
@@ -128,14 +129,13 @@ async function handleReferral(
       })
     )
 
-    return { user, txn }
+    return txn
   })
-  if (!res || !res.txn) return
 
   await createReferralNotification(
     referredByUserId,
     user,
-    res.txn.amount.toString(),
+    txn.amount.toString(),
     referredByContract
   )
   await completeReferralsQuest(referredByUserId)

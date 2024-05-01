@@ -125,17 +125,16 @@ const payUserLoan = async (
   const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
 
   // make sure we don't already have a txn for this user/questType
-  const previousTxns = await tx.map<Txn>(
-    `select data from txns
+  const count = await tx.one<number>(
+    `select count(*) from txns
     where data->>'toId' = $1
     and data->>'category' = 'LOAN'
     and data->'createdTime' >= $2
     limit 1`,
-    [userId, startOfDay],
-    (r: any) => r.data
+    [userId, startOfDay]
   )
 
-  if (previousTxns.length) {
+  if (count) {
     throw new APIError(400, 'Already awarded loan today')
   }
 

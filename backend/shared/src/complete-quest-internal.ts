@@ -17,6 +17,7 @@ import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
 import { WEEK_MS } from 'common/util/time'
+import { convertTxn } from 'common/supabase/txns'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -167,7 +168,7 @@ const awardQuestBonus = async (
   return await pg.tx(async (tx) => {
     // make sure we don't already have a txn for this user/questType
     const previousTxn = await tx.oneOrNone(
-      `select data from txns
+      `select * from txns
       where to_id = $1
       and category = 'QUEST_REWARD'
       and data->'data'->>'questType' = $2
@@ -175,7 +176,7 @@ const awardQuestBonus = async (
       and created_time >= millis_to_ts($4)
       limit 1`,
       [user.id, questType, newCount, startOfDay],
-      (r: any) => r?.data
+      convertTxn
     )
 
     if (previousTxn) {
