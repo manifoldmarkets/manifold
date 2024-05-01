@@ -21,7 +21,6 @@ import toast from 'react-hot-toast'
 import { track } from 'web/lib/service/analytics'
 import { buildArray } from 'common/util/array'
 import { UserHovercard } from '../user/user-hovercard'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { removeUndefinedProps } from 'common/util/object'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { DisplayUser } from 'common/api/user-types'
@@ -39,7 +38,7 @@ export const LikeButton = memo(function LikeButton(props: {
   placement?: 'top' | 'bottom'
   size?: SizeType
   disabled?: boolean
-  feedItem?: FeedTimelineItem
+  feedReason?: string
   contractId?: string
   commentId?: string
 }) {
@@ -52,7 +51,7 @@ export const LikeButton = memo(function LikeButton(props: {
     className,
     trackingLocation,
     placement = 'bottom',
-    feedItem,
+    feedReason,
     size,
     contractId,
     commentId,
@@ -83,14 +82,10 @@ export const LikeButton = memo(function LikeButton(props: {
           itemId: contentId,
           location: trackingLocation,
           contractId:
-            feedItem?.contractId ?? contractId ?? contentType === 'contract'
-              ? contentId
-              : undefined,
+            contractId ?? contentType === 'contract' ? contentId : undefined,
           commentId:
-            feedItem?.commentId ?? commentId ?? contentType === 'comment'
-              ? contentId
-              : undefined,
-          feedItem,
+            commentId ?? contentType === 'comment' ? contentId : undefined,
+          feedReason,
         })
       )
     } else {

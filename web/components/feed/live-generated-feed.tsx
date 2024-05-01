@@ -174,10 +174,11 @@ const FeedCard = (props: {
     />
   ) : (
     <FeedContractCard
+      trackingPostfix={'feed'}
       contract={contract}
       key={contract.id}
       hide={() => setHidden(true)}
-      endpointReason={reason}
+      feedReason={reason}
       promotedData={adId ? { adId, reward: AD_REDEEM_REWARD } : undefined}
     />
   )

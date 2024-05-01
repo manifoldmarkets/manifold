@@ -247,7 +247,7 @@ const BottomActionRow = (props: {
           contentText={richTextToString(comment.content)}
           disabled={isBlocked(privateUser, comment.userId)}
           trackingLocation={'feed'}
-          feedItem={feedItem}
+          feedReason={feedItem?.dataType}
         />
       </BottomRowButtonWrapper>
     </Row>

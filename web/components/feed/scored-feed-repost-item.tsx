@@ -245,6 +245,7 @@ const BottomActionRow = (props: {
           trackingLocation={'feed'}
           contractId={contract.id}
           commentId={comment.id}
+          feedReason={'repost'}
         />
       </BottomRowButtonWrapper>
     </Row>

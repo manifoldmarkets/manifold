@@ -7,16 +7,15 @@ import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { CPMMBinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function BetButton(props: {
   contract: CPMMBinaryContract | StonkContract
   user: User | null | undefined
-  feedItem?: FeedTimelineItem
+  feedReason?: string
   className?: string
   labels?: { yes: string; no: string }
 }) {
-  const { contract, labels, user, className, feedItem } = props
+  const { contract, labels, user, className, feedReason } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
@@ -74,7 +73,7 @@ export function BetButton(props: {
               }
               location={'feed card'}
               inModal={true}
-              feedItem={feedItem}
+              feedReason={feedReason}
             />
           </Col>
         </Modal>

@@ -10,7 +10,6 @@ import {
   canEditAnswer,
 } from './answers-panel'
 import { BuyPanelBody } from 'web/components/bet/bet-panel'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
@@ -18,9 +17,9 @@ import { PencilIcon } from '@heroicons/react/solid'
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
   answers: Answer[]
-  feedItem?: FeedTimelineItem
+  feedReason?: string
 }) {
-  const { feedItem, contract, answers } = props
+  const { feedReason, contract, answers } = props
 
   const [colorLeft, colorRight] = answers.map(
     (a, i) => a.color ?? VERSUS_COLORS[i]
@@ -38,7 +37,7 @@ export function BinaryMultiAnswersPanel(props: {
             answer={answer}
             contract={contract as MultiContract}
             color={i === 0 ? colorLeft : colorRight}
-            feedItem={feedItem}
+            feedReason={feedReason}
           />
         ))}
       </>

@@ -65,7 +65,7 @@ export function FeedContractCard(props: {
   hideBottomRow?: boolean
   hideTags?: boolean
   hideReason?: boolean
-  endpointReason?: string
+  feedReason?: string
 }) {
   const {
     promotedData,
@@ -79,7 +79,7 @@ export function FeedContractCard(props: {
     size = 'md',
     hideTags,
     hideReason,
-    endpointReason,
+    feedReason,
   } = props
   const user = useUser()
 
@@ -152,7 +152,7 @@ export function FeedContractCard(props: {
         creatorId: contract.creatorId,
         slug: contract.slug,
         isPromoted: !!promotedData,
-        feedItem: item,
+        feedReason: feedReason,
         commentId: item?.commentId,
       })
     )
@@ -206,7 +206,7 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {!hideReason && !endpointReason && (
+            {!hideReason && !feedReason && (
               <CardReason
                 item={item}
                 contract={contract}
@@ -214,9 +214,9 @@ export function FeedContractCard(props: {
                 since={startTime}
               />
             )}
-            {endpointReason && (
+            {feedReason && (
               <EndpointCardReason
-                reason={endpointReason as any}
+                reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
               />
@@ -253,7 +253,7 @@ export function FeedContractCard(props: {
           )}
           {isBinaryCpmm && !isClosed && (
             <BetButton
-              feedItem={item}
+              feedReason={feedReason}
               contract={contract}
               user={user}
               className="h-min"
@@ -261,7 +261,7 @@ export function FeedContractCard(props: {
           )}
           {!isClosed && isStonk && (
             <BetButton
-              feedItem={item}
+              feedReason={feedReason}
               contract={contract}
               user={user}
               className="h-min"
@@ -285,7 +285,7 @@ export function FeedContractCard(props: {
           <SimpleAnswerBars
             contract={contract}
             maxAnswers={4}
-            feedItem={item}
+            feedReason={feedReason}
           />
         )}
 
@@ -295,7 +295,7 @@ export function FeedContractCard(props: {
             <BinaryMultiAnswersPanel
               contract={contract}
               answers={contract.answers}
-              feedItem={item}
+              feedReason={feedReason}
             />
           )}
 
@@ -342,7 +342,7 @@ export function FeedContractCard(props: {
               contract={contract}
               user={user}
               underline={!!children}
-              feedItem={item}
+              feedReason={feedReason}
             />
             {children}
           </Col>
@@ -365,9 +365,9 @@ const BottomActionRow = (props: {
   contract: Contract
   user: User | null | undefined
   underline?: boolean
-  feedItem?: FeedTimelineItem
+  feedReason?: string
 }) => {
-  const { contract, feedItem, user, underline } = props
+  const { contract, feedReason, user, underline } = props
   const { question } = contract
 
   return (
@@ -430,7 +430,8 @@ const BottomActionRow = (props: {
           size={'2xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
-          feedItem={feedItem}
+          feedReason={feedReason}
+          contractId={contract.id}
         />
       </BottomRowButtonWrapper>
     </Row>
