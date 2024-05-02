@@ -12,10 +12,11 @@ import { log } from 'shared/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp, max, sortBy } from 'lodash'
-import { logit } from 'common/util/math'
+import { floatingEqual, logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
+import { convertContract } from 'common/supabase/contracts'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 
@@ -30,20 +31,20 @@ export async function calculateImportanceScore(
   const weekAgo = now - 7 * DAY_MS
 
   const activeContracts = await pg.map(
-    `select data, conversion_score from contracts
+    `select data, conversion_score, importance_score, freshness_score from contracts
     where last_bet_time > millis_to_ts($1)
     or last_comment_time > millis_to_ts($1)`,
     [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
-    (row) =>
-      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
+    (row) => convertContract(row)
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data, conversion_score from contracts
-      where importance_score > 0.2`,
+    `select data, conversion_score, importance_score, freshness_score from contracts
+            where importance_score > 0.05
+            or freshness_score > 0.05
+            `,
     [],
-    (row) =>
-      ({ ...row.data, conversionScore: row.conversion_score ?? 0 } as Contract)
+    (row) => convertContract(row)
   )
 
   const activeContractIds = activeContracts.map((c) => c.id)
@@ -82,28 +83,24 @@ export async function calculateImportanceScore(
   const contractsWithUpdates: Contract[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, popularityScore, dailyScore, freshnessScore } =
-      computeContractScores(
-        now,
-        contract,
-        todayComments[contract.id] ?? 0,
-        todayLikesByContract[contract.id] ?? 0,
-        thisWeekLikesByContract[contract.id] ?? 0,
-        todayTradersByContract[contract.id] ?? 0,
-        hourAgoTradersByContract[contract.id] ?? 0,
-        thisWeekTradersByContract[contract.id] ?? 0
-      )
+    const { importanceScore, freshnessScore } = computeContractScores(
+      now,
+      contract,
+      todayComments[contract.id] ?? 0,
+      todayLikesByContract[contract.id] ?? 0,
+      thisWeekLikesByContract[contract.id] ?? 0,
+      todayTradersByContract[contract.id] ?? 0,
+      hourAgoTradersByContract[contract.id] ?? 0,
+      thisWeekTradersByContract[contract.id] ?? 0
+    )
 
+    const epsilon = 0.005
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
-      contract.importanceScore !== importanceScore ||
-      contract.popularityScore !== popularityScore ||
-      contract.dailyScore !== dailyScore ||
-      contract.freshnessScore !== freshnessScore
+      !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
+      !floatingEqual(freshnessScore, contract.freshnessScore, epsilon)
     ) {
       contract.importanceScore = importanceScore
-      contract.popularityScore = popularityScore
-      contract.dailyScore = dailyScore
       contract.freshnessScore = freshnessScore
       contractsWithUpdates.push(contract)
     }
@@ -148,17 +145,14 @@ export async function calculateImportanceScore(
     })
 
   if (!readOnly) {
-    const limitedContractsWithUpdates = contractsWithUpdates.slice(0, 2500)
-    console.log('Updating', limitedContractsWithUpdates.length, 'contracts')
+    console.log('Updating', contractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
       'contracts',
       ['id'],
-      limitedContractsWithUpdates.map((contract) => ({
+      contractsWithUpdates.map((contract) => ({
         id: contract.id,
-        data: `${JSON.stringify(contract)}::jsonb`,
         importance_score: contract.importanceScore,
-        popularity_score: contract.popularityScore,
         freshness_score: contract.freshnessScore,
       }))
     )
