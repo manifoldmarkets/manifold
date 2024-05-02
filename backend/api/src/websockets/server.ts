@@ -1,0 +1,119 @@
+import { Server as HttpServer } from 'node:http'
+import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
+import { isError } from 'lodash'
+import { log } from 'shared/utils'
+import { Switchboard } from './switchboard'
+import {
+  ClientMessage,
+  ServerMessage,
+  CLIENT_MESSAGE_SCHEMA,
+} from 'common/api/websockets'
+
+const SWITCHBOARD = new Switchboard()
+
+export class MessageParseError extends Error {
+  details?: unknown
+  constructor(message: string, details?: unknown) {
+    super(message)
+    this.name = 'MessageParseError'
+    this.details = details
+  }
+}
+
+function serializeError(err: unknown) {
+  return isError(err) ? err.message : 'Unexpected error.'
+}
+
+function parseMessage(data: RawData): ClientMessage {
+  let messageObj: any
+  try {
+    messageObj = JSON.parse(data.toString())
+  } catch (err) {
+    log.error(err)
+    throw new MessageParseError('Message was not valid UTF-8 encoded JSON.')
+  }
+  const result = CLIENT_MESSAGE_SCHEMA.safeParse(messageObj)
+  if (!result.success) {
+    const issues = result.error.issues.map((i) => {
+      return {
+        field: i.path.join('.') || null,
+        error: i.message,
+      }
+    })
+    throw new MessageParseError('Error parsing message.', issues)
+  } else {
+    return result.data
+  }
+}
+
+function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
+  try {
+    const msg = parseMessage(data)
+    const { type, txid } = msg
+    try {
+      switch (type) {
+        case 'identify': {
+          SWITCHBOARD.identify(ws, msg.uid)
+          break
+        }
+        case 'subscribe': {
+          SWITCHBOARD.subscribe(ws, ...msg.topics)
+          break
+        }
+        case 'unsubscribe': {
+          SWITCHBOARD.unsubscribe(ws, ...msg.topics)
+          break
+        }
+        case 'ping': {
+          SWITCHBOARD.markSeen(ws)
+          break
+        }
+        default:
+          throw new Error("Unknown message type; shouldn't be possible here.")
+      }
+    } catch (err) {
+      log.error(err)
+      return { type: 'ack', txid, success: false, error: serializeError(err) }
+    }
+    return { type: 'ack', txid, success: true }
+  } catch (err) {
+    log.error(err)
+    return { type: 'ack', success: false, error: serializeError(err) }
+  }
+}
+
+export function broadcast(topic: string, data: Record<string, unknown>) {
+  const msg = { type: 'broadcast', topic, data } as ServerMessage<'broadcast'>
+  const json = JSON.stringify(msg)
+  for (const [ws, _] of SWITCHBOARD.getSubscribers(topic)) {
+    // mqp: check ws.readyState before sending?
+    ws.send(json)
+  }
+}
+
+export function listen(server: HttpServer, path: string) {
+  const wss = new WebSocketServer({ server, path })
+  wss.on('error', (err) => {
+    log.error('Error on websocket server.', { error: err })
+  })
+  wss.on('connection', (ws) => {
+    // todo: should likely kill connections that haven't sent any ping for a long time
+    ws.on('open', () => {
+      log.debug(`WS client connected to ${ws.url}.`)
+      SWITCHBOARD.connect(ws)
+    })
+    ws.on('message', (data) => {
+      const result = processMessage(ws, data)
+      // mqp: check ws.readyState before sending?
+      ws.send(JSON.stringify(result))
+    })
+    ws.on('close', (code, reason) => {
+      log.debug(`WS client disconnected from ${ws.url}.`, { code, reason })
+      SWITCHBOARD.disconnect(ws)
+    })
+    ws.on('error', (err) => {
+      log.error('Error on websocket connection.', { error: err })
+    })
+  })
+  return wss
+}
