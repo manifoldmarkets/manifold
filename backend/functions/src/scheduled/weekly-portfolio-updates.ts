@@ -107,7 +107,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
   )
 
   const pg = createSupabaseDirectClient()
-  bulkInsert(pg, 'weekly_update', results)
+  await bulkInsert(pg, 'weekly_update', results)
 
   log('saved weekly contract metrics for users:', usersToSave.length)
 }
