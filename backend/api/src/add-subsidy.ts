@@ -61,18 +61,6 @@ export const addLiquidity: APIHandler<
         newLiquidityProvisionDoc.id
       )
 
-    await pg.tx((tx) =>
-      insertTxn(tx, {
-        fromId: auth.uid,
-        amount: amount,
-        toId: contractId,
-        toType: 'CONTRACT',
-        category: 'ADD_SUBSIDY',
-        token: 'M$',
-        fromType: 'USER',
-      })
-    )
-
     transaction.update(contractDoc, {
       subsidyPool: newSubsidyPool,
       totalLiquidity: newTotalLiquidity,
@@ -81,6 +69,18 @@ export const addLiquidity: APIHandler<
     transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
     return newLiquidityProvision
   })
+
+  await pg.tx((tx) =>
+    insertTxn(tx, {
+      fromId: auth.uid,
+      amount: amount,
+      toId: contractId,
+      toType: 'CONTRACT',
+      category: 'ADD_SUBSIDY',
+      token: 'M$',
+      fromType: 'USER',
+    })
+  )
 
   return provision
 }
