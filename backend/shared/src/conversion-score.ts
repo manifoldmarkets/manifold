@@ -46,7 +46,7 @@ export async function calculateConversionScore() {
          card_enjoyers as (
            select contract_id, count(distinct user_id) as uniques
            from user_contract_interactions
-           where name in ('card bet', 'card like', 'card click')
+           where name in ('card bet', 'card like')
            and contract_id= any ($1)
            group by contract_id
          )
