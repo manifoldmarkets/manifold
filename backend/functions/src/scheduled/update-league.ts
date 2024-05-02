@@ -77,51 +77,22 @@ export async function updateLeagueCore() {
     [season, seasonStart, seasonEnd, txnCategoriesCountedAsManaEarned]
   )
 
-  // Unique bettor bonuses during the season (contract can be created any time).
-  const uniqueBettorBonuses = await pg.manyOrNone<{
+  // Earned fees from bets in your markets during the season.
+  const creatorFees = await pg.manyOrNone<{
     user_id: string
     category: string
     amount: number
   }>(
     `select
-      user_id,
-      category,
-      sum(amount) as amount
-    from txns 
-    join
-      leagues on leagues.user_id = txns.to_id
+      contracts.creator_id as user_id,
+      'CREATOR_FEE' as category,
+      sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
+    from contract_bets cb 
+    join contracts on contracts.id = cb.contract_id
     where
-      leagues.season = $1
-      and txns.created_time > millis_to_ts($2)
-      and txns.created_time < millis_to_ts($3)
-      and txns.category = 'UNIQUE_BETTOR_BONUS'
-    group by user_id, category
-    `,
-    [season, seasonStart, seasonEnd]
-  )
-
-  const negativeBettorBonuses = await pg.manyOrNone<{
-    user_id: string
-    category: string
-    amount: number
-  }>(
-    `select
-      user_id,
-      category,
-      -1 * sum(amount) as amount
-    from txns 
-    join
-      leagues on leagues.user_id = txns.from_id
-    join
-      contracts on contracts.id = txns.data->'data'->>'contractId'
-    where
-      leagues.season = $1
-      and ts_to_millis(contracts.created_time) > $2
-      and ts_to_millis(contracts.created_time) < $3
-      and txns.created_time > millis_to_ts($2)
-      and txns.created_time < millis_to_ts($3)
-      and txns.category = 'CANCEL_UNIQUE_BETTOR_BONUS'
-    group by user_id, category
+      cb.created_time > millis_to_ts($2)
+      and cb.created_time < millis_to_ts($3)
+    group by contracts.creator_id
     `,
     [season, seasonStart, seasonEnd]
   )
@@ -129,10 +100,8 @@ export async function updateLeagueCore() {
   console.log(
     'Loaded txns per user',
     txnData.length,
-    'unique bettor bonuses',
-    uniqueBettorBonuses.length,
-    'negative bettor bonuses',
-    negativeBettorBonuses.length
+    'creator fees',
+    creatorFees.length
   )
 
   log('Loading bets...')
@@ -198,8 +167,7 @@ export async function updateLeagueCore() {
     [
       ...userProfit,
       ...txnData,
-      ...uniqueBettorBonuses,
-      ...negativeBettorBonuses,
+      ...creatorFees,
     ].map((u) => ({ ...u, amount: +u.amount })),
     'user_id'
   )
