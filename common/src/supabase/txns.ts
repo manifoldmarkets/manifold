@@ -11,4 +11,6 @@ export const convertTxn = (row: Row<'txns'>): Txn => ({
   category: row.category as any,
   createdTime: tsToMillis(row.created_time),
   token: (row.data as any).token,
+  description: (row.data as any).description,
+  data: (row.data as any).data,
 })
