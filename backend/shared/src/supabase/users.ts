@@ -1,7 +1,9 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
+import { User } from 'common/user'
+import { updateData } from './utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -65,4 +67,69 @@ export const getMostlyActiveUserIds = async (
     [longAgo, new Date(longAgo).toISOString(), randomNumberThreshold, userIds],
     (r: { id: string }) => r.id
   )
+}
+
+export const updateUser = async (
+  db: SupabaseDirectClient,
+  id: string,
+  update: Partial<
+    Omit<User, 'id' | 'balance' | 'spiceBalance' | 'totalDeposits'>
+  >
+) => {
+  await updateData(db, 'users', 'id', { id, ...update })
+}
+
+export const incrementBalance = async (
+  db: SupabaseDirectClient,
+  id: string,
+  deltas: { balance?: number; spiceBalance?: number; totalDeposits?: number }
+) => {
+  await db.none(
+    `update users
+    set balance = balance + $1,
+        spice_balance = spice_balance + $2,
+        total_deposits = total_deposits + $3
+    where id = $4`,
+    [
+      deltas.balance ?? 0,
+      deltas.spiceBalance ?? 0,
+      deltas.totalDeposits ?? 0,
+      id,
+    ]
+  )
+}
+
+export const bulkIncrementBalances = async (
+  db: SupabaseDirectClient,
+  userUpdates: {
+    id: string
+    balance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+  }[]
+) => {
+  const cs = new pgp.helpers.ColumnSet(
+    [
+      'id',
+      {
+        name: 'balance',
+        init: (c) => 'balance + ' + c.value ?? 0,
+        mod: ':raw',
+      },
+      {
+        name: 'spice_balance',
+        init: (c) => 'spice_balance + ' + c.value ?? 0,
+        mod: ':raw',
+      },
+      {
+        name: 'total_deposits',
+        init: (c) => 'total_deposits + ' + c.value ?? 0,
+        mod: ':raw',
+      },
+    ],
+    { table: 'users' }
+  )
+
+  const q = pgp.helpers.update(userUpdates, cs) + ' WHERE v.id = t.id'
+  await db.none(q)
 }

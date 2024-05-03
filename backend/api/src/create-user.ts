@@ -17,7 +17,7 @@ import {
   LOVE_DOMAIN_ALTERNATE,
   RESERVED_PATHS,
 } from 'common/envs/constants'
-import { log, isProd } from 'shared/utils'
+import { log, isProd, getUser, getUserByUsername } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
@@ -33,6 +33,7 @@ import {
 
 import { onCreateUser } from 'api/helpers/on-create-user'
 import { STARTING_BALANCE } from 'common/economy'
+import { insert } from 'shared/supabase/utils'
 
 export const createuser: APIHandler<'createuser'> = async (
   props,
@@ -81,81 +82,79 @@ export const createuser: APIHandler<'createuser'> = async (
     ? fbUser.photoURL
     : await generateAvatarUrl(auth.uid, name, bucket)
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+
   let username = cleanUsername(name)
 
   // Check username case-insensitive
-  const { data } = await db
-    .from('users')
-    .select('id')
-    .ilike('username', username)
-
-  const usernameExists = (data ?? []).length > 0
+  const countDupe = await pg.one<number>(
+    `select count(*) from users where username ilike $1`,
+    [username]
+  )
+  const usernameExists = countDupe > 0
   const isReservedName = RESERVED_PATHS.includes(username)
   if (usernameExists || isReservedName) username += randomString(4)
 
-  const { user, privateUser } = await firestore.runTransaction(
-    async (trans) => {
-      const userRef = firestore.collection('users').doc(auth.uid)
-
-      const preexistingUser = await trans.get(userRef)
-      if (preexistingUser.exists)
-        throw new APIError(403, 'User already exists', {
-          userId: auth.uid,
-        })
-
-      // Check exact username to avoid problems with duplicate requests
-      const sameNameUser = await trans.get(
-        firestore.collection('users').where('username', '==', username)
-      )
-      if (!sameNameUser.empty)
-        throw new APIError(403, 'Username already taken', { username })
-
-      // Only undefined prop should be fromLove
-      const user: User = removeUndefinedProps({
-        id: auth.uid,
-        name,
-        username,
-        avatarUrl,
-        balance: STARTING_BALANCE,
-        spiceBalance: 0,
-        totalDeposits: STARTING_BALANCE,
-        createdTime: Date.now(),
-        profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-        nextLoanCached: 0,
-        streakForgiveness: 1,
-        shouldShowWelcome: true,
-        creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
-        isBannedFromPosting: Boolean(
-          (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
-            (ip && bannedIpAddresses.includes(ip))
-        ),
-        fromLove,
-        signupBonusPaid: 0,
-        verifiedPhone: testUserAKAEmailPasswordUser,
+  const { user, privateUser } = await pg.tx(async (tx) => {
+    const preexistingUser = await getUser(auth.uid, tx)
+    if (preexistingUser)
+      throw new APIError(403, 'User already exists', {
+        userId: auth.uid,
       })
 
-      const privateUser: PrivateUser = {
-        id: auth.uid,
-        email,
-        initialIpAddress: ip,
-        initialDeviceToken: deviceToken,
-        notificationPreferences: getDefaultNotificationPreferences(),
-        blockedUserIds: [],
-        blockedByUserIds: [],
-        blockedContractIds: [],
-        blockedGroupSlugs: [],
-      }
+    // Check exact username to avoid problems with duplicate requests
+    const sameNameUser = await getUserByUsername(username, tx)
+    if (sameNameUser)
+      throw new APIError(403, 'Username already taken', { username })
 
-      trans.create(userRef, user)
-      trans.create(
-        firestore.collection('private-users').doc(auth.uid),
-        privateUser
-      )
+    // Only undefined prop should be fromLove
+    const user: User = removeUndefinedProps({
+      id: auth.uid,
+      name,
+      username,
+      avatarUrl,
+      balance: STARTING_BALANCE,
+      spiceBalance: 0,
+      totalDeposits: STARTING_BALANCE,
+      createdTime: Date.now(),
+      profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+      nextLoanCached: 0,
+      streakForgiveness: 1,
+      shouldShowWelcome: true,
+      creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
+      isBannedFromPosting: Boolean(
+        (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
+          (ip && bannedIpAddresses.includes(ip))
+      ),
+      fromLove,
+      signupBonusPaid: 0,
+      verifiedPhone: testUserAKAEmailPasswordUser,
+    })
 
-      return { user, privateUser }
+    const privateUser: PrivateUser = {
+      id: auth.uid,
+      email,
+      initialIpAddress: ip,
+      initialDeviceToken: deviceToken,
+      notificationPreferences: getDefaultNotificationPreferences(),
+      blockedUserIds: [],
+      blockedByUserIds: [],
+      blockedContractIds: [],
+      blockedGroupSlugs: [],
     }
-  )
+
+    await insert(tx, 'users', {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      data: user,
+      fs_updated_time: 'TODO REMOVE',
+    })
+
+    await firestore.collection('private-users').doc(auth.uid).set(privateUser)
+
+    return { user, privateUser }
+  })
 
   log('created user ', { username: user.username, firebaseId: auth.uid })
 

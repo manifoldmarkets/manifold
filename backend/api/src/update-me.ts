@@ -16,6 +16,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import * as admin from 'firebase-admin'
+import { updateUser } from 'shared/supabase/users'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
@@ -41,7 +42,9 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
     update.username = cleanedUsername
   }
 
-  await firestore.doc(`users/${auth.uid}`).update(removeUndefinedProps(update))
+  const pg = createSupabaseDirectClient()
+
+  await updateUser(pg, auth.uid, removeUndefinedProps(update))
   const { name, username, avatarUrl } = update
   if (name || username || avatarUrl) {
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })

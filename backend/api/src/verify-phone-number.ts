@@ -1,12 +1,13 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isProd, log } from 'shared/utils'
+import { getUser, isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { STARTING_BALANCE, SUS_STARTING_BALANCE } from 'common/economy'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { SignupBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { rateLimitByUser } from './helpers/rate-limit'
+import { updateUser } from 'shared/supabase/users'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const twilio = require('twilio')
 
@@ -71,49 +72,31 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
       !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
     const amount = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
-    const deservesSignupBonus = await firestore.runTransaction(
-      async (transaction) => {
-        const toDoc = firestore.doc(`users/${auth.uid}`)
-        const toUserSnap = await transaction.get(toDoc)
-        if (!toUserSnap.exists)
-          throw new APIError(400, 'User not found', { userId: auth.uid })
-        const user = toUserSnap.data() as User
-        const { verifiedPhone } = user
-        const deservesSignupBonus = verifiedPhone === false
-
-        transaction.update(toDoc, {
+    await pg.tx(async (tx) => {
+      const user = await getUser(auth.uid, tx)
+      if (!user) throw new APIError(401, `User ${auth.uid} not found`)
+      const { verifiedPhone } = user
+      if (verifiedPhone === false) {
+        await updateUser(tx, auth.uid, {
           verifiedPhone: true,
         })
-        return deservesSignupBonus
-      }
-    )
 
-    if (deservesSignupBonus) {
-      const signupBonusTxn: Omit<
-        SignupBonusTxn,
-        'fromId' | 'id' | 'createdTime'
-      > = {
-        fromType: 'BANK',
-        amount: amount,
-        category: 'SIGNUP_BONUS',
-        toId: auth.uid,
-        token: 'M$',
-        toType: 'USER',
-        description: 'Signup bonus for verifying phone number',
+        const signupBonusTxn: Omit<
+          SignupBonusTxn,
+          'fromId' | 'id' | 'createdTime'
+        > = {
+          fromType: 'BANK',
+          amount: amount,
+          category: 'SIGNUP_BONUS',
+          toId: auth.uid,
+          token: 'M$',
+          toType: 'USER',
+          description: 'Signup bonus for verifying phone number',
+        }
+        await runTxnFromBank(tx, signupBonusTxn)
+        log(`Sent phone verification bonus to user ${auth.uid}`)
       }
-      await pg
-        .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
-        .catch((e) => {
-          log.error(
-            `User ${auth.uid} verified phone but may not have recieved mana! Must manually reconcile`
-          )
-          log.error(
-            e && typeof e === 'object' && 'message' in e ? e.message : e
-          )
-        })
-
-      log(`Sent phone verification bonus to user ${auth.uid}`)
-    }
+    })
 
     return { status: 'success' }
   })

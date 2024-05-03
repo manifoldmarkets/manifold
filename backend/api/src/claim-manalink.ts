@@ -7,6 +7,7 @@ import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
+import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
@@ -61,37 +62,30 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       )
     }
 
-    const toUser = await firestore.runTransaction(async (transaction) => {
-      const fromDoc = firestore.doc(`users/${creator_id}`)
-      const fromSnap = await transaction.get(fromDoc)
-      if (!fromSnap.exists) {
-        throw new APIError(500, `User ${creator_id} not found`)
-      }
-      const fromUser = fromSnap.data() as User
+    const fromUser = await getUser(creator_id)
+    if (!fromUser) {
+      throw new APIError(500, `User ${creator_id} not found`)
+    }
 
-      const { canSend, message } = await canSendMana(fromUser, () =>
-        getUserPortfolioInternal(fromUser.id)
+    const { canSend, message } = await canSendMana(fromUser, () =>
+      getUserPortfolioInternal(fromUser.id)
+    )
+    if (!canSend) {
+      throw new APIError(403, message)
+    }
+
+    const toUser = await getUser(auth.uid)
+    if (!toUser) {
+      throw new APIError(401, 'Your account was not found')
+    }
+
+    const canReceive = isVerified(toUser)
+    if (!canReceive) {
+      throw new APIError(
+        403,
+        'You must verify your phone number to claim mana.'
       )
-      if (!canSend) {
-        throw new APIError(403, message)
-      }
-
-      const toDoc = firestore.doc(`users/${auth.uid}`)
-      const toSnap = await transaction.get(toDoc)
-      if (!toSnap.exists) {
-        throw new APIError(500, `User ${auth.uid} not found`)
-      }
-      const toUser = toSnap.data() as User
-
-      const canReceive = isVerified(toUser)
-      if (!canReceive) {
-        throw new APIError(
-          403,
-          'You must verify your phone number to claim mana.'
-        )
-      }
-      return toUser
-    })
+    }
 
     const data = {
       fromId: creator_id,

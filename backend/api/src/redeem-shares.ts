@@ -15,122 +15,129 @@ import { log } from 'shared/utils'
 import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { incrementBalance } from 'shared/supabase/users'
 
 export const redeemShares = async (
   userId: string,
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
 ) => {
-  return await firestore.runTransaction(async (trans) => {
-    const { id: contractId } = contract
+  const pg = createSupabaseDirectClient()
+  return await pg.tx(async (pgTrans) => {
+    return await firestore.runTransaction(async (fbTrans) => {
+      const { id: contractId } = contract
 
-    const betsColl = firestore.collection(`contracts/${contractId}/bets`)
-    const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
-    log(
-      `Loaded ${bets.length} bets for user ${userId} on contract ${contractId} to redeem shares`
-    )
-
-    const userNonRedemptionBetsByAnswer = groupBy(
-      bets.filter((bet) => bet.shares !== 0),
-      (bet) => bet.answerId
-    )
-
-    // We should be able to extend this to any sum-to-one cpmm-multi contract
-    if (contract.outcomeType === 'NUMBER') {
-      const answersToSharesIn = mapValues(
-        userNonRedemptionBetsByAnswer,
-        (bets) => sumBy(bets, (b) => b.shares)
+      const betsColl = firestore.collection(`contracts/${contractId}/bets`)
+      const betsSnap = await fbTrans.get(betsColl.where('userId', '==', userId))
+      const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+      log(
+        `Loaded ${bets.length} bets for user ${userId} on contract ${contractId} to redeem shares`
       )
-      const allShares = Object.values(answersToSharesIn)
-      const minShares = min(allShares) ?? 0
-      if (minShares > 0 && allShares.length === contract.answers.length) {
-        const loanAmountByAnswerId = mapValues(
-          groupBy(bets, 'answerId'),
-          (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
-        )
 
-        const saleBets = getSellAllRedemptionPreliminaryBets(
-          contract.answers,
-          minShares,
-          Date.now()
-        )
+      const userNonRedemptionBetsByAnswer = groupBy(
+        bets.filter((bet) => bet.shares !== 0),
+        (bet) => bet.answerId
+      )
 
-        const now = Date.now()
-        const sellBetCandidates = saleBets.map((b) =>
-          getNewSellBetInfo(
-            b,
-            now,
-            contract.answers,
-            contract,
-            loanAmountByAnswerId
+      // We should be able to extend this to any sum-to-one cpmm-multi contract
+      if (contract.outcomeType === 'NUMBER') {
+        const answersToSharesIn = mapValues(
+          userNonRedemptionBetsByAnswer,
+          (bets) => sumBy(bets, (b) => b.shares)
+        )
+        const allShares = Object.values(answersToSharesIn)
+        const minShares = min(allShares) ?? 0
+        if (minShares > 0 && allShares.length === contract.answers.length) {
+          const loanAmountByAnswerId = mapValues(
+            groupBy(bets, 'answerId'),
+            (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
           )
-        )
-        const betGroupId = crypto.randomBytes(12).toString('hex')
-        for (const sale of sellBetCandidates) {
-          const doc = betsColl.doc()
-          trans.create(doc, {
-            id: doc.id,
-            userId,
-            ...sale.newBet,
-            betGroupId,
+
+          const saleBets = getSellAllRedemptionPreliminaryBets(
+            contract.answers,
+            minShares,
+            Date.now()
+          )
+
+          const now = Date.now()
+          const sellBetCandidates = saleBets.map((b) =>
+            getNewSellBetInfo(
+              b,
+              now,
+              contract.answers,
+              contract,
+              loanAmountByAnswerId
+            )
+          )
+
+          const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
+          const loanPaid = sum(Object.values(loanAmountByAnswerId))
+
+          await incrementBalance(pgTrans, userId, {
+            balance: saleValue - loanPaid,
           })
+
+          const betGroupId = crypto.randomBytes(12).toString('hex')
+          for (const sale of sellBetCandidates) {
+            const doc = betsColl.doc()
+            fbTrans.create(doc, {
+              id: doc.id,
+              userId,
+              ...sale.newBet,
+              betGroupId,
+            })
+          }
+          log('cpmm-multi-1 redeemed', {
+            shares: minShares,
+            totalAmount: saleValue,
+          })
+          return { status: 'success' }
         }
-        const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
-        const loanPaid = sum(Object.values(loanAmountByAnswerId))
-        const userDoc = firestore.collection('users').doc(userId)
-        trans.update(userDoc, {
-          balance: FieldValue.increment(saleValue - loanPaid),
-        })
-        log('cpmm-multi-1 redeemed', {
-          shares: minShares,
-          totalAmount: saleValue,
-        })
-        return { status: 'success' }
       }
-    }
 
-    let totalAmount = 0
+      let totalAmount = 0
 
-    for (const [answerId, bets] of Object.entries(
-      userNonRedemptionBetsByAnswer
-    )) {
-      const { shares, loanPayment, netAmount } = getBinaryRedeemableAmount(bets)
-      if (floatingEqual(shares, 0)) {
-        continue
-      }
-      if (!isFinite(netAmount)) {
-        throw new APIError(
-          500,
-          'Invalid redemption amount, no clue what happened here.'
+      for (const [answerId, bets] of Object.entries(
+        userNonRedemptionBetsByAnswer
+      )) {
+        const { shares, loanPayment, netAmount } =
+          getBinaryRedeemableAmount(bets)
+        if (floatingEqual(shares, 0)) {
+          continue
+        }
+        if (!isFinite(netAmount)) {
+          throw new APIError(
+            500,
+            'Invalid redemption amount, no clue what happened here.'
+          )
+        }
+
+        totalAmount += netAmount
+
+        const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
+        const [yesBet, noBet] = getRedemptionBets(
+          contract,
+          shares,
+          loanPayment,
+          lastProb,
+          answerId === 'undefined' ? undefined : answerId
         )
+        const yesDoc = betsColl.doc()
+        const noDoc = betsColl.doc()
+
+        fbTrans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
+        fbTrans.create(noDoc, { id: noDoc.id, userId, ...noBet })
+
+        log('redeemed', {
+          shares,
+          netAmount,
+        })
       }
 
-      totalAmount += netAmount
+      await incrementBalance(pgTrans, userId, { balance: totalAmount })
 
-      const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
-      const [yesBet, noBet] = getRedemptionBets(
-        contract,
-        shares,
-        loanPayment,
-        lastProb,
-        answerId === 'undefined' ? undefined : answerId
-      )
-      const yesDoc = betsColl.doc()
-      const noDoc = betsColl.doc()
-
-      trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
-      trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
-
-      log('redeemed', {
-        shares,
-        netAmount,
-      })
-    }
-
-    const userDoc = firestore.collection('users').doc(userId)
-    trans.update(userDoc, { balance: FieldValue.increment(totalAmount) })
-
-    return { status: 'success' }
+      return { status: 'success' }
+    })
   })
 }
 

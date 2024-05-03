@@ -106,3 +106,9 @@ export function createSupabaseDirectClient(
   }, METRICS_INTERVAL_MS)
   return (pgpDirect = client)
 }
+
+export const SERIAL = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.serializable,
+  readOnly: false,
+  deferrable: false,
+})

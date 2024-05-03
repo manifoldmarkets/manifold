@@ -20,8 +20,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, LimitBet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { log, metrics } from 'shared/utils'
-import { filterDefined } from 'common/util/array'
+import { getUser, getUsers, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -29,6 +28,13 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+  SERIAL,
+} from 'shared/supabase/init'
+import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
+import { runEvilTransaction } from 'shared/evil-transaction'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -43,160 +49,158 @@ export const placeBetMain = async (
 ) => {
   const { amount, contractId, replyToCommentId } = body
 
-  const result = await firestore.runTransaction(
-    async (trans) => {
-      const { user, contract, contractDoc, userDoc } = await validateBet(
-        uid,
-        amount,
-        contractId,
-        trans,
-        isApi
-      )
+  const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
+    const { user, contract, contractDoc } = await validateBet(
+      uid,
+      amount,
+      contractId,
+      pgTrans,
+      fbTrans,
+      isApi
+    )
 
-      const { closeTime, outcomeType, mechanism } = contract
-      if (closeTime && Date.now() > closeTime)
-        throw new APIError(403, 'Trading is closed.')
+    const { closeTime, outcomeType, mechanism } = contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(403, 'Trading is closed.')
 
-      const newBetResult = await (async (): Promise<
-        BetInfo & {
-          makers?: maker[]
-          ordersToCancel?: LimitBet[]
-          otherBetResults?: {
-            answer: Answer
-            bet: CandidateBet<Bet>
-            cpmmState: CpmmState
-            makers: maker[]
-            ordersToCancel: LimitBet[]
-          }[]
-        }
-      > => {
-        if (
-          (outcomeType == 'BINARY' ||
-            outcomeType === 'PSEUDO_NUMERIC' ||
-            outcomeType === 'STONK') &&
-          mechanism == 'cpmm-1'
-        ) {
-          // eslint-disable-next-line prefer-const
-          let { outcome, limitProb, expiresAt } = body
-          if (expiresAt && expiresAt < Date.now())
-            throw new APIError(400, 'Bet cannot expire in the past.')
+    const newBetResult = await (async (): Promise<
+      BetInfo & {
+        makers?: maker[]
+        ordersToCancel?: LimitBet[]
+        otherBetResults?: {
+          answer: Answer
+          bet: CandidateBet<Bet>
+          cpmmState: CpmmState
+          makers: maker[]
+          ordersToCancel: LimitBet[]
+        }[]
+      }
+    > => {
+      if (
+        (outcomeType == 'BINARY' ||
+          outcomeType === 'PSEUDO_NUMERIC' ||
+          outcomeType === 'STONK') &&
+        mechanism == 'cpmm-1'
+      ) {
+        // eslint-disable-next-line prefer-const
+        let { outcome, limitProb, expiresAt } = body
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(400, 'Bet cannot expire in the past.')
 
-          if (limitProb !== undefined && outcomeType === 'BINARY') {
-            const isRounded = floatingEqual(
-              Math.round(limitProb * 100),
-              limitProb * 100
-            )
-            if (!isRounded)
-              throw new APIError(
-                400,
-                'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
-              )
-
-            limitProb = Math.round(limitProb * 100) / 100
-          }
-
-          log(
-            `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
+        if (limitProb !== undefined && outcomeType === 'BINARY') {
+          const isRounded = floatingEqual(
+            Math.round(limitProb * 100),
+            limitProb * 100
           )
-          const { unfilledBets, balanceByUserId } =
-            await getUnfilledBetsAndUserBalances(trans, contractDoc)
-
-          return getBinaryCpmmBetInfo(
-            contract,
-            outcome,
-            amount,
-            limitProb,
-            unfilledBets,
-            balanceByUserId,
-            expiresAt
-          )
-        } else if (
-          (outcomeType == 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') &&
-          mechanism == 'dpm-2'
-        ) {
-          if (!body.answerId) {
-            throw new APIError(400, 'answerId must be specified for multi bets')
-          }
-
-          const { answerId } = body
-          const answerDoc = contractDoc.collection('answers').doc(answerId)
-          const answerSnap = await trans.get(answerDoc)
-          if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
-          return getNewMultiBetInfo(answerId, amount, contract)
-        } else if (
-          (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
-          mechanism == 'cpmm-multi-1'
-        ) {
-          const { shouldAnswersSumToOne } = contract
-          if (!body.answerId) {
-            throw new APIError(400, 'answerId must be specified for multi bets')
-          }
-
-          const { answerId, outcome, limitProb, expiresAt } = body
-          if (expiresAt && expiresAt < Date.now())
-            throw new APIError(403, 'Bet cannot expire in the past.')
-          const answersSnap = await trans.get(
-            contractDoc.collection('answersCpmm')
-          )
-          const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-          const answer = answers.find((a) => a.id === answerId)
-          if (!answer) throw new APIError(404, 'Answer not found')
-          if ('resolution' in answer && answer.resolution)
-            throw new APIError(403, 'Answer is resolved and cannot be bet on')
-          if (shouldAnswersSumToOne && answers.length < 2)
+          if (!isRounded)
             throw new APIError(
-              403,
-              'Cannot bet until at least two answers are added.'
+              400,
+              'limitProb must be in increments of 0.01 (i.e. whole percentage points)'
             )
 
-          const roundedLimitProb = getRoundedLimitProb(limitProb)
-
-          const { unfilledBets, balanceByUserId } =
-            await getUnfilledBetsAndUserBalances(
-              trans,
-              contractDoc,
-              // Fetch all limit orders if answers should sum to one.
-              shouldAnswersSumToOne ? undefined : answerId
-            )
-
-          return getNewMultiCpmmBetInfo(
-            contract,
-            answers,
-            answer,
-            outcome,
-            amount,
-            roundedLimitProb,
-            unfilledBets,
-            balanceByUserId,
-            expiresAt
-          )
-        } else {
-          throw new APIError(
-            400,
-            'Contract type/mechanism not supported (or is no longer)'
-          )
+          limitProb = Math.round(limitProb * 100) / 100
         }
-      })()
-      log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-      const betGroupId =
-        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-          ? crypto.randomBytes(12).toString('hex')
-          : undefined
-      return processNewBetResult(
-        newBetResult,
-        contractDoc,
-        contract,
-        userDoc,
-        user,
-        isApi,
-        trans,
-        replyToCommentId,
-        betGroupId
-      )
-    },
-    { maxAttempts: 2 }
-  )
+
+        log(
+          `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
+        )
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(pgTrans, fbTrans, contractDoc)
+
+        return getBinaryCpmmBetInfo(
+          contract,
+          outcome,
+          amount,
+          limitProb,
+          unfilledBets,
+          balanceByUserId,
+          expiresAt
+        )
+      } else if (
+        (outcomeType == 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
+        mechanism == 'dpm-2'
+      ) {
+        if (!body.answerId) {
+          throw new APIError(400, 'answerId must be specified for multi bets')
+        }
+
+        const { answerId } = body
+        const answerDoc = contractDoc.collection('answers').doc(answerId)
+        const answerSnap = await fbTrans.get(answerDoc)
+        if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
+        return getNewMultiBetInfo(answerId, amount, contract)
+      } else if (
+        (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
+        mechanism == 'cpmm-multi-1'
+      ) {
+        const { shouldAnswersSumToOne } = contract
+        if (!body.answerId) {
+          throw new APIError(400, 'answerId must be specified for multi bets')
+        }
+
+        const { answerId, outcome, limitProb, expiresAt } = body
+        if (expiresAt && expiresAt < Date.now())
+          throw new APIError(403, 'Bet cannot expire in the past.')
+        const answersSnap = await fbTrans.get(
+          contractDoc.collection('answersCpmm')
+        )
+        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const answer = answers.find((a) => a.id === answerId)
+        if (!answer) throw new APIError(404, 'Answer not found')
+        if ('resolution' in answer && answer.resolution)
+          throw new APIError(403, 'Answer is resolved and cannot be bet on')
+        if (shouldAnswersSumToOne && answers.length < 2)
+          throw new APIError(
+            403,
+            'Cannot bet until at least two answers are added.'
+          )
+
+        const roundedLimitProb = getRoundedLimitProb(limitProb)
+
+        const { unfilledBets, balanceByUserId } =
+          await getUnfilledBetsAndUserBalances(
+            pgTrans,
+            fbTrans,
+            contractDoc,
+            // Fetch all limit orders if answers should sum to one.
+            shouldAnswersSumToOne ? undefined : answerId
+          )
+
+        return getNewMultiCpmmBetInfo(
+          contract,
+          answers,
+          answer,
+          outcome,
+          amount,
+          roundedLimitProb,
+          unfilledBets,
+          balanceByUserId,
+          expiresAt
+        )
+      } else {
+        throw new APIError(
+          400,
+          'Contract type/mechanism not supported (or is no longer)'
+        )
+      }
+    })()
+    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+    const betGroupId =
+      mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+        ? crypto.randomBytes(12).toString('hex')
+        : undefined
+    return processNewBetResult(
+      newBetResult,
+      contractDoc,
+      contract,
+      user,
+      isApi,
+      pgTrans,
+      fbTrans,
+      replyToCommentId,
+      betGroupId
+    )
+  })
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
@@ -238,24 +242,20 @@ const getUnfilledBetsQuery = (
 }
 
 export const getUnfilledBetsAndUserBalances = async (
-  trans: Transaction,
+  pgTrans: SupabaseTransaction,
+  fbTrans: Transaction,
   contractDoc: DocumentReference,
   answerId?: string
 ) => {
-  const unfilledBetsSnap = await trans.get(
+  const unfilledBetsSnap = await fbTrans.get(
     getUnfilledBetsQuery(contractDoc, answerId)
   )
   const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
   // Get balance of all users with open limit orders.
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
-  const userDocs =
-    userIds.length === 0
-      ? []
-      : await trans.getAll(
-          ...userIds.map((userId) => firestore.doc(`users/${userId}`))
-        )
-  const users = filterDefined(userDocs.map((doc) => doc.data() as User))
+  const users = userIds.length === 0 ? [] : await getUsers(userIds, pgTrans)
+
   const balanceByUserId = Object.fromEntries(
     users.map((user) => [user.id, user.balance])
   )
@@ -274,14 +274,15 @@ export type NewBetResult = BetInfo & {
   }[]
 }
 
-export const processNewBetResult = (
+/** does not account for account deduction! */
+export const processNewBetResult = async (
   newBetResult: NewBetResult,
   contractDoc: DocumentReference,
   contract: Contract,
-  userDoc: DocumentReference,
   user: User,
   isApi: boolean,
-  trans: Transaction,
+  pgTrans: SupabaseTransaction,
+  fbTrans: Transaction,
   replyToCommentId?: string,
   betGroupId?: string
 ) => {
@@ -367,33 +368,32 @@ export const processNewBetResult = (
     betGroupId,
     ...newBet,
   })
-  trans.create(betDoc, fullBet)
+  fbTrans.create(betDoc, fullBet)
   fullBets.push(fullBet)
   log(`Created new bet document for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    updateMakers(makers, betDoc.id, contractDoc, trans)
+    await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
   }
   if (ordersToCancel) {
     for (const bet of ordersToCancel) {
-      trans.update(contractDoc.collection('bets').doc(bet.id), {
+      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
     }
     allOrdersToCancel.push(...ordersToCancel)
   }
 
-  trans.update(userDoc, { balance: FieldValue.increment(-newBet.amount) })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
   const totalCreatorFee =
     newBet.fees.creatorFee +
     sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
   if (totalCreatorFee !== 0) {
-    const creatorUserDoc = firestore.doc(`users/${contract.creatorId}`)
-    trans.update(creatorUserDoc, {
-      balance: FieldValue.increment(totalCreatorFee),
+    await incrementBalance(pgTrans, contract.creatorId, {
+      balance: totalCreatorFee,
     })
+
     log(
       `Updated creator ${
         contract.creatorUsername
@@ -409,7 +409,7 @@ export const processNewBetResult = (
       if (newPool) {
         const { YES: poolYes, NO: poolNo } = newPool
         const prob = getCpmmProbability(newPool, 0.5)
-        trans.update(
+        fbTrans.update(
           contractDoc.collection('answersCpmm').doc(newBet.answerId),
           removeUndefinedProps({
             poolYes,
@@ -419,7 +419,7 @@ export const processNewBetResult = (
         )
       }
     } else {
-      trans.update(
+      fbTrans.update(
         contractDoc,
         removeUndefinedProps({
           pool: newPool,
@@ -452,11 +452,11 @@ export const processNewBetResult = (
             betGroupId,
             ...bet,
           })
-          trans.create(betDoc, fullBet)
+          fbTrans.create(betDoc, fullBet)
           fullBets.push(fullBet)
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          trans.update(
+          fbTrans.update(
             contractDoc.collection('answersCpmm').doc(answer.id),
             removeUndefinedProps({
               poolYes,
@@ -465,9 +465,9 @@ export const processNewBetResult = (
             })
           )
         }
-        updateMakers(makers, betDoc.id, contractDoc, trans)
+        await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
         for (const bet of ordersToCancel) {
-          trans.update(contractDoc.collection('bets').doc(bet.id), {
+          fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
             isCancelled: true,
           })
         }
@@ -494,19 +494,19 @@ export const validateBet = async (
   uid: string,
   amount: number,
   contractId: string,
-  trans: Transaction,
+  pgTrans: SupabaseTransaction,
+  fbTrans: Transaction,
   isApi: boolean
 ) => {
   log(`Inside main transaction for ${uid}.`)
   const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const userDoc = firestore.doc(`users/${uid}`)
-  const [contractSnap, userSnap] = await trans.getAll(contractDoc, userDoc)
-
+  const contractSnap = await fbTrans.get(contractDoc)
   if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-  if (!userSnap.exists) throw new APIError(404, 'User not found.')
-
   const contract = contractSnap.data() as Contract
-  const user = userSnap.data() as User
+
+  const user = await getUser(uid, pgTrans)
+  if (!user) throw new APIError(404, 'User not found.')
+
   if (user.balance < amount) throw new APIError(403, 'Insufficient balance.')
   if (
     (user.isBannedFromPosting || user.userDeleted) &&
@@ -531,7 +531,6 @@ export const validateBet = async (
     user,
     contract,
     contractDoc,
-    userDoc,
   }
 }
 
@@ -541,11 +540,12 @@ export type maker = {
   shares: number
   timestamp: number
 }
-export const updateMakers = (
+export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
   contractDoc: DocumentReference,
-  trans: Transaction
+  pgTrans: SupabaseTransaction,
+  fbTrans: Transaction
 ) => {
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
@@ -560,7 +560,7 @@ export const updateMakers = (
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
     log('Updated a matched limit order.')
-    trans.update(contractDoc.collection('bets').doc(bet.id), {
+    fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
       fills,
       isFilled,
       amount: totalAmount,
@@ -573,10 +573,16 @@ export const updateMakers = (
     groupBy(makers, (maker) => maker.bet.userId),
     (makers) => sumBy(makers, (maker) => maker.amount)
   )
-  for (const [userId, spent] of Object.entries(spentByUser)) {
-    const userDoc = firestore.collection('users').doc(userId)
-    trans.update(userDoc, { balance: FieldValue.increment(-spent) })
-  }
+
+  await bulkIncrementBalances(
+    pgTrans,
+    Object.entries(spentByUser).map(([userId, spent]) => ({
+      id: userId,
+      balance: -spent,
+    }))
+  )
+
+  // TODO: figure out LOGGING
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

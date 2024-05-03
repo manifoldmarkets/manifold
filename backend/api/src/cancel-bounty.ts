@@ -26,6 +26,9 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
   if (contract?.creatorId !== auth.uid)
     throw new APIError(403, 'You are not allowed to cancel this bounty')
 
+  if (contract.bountyLeft <= 0)
+    throw new APIError(403, 'Bounty already fully dispersed')
+
   const txn = await runCancelBountyTxn(
     {
       category: 'BOUNTY_CANCELED',
@@ -34,7 +37,7 @@ export const cancelbounty = authEndpoint(async (req, auth) => {
       toId: auth.uid,
       toType: 'USER',
       token: 'M$',
-      amount: contract.bountyLeft, // actually recalculated within
+      amount: contract.bountyLeft,
     },
     contract.closeTime
   )

@@ -1,9 +1,7 @@
 // check every day if the user has created a bet since 4pm UTC, and if not, reset their streak
 
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
-import { User } from 'common/user'
-const firestore = admin.firestore()
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const incrementStreakForgiveness = functions
   .runWith({ timeoutSeconds: 540, memory: '4GB' })
@@ -14,17 +12,12 @@ export const incrementStreakForgiveness = functions
   })
 
 const incrementStreakForgivenessInternal = async () => {
-  const usersSnap = await firestore.collection('users').get()
-
-  const users = usersSnap.docs.map((doc) => doc.data() as User)
-  await Promise.all(
-    users.map((user) =>
-      firestore
-        .collection('users')
-        .doc(user.id)
-        .update({
-          streakForgiveness: (user.streakForgiveness ?? 0) + 1,
-        })
-    )
-  )
+  const pg = createSupabaseDirectClient()
+  pg.none(`
+    update users
+    set data = data || 
+      json_build_object('streakForgiveness', 
+        coalesce((data->>'streakForgiveness')::numeric, 0) + 1
+      )
+  `)
 }

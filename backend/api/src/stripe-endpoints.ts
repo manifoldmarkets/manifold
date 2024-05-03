@@ -2,13 +2,13 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
-import { getPrivateUser, isProd, log } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
 import { runTxnFromBank } from 'shared/txn/run-txn'
-import { User } from 'common/user'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -177,7 +177,12 @@ const issueMoneys = async (session: StripeSession) => {
 
   let success = false
   try {
-    await pg.tx((tx) => runTxnFromBank(tx, manaPurchaseTxn))
+    await pg.tx(async (tx) => {
+      await runTxnFromBank(tx, manaPurchaseTxn)
+      await updateUser(tx, userId, {
+        purchasedMana: true,
+      })
+    })
     success = true
   } catch (e) {
     console.error(
@@ -191,15 +196,10 @@ const issueMoneys = async (session: StripeSession) => {
 
   if (success) {
     log('user', userId, 'paid M$', deposit)
-    const userRef = firestore.collection('users').doc(userId)
-    const userSnap = await userRef.get()
-    if (!userSnap.exists) {
+    const user = await getUser(userId)
+    if (!user) {
       throw new APIError(500, 'User not found')
     }
-    const user = userSnap.data() as User
-    await userRef.update({
-      purchasedMana: true,
-    })
 
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) throw new APIError(500, 'Private user not found')

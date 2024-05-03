@@ -1,6 +1,3 @@
-import * as admin from 'firebase-admin'
-import { User } from 'common/user'
-import { FieldValue } from 'firebase-admin/firestore'
 import { Txn } from 'common/txn'
 import { isAdminId } from 'common/envs/constants'
 import { bulkInsert } from 'shared/supabase/utils'
@@ -9,11 +6,11 @@ import { SupabaseTransaction } from 'shared/supabase/init'
 import { Row } from 'common/supabase/utils'
 import { convertTxn } from 'common/supabase/txns'
 import { removeUndefinedProps } from 'common/util/object'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
+import { incrementBalance } from 'shared/supabase/users'
 
 export type TxnData = Omit<Txn, 'id' | 'createdTime'>
 
-/** This creates an firestore transaction within. DO NOT run within another firestore transaction! */
 export async function runTxn(
   pgTransaction: SupabaseTransaction,
   data: TxnData & { fromType: 'USER' }
@@ -28,79 +25,91 @@ export async function runTxn(
     throw new APIError(400, "Amount can't be negative")
   }
 
-  if (fromType !== 'USER') {
+  if (fromType === 'USER') {
     throw new APIError(400, 'This method is only for transfers from users')
   }
 
-  const firestore = admin.firestore()
+  const fromUser = await getUser(fromId, pgTransaction)
 
-  await firestore.runTransaction(async (fbTransaction) => {
-    const fromDoc = firestore.doc(`users/${fromId}`)
-    const fromSnap = await fbTransaction.get(fromDoc)
-    if (!fromSnap.exists) {
-      throw new APIError(404, 'User not found')
+  if (!fromUser) {
+    throw new APIError(404, `User ${fromId} not found`)
+  }
+
+  if (token === 'SPICE') {
+    if (fromUser.spiceBalance < amount) {
+      throw new APIError(
+        403,
+        `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.spiceBalance}`
+      )
     }
-    const fromUser = fromSnap.data() as User
 
-    if (token === 'SPICE') {
-      if (fromUser.spiceBalance < amount) {
-        throw new APIError(
-          403,
-          `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.spiceBalance}`
-        )
+    if (toType === 'USER') {
+      const toUser = await getUser(toId, pgTransaction)
+      if (!toUser) {
+        throw new APIError(404, `User ${toId} not found`)
       }
 
-      // TODO: Track payments received by charities, bank, contracts too.
-      if (toType === 'USER') {
-        const toDoc = firestore.doc(`users/${toId}`)
-        fbTransaction.update(toDoc, {
-          spiceBalance: FieldValue.increment(amount),
-          totalDeposits: FieldValue.increment(amount),
-        })
-      }
-
-      fbTransaction.update(fromDoc, {
-        spiceBalance: FieldValue.increment(-amount),
-        totalDeposits: FieldValue.increment(-amount),
+      await incrementBalance(pgTransaction, toId, {
+        spiceBalance: amount,
+        totalDeposits: amount,
       })
-    } else if (token === 'M$') {
-      if (fromUser.balance < amount) {
-        throw new APIError(
-          403,
-          `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
-        )
-      }
-
-      // TODO: Track payments received by charities, bank, contracts too.
-      if (toType === 'USER') {
-        const toDoc = firestore.doc(`users/${toId}`)
-        fbTransaction.update(toDoc, {
-          balance: FieldValue.increment(amount),
-          totalDeposits: FieldValue.increment(amount),
-        })
-      }
-
-      fbTransaction.update(fromDoc, {
-        balance: FieldValue.increment(-amount),
-        totalDeposits: FieldValue.increment(-amount),
-      })
+    } else if (toType === 'CHARITY' || toType === 'BANK') {
+      // do nothing
     } else {
-      throw new APIError(400, `Invalid token type: ${token}`)
+      throw new APIError(
+        400,
+        `This method does not support transfers to ${toType}`
+      )
     }
-  })
+
+    await incrementBalance(pgTransaction, fromId, {
+      spiceBalance: -amount,
+      totalDeposits: -amount,
+    })
+  } else if (token === 'M$') {
+    if (fromUser.balance < amount) {
+      throw new APIError(
+        403,
+        `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
+      )
+    }
+
+    if (toType === 'USER') {
+      const toUser = await getUser(toId, pgTransaction)
+      if (!toUser) {
+        throw new APIError(404, `User ${toId} not found`)
+      }
+
+      await incrementBalance(pgTransaction, toId, {
+        balance: amount,
+        totalDeposits: amount,
+      })
+    } else if (toType === 'CHARITY' || toType === 'BANK') {
+      // do nothing
+    } else {
+      throw new APIError(
+        400,
+        `This method does not support transfers to ${toType}`
+      )
+    }
+
+    await incrementBalance(pgTransaction, fromId, {
+      balance: -amount,
+      totalDeposits: -amount,
+    })
+  } else {
+    throw new APIError(400, `Invalid token type: ${token}`)
+  }
 
   const txn = await insertTxn(pgTransaction, data)
-
   return txn
 }
 
-/** This creates does a firestore write within. DO NOT run within another firestore transaction! */
 export async function runTxnFromBank(
   pgTransaction: SupabaseTransaction,
   data: Omit<TxnData, 'fromId'> & { fromType: 'BANK' },
   affectsProfit = false
 ) {
-  const firestore = admin.firestore()
   const { amount, fromType, toId, toType, token } = data
   if (fromType !== 'BANK') {
     throw new APIError(400, 'This method is only for transfers from banks')
@@ -114,20 +123,24 @@ export async function runTxnFromBank(
     throw new APIError(400, `Invalid token type: ${token}`)
   }
 
-  const update: { [key: string]: any } = {}
-
-  if (token === 'SPICE') {
-    update.spiceBalance = FieldValue.increment(amount)
-  } else {
-    update.balance = FieldValue.increment(amount)
-  }
-
-  if (!affectsProfit) {
-    update.totalDeposits = FieldValue.increment(amount)
-  }
-
   if (toType === 'USER') {
-    await firestore.doc(`users/${toId}`).update(update)
+    const update: {
+      balance?: number
+      spiceBalance?: number
+      totalDeposits?: number
+    } = {}
+
+    if (token === 'SPICE') {
+      update.spiceBalance = amount
+    } else {
+      update.balance = amount
+    }
+
+    if (!affectsProfit) {
+      update.totalDeposits = amount
+    }
+
+    await incrementBalance(pgTransaction, toId, update)
   }
 
   return await insertTxn(pgTransaction, { fromId: 'BANK', ...data })

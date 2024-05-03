@@ -1,12 +1,10 @@
-import * as admin from 'firebase-admin'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { AD_REDEEM_REWARD } from 'common/boost'
-import { FieldValue } from 'firebase-admin/firestore'
 import { MarketAdRedeemFeeTxn, MarketAdRedeemTxn } from 'common/txn'
 import { insertTxns } from 'shared/txn/run-txn'
+import { incrementBalance } from 'shared/supabase/users'
 
 const schema = z
   .object({
@@ -17,8 +15,6 @@ const schema = z
 export const redeemboost = authEndpoint(async (req, auth) => {
   const { adId } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()
-
-  const firestore = admin.firestore()
 
   // find the advertisement
   const data = await pg.one(
@@ -88,10 +84,9 @@ export const redeemboost = authEndpoint(async (req, auth) => {
       } as MarketAdRedeemFeeTxn,
     ])
 
-    const toUser = firestore.doc(`users/${auth.uid}`)
-    toUser.update({
-      balance: FieldValue.increment(reward),
-      totalDeposits: FieldValue.increment(reward),
+    await incrementBalance(tx, auth.uid, {
+      balance: reward,
+      totalDeposits: reward,
     })
   })
 

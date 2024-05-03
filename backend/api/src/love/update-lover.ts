@@ -1,11 +1,15 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { contentSchema } from 'common/api/zod-types'
 import { log } from 'shared/utils'
+import { updateUser } from 'shared/supabase/users'
 
 const optionalLoversSchema = z.object({
   political_beliefs: z.array(z.string()).optional(),
@@ -38,6 +42,7 @@ export const updatelover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(combinedLoveUsersSchema, req.body)
   log('parsedBody', parsedBody)
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   const { data: existingLover } = await db
     .from('lovers')
     .select('id')
@@ -51,10 +56,7 @@ export const updatelover = authEndpoint(async (req, auth) => {
 
   await removePinnedUrlFromPhotoUrls(parsedBody)
   if (parsedBody.avatar_url) {
-    const firestore = admin.firestore()
-    await firestore.doc('users/' + auth.uid).update({
-      avatarUrl: parsedBody.avatar_url,
-    })
+    await updateUser(pg, auth.uid, { avatarUrl: parsedBody.avatar_url })
   }
 
   const { data, error } = await db
