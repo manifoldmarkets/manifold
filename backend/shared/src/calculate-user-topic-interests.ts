@@ -3,6 +3,8 @@ import { sum, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
+import { Bet } from 'common/bet'
+import { getFeeTotal, getTakerFee } from 'common/fees'
 
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
@@ -28,9 +30,18 @@ export async function calculateUserTopicInterests(startTime?: number) {
     [userId: string]: { [groupId: string]: number }
   } = {}
 
+  const addWeight = (userId: string, groupId: string, weight: number): void => {
+    if (!userIdsToGroupIdInteractionWeights[userId]) {
+      userIdsToGroupIdInteractionWeights[userId] = {}
+    }
+    if (!userIdsToGroupIdInteractionWeights[userId][groupId]) {
+      userIdsToGroupIdInteractionWeights[userId][groupId] = 0
+    }
+    userIdsToGroupIdInteractionWeights[userId][groupId] += weight
+  }
+
   for (const [userId, groupIdsAndInteractions] of userGroupIdsToInteractions) {
-    const groupId = groupIdsAndInteractions[0]
-    const interactions = groupIdsAndInteractions[1]
+    const [groupId, interactions] = groupIdsAndInteractions
     const weights = interactions.map(
       (
         interaction: ValidatedAPIParams<'record-contract-interaction'>['kind']
@@ -41,9 +52,9 @@ export async function calculateUserTopicInterests(startTime?: number) {
           case 'page repost':
             return 1
           case 'card click':
-            return 0.25
-          case 'promoted click':
             return 0.1
+          case 'promoted click':
+            return 0.01
           case 'page comment':
           case 'card like':
           case 'page share':
@@ -53,14 +64,36 @@ export async function calculateUserTopicInterests(startTime?: number) {
         }
       }
     )
-    if (!userIdsToGroupIdInteractionWeights[userId]) {
-      userIdsToGroupIdInteractionWeights[userId] = {}
-    }
-    if (!userIdsToGroupIdInteractionWeights[userId][groupId]) {
-      userIdsToGroupIdInteractionWeights[userId][groupId] = 0
-    }
-    userIdsToGroupIdInteractionWeights[userId][groupId] += sum(weights)
+    const weight = sum(weights)
+    addWeight(userId, groupId, weight)
   }
+
+  await pg.map(
+    `
+        select cb.user_id, gc.group_id, cb.data from contract_bets cb
+               join contracts c on cb.contract_id = c.id
+               join group_contracts gc on c.id = gc.contract_id
+        where cb.created_time > $1
+          and cb.created_time < $2
+          and is_redemption = false
+        `,
+    [start, end],
+    (row) => {
+      const bet = row.data as Bet
+      const { amount, outcome, fees, limitProb, orderAmount } = bet
+      if (limitProb) {
+        // Simulate fees if a limit bet
+        const prob = Math.abs(limitProb ?? amount / bet.shares)
+        const probForOutcome = outcome === 'YES' ? prob : 1 - prob
+        const probForSale = amount < 0 ? 1 - probForOutcome : probForOutcome
+        const shares = Math.abs((orderAmount ?? amount) / probForSale)
+        const fees = getTakerFee(shares, probForSale)
+        addWeight(row.user_id, row.group_id, fees)
+      } else {
+        addWeight(row.user_id, row.group_id, getFeeTotal(fees))
+      }
+    }
+  )
 
   const userViewedGroupIds = await pg.map(
     `
