@@ -39,12 +39,7 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   const pg = createSupabaseDirectClient()
 
   const privateUsers = isProd()
-    ? await getPrivateUsersNotSent(
-        'weeklyPortfolioUpdateEmailSent',
-        'profit_loss_updates',
-        USERS_TO_EMAIL,
-        pg
-      )
+    ? await getPrivateUsersNotSent('profit_loss_updates', USERS_TO_EMAIL, pg)
     : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
 
   await pg.none(

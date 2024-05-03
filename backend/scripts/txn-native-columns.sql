@@ -18,8 +18,6 @@ create
 or replace function txns_populate_cols () returns trigger language plpgsql as $$
 begin
     if new.data is not null then
-    new.created_time :=
-        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
     new.from_id := (new.data ->> 'fromId');
     new.from_type := (new.data ->> 'fromType');
     new.to_id := (new.data ->> 'toId');

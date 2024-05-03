@@ -34,7 +34,6 @@ export const collectionTables: CollectionTableMapping = {
   users: 'users',
   'private-users': 'private_users',
   contracts: 'contracts',
-  txns: 'txns',
   manalinks: 'manalinks',
 }
 

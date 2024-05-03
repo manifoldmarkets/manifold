@@ -49,6 +49,8 @@ type AnyTxnType =
   | ContractAnte
   | AddSubsidy
   | ReclaimMana
+  | ManachanTweet
+  | BotCommentFee
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -456,6 +458,20 @@ type ReclaimMana = {
   token: 'M$'
 }
 
+type ManachanTweet = {
+  category: 'MANACHAN_TWEET'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+}
+
+type BotCommentFee = {
+  category: 'BOT_COMMENT_FEE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -503,3 +519,5 @@ export type LoanTxn = Txn & Loan
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
+export type ManachanTweetTxn = Txn & ManachanTweet
+export type BotCommentFeeTxn = Txn & BotCommentFee

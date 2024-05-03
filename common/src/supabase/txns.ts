@@ -1,8 +1,16 @@
 import { type Txn } from 'common/txn'
-import { type Row, convertSQLtoTS, tsToMillis } from './utils'
+import { type Row, tsToMillis } from './utils'
 
-export const convertTxn = (row: Row<'txns'>) =>
-  convertSQLtoTS<'txns', Txn>(row, {
-    fs_updated_time: false,
-    created_time: tsToMillis as any,
-  })
+export const convertTxn = (row: Row<'txns'>): Txn => ({
+  id: row.id,
+  amount: row.amount,
+  fromId: row.from_id,
+  toId: row.to_id,
+  fromType: row.from_type as any,
+  toType: row.to_type as any,
+  category: row.category as any,
+  createdTime: tsToMillis(row.created_time),
+  token: (row.data as any).token,
+  description: (row.data as any).description,
+  data: (row.data as any).data,
+})

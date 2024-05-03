@@ -19,8 +19,6 @@ import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { query, where } from 'firebase/firestore'
-import { coll, listenForValues } from 'web/lib/firebase/utils'
 import { sum } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
 import { AD_REDEEM_REWARD } from 'common/boost'
@@ -32,6 +30,9 @@ import { Col } from 'web/components/layout/col'
 import { linkClass } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import { AmountInput } from './widgets/amount-input'
+import { run } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
+import { convertTxn } from 'common/supabase/txns'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -300,17 +301,16 @@ const use24hrUsdPurchases = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    return listenForValues(
-      query(
-        coll<Txn>('txns'),
-        where('category', '==', 'MANA_PURCHASE'),
-        where('toId', '==', userId)
-      ),
-      setPurchases
-    )
+    run(
+      db
+        .from('txns')
+        .select()
+        .eq('category', 'MANA_PURCHASE')
+        .eq('to_id', userId)
+    ).then((res) => {
+      setPurchases(res.data.map(convertTxn))
+    })
   }, [userId])
-
-  //  TODO: include ios purchases
 
   return (
     sum(

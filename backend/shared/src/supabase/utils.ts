@@ -15,6 +15,18 @@ export async function getAll<T extends TableName>(
   return db.map('select data from $1~', [table], (r) => r.data as DataFor<T>)
 }
 
+export async function insert<
+  T extends TableName,
+  ColumnValues extends Tables[T]['Insert']
+>(db: SupabaseDirectClient, table: T, values: ColumnValues) {
+  const columnNames = Object.keys(values)
+  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+  const query = pgp.helpers.insert(values, cs)
+  // Hack to properly cast jsonb values.
+  const q = query.replace(/::jsonb'/g, "'::jsonb")
+  await db.none(q)
+}
+
 export async function bulkInsert<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert']

@@ -8,7 +8,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getUser, log } from 'shared/utils'
+import { getUsers, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -16,6 +16,7 @@ import {
   MANIFOLD_USER_USERNAME,
   PrivateUser,
   User,
+  isVerified,
 } from 'common/user'
 import {
   getNotificationDestinationsForUser,
@@ -26,6 +27,7 @@ import * as crypto from 'crypto'
 import { getForYouMarkets } from 'shared/supabase/search-contracts'
 import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { APIError } from 'common/api/utils'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -34,7 +36,6 @@ D1 send mana bonus email
 [deprecated] D2 send creator guide email
 */
 export async function sendOnboardingNotificationsInternal() {
-  const firestore = admin.firestore()
   const { recentUserIds } = await getRecentNonLoverUserIds()
 
   log(
@@ -42,9 +43,7 @@ export async function sendOnboardingNotificationsInternal() {
       recentUserIds.length
   )
 
-  await Promise.all(
-    recentUserIds.map((userId) => sendBonusNotification(firestore, userId))
-  )
+  await sendBonusNotifications(recentUserIds)
 }
 
 const getRecentNonLoverUserIds = async () => {
@@ -82,70 +81,95 @@ const getRecentNonLoverUserIds = async () => {
 
 const sendNextDayManaBonus = async (
   firestore: admin.firestore.Firestore,
-  userId: string
+  user: User
 ) => {
-  return await firestore.runTransaction(async (transaction) => {
-    const toDoc = firestore.doc(`private-users/${userId}`)
+  const pg = createSupabaseDirectClient()
+
+  const privateUser = await firestore.runTransaction(async (transaction) => {
+    const toDoc = firestore.doc(`private-users/${user.id}`)
     const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) return { txn: null, privateUser: null }
+    if (!toUserSnap.exists) return null
 
     const privateUser = toUserSnap.data() as PrivateUser
-    if (privateUser.manaBonusSent) return { txn: null, privateUser }
-
-    const signupBonusTxn: Omit<
-      SignupBonusTxn,
-      'fromId' | 'id' | 'createdTime'
-    > = {
-      fromType: 'BANK',
-      amount: NEXT_DAY_BONUS,
-      category: 'SIGNUP_BONUS',
-      toId: userId,
-      token: 'M$',
-      toType: 'USER',
-      description: 'Signup bonus',
-      data: {},
-    }
-    const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-    if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
+    if (privateUser.manaBonusSent) {
+      log(`User ${user.id} already received mana bonus`)
+      return null
+    } else {
       transaction.update(toDoc, {
         manaBonusSent: true,
         weeklyTrendingEmailSent: true, // not yet, but about to!
       })
-      log(`Sent mana bonus to user ${userId}`)
-    } else {
-      log(`No mana bonus sent to user ${userId}: ${manaBonusTxn.message}`)
     }
-    return { ...manaBonusTxn, privateUser }
+    return privateUser
   })
+
+  if (!privateUser) return
+
+  const signupBonusTxn: Omit<SignupBonusTxn, 'fromId' | 'id' | 'createdTime'> =
+    {
+      fromType: 'BANK',
+      amount: NEXT_DAY_BONUS,
+      category: 'SIGNUP_BONUS',
+      toId: user.id,
+      token: 'M$',
+      toType: 'USER',
+      description: 'Signup bonus',
+    }
+
+  const txn = await pg
+    .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+    .catch((e) => {
+      log.error(
+        `User ${user.id} had initial signup bonus marked but may not have recieved mana! Must manually reconcile`
+      )
+      log.error(e && typeof e === 'object' && 'message' in e ? e.message : e)
+      return null
+    })
+
+  if (!txn) return
+
+  log(`Sent mana bonus to user ${user.id}`)
+
+  await createSignupBonusNotification(user, privateUser, txn.id, NEXT_DAY_BONUS)
 }
 
-export const sendOnboardingMarketVisitBonus = async (
-  firestore: admin.firestore.Firestore,
-  userId: string
-) => {
-  return await firestore.runTransaction(async (transaction) => {
+export const sendOnboardingMarketVisitBonus = async (userId: string) => {
+  const firestore = admin.firestore()
+  const pg = createSupabaseDirectClient()
+
+  await firestore.runTransaction(async (transaction) => {
     const toDoc = firestore.doc(`users/${userId}`)
     const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) return { txn: null }
+    if (!toUserSnap.exists) throw new APIError(404, `User ${userId} not found`)
 
     const user = toUserSnap.data() as User
-    if (user.signupBonusPaid === undefined) {
-      log(`User ${userId} not eligible for market visit bonus`)
-      return { txn: null }
+    if (!isVerified(user)) {
+      throw new APIError(403, 'User not yet verified phone number.')
     }
-    const signupBonusAmountPaid = user.signupBonusPaid
-    if (signupBonusAmountPaid >= MARKET_VISIT_BONUS_TOTAL) {
-      log(
+
+    if (user.signupBonusPaid === undefined) {
+      throw new APIError(
+        403,
+        `User ${userId} not eligible for market visit bonus`
+      )
+    }
+
+    if (user.signupBonusPaid >= MARKET_VISIT_BONUS_TOTAL) {
+      throw new APIError(
+        403,
         `User ${userId} already received ${
           MARKET_VISIT_BONUS_TOTAL / MARKET_VISIT_BONUS
         } market visit bonuses`
       )
-      return { txn: null }
     }
-    const signupBonusTxn: Omit<
-      SignupBonusTxn,
-      'fromId' | 'id' | 'createdTime'
-    > = {
+
+    transaction.update(toDoc, {
+      signupBonusPaid: user.signupBonusPaid + MARKET_VISIT_BONUS,
+    })
+  })
+
+  const signupBonusTxn: Omit<SignupBonusTxn, 'fromId' | 'id' | 'createdTime'> =
+    {
       fromType: 'BANK',
       amount: MARKET_VISIT_BONUS,
       category: 'SIGNUP_BONUS',
@@ -153,39 +177,25 @@ export const sendOnboardingMarketVisitBonus = async (
       token: 'M$',
       toType: 'USER',
       description: 'Market visit signup bonus',
-      data: {},
     }
-    const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-    if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-      transaction.update(toDoc, {
-        signupBonusPaid: signupBonusAmountPaid + MARKET_VISIT_BONUS,
-      })
-      log(`Sent mana bonus to user ${userId}`)
-    } else {
-      log(`No mana bonus sent to user ${userId}: ${manaBonusTxn.message}`)
-    }
-    return { ...manaBonusTxn }
-  })
+
+  try {
+    const txn = await pg.tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+    log(`Sent mana bonus to user ${userId}`)
+    return txn
+  } catch (e) {
+    log.error(
+      `User ${userId} had market visit signup bonus added but may not have recieved mana! Must manually reconcile`
+    )
+    log.error(e && typeof e === 'object' && 'message' in e ? e.message : e)
+    throw e
+  }
 }
 
-const sendBonusNotification = async (
-  firestore: admin.firestore.Firestore,
-  userId: string
-) => {
-  const { privateUser, txn } = await sendNextDayManaBonus(firestore, userId)
-  if (!privateUser || !txn) return
-
-  const user = await getUser(privateUser.id)
-  if (!user) return
-
-  if (txn) {
-    await createSignupBonusNotification(
-      user,
-      privateUser,
-      txn.id,
-      NEXT_DAY_BONUS
-    )
-  }
+const sendBonusNotifications = async (userIds: string[]) => {
+  const firestore = admin.firestore()
+  const users = await getUsers(userIds)
+  await Promise.all(users.map((user) => sendNextDayManaBonus(firestore, user)))
 }
 
 const createSignupBonusNotification = async (

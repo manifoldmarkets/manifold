@@ -1,10 +1,11 @@
-import * as admin from 'firebase-admin'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxn } from './run-txn'
 import { LIKE_COST } from 'common/love/constants'
 
 export async function runLikePurchaseTxn(userId: string, targetId: string) {
-  return admin.firestore().runTransaction(async (fbTransaction) => {
-    return await runTxn(fbTransaction, {
+  const pg = createSupabaseDirectClient()
+  return pg.tx((tx) =>
+    runTxn(tx, {
       amount: LIKE_COST,
       fromId: userId,
       fromType: 'USER',
@@ -14,5 +15,5 @@ export async function runLikePurchaseTxn(userId: string, targetId: string) {
       token: 'M$',
       data: { targetId },
     })
-  })
+  )
 }

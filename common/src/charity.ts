@@ -1075,6 +1075,46 @@ Strategic civil litigation offers a solution. Several little-known legal doctrin
     `,
     tags: ['New'] as const,
   },
+  {
+    name: 'Parker Institute for Cancer Immunotherapy',
+    website: 'https://www.parkerici.org/',
+    photo: 'https://i.imgur.com/vsiOFB5.png',
+    preview:
+      'Develop breakthrough immune therapies to turn all cancers into curable diseases faster',
+    description: `For decades, entrenched infrastructure barriers have slowed progress in the fight against cancer and the development of potent immunotherapies. The Parker Institute for Cancer Immunotherapy breaks down these barriers and focuses fully on this durable and promising treatment. The result is groundbreaking new research and an intellectual property model that builds collaboration between researchers, nonprofits and industry all working together to get treatments to patients faster.
+
+`,
+  },
+  {
+    name: 'FIRE',
+    website: 'https://www.thefire.org/',
+    photo: 'https://i.imgur.com/BvFD5IC.png',
+    preview:
+      'FIRE defends and promotes the value of free speech for all Americans in our courtrooms, on our campuses, and in our culture.',
+    description: `Freedom of speech is a fundamental American freedom and human right. It is essential for democracy, scientific progress, artistic expression, social justice, peace, and our ability to live as authentic individuals. 
+
+Yet, across our nation, this cornerstone of our free society is under serious threat. Far too many of us fear sharing our views or challenging those that seem to dominate. Nearly 6-in-10 Americans believe our nation’s democracy is threatened because people are afraid to voice their opinions. 
+
+FIRE therefore defends and promotes the value of free speech for all Americans in our courtrooms, on our campuses, and in our culture. Our vision is an America in which people overwhelmingly believe in the right of others to freely express views different from their own, and expect their laws and educational institutions to reflect and teach this belief.`,
+  },
+  {
+    name: 'Doctors opposing circumcision',
+    website: 'https://www.doctorsopposingcircumcision.org/',
+    photo: 'https://i.imgur.com/QyKEfNE.png',
+    preview:
+      'Envisioning a world free from forced genital cutting, one where children’s rights are respected and their wholeness protected.',
+    description:
+      'We are an international network of physicians dedicated to protecting the genital integrity and eventual autonomy of all children, serving both health professionals and the public through education, support, and advocacy.',
+  },
+  {
+    name: 'Bloodstained Men',
+    website: 'https://www.bloodstainedmen.com/',
+    photo: 'https://i.imgur.com/wjvZWGK.png',
+    preview:
+      'Our mission is to warn the American people that circumcision is cruel, worthless, and destructive',
+    description:
+      'In a typical year we travel to more than 60 cities, holding protests and educating the public about the rights of all children to keep all parts of their genitals. We have reached hundreds of thousands of people directly on the streets of America, and millions more through traditional media coverage, our social media activities, and our billboard campaigns.',
+  },
 ].map((charity) => {
   const slug = charity.name.toLowerCase().replace(/\s/g, '-')
   return {

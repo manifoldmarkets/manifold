@@ -1,7 +1,5 @@
-import * as admin from 'firebase-admin'
 import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
-import { FieldValue } from 'firebase-admin/firestore'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
 import { getContract, getUserFirebase } from 'shared/utils'
@@ -17,6 +15,7 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
+import { runTxn } from 'shared/txn/run-txn'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -123,12 +122,17 @@ export const createCommentOnContractInternal = async (
     result: comment,
     continue: async () => {
       if (isApi) {
-        const firestore = admin.firestore()
-        const userRef = firestore.doc(`users/${creator.id}`)
-        await userRef.update({
-          balance: FieldValue.increment(-FLAT_COMMENT_FEE),
-          totalDeposits: FieldValue.increment(-FLAT_COMMENT_FEE),
-        })
+        await pg.tx((tx) =>
+          runTxn(tx, {
+            category: 'BOT_COMMENT_FEE',
+            token: 'M$',
+            fromId: creator.id,
+            fromType: 'USER',
+            toId: 'BANK',
+            toType: 'BANK',
+            amount: FLAT_COMMENT_FEE,
+          })
+        )
       }
       if (replyToBetId) return
 

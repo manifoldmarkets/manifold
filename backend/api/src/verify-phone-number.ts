@@ -14,6 +14,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
   rateLimitByUser(async (props, auth) => {
     const pg = createSupabaseDirectClient()
 
+    // TODO: transaction over this sql query rather than over user properties
     const { phoneNumber, code: otpCode } = props
     const userHasPhoneNumber = await pg.oneOrNone(
       `select phone_number from private_user_phone_numbers where user_id = $1
@@ -69,16 +70,25 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
     const deviceUsedBefore =
       !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
     const amount = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
-    await firestore.runTransaction(async (transaction) => {
-      const toDoc = firestore.doc(`users/${auth.uid}`)
-      const toUserSnap = await transaction.get(toDoc)
-      if (!toUserSnap.exists)
-        throw new APIError(400, 'User not found', { userId: auth.uid })
-      const user = toUserSnap.data() as User
-      const { verifiedPhone } = user
-      if (verifiedPhone === true || verifiedPhone === undefined)
-        throw new APIError(400, 'User already verified')
 
+    const deservesSignupBonus = await firestore.runTransaction(
+      async (transaction) => {
+        const toDoc = firestore.doc(`users/${auth.uid}`)
+        const toUserSnap = await transaction.get(toDoc)
+        if (!toUserSnap.exists)
+          throw new APIError(400, 'User not found', { userId: auth.uid })
+        const user = toUserSnap.data() as User
+        const { verifiedPhone } = user
+        const deservesSignupBonus = verifiedPhone === false
+
+        transaction.update(toDoc, {
+          verifiedPhone: true,
+        })
+        return deservesSignupBonus
+      }
+    )
+
+    if (deservesSignupBonus) {
       const signupBonusTxn: Omit<
         SignupBonusTxn,
         'fromId' | 'id' | 'createdTime'
@@ -90,21 +100,20 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
         token: 'M$',
         toType: 'USER',
         description: 'Signup bonus for verifying phone number',
-        data: {},
       }
-      const manaBonusTxn = await runTxnFromBank(transaction, signupBonusTxn)
-      if (manaBonusTxn.status != 'error' && manaBonusTxn.txn) {
-        transaction.update(toDoc, {
-          verifiedPhone: true,
+      await pg
+        .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+        .catch((e) => {
+          log.error(
+            `User ${auth.uid} verified phone but may not have recieved mana! Must manually reconcile`
+          )
+          log.error(
+            e && typeof e === 'object' && 'message' in e ? e.message : e
+          )
         })
-        log(`Sent phone verification bonus to user ${auth.uid}`)
-      } else {
-        log(
-          `No phone verification bonus sent to user ${auth.uid}: ${manaBonusTxn.message}`
-        )
-        throw new APIError(400, 'Error sending phone verification bonus')
-      }
-    })
+
+      log(`Sent phone verification bonus to user ${auth.uid}`)
+    }
 
     return { status: 'success' }
   })
