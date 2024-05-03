@@ -168,14 +168,15 @@ export function SellPanel(props: {
   let fees: Fees
   let cpmmState
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } = getSaleResultMultiSumsToOne(
-      contract,
-      answerId!,
-      sellQuantity,
-      sharesOutcome,
-      unfilledBets,
-      balanceByUserId
-    ))
+    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } =
+      getSaleResultMultiSumsToOne(
+        contract,
+        answerId!,
+        sellQuantity,
+        sharesOutcome,
+        unfilledBets,
+        balanceByUserId
+      ))
   } else {
     ;({ initialProb, cpmmState, saleValue, fees, buyAmount } = getSaleResult(
       contract,
