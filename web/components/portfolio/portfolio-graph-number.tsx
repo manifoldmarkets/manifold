@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { PortfolioMode } from './portfolio-value-graph'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { CoinNumber } from '../widgets/manaCoinNumber'
+import { Col } from '../layout/col'
 
 export function PortfolioGraphNumber(props: {
   numberType: 'balance' | 'investment'
@@ -11,6 +12,7 @@ export function PortfolioGraphNumber(props: {
   displayedAmount: number | undefined
   color: string
   onClick: () => void
+  className?: string
 }) {
   const {
     portfolioFocus,
@@ -20,43 +22,36 @@ export function PortfolioGraphNumber(props: {
     displayedAmount,
     color,
     onClick,
+    className,
   } = props
   return (
     <div
       className={clsx(
-        'group cursor-pointer select-none text-2xl transition-opacity sm:text-4xl',
-        portfolioFocus == numberType
+        'group cursor-pointer select-none rounded px-2 py-1 transition-opacity',
+        portfolioFocus == numberType || portfolioHoveredGraph == numberType
           ? 'opacity-100'
           : portfolioFocus !== 'all' && portfolioFocus !== numberType
-          ? 'opacity-50'
-          : 'opacity-[0.85] hover:opacity-100'
+          ? 'opacity-50 hover:opacity-100'
+          : 'opacity-[0.85] hover:opacity-100 ',
+
+        className
       )}
+      style={{ backgroundColor: color }}
       onClick={onClick}
     >
-      <span className="whitespace-nowrap">
+      <Col>
         <CoinNumber
           amount={displayedAmount}
-          className={clsx(
-            'transition-all group-hover:font-bold',
-            (portfolioFocus == numberType ||
-              portfolioHoveredGraph == numberType) &&
-              'font-bold'
-          )}
-          isInline
-          coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-          style={{
-            color: color,
-          }}
+          className={clsx('font-bold text-white transition-all')}
         />
-        <span
+        <div
           className={clsx(
-            'text-ink-600 group-hover:text-ink-700 text-sm transition-all sm:text-base'
+            'sm:sm -mt-1 ml-4 text-xs text-gray-200 transition-all group-hover:text-gray-100'
           )}
         >
-          {' '}
           {descriptor}
-        </span>
-      </span>
+        </div>
+      </Col>
     </div>
   )
 }

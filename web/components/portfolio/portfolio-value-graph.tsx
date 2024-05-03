@@ -9,7 +9,10 @@ import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { ZoomParams } from '../charts/helpers'
 import { Col } from '../layout/col'
 import { PortfolioChart } from './portfolio-chart'
-import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import {
+  GraphValueType,
+  PortfolioHoveredGraphType,
+} from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -41,9 +44,7 @@ export const PortfolioGraph = (props: {
   negativeThreshold?: number
   hideXAxis?: boolean
   firstProfit: number
-  setGraphBalance: (balance: number | undefined) => void
-  setGraphInvested: (invested: number | undefined) => void
-  setGraphProfit: (profit: number | undefined) => void
+  updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   portfolioHoveredGraph: PortfolioHoveredGraphType
@@ -59,9 +60,7 @@ export const PortfolioGraph = (props: {
     zoomParams,
     negativeThreshold = 0,
     hideXAxis,
-    setGraphBalance,
-    setGraphInvested,
-    setGraphProfit,
+    updateGraphValues,
     portfolioFocus,
     setPortfolioFocus,
     portfolioHoveredGraph,
@@ -153,8 +152,7 @@ export const PortfolioGraph = (props: {
           xScale={xScale}
           yScale={yScale}
           yKind="Ṁ"
-          setGraphBalance={setGraphBalance}
-          setGraphInvested={setGraphInvested}
+          updateGraphValues={updateGraphValues}
           setPortfolioFocus={setPortfolioFocus}
           portfolioHoveredGraph={portfolioHoveredGraph}
           setPortfolioHoveredGraph={setPortfolioHoveredGraph}
@@ -176,8 +174,8 @@ export const PortfolioGraph = (props: {
           )}
           onMouseOver={(p) => {
             portfolioFocus == 'balance'
-              ? setGraphBalance(p ? p.y : undefined)
-              : setGraphInvested(p ? p.y : undefined)
+              ? updateGraphValues({ balance: p ? p.y : undefined })
+              : updateGraphValues({ invested: p ? p.y : undefined })
           }}
           curve={curveLinear}
           negativeThreshold={negativeThreshold}
@@ -203,7 +201,7 @@ export const PortfolioGraph = (props: {
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={(p) => {
-        setGraphProfit(p ? p.y : undefined)
+        updateGraphValues({ profit: p ? p.y : undefined })
       }}
       curve={curveLinear}
       color={mode === 'profit' ? ['#14b8a6', '#F75836'] : '#4f46e5'}

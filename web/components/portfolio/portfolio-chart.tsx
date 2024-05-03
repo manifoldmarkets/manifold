@@ -17,7 +17,10 @@ import {
 } from '../charts/helpers'
 import { ZoomSlider } from '../charts/zoom-slider'
 import { PortfolioMode } from './portfolio-value-graph'
-import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import {
+  GraphValueType,
+  PortfolioHoveredGraphType,
+} from './portfolio-value-section'
 import { Col } from '../layout/col'
 import dayjs from 'dayjs'
 import { CoinNumber } from '../widgets/manaCoinNumber'
@@ -47,8 +50,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
-  setGraphBalance: (balance: number | undefined) => void
-  setGraphInvested: (invested: number | undefined) => void
+  updateGraphValues: (newGraphValues: GraphValueType) => void
   setPortfolioFocus: (mode: PortfolioMode) => void
   portfolioHoveredGraph: PortfolioHoveredGraphType
   setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
@@ -64,8 +66,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     hoveredAnnotation,
     setHoveredAnnotation,
     yKind,
-    setGraphBalance,
-    setGraphInvested,
+    updateGraphValues,
     setPortfolioFocus,
     portfolioHoveredGraph,
     setPortfolioHoveredGraph,
@@ -148,10 +149,10 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
     unstackedPs.forEach((p, i) => {
       if (i == BALANCE_IDX && p.prev?.y) {
-        setGraphBalance(p.prev.y)
+        updateGraphValues({ balance: p.prev.y })
       }
       if (i == INVESTED_IDX && p.prev?.y) {
-        setGraphInvested(p.prev.y)
+        updateGraphValues({ invested: p.prev.y })
       }
     })
 
@@ -174,8 +175,10 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
-    setGraphBalance(undefined)
-    setGraphInvested(undefined)
+    updateGraphValues({
+      balance: undefined,
+      invested: undefined,
+    })
   })
 
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
