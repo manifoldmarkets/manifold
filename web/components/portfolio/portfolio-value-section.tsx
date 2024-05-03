@@ -328,7 +328,7 @@ function PortfolioValueSkeleton(props: {
           {graphMode == 'portfolio' && (
             <Col className="w-full">
               <Row className="w-full justify-between">
-                <Row className="w-full justify-between gap-2 sm:justify-start">
+                <Row className="w-full justify-between gap-2 ">
                   <span
                     className={clsx(
                       'group cursor-pointer select-none transition-opacity',
@@ -357,21 +357,15 @@ function PortfolioValueSkeleton(props: {
                   {!hideAddFundsButton && (
                     <AddFundsButton
                       userId={userId}
-                      className="mt-1 h-fit whitespace-nowrap sm:mt-2"
+                      className="h-fit whitespace-nowrap"
                     />
                   )}
                 </Row>
-                {!placement && !hideSwitcher && (
-                  <TimeRangePicker
-                    currentTimePeriod={currentTimePeriod}
-                    setCurrentTimePeriod={setCurrentTimePeriod}
-                    color={switcherColor}
-                    disabled={disabled}
-                    className="bg-canvas-50 ml-auto h-fit border-0"
-                    toggleClassName={'w-12 justify-center'}
-                  />
-                )}
               </Row>
+              <BalanceWidget
+                balanceChanges={balanceChanges}
+                className="w-fit"
+              />
               <Row className="mt-2 gap-2">
                 <PortfolioGraphNumber
                   numberType={'investment'}
@@ -407,10 +401,6 @@ function PortfolioValueSkeleton(props: {
                   </Row>
                 )}
               </Row>
-              {/* <BalanceWidget
-                balanceChanges={balanceChanges}
-                className="w-fit"
-              /> */}
             </Col>
           )}
           {graphMode == 'profit' && (
@@ -437,16 +427,19 @@ function PortfolioValueSkeleton(props: {
         >
           {graphElement}
         </SizedContainer>
-        {placement === 'bottom' && !hideSwitcher && (
-          <TimeRangePicker
-            currentTimePeriod={currentTimePeriod}
-            setCurrentTimePeriod={setCurrentTimePeriod}
-            color={switcherColor}
-            disabled={disabled}
-            className="bg-canvas-50 mt-8 border-0"
-            toggleClassName="grow justify-center"
-          />
-        )}
+        {
+          // placement === 'bottom' &&
+          !hideSwitcher && (
+            <TimeRangePicker
+              currentTimePeriod={currentTimePeriod}
+              setCurrentTimePeriod={setCurrentTimePeriod}
+              color={switcherColor}
+              disabled={disabled}
+              className="bg-canvas-50 mt-8 border-0"
+              toggleClassName="grow justify-center"
+            />
+          )
+        }
       </Col>
     </Col>
   )

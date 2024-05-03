@@ -157,6 +157,9 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     })
 
     const p = ps[topmostIdx]
+
+    updateGraphValues({ net: p?.prev?.y })
+
     if (p?.prev) {
       return {
         ...p,
