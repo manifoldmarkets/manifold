@@ -329,7 +329,7 @@ function PortfolioValueSkeleton(props: {
             <Col className="w-full">
               <Row className="w-full justify-between">
                 <Row className="w-full justify-between gap-2 sm:justify-start">
-                  <Col
+                  <span
                     className={clsx(
                       'group cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
@@ -346,14 +346,14 @@ function PortfolioValueSkeleton(props: {
                       isInline
                       coinClassName="top-[0.25rem] sm:top-[0.1rem]"
                     />
-                    <div
+                    <span
                       className={clsx(
-                        'text-ink-600 group-hover:text-ink-700 -mt-1 text-sm transition-all sm:text-base'
+                        'text-ink-600 group-hover:text-ink-700  ml-1 whitespace-nowrap text-sm transition-all sm:text-base'
                       )}
                     >
                       net worth
-                    </div>
-                  </Col>
+                    </span>
+                  </span>
                   {!hideAddFundsButton && (
                     <AddFundsButton
                       userId={userId}

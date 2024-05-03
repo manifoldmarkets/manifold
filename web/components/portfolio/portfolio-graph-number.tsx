@@ -46,7 +46,7 @@ export function PortfolioGraphNumber(props: {
         />
         <div
           className={clsx(
-            'sm:sm -mt-1 text-xs text-gray-200 transition-all group-hover:text-gray-100'
+            'sm:sm mx-auto -mt-1 text-xs text-gray-200 transition-all group-hover:text-gray-100'
           )}
         >
           {descriptor}
