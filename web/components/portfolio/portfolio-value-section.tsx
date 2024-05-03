@@ -348,7 +348,7 @@ function PortfolioValueSkeleton(props: {
                     />
                     <span
                       className={clsx(
-                        'text-ink-600 group-hover:text-ink-700  ml-1 whitespace-nowrap text-sm transition-all sm:text-base'
+                        'text-ink-600 group-hover:text-ink-700 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
                       )}
                     >
                       net worth
