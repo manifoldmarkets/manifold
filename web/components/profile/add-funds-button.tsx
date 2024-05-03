@@ -14,7 +14,7 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
       <Button
         onClick={() => setOpen(true)}
         size="2xs"
-        color="gradient"
+        color="gradient-pink"
         className={className}
       >
         <PlusIcon className="mr-1 h-3 w-3" />

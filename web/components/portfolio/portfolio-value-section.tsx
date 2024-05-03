@@ -318,123 +318,119 @@ function PortfolioValueSkeleton(props: {
             />
           </PortfolioTab>
         </Row>
-        {!hideAddFundsButton && (
-          <AddFundsButton
-            userId={userId}
-            className=" hidden self-center whitespace-nowrap sm:flex"
-          />
-        )}
       </Row>
       <Col
         className={clsx(
           'bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-b-lg border-2 p-4 sm:rounded-lg sm:rounded-tl-none'
         )}
       >
-        <Row className={clsx('justify-between gap-0')}>
-          <div>
-            {graphMode == 'portfolio' && (
-              <Col>
-                <div
-                  className={clsx(
-                    'group cursor-pointer select-none transition-opacity',
-                    portfolioFocus == 'all'
-                      ? 'opacity-100'
-                      : 'hover:opacity-85 opacity-50'
-                  )}
-                  onClick={() => togglePortfolioFocus('all')}
-                >
-                  <span className="whitespace-nowrap">
-                    <CoinNumber
-                      amount={graphValues.net ?? portfolioValues?.net}
-                      className={clsx(
-                        'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
-                      )}
-                      isInline
-                      coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                    />
-                    <span
-                      className={clsx(
-                        'text-ink-600 group-hover:text-ink-700 text-sm transition-all sm:text-base'
-                      )}
-                    >
-                      {' '}
-                      net worth
+        <div>
+          {graphMode == 'portfolio' && (
+            <Col className="w-full">
+              <Row className="w-full justify-between">
+                <Row className="w-full justify-between gap-2 sm:justify-start">
+                  <div
+                    className={clsx(
+                      'group cursor-pointer select-none transition-opacity',
+                      portfolioFocus == 'all'
+                        ? 'opacity-100'
+                        : 'hover:opacity-85 opacity-50'
+                    )}
+                    onClick={() => togglePortfolioFocus('all')}
+                  >
+                    <span className="whitespace-nowrap">
+                      <CoinNumber
+                        amount={graphValues.net ?? portfolioValues?.net}
+                        className={clsx(
+                          'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
+                        )}
+                        isInline
+                        coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                      />
+                      <span
+                        className={clsx(
+                          'text-ink-600 group-hover:text-ink-700 text-sm transition-all sm:text-base'
+                        )}
+                      >
+                        {' '}
+                        net worth
+                      </span>
                     </span>
-                  </span>
-                </div>
-                <Row className="mt-2 gap-2">
-                  <PortfolioGraphNumber
-                    numberType={'investment'}
-                    descriptor="invested"
-                    portfolioFocus={portfolioFocus}
-                    portfolioHoveredGraph={portfolioHoveredGraph}
-                    displayedAmount={
-                      graphValues.invested ?? portfolioValues?.invested
-                    }
-                    color={INVESTMENT_COLOR}
-                    onClick={() => togglePortfolioFocus('investment')}
-                  />
-                  <PortfolioGraphNumber
-                    numberType={'balance'}
-                    descriptor="balance"
-                    portfolioFocus={portfolioFocus}
-                    portfolioHoveredGraph={portfolioHoveredGraph}
-                    displayedAmount={
-                      graphValues.balance ?? portfolioValues?.balance
-                    }
-                    color={BALANCE_COLOR}
-                    onClick={() => togglePortfolioFocus('balance')}
-                  />
-                  {SPICE_PRODUCTION_ENABLED && (
-                    <Row className="mt-1 items-center gap-3">
-                      <CoinNumber amount={user.spiceBalance} isSpice={true} />
-                      {!hideAddFundsButton && (
-                        <RedeemSpiceButton
-                          userId={userId}
-                          className=" self-center whitespace-nowrap"
-                        />
-                      )}
-                    </Row>
+                  </div>
+                  {!hideAddFundsButton && (
+                    <AddFundsButton
+                      userId={userId}
+                      className=" self-center whitespace-nowrap"
+                    />
                   )}
                 </Row>
-                <BalanceWidget balanceChanges={balanceChanges} />
-              </Col>
-            )}
-            {graphMode == 'profit' && (
-              <>
-                <CoinNumber
-                  amount={graphValues.profit ?? portfolioValues?.profit}
-                  className={clsx(
-                    'text-2xl transition-colors sm:text-4xl',
-                    (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
-                      ? 'text-scarlet-500'
-                      : 'text-teal-500'
-                  )}
+                {!placement && !hideSwitcher && (
+                  <TimeRangePicker
+                    currentTimePeriod={currentTimePeriod}
+                    setCurrentTimePeriod={setCurrentTimePeriod}
+                    color={switcherColor}
+                    disabled={disabled}
+                    className="bg-canvas-50 ml-auto h-fit border-0"
+                    toggleClassName={'w-12 justify-center'}
+                  />
+                )}
+              </Row>
+              <Row className="mt-2 gap-2">
+                <PortfolioGraphNumber
+                  numberType={'investment'}
+                  descriptor="invested"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={
+                    graphValues.invested ?? portfolioValues?.invested
+                  }
+                  color={INVESTMENT_COLOR}
+                  onClick={() => togglePortfolioFocus('investment')}
                 />
-                <ProfitWidget user={user} portfolio={portfolio} />
-              </>
-            )}
-          </div>
-
-          {!placement && !hideSwitcher && (
-            <TimeRangePicker
-              currentTimePeriod={currentTimePeriod}
-              setCurrentTimePeriod={setCurrentTimePeriod}
-              color={switcherColor}
-              disabled={disabled}
-              className="bg-canvas-50 ml-auto h-fit border-0"
-              toggleClassName={'w-12 justify-center'}
-            />
-          )}
-          {!hideAddFundsButton && (
-            <Col>
-              <AddFundsButton
-                userId={userId}
-                className=" self-center whitespace-nowrap sm:hidden"
+                <PortfolioGraphNumber
+                  numberType={'balance'}
+                  descriptor="balance"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  displayedAmount={
+                    graphValues.balance ?? portfolioValues?.balance
+                  }
+                  color={BALANCE_COLOR}
+                  onClick={() => togglePortfolioFocus('balance')}
+                />
+                {SPICE_PRODUCTION_ENABLED && (
+                  <Row className="mt-1 items-center gap-3">
+                    <CoinNumber amount={user.spiceBalance} isSpice={true} />
+                    {!hideAddFundsButton && (
+                      <RedeemSpiceButton
+                        userId={userId}
+                        className=" self-center whitespace-nowrap"
+                      />
+                    )}
+                  </Row>
+                )}
+              </Row>
+              <BalanceWidget
+                balanceChanges={balanceChanges}
+                className="w-fit"
               />
             </Col>
           )}
-        </Row>
+          {graphMode == 'profit' && (
+            <>
+              <CoinNumber
+                amount={graphValues.profit ?? portfolioValues?.profit}
+                className={clsx(
+                  'text-2xl transition-colors sm:text-4xl',
+                  (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
+                    ? 'text-scarlet-500'
+                    : 'text-teal-500'
+                )}
+              />
+              <ProfitWidget user={user} portfolio={portfolio} />
+            </>
+          )}
+        </div>
         <SizedContainer
           className={clsx(
             className,
