@@ -9,6 +9,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   AreaPath,
+  LinePath,
   PointerMode,
   SVGChart,
   SliceMarker,
@@ -124,6 +125,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     }, [])
   }, [data])
 
+  const topmostIdx = stackedData.length - 1
   const selectors = useMemo(() => {
     return Object.fromEntries(
       stackedData.map(({ id, points }) => [id, dataAtXSelector(points, xScale)])
@@ -145,7 +147,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     const unstackedPs = Object.entries(data).map(([id]) => {
       return unstackedSelectors[id](mouseX)
     })
-    const topmostIdx = stackedData.length - 1
 
     unstackedPs.forEach((p, i) => {
       if (i == BALANCE_IDX && p.prev?.y) {
@@ -248,6 +249,13 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             </>
           )
         })}
+        <LinePath
+          data={stackedData[topmostIdx].points}
+          px={px}
+          py={py}
+          curve={curve}
+          className="stroke-ink-1000"
+        />
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"
