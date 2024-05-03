@@ -164,20 +164,21 @@ export function SellPanel(props: {
     })
   }
 
-  let initialProb: number, saleValue: number
+  let initialProb: number, saleValue: number, buyAmount: number
   let fees: Fees
   let cpmmState
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue, fees } = getSaleResultMultiSumsToOne(
-      contract,
-      answerId!,
-      sellQuantity,
-      sharesOutcome,
-      unfilledBets,
-      balanceByUserId
-    ))
+    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } =
+      getSaleResultMultiSumsToOne(
+        contract,
+        answerId!,
+        sellQuantity,
+        sharesOutcome,
+        unfilledBets,
+        balanceByUserId
+      ))
   } else {
-    ;({ initialProb, cpmmState, saleValue, fees } = getSaleResult(
+    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } = getSaleResult(
       contract,
       sellQuantity,
       sharesOutcome,
@@ -279,7 +280,7 @@ export function SellPanel(props: {
           Fees
           <FeeDisplay
             totalFees={totalFees}
-            amount={saleValue}
+            amount={buyAmount}
             isMultiSumsToOne={isMultiSumsToOne}
           />
         </Row>
@@ -347,7 +348,7 @@ const getSaleResult = (
     ? { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 }
     : { pool: (contract as CPMMContract).pool, p: (contract as CPMMContract).p }
 
-  const { cpmmState, saleValue, fees } = calculateCpmmSale(
+  const { cpmmState, saleValue, buyAmount, fees } = calculateCpmmSale(
     initialCpmmState,
     shares,
     outcome,
@@ -359,6 +360,7 @@ const getSaleResult = (
 
   return {
     saleValue,
+    buyAmount,
     cpmmState,
     initialProb,
     resultProb,
@@ -377,7 +379,7 @@ const getSaleResultMultiSumsToOne = (
 ) => {
   const initialProb = getAnswerProbability(contract, answerId)
   const answerToSell = contract.answers.find((a) => a.id === answerId)
-  const { newBetResult, saleValue, otherBetResults } =
+  const { newBetResult, saleValue, buyAmount, otherBetResults } =
     calculateCpmmMultiSumsToOneSale(
       contract.answers,
       answerToSell!,
@@ -398,6 +400,7 @@ const getSaleResultMultiSumsToOne = (
 
   return {
     saleValue,
+    buyAmount,
     cpmmState,
     initialProb,
     resultProb,

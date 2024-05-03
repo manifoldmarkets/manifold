@@ -105,8 +105,7 @@ export const insertLinkPreviews = async (
 }
 
 export const findLinksInContent = (content: JSONContent) => {
-  const linkRegExp =
-    /(?:^|[\s])(?:(?:https?:\/\/|www\.)[\w-]+(?:\.[\w-]+)+|(?:[\w-]+\.(?:com|net|org|us|co)))(?=\s|$)/g
+  const linkRegExp = /(?:https?:\/\/|www\.)[\w-]+(?:\.[\w-]+)+(?:\/[^\s]*)?/g
 
   const linkMatches = content.content?.flatMap((node) => {
     const contents = node.content?.flat()

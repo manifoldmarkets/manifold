@@ -11,7 +11,7 @@ import { hasChanges, removeUndefinedProps } from 'common/util/object'
 import { bulkInsert } from 'shared/supabase/utils'
 import * as admin from 'firebase-admin'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
-
+export const CREATOR_UPDATE_FREQUENCY = 13
 export async function updateCreatorMetricsCore() {
   const firestore = admin.firestore()
   const now = Date.now()
@@ -22,9 +22,8 @@ export async function updateCreatorMetricsCore() {
   const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading active creators...')
-  // TODO: check on the timeliness of this query after we fill out the creator_portfolio_history table
-  // Also, once we've computed scores for all old markets, we could focus just on the recent ones
-  const activeUserIds = await pg.map(
+  // TODO: Once we've computed scores for all old market creators, we could focus just on the ones with open markets
+  const allActiveUserIds = await pg.map(
     `
       select contracts.creator_id, latest_cph.ts
       from (
@@ -37,13 +36,17 @@ export async function updateCreatorMetricsCore() {
         select ts
         from creator_portfolio_history
         where user_id = contracts.creator_id
-        order by ts nulls first
+        order by ts desc
         limit 1
       ) latest_cph on true
-      order by latest_cph.ts nulls first
-      limit 100`,
+      order by latest_cph.ts nulls first`,
     [],
     (r) => r.creator_id as string
+  )
+  const updatesPerDay = (24 * 60) / CREATOR_UPDATE_FREQUENCY
+  const activeUserIds = allActiveUserIds.slice(
+    0,
+    allActiveUserIds.length / updatesPerDay
   )
   log(`Loaded ${activeUserIds.length} active creators.`)
 

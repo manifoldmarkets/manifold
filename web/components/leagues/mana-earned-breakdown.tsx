@@ -107,16 +107,20 @@ export const ManaEarnedBreakdown = (props: {
             </tr>
           </thead>
           <tbody>
-            {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) => (
-              <tr key={category}>
-                <td className={clsx('pl-2')}>
-                  {MANA_EARNED_CATEGORY_LABELS[category]}
-                </td>
-                <td className={clsx('pr-2 text-right')}>
-                  {formatMoney(breakdown[category] ?? 0)}
-                </td>
-              </tr>
-            ))}
+            {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
+              (category === 'CREATOR_FEE' ||
+                category === 'UNIQUE_BETTOR_BONUS') &&
+              !breakdown[category] ? null : (
+                <tr key={category}>
+                  <td className={clsx('pl-2')}>
+                    {MANA_EARNED_CATEGORY_LABELS[category]}
+                  </td>
+                  <td className={clsx('pr-2 text-right')}>
+                    {formatMoney(breakdown[category] ?? 0)}
+                  </td>
+                </tr>
+              )
+            )}
             <tr className="font-semibold">
               <td className={clsx('pl-2')}>Total</td>
               <td className={clsx('pr-2 text-right')}>
@@ -233,4 +237,5 @@ const MANA_EARNED_CATEGORY_LABELS = {
   MARKET_BOOST_REDEEM: 'Boosts claimed',
   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
   REFERRAL: 'Referrals',
+  CREATOR_FEE: 'Creator earnings',
 } as { [key: string]: string }

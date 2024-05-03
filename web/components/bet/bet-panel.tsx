@@ -49,7 +49,6 @@ import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import LimitOrderPanel from './limit-order-panel'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { useUser } from 'web/hooks/use-user'
 import { getVersusColors } from '../charts/contract/choice'
 import { useAudio } from 'web/hooks/use-audio'
@@ -79,7 +78,7 @@ export function BuyPanel(props: {
   location?: string
   replyToCommentId?: string
   alwaysShowOutcomeSwitcher?: boolean
-  feedItem?: FeedTimelineItem
+  feedReason?: string
   children?: React.ReactNode
 }) {
   const {
@@ -186,7 +185,7 @@ export const BuyPanelBody = (props: {
   location?: string
   onClose?: () => void
   replyToCommentId?: string
-  feedItem?: FeedTimelineItem
+  feedReason?: string
   panelClassName?: string
   children?: React.ReactNode
 }) => {
@@ -200,7 +199,7 @@ export const BuyPanelBody = (props: {
     location = 'bet panel',
     onClose,
     replyToCommentId,
-    feedItem,
+    feedReason,
     panelClassName,
     children,
   } = props
@@ -339,7 +338,7 @@ export const BuyPanelBody = (props: {
         outcome,
         isLimitOrder: false,
         answerId: multiProps?.answerToBuy.id,
-        feedItem,
+        feedReason,
       })
     )
   }

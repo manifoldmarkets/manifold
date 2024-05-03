@@ -14,7 +14,6 @@ import {
 } from 'web/components/contract/contracts-table'
 import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { DEBUG_FEED_CARDS } from 'web/hooks/use-feed-timeline'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { track } from 'web/lib/service/analytics'
 import { getAdCanPayFunds } from 'web/lib/supabase/ads'
@@ -65,13 +64,12 @@ export function HorizontalDashboardCard(props: {
   const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
-        track('view market card', {
-          contractId: contract.id,
-          creatorId: contract.creatorId,
-          slug: contract.slug,
-          isPromoted: !!promotedData,
-        } as ContractCardView)
+      track('view market card', {
+        contractId: contract.id,
+        creatorId: contract.creatorId,
+        slug: contract.slug,
+        isPromoted: !!promotedData,
+      } as ContractCardView)
       setVisible(true)
     },
     false,

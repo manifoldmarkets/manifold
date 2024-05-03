@@ -44,7 +44,7 @@ function getNavigation(user: User) {
     },
     {
       name: 'Browse',
-      href: '/browse/for-you',
+      href: '/browse',
       icon: BiSearchAlt2,
     },
     // {

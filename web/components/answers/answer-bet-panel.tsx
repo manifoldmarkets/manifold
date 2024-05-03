@@ -32,7 +32,6 @@ import {
 } from 'common/calculate'
 import { removeUndefinedProps } from 'common/util/object'
 import { BuyPanel } from '../bet/bet-panel'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 export function AnswerBetPanel(props: {
   answer: DpmAnswer
@@ -227,14 +226,14 @@ export function AnswerCpmmBetPanel(props: {
   closePanel: () => void
   outcome: 'YES' | 'NO' | undefined
   alwaysShowOutcomeSwitcher?: boolean
-  feedItem?: FeedTimelineItem
+  feedReason?: string
 }) {
   const {
     answer,
     contract,
     closePanel,
     outcome,
-    feedItem,
+    feedReason,
     alwaysShowOutcomeSwitcher,
   } = props
 
@@ -250,7 +249,7 @@ export function AnswerCpmmBetPanel(props: {
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
         location={'contract page answer'}
-        feedItem={feedItem}
+        feedReason={feedReason}
         inModal={true}
         alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}
       >

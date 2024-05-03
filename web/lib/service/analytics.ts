@@ -9,7 +9,6 @@ import { api, completeQuest } from 'web/lib/firebase/api'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 
 amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
 
@@ -136,12 +135,12 @@ function insertUserEvent(
       name === 'like') &&
     contractId
   ) {
-    const feedItem = data?.feedItem as FeedTimelineItem | undefined
+    const feedReason = data?.feedReason as string
     const isCardClick = name.includes('click market card')
     const kind =
       name === 'copy market link'
         ? 'page share'
-        : name === 'like' && feedItem
+        : name === 'like' && feedReason
         ? 'card like'
         : name === 'like'
         ? 'page like'
@@ -155,7 +154,7 @@ function insertUserEvent(
         ? 'card click'
         : data?.location === 'feed card' ||
           data?.location === 'feed' ||
-          !!feedItem
+          !!feedReason
         ? 'card bet'
         : 'page bet'
     if (userId !== null) {
@@ -163,10 +162,9 @@ function insertUserEvent(
         'record-contract-interaction',
         removeUndefinedProps({
           contractId,
-          commentId: commentId ?? feedItem?.commentId ?? undefined,
+          commentId: commentId ?? undefined,
           kind,
-          feedType: feedItem?.dataType,
-          feedReasons: feedItem?.reasons,
+          feedType: feedReason,
           betGroupId: data?.betGroupId as string,
           betId: data?.betId as string,
         })

@@ -39,6 +39,7 @@
     "handlebars": "4.7.8",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
+    "numeral": "2.0.6",
     "openai": "4.16.1",
     "pg-promise": "11.4.1",
     "string-similarity": "4.0.4",

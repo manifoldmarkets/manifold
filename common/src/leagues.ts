@@ -2,7 +2,7 @@ import { Row } from './supabase/utils'
 
 export type season = (typeof SEASONS)[number]
 
-export const SEASONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const
+export const SEASONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] as const
 export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
@@ -19,6 +19,7 @@ const SEASON_END_TIMES = [
   new Date('2024-02-01T17:51:49-08:00'),
   new Date('2024-03-01T15:30:22-08:00'),
   new Date('2024-04-01T21:43:18-08:00'),
+  new Date('2024-05-01T16:32:08-07:00'),
 ]
 
 export type League = {
@@ -116,7 +117,7 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 5, doublePromotion: 0 }
   }
   if (division === 5) {
-    return { demotion: 12, promotion: 3, doublePromotion: 0 }
+    return { demotion: 10, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
     return { demotion: 30, promotion: 0, doublePromotion: 0 }
@@ -128,6 +129,10 @@ export const getDemotionAndPromotionCountBySeason = (
   season: number,
   division: number
 ) => {
+  if (season > 8 && season < 13) {
+    if (division === 5)
+      return { demotion: 12, promotion: 3, doublePromotion: 0 }
+  }
   if (season === 8) {
     if (division === 6)
       return { demotion: 34, promotion: 0, doublePromotion: 0 }
@@ -207,15 +212,12 @@ export const getCohortSize = (division: number) => {
 }
 
 export const prizesByDivisionAndRank = [
-  [100, 90, 80, 70, 60, 50, 40],
-  [200, 180, 160, 140, 120, 100, 80, 60],
-  [400, 360, 320, 280, 240, 200, 160, 120, 80],
-  [800, 720, 640, 560, 480, 400, 320, 240, 160, 80],
-  [1600, 1440, 1280, 1120, 960, 800, 640, 480, 320, 160],
-  [
-    3200, 2880, 2560, 2240, 1920, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900,
-    800, 700, 600, 500, 400, 300, 200,
-  ],
+  [1000, 500, 400, 300, 200, 100, 50],
+  [2000, 1000, 900, 800, 700, 600, 500, 400],
+  [4000, 2000, 1800, 1600, 1400, 1200, 1000, 800, 600],
+  [8000, 4000, 3600, 3200, 2800, 2400, 2000, 1600, 1200, 800],
+  [16000, 8000, 7200, 6400, 5600, 4800, 4000, 3200, 2400, 1600],
+  [64000, 32000, 16000, 14400, 12800, 11200, 9600, 8000, 6400, 4800],
 ]
 
 export const getLeaguePrize = (division: number, rank: number) => {

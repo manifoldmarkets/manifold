@@ -300,6 +300,7 @@ export function calculateCpmmMultiSumsToOneSale(
           balanceByUserId
         )
 
+  const buyAmount = sumBy(newBetResult.takers, (taker) => taker.amount)
   // Transform buys of opposite outcome into sells.
   const saleTakers = newBetResult.takers.map((taker) => ({
     ...taker,
@@ -322,6 +323,7 @@ export function calculateCpmmMultiSumsToOneSale(
 
   return {
     saleValue,
+    buyAmount,
     newBetResult: transformedNewBetResult,
     otherBetResults,
   }
@@ -440,6 +442,7 @@ export function calculateCpmmSale(
 
   return {
     saleValue,
+    buyAmount,
     cpmmState,
     fees: totalFees,
     makers,

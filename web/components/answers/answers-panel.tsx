@@ -72,7 +72,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { formatTime } from 'web/lib/util/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { getBets } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 
@@ -194,7 +193,6 @@ export function AnswersPanel(props: {
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
-  const [expandedIds, setExpandedIds] = useState<string[]>([])
   const setDefaultSort = async () => {
     await toast.promise(updateMarket({ contractId: contract.id, sort }), {
       loading: 'Updating sort order...',
@@ -483,9 +481,9 @@ export function SimpleAnswerBars(props: {
   contract: MultiContract
   maxAnswers?: number
   barColor?: string
-  feedItem?: FeedTimelineItem
+  feedReason?: string
 }) {
-  const { contract, maxAnswers = Infinity, barColor, feedItem } = props
+  const { contract, maxAnswers = Infinity, barColor, feedReason } = props
   const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
@@ -544,7 +542,7 @@ export function SimpleAnswerBars(props: {
               unfilledBets={unfilledBets?.filter(
                 (b) => b.answerId === answer.id
               )}
-              feedItem={feedItem}
+              feedReason={feedReason}
             />
           ))}
           {moreCount > 0 && (
@@ -577,7 +575,7 @@ export function Answer(props: {
   expanded?: boolean
   barColor?: string
   shouldShowLimitOrderChart: boolean
-  feedItem?: FeedTimelineItem
+  feedReason?: string
 }) {
   const {
     answer,
@@ -591,7 +589,7 @@ export function Answer(props: {
     expanded,
     user,
     barColor,
-    feedItem,
+    feedReason,
     shouldShowLimitOrderChart,
   } = props
 
@@ -679,7 +677,7 @@ export function Answer(props: {
               contract={contract}
               answer={answer}
               fillColor={barColor}
-              feedItem={feedItem}
+              feedReason={feedReason}
             />
           </Row>
         }

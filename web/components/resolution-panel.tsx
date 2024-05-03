@@ -293,8 +293,8 @@ export function MiniResolutionPanel(props: {
             <ProbabilityInput
               prob={prob}
               onChange={setProb}
-              className="w-20"
-              inputClassName="!h-6"
+              className="w-28"
+              inputClassName=""
             />
           </Row>
         )}

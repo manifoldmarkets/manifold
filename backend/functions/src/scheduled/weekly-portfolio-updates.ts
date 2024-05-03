@@ -7,6 +7,7 @@ import { createWeeklyPortfolioUpdateNotification } from 'shared/create-notificat
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
+  SupabaseClient,
 } from 'shared/supabase/init'
 import { getUser, getUsers, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
@@ -15,6 +16,8 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { APIError } from 'common/api/utils'
 
 import * as dayjs from 'dayjs'
+import { Row } from 'common/supabase/utils'
+import { ContractMetric } from 'common/contract-metric'
 
 const firestore = admin.firestore()
 const now = new Date()
@@ -107,7 +110,7 @@ export const saveWeeklyContractMetricsInternal = async () => {
   )
 
   const pg = createSupabaseDirectClient()
-  bulkInsert(pg, 'weekly_update', results)
+  await bulkInsert(pg, 'weekly_update', results)
 
   log('saved weekly contract metrics for users:', usersToSave.length)
 }
@@ -136,7 +139,8 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
     privateUsers.map(async (privateUser) => {
       const data = await getUsersWeeklyUpdate(db, privateUser.id, now)
       if (!data) return
-      const { weeklyProfit, rangeEndDateSlug, contractMetrics } = data
+      const { profit, range_end, contract_metrics } = data
+      const contractMetrics = contract_metrics as ContractMetric[]
       // Don't send update if there are no contracts
       count++
       if (count % 100 === 0)
@@ -145,15 +149,15 @@ export const sendWeeklyPortfolioUpdateNotifications = async () => {
       await createWeeklyPortfolioUpdateNotification(
         privateUser,
         usernameById[privateUser.id],
-        weeklyProfit,
-        rangeEndDateSlug
+        profit,
+        range_end
       )
     })
   )
 }
 
 const getUsersWeeklyUpdate = async (
-  db: any,
+  db: SupabaseClient,
   userId: string,
   rangeEnd: string
 ) => {
@@ -162,7 +166,7 @@ const getUsersWeeklyUpdate = async (
     .select('*')
     .eq('user_id', userId)
     .eq('range_end', rangeEnd)
-    .orderBy('created_time', { ascending: false })
+    .order('created_time', { ascending: false })
     .limit(1)
 
   if (error) {
@@ -173,6 +177,5 @@ const getUsersWeeklyUpdate = async (
     return
   }
 
-  const update = data[0]
-  return update
+  return data[0] as Row<'weekly_update'>
 }

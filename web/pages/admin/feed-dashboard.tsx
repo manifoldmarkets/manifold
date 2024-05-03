@@ -1,6 +1,6 @@
 import { Col } from 'web/components/layout/col'
-import { FeedTimeline } from 'web/components/feed-timeline'
 import { useRecentlyActiveUsersAndPrivateUsers } from 'web/hooks/use-users'
+import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export default function FeedDashboard() {
   const privateUsersAndUsers = useRecentlyActiveUsersAndPrivateUsers(8)
@@ -8,9 +8,7 @@ export default function FeedDashboard() {
     <Col className={'grid-cols-16 grid w-full'}>
       {privateUsersAndUsers?.map(({ privateUser, user }) => (
         <Col key={user.id} className={'col-span-2'}>
-          {privateUser && (
-            <FeedTimeline user={user} privateUser={privateUser} />
-          )}
+          {privateUser && <LiveGeneratedFeed userId={user.id} />}
         </Col>
       ))}
     </Col>

@@ -1,6 +1,6 @@
 import { uniq } from 'lodash'
 import { db } from './db'
-import { millisToTs, run, selectFrom, tsToMillis } from 'common/supabase/utils'
+import { millisToTs, run, tsToMillis } from 'common/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import { getDisplayUsers } from './users'
 
@@ -47,7 +47,9 @@ export function getDonationsPageQuery(charityId: string) {
 
 export async function getMostRecentDonation() {
   const { data } = await run(
-    selectFrom(db, 'txns', 'fromId', 'toId')
+    db
+      .from('txns')
+      .select('from_id, to_id')
       .eq('category', 'CHARITY')
       .order('created_time', { ascending: false })
       .limit(1)

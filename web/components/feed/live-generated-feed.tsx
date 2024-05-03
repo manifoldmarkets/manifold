@@ -19,7 +19,7 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 
-export function ScoredFeed(props: { userId: string }) {
+export function LiveGeneratedFeed(props: { userId: string }) {
   const { userId } = props
   const user = useUser()
   const [offset, setOffset] = usePersistentInMemoryState(
@@ -174,10 +174,11 @@ const FeedCard = (props: {
     />
   ) : (
     <FeedContractCard
+      trackingPostfix={'feed'}
       contract={contract}
       key={contract.id}
       hide={() => setHidden(true)}
-      endpointReason={reason}
+      feedReason={reason}
       promotedData={adId ? { adId, reward: AD_REDEEM_REWARD } : undefined}
     />
   )

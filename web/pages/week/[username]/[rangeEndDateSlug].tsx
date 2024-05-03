@@ -14,14 +14,15 @@ import {
   WeeklyPortfolioUpdateOGCardProps,
 } from 'common/weekly-portfolio-update'
 import { chunk, sortBy, sum } from 'lodash'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { ZoomParams } from 'web/components/charts/helpers'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
 import { ProfitChangeTable } from 'web/components/home/daily-profit'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { PortfolioGraph } from 'web/components/portfolio/portfolio-value-graph'
+import { PortfolioTooltip } from 'web/components/portfolio/portfolio-value-graph'
 import { SEO } from 'web/components/SEO'
 import { SizedContainer } from 'web/components/sized-container'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -33,6 +34,11 @@ import { useRecentlyBetOnContracts } from 'web/lib/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
+import { max, min } from 'lodash'
+import { Period } from 'web/lib/firebase/users'
+import { scaleLinear, scaleTime } from 'd3-scale'
+import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
+import { curveLinear } from 'd3-shape'
 
 export async function getStaticProps(props: {
   params: { username: string; rangeEndDateSlug: string }
@@ -199,8 +205,7 @@ export default function RangePerformancePage(props: {
           {graphPoints.length > 0 && (
             <SizedContainer className="h-[250px] w-full max-w-md">
               {(width, height) => (
-                <PortfolioGraph
-                  mode="profit"
+                <ProfitGraph
                   points={graphPoints}
                   width={width}
                   height={height}
@@ -230,5 +235,65 @@ export default function RangePerformancePage(props: {
         )}
       </Col>
     </Page>
+  )
+}
+
+export const ProfitGraph = (props: {
+  duration?: Period
+  points: HistoryPoint<Partial<PortfolioMetrics>>[]
+  width: number
+  height: number
+  zoomParams?: ZoomParams
+  negativeThreshold?: number
+  hideXAxis?: boolean
+}) => {
+  const {
+    duration,
+    points,
+    width,
+    height,
+    zoomParams,
+    negativeThreshold,
+    hideXAxis,
+  } = props
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const minDate = min(points.map((d) => d.x))!
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const maxDate = max(points.map((d) => d.x))!
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const minValue = min(points.map((d) => d.y))!
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const maxValue = max(points.map((d) => d.y))!
+
+  const tinyDiff = Math.abs(maxValue - minValue) < 20
+  const xScale = scaleTime([minDate, maxDate], [0, width])
+  const yScale = scaleLinear(
+    [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
+    [height, 0]
+  )
+
+  // reset axis scale if mode or duration change (since points change)
+  useEffect(() => {
+    zoomParams?.setXScale(xScale)
+  }, [duration])
+
+  return (
+    <SingleValueHistoryChart
+      w={width > 768 ? 768 : width}
+      h={height}
+      xScale={xScale}
+      yScale={yScale}
+      zoomParams={zoomParams}
+      yKind="Ṁ"
+      data={points}
+      // eslint-disable-next-line react/prop-types
+      Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
+      curve={curveLinear}
+      color={['#14b8a6', '#F75836']}
+      negativeThreshold={negativeThreshold}
+      hideXAxis={hideXAxis}
+    />
   )
 }

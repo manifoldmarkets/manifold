@@ -597,6 +597,27 @@ async function generateAntes(
   ante: number
 ) {
   if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1' &&
+    !contract.shouldAnswersSumToOne
+  ) {
+    const { answers } = contract
+    for (const answer of answers) {
+      const ante = Math.sqrt(answer.poolYes * answer.poolNo)
+      const liquidityDoc = firestore
+        .collection(`contracts/${contract.id}/liquidity`)
+        .doc()
+      const lp = getCpmmInitialLiquidity(
+        providerId,
+        contract,
+        liquidityDoc.id,
+        ante,
+        contract.createdTime,
+        answer.id
+      )
+      await liquidityDoc.set(lp)
+    }
+  } else if (
     outcomeType === 'BINARY' ||
     outcomeType === 'PSEUDO_NUMERIC' ||
     outcomeType === 'STONK' ||

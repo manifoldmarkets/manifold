@@ -67,7 +67,7 @@ const interpolateY = (
   }
 }
 
-const getTickValues = (min: number, max: number, n: number) => {
+export const getTickValues = (min: number, max: number, n: number) => {
   let step = (max - min) / (n - 1)
   let theMin = min
   let theMax = max
@@ -79,7 +79,7 @@ const getTickValues = (min: number, max: number, n: number) => {
   return [theMin, ...range(1, n - 1).map((i) => theMin + step * i), theMax]
 }
 
-const dataAtXSelector = <Y, P extends Point<number, Y>>(
+export const dataAtXSelector = <Y, P extends Point<number, Y>>(
   data: P[],
   xScale?: ScaleTime<number, number>
 ) => {
@@ -93,7 +93,9 @@ const dataAtXSelector = <Y, P extends Point<number, Y>>(
     return { prev, next, nearest, x: posX }
   }
 }
-const dataAtTimeSelector = <Y, P extends Point<number, Y>>(data: P[]) => {
+export const dataAtTimeSelector = <Y, P extends Point<number, Y>>(
+  data: P[]
+) => {
   return dataAtXSelector(data)
 }
 
@@ -688,6 +690,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
   hideXAxis?: boolean
+  onGraphClick?: () => void
+  areaClassName?: string
+  className?: string
 }) => {
   const {
     contractId,
@@ -706,6 +711,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     pointerMode = 'zoom',
     chartAnnotations = [],
     hideXAxis,
+    onGraphClick,
+    areaClassName,
   } = props
 
   useEffect(() => {
@@ -840,6 +847,8 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           py0={py0}
           py1={py1}
           curve={curve}
+          className={areaClassName}
+          onClick={onGraphClick}
         />
         {mouse && (
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />

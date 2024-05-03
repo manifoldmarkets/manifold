@@ -13,8 +13,18 @@ export function CoinNumber(props: {
   numberType?: 'short' | 'animated'
   className?: string
   isInline?: boolean
+  coinClassName?: string
+  style?: React.CSSProperties
 }) {
-  const { amount, isSpice, numberType, className, isInline } = props
+  const {
+    amount,
+    isSpice,
+    numberType,
+    className,
+    isInline,
+    coinClassName,
+    style,
+  } = props
   return (
     <Row
       className={clsx(
@@ -23,15 +33,22 @@ export function CoinNumber(props: {
         isSpice ? 'text-sky-600 dark:text-sky-400' : '',
         isInline && 'relative ml-[1.1em] inline-flex items-baseline'
       )}
+      style={style}
     >
       {amount !== undefined && amount <= -1 && '-'}
       {!!isSpice ? (
         <SpiceCoin
-          className={clsx(isInline && 'absolute -left-[1.1em] top-[0.25em]')}
+          className={clsx(
+            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            coinClassName
+          )}
         />
       ) : (
         <ManaCoin
-          className={clsx(isInline && 'absolute -left-[1.1em] top-[0.25em]')}
+          className={clsx(
+            isInline && 'absolute -left-[1.1em] top-[0.25em]',
+            coinClassName
+          )}
         />
       )}
       {amount == undefined ? (

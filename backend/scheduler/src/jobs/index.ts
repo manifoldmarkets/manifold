@@ -1,30 +1,28 @@
 import { createJob } from './helpers'
-import { addTrendingFeedContracts } from './add-trending-feed-contracts'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
-import { cleanOldFeedRows } from './clean-old-feed-rows'
 import { cleanOldTombstones } from './clean-old-tombstones'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { truncateIncomingWrites } from './truncate-incoming-writes'
 import { updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
-import { addConvertingContractsToFeed } from 'shared/add-converting-contracts-to-feed'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
 import { MINUTE_MS } from 'common/util/time'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
-import { updateCreatorMetricsCore } from 'shared/update-creator-metrics-core'
+import {
+  CREATOR_UPDATE_FREQUENCY,
+  updateCreatorMetricsCore,
+} from 'shared/update-creator-metrics-core'
+import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
+import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
+import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
 
 export function createJobs() {
   return [
     // Hourly jobs:
-    createJob(
-      'add-trending-feed-contracts',
-      '0 10 * * * *', // on the 10th minute of every hour
-      addTrendingFeedContracts
-    ),
     createJob(
       'update-contract-metrics-non-multi',
       '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
@@ -58,11 +56,6 @@ export function createJobs() {
       updateGroupMetricsCore
     ),
     createJob(
-      'add-converting-feed-contracts',
-      '0 15 * * * *', // on the 15th minute of every hour
-      addConvertingContractsToFeed
-    ),
-    createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
       updateUserMetricsCore,
@@ -70,7 +63,7 @@ export function createJobs() {
     ),
     createJob(
       'update-creator-metrics',
-      '0 */13 * * * *', // every 13 minutes - (on the 5th minute of every hour)
+      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
       updateCreatorMetricsCore
     ),
     // Daily jobs:
@@ -83,11 +76,6 @@ export function createJobs() {
       'clean-old-tombstones',
       '0 0 0 * * *', // midnight daily
       cleanOldTombstones
-    ),
-    createJob(
-      'clean-old-feed-rows',
-      '0 0 1 * * *', // 1 AM daily
-      cleanOldFeedRows
     ),
     createJob(
       'clean-old-notifications',
@@ -108,6 +96,21 @@ export function createJobs() {
       'onboarding-notification',
       '0 0 11 * * *', // 11 AM daily
       sendOnboardingNotificationsInternal
+    ),
+    createJob(
+      'weekly-portfolio-emails',
+      '0 * 12-14 * * 5',
+      sendPortfolioUpdateEmailsToAllUsers
+    ),
+    createJob(
+      'weekly-markets-emails',
+      '0 * 12-14 * * 1',
+      sendWeeklyMarketsEmails
+    ),
+    createJob(
+      'reset-weekly-email-flags',
+      '0 0 0 * * 6',
+      resetWeeklyEmailsFlags
     ),
   ]
 }

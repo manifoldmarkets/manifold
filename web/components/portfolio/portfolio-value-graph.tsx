@@ -1,16 +1,23 @@
-import { useEffect, useMemo } from 'react'
-import { scaleTime, scaleLinear } from 'd3-scale'
-import { min, max } from 'lodash'
-import dayjs from 'dayjs'
-import { Col } from '../layout/col'
-import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { HistoryPoint } from 'common/chart'
+import { scaleLinear, scaleTime } from 'd3-scale'
 import { curveLinear } from 'd3-shape'
-import { ZoomParams } from '../charts/helpers'
+import dayjs from 'dayjs'
+import { max, min } from 'lodash'
+import { useEffect, useMemo } from 'react'
+import { SingleValueHistoryChart } from 'web/components/charts/generic-charts'
 import { Period } from 'web/lib/firebase/users'
+import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
+import { ZoomParams } from '../charts/helpers'
+import { Col } from '../layout/col'
+import { PortfolioChart } from './portfolio-chart'
+import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import { findMinMax } from 'web/lib/util/minMax'
+import { HistoryPoint } from 'common/chart'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
-export type GraphMode = 'profit' | 'invested' | 'balance'
+export type GraphMode = 'portfolio' | 'profit'
+export type PortfolioMode = 'balance' | 'investment' | 'all'
+export const BALANCE_COLOR = '#4f46e5'
+export const INVESTMENT_COLOR = '#818cf8'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -27,37 +34,100 @@ export const PortfolioTooltip = (props: { date: Date }) => {
 export const PortfolioGraph = (props: {
   mode: GraphMode
   duration?: Period
-  points: HistoryPoint<Partial<PortfolioMetrics>>[]
+  portfolioHistory: PortfolioSnapshot[]
   width: number
   height: number
   zoomParams?: ZoomParams
-  onMouseOver?: (p: HistoryPoint<Partial<PortfolioMetrics>> | undefined) => void
   negativeThreshold?: number
   hideXAxis?: boolean
+  firstProfit: number
+  setGraphBalance: (balance: number | undefined) => void
+  setGraphInvested: (invested: number | undefined) => void
+  setGraphProfit: (profit: number | undefined) => void
+  portfolioFocus: PortfolioMode
+  setPortfolioFocus: (mode: PortfolioMode) => void
+  portfolioHoveredGraph: PortfolioHoveredGraphType
+  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) => {
   const {
     mode,
     duration,
-    points,
-    onMouseOver,
+    firstProfit,
+    portfolioHistory,
     width,
     height,
     zoomParams,
-    negativeThreshold,
+    negativeThreshold = 0,
     hideXAxis,
+    setGraphBalance,
+    setGraphInvested,
+    setGraphProfit,
+    portfolioFocus,
+    setPortfolioFocus,
+    portfolioHoveredGraph,
+    setPortfolioHoveredGraph,
   } = props
-  const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minDate = min(points.map((d) => d.x))!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxDate = max(points.map((d) => d.x))!
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const minValue = min(points.map((d) => d.y))!
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const maxValue = max(points.map((d) => d.y))!
-    return { minDate, maxDate, minValue, maxValue }
-  }, [points])
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
+
+  const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
+    if (mode == 'portfolio') {
+      const balanceXPoints = balancePoints.map((d) => d.x)!
+      const { min: balanceXMin, max: balanceXMax } = findMinMax(balanceXPoints)
+      const balanceYPoints = balancePoints.map((d) => d.y)!
+      const { min: balanceYMin, max: balanceYMax } = findMinMax(balanceYPoints)
+
+      const investmentXPoints = investmentPoints.map((d) => d.x)!
+      const { min: investmentXMin, max: investmentXMax } =
+        findMinMax(investmentXPoints)
+      const investmentYPoints = investmentPoints.map((d) => d.y)!
+      const { min: investmentYMin, max: investmentYMax } =
+        findMinMax(investmentYPoints)
+
+      const networthYPoints = networthPoints.map((d) => d.y)!
+      const { min: networthYMin, max: networthYMax } =
+        findMinMax(networthYPoints)
+
+      const minDate =
+        portfolioFocus == 'all'
+          ? min([balanceXMin, investmentXMin])!
+          : portfolioFocus == 'balance'
+          ? balanceXMin
+          : investmentXMin
+      const maxDate =
+        portfolioFocus == 'all'
+          ? max([balanceXMax, investmentXMax])!
+          : portfolioFocus == 'balance'
+          ? balanceXMax
+          : investmentXMax
+      const minValue =
+        portfolioFocus == 'all'
+          ? min([balanceYMin, networthYMin])!
+          : portfolioFocus == 'balance'
+          ? balanceYMin
+          : investmentYMin
+      const maxValue =
+        portfolioFocus == 'all'
+          ? max([networthYMax, balanceYMax])!
+          : portfolioFocus == 'balance'
+          ? balanceYMax
+          : investmentYMax
+      return { minDate, maxDate, minValue, maxValue }
+    } else {
+      const profitXPoints = profitPoints.map((d) => d.x)!
+      const { min: profitXMin, max: profitXMax } = findMinMax(profitXPoints)
+      const profitYPoints = profitPoints.map((d) => d.y)!
+      const { min: profitYMin, max: profitYMax } = findMinMax(profitYPoints)
+      return {
+        minDate: profitXMin,
+        maxDate: profitXMax,
+        minValue: profitYMin,
+        maxValue: profitYMax,
+      }
+    }
+  }, [duration, portfolioFocus, mode])
+
   const tinyDiff = Math.abs(maxValue - minValue) < 20
   const xScale = scaleTime([minDate, maxDate], [0, width])
   const yScale = scaleLinear(
@@ -68,24 +138,126 @@ export const PortfolioGraph = (props: {
   // reset axis scale if mode or duration change (since points change)
   useEffect(() => {
     zoomParams?.setXScale(xScale)
-  }, [mode, duration])
+  }, [mode, duration, portfolioFocus])
 
+  if (mode == 'portfolio') {
+    if (portfolioFocus == 'all') {
+      return (
+        <PortfolioChart
+          data={{
+            balance: { points: balancePoints, color: BALANCE_COLOR },
+            investment: { points: investmentPoints, color: INVESTMENT_COLOR },
+          }}
+          w={width}
+          h={height}
+          xScale={xScale}
+          yScale={yScale}
+          yKind="Ṁ"
+          setGraphBalance={setGraphBalance}
+          setGraphInvested={setGraphInvested}
+          setPortfolioFocus={setPortfolioFocus}
+          portfolioHoveredGraph={portfolioHoveredGraph}
+          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+        />
+      )
+    } else {
+      return (
+        <SingleValueHistoryChart
+          w={width}
+          h={height}
+          xScale={xScale}
+          yScale={yScale}
+          zoomParams={zoomParams}
+          yKind="Ṁ"
+          data={portfolioFocus == 'balance' ? balancePoints : investmentPoints}
+          Tooltip={(props) => (
+            // eslint-disable-next-line react/prop-types
+            <PortfolioTooltip date={xScale.invert(props.x)} />
+          )}
+          onMouseOver={(p) => {
+            portfolioFocus == 'balance'
+              ? setGraphBalance(p ? p.y : undefined)
+              : setGraphInvested(p ? p.y : undefined)
+          }}
+          curve={curveLinear}
+          negativeThreshold={negativeThreshold}
+          hideXAxis={hideXAxis}
+          color={portfolioFocus == 'balance' ? BALANCE_COLOR : INVESTMENT_COLOR}
+          onGraphClick={() => {
+            setPortfolioFocus('all')
+          }}
+          areaClassName="hover:opacity-100 opacity-[0.85] transition-opacity"
+        />
+      )
+    }
+  }
   return (
     <SingleValueHistoryChart
-      w={width > 768 ? 768 : width}
+      w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
       zoomParams={zoomParams}
       yKind="Ṁ"
-      data={points}
+      data={profitPoints}
       // eslint-disable-next-line react/prop-types
       Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
-      onMouseOver={onMouseOver}
+      onMouseOver={(p) => {
+        setGraphProfit(p ? p.y : undefined)
+      }}
       curve={curveLinear}
       color={mode === 'profit' ? ['#14b8a6', '#F75836'] : '#4f46e5'}
       negativeThreshold={negativeThreshold}
       hideXAxis={hideXAxis}
     />
   )
+}
+
+function usePortfolioPointsFromHistory(
+  portfolioHistory: PortfolioSnapshot[],
+  firstProfit: number
+) {
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    useMemo(() => {
+      if (!portfolioHistory?.length) {
+        return {
+          profitPoints: [],
+          investmentPoints: [],
+          balancePoints: [],
+          networthPoints: [],
+        }
+      }
+
+      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+
+      portfolioHistory.forEach((p) => {
+        profitPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+          obj: p,
+        })
+        investmentPoints.push({
+          x: p.timestamp,
+          y: p.investmentValue,
+          obj: p,
+        })
+        balancePoints.push({
+          x: p.timestamp,
+          y: p.balance,
+          obj: p,
+        })
+        networthPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue,
+          obj: p,
+        })
+      })
+
+      return { profitPoints, investmentPoints, balancePoints, networthPoints }
+    }, [portfolioHistory])
+
+  return { profitPoints, investmentPoints, balancePoints, networthPoints }
 }

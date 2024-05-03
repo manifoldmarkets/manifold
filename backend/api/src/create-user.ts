@@ -30,10 +30,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { generateNewUserFeedFromContracts } from 'shared/supabase/users'
-import { DEFAULT_FEED_USER_ID } from 'common/feed'
 
-import { getImportantContractsForNewUsers } from 'shared/supabase/contracts'
 import { onCreateUser } from 'api/helpers/on-create-user'
 import { STARTING_BALANCE } from 'common/economy'
 
@@ -148,8 +145,6 @@ export const createuser: APIHandler<'createuser'> = async (
         blockedByUserIds: [],
         blockedContractIds: [],
         blockedGroupSlugs: [],
-        weeklyTrendingEmailSent: false,
-        weeklyPortfolioUpdateEmailSent: false,
       }
 
       trans.create(userRef, user)
@@ -175,17 +170,6 @@ export const createuser: APIHandler<'createuser'> = async (
 
     await addContractsToSeenMarketsTable(auth.uid, visitedContractIds, pg)
     await upsertNewUserEmbeddings(auth.uid, visitedContractIds, pg)
-    const interestingContractIds = await getImportantContractsForNewUsers(
-      30,
-      pg
-    )
-    await generateNewUserFeedFromContracts(
-      auth.uid,
-      pg,
-      DEFAULT_FEED_USER_ID, // Should we just use the ALL_FEED_USER_ID now that we have tailored contract ids?
-      interestingContractIds,
-      0.5
-    )
 
     if (process.env.FB_ACCESS_TOKEN)
       await trackSignupFB(

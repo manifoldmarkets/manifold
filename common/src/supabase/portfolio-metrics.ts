@@ -1,4 +1,4 @@
-import { run, millisToTs, tsToMillis, SupabaseClient } from './utils'
+import { SupabaseClient, millisToTs, run, tsToMillis } from './utils'
 
 export async function getPortfolioHistory(
   userId: string,

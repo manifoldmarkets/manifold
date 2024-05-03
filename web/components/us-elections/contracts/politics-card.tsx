@@ -8,7 +8,6 @@ import { Spacer } from 'web/components/layout/spacer'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
-import { FeedTimelineItem } from 'web/hooks/use-feed-timeline'
 import { track } from 'web/lib/service/analytics'
 import { CandidatePanel } from './candidates-panel/candidates-panel'
 import { SmallCandidatePanel } from './candidates-panel/small-candidate-panel'
@@ -20,7 +19,6 @@ export function PoliticsCard(props: {
   promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
-  item?: FeedTimelineItem
   className?: string
   customTitle?: string
   titleSize?: 'lg'
@@ -31,7 +29,6 @@ export function PoliticsCard(props: {
   const {
     promotedData,
     trackingPostfix,
-    item,
     customTitle,
     titleSize,
     className,
@@ -62,7 +59,6 @@ export function PoliticsCard(props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
-      feedId: item?.id,
       isPromoted: !!promotedData,
     })
 
