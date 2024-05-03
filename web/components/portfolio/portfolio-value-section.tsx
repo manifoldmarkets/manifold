@@ -329,7 +329,7 @@ function PortfolioValueSkeleton(props: {
             <Col className="w-full">
               <Row className="w-full justify-between">
                 <Row className="w-full justify-between gap-2 sm:justify-start">
-                  <div
+                  <Col
                     className={clsx(
                       'group cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
@@ -338,29 +338,26 @@ function PortfolioValueSkeleton(props: {
                     )}
                     onClick={() => togglePortfolioFocus('all')}
                   >
-                    <span className="whitespace-nowrap">
-                      <CoinNumber
-                        amount={graphValues.net ?? portfolioValues?.net}
-                        className={clsx(
-                          'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
-                        )}
-                        isInline
-                        coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                      />
-                      <span
-                        className={clsx(
-                          'text-ink-600 group-hover:text-ink-700 text-sm transition-all sm:text-base'
-                        )}
-                      >
-                        {' '}
-                        net worth
-                      </span>
-                    </span>
-                  </div>
+                    <CoinNumber
+                      amount={graphValues.net ?? portfolioValues?.net}
+                      className={clsx(
+                        'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
+                      )}
+                      isInline
+                      coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                    />
+                    <div
+                      className={clsx(
+                        'text-ink-600 group-hover:text-ink-700 -mt-1 text-sm transition-all sm:text-base'
+                      )}
+                    >
+                      net worth
+                    </div>
+                  </Col>
                   {!hideAddFundsButton && (
                     <AddFundsButton
                       userId={userId}
-                      className=" self-center whitespace-nowrap"
+                      className="mt-1 h-fit whitespace-nowrap sm:mt-2"
                     />
                   )}
                 </Row>
@@ -410,10 +407,10 @@ function PortfolioValueSkeleton(props: {
                   </Row>
                 )}
               </Row>
-              <BalanceWidget
+              {/* <BalanceWidget
                 balanceChanges={balanceChanges}
                 className="w-fit"
-              />
+              /> */}
             </Col>
           )}
           {graphMode == 'profit' && (
@@ -434,7 +431,7 @@ function PortfolioValueSkeleton(props: {
         <SizedContainer
           className={clsx(
             className,
-            'pr-11',
+            'mt-2 pr-11',
             size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
           )}
         >
