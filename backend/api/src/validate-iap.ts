@@ -7,6 +7,7 @@ import { IapTransaction, PurchaseData } from 'common/iap'
 import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 const bodySchema = z
   .object({
@@ -109,13 +110,8 @@ export const validateiap = authEndpoint(async (req, auth) => {
     description: `Deposit M$${payout} from BANK for mana purchase`,
   } as Omit<ManaPurchaseTxn, 'id' | 'createdTime'>
 
-  await firestore.runTransaction(async (transaction) => {
-    const result = await runTxnFromBank(transaction, manaPurchaseTxn)
-    if (result.status == 'error') {
-      throw new APIError(500, result.message ?? 'An unknown error occurred.')
-    }
-    return result
-  })
+  const pg = createSupabaseDirectClient()
+  await pg.tx(async (tx) => runTxnFromBank(tx, manaPurchaseTxn))
 
   log('user', userId, 'paid M$', payout)
 

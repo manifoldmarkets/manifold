@@ -10,6 +10,7 @@ import { STARTING_BALANCE } from 'common/economy'
 import { getUser } from 'shared/utils'
 import { User } from 'common/user'
 import { charities } from 'common/charity'
+import { convertTxn } from 'common/supabase/txns'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -48,14 +49,14 @@ const getTxnBalanceChanges = async (
 
   const txns = await pg.map(
     `
-    select data
+    select *
     from txns
     where created_time > millis_to_ts($1)
       and (to_id = $2 or from_id = $2)
     order by created_time asc;
     `,
     [after, userId],
-    (row) => row.data as Txn
+    convertTxn
   )
   const contractIds = filterDefined(
     txns.map((txn) => getContractIdFromTxn(txn))

@@ -1,15 +1,15 @@
 create table if not exists
   txns (
-    id text not null primary key,
+    id text not null primary key default random_alphanumeric (8),
     data jsonb not null,
-    created_time timestamptz default now(),
-    from_id text,
-    from_type text,
-    to_id text,
-    to_type text,
-    amount numeric,
-    category text,
-    fs_updated_time timestamp not null
+    created_time timestamptz not null default now(),
+    from_id text not null,
+    from_type text not null,
+    to_id text not null,
+    to_type text not null,
+    amount numeric not null,
+    category text not null,
+    fs_updated_time timestamp
   );
 
 alter table txns enable row level security;
@@ -24,8 +24,6 @@ create
 or replace function txns_populate_cols () returns trigger language plpgsql as $$
 begin
     if new.data is not null then
-    new.created_time :=
-        case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
     new.from_id := (new.data ->> 'fromId');
     new.from_type := (new.data ->> 'fromType');
     new.to_id := (new.data ->> 'toId');

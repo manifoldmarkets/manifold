@@ -4,7 +4,7 @@ export { SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
 import { metrics, log, isProd } from '../utils'
-import { IDatabase } from 'pg-promise'
+import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
 import { HOUR_MS } from 'common/util/time'
 import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
@@ -33,7 +33,8 @@ export const pgp = pgPromise({
 pgp.pg.types.setTypeParser(20, BigInt) // Type Id 20 = BIGINT | BIGSERIAL
 pgp.pg.types.setTypeParser(1700, parseFloat) // Type Id 1700 = NUMERIC
 
-export type SupabaseDirectClient = ReturnType<typeof createSupabaseDirectClient>
+export type SupabaseTransaction = ITask<{}>
+export type SupabaseDirectClient = IDatabase<{}, IClient> | SupabaseTransaction
 
 export function getInstanceId() {
   return (
