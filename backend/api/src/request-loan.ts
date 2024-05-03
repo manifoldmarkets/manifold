@@ -1,6 +1,5 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
-  type SupabaseDirectClient,
   createSupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
@@ -14,7 +13,7 @@ import { groupBy, uniq } from 'lodash'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as admin from 'firebase-admin'
 import * as dayjs from 'dayjs'
-import { LoanTxn, Txn } from 'common/txn'
+import { LoanTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {

@@ -1,5 +1,5 @@
 import { type Txn } from 'common/txn'
-import { type Row, convertSQLtoTS, tsToMillis } from './utils'
+import { type Row, tsToMillis } from './utils'
 
 export const convertTxn = (row: Row<'txns'>): Txn => ({
   id: row.id,
