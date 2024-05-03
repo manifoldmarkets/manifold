@@ -16,7 +16,7 @@ import {
   ZoomParams,
 } from '../charts/helpers'
 import { ZoomSlider } from '../charts/zoom-slider'
-import { PortfolioMode } from './portfolio-value-graph'
+import { PortfolioMode, PortfolioTooltip } from './portfolio-value-graph'
 import {
   GraphValueType,
   PortfolioHoveredGraphType,
@@ -202,28 +202,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         zoomParams={zoomParams}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
-        Tooltip={(props) => {
-          // eslint-disable-next-line react/prop-types
-          const date = xScale.invert(props.x)
-          const d = dayjs(date)
-          return (
-            <Col className="text-xs sm:text-sm">
-              {ttParams && ttParams.prev && (
-                <span className="text-ink-900">
-                  <CoinNumber
-                    amount={ttParams.prev.y}
-                    isInline
-                    className="font-semibold"
-                  />{' '}
-                  <span>net</span>
-                </span>
-              )}
-              <div className="text-2xs text-ink-600 font-normal sm:text-xs">
-                {d.format('MMM/D/YY')} {d.format('h:mm A')}
-              </div>
-            </Col>
-          )
-        }}
+        // eslint-disable-next-line react/prop-types
+        Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
         noGridlines
         className="group"
         pointerMode={pointerMode}

@@ -362,10 +362,6 @@ function PortfolioValueSkeleton(props: {
                   )}
                 </Row>
               </Row>
-              <BalanceWidget
-                balanceChanges={balanceChanges}
-                className="w-fit"
-              />
               <Row className="mt-2 gap-2">
                 <PortfolioGraphNumber
                   numberType={'investment'}
@@ -401,6 +397,10 @@ function PortfolioValueSkeleton(props: {
                   </Row>
                 )}
               </Row>
+              {/* <BalanceWidget
+                balanceChanges={balanceChanges}
+                className="mt-1 w-fit"
+              /> */}
             </Col>
           )}
           {graphMode == 'profit' && (
