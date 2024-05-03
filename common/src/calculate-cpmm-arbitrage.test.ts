@@ -9,7 +9,7 @@ import {
   calculateCpmmMultiSumsToOneSale,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { getFeeTotal } from './fees'
+import { getFeeTotal, getTakerFee } from './fees'
 import { getMultiNumericAnswerBucketRanges } from './multi-numeric'
 import { getNewSellBetInfo } from './sell-bet'
 import { Bet } from './bet'
@@ -79,8 +79,10 @@ describe('calculateCpmmMultiArbitrageBet', () => {
       expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
     }
   })
+})
 
-  it('should conserve shares after sell', async () => {
+describe('calculateCpmmMultiSumsToOneSale', () => {
+  it('should conserve shares after sell YES', async () => {
     const answers: Answer[] = [
       getAnswer(1, 0.5),
       getAnswer(2, 0.3),
@@ -113,6 +115,7 @@ describe('calculateCpmmMultiArbitrageBet', () => {
     const sellFees =
       getFeeTotal(newBetResult.totalFees) +
       sumBy(otherBetResults, (b) => getFeeTotal(b.totalFees))
+    console.log('amount', amount, 'sellFees', sellFees)
     for (let i = 0; i < answers.length; i++) {
       finalAnswerYesShares[i] += sellFees - amount
     }
@@ -120,6 +123,110 @@ describe('calculateCpmmMultiArbitrageBet', () => {
     for (let i = 0; i < answers.length; i++) {
       expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
     }
+  })
+
+  it('should conserve shares after sell NO', async () => {
+    const answers: Answer[] = [
+      getAnswer(1, 0.5),
+      getAnswer(2, 0.3),
+      getAnswer(3, 0.2),
+    ]
+
+    const sharesToSell = 10
+
+    const initialYesShares = convertAnswerPoolsToYesPools(answers)
+    for (let i = 1; i < answers.length; i++) {
+      initialYesShares[i] += sharesToSell
+    }
+
+    const result = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      sharesToSell,
+      'NO',
+      undefined,
+      [],
+      {}
+    )
+    const { newBetResult, otherBetResults } = result
+
+    const finalPools = [
+      newBetResult.cpmmState.pool,
+      ...otherBetResults.map((b) => b.cpmmState.pool),
+    ].map(({ YES, NO }) => ({ poolYes: YES, poolNo: NO }))
+    const finalAnswerYesShares = convertAnswerPoolsToYesPools(finalPools)
+
+    const amount = sumBy(newBetResult.takers, (t) => t.amount)
+    const sellFees =
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (b) => getFeeTotal(b.totalFees))
+    for (let i = 0; i < answers.length; i++) {
+      finalAnswerYesShares[i] += sellFees - amount
+    }
+
+    for (let i = 0; i < answers.length; i++) {
+      expect(initialYesShares[i]).toBeCloseTo(finalAnswerYesShares[i])
+    }
+  })
+
+  it('should charge sell fee on shares bought YES', async () => {
+    const answers: Answer[] = [
+      getAnswer(1, 0.5),
+      getAnswer(2, 0.3),
+      getAnswer(3, 0.2),
+    ]
+
+    const sharesToSell = 10
+
+    const initialYesShares = convertAnswerPoolsToYesPools(answers)
+    initialYesShares[0] += sharesToSell
+
+    const result = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      sharesToSell,
+      'YES',
+      undefined,
+      [],
+      {}
+    )
+    const { newBetResult, otherBetResults, buyAmount } = result
+    const sellFee =
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (b) => getFeeTotal(b.totalFees))
+
+    const expectedFee = getTakerFee(sharesToSell, buyAmount / sharesToSell)
+    expect(sellFee).toBeCloseTo(expectedFee)
+  })
+
+  it('should charge sell fee on shares bought NO', async () => {
+    const answers: Answer[] = [
+      getAnswer(1, 0.5),
+      getAnswer(2, 0.3),
+      getAnswer(3, 0.2),
+    ]
+
+    const sharesToSell = 10
+
+    const initialYesShares = convertAnswerPoolsToYesPools(answers)
+    initialYesShares[0] += sharesToSell
+
+    const result = calculateCpmmMultiSumsToOneSale(
+      answers,
+      answers[0],
+      sharesToSell,
+      'NO',
+      undefined,
+      [],
+      {}
+    )
+    const { newBetResult, otherBetResults, buyAmount } = result
+    const sellFee =
+      getFeeTotal(newBetResult.totalFees) +
+      sumBy(otherBetResults, (b) => getFeeTotal(b.totalFees))
+
+    const expectedFee = getTakerFee(sharesToSell, buyAmount / sharesToSell)
+    expect(sellFee).toBeCloseTo(expectedFee)
   })
 })
 

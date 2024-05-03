@@ -8,7 +8,7 @@ import {
 import { binarySearch } from './util/algos'
 import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
-import { Fees, noFees, sumAllFees } from './fees'
+import { CREATOR_FEE_FRAC, Fees, getTakerFee, noFees, sumAllFees } from './fees'
 import { addObjects } from './util/object'
 
 const DEBUG = false
@@ -807,7 +807,8 @@ export function calculateCpmmMultiArbitrageSellNo(
           noSharesInOtherAnswers,
           'NO',
           unfilledBetsByAnswer[id] ?? [],
-          balanceByUserId
+          balanceByUserId,
+          true
         )
     )
 
@@ -829,7 +830,9 @@ export function calculateCpmmMultiArbitrageSellNo(
           noAmount,
           undefined,
           unfilledBetsByAnswer[answer.id] ?? [],
-          balanceByUserId
+          balanceByUserId,
+          undefined,
+          true
         ),
         answer,
       }
@@ -857,7 +860,8 @@ export function calculateCpmmMultiArbitrageSellNo(
       noSharesInOtherAnswers,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const yesBetResult = computeFills(
@@ -878,7 +882,9 @@ export function calculateCpmmMultiArbitrageSellNo(
         noAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -894,18 +900,31 @@ export function calculateCpmmMultiArbitrageSellNo(
       amount: -sumBy(noBetResult.takers, 'amount'),
       shares: -sumBy(noBetResult.takers, 'shares'),
       timestamp: now,
-      fees: noBetResult.totalFees,
+      fees: noFees,
     }
     noBetResult.takers.push(redemptionFill)
   }
 
+  const arbitrageFee =
+    noSharesInOtherAnswers === 0
+      ? 0
+      : getTakerFee(
+          noSharesInOtherAnswers,
+          netNoAmount / noSharesInOtherAnswers
+        )
+  const arbitrageFees = {
+    platformFee: arbitrageFee * (1 - CREATOR_FEE_FRAC),
+    creatorFee: arbitrageFee * CREATOR_FEE_FRAC,
+    liquidityFee: 0,
+  }
   yesBetResult.takers.push({
     matchedBetId: null,
-    amount: netNoAmount,
+    amount: netNoAmount + arbitrageFee,
     shares: noSharesInOtherAnswers,
     timestamp: now,
-    fees: noFees,
+    fees: arbitrageFees,
   })
+  yesBetResult.totalFees = addObjects(yesBetResult.totalFees, arbitrageFees)
 
   if (DEBUG) {
     const endTime = Date.now()
@@ -986,7 +1005,8 @@ export function calculateCpmmMultiArbitrageSellYes(
           yesSharesInOtherAnswers,
           'YES',
           unfilledBetsByAnswer[id] ?? [],
-          balanceByUserId
+          balanceByUserId,
+          true
         )
     )
 
@@ -1008,7 +1028,9 @@ export function calculateCpmmMultiArbitrageSellYes(
           yesAmount,
           undefined,
           unfilledBetsByAnswer[answer.id] ?? [],
-          balanceByUserId
+          balanceByUserId,
+          undefined,
+          true
         ),
         answer,
       }
@@ -1036,7 +1058,8 @@ export function calculateCpmmMultiArbitrageSellYes(
       yesSharesInOtherAnswers,
       'YES',
       unfilledBetsByAnswer[id] ?? [],
-      balanceByUserId
+      balanceByUserId,
+      true
     )
   )
   const noBetResult = computeFills(
@@ -1057,7 +1080,9 @@ export function calculateCpmmMultiArbitrageSellYes(
         yesAmount,
         undefined,
         unfilledBetsByAnswer[answer.id] ?? [],
-        balanceByUserId
+        balanceByUserId,
+        undefined,
+        true
       ),
       answer,
     }
@@ -1072,18 +1097,31 @@ export function calculateCpmmMultiArbitrageSellYes(
       amount: -sumBy(yesBetResult.takers, 'amount'),
       shares: -sumBy(yesBetResult.takers, 'shares'),
       timestamp: now,
-      fees: yesBetResult.totalFees,
+      fees: noFees,
     }
     yesBetResult.takers.push(redemptionFill)
   }
 
+  const arbitrageFee =
+    yesSharesInOtherAnswers === 0
+      ? 0
+      : getTakerFee(
+          yesSharesInOtherAnswers,
+          totalYesAmount / yesSharesInOtherAnswers
+        )
+  const arbitrageFees = {
+    platformFee: arbitrageFee * (1 - CREATOR_FEE_FRAC),
+    creatorFee: arbitrageFee * CREATOR_FEE_FRAC,
+    liquidityFee: 0,
+  }
   noBetResult.takers.push({
     matchedBetId: null,
-    amount: totalYesAmount,
+    amount: totalYesAmount + arbitrageFee,
     shares: yesSharesInOtherAnswers,
     timestamp: now,
-    fees: noFees,
+    fees: arbitrageFees,
   })
+  noBetResult.totalFees = addObjects(noBetResult.totalFees, arbitrageFees)
 
   if (DEBUG) {
     const endTime = Date.now()
@@ -1126,7 +1164,10 @@ export function calculateCpmmMultiArbitrageSellYes(
     )
   }
 
-  const newBetResult = { ...noBetResult, outcome: 'NO' }
+  const newBetResult = {
+    ...noBetResult,
+    outcome: 'NO',
+  }
   const otherBetResults = yesBetResults.map((r) => ({ ...r, outcome: 'YES' }))
   return { newBetResult, otherBetResults }
 }
