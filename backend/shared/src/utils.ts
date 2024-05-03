@@ -294,7 +294,6 @@ export const getAllPrivateUsers = async () => {
 }
 
 export const getPrivateUsersNotSent = async (
-  type: 'weeklyTrendingEmailSent' | 'weeklyPortfolioUpdateEmailSent',
   preference: 'trending_markets' | 'profit_loss_updates',
   limit: number,
   pg: SupabaseDirectClient
@@ -302,7 +301,11 @@ export const getPrivateUsersNotSent = async (
   return await pg.map(
     `select data from private_users 
          where (data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
-         and data->>'${type}' = 'false'
+         and ${
+           preference === 'trending_markets'
+             ? 'weekly_trending_email_sent'
+             : 'weekly_portfolio_email_sent'
+         } = false
          and (data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
          and data->>'email' is not null
          limit $1`,

@@ -12,7 +12,6 @@ const EMAILS_PER_BATCH = 1000
 export async function sendWeeklyMarketsEmails() {
   const pg = createSupabaseDirectClient()
   const privateUsers = await getPrivateUsersNotSent(
-    'weeklyTrendingEmailSent',
     'trending_markets',
     EMAILS_PER_BATCH,
     pg
