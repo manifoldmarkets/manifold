@@ -62,6 +62,8 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
 
+  const isYou = user.id === signedInUser?.id
+
   const [metricsByContract, setMetricsByContract] = usePersistentInMemoryState<
     Dictionary<ContractMetric> | undefined
   >(undefined, `user-contract-metrics-${user.id}`)
@@ -183,7 +185,7 @@ export function UserBetsTable(props: { user: User; isPolitics?: boolean }) {
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
         <Col className="w-full gap-2">
           <Input
-            placeholder="Search your trades"
+            placeholder={isYou ? 'Search your trades' : 'Search trades'}
             className={'w-full min-w-[30px]'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
