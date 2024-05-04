@@ -127,7 +127,7 @@ const payUserLoan = async (
     .toISOString()
 
   // make sure we don't already have a txn for this user/questType
-  const count = await tx.one<number>(
+  const { count } = await tx.one(
     `select count(*) from txns
     where to_id = $1
     and category = 'LOAN'
