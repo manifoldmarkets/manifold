@@ -32,7 +32,7 @@ or replace function get_user_topic_interests (p_user_id text, limit_rows int) re
     )
     select
         key as group_id,
-        avg(coalesce((value->'conversionScore')::numeric), 0) as avg_conversion_score,
+        avg(coalesce((value->>'conversionScore')::numeric, 0.0)) as avg_conversion_score,
         count(*) as groups_count
     from key_value_pairs
     group by group_id
