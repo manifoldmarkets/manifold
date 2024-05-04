@@ -695,7 +695,7 @@ or replace function profit_leaderboard (limit_n int) returns table (
   username text,
   avatar_url text
 ) language sql stable parallel safe as $$
-  select p.user_id, p.balance + p.spice_balance + p.investment_value - p.total_deposits as profit, u.username, u.name, u.data->>'avatarUrl' as avatar_url
+  select p.user_id, p.balance + p.spice_balance + p.investment_value - p.total_deposits as profit, u.name, u.username, u.data->>'avatarUrl' as avatar_url
   from user_portfolio_history_latest p join users u on p.user_id = u.id
   order by profit desc
   limit limit_n
