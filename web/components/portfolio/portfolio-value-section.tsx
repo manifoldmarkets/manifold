@@ -165,6 +165,7 @@ export const PortfolioValueSection = memo(
           portfolioFocus={portfolioFocus}
           setPortfolioFocus={onSetPortfolioFocus}
           graphValues={graphValues}
+          setPortfolioHoveredGraph={setPortfolioHoveredGraph}
         />
       )
     }
@@ -192,6 +193,7 @@ export const PortfolioValueSection = memo(
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={onSetPortfolioFocus}
         portfolioHoveredGraph={portfolioHoveredGraph}
+        setPortfolioHoveredGraph={setPortfolioHoveredGraph}
         graphElement={(width, height) => (
           <PortfolioGraph
             mode={graphMode}
@@ -247,6 +249,7 @@ function PortfolioValueSkeleton(props: {
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
   portfolioHoveredGraph?: PortfolioHoveredGraphType
+  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
 }) {
   const {
     graphMode,
@@ -271,6 +274,7 @@ function PortfolioValueSkeleton(props: {
     portfolio,
     user,
     portfolioHoveredGraph,
+    setPortfolioHoveredGraph,
   } = props
   const profitLabel = onlyShowProfit
     ? {
@@ -368,6 +372,7 @@ function PortfolioValueSkeleton(props: {
                   descriptor="invested"
                   portfolioFocus={portfolioFocus}
                   portfolioHoveredGraph={portfolioHoveredGraph}
+                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                   displayedAmount={
                     graphValues.invested ?? portfolioValues?.invested
                   }
@@ -379,6 +384,7 @@ function PortfolioValueSkeleton(props: {
                   descriptor="balance"
                   portfolioFocus={portfolioFocus}
                   portfolioHoveredGraph={portfolioHoveredGraph}
+                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                   displayedAmount={
                     graphValues.balance ?? portfolioValues?.balance
                   }
@@ -397,10 +403,6 @@ function PortfolioValueSkeleton(props: {
                   </Row>
                 )}
               </Row>
-              {/* <BalanceWidget
-                balanceChanges={balanceChanges}
-                className="mt-1 w-fit"
-              /> */}
             </Col>
           )}
           {graphMode == 'profit' && (
@@ -427,19 +429,16 @@ function PortfolioValueSkeleton(props: {
         >
           {graphElement}
         </SizedContainer>
-        {
-          // placement === 'bottom' &&
-          !hideSwitcher && (
-            <TimeRangePicker
-              currentTimePeriod={currentTimePeriod}
-              setCurrentTimePeriod={setCurrentTimePeriod}
-              color={switcherColor}
-              disabled={disabled}
-              className="bg-canvas-50 mt-8 border-0"
-              toggleClassName="grow justify-center"
-            />
-          )
-        }
+        {!hideSwitcher && (
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setCurrentTimePeriod}
+            color={switcherColor}
+            disabled={disabled}
+            className="bg-canvas-50 mt-8 border-0"
+            toggleClassName="grow justify-center"
+          />
+        )}
       </Col>
     </Col>
   )

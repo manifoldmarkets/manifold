@@ -9,6 +9,7 @@ export function PortfolioGraphNumber(props: {
   descriptor: string
   portfolioFocus: PortfolioMode
   portfolioHoveredGraph: PortfolioHoveredGraphType
+  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
   displayedAmount: number | undefined
   color: string
   onClick: () => void
@@ -19,6 +20,7 @@ export function PortfolioGraphNumber(props: {
     numberType,
     descriptor,
     portfolioHoveredGraph,
+    setPortfolioHoveredGraph,
     displayedAmount,
     color,
     onClick,
@@ -31,13 +33,15 @@ export function PortfolioGraphNumber(props: {
         portfolioFocus == numberType || portfolioHoveredGraph == numberType
           ? 'opacity-100'
           : portfolioFocus !== 'all' && portfolioFocus !== numberType
-          ? 'opacity-50 hover:opacity-100'
-          : 'opacity-[0.85] hover:opacity-100 ',
+          ? 'opacity-50 hover:opacity-[0.85]'
+          : 'opacity-[0.85]',
 
         className
       )}
       style={{ backgroundColor: color }}
       onClick={onClick}
+      onMouseEnter={() => setPortfolioHoveredGraph(numberType)}
+      onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
         <CoinNumber
