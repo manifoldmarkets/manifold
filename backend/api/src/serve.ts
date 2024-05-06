@@ -20,10 +20,11 @@ const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
   : // No explicit credentials needed for deployed service.
     undefined
-loadSecretsToEnv(credentials).then(() => {
-  initCaches()
-  const PORT = process.env.PORT ?? 8088
-  app.listen(PORT, () => {
-    log.info(`Serving API on port ${PORT}.`)
+loadSecretsToEnv(credentials).then(() =>
+  initCaches().then(() => {
+    const PORT = process.env.PORT ?? 8088
+    app.listen(PORT, () => {
+      log.info(`Serving API on port ${PORT}.`)
+    })
   })
-})
+)
