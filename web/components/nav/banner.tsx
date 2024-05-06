@@ -60,8 +60,8 @@ export function PivotBanner(props: { hideBanner: () => void }) {
           strokeWidth={1}
         />
         <div>
-          <span className="font-semibold">Coming soon!</span> Cash prizes and other
-          changes. Read more
+          <span className="font-semibold">Coming soon!</span> Cash prizes and
+          other changes. Read more
         </div>
       </Row>
     </Banner>
