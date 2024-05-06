@@ -19,7 +19,7 @@ import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
-
+export const MIN_IMPORTANCE_SCORE = 0.05
 export async function calculateImportanceScore(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
@@ -40,10 +40,10 @@ export async function calculateImportanceScore(
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
     `select data, conversion_score, importance_score, freshness_score from contracts
-            where importance_score > 0.05
-            or freshness_score > 0.05
+            where importance_score > $1
+            or freshness_score > $1
             `,
-    [],
+    [MIN_IMPORTANCE_SCORE],
     (row) => convertContract(row)
   )
 
