@@ -1,14 +1,12 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { map, orderBy, range, sum, uniq } from 'lodash'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { MIN_IMPORTANCE_SCORE } from 'shared/importance-score'
 
 const MARKETS_PER_GROUP = 50
 
-export async function calculateGroupImportanceScore(
-  pg: SupabaseDirectClient,
-  readOnly = false
-) {
+export async function calculateGroupImportanceScore(readOnly = false) {
+  const pg = createSupabaseDirectClient()
   const importantContracts = await pg.map(
     `select c.importance_score, gc.group_id 
             from contracts c

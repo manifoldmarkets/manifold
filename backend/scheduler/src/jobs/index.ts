@@ -19,6 +19,7 @@ import {
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
+import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 
 export function createJobs() {
   return [
@@ -56,15 +57,20 @@ export function createJobs() {
       updateGroupMetricsCore
     ),
     createJob(
-      'update-user-metrics',
-      '0 * * * * *', // every minute
-      updateUserMetricsCore,
-      10 * MINUTE_MS // The caches take time to build
+      'group-importance-score',
+      '0 6 * * * *', // on the 6th minute of every hour
+      () => calculateGroupImportanceScore()
     ),
     createJob(
       'update-creator-metrics',
       `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
       updateCreatorMetricsCore
+    ),
+    createJob(
+      'update-user-metrics',
+      '0 * * * * *', // every minute
+      updateUserMetricsCore,
+      10 * MINUTE_MS // The caches take time to build
     ),
     // Daily jobs:
     createJob(
