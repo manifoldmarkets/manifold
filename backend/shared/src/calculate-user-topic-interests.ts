@@ -4,7 +4,7 @@ import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet } from 'common/bet'
-import { getFeeTotal, getTakerFee } from 'common/fees'
+import { FEE_START_TIME, getFeeTotal, getTakerFee } from 'common/fees'
 
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
@@ -37,7 +37,7 @@ export async function calculateUserTopicInterests(startTime?: number) {
     if (!userIdsToGroupIdInteractionWeights[userId][groupId]) {
       userIdsToGroupIdInteractionWeights[userId][groupId] = 0
     }
-    userIdsToGroupIdInteractionWeights[userId][groupId] += weight
+    userIdsToGroupIdInteractionWeights[userId][groupId] += Math.abs(weight)
   }
 
   for (const [userId, groupIdsAndInteractions] of userGroupIdsToInteractions) {
@@ -76,14 +76,17 @@ export async function calculateUserTopicInterests(startTime?: number) {
         where cb.created_time > $1
           and cb.created_time < $2
           and is_redemption = false
+          and (amount != 0 or cb.data->>'orderAmount' != '0')
         `,
     [start, end],
     (row) => {
       const bet = row.data as Bet
-      const { amount, outcome, fees, limitProb, orderAmount } = bet
-      if (limitProb) {
-        // Simulate fees if a limit bet
-        const prob = Math.abs(limitProb ?? amount / bet.shares)
+      const { amount, outcome, createdTime, fees, limitProb, orderAmount } = bet
+      // Simulate fees if a limit bet or created before fees were introduced
+      if (limitProb || createdTime < FEE_START_TIME) {
+        const prob =
+          bet.shares === 0 ? limitProb : Math.abs(amount / bet.shares)
+        if (prob === undefined) return
         const probForOutcome = outcome === 'YES' ? prob : 1 - prob
         const probForSale = amount < 0 ? 1 - probForOutcome : probForOutcome
         const shares = Math.abs((orderAmount ?? amount) / probForSale)
@@ -129,6 +132,18 @@ export async function calculateUserTopicInterests(startTime?: number) {
         ])
       ) as groupIdsToConversionScore
 
+      if (
+        Object.keys(groupIdsToConversionScore).length === 0 ||
+        Object.values(groupIdsToConversionScore).some(
+          (v) =>
+            v.conversionScore === null ||
+            v.conversionScore === undefined ||
+            isNaN(v.conversionScore) ||
+            v.conversionScore < 0
+        )
+      ) {
+        log.error('Skipping conversion score writes for user: ' + userId)
+      }
       await pg.none(
         `insert into user_topic_interests (user_id, group_ids_to_activity)
            values ($1, $2)`,
