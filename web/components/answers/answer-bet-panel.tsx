@@ -238,7 +238,7 @@ export function AnswerCpmmBetPanel(props: {
   } = props
 
   return (
-    <Col className="rounded-2xl backdrop-blur-sm">
+    <Col className="bg-canvas-0 rounded-2xl">
       <BuyPanel
         contract={contract}
         multiProps={{
