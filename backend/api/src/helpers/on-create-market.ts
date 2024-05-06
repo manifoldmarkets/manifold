@@ -29,7 +29,7 @@ export const onCreateMarket = async (
   firestore: admin.firestore.Firestore,
   triggerEventId?: string
 ) => {
-  const { creatorId, question, loverUserId1, creatorUsername } = contract
+  const { creatorId, question, creatorUsername } = contract
   const eventId = triggerEventId ?? contract.id + '-on-create'
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
@@ -89,14 +89,12 @@ export const onCreateMarket = async (
     )
   }
 
-  if (!loverUserId1) {
-    await uploadAndSetCoverImage(
-      question,
-      contract.id,
-      creatorUsername,
-      firestore
-    )
-  }
+  await uploadAndSetCoverImage(
+    question,
+    contract.id,
+    creatorUsername,
+    firestore
+  )
 }
 
 const uploadAndSetCoverImage = async (
@@ -109,10 +107,9 @@ const uploadAndSetCoverImage = async (
   if (!dalleImage) return
   // first save the url to the contract
   const snapshot = await firestore.collection('contracts').doc(contractId).get()
-  await snapshot.ref.update({ coverImageUrl: dalleImage })
   console.log('generated dalle image: ' + dalleImage)
 
-  // try to upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
+  // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
   const coverImageUrl = await uploadToStorage(
     dalleImage,
     creatorUsername
@@ -136,7 +133,6 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
     .toBuffer()
 
   const bucket = admin.storage().bucket()
-
   await bucket.makePublic()
 
   const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
