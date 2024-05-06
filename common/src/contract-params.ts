@@ -25,7 +25,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, minBy, orderBy, sortBy } from 'lodash'
+import { groupBy, mapValues, minBy, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
@@ -39,8 +39,6 @@ export async function getContractParams(
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
   const isMulti = contract.mechanism === 'cpmm-multi-1'
-  const isBinaryDpm =
-    contract.outcomeType === 'BINARY' && contract.mechanism === 'dpm-2'
   const isNumber = contract.outcomeType === 'NUMBER'
   const numberContractBetCount = async () =>
     unauthedApi('unique-bet-group-count', {
@@ -106,20 +104,18 @@ export async function getContractParams(
     getDashboardsToDisplayOnContract(contract.slug, db),
   ])
 
-  const chartPoints =
-    isCpmm1 || isBinaryDpm
-      ? getSingleBetPoints(allBetPoints, contract)
-      : isMulti
-      ? isNumber
-        ? getFilledInMultiNumericBetPoints(
-            groupBy(allBetPoints, 'answerId'),
-            contract
-          )
-        : getMultiBetPoints(allBetPoints, contract)
-      : []
+  const multiPoints = isMulti
+    ? isNumber
+      ? getFilledInMultiNumericBetPoints(
+          groupBy(allBetPoints, 'answerId'),
+          contract
+        )
+      : getMultiBetPoints(allBetPoints, contract)
+    : {}
+  const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints =
-    isCpmm1 && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
+    !isMulti && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
   return {
@@ -129,10 +125,11 @@ export async function getContractParams(
       contract,
       historyData: {
         bets: betsToPass,
-        points: chartPoints,
+        points: [], // for backwards compat. TODO: remove
       },
       betReplies,
       pointsString,
+      multiPointsString,
       comments,
       userPositionsByOutcome,
       totalPositions,

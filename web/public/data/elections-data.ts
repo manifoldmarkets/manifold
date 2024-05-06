@@ -1,12 +1,6 @@
-import { Bet } from 'common/bet'
-import {
-  MultiPoints,
-  MultiSerializedPoints,
-  SerializedPoint,
-} from 'common/chart'
+import { MultiPoints } from 'common/chart'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
 import { PolicyContractType } from './policy-data'
@@ -257,14 +251,6 @@ export type ElectionsPageProps = {
   headlines: Headline[]
   trendingDashboard: NewsDashboardPageProps
   partyGraphData: { partyPoints: MultiPoints; afterTime: number }
-}
-
-export type ChartParams = {
-  historyData: {
-    bets: Bet[]
-    points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
-  }
-  chartAnnotations: ChartAnnotation[]
 }
 
 export type SuccesNewsDashboardPageProps = {

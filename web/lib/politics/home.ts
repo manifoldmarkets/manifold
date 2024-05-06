@@ -15,8 +15,8 @@ import { api } from 'web/lib/firebase/api'
 import { getDashboardProps } from 'web/lib/politics/news-dashboard'
 import { getBetPoints } from 'common/supabase/bets'
 import { getMultiBetPoints } from 'common/contract-params'
-import { unserializeMultiPoints } from 'common/chart'
 import { PolicyContractType, PolicyData } from 'web/public/data/policy-data'
+import { mapValues } from 'lodash'
 
 export async function getElectionsPageProps() {
   const adminDb = await initSupabaseAdmin()
@@ -87,7 +87,9 @@ export async function getElectionsPageProps() {
       allBetPoints,
       electionPartyContract as CPMMMultiContract
     )
-    partyPoints = unserializeMultiPoints(serializedMultiPoints)
+    partyPoints = mapValues(serializedMultiPoints, (points) =>
+      points.map(([x, y]) => ({ x, y } as const))
+    )
     // weird hack to get rid of points that I can't figure out how it's getting there
     Object.values(partyPoints).forEach((points) => {
       points.shift()

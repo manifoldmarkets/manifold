@@ -1,11 +1,7 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { Answer, DpmAnswer } from 'common/answer'
-import {
-  MultiSerializedPoints,
-  unserializeMultiPoints,
-  unserializePoints,
-} from 'common/chart'
+import { unserializeBase64Multi } from 'common/chart'
 import {
   ContractParams,
   MaybeAuthedContractParams,
@@ -89,6 +85,7 @@ import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
 import { Title } from 'web/components/widgets/title'
+import { base64toPoints } from 'common/edge/og'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -136,13 +133,9 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, historyData, pointsString } = props.contractParams
+  const { contract, pointsString } = props.contractParams
 
-  const points =
-    contract.outcomeType !== 'MULTIPLE_CHOICE' &&
-    contract.outcomeType !== 'NUMBER'
-      ? unserializePoints(historyData.points as any)
-      : []
+  const points = pointsString ? base64toPoints(pointsString) : []
 
   const inIframe = useIsIframe()
   if (!contract) {
@@ -167,6 +160,8 @@ export function ContractPageContent(props: ContractParams) {
     totalPositions,
     relatedContracts,
     historyData,
+    pointsString,
+    multiPointsString,
     chartAnnotations,
     relatedContractsByTopicSlug,
     topics,
@@ -269,15 +264,15 @@ export function ContractPageContent(props: ContractParams) {
       contract.outcomeType === 'FREE_RESPONSE' ||
       contract.outcomeType === 'NUMBER'
     ) {
-      const data = unserializeMultiPoints(
-        historyData.points as MultiSerializedPoints
-      )
+      const data = multiPointsString
+        ? unserializeBase64Multi(multiPointsString)
+        : []
       const newData =
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
       return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
     } else {
-      const points = unserializePoints(historyData.points as any)
+      const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBets.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
@@ -285,7 +280,7 @@ export function ContractPageContent(props: ContractParams) {
       }))
       return [...points, ...newPoints]
     }
-  }, [historyData.points, stringifiedNewBets])
+  }, [pointsString, stringifiedNewBets])
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
