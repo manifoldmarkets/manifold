@@ -5,6 +5,7 @@ const TAKER_FEE_CONSTANT = 0.07
 export const getTakerFee = (shares: number, prob: number) => {
   return TAKER_FEE_CONSTANT * prob * (1 - prob) * shares
 }
+export const FEE_START_TIME = 1713292320000
 
 // Creators take a fraction of the taker fee.
 export const CREATOR_FEE_FRAC = 0.5
