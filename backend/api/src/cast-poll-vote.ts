@@ -5,6 +5,7 @@ import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
 import { PollContract } from 'common/contract'
 import { createVotedOnPollNotification } from 'shared/create-notification'
+import { getUser } from 'shared/utils'
 
 const schema = z
   .object({
@@ -23,6 +24,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   const contract = contractSnap.data() as PollContract
   if (contract.outcomeType !== 'POLL') {
     throw new APIError(403, 'This contract is not a poll')
+  }
+
+  const user = await getUser(auth.uid)
+  if (user?.isBannedFromPosting) {
+    throw new APIError(403, 'You are banned and cannot vote')
   }
 
   const options: PollOption[] = contract.options
