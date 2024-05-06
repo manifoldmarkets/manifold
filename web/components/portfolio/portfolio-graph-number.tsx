@@ -40,7 +40,11 @@ export function PortfolioGraphNumber(props: {
       )}
       style={{ backgroundColor: color }}
       onClick={onClick}
-      onMouseEnter={() => setPortfolioHoveredGraph(numberType)}
+      onMouseEnter={() => {
+        if (portfolioFocus == 'all') {
+          setPortfolioHoveredGraph(numberType)
+        }
+      }}
       onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
