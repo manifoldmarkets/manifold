@@ -60,7 +60,7 @@ export const getContractsDirect = async (
   if (contractIds.length === 0) return [] as Contract[]
 
   return await pg.map(
-    `select data, importance_score, view_count from contracts where id in ($1:list)`,
+    `select data, importance_score, conversion_score, freshness_score, view_count from contracts where id in ($1:list)`,
     [contractIds],
     (r) => convertContract(r)
   )
