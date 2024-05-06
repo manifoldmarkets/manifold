@@ -20,7 +20,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { CoinNumber } from '../widgets/manaCoinNumber'
-import { BalanceWidget } from './balance-widget'
 import { PortfolioTab } from './portfolio-tabs'
 import {
   BALANCE_COLOR,

@@ -22,9 +22,6 @@ import {
   GraphValueType,
   PortfolioHoveredGraphType,
 } from './portfolio-value-section'
-import { Col } from '../layout/col'
-import dayjs from 'dayjs'
-import { CoinNumber } from '../widgets/manaCoinNumber'
 
 type AreaPointType = {
   x: number // The x-coordinate
