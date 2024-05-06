@@ -335,10 +335,10 @@ function PortfolioValueSkeleton(props: {
                 <Row className="w-full justify-between gap-2 ">
                   <span
                     className={clsx(
-                      'group cursor-pointer select-none transition-opacity',
+                      'cursor-pointer select-none transition-opacity',
                       portfolioFocus == 'all'
                         ? 'opacity-100'
-                        : 'hover:opacity-85 opacity-50'
+                        : 'opacity-50 hover:opacity-[85%]'
                     )}
                     onClick={() => togglePortfolioFocus('all')}
                   >
@@ -352,7 +352,7 @@ function PortfolioValueSkeleton(props: {
                     />
                     <span
                       className={clsx(
-                        'text-ink-600 group-hover:text-ink-700 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+                        'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
                       )}
                     >
                       net worth
