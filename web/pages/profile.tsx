@@ -12,10 +12,10 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
-import { updateUserApi } from 'web/lib/firebase/api'
+import { api, updateUser } from 'web/lib/firebase/api'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
 import { uploadImage } from 'web/lib/firebase/storage'
-import { getUserAndPrivateUser, updateUser } from 'web/lib/firebase/users'
+import { getUserAndPrivateUser } from 'web/lib/firebase/users'
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   return { props: { auth: await getUserAndPrivateUser(creds.uid) } }
@@ -30,8 +30,7 @@ export function EditUserField(props: {
   const [value, setValue] = useState(user[field] ?? '')
 
   async function updateField() {
-    // Note: We trim whitespace before uploading to Firestore
-    await updateUser(user.id, { [field]: value.trim() })
+    await api('me/update', { [field]: value.trim() })
   }
 
   return (
@@ -83,7 +82,7 @@ export default function ProfilePage(props: {
 
     await uploadImage(user.username, file)
       .then(async (url) => {
-        await updateUserApi({ avatarUrl: url })
+        await updateUser({ avatarUrl: url })
         setAvatarUrl(url)
         setAvatarLoading(false)
       })

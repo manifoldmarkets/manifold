@@ -1,27 +1,19 @@
 import { TrashIcon } from '@heroicons/react/solid'
-import { deleteField } from 'firebase/firestore'
 import router from 'next/router'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { auth, updatePrivateUser, updateUser } from 'web/lib/firebase/users'
+import { auth } from 'web/lib/firebase/users'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
+import { api } from 'web/lib/firebase/api'
 
-export function DeleteYourselfButton(props: { userId: string }) {
-  const { userId } = props
+export function DeleteYourselfButton(props: { username: string }) {
+  const { username } = props
 
   const deleteAccount = async () => {
-    // if you change this, be sure to update firestore.rules. it's pretty exact to prevent self-unbanning. or better, turn this to API call
-    await updateUser(userId, {
-      userDeleted: true,
-      isBannedFromPosting: true,
-    })
-    await updatePrivateUser(userId, {
-      email: deleteField(),
-      twitchInfo: deleteField(),
-    } as any)
+    await api('me/delete', { username })
     await auth.signOut()
   }
 

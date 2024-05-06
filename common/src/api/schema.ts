@@ -619,6 +619,36 @@ export const API = (_apiTypeCheck = {
     props: z.object({}),
     returns: {} as FullUser,
   },
+  'me/update': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      name: z.string().trim().min(1).optional(),
+      username: z.string().trim().min(1).optional(),
+      avatarUrl: z.string().optional(),
+      bio: z.string().optional(),
+      website: z.string().optional(),
+      twitterHandle: z.string().optional(),
+      discordHandle: z.string().optional(),
+      // settings
+      optOutBetWarnings: z.boolean().optional(),
+      isAdvancedTrader: z.boolean().optional(),
+      //internal
+      shouldShowWelcome: z.boolean().optional(),
+      hasSeenContractFollowModal: z.boolean().optional(),
+      hasSeenLoanModal: z.boolean().optional(),
+    }),
+    returns: {} as FullUser,
+  },
+  'me/delete': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      username: z.string(), // just so you're sure
+    }),
+  },
   'user/:username': {
     method: 'GET',
     visibility: 'public',

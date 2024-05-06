@@ -167,6 +167,7 @@ import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
+import { deleteMe } from './delete-me'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -263,6 +264,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
+  'me/update': updateUser,
+  'me/delete': deleteMe,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getDisplayUser,
   'user/:username': getUser,
@@ -349,7 +352,6 @@ Object.entries(handlers).forEach(([path, handler]) => {
 app.get('/health', ...apiRoute(health))
 app.get('/unsubscribe', ...apiRoute(unsubscribe))
 app.post('/transact', ...apiRoute(transact))
-app.post('/update-user', ...apiRoute(updateUser))
 app.post('/editcomment', ...apiRoute(editcomment))
 
 app.post('/claimmanalink', ...apiRoute(claimmanalink))
