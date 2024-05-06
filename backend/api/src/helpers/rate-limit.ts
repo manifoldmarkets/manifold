@@ -12,7 +12,7 @@ export const rateLimitByUser = <N extends APIPath>(
     const lastCalled = rateLimit.get(key) || 0
 
     if (lastCalled >= maxCalls) {
-      throw new APIError(400, 'Rate limit exceeded')
+      throw new APIError(429, 'Rate limit exceeded')
     }
 
     rateLimit.set(key, lastCalled + 1)
