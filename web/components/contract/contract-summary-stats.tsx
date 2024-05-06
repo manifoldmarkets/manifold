@@ -85,7 +85,9 @@ export function ContractSummaryStats(props: {
             </Tooltip>
           )}
 
-          {isCreator && <CreatorFeesDisplay className="" contract={contract} />}
+          {isCreator && contract.mechanism !== 'none' && (
+            <CreatorFeesDisplay contract={contract} />
+          )}
           <CloseOrResolveTime contract={contract} editable={editable} />
         </Row>
       )}

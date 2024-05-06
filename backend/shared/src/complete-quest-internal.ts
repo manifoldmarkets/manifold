@@ -17,7 +17,6 @@ import { millisToTs, SupabaseClient } from 'common/supabase/utils'
 import { getReferralCount } from 'common/supabase/referrals'
 import { log } from 'shared/utils'
 import { WEEK_MS } from 'common/util/time'
-import { convertTxn } from 'common/supabase/txns'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -175,8 +174,7 @@ const awardQuestBonus = async (
       and (data->'data'->>'questCount')::integer = $3
       and created_time >= millis_to_ts($4)
       limit 1`,
-      [user.id, questType, newCount, startOfDay],
-      convertTxn
+      [user.id, questType, newCount, startOfDay]
     )
 
     if (previousTxn) {

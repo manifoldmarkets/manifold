@@ -46,7 +46,7 @@ const payUserPushNotificationsBonus = async (
   return await pg.tx(async (tx) => {
     // make sure we don't already have a txn for this user/questType
     const previousTxn = await tx.oneOrNone(
-      `select * from txns where data->>'toId' = $1 and data->>'category' = 'PUSH_NOTIFICATION_BONUS' limit 1`,
+      `select * from txns where to_id = $1 and category = 'PUSH_NOTIFICATION_BONUS' limit 1`,
       [userId]
     )
     if (previousTxn) {

@@ -110,11 +110,15 @@ export async function runAwardBountyTxn(
     // update bountied contract
     fbTransaction.update(contractDoc, {
       bountyLeft: FieldValue.increment(-amount),
-      bountyTxns: FieldValue.arrayUnion(txn.id),
     })
   })
 
   const txn = await insertTxn(tx, txnData)
+
+  await firestore.doc(`contracts/${fromId}`).update({
+    bountyTxns: FieldValue.arrayUnion(txn.id),
+  })
+
   return txn
 }
 
@@ -151,7 +155,6 @@ export async function runCancelBountyTxn(
         ? resolutionTime
         : contractCloseTime
 
-
     fbTransaction.update(contractRef, {
       bountyLeft: FieldValue.increment(-amount),
       closeTime,
@@ -164,7 +167,7 @@ export async function runCancelBountyTxn(
 
   const txn = await pg.tx((tx) => insertTxn(tx, txnData))
 
-  firestore.doc(`contracts/${txn.toId}`).update({
+  await firestore.doc(`contracts/${fromId}`).update({
     bountyTxns: FieldValue.arrayUnion(txn.id),
   })
 

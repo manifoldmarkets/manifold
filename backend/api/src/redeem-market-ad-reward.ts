@@ -42,9 +42,9 @@ export const redeemboost = authEndpoint(async (req, auth) => {
     // first check if user has redeemed before
     const oldTxn = await tx.oneOrNone(
       `select 1 from txns
-      where data->>category = 'MARKET_BOOST_REDEEM'
-      and data->>fromId = $1
-      and data->>toId = $2`,
+      where category = 'MARKET_BOOST_REDEEM'
+      and from_id = $1
+      and to_id = $2`,
       [adId, auth.uid]
     )
 

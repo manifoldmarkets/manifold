@@ -121,14 +121,17 @@ const payUserLoan = async (
   payout: number,
   tx: SupabaseTransaction
 ) => {
-  const startOfDay = dayjs().tz('America/Los_Angeles').startOf('day').valueOf()
+  const startOfDay = dayjs()
+    .tz('America/Los_Angeles')
+    .startOf('day')
+    .toISOString()
 
   // make sure we don't already have a txn for this user/questType
-  const count = await tx.one<number>(
+  const { count } = await tx.one(
     `select count(*) from txns
-    where data->>'toId' = $1
-    and data->>'category' = 'LOAN'
-    and data->'createdTime' >= $2
+    where to_id = $1
+    and category = 'LOAN'
+    and created_time >= $2
     limit 1`,
     [userId, startOfDay]
   )

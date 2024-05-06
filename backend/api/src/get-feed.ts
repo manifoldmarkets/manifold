@@ -31,20 +31,25 @@ const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
 } = {}
 const DEBUG = process.platform === 'darwin'
+const DEBUG_USER_ID: string | undefined = 'FptiiMZZ6dQivihLI8MYFQ6ypSw1'
 const DEBUG_TIME_FRAME = '30 minutes'
+
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
   // Use random user ids so that postgres doesn't cache the query:
-  const userId = DEBUG
-    ? await pg.one(
-        `select user_id from user_contract_interactions
+  const userId =
+    DEBUG && DEBUG_USER_ID
+      ? DEBUG_USER_ID
+      : DEBUG
+      ? await pg.one(
+          `select user_id from user_contract_interactions
             where created_time > now() - interval $1
             order by random() limit 1`,
-        [DEBUG_TIME_FRAME],
-        (r) => r.user_id as string
-      )
-    : props.userId
+          [DEBUG_TIME_FRAME],
+          (r) => r.user_id as string
+        )
+      : props.userId
 
   if (userIdsToAverageTopicConversionScores[userId] === undefined) {
     await buildUserInterestsCache(userId)
@@ -62,6 +67,26 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   } = privateUser
   const blockedIds = blockedUserIds.concat(blockedByUserIds)
 
+  // If they don't follow any topics and have no recorded topic activity, show them top trending markets
+  if (userIdsToAverageTopicConversionScores[userId] === undefined) {
+    const defaultContracts = await pg.map(
+      `select data, importance_score, conversion_score, freshness_score, view_count from contracts
+                order by importance_score desc 
+                limit $1 offset $2`,
+      [limit * 4, offset],
+      (r) => convertContract(r)
+    )
+    return {
+      contracts: defaultContracts,
+      ads: [],
+      idsToReason: Object.fromEntries(
+        defaultContracts.map((c) => [c.id, 'importance'])
+      ),
+      comments: [],
+      bets: [],
+      reposts: [],
+    }
+  }
   const viewedContractsQuery = renderSql(
     select(
       `contract_id, max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)) AS latest_seen_time`
@@ -174,8 +199,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   if (DEBUG) {
     const explain = await pg.many(`explain analyze ${sortQueries[0]}`, [])
     log('explain:', explain.map((q) => q['QUERY PLAN']).join('\n'))
-    const explainAds = await pg.many(`explain analyze ${adsQuery}`, [])
-    log('explain:', explainAds.map((q) => q['QUERY PLAN']).join('\n'))
   }
   const startTime = Date.now()
   const [
