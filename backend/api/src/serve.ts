@@ -8,7 +8,11 @@ const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
   initAdmin()
 } else {
-  admin.initializeApp()
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT
+  admin.initializeApp({
+    projectId,
+    storageBucket: `${projectId}.appspot.com`,
+  })
 }
 
 METRIC_WRITER.start()
