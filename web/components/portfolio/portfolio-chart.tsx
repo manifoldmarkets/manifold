@@ -9,6 +9,7 @@ import { useEvent } from 'web/hooks/use-event'
 import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   AreaPath,
+  LinePath,
   PointerMode,
   SVGChart,
   SliceMarker,
@@ -16,8 +17,11 @@ import {
   ZoomParams,
 } from '../charts/helpers'
 import { ZoomSlider } from '../charts/zoom-slider'
-import { PortfolioMode } from './portfolio-value-graph'
-import { PortfolioHoveredGraphType } from './portfolio-value-section'
+import { PortfolioMode, PortfolioTooltip } from './portfolio-value-graph'
+import {
+  GraphValueType,
+  PortfolioHoveredGraphType,
+} from './portfolio-value-section'
 import { Col } from '../layout/col'
 import dayjs from 'dayjs'
 import { CoinNumber } from '../widgets/manaCoinNumber'
@@ -47,8 +51,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
-  setGraphBalance: (balance: number | undefined) => void
-  setGraphInvested: (invested: number | undefined) => void
+  updateGraphValues: (newGraphValues: GraphValueType) => void
   setPortfolioFocus: (mode: PortfolioMode) => void
   portfolioHoveredGraph: PortfolioHoveredGraphType
   setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
@@ -64,8 +67,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     hoveredAnnotation,
     setHoveredAnnotation,
     yKind,
-    setGraphBalance,
-    setGraphInvested,
+    updateGraphValues,
     setPortfolioFocus,
     portfolioHoveredGraph,
     setPortfolioHoveredGraph,
@@ -123,6 +125,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     }, [])
   }, [data])
 
+  const topmostIdx = stackedData.length - 1
   const selectors = useMemo(() => {
     return Object.fromEntries(
       stackedData.map(({ id, points }) => [id, dataAtXSelector(points, xScale)])
@@ -144,18 +147,20 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     const unstackedPs = Object.entries(data).map(([id]) => {
       return unstackedSelectors[id](mouseX)
     })
-    const topmostIdx = stackedData.length - 1
 
     unstackedPs.forEach((p, i) => {
       if (i == BALANCE_IDX && p.prev?.y) {
-        setGraphBalance(p.prev.y)
+        updateGraphValues({ balance: p.prev.y })
       }
       if (i == INVESTED_IDX && p.prev?.y) {
-        setGraphInvested(p.prev.y)
+        updateGraphValues({ invested: p.prev.y })
       }
     })
 
     const p = ps[topmostIdx]
+
+    updateGraphValues({ net: p?.prev?.y })
+
     if (p?.prev) {
       return {
         ...p,
@@ -174,8 +179,10 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
-    setGraphBalance(undefined)
-    setGraphInvested(undefined)
+    updateGraphValues({
+      balance: undefined,
+      invested: undefined,
+    })
   })
 
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
@@ -196,28 +203,8 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         zoomParams={zoomParams}
         onMouseOver={onMouseOver}
         onMouseLeave={onMouseLeave}
-        Tooltip={(props) => {
-          // eslint-disable-next-line react/prop-types
-          const date = xScale.invert(props.x)
-          const d = dayjs(date)
-          return (
-            <Col className="text-xs sm:text-sm">
-              {ttParams && ttParams.prev && (
-                <span className="text-ink-900">
-                  <CoinNumber
-                    amount={ttParams.prev.y}
-                    isInline
-                    className="font-semibold"
-                  />{' '}
-                  <span>net</span>
-                </span>
-              )}
-              <div className="text-2xs text-ink-600 font-normal sm:text-xs">
-                {d.format('MMM/D/YY')} {d.format('h:mm A')}
-              </div>
-            </Col>
-          )
-        }}
+        // eslint-disable-next-line react/prop-types
+        Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
         noGridlines
         className="group"
         pointerMode={pointerMode}
@@ -262,6 +249,13 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             </>
           )
         })}
+        <LinePath
+          data={stackedData[topmostIdx].points}
+          px={px}
+          py={py}
+          curve={curve}
+          className="stroke-ink-1000"
+        />
         {ttParams && (
           <SliceMarker
             color="#5BCEFF"

@@ -5,11 +5,13 @@ import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { Button } from '../buttons/button'
 import { CoinNumber } from '../widgets/manaCoinNumber'
+import clsx from 'clsx'
 
 export function BalanceWidget(props: {
   balanceChanges: AnyBalanceChangeType[]
+  className?: string
 }) {
-  const { balanceChanges } = props
+  const { balanceChanges, className } = props
   const spentToday = sumBy(
     balanceChanges.filter(
       (change) => change.createdTime > Date.now() - DAY_MS && change.amount < 0
@@ -36,7 +38,7 @@ export function BalanceWidget(props: {
         })
       }}
       size="xs"
-      className="gap-1 !px-1 !py-1"
+      className={clsx('gap-1 !px-1 !py-1', className)}
     >
       <CoinNumber amount={earnedToday} />
       in and
