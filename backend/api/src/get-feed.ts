@@ -31,7 +31,7 @@ const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
 } = {}
 const DEBUG = process.platform === 'darwin'
-const DEBUG_USER_ID: string | undefined = 'FptiiMZZ6dQivihLI8MYFQ6ypSw1'
+const DEBUG_USER_ID: string | undefined = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const DEBUG_TIME_FRAME = '30 minutes'
 
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
@@ -251,13 +251,14 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
          contract_bets.data as bet_data,
          posts.*
         from posts
-           join user_contract_views ucv on posts.contract_id = ucv.contract_id and ucv.user_id = $1
            join contracts on posts.contract_id = contracts.id and contracts.close_time > now()
            join contract_comments on posts.contract_comment_id = contract_comments.comment_id
+           left join user_contract_views ucv on posts.contract_id = ucv.contract_id and ucv.user_id = $1
            left join contract_bets on contract_comments.data->>'betId' = contract_bets.bet_id
             where posts.user_id in ( select follow_id from user_follows where user_id = $1)
-            and posts.created_time > greatest(ucv.last_card_view_ts, ucv.last_page_view_ts)
+            and posts.created_time > coalesce(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
             and posts.created_time > now() - interval '1 week'
+            and contracts.close_time > now()
         order by posts.created_time desc
         offset $2 limit $3
 `,
