@@ -235,7 +235,6 @@ export const VERIFIED_USERNAMES = [
   'SantaPawsSSB',
   'AndersSandberg',
   'JosephWeisenthal',
-  'BTE',
   'LawrenceLessig',
   'NatFriedman',
   'patrissimo',
@@ -257,7 +256,6 @@ export const BLESSED_BANNED_USER_IDS = [
 export const PARTNER_USER_IDS: string[] = [
   'sTUV8ejuM2byukNZp7qKP2OKXMx2', // NFL
   'rFJu0EIdR6RP8d1vHKSh62pbnbH2', // SimonGrayson
-  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
   'cb6PJqGOSVPEUhprDHCKWWMuJqu1', // DanMan314
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
   'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
