@@ -19,6 +19,7 @@ import { db } from 'web/lib/supabase/db'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function MatchPositionsButton(props: {
   contract: CPMMMultiContract
@@ -78,7 +79,9 @@ export function MatchPositionsButton(props: {
             <span>
               <span className="text-ink-600">Positions on </span>
               <span className={clsx('text-primary-600', linkClass)}>
-                <Link href={contractPath(contract)}>{answer.text}</Link>
+                <Link href={`https://${ENV_CONFIG.domain}/${contractPath(contract)}`}>
+                  {answer.text}
+                </Link>
               </span>
             </span>
             <MatchPositionsContent positions={positions} />

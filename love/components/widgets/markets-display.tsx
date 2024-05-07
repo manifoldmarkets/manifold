@@ -22,6 +22,7 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Subtitle } from './lover-subtitle'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import { CompatibleBadge } from './compatible-badge'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const MarketsDisplay = ({
   profileLover,
@@ -44,7 +45,7 @@ export const MarketsDisplay = ({
         <Subtitle>Predicted matches</Subtitle>{' '}
         <Link
           className={clsx(linkClass, 'text-ink-500')}
-          href={contractPath(contract)}
+          href={`https://${ENV_CONFIG.domain}/${contractPath(contract)}`}
         >
           <Row className="items-center gap-1">
             <div className="">See market</div>{' '}
@@ -193,7 +194,10 @@ const MatchTile = (props: {
       </Col>
       <Col className="bg-canvas-0 text-ink-1000 grow justify-between gap-2 px-2 py-2 text-sm">
         <Row className="w-full items-center justify-between gap-2">
-          <Link className={clsx(linkClass, '')} href={contractPath(contract)}>
+          <Link
+            className={clsx(linkClass, '')}
+            href={`https://${ENV_CONFIG.domain}/${contractPath(contract)}`}
+          >
             <span className="text-lg font-semibold">
               {answer.prob <= 0.0205
                 ? '<2%'
