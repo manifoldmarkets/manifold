@@ -33,7 +33,7 @@ export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
         investmentValue: parseFloat(r.investment_value as string),
         balance: parseFloat(r.balance as string),
         totalDeposits: parseFloat(r.total_deposits as string),
-      } as PortfolioMetrics)
+      } as PortfolioMetrics & { userId: string })
   )
   if (!portfolioMetric) {
     throw new APIError(404, `No portfolio found for user ${auth.uid}`)

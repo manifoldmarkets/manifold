@@ -222,28 +222,26 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             y1: point.y,
           }))
           return (
-            <>
-              <AreaPath<AreaPointType>
-                key={id}
-                data={areaData}
-                px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
-                py0={(d) => yScale(d.y0)} // Lower boundary
-                py1={(d) => yScale(d.y1)} // Upper boundary
-                fill={color}
-                curve={curve}
-                opacity={portfolioHoveredGraph == id ? 1 : 0.85}
-                className="transition-opacity"
-                onClick={() => {
-                  setPortfolioFocus(id as PortfolioMode)
-                }}
-                onMouseEnter={() => {
-                  setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
-                }}
-                onMouseLeave={() => {
-                  setPortfolioHoveredGraph(undefined)
-                }}
-              />
-            </>
+            <AreaPath<AreaPointType>
+              key={id}
+              data={areaData}
+              px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
+              py0={(d) => yScale(d.y0)} // Lower boundary
+              py1={(d) => yScale(d.y1)} // Upper boundary
+              fill={color}
+              curve={curve}
+              opacity={portfolioHoveredGraph == id ? 1 : 0.85}
+              className="transition-opacity"
+              onClick={() => {
+                setPortfolioFocus(id as PortfolioMode)
+              }}
+              onMouseEnter={() => {
+                setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
+              }}
+              onMouseLeave={() => {
+                setPortfolioHoveredGraph(undefined)
+              }}
+            />
           )
         })}
         <LinePath

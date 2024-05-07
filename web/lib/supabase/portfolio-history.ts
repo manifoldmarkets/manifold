@@ -1,5 +1,4 @@
-import { getPortfolioHistory } from 'common/supabase/portfolio-metrics'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
-export type PortfolioSnapshot = Awaited<
-  ReturnType<typeof getPortfolioHistory>
->[number]
+// TODO: Consolidate these.
+export type PortfolioSnapshot = PortfolioMetrics

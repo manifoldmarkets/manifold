@@ -33,7 +33,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
-    currentPortfolio: Omit<PortfolioMetrics, 'userId'> | undefined
+    currentPortfolio: PortfolioMetrics | undefined
     dayAgoProfit: number
     weekAgoProfit: number
     monthAgoProfit: number
