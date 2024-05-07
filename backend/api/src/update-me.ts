@@ -19,7 +19,7 @@ import * as admin from 'firebase-admin'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
-export const updateUser: APIHandler<'me/update'> = async (props, auth) => {
+export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const firestore = admin.firestore()
 
   const update = cloneDeep(props)

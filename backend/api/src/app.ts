@@ -8,7 +8,7 @@ import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
 import { transact } from './transact'
-import { updateUser } from './update-user'
+import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
 import { sellShareDPM } from './sell-bet'
@@ -264,7 +264,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
   me: getCurrentUser,
-  'me/update': updateUser,
+  'me/update': updateMe,
   'me/delete': deleteMe,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getDisplayUser,
