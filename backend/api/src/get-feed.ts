@@ -26,10 +26,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import {
-  DEBUG_TIME_FRAME,
-  DEBUG_TOPIC_INTERESTS,
-} from 'api/helpers/init-caches'
+import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 
 const DEBUG_USER_ID: string | undefined = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 

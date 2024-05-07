@@ -6,10 +6,7 @@ import {
 } from 'shared/supabase/init'
 import { filterDefined } from 'common/util/array'
 import { chunk } from 'lodash'
-import {
-  DEBUG_TIME_FRAME,
-  DEBUG_TOPIC_INTERESTS,
-} from '@manifold/api/lib/helpers/init-caches'
+import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 
 export const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
