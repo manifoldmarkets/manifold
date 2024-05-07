@@ -2,11 +2,22 @@ import { HistoryPoint, ValueKind } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { CurveFactory, curveStepAfter } from 'd3-shape'
+import { CurveFactory, area, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  SVGProps,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+} from 'react'
 import { useEvent } from 'web/hooks/use-event'
-import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
+import {
+  DiagonalPattern,
+  dataAtTimeSelector,
+  dataAtXSelector,
+} from '../charts/generic-charts'
 import {
   AreaPath,
   LinePath,
@@ -22,6 +33,7 @@ import {
   GraphValueType,
   PortfolioHoveredGraphType,
 } from './portfolio-value-section'
+import { StackedArea } from './stacked-data-area'
 
 type AreaPointType = {
   x: number // The x-coordinate
@@ -214,36 +226,30 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         }
       >
         {stackedData.map(({ id, points, color }, i) => {
-          const { points: previousPoints } =
-            i > 0 ? stackedData[i - 1] : { points: undefined }
-          const areaData = points.map((point, idx) => ({
-            x: point.x,
-            y0: previousPoints ? previousPoints[idx].y : 0, // Use previous dataset's y if available, otherwise use 0
-            y1: point.y,
-          }))
           return (
-            <>
-              <AreaPath<AreaPointType>
-                key={id}
-                data={areaData}
-                px={(d) => xScale(d.x)} // You might need to adjust how these are passed based on your AreaPath implementation
-                py0={(d) => yScale(d.y0)} // Lower boundary
-                py1={(d) => yScale(d.y1)} // Upper boundary
-                fill={color}
-                curve={curve}
-                opacity={portfolioHoveredGraph == id ? 1 : 0.85}
-                className="transition-opacity"
-                onClick={() => {
-                  setPortfolioFocus(id as PortfolioMode)
-                }}
-                onMouseEnter={() => {
-                  setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
-                }}
-                onMouseLeave={() => {
-                  setPortfolioHoveredGraph(undefined)
-                }}
-              />
-            </>
+            <StackedArea
+              key={id}
+              id={id}
+              points={points}
+              unstackedPoints={data[id].points}
+              stackedData={stackedData}
+              color={color}
+              index={i}
+              xScale={xScale}
+              yScale={yScale}
+              curve={curve}
+              onClick={() => {
+                setPortfolioFocus(id as PortfolioMode)
+              }}
+              onMouseEnter={() => {
+                setPortfolioHoveredGraph(id as PortfolioHoveredGraphType)
+              }}
+              onMouseLeave={() => {
+                setPortfolioHoveredGraph(undefined)
+              }}
+              portfolioHoveredGraph={portfolioHoveredGraph}
+              w={w}
+            />
           )
         })}
         <LinePath

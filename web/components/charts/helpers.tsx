@@ -366,6 +366,20 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
           <clipPath id={`${id}-clip`}>
             <rect x={-32} y={-32} width={w + 64} height={h + 64} />
           </clipPath>
+          <pattern
+            id="negativePattern"
+            patternUnits="userSpaceOnUse"
+            width="10"
+            height="10"
+          >
+            <path
+              d="M-1,1 l2,-2
+               M0,10 l10,-10
+               M9,11 l2,-2"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+          </pattern>
         </defs>
 
         <g>
