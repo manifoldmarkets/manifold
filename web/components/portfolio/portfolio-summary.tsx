@@ -8,10 +8,7 @@ import { Col } from '../layout/col'
 import { SupabaseSearch } from '../supabase-search'
 import { PortfolioValueSection } from './portfolio-value-section'
 
-export const PortfolioSummary = (props: {
-  user: User
-  className?: string
-}) => {
+export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const { user, className } = props
   const currentUser = useUser()
   const privateUser = usePrivateUser()

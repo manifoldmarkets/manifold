@@ -358,10 +358,7 @@ function UserProfile(props: {
                 content: (
                   <>
                     <VerifyPhoneNumberBanner user={currentUser} />
-                    <PortfolioSummary
-                      className="mt-4"
-                      user={user}
-                    />
+                    <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
               },
