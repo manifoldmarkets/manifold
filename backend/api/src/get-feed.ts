@@ -1,12 +1,8 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import {
-  createSupabaseDirectClient,
-  getInstanceId,
-  SupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertContract } from 'common/supabase/contracts'
 import { PrivateUser } from 'common/user'
-import { chunk, orderBy, uniqBy } from 'lodash'
+import { orderBy, uniqBy } from 'lodash'
 import {
   from,
   renderSql,
@@ -26,22 +22,25 @@ import { Bet } from 'common/bet'
 import { adContract } from 'common/boost'
 import { Repost } from 'common/repost'
 import { DAY_MS } from 'common/util/time'
+import {
+  buildUserInterestsCache,
+  userIdsToAverageTopicConversionScores,
+} from 'shared/topic-interests'
+import {
+  DEBUG_TIME_FRAME,
+  DEBUG_TOPIC_INTERESTS,
+} from 'api/helpers/init-caches'
 
-const userIdsToAverageTopicConversionScores: {
-  [userId: string]: { [groupId: string]: number }
-} = {}
-const DEBUG = process.platform === 'darwin'
 const DEBUG_USER_ID: string | undefined = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
-const DEBUG_TIME_FRAME = '30 minutes'
 
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
   // Use random user ids so that postgres doesn't cache the query:
   const userId =
-    DEBUG && DEBUG_USER_ID
+    DEBUG_TOPIC_INTERESTS && DEBUG_USER_ID
       ? DEBUG_USER_ID
-      : DEBUG
+      : DEBUG_TOPIC_INTERESTS
       ? await pg.one(
           `select user_id from user_contract_interactions
             where created_time > now() - interval $1
@@ -196,7 +195,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     repost?: Repost
     bet?: Bet
   }
-  if (DEBUG) {
+  if (DEBUG_TOPIC_INTERESTS) {
     const explain = await pg.many(`explain analyze ${sortQueries[0]}`, [])
     log('explain:', explain.map((q) => q['QUERY PLAN']).join('\n'))
   }
@@ -345,62 +344,4 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     bets: filterDefined(repostData.map((c) => c.bet)),
     reposts: filterDefined(repostData.map((c) => c.repost)),
   }
-}
-
-export const buildUserInterestsCache = async (userId?: string) => {
-  log('Starting user topic interests cache build process')
-  const pg = createSupabaseDirectClient(getInstanceId())
-  const activeUserIds = filterDefined([userId])
-
-  if (Object.keys(userIdsToAverageTopicConversionScores).length === 0) {
-    const recentlyActiveUserIds = await pg.map(
-      `select distinct user_id from user_contract_interactions
-              where created_time > now() - interval $1`,
-      [DEBUG ? DEBUG_TIME_FRAME : '1 month'],
-      (r) => r.user_id as string
-    )
-    activeUserIds.push(...recentlyActiveUserIds)
-  }
-  log('building cache for users: ', activeUserIds.length)
-  const chunks = chunk(activeUserIds, 500)
-  for (const userIds of chunks) {
-    await Promise.all([
-      ...userIds.map(async (userId) => {
-        userIdsToAverageTopicConversionScores[userId] = {}
-        await pg.map(
-          `SELECT * FROM get_user_topic_interests($1, 50) LIMIT 100`,
-          [userId],
-          (r) => {
-            userIdsToAverageTopicConversionScores[userId][r.group_id] =
-              r.avg_conversion_score
-          }
-        )
-      }),
-      addScoreForFollowedTopics(pg, userIds),
-    ])
-    log(
-      'built topic interests cache for users: ',
-      Object.keys(userIdsToAverageTopicConversionScores).length
-    )
-  }
-  log('built user topic interests cache')
-}
-
-const addScoreForFollowedTopics = async (
-  pg: SupabaseDirectClient,
-  userIds: string[]
-) => {
-  await pg.map(
-    `select member_id, group_id from group_members where member_id = any($1)`,
-    [userIds],
-    (row) => {
-      if (!userIdsToAverageTopicConversionScores[row.member_id]) {
-        userIdsToAverageTopicConversionScores[row.member_id] = {}
-      }
-      if (!userIdsToAverageTopicConversionScores[row.member_id][row.group_id]) {
-        userIdsToAverageTopicConversionScores[row.member_id][row.group_id] = 0
-      }
-      userIdsToAverageTopicConversionScores[row.member_id][row.group_id] += 1
-    }
-  )
 }
