@@ -219,7 +219,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         pointerMode={pointerMode}
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
-        y0={0}
+        y0={yScale(0)}
         xScale={xScale}
         yAtTime={(time, answerId) =>
           answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
