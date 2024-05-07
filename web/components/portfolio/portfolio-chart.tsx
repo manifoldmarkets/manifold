@@ -35,7 +35,7 @@ import {
 } from './portfolio-value-section'
 import { StackedArea } from './stacked-data-area'
 
-type AreaPointType = {
+export type AreaPointType = {
   x: number // The x-coordinate
   y0: number // Lower boundary of the area
   y1: number // Upper boundary of the area
@@ -219,7 +219,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         pointerMode={pointerMode}
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
-        y0={yScale(0)}
+        y0={0}
         xScale={xScale}
         yAtTime={(time, answerId) =>
           answerId ? getYValueByAnswerIdAndTime(time, answerId) ?? 1 : 1
@@ -231,7 +231,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
               key={id}
               id={id}
               points={points}
-              unstackedPoints={data[id].points}
               stackedData={stackedData}
               color={color}
               index={i}

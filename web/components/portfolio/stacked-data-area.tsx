@@ -4,11 +4,12 @@ import { DiagonalPattern } from '../charts/generic-charts'
 import { AreaPath } from '../charts/helpers'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { create } from 'domain'
+import { HistoryPoint } from 'common/chart'
+import { AreaPointType } from './portfolio-chart'
 
-export function StackedArea<P>(props: {
+export function StackedArea<P extends HistoryPoint>(props: {
   id: string
   points: P[]
-  unstackedPoints: P[]
   color: string
   index: number
   xScale: (x: number) => number
@@ -34,34 +35,39 @@ export function StackedArea<P>(props: {
     onMouseEnter,
     onMouseLeave,
     portfolioHoveredGraph,
-    unstackedPoints,
-    w,
   } = props
 
-  const createAreaData = (points: P[], y0Calculator: (idx: number) => void) =>
+  const negativePatternId = useId()
+
+  const createAreaData = (points: P[], y0Calculator: (idx: number) => number) =>
     points.map((point, idx) => ({
       x: point.x,
       y0: y0Calculator(idx),
       y1: point.y,
     }))
 
-  const negativePatternId = useId()
   const { points: previousPoints } =
-    index >= 0 ? stackedData[index - 1] : { points: undefined }
+    index > 0 ? stackedData[index - 1] : { points: undefined }
 
   const { positiveData, negativeData } = useMemo(() => {
     const positivePoints: P[] = []
     const negativePoints: P[] = []
 
     points.forEach((point, index) => {
-      const isNegative = unstackedPoints[index] && unstackedPoints[index].y < 0
-      if (isNegative) {
-        negativePoints.push(point)
-      } else {
-        positivePoints.push(point)
-      }
-    })
+      const baselineY =
+        previousPoints && previousPoints[index] ? previousPoints[index].y : 0
+      const isNegative = baselineY > point.y
 
+      positivePoints.push({
+        ...point,
+        y: isNegative ? baselineY : point.y,
+      })
+
+      negativePoints.push({
+        ...point,
+        y: isNegative ? point.y : baselineY,
+      })
+    })
     // Create separate datasets for positive and negative areas
     return {
       positiveData: createAreaData(positivePoints, (idx) =>
@@ -71,13 +77,18 @@ export function StackedArea<P>(props: {
         previousPoints ? previousPoints[idx].y : 0
       ),
     }
-  }, [points, unstackedPoints, color, negativePatternId])
+  }, [points, previousPoints, id])
   return (
     <>
       <defs>
-        <DiagonalPattern id={negativePatternId} color={color} size={2} />
+        <DiagonalPattern
+          id={negativePatternId}
+          color={color}
+          size={5}
+          strokeWidth={3}
+        />
       </defs>
-      <AreaPath
+      <AreaPath<AreaPointType>
         data={positiveData}
         px={(p) => xScale(p.x)}
         py0={(p) => yScale(p.y0)}
@@ -90,7 +101,7 @@ export function StackedArea<P>(props: {
         className="transition-opacity"
         opacity={portfolioHoveredGraph == id ? 1 : 0.85}
       />
-      <AreaPath
+      <AreaPath<AreaPointType>
         data={negativeData}
         px={(p) => xScale(p.x)}
         py0={(p) => yScale(p.y0)}
