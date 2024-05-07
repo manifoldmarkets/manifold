@@ -1,110 +1,98 @@
 import { DpmAnswer } from 'common/answer'
+import { toUserAPIResponse } from 'common/api/user-types'
 import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
 import {
   Contract,
   FreeResponseContract,
   MultipleChoiceContract,
 } from 'common/contract'
-import { User } from 'common/user'
+import { RESERVED_PATHS } from 'common/envs/constants'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
-import { RESERVED_PATHS } from 'common/envs/constants'
-import * as admin from 'firebase-admin'
-import { uniq } from 'lodash'
-import { getUser, getUserByUsername } from 'shared/utils'
-import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { cloneDeep, uniq } from 'lodash'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUser, getUserByUsername, log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
+import * as admin from 'firebase-admin'
 
 type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
-const bodySchema = z
-  .object({
-    username: z.string().min(1).optional(),
-    name: z.string().min(1).optional(),
-    avatarUrl: z.string().optional(),
-  })
-  .strict()
+export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
+  const firestore = admin.firestore()
 
-export const updateUser = authEndpoint(async (req, auth) => {
-  const { username, name, avatarUrl } = validate(bodySchema, req.body)
+  const update = cloneDeep(props)
 
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(401, 'Your account was not found')
-  const cleanedUsername = username ? cleanUsername(username) : undefined
 
-  if (username) {
+  if (update.name) {
+    update.name = cleanDisplayName(update.name)
+  }
+
+  if (update.username) {
+    const cleanedUsername = cleanUsername(update.username)
     if (!cleanedUsername) throw new APIError(400, 'Invalid username')
     const reservedName = RESERVED_PATHS.includes(cleanedUsername)
     if (reservedName) throw new APIError(403, 'This username is reserved')
     const otherUserExists = await getUserByUsername(cleanedUsername)
     if (otherUserExists) throw new APIError(403, 'Username already taken')
+    update.username = cleanedUsername
   }
 
-  try {
-    await updateUserInternal(user, {
-      username: cleanedUsername,
-      name,
-      avatarUrl,
-    })
-    return { message: 'Successfully changed user info.' }
-  } catch (e) {
-    log.error(e)
-    throw new APIError(500, 'update failed, please revert changes')
+  await firestore.doc(`users/${auth.uid}`).update(removeUndefinedProps(update))
+  const { name, username, avatarUrl } = update
+  if (name || username || avatarUrl) {
+    await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
-})
 
-export const updateUserInternal = async (
-  user: User,
+  return toUserAPIResponse({ ...user, ...update })
+}
+
+const updateUserDenormalizedFields = async (
+  userId: string,
   update: {
     username?: string
     name?: string
     avatarUrl?: string
   }
 ) => {
-  const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()
-  const bulkWriter = new SafeBulkWriter()
-
-  if (update.username) update.username = cleanUsername(update.username)
-  if (update.name) update.name = cleanDisplayName(update.name)
-
-  const userRef = firestore.collection('users').doc(user.id)
-  bulkWriter.update(userRef, removeUndefinedProps(update))
+  const pg = createSupabaseDirectClient()
 
   log('Updating denormalized user data on contracts...')
+
+  const bulkWriter = new SafeBulkWriter()
+
   const contractRows = await pg.manyOrNone(
     `select id from contracts where creator_id = $1`,
-    [user.id]
+    [userId]
   )
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
     creatorUsername: update.username,
     creatorAvatarUrl: update.avatarUrl,
   })
+
   for (const row of contractRows) {
     const ref = firestore.collection('contracts').doc(row.id)
     bulkWriter.update(ref, contractUpdate)
   }
   log(`Updated ${contractRows.length} contracts.`)
+
+  const commentUpdate: Partial<ContractComment> = removeUndefinedProps({
+    userName: update.name,
+    userUsername: update.username,
+    userAvatarUrl: update.avatarUrl,
+  })
+
   const commentIds = await pg.map(
     `update contract_comments
-     set data = jsonb_set(jsonb_set(jsonb_set(
-             data, 
-             '{userName}',$2::jsonb,true),
-             '{userUsername}',$3::jsonb,true),
-             '{userAvatarUrl}',$4::jsonb,true)
+     set data = data || $2
      where user_id = $1
-     returning comment_id
-     `,
-    [
-      user.id,
-      JSON.stringify(update.name ?? user.name),
-      JSON.stringify(update.username ?? user.username),
-      JSON.stringify(update.avatarUrl ?? user.avatarUrl),
-    ],
+     returning comment_id`,
+    [userId, JSON.stringify(commentUpdate)],
     (row) => row.comment_id
   )
   log(`Updated ${commentIds.length} comments.`)
@@ -112,7 +100,7 @@ export const updateUserInternal = async (
   log('Updating denormalized user data on bets...')
   const betRows = await pg.manyOrNone(
     `select contract_id, bet_id from contract_bets where user_id = $1`,
-    [user.id]
+    [userId]
   )
   const betUpdate: Partial<Bet> = removeUndefinedProps({
     userName: update.name,
@@ -132,7 +120,7 @@ export const updateUserInternal = async (
   log('Updating denormalized user data on answers...')
   const answerRows = await pg.manyOrNone(
     `select contract_id, answer_id from contract_answers where data->>'userId' = $1`,
-    [user.id]
+    [userId]
   )
   const answerUpdate: Partial<DpmAnswer> = removeUndefinedProps(update)
   for (const row of answerRows) {
@@ -154,7 +142,7 @@ export const updateUserInternal = async (
     for (const doc of answerContracts) {
       const contract = doc.data() as ChoiceContract
       for (const a of contract.answers) {
-        if (a.userId === user.id) {
+        if (a.userId === userId) {
           a.username = update.username ?? a.username
           a.avatarUrl = update.avatarUrl ?? a.avatarUrl
           a.name = update.name ?? a.name
@@ -166,5 +154,5 @@ export const updateUserInternal = async (
   log(`Updated ${answerRows.length} answers.`)
 
   await bulkWriter.flush()
-  log('Done writing!')
+  log('Done denormalizing!')
 }

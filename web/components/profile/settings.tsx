@@ -2,7 +2,7 @@ import { RefreshIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AiOutlineCopy } from 'react-icons/ai'
-import { updatePrivateUser, updateUser } from 'web/lib/firebase/users'
+import { updatePrivateUser } from 'web/lib/firebase/users'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -15,6 +15,7 @@ import { Title } from '../widgets/title'
 import { PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
+import { api } from 'web/lib/firebase/api'
 
 export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
   const { user, privateUser } = props
@@ -46,7 +47,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
           on={advancedTraderMode}
           setOn={(enabled) => {
             setAdvancedTraderMode(enabled)
-            updateUser(user.id, { isAdvancedTrader: enabled })
+            api('me/update', { isAdvancedTrader: enabled })
           }}
         />
       </div>
@@ -63,7 +64,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
           on={betWarnings}
           setOn={(enabled) => {
             setBetWarnings(enabled)
-            updateUser(user.id, { optOutBetWarnings: !enabled })
+            api('me/update', { optOutBetWarnings: !enabled })
           }}
         />
       </div>

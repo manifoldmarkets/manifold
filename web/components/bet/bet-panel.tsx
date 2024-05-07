@@ -26,7 +26,7 @@ import {
   formatPercent,
 } from 'common/util/format'
 import { computeCpmmBet } from 'common/new-bet'
-import { firebaseLogin, updateUser } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { LimitBet } from 'common/bet'
 import { APIError, api } from 'web/lib/firebase/api'
 import { BuyAmountInput } from '../widgets/amount-input'
@@ -732,7 +732,7 @@ export const BuyPanelBody = (props: {
                 if (!tradingMode) {
                   setBetType('Market')
                 }
-                updateUser(user.id, { isAdvancedTrader: tradingMode })
+                api('me/update', { isAdvancedTrader: tradingMode })
               }}
             >
               <span className="hover:underline">

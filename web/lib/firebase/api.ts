@@ -65,10 +65,6 @@ export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
 }
 
-export function updateUserApi(params: any) {
-  return call(getApiUrl('update-user'), 'POST', params)
-}
-
 export function swapCert(params: any) {
   return call(getApiUrl('swapcert'), 'POST', params)
 }
@@ -345,6 +341,8 @@ export function referUser(params: {
 }
 
 export const updateMarket = curriedAPI('market/:contractId/update')
+
+export const updateUser = curriedAPI('me/update')
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)

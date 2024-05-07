@@ -2,13 +2,12 @@ import { useEffect, useState } from 'react'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { LoansModal } from 'web/components/profile/loans-modal'
-import { requestLoan } from 'web/lib/firebase/api'
+import { api, requestLoan } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
-import { updateUser } from 'web/lib/firebase/users'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
@@ -77,7 +76,7 @@ export function DailyLoan(props: {
 
   useEffect(() => {
     if (showLoansModal && !user.hasSeenLoanModal)
-      updateUser(user.id, { hasSeenLoanModal: true })
+      api('me/update', { hasSeenLoanModal: true })
   }, [showLoansModal])
 
   const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS

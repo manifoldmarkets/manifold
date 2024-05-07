@@ -42,6 +42,7 @@ export type User = {
   /** @deprecated */
   followerCountCached?: number
 
+  /** @deprecated */
   homeSections?: string[]
 
   referredByUserId?: string

@@ -9,10 +9,7 @@ import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import {
-  setCachedReferralInfoForUser,
-  updateUser,
-} from 'web/lib/firebase/users'
+import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -30,12 +27,7 @@ import { track } from 'web/lib/service/analytics'
 import { PencilIcon } from '@heroicons/react/outline'
 import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import {
-  api,
-  updateUserApi,
-  followTopic,
-  followUser,
-} from 'web/lib/firebase/api'
+import { api, updateUser, followTopic, followUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
@@ -169,7 +161,7 @@ export default function Welcome(props: { setFeedKey?: (key: string) => void }) {
   async function increasePage() {
     if (page < availablePages.length - 1) handleSetPage(page + 1)
     else {
-      if (user) await updateUser(user.id, { shouldShowWelcome: false })
+      if (user) await api('me/update', { shouldShowWelcome: false })
       track('welcome screen: complete')
       setOpen(false)
     }
@@ -212,7 +204,7 @@ const useIsTwitch = (user: User | null | undefined) => {
 
   useEffect(() => {
     if (isTwitch && user?.shouldShowWelcome) {
-      updateUser(user.id, { shouldShowWelcome: false })
+      api('me/update', { shouldShowWelcome: false })
     }
   }, [isTwitch, user?.id, user?.shouldShowWelcome])
 
@@ -233,14 +225,14 @@ function WhatIsManifoldPage() {
     if (newName === user?.name) return
     setName(newName)
 
-    await updateUserApi({ name: newName })
+    await updateUser({ name: newName })
 
     let username = cleanUsername(newName)
     try {
-      await updateUserApi({ username })
+      await updateUser({ username })
     } catch (e) {
       username += randomString(5)
-      await updateUserApi({ username })
+      await updateUser({ username })
     }
   }
 
