@@ -1,38 +1,38 @@
-import { Period } from 'web/lib/firebase/users'
+import { Period, getCutoff } from 'common/period'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { useEffect } from 'react'
-import { getCutoff } from 'web/lib/util/time'
-import {
-  getCurrentPortfolio,
-  getPortfolioHistory,
-} from 'common/supabase/portfolio-metrics'
+import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
 import { db } from 'web/lib/supabase/db'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { api } from 'web/lib/firebase/api'
+
 export type PeriodToSnapshots = {
   [time: number]: PortfolioSnapshot[]
 }
-export const usePortfolioHistory = (
-  userId: string,
-  period: Period,
-  preloadPoints?: PeriodToSnapshots
-) => {
+export const usePortfolioHistory = (userId: string, period: Period) => {
   const cutoff = getCutoff(period)
   const [portfolioHistories, setPortfolioHistories] =
     usePersistentInMemoryState<PeriodToSnapshots>(
-      preloadPoints ?? {},
+      {},
       `user-portfolio-history-${userId}`
     )
 
   useEffect(() => {
-    // We could remove this next line or set a lastUpdatedTime in order to re-fetch new data.
     if (portfolioHistories[cutoff]) return
-    getPortfolioHistory(userId, cutoff, db).then((portfolioHistory) => {
-      setPortfolioHistories((prev) => ({
-        ...prev,
-        [cutoff]: portfolioHistory,
-      }))
-    })
-  }, [userId, cutoff, setPortfolioHistories, portfolioHistories])
+
+    api('get-user-portfolio-history', { userId, period })
+      .then((portfolioHistory) => {
+        console.log('got portfolio history', portfolioHistory)
+        setPortfolioHistories((prev) => ({
+          ...prev,
+          [cutoff]: portfolioHistory,
+        }))
+      })
+      .catch((e) => {
+        console.error('Failed to get portfolio history', e)
+      })
+  }, [userId, setPortfolioHistories, cutoff])
+
   return portfolioHistories[cutoff] as PortfolioSnapshot[] | undefined
 }
 

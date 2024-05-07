@@ -166,6 +166,7 @@ import { convertSpiceToMana } from './convert-sp-to-mana'
 import { donate } from './donate'
 import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
+import { getUserPortfolioHistory } from './get-user-portfolio-history'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -310,6 +311,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'unique-bet-group-count': getUniqueBetGroupCount,
   'record-contract-interaction': recordContractInteraction,
   'get-user-portfolio': getUserPortfolio,
+  'get-user-portfolio-history': getUserPortfolioHistory,
   createuser: createuser,
   'verify-phone-number': verifyPhoneNumber,
   'request-otp': requestOTP,

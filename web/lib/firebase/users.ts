@@ -31,8 +31,6 @@ export const privateUsers = coll<PrivateUser>('private-users')
 
 export type { User }
 
-export type Period = 'daily' | 'weekly' | 'monthly' | 'allTime'
-
 export const auth = getAuth(app)
 
 export async function getPrivateUser(userId: string) {

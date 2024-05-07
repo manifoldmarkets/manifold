@@ -2,7 +2,7 @@ import { Row } from '../layout/row'
 import { Ref, forwardRef, useEffect, useState } from 'react'
 import { getFullUserById } from 'web/lib/supabase/users'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
-import { useAdminOrTrusted } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import * as HoverCard from '@radix-ui/react-hover-card'
 import { Avatar } from '../widgets/avatar'
 import { FollowButton } from '../buttons/follow-button'
@@ -52,7 +52,7 @@ const FetchUserHovercardContent = forwardRef(
 
     const followingIds = useFollows(userId)
     const followerIds = useFollowers(userId)
-    const isMod = useAdminOrTrusted()
+    const isMod = useAdminOrMod()
 
     return user ? (
       <HoverCard.Content

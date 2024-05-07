@@ -15,7 +15,7 @@ import {
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
-import { useAdminOrTrusted } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { filterDefined } from 'common/util/array'
 import { Group, groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
@@ -128,7 +128,7 @@ export function PublicMarketTopics(props: TopicRowProps) {
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
-  const isMod = useAdminOrTrusted()
+  const isMod = useAdminOrMod()
   const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
   const onlyGroups = !isMod && !isCreator ? adminGroups : undefined
 

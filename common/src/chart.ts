@@ -1,3 +1,4 @@
+import { base64toPoints } from './edge/og'
 import { removeUndefinedProps } from './util/object'
 import { first, last, mapValues, meanBy } from 'lodash'
 
@@ -8,19 +9,19 @@ export type ValueKind = 'Ṁ' | 'percent' | 'amount'
 
 export type MultiPoints = { [answerId: string]: HistoryPoint<never>[] }
 
-/** [x, [y0, y1, ...]] */
-export type MultiSerializedPoints = { [answerId: string]: [number, number][] }
-/** [x, y, obj] */
-export type SerializedPoint<T = unknown> =
-  | Readonly<[number, number]>
-  | Readonly<[number, number, T | undefined]>
+/** answer  -> base 64 encoded */
+export type MultiBase64Points = { [answerId: string]: string }
 
-export const unserializePoints = <T>(points: SerializedPoint<T>[]) => {
-  return points.map(([x, y, obj]) => removeUndefinedProps({ x, y, obj }))
+export type MultiSerializedPoints = { [answerId: string]: [number, number][] }
+/** [x, y] */
+export type SerializedPoint = Readonly<[number, number]>
+
+export const unserializePoints = (points: SerializedPoint[]) => {
+  return points.map(([x, y]) => removeUndefinedProps({ x, y }))
 }
 
-export const unserializeMultiPoints = (data: MultiSerializedPoints) => {
-  return mapValues(data, (points) => points.map(([x, y]) => ({ x, y })))
+export const unserializeBase64Multi = (data: MultiBase64Points) => {
+  return mapValues(data, (text) => base64toPoints(text))
 }
 
 export const serializeMultiPoints = (data: {

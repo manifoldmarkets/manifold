@@ -11,6 +11,7 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { track } from 'web/lib/service/analytics'
 import { useState } from 'react'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function MatchBetButton(props: {
   contract: CPMMMultiContract
@@ -76,7 +77,7 @@ export function MatchBetButton(props: {
       >
         <Col>
           {modalHeader}
-          <Link href={contractPath(contract)}>
+          <Link href={`https://${ENV_CONFIG.domain}/${contractPath(contract)}`}>
             <Subtitle className={clsx('!mb-4 !mt-0 !text-xl', linkClass)}>
               {answer.text}
             </Subtitle>

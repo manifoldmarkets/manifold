@@ -1,8 +1,8 @@
 export type PortfolioMetrics = {
   investmentValue: number
   balance: number
+  spiceBalance: number
   totalDeposits: number
-  loanTotal?: number
+  loanTotal: number
   timestamp: number
-  userId: string
 }

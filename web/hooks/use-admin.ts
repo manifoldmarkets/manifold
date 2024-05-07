@@ -6,7 +6,7 @@ export const useAdmin = () => {
   return user ? isAdminId(user.id) : false
 }
 
-export const useAdminOrTrusted = () => {
+export const useAdminOrMod = () => {
   const user = useUser()
   return user ? isAdminId(user.id) || isModId(user.id) : false
 }

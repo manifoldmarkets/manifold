@@ -20,6 +20,7 @@ import { CommentsTabContent } from 'web/components/contract/contract-tabs'
 import Link from 'next/link'
 import { contractPath } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function CommentsButton(props: {
   contract: Contract
@@ -85,7 +86,9 @@ function CommentsDialog(props: {
         <span>
           <span className="text-ink-600">Comments on </span>
           <span className={clsx('text-primary-600', linkClass)}>
-            <Link href={contractPath(contract)}>{contract.question}</Link>
+            <Link href={`https://${ENV_CONFIG.domain}/${contractPath(contract)}`}>
+              {contract.question}
+            </Link>
           </span>
         </span>
         <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide w-full')}>

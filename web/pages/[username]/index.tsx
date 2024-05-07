@@ -358,11 +358,7 @@ function UserProfile(props: {
                 content: (
                   <>
                     <VerifyPhoneNumberBanner user={currentUser} />
-                    <PortfolioSummary
-                      className="mt-4"
-                      user={user}
-                      balanceChanges={balanceChanges}
-                    />
+                    <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
               },
@@ -376,13 +372,11 @@ function UserProfile(props: {
                     {!isCurrentUser && (
                       <>
                         <PortfolioValueSection
-                          currentUser={currentUser}
                           user={user}
                           defaultTimePeriod={
                             currentUser?.id === user.id ? 'weekly' : 'monthly'
                           }
                           hideAddFundsButton
-                          balanceChanges={balanceChanges}
                         />
                         <Spacer h={4} />
                       </>

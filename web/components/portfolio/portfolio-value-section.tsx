@@ -1,19 +1,14 @@
 'use client'
 import clsx from 'clsx'
-import { AnyBalanceChangeType } from 'common/balance-change'
 import { last } from 'lodash'
 import { ReactNode, memo, useState } from 'react'
 import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import {
-  PeriodToSnapshots,
-  usePortfolioHistory,
-} from 'web/hooks/use-portfolio-history'
-import { Period, User } from 'web/lib/firebase/users'
+import { Period, periodDurations } from 'common/period'
+import { User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
-import { periodDurations } from 'web/lib/util/time'
 import { useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
@@ -32,6 +27,7 @@ import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
+import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 
 export type PortfolioHoveredGraphType = 'balance' | 'investment' | undefined
 
@@ -53,16 +49,13 @@ export const emptyGraphValues = {
 
 export const PortfolioValueSection = memo(
   function PortfolioValueSection(props: {
-    currentUser: User | null | undefined
     user: User
     defaultTimePeriod: Period
     portfolio?: PortfolioSnapshot
     hideAddFundsButton?: boolean
     onlyShowProfit?: boolean
     graphContainerClassName?: string
-    preloadPoints?: PeriodToSnapshots
     size?: 'sm' | 'md'
-    balanceChanges: AnyBalanceChangeType[]
   }) {
     const {
       user,
@@ -71,13 +64,11 @@ export const PortfolioValueSection = memo(
       portfolio,
       onlyShowProfit,
       graphContainerClassName,
-      preloadPoints,
       size = 'md',
-      balanceChanges,
-      currentUser,
     } = props
     const [currentTimePeriod, setCurrentTimePeriod] =
       useState<Period>(defaultTimePeriod)
+
     const portfolioHistory = usePortfolioHistory(user.id, currentTimePeriod)
 
     const [graphMode, setGraphMode] = useState<GraphMode>('portfolio')
@@ -158,7 +149,6 @@ export const PortfolioValueSection = memo(
           placement={isMobile ? 'bottom' : undefined}
           size={size}
           setGraphMode={setGraphMode}
-          balanceChanges={balanceChanges}
           portfolio={portfolio}
           user={user}
           portfolioFocus={portfolioFocus}
@@ -217,7 +207,6 @@ export const PortfolioValueSection = memo(
         portfolioValues={portfolioValues}
         graphValues={graphValues}
         setGraphMode={setGraphMode}
-        balanceChanges={balanceChanges}
         portfolio={undefined}
         user={user}
       />
@@ -242,7 +231,6 @@ function PortfolioValueSkeleton(props: {
   portfolioValues?: PortfolioValueType
   graphValues: GraphValueType
   setGraphMode: (mode: GraphMode) => void
-  balanceChanges: AnyBalanceChangeType[]
   portfolio: PortfolioSnapshot | undefined
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
@@ -267,7 +255,6 @@ function PortfolioValueSkeleton(props: {
     portfolioValues,
     graphValues,
     setGraphMode,
-    balanceChanges,
     portfolioFocus,
     setPortfolioFocus,
     portfolio,

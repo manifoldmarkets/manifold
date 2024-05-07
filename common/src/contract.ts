@@ -1,6 +1,5 @@
 import { Answer, DpmAnswer } from './answer'
 import { Bet } from './bet'
-import { MultiSerializedPoints, SerializedPoint } from './chart'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
 import { GroupLink, Topic } from 'common/group'
@@ -476,9 +475,9 @@ export type ContractParams = {
   contract: Contract
   historyData: {
     bets: Bet[]
-    points: MultiSerializedPoints | SerializedPoint<Partial<Bet>>[]
   }
   pointsString?: string
+  multiPointsString?: { [answerId: string]: string }
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number

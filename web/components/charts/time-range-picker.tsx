@@ -1,6 +1,5 @@
 import clsx from 'clsx'
-import { periodDurations } from 'web/lib/util/time'
-import { Period } from 'web/lib/firebase/users'
+import { Period, periodDurations } from 'common/period'
 import { ChoicesToggleGroup, ColorType } from '../widgets/choices-toggle-group'
 
 const labels: { [label: string]: Period } = {

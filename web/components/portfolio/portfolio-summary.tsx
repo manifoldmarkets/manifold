@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 
-import { AnyBalanceChangeType } from 'common/balance-change'
 import { User } from 'common/user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -9,12 +8,8 @@ import { Col } from '../layout/col'
 import { SupabaseSearch } from '../supabase-search'
 import { PortfolioValueSection } from './portfolio-value-section'
 
-export const PortfolioSummary = (props: {
-  user: User
-  balanceChanges: AnyBalanceChangeType[]
-  className?: string
-}) => {
-  const { user, balanceChanges, className } = props
+export const PortfolioSummary = (props: { user: User; className?: string }) => {
+  const { user, className } = props
   const currentUser = useUser()
   const privateUser = usePrivateUser()
   const isAuthed = useIsAuthorized()
@@ -30,7 +25,6 @@ export const PortfolioSummary = (props: {
     <Col className={clsx(className, 'gap-4')}>
       <PortfolioValueSection
         user={user}
-        currentUser={currentUser}
         defaultTimePeriod={
           isCreatedInLastWeek
             ? 'allTime'
@@ -39,7 +33,6 @@ export const PortfolioSummary = (props: {
             : 'monthly'
         }
         portfolio={portfolioData}
-        balanceChanges={balanceChanges}
       />
 
       {isCurrentUser && (

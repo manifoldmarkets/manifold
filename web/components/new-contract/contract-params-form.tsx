@@ -63,6 +63,7 @@ import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-nu
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -268,7 +269,7 @@ export function ContractParamsForm(props: {
   }, [outcomeType])
 
   const isValidQuestion = question.length > 0
-
+  const isMod = useAdminOrMod()
   const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
@@ -598,6 +599,26 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
+      {isMod && (
+        <Row className="mt-2 items-center gap-2">
+          <span>
+            Publicly listed{' '}
+            <InfoTooltip
+              text={
+                visibility === 'public'
+                  ? 'Visible on home page and search results'
+                  : "Only visible via link. Won't notify followers"
+              }
+            />
+          </span>
+          <ShortToggle
+            on={visibility === 'public'}
+            setOn={(on) => {
+              setVisibility(on ? 'public' : 'unlisted')
+            }}
+          />
+        </Row>
+      )}
       <CostSection
         balance={balance}
         amountSuppliedByUser={amountSuppliedByUser}

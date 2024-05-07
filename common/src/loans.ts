@@ -31,7 +31,7 @@ export const overLeveraged = (loanTotal: number, investmentValue: number) =>
   loanTotal / investmentValue >= 8
 
 export const isUserEligibleForLoan = (
-  portfolio: PortfolioMetrics | undefined
+  portfolio: (PortfolioMetrics & { userId: string }) | undefined
 ) => {
   if (!portfolio) return true
 

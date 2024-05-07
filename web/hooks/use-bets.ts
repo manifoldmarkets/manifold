@@ -37,7 +37,8 @@ export const useUnfilledBets = (
   useEffect(() => {
     // poll every 5 seconds
     if (!options?.waitUntilAdvancedTrader) {
-      const interval = setInterval(onPoll, 5000)
+      onPoll()
+      const interval = setInterval(onPoll, 500)
       return () => clearInterval(interval)
     }
   }, [contractId, !!options?.waitUntilAdvancedTrader])

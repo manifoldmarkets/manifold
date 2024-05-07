@@ -39,6 +39,8 @@ import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
+import { PERIODS } from 'common/period'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1133,6 +1135,16 @@ export const API = (_apiTypeCheck = {
       totalDeposits: number
       timestamp: number
     },
+  },
+  'get-user-portfolio-history': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      userId: z.string(),
+      period: z.enum(PERIODS),
+    }),
+    returns: {} as PortfolioMetrics[],
   },
   'get-feed': {
     method: 'GET',

@@ -3,18 +3,22 @@ import { getLocalEnv, initAdmin } from 'shared/init-admin'
 import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
+import { initCaches } from 'shared/init-caches'
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 if (LOCAL_DEV) {
   initAdmin()
 } else {
-  admin.initializeApp()
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT
+  admin.initializeApp({
+    projectId,
+    storageBucket: `${projectId}.appspot.com`,
+  })
 }
 
 METRIC_WRITER.start()
 
 import { app } from './app'
-import { initCaches } from 'api/helpers/init-caches'
 
 const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
