@@ -50,7 +50,8 @@ export const ContractMinibar = (props: { contract: MultiContract }) => {
   const sumsToOne =
     contract.mechanism != 'cpmm-multi-1' || contract.shouldAnswersSumToOne
 
-  const options = answers.map((a) => ({
+  const answersToShow = sumsToOne ? answers : answers.slice(0, 3)
+  const options = answersToShow.map((a) => ({
     prob: getAnswerProbability(contract, a.id),
     color: getAnswerColor(
       a,
@@ -61,6 +62,6 @@ export const ContractMinibar = (props: { contract: MultiContract }) => {
   if (sumsToOne) {
     return <MiniStackedBar options={options} />
   } else {
-    return <MiniBar options={options.slice(0, 3)} />
+    return <MiniBar options={options} />
   }
 }

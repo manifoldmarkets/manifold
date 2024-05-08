@@ -167,24 +167,25 @@ export const ChoiceContractChart = (props: {
     >
 
     answers.forEach((a) => {
-      const points = cloneDeep(multiPoints[a.id] ?? [])
+      const startingPoints = multiPoints[a.id] ?? []
+      const additionalPoints = []
 
       if ('resolution' in a) {
         if (a.resolutionTime) {
-          points.push({
+          additionalPoints.push({
             x: a.resolutionTime,
             y: getAnswerProbability(contract, a.id),
           })
         }
       } else {
-        points.push({
+        additionalPoints.push({
           x: end ?? now,
           y: getAnswerProbability(contract, a.id),
         })
       }
 
       const color = getAnswerColor(a, answerOrder)
-      ret[a.id] = { points, color }
+      ret[a.id] = { points: [...startingPoints, ...additionalPoints], color }
     })
 
     return ret
