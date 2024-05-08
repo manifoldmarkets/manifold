@@ -14,7 +14,7 @@ import {
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { mapValues, omit, orderBy } from 'lodash'
+import { mapValues, orderBy } from 'lodash'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
