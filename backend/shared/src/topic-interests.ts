@@ -35,7 +35,7 @@ export const buildUserInterestsCache = async (userId?: string) => {
       ...userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
         await pg.map(
-          `SELECT * FROM get_user_topic_interests_1($1, 50) LIMIT 100`,
+          `SELECT * FROM get_user_topic_interests_1($1, 50) LIMIT 200`,
           [userId],
           (r) => {
             userIdsToAverageTopicConversionScores[userId][r.group_id] =
