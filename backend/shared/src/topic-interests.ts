@@ -1,7 +1,6 @@
 import { log } from 'shared/monitoring/log'
 import {
   createSupabaseDirectClient,
-  getInstanceId,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { filterDefined } from 'common/util/array'
@@ -15,7 +14,7 @@ export const userIdsToAverageTopicConversionScores: {
 export const buildUserInterestsCache = async (userId?: string) => {
   const timeFrame = DEBUG_TOPIC_INTERESTS ? DEBUG_TIME_FRAME : '3 month'
   log('Starting user topic interests cache build process')
-  const pg = createSupabaseDirectClient(getInstanceId())
+  const pg = createSupabaseDirectClient()
   const activeUserIds = filterDefined([userId])
 
   if (Object.keys(userIdsToAverageTopicConversionScores).length === 0) {
@@ -36,7 +35,7 @@ export const buildUserInterestsCache = async (userId?: string) => {
       ...userIds.map(async (userId) => {
         userIdsToAverageTopicConversionScores[userId] = {}
         await pg.map(
-          `SELECT * FROM get_user_topic_interests($1, 50) LIMIT 100`,
+          `SELECT * FROM get_user_topic_interests_1($1, 50) LIMIT 100`,
           [userId],
           (r) => {
             userIdsToAverageTopicConversionScores[userId][r.group_id] =
