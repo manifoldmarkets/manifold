@@ -18,7 +18,6 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Row } from 'web/components/layout/row'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { Col } from 'web/components/layout/col'
-import { useAudio } from 'web/hooks/use-audio'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -41,8 +40,6 @@ export function DailyLoan(props: {
   const notEligibleForLoan = false //user.nextLoanCached < 1
   const receivedLoanToday = receivedTxnLoan || justReceivedLoan
 
-  const play = useAudio('register.mp3')
-
   const getLoan = async () => {
     if (receivedLoanToday || notEligibleForLoan) {
       setShowLoansModal(true)
@@ -57,7 +54,6 @@ export function DailyLoan(props: {
     })
     if (res) {
       await checkTxns()
-      play()
       toast.success(`${formatMoney(res.payout)} loan collected!`)
       setJustReceivedLoan(true)
     }
