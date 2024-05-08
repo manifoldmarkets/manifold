@@ -23,7 +23,8 @@ export const MIN_IMPORTANCE_SCORE = 0.05
 export async function calculateImportanceScore(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
-  readOnly = false
+  readOnly = false,
+  rescoreAll = false
 ) {
   const now = Date.now()
   const hourAgo = now - HOUR_MS
@@ -97,7 +98,7 @@ export async function calculateImportanceScore(
     const epsilon = 0.005
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
-      readOnly ||
+      rescoreAll ||
       !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
       !floatingEqual(freshnessScore, contract.freshnessScore, epsilon)
     ) {
