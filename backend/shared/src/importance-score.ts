@@ -97,6 +97,7 @@ export async function calculateImportanceScore(
     const epsilon = 0.005
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
+      readOnly ||
       !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
       !floatingEqual(freshnessScore, contract.freshnessScore, epsilon)
     ) {
@@ -301,20 +302,23 @@ export const computeContractScores = (
   const marketMovt =
     normalize(logOddsChange, 5) * normalize(contract.uniqueBettorCount, 10) // ignore movt on small markets
 
+  const conversionScore = normalize(contract.conversionScore, 1)
+
   // recalibrate all of these numbers as site usage changes
-  const rawImportance =
-    3 * normalize(traderHour, 20) +
-    3 * newness +
+  const rawMarketImportance =
+    2 * normalize(Math.log10(contract.volume24Hours + 1), 5) +
+    2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
-    2 * marketMovt +
-    2 * closingSoonnness +
+    2 * liquidityScore +
+    newness +
+    marketMovt +
+    closingSoonnness +
     commentScore +
     normalize(thisWeekScore, 200) +
-    normalize(Math.log10(contract.volume24Hours + 1), 5) +
     normalize(contract.uniqueBettorCount, 1000) +
     normalize(Math.log10(contract.volume + 1), 7) +
-    liquidityScore +
-    uncertainness
+    uncertainness +
+    conversionScore
 
   const rawPollImportance =
     2 * normalize(traderHour, 20) +
@@ -324,18 +328,26 @@ export const computeContractScores = (
     normalize(thisWeekScore, 200) +
     normalize(contract.uniqueBettorCount, 1000)
 
-  const scorePerType =
+  const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
-      : normalize(rawImportance, 8)
+      : normalize(rawMarketImportance, 8)
 
-  const importanceScore = scorePerType * (contract.conversionScore + 0.025)
+  const rawMarketFreshness =
+    normalize(Math.log10(contract.volume24Hours + 1), 5) +
+    normalize(traderHour, 20) +
+    newness
+
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
   const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
-  const freshnessScore = freshnessFactor * importanceScore
+
+  const freshnessScore =
+    outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
+      ? freshnessFactor * importanceScore
+      : normalize(rawMarketFreshness, 2)
 
   return {
     todayScore,
