@@ -29,7 +29,7 @@ import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
-import { MAX_ANSWERS } from './answer'
+import { MAX_ANSWERS, sortAnswers } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 
 export async function getContractParams(
@@ -118,10 +118,13 @@ export async function getContractParams(
     !isMulti && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
-  if ('answers' in contract) {
-    contract.answers = contract.answers.map(
-      (a) => omit(a, ['textFts', 'fsUpdatedTime']) as any
-    )
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    contract.answers = sortAnswers(contract, contract.answers)
+      .slice(0, 20)
+      .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
   }
 
   return {
