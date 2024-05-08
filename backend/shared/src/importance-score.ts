@@ -17,6 +17,7 @@ import { floatingEqual, logit } from 'common/util/math'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
+import { removeNullOrUndefinedProps } from 'common/util/object'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.05
@@ -27,25 +28,63 @@ export async function calculateImportanceScore(
   rescoreAll = false
 ) {
   const now = Date.now()
+  log('Calculating importance scores')
   const hourAgo = now - HOUR_MS
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
+  const select = (whereClause: string) => `
+    select c.id,
+           question,
+           mechanism,
+           c.data->'prob' as prob,
+           c.data->'volume' as volume,
+           c.data->'elasticity' as elasticity,
+           c.data->'probChanges' as prob_changes,
+           c.data->'uniqueBettorCount' as unique_bettors,
+           c.data->'createdTime' as created_time,
+           c.data->'volume24Hours' as volume_24_hours,
+           c.data->'shouldAnswersSumToOne' as should_answers_sum_to_one,
+           conversion_score,importance_score, freshness_score, view_count,
+           case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
+    from contracts c
+           left join answers a on c.id = a.contract_id
+    ${whereClause}
+    group by c.id
+       `
+  const convertRow = (row: any) => {
+    const {
+      should_answers_sum_to_one,
+      unique_bettors,
+      created_time,
+      volume_24_hours,
+      prob_changes,
+      answer_probs,
+      ...rest
+    } = row
+    const data = removeNullOrUndefinedProps({
+      shouldAnswersSumToOne: should_answers_sum_to_one,
+      probChanges: prob_changes,
+      volume24Hours: volume_24_hours as number,
+      uniqueBettorCount: unique_bettors as number,
+      createdTime: created_time as number,
+      answers: answer_probs?.map((p: number) => ({ prob: p as number })) ?? [],
+      ...rest,
+    }) as Contract
+    return convertContract({ ...row, data })
+  }
 
   const activeContracts = await pg.map(
-    `select data, conversion_score, importance_score, freshness_score from contracts
-    where last_bet_time > millis_to_ts($1)
-    or last_comment_time > millis_to_ts($1)`,
+    select(
+      'where last_bet_time > millis_to_ts($1) or last_comment_time > millis_to_ts($1)'
+    ),
     [now - IMPORTANCE_MINUTE_INTERVAL * MINUTE_MS],
-    (row) => convertContract(row)
+    convertRow
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    `select data, conversion_score, importance_score, freshness_score from contracts
-            where importance_score > $1
-            or freshness_score > $1
-            `,
+    select(' where importance_score > $1 or freshness_score > $1'),
     [MIN_IMPORTANCE_SCORE],
-    (row) => convertContract(row)
+    convertRow
   )
 
   const activeContractIds = activeContracts.map((c) => c.id)
@@ -95,7 +134,7 @@ export async function calculateImportanceScore(
       thisWeekTradersByContract[contract.id] ?? 0
     )
 
-    const epsilon = 0.005
+    const epsilon = 0.01
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       rescoreAll ||
@@ -118,12 +157,12 @@ export async function calculateImportanceScore(
       (c) => c.importanceScore < 0 || c.importanceScore > 1
     ).length !== 0
   )
-    console.log('WARNING: some scores are out of bounds')
+    log('WARNING: some scores are out of bounds')
 
-  console.log('Top 30 contracts by score')
+  log('Top 30 contracts by score')
 
   contractsWithUpdates.slice(0, 30).forEach((contract) => {
-    console.log(contract.importanceScore, contract.question)
+    log(contract.importanceScore, contract.question)
   })
 
   // Sort in descending order by freshness
@@ -131,23 +170,23 @@ export async function calculateImportanceScore(
     contractsWithUpdates,
     (c) => -1 * (c.freshnessScore ?? 0)
   )
-  console.log('Top 30 contracts by freshness')
+  log('Top 30 contracts by freshness')
 
   freshest.slice(0, 30).forEach((contract) => {
-    console.log(contract.freshnessScore, contract.question)
+    log(contract.freshnessScore, contract.question)
   })
 
-  console.log('Bottom 5 contracts by score')
+  log('Bottom 5 contracts by score')
   contractsWithUpdates
     .slice()
     .reverse()
     .slice(0, 5)
     .forEach((contract) => {
-      console.log(contract.importanceScore, contract.question)
+      log(contract.importanceScore, contract.question)
     })
 
   if (!readOnly) {
-    console.log('Updating', contractsWithUpdates.length, 'contracts')
+    log('Updating', contractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
       'contracts',
