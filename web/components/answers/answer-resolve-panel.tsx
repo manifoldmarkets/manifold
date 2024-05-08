@@ -1,7 +1,11 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import { CPMMMultiContract, MultiContract, canCancelContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  MultiContract,
+  canCancelContract,
+} from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
