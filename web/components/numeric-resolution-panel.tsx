@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { NumberCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { PseudoNumericContract } from 'common/contract'
+import { PseudoNumericContract, canCancelContract } from 'common/contract'
 import { APIError, api } from 'web/lib/firebase/api'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { BETTORS } from 'common/user'
 import { Button } from './buttons/button'
 import { AmountInput } from './widgets/amount-input'
-import { ResolveHeader } from './resolution-panel'
+import { ResolutionExplainer, ResolveHeader } from './resolution-panel'
 import { useUser } from 'web/hooks/use-user'
 
 function getNumericResolveButtonColor(
@@ -72,6 +72,9 @@ export function NumericResolutionPanel(props: {
     outcomeMode === undefined ||
     (value === undefined && outcomeMode !== 'CANCEL')
 
+  const user = useUser()
+  const canCancel = !!user && canCancelContract(user.id, contract)
+
   return (
     <>
       <ResolveHeader
@@ -81,7 +84,11 @@ export function NumericResolutionPanel(props: {
         fullTitle={inModal}
       />
 
-      <NumberCancelSelector selected={outcomeMode} onSelect={setOutcomeMode} />
+      <NumberCancelSelector
+        selected={outcomeMode}
+        onSelect={setOutcomeMode}
+        canCancel={canCancel}
+      />
 
       <Spacer h={4} />
 
@@ -129,6 +136,9 @@ export function NumericResolutionPanel(props: {
         )}
       </div>
       {!!error && <div className="text-scarlet-500">{error}</div>}
+
+      <Spacer h={4} />
+      <ResolutionExplainer pseudoNumeric />
     </>
   )
 }

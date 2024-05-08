@@ -8,6 +8,7 @@ import {
   BinaryContract,
   CPMMMultiContract,
   Contract,
+  canCancelContract,
   resolution,
 } from 'common/contract'
 import { BETTORS } from 'common/user'
@@ -88,6 +89,9 @@ export function ResolutionPanel(props: {
     }
   }
 
+  const user = useUser()
+  const canCancel = !!user && canCancelContract(user.id, contract)
+
   return (
     <>
       <ResolveHeader
@@ -97,7 +101,11 @@ export function ResolutionPanel(props: {
         fullTitle={inModal}
       />
 
-      <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
+      <YesNoCancelSelector
+        selected={outcome}
+        onSelect={setOutcome}
+        canCancel={canCancel}
+      />
 
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
@@ -114,29 +122,22 @@ export function ResolutionPanel(props: {
               earned fees.
             </>
           ) : outcome === 'MKT' ? (
-            <Row className="flex-wrap items-center gap-2">
-              <span>Pay out at this probability:</span>{' '}
-              <ProbabilityInput
-                prob={prob}
-                onChange={setProb}
-                className="!h-11 w-28"
-              />
-            </Row>
+            <Col className="gap-2">
+              <Row className="flex-wrap items-center gap-2">
+                <span>Pay out at this probability:</span>{' '}
+                <ProbabilityInput
+                  prob={prob}
+                  onChange={setProb}
+                  className="!h-11 w-28"
+                />
+              </Row>
+              <div className="text-ink-500">
+                Yes holders get this percent of the winnings and No holders get
+                the rest.
+              </div>
+            </Col>
           ) : (
-            <span className="text-ink-500">
-              Pick the true answer and pay out {BETTORS} that got it right. Ask
-              in the comments section or our{' '}
-              <Link
-                onClick={(e) => {
-                  e.stopPropagation()
-                }}
-                href="https://discord.gg/eHQBNBqXuh"
-                className={clsx(linkClass)}
-              >
-                Discord
-              </Link>{' '}
-              if you need help.
-            </span>
+            <ResolutionExplainer />
           )}
         </div>
         {!inModal && (
@@ -232,6 +233,9 @@ export function MiniResolutionPanel(props: {
 }) {
   const { contract, answer, isAdmin, isCreator, modalSetOpen } = props
 
+  const user = useUser()
+  const canCancel = !!user && canCancelContract(user.id, contract)
+
   const [outcome, setOutcome] = useState<resolution | undefined>()
   const toggleOutcome = (newOutcome: resolution | undefined) => {
     if (newOutcome === outcome) {
@@ -285,18 +289,28 @@ export function MiniResolutionPanel(props: {
           ADMIN
         </div>
       )}
-      <Col className="items-center gap-1">
-        <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
+      <Col className="gap-1">
+        <YesNoCancelSelector
+          selected={outcome}
+          onSelect={toggleOutcome}
+          canCancel={canCancel}
+        />
         {outcome === 'MKT' && (
-          <Row className="flex-wrap items-center gap-1">
-            Resolve to
-            <ProbabilityInput
-              prob={prob}
-              onChange={setProb}
-              className="w-28"
-              inputClassName=""
-            />
-          </Row>
+          <Col className="gap-2">
+            <Row className="flex-wrap items-center gap-1">
+              Resolve to
+              <ProbabilityInput
+                prob={prob}
+                onChange={setProb}
+                className="w-28"
+                inputClassName=""
+              />
+            </Row>
+            <div className="text-ink-500">
+              Yes holders get this percent of the winnings and No holders get
+              the rest.
+            </div>
+          </Col>
         )}
         {outcome === 'CANCEL' && (
           <div className="text-warning">Cancel trades and return mana</div>
@@ -316,5 +330,36 @@ export function MiniResolutionPanel(props: {
         isSubmitting={isSubmitting}
       />
     </Row>
+  )
+}
+
+export const ResolutionExplainer = (props: {
+  independentMulti?: boolean
+  pseudoNumeric?: boolean
+}) => {
+  const { independentMulti, pseudoNumeric } = props
+  const answerOrQuestion = independentMulti ? 'answer' : 'question'
+  return (
+    <div className="text-ink-500 text-sm">
+      {!pseudoNumeric && (
+        <>
+          Resolves the {answerOrQuestion} and pays out {BETTORS} that got it
+          right. <br />{' '}
+        </>
+      )}
+      If you need help, ask in the comments section below; mention{' '}
+      <span className="font-semibold">@SirSalty</span> in your comment if you
+      want to cancel the {answerOrQuestion}. Or, ask in our{' '}
+      <Link
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+        href="https://discord.gg/eHQBNBqXuh"
+        className={clsx(linkClass, 'underline')}
+      >
+        Discord
+      </Link>
+      !
+    </div>
   )
 }

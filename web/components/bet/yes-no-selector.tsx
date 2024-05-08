@@ -70,12 +70,12 @@ export function YesNoSelector(props: {
 export function YesNoCancelSelector(props: {
   selected: resolution | undefined
   onSelect: (selected: resolution) => void
+  canCancel: boolean
   className?: string
 }) {
-  const { selected, onSelect, className } = props
-
+  const { selected, onSelect, canCancel, className } = props
   const btnClassName = clsx(
-    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none',
+    '!py-2 flex-1 first:rounded-l-xl last:rounded-r-xl rounded-r-none rounded-l-none whitespace-nowrap',
     className
   )
 
@@ -103,16 +103,18 @@ export function YesNoCancelSelector(props: {
         onClick={() => onSelect('MKT')}
         className={btnClassName}
       >
-        %
+        PARTIAL %
       </Button>
 
-      <Button
-        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-        onClick={() => onSelect('CANCEL')}
-        className={btnClassName}
-      >
-        N/A
-      </Button>
+      {canCancel && (
+        <Button
+          color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+          onClick={() => onSelect('CANCEL')}
+          className={btnClassName}
+        >
+          N/A
+        </Button>
+      )}
     </Row>
   )
 }
@@ -120,8 +122,9 @@ export function YesNoCancelSelector(props: {
 export function ChooseCancelSelector(props: {
   selected: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL' | undefined
   onSelect: (selected: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL') => void
+  canCancel: boolean
 }) {
-  const { selected, onSelect } = props
+  const { selected, onSelect, canCancel } = props
 
   const btnClassName =
     '!py-2 flex-1 sm:first:rounded-l-xl sm:last:rounded-r-xl sm:rounded-none whitespace-nowrap'
@@ -146,14 +149,16 @@ export function ChooseCancelSelector(props: {
         Choose many
       </Button>
 
-      <Button
-        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-        size="lg"
-        onClick={() => onSelect('CANCEL')}
-        className={btnClassName}
-      >
-        N/A
-      </Button>
+      {canCancel && (
+        <Button
+          color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+          size="lg"
+          onClick={() => onSelect('CANCEL')}
+          className={btnClassName}
+        >
+          N/A
+        </Button>
+      )}
     </div>
   )
 }
@@ -161,9 +166,10 @@ export function ChooseCancelSelector(props: {
 export function NumberCancelSelector(props: {
   selected: 'NUMBER' | 'CANCEL' | undefined
   onSelect: (selected: 'NUMBER' | 'CANCEL') => void
+  canCancel: boolean
   className?: string
 }) {
-  const { selected, onSelect } = props
+  const { selected, onSelect, canCancel } = props
 
   const btnClassName = 'flex-1 font-medium whitespace-nowrap'
 
@@ -178,14 +184,16 @@ export function NumberCancelSelector(props: {
         Choose value
       </Button>
 
-      <Button
-        color={selected === 'CANCEL' ? 'yellow' : 'gray'}
-        size="lg"
-        onClick={() => onSelect('CANCEL')}
-        className={clsx(btnClassName, 'rounded-l-none rounded-r-xl')}
-      >
-        N/A
-      </Button>
+      {canCancel && (
+        <Button
+          color={selected === 'CANCEL' ? 'yellow' : 'gray'}
+          size="lg"
+          onClick={() => onSelect('CANCEL')}
+          className={clsx(btnClassName, 'rounded-l-none rounded-r-xl')}
+        >
+          N/A
+        </Button>
+      )}
     </Row>
   )
 }

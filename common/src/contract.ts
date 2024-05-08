@@ -5,13 +5,14 @@ import { JSONContent } from '@tiptap/core'
 import { GroupLink, Topic } from 'common/group'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
 import { ContractComment } from './comment'
-import { ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
 import { formatMoney, formatPercent } from './util/format'
 import { getLiquidity } from './calculate-cpmm-multi'
 import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
 import { PollOption } from './poll-option'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { MINUTE_MS } from './util/time'
 
 /************************************************
 
@@ -505,3 +506,8 @@ export const MAX_CPMM_PROB = 0.99
 export const MIN_CPMM_PROB = 0.01
 export const MAX_STONK_PROB = 0.95
 export const MIN_STONK_PROB = 0.2
+
+export const canCancelContract = (userId: string, contract: Contract) => {
+  const createdRecently = (Date.now() - contract.createdTime) / MINUTE_MS < 15
+  return createdRecently || isModId(userId) || isAdminId(userId)
+}

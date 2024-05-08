@@ -5,6 +5,7 @@ import {
   Contract,
   MultiContract,
   CPMMNumericContract,
+  canCancelContract,
 } from 'common/contract'
 import { log, getUser } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
@@ -65,6 +66,16 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
     if (answer && 'resolution' in answer && answer.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }
+  }
+
+  if (
+    resolutionParams.outcome === 'CANCEL' &&
+    !canCancelContract(auth.uid, contract)
+  ) {
+    throw new APIError(
+      403,
+      'Only admins/mods can cancel markets, unless the market was created in the last 15 minutes'
+    )
   }
 
   log('Resolving market ', {

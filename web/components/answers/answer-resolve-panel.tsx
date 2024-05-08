@@ -1,7 +1,7 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, MultiContract, canCancelContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/firebase/api'
 import { Row } from '../layout/row'
@@ -14,7 +14,11 @@ import { useUser } from 'web/hooks/use-user'
 import { DpmAnswer, Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
-import { MiniResolutionPanel, ResolveHeader } from '../resolution-panel'
+import {
+  MiniResolutionPanel,
+  ResolutionExplainer,
+  ResolveHeader,
+} from '../resolution-panel'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
@@ -149,12 +153,16 @@ function AnswersResolveOptions(props: {
     setIsSubmitting(false)
   }
 
+  const user = useUser()
+  const canCancel = !!user && canCancelContract(user.id, contract)
+
   return (
     <>
       <div className="flex flex-col items-stretch justify-center gap-4 sm:flex-row sm:flex-wrap sm:justify-between">
         <ChooseCancelSelector
           selected={resolveOption}
           onSelect={setResolveOption}
+          canCancel={canCancel}
         />
 
         <Row className="justify-end gap-1">
@@ -314,6 +322,7 @@ export const AnswersResolvePanel = (props: {
             />
           ))}
         </Col>
+        <ResolutionExplainer />
       </Col>
     </GradientContainer>
   )
@@ -453,6 +462,7 @@ export const IndependentAnswersResolvePanel = (props: {
             />
           ))}
         </Col>
+        <ResolutionExplainer independentMulti />
       </Col>
     </GradientContainer>
   )
