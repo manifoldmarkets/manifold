@@ -118,6 +118,15 @@ export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
+const logObjectSize = (obj: any) => {
+  console.table(
+    Object.entries(obj).map(([k, v]) => [
+      k,
+      JSON.stringify(v).length.toLocaleString(),
+    ])
+  )
+}
+
 export default function ContractPage(props: MaybeAuthedContractParams) {
   if (props.state === 'deleted') {
     return (
@@ -128,6 +137,10 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
       </Page>
     )
   }
+
+  logObjectSize(props.params)
+  // logObjectSize(props.params.contract)
+  console.log(props.params.relatedContracts)
 
   return <NonPrivateContractPage contractParams={props.params} />
 }
