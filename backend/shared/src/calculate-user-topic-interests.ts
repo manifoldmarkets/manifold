@@ -125,9 +125,11 @@ export async function calculateUserTopicInterests(startTime?: number) {
         allGroupIds.map((groupId) => [
           groupId,
           {
-            conversionScore:
+            conversionScore: Math.log(
               (myGroupWeights[groupId] ?? 0) /
-              (viewedGroupIds.filter((id) => id === groupId).length || 1),
+                (viewedGroupIds.filter((id) => id === groupId).length || 1) +
+                1
+            ),
           },
         ])
       ) as groupIdsToConversionScore
@@ -145,9 +147,9 @@ export async function calculateUserTopicInterests(startTime?: number) {
         log.error('Skipping conversion score writes for user: ' + userId)
       }
       await pg.none(
-        `insert into user_topic_interests (user_id, group_ids_to_activity)
-           values ($1, $2)`,
-        [userId, groupIdsToConversionScore]
+        `insert into user_topic_interests (user_id, group_ids_to_activity, created_time)
+           values ($1, $2, $3)`,
+        [userId, groupIdsToConversionScore, start]
       )
     })
   )
