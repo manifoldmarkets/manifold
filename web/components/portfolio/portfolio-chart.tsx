@@ -2,24 +2,20 @@ import { HistoryPoint, ValueKind } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
-import { CurveFactory, area, curveStepAfter } from 'd3-shape'
+import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
 import {
-  SVGProps,
   useCallback,
   useEffect,
-  useId,
   useMemo,
   useState,
 } from 'react'
 import { useEvent } from 'web/hooks/use-event'
 import {
-  DiagonalPattern,
   dataAtTimeSelector,
   dataAtXSelector,
 } from '../charts/generic-charts'
 import {
-  AreaPath,
   LinePath,
   PointerMode,
   SVGChart,

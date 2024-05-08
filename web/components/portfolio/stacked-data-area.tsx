@@ -3,7 +3,6 @@ import { useId, useMemo } from 'react'
 import { DiagonalPattern } from '../charts/generic-charts'
 import { AreaPath } from '../charts/helpers'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
-import { create } from 'domain'
 import { HistoryPoint } from 'common/chart'
 import { AreaPointType } from './portfolio-chart'
 
