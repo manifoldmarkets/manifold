@@ -25,7 +25,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, mapValues, minBy, orderBy, sortBy } from 'lodash'
+import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
@@ -117,6 +117,12 @@ export async function getContractParams(
   const ogPoints =
     !isMulti && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+
+  if ('answers' in contract) {
+    contract.answers = contract.answers.map(
+      (a) => omit(a, ['textFts', 'fsUpdatedTime']) as any
+    )
+  }
 
   return {
     state: 'authed',

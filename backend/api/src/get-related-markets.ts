@@ -14,7 +14,7 @@ import {
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { orderBy } from 'lodash'
+import { mapValues, omit, orderBy } from 'lodash'
 
 export const getrelatedmarketscache: APIHandler<
   'get-related-markets-cache'
@@ -128,10 +128,21 @@ const getRelatedMarkets = async (
       marketsFromEmbeddings,
       orderByNonStonks,
       'desc'
+    ).map(cleanContractForStaticProps),
+    marketsByTopicSlug: mapValues(marketsByTopicSlug, (contracts) =>
+      contracts.map(cleanContractForStaticProps)
     ),
-    marketsByTopicSlug,
   }
 }
+
+const cleanContractForStaticProps = (c: Contract) =>
+  ({
+    ...c,
+    description: '',
+    answers: [],
+    groupSlugs: [],
+    groupLinks: [],
+  } as Contract)
 
 const refreshedRelatedMarkets = async (
   contractId: string,
@@ -146,14 +157,16 @@ const refreshedRelatedMarkets = async (
     pg
   )
   return {
-    marketsFromEmbeddings: refreshedContracts.filter((c) =>
-      cachedResults.marketIdsFromEmbeddings.includes(c.id)
-    ),
+    marketsFromEmbeddings: refreshedContracts
+      .filter((c) => cachedResults.marketIdsFromEmbeddings.includes(c.id))
+      .map(cleanContractForStaticProps),
     marketsByTopicSlug: Object.fromEntries(
       Object.entries(cachedResults.marketIdsByTopicSlug).map(
         ([slug, contractIds]) => [
           slug,
-          refreshedContracts.filter((c) => contractIds.includes(c.id)),
+          refreshedContracts
+            .filter((c) => contractIds.includes(c.id))
+            .map(cleanContractForStaticProps),
         ]
       )
     ),
