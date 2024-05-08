@@ -1,17 +1,10 @@
 import { Contract } from 'common/contract'
-import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
-import { linkClass } from 'web/components/widgets/site-link'
-import { useEffect, useState, useRef } from 'react'
+import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  PencilIcon,
-  PlusIcon,
-} from '@heroicons/react/solid'
+import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
@@ -45,86 +38,42 @@ function PrivateMarketGroups(props: { topic?: Topic }) {
   return null
 }
 
-const ContractTopicBreadcrumbs = (props: TopicRowProps) => {
-  const { contract, dashboards, topics } = props
-
-  const spanRef = useRef<HTMLSpanElement>(null)
-  const [isClamped, setClamped] = useState(true)
-  const [showMore, setShowMore] = useState(false)
-
-  useEffect(() => {
-    function handleResize() {
-      if (spanRef.current) {
-        setClamped(spanRef.current.scrollHeight > spanRef.current.clientHeight)
-      }
-    }
-
-    handleResize()
-    window.addEventListener('resize', handleResize)
-
-    return () => window.removeEventListener('resize', handleResize)
-  }, [topics])
-
+const DashboardLink = (props: {
+  dashboard: { slug: string; title: string }
+}) => {
+  const { dashboard } = props
   return (
-    <>
-      <span
-        ref={spanRef}
-        className={clsx('min-h-[24px]', !showMore && 'line-clamp-1')}
-      >
-        {dashboards?.map((dashboard) => (
-          <span key={dashboard.slug}>
-            <Link
-              className={'text-sm text-teal-800 hover:underline'}
-              href={`/news/${dashboard.slug}`}
-            >
-              {dashboard.title}
-            </Link>
-            {topics.length > 0 && <SpacerDot />}
-          </span>
-        ))}
-        {topics.map((topic, i) => (
-          <span key={topic.id}>
-            <Link
-              className={clsx(linkClass, 'text-primary-700 text-sm')}
-              href={groupPath(topic.slug)}
-              onClick={() => {
-                track('click category pill on market', {
-                  contractId: contract.id,
-                  categoryName: topic.name,
-                })
-              }}
-            >
-              {removeEmojis(topic.name)}
-            </Link>
-            {i !== topics.length - 1 && <SpacerDot />}
-          </span>
-        ))}
-      </span>
-      {isClamped && (
-        <button
-          className={'text-primary-700 mt-1'}
-          onClick={() => setShowMore(!showMore)}
-        >
-          {showMore ? (
-            <ChevronUpIcon className="h-4 w-4" />
-          ) : (
-            <ChevronDownIcon className="h-4 w-4" />
-          )}
-        </button>
-      )}
-    </>
+    <Link
+      className="text-teal-700 hover:underline active:underline"
+      href={`/news/${dashboard.slug}`}
+    >
+      {dashboard.title}
+    </Link>
   )
 }
 
-const SpacerDot = () => (
-  <span className="text-ink-500 mx-1.5">
-    <wbr />•
-  </span>
-)
+const TopicLink = (props: { topic: Topic; contractId: string }) => {
+  const { topic, contractId } = props
+  return (
+    <Link
+      key={topic.id}
+      className="text-ink-500 hover:underline active:underline"
+      href={groupPath(topic.slug)}
+      onClick={() => {
+        track('click category pill on market', {
+          contractId: contractId,
+          categoryName: topic.name,
+        })
+      }}
+    >
+      #{removeEmojis(topic.name)}
+    </Link>
+  )
+}
 
 export function PublicMarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
-  const { contract, topics } = props
+  const { contract, topics, dashboards } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
@@ -139,8 +88,13 @@ export function PublicMarketTopics(props: TopicRowProps) {
     !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
   return (
     <>
-      <Row className={'group gap-1'}>
-        <ContractTopicBreadcrumbs {...props} />
+      <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
+        {dashboards.map((d) => (
+          <DashboardLink key={d.slug} dashboard={d} />
+        ))}
+        {topics.map((t) => (
+          <TopicLink key={t.id} topic={t} contractId={contract.id} />
+        ))}
         {user && canEdit && (
           <button
             onClick={(e) => {
@@ -148,18 +102,18 @@ export function PublicMarketTopics(props: TopicRowProps) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-primary-400/20 text-primary-700 rounded-md text-sm sm:invisible sm:group-hover:visible"
+            className="hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md px-2 text-xs sm:invisible sm:text-sm sm:group-hover:visible"
           >
             {topics.length ? (
-              <PencilIcon className="mx-1 h-4 w-4" />
+              <PencilIcon className="h-4 w-4" />
             ) : (
-              <span className={clsx('flex items-center px-1 text-sm')}>
+              <>
                 <PlusIcon className="mr-1 h-3 " /> Topics
-              </span>
+              </>
             )}
           </button>
         )}
-      </Row>
+      </div>
       <Modal open={open} setOpen={setOpen} size={'md'}>
         <Col
           className={
