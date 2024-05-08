@@ -29,12 +29,12 @@ export const useDataZoomFetcher = <T>(props: {
   points: HistoryPoint<T>[]
 }) => {
   const [data, setData] = useState(props.points)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const onZoomData = useCallback(
     debounce(async (min?: number, max?: number) => {
       if (min && max) {
-        setLoading(false)
+        setLoading(true)
         const points = await getPointsBetween(props.contractId, min, max)
 
         setData(
@@ -42,10 +42,10 @@ export const useDataZoomFetcher = <T>(props: {
             props.points.filter((p, i) => i == 0 || p.x < min),
             points,
             props.points.filter((p) => p.x > max)
-          )
+          ).sort((a, b) => a.x - b.x)
         )
 
-        setLoading(true)
+        setLoading(false)
       } else {
         setData(props.points)
       }
