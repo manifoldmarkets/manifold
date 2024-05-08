@@ -133,7 +133,7 @@ export function BannedBadge() {
       text="Can't create comments, messages, or questions"
       placement="bottom"
     >
-      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
         Banned
       </span>
     </Tooltip>
