@@ -4,17 +4,9 @@ import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
 import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useEvent } from 'web/hooks/use-event'
-import {
-  dataAtTimeSelector,
-  dataAtXSelector,
-} from '../charts/generic-charts'
+import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   LinePath,
   PointerMode,
