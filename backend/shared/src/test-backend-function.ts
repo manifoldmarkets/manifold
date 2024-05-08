@@ -10,6 +10,7 @@ import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
 import { DAY_MS } from 'common/util/time'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import { updateCreatorMetricsCore } from 'shared/update-creator-metrics-core'
+import { calculateImportanceScore } from 'shared/importance-score'
 
 // Ian's file for debugging
 export async function testBackendFunction() {
@@ -19,13 +20,21 @@ export async function testBackendFunction() {
     const pg = createSupabaseDirectClient()
     const db = createSupabaseClient()
     const firestore = admin.firestore()
-    // for (let i = 0; i < 50; i++) {
-    //   const startTime = Date.now() - DAY_MS * (50 - i)
+    // const MAX_DAYS = 100
+    // const now = Date.now()
+    // console.log('Starting topic interests')
+    // const startTimes = []
+    // for (let i = 0; i < MAX_DAYS; i++) {
+    //   const startTime = now - DAY_MS * (MAX_DAYS - i)
+    //   console.log('Topic interests iteration:', i)
     //   await calculateUserTopicInterests(startTime)
+    //   startTimes.push(new Date(startTime).toISOString())
     // }
+    // console.log('all start times:', startTimes)
+    // await calculateImportanceScore(db, pg)
     // await updateContractMetricsCore()
     // await updateUserMetricsCore()
-    await updateCreatorMetricsCore()
+    // await updateCreatorMetricsCore()
   } catch (e) {
     console.error(e)
   }
