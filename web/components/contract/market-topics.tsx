@@ -1,5 +1,4 @@
 import { Contract } from 'common/contract'
-import clsx from 'clsx'
 import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { useState } from 'react'
