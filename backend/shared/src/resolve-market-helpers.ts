@@ -29,7 +29,11 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
 import { acquireLock, releaseLock } from './firestore-lock'
-import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  SPICE_PRODUCTION_ENABLED,
+  isAdminId,
+  isModId,
+} from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 
 export type ResolutionParams = {
@@ -163,12 +167,13 @@ export const resolveMarketHelper = async (
 
     if (
       outcome === 'CANCEL' &&
-      !ENV_CONFIG.adminIds.includes(resolver.id) &&
+      !isAdminId(resolver.id) &&
+      !isModId(resolver.id) &&
       negativePayouts.length > 0
     ) {
       throw new APIError(
         403,
-        'Negative payouts too large for resolution. Contact admin.'
+        'Negative payouts too large for resolution. Contact admin or mod.'
       )
     }
 
