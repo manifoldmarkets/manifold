@@ -60,8 +60,16 @@ const search = async (
     : undefined
   let contracts
   if (isForYou && !term && sort === 'score' && userId) {
-    const forYouSql = getForYouSQL(userId, filter, contractType, limit, offset)
+    const forYouSql = await getForYouSQL(
+      userId,
+      filter,
+      contractType,
+      limit,
+      offset
+    )
+    const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
+    log('For you search completed in (s):', (Date.now() - start) / 1000)
   } else if (isRecent && !term && userId) {
     contracts = await pg.map(
       'select data from get_your_recent_contracts($1, $2, $3)',

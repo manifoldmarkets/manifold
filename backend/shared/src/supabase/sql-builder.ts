@@ -47,8 +47,9 @@ export function buildSql(...parts: Args): SqlBuilder {
   }
 }
 
-export function withClause(clause: string) {
-  return buildSql({ with: clause })
+export function withClause(clause: string, formatValues?: any) {
+  const formattedWith = pgp.as.format(clause, formatValues)
+  return buildSql({ with: formattedWith })
 }
 
 export function select(clause: string) {
