@@ -39,7 +39,8 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'NUMBER',
     name: 'numeric',
     descriptor: 'A question with a numerical answer.',
-    example: 'Experimental market type: How many people will come to Taco Tuesday?',
+    example:
+      'Experimental market type: How many people will come to Taco Tuesday?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <GoNumber className="h-12 w-12" />
