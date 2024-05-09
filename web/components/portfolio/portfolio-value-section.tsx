@@ -105,8 +105,6 @@ export const PortfolioValueSection = memo(
         return updatedValues
       })
     }
-
-    // console.log(graphValues)
     const [portfolioHoveredGraph, setPortfolioHoveredGraph] =
       useState<PortfolioHoveredGraphType>(undefined)
 

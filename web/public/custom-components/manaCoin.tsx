@@ -17,5 +17,3 @@ export function ManaCoin(props: { className?: string }) {
     />
   )
 }
-
-
