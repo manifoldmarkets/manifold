@@ -23,6 +23,7 @@ import {
   emptyGraphValues,
 } from './portfolio-value-section'
 import { StackedArea } from './stacked-data-area'
+import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type AreaPointType = {
   x: number // The x-coordinate
@@ -149,7 +150,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
     unstackedPs.forEach((p, i) => {
       if (i == SPICE_IDX && p.prev?.y) {
-        updateGraphValues({ spice: p.prev.y })
+        updateGraphValues({ spice: p.prev.y / SPICE_TO_MANA_CONVERSION_RATE })
       }
       if (i == BALANCE_IDX && p.prev?.y) {
         updateGraphValues({ balance: p.prev.y })

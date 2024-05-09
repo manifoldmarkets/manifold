@@ -25,7 +25,10 @@ import {
   SPICE_COLOR,
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  SPICE_PRODUCTION_ENABLED,
+  SPICE_TO_MANA_CONVERSION_RATE,
+} from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
@@ -183,7 +186,8 @@ export const PortfolioValueSection = memo(
 
     const { balance, investmentValue, totalDeposits, spiceBalance } =
       lastPortfolioMetrics
-    const totalValue = balance + investmentValue
+    const totalValue =
+      balance + investmentValue + spiceBalance * SPICE_TO_MANA_CONVERSION_RATE
 
     const profit = totalValue - totalDeposits - firstProfit
 

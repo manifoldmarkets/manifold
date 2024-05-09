@@ -95,9 +95,7 @@ export const PortfolioGraph = (props: {
       const { min: networthYMin, max: networthYMax } =
         findMinMax(networthYPoints)
 
-      const spiceYPointsInMana = spicePoints.map(
-        (d) => d.y * SPICE_TO_MANA_CONVERSION_RATE
-      )!
+      const spiceYPointsInMana = spicePoints.map((d) => d.y)!
       const { min: spiceYMinInMana, max: spiceYMaxInMana } =
         findMinMax(spiceYPointsInMana)
       const spiceXPoints = spicePoints.map((d) => d.x)!
@@ -304,7 +302,7 @@ function usePortfolioPointsFromHistory(
       })
       spicePoints.push({
         x: p.timestamp,
-        y: p.spiceBalance,
+        y: p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
         obj: p,
       })
     })
