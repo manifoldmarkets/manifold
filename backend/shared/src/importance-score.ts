@@ -20,7 +20,8 @@ import { convertContract } from 'common/supabase/contracts'
 import { removeNullOrUndefinedProps } from 'common/util/object'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
-export const MIN_IMPORTANCE_SCORE = 0.05
+export const MIN_IMPORTANCE_SCORE = 0.1
+
 export async function calculateImportanceScore(
   db: SupabaseClient,
   pg: SupabaseDirectClient,
@@ -82,7 +83,7 @@ export async function calculateImportanceScore(
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    select(' where importance_score > $1 or freshness_score > $1'),
+    select('where importance_score > $1 or freshness_score > $1 or resolution_time is null'),
     [MIN_IMPORTANCE_SCORE],
     convertRow
   )
@@ -94,6 +95,7 @@ export async function calculateImportanceScore(
 
   const contracts = activeContracts.concat(previouslyActiveContractsFiltered)
   const contractIds = contracts.map((c) => c.id)
+
   log(
     `Found ${contracts.length} contracts to score`,
     'including',
