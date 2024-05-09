@@ -10,6 +10,7 @@ import {
   orderBy,
   limit as lim,
   withClause,
+  groupBy,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
@@ -68,7 +69,9 @@ export async function getForYouSQL(
 
   const forYou = renderSql(
     buildArray(
-      select('contracts.*, uti.avg_conversion_score as topic_conversion_score'),
+      select(
+        'contracts.*, avg(uti.avg_conversion_score) as topic_conversion_score'
+      ),
       from(
         `(select
                unnest(array[$1]) as group_id,
@@ -95,10 +98,11 @@ export async function getForYouSQL(
         hideStonks: true,
       }),
       lim(limit, offset),
-      orderBy(`power(uti.avg_conversion_score, 0.75)  * contracts.importance_score *
+      groupBy('contracts.id'),
+      orderBy(`sum(power(uti.avg_conversion_score, 0.5)  * contracts.importance_score *
          (1 + case
-          when contracts.creator_id = any(select follow_id from user_follows) then 0.25
-          else 0.0 end)
+          when contracts.creator_id = any(select follow_id from user_follows) then 0.2
+          else 0.0 end))
            desc`)
     )
   )
