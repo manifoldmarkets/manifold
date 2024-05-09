@@ -3,6 +3,7 @@ import { PortfolioMode } from './portfolio-value-graph'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 
 export function PortfolioGraphNumber(props: {
   numberType: 'balance' | 'investment' | 'spice'
@@ -50,11 +51,12 @@ export function PortfolioGraphNumber(props: {
       onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
-        <CoinNumber
-          amount={displayedAmount}
-          className={clsx('font-bold text-white transition-all')}
-          isSpice={isSpice}
-        />
+          <CoinNumber
+            amount={displayedAmount}
+            className={clsx('font-bold text-white transition-all')}
+            isSpice={isSpice}
+          />
+  
         <div
           className={clsx(
             'sm:sm mx-auto -mt-1 text-xs text-gray-200 transition-all group-hover:text-gray-100'

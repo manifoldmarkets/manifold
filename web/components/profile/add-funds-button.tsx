@@ -15,11 +15,11 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
     <>
       <Button
         onClick={() => setOpen(true)}
-        size={isMobile ? '2xs' : 'xs'}
+        size="2xs"
         color="gradient-pink"
         className={className}
       >
-        <PlusIcon className="mr-1 h-3 w-3" />
+        <PlusIcon className="mr-1 h-2 w-2" />
         Get mana
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />

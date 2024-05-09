@@ -21,6 +21,7 @@ export type ColorType =
   | 'yellow-outline'
   | 'gold'
   | 'none'
+  | 'white-outline'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -73,7 +74,8 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'gold' && [
       gradient,
       'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
-    ]
+    ],
+    color === 'white-outline' && [outline, 'text-white hover:bg-white']
   )
 }
 

@@ -345,8 +345,8 @@ function PortfolioValueSkeleton(props: {
         <div>
           {graphMode == 'portfolio' && (
             <Col className="w-full">
-              <Row className="w-full justify-between">
-                <Row className="w-full justify-between gap-2 ">
+              <Row className="w-full justify-between gap-2 ">
+                <Col className="grow justify-end">
                   <span
                     className={clsx(
                       'cursor-pointer select-none transition-opacity',
@@ -375,19 +375,20 @@ function PortfolioValueSkeleton(props: {
                       net worth
                     </span>
                   </span>
-                  {!hideAddFundsButton && (
-                    <>
-                      <AddFundsButton
-                        userId={userId}
-                        className="h-fit whitespace-nowrap"
-                      />
-                      <RedeemSpiceButton
-                        userId={userId}
-                        className=" self-center whitespace-nowrap"
-                      />
-                    </>
-                  )}
-                </Row>
+                </Col>
+                {!hideAddFundsButton && (
+                  <Col className="hidden gap-1 sm:flex">
+                    <AddFundsButton
+                      userId={userId}
+                      className="h-fit whitespace-nowrap"
+                    />
+                    <RedeemSpiceButton
+                      userId={userId}
+                      className="h-fit whitespace-nowrap"
+                      spice={portfolioValues?.spice}
+                    />
+                  </Col>
+                )}
               </Row>
               <Row className="mt-2 gap-2">
                 <PortfolioGraphNumber
@@ -473,6 +474,19 @@ function PortfolioValueSkeleton(props: {
             className="bg-canvas-50 mt-8 border-0"
             toggleClassName="grow justify-center"
           />
+        )}
+        {!hideAddFundsButton && (
+          <Row className="mt-4 w-full gap-1 sm:hidden">
+            <AddFundsButton
+              userId={userId}
+              className="w-1/2 whitespace-nowrap"
+            />
+            <RedeemSpiceButton
+              userId={userId}
+              className="w-1/2 whitespace-nowrap"
+              spice={portfolioValues?.spice}
+            />
+          </Row>
         )}
       </Col>
     </Col>

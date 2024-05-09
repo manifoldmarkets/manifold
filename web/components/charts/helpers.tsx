@@ -63,7 +63,11 @@ export const YAxis = <Y,>(props: {
           g.selectAll('.tick').each(function () {
             const tick = select(this)
 
-            tick.select('line').attr('x2', w).attr('stroke-opacity', 0.1)
+            tick
+              .select('line')
+              .attr('x2', w)
+              .attr('stroke-opacity', 0.1)
+              .attr('transform', `translate(-${w}, 0)`)
           })
         )
       }
