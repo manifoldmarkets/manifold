@@ -20,6 +20,7 @@ import { PortfolioMode, PortfolioTooltip } from './portfolio-value-graph'
 import {
   GraphValueType,
   PortfolioHoveredGraphType,
+  emptyGraphValues,
 } from './portfolio-value-section'
 import { StackedArea } from './stacked-data-area'
 
@@ -30,8 +31,9 @@ export type AreaPointType = {
 }
 
 // hacky solution
-const BALANCE_IDX = 0
-const INVESTED_IDX = 1
+const SPICE_IDX = 0
+const BALANCE_IDX = 1
+const INVESTED_IDX = 2
 
 // multi line chart
 export const PortfolioChart = <P extends HistoryPoint>(props: {
@@ -146,6 +148,9 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     })
 
     unstackedPs.forEach((p, i) => {
+      if (i == SPICE_IDX && p.prev?.y) {
+        updateGraphValues({ spice: p.prev.y })
+      }
       if (i == BALANCE_IDX && p.prev?.y) {
         updateGraphValues({ balance: p.prev.y })
       }
@@ -176,10 +181,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
-    updateGraphValues({
-      balance: undefined,
-      invested: undefined,
-    })
+    updateGraphValues(emptyGraphValues)
   })
 
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {

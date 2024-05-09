@@ -16,11 +16,13 @@ import {
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
-export type PortfolioMode = 'balance' | 'investment' | 'all'
+export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
 export const BALANCE_COLOR = '#4f46e5'
 export const INVESTMENT_COLOR = '#818cf8'
+export const SPICE_COLOR = '#0ea5e9'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -67,8 +69,13 @@ export const PortfolioGraph = (props: {
     setPortfolioHoveredGraph,
   } = props
 
-  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
-    usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
+  const {
+    profitPoints,
+    investmentPoints,
+    balancePoints,
+    networthPoints,
+    spicePoints,
+  } = usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     if (mode == 'portfolio') {
@@ -88,30 +95,46 @@ export const PortfolioGraph = (props: {
       const { min: networthYMin, max: networthYMax } =
         findMinMax(networthYPoints)
 
+      const spiceYPointsInMana = spicePoints.map(
+        (d) => d.y * SPICE_TO_MANA_CONVERSION_RATE
+      )!
+      const { min: spiceYMinInMana, max: spiceYMaxInMana } =
+        findMinMax(spiceYPointsInMana)
+      const spiceXPoints = spicePoints.map((d) => d.x)!
+      const { min: spiceXMin, max: spiceXMax } = findMinMax(spiceXPoints)
+
       const minDate =
         portfolioFocus == 'all'
           ? min([balanceXMin, investmentXMin])!
           : portfolioFocus == 'balance'
           ? balanceXMin
-          : investmentXMin
+          : portfolioFocus == 'investment'
+          ? investmentXMin
+          : spiceXMin
       const maxDate =
         portfolioFocus == 'all'
           ? max([balanceXMax, investmentXMax])!
           : portfolioFocus == 'balance'
           ? balanceXMax
-          : investmentXMax
+          : portfolioFocus == 'investment'
+          ? investmentXMax
+          : spiceXMax
       const minValue =
         portfolioFocus == 'all'
-          ? min([balanceYMin, networthYMin])!
+          ? min([balanceYMin, networthYMin, spiceYMinInMana])!
           : portfolioFocus == 'balance'
           ? balanceYMin
-          : investmentYMin
+          : portfolioFocus == 'investment'
+          ? investmentYMin
+          : spiceYMinInMana
       const maxValue =
         portfolioFocus == 'all'
-          ? max([networthYMax, balanceYMax])!
+          ? max([networthYMax, balanceYMax + spiceYMaxInMana])!
           : portfolioFocus == 'balance'
           ? balanceYMax
-          : investmentYMax
+          : portfolioFocus == 'investment'
+          ? investmentYMax
+          : spiceYMaxInMana
       return { minDate, maxDate, minValue, maxValue }
     } else {
       const profitXPoints = profitPoints.map((d) => d.x)!
@@ -144,6 +167,7 @@ export const PortfolioGraph = (props: {
       return (
         <PortfolioChart
           data={{
+            spice: { points: spicePoints, color: SPICE_COLOR },
             balance: { points: balancePoints, color: BALANCE_COLOR },
             investment: { points: investmentPoints, color: INVESTMENT_COLOR },
           }}
@@ -167,20 +191,36 @@ export const PortfolioGraph = (props: {
           yScale={yScale}
           zoomParams={zoomParams}
           yKind="Ṁ"
-          data={portfolioFocus == 'balance' ? balancePoints : investmentPoints}
+          data={
+            portfolioFocus == 'balance'
+              ? balancePoints
+              : portfolioFocus == 'investment'
+              ? investmentPoints
+              : spicePoints
+          }
           Tooltip={(props) => (
             // eslint-disable-next-line react/prop-types
             <PortfolioTooltip date={xScale.invert(props.x)} />
           )}
           onMouseOver={(p) => {
             portfolioFocus == 'balance'
-              ? updateGraphValues({ balance: p ? p.y : undefined })
-              : updateGraphValues({ invested: p ? p.y : undefined })
+              ? updateGraphValues({ balance: p ? p.y : null })
+              : portfolioFocus == 'investment'
+              ? updateGraphValues({ invested: p ? p.y : null })
+              : updateGraphValues({
+                  spice: p ? p.y / SPICE_TO_MANA_CONVERSION_RATE : null,
+                })
           }}
           curve={curveLinear}
           negativeThreshold={negativeThreshold}
           hideXAxis={hideXAxis}
-          color={portfolioFocus == 'balance' ? BALANCE_COLOR : INVESTMENT_COLOR}
+          color={
+            portfolioFocus == 'balance'
+              ? BALANCE_COLOR
+              : portfolioFocus == 'investment'
+              ? INVESTMENT_COLOR
+              : SPICE_COLOR
+          }
           onGraphClick={() => {
             setPortfolioFocus('all')
           }}
@@ -215,47 +255,73 @@ function usePortfolioPointsFromHistory(
   portfolioHistory: PortfolioSnapshot[],
   firstProfit: number
 ) {
-  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
-    useMemo(() => {
-      if (!portfolioHistory?.length) {
-        return {
-          profitPoints: [],
-          investmentPoints: [],
-          balancePoints: [],
-          networthPoints: [],
-        }
+  const {
+    profitPoints,
+    investmentPoints,
+    balancePoints,
+    networthPoints,
+    spicePoints,
+  } = useMemo(() => {
+    if (!portfolioHistory?.length) {
+      return {
+        profitPoints: [],
+        investmentPoints: [],
+        balancePoints: [],
+        networthPoints: [],
+        spicePoints: [],
       }
+    }
 
-      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+    const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
 
-      portfolioHistory.forEach((p) => {
-        profitPoints.push({
-          x: p.timestamp,
-          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-          obj: p,
-        })
-        investmentPoints.push({
-          x: p.timestamp,
-          y: p.investmentValue,
-          obj: p,
-        })
-        balancePoints.push({
-          x: p.timestamp,
-          y: p.balance,
-          obj: p,
-        })
-        networthPoints.push({
-          x: p.timestamp,
-          y: p.balance + p.investmentValue,
-          obj: p,
-        })
+    portfolioHistory.forEach((p) => {
+      profitPoints.push({
+        x: p.timestamp,
+        y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+        obj: p,
       })
+      investmentPoints.push({
+        x: p.timestamp,
+        y: p.investmentValue,
+        obj: p,
+      })
+      balancePoints.push({
+        x: p.timestamp,
+        y: p.balance,
+        obj: p,
+      })
+      networthPoints.push({
+        x: p.timestamp,
+        y:
+          p.balance +
+          p.investmentValue +
+          p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
+        obj: p,
+      })
+      spicePoints.push({
+        x: p.timestamp,
+        y: p.spiceBalance,
+        obj: p,
+      })
+    })
+    return {
+      profitPoints,
+      investmentPoints,
+      balancePoints,
+      networthPoints,
+      spicePoints,
+    }
+  }, [portfolioHistory])
 
-      return { profitPoints, investmentPoints, balancePoints, networthPoints }
-    }, [portfolioHistory])
-
-  return { profitPoints, investmentPoints, balancePoints, networthPoints }
+  return {
+    profitPoints,
+    investmentPoints,
+    balancePoints,
+    networthPoints,
+    spicePoints,
+  }
 }

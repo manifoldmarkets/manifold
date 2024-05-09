@@ -22,6 +22,7 @@ import {
   INVESTMENT_COLOR,
   PortfolioGraph,
   PortfolioMode,
+  SPICE_COLOR,
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
@@ -29,13 +30,18 @@ import { RedeemSpiceButton } from '../profile/redeem-spice-button'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
 
-export type PortfolioHoveredGraphType = 'balance' | 'investment' | undefined
+export type PortfolioHoveredGraphType =
+  | 'balance'
+  | 'investment'
+  | 'spice'
+  | undefined
 
 export type GraphValueType = {
-  net?: number
-  balance?: number
-  invested?: number
-  profit?: number
+  net?: number | null
+  balance?: number | null
+  invested?: number | null
+  profit?: number | null
+  spice?: number | null
 }
 
 export type PortfolioValueType = Required<GraphValueType>
@@ -45,6 +51,7 @@ export const emptyGraphValues = {
   balance: undefined,
   invested: undefined,
   profit: undefined,
+  spice: undefined,
 }
 
 export const PortfolioValueSection = memo(
@@ -77,8 +84,23 @@ export const PortfolioValueSection = memo(
     const [graphValues, setGraphValues] =
       useState<GraphValueType>(emptyGraphValues)
 
-    function updateGraphValues(newGraphValues: GraphValueType) {
-      setGraphValues((graphValues) => ({ ...graphValues, ...newGraphValues }))
+    function updateGraphValues(newGraphValues: Partial<GraphValueType>): void {
+      setGraphValues((prevGraphValues: GraphValueType) => {
+        const updatedValues: GraphValueType = { ...prevGraphValues }
+        Object.keys(newGraphValues).forEach((key) => {
+          const value = newGraphValues[key as keyof GraphValueType]
+          if (value === undefined) {
+            // Explicitly set to undefined or delete the key
+            updatedValues[key as keyof GraphValueType] = undefined // If you want to keep the key with value undefined
+            // delete updatedValues[key as keyof GraphValueType];     // If you want to remove the key entirely
+          } else {
+            updatedValues[key as keyof GraphValueType] = value as NonNullable<
+              GraphValueType[keyof GraphValueType]
+            >
+          }
+        })
+        return updatedValues
+      })
     }
 
     const [portfolioHoveredGraph, setPortfolioHoveredGraph] =
@@ -159,7 +181,8 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
+    const { balance, investmentValue, totalDeposits, spiceBalance } =
+      lastPortfolioMetrics
     const totalValue = balance + investmentValue
 
     const profit = totalValue - totalDeposits - firstProfit
@@ -169,6 +192,7 @@ export const PortfolioValueSection = memo(
       invested: investmentValue,
       profit,
       net: totalValue,
+      spice: spiceBalance,
     }
 
     return (
@@ -290,7 +314,7 @@ function PortfolioValueSkeleton(props: {
             title="Portfolio"
           >
             <CoinNumber
-              amount={portfolioValues?.net}
+              amount={portfolioValues?.net ?? undefined}
               className="text-primary-600 text-xs sm:text-sm"
               numberType="short"
             />
@@ -302,7 +326,7 @@ function PortfolioValueSkeleton(props: {
             title={profitLabel}
           >
             <CoinNumber
-              amount={portfolioValues?.profit}
+              amount={portfolioValues?.profit ?? undefined}
               className="text-primary-600 text-xs sm:text-sm"
               numberType="short"
             />
@@ -329,7 +353,10 @@ function PortfolioValueSkeleton(props: {
                     onClick={() => togglePortfolioFocus('all')}
                   >
                     <CoinNumber
-                      amount={graphValues.net ?? portfolioValues?.net}
+                      amount={displayAmounts(
+                        graphValues.net,
+                        portfolioValues?.net
+                      )}
                       className={clsx(
                         'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
                       )}
@@ -354,30 +381,47 @@ function PortfolioValueSkeleton(props: {
               </Row>
               <Row className="mt-2 gap-2">
                 <PortfolioGraphNumber
-                  numberType={'investment'}
-                  descriptor="invested"
-                  portfolioFocus={portfolioFocus}
-                  portfolioHoveredGraph={portfolioHoveredGraph}
-                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                  displayedAmount={
-                    graphValues.invested ?? portfolioValues?.invested
-                  }
-                  color={INVESTMENT_COLOR}
-                  onClick={() => togglePortfolioFocus('investment')}
-                />
-                <PortfolioGraphNumber
                   numberType={'balance'}
                   descriptor="balance"
                   portfolioFocus={portfolioFocus}
                   portfolioHoveredGraph={portfolioHoveredGraph}
                   setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                  displayedAmount={
-                    graphValues.balance ?? portfolioValues?.balance
-                  }
+                  displayedAmount={displayAmounts(
+                    graphValues.balance,
+                    portfolioValues?.balance
+                  )}
                   color={BALANCE_COLOR}
                   onClick={() => togglePortfolioFocus('balance')}
                 />
-                {SPICE_PRODUCTION_ENABLED && (
+                <PortfolioGraphNumber
+                  numberType={'investment'}
+                  descriptor="invested"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                  displayedAmount={displayAmounts(
+                    graphValues.invested,
+                    portfolioValues?.invested
+                  )}
+                  color={INVESTMENT_COLOR}
+                  onClick={() => togglePortfolioFocus('investment')}
+                />
+
+                <PortfolioGraphNumber
+                  numberType={'spice'}
+                  descriptor="prize points"
+                  portfolioFocus={portfolioFocus}
+                  portfolioHoveredGraph={portfolioHoveredGraph}
+                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                  displayedAmount={displayAmounts(
+                    graphValues.spice,
+                    portfolioValues?.spice
+                  )}
+                  color={SPICE_COLOR}
+                  onClick={() => togglePortfolioFocus('spice')}
+                  isSpice
+                />
+                {/* {SPICE_PRODUCTION_ENABLED && (
                   <Row className="mt-1 items-center gap-3">
                     <CoinNumber amount={user.spiceBalance} isSpice={true} />
                     {!hideAddFundsButton && (
@@ -387,14 +431,17 @@ function PortfolioValueSkeleton(props: {
                       />
                     )}
                   </Row>
-                )}
+                )} */}
               </Row>
             </Col>
           )}
           {graphMode == 'profit' && (
             <>
               <CoinNumber
-                amount={graphValues.profit ?? portfolioValues?.profit}
+                amount={displayAmounts(
+                  graphValues.profit,
+                  portfolioValues?.profit
+                )}
                 className={clsx(
                   'text-2xl transition-colors sm:text-4xl',
                   (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
@@ -428,4 +475,14 @@ function PortfolioValueSkeleton(props: {
       </Col>
     </Col>
   )
+}
+
+function displayAmounts(
+  graphNumber: number | null | undefined,
+  currentNumber: number | null | undefined
+): number | undefined {
+  if (graphNumber === undefined) {
+    return currentNumber ?? undefined
+  }
+  return graphNumber ?? undefined
 }
