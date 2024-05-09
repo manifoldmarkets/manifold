@@ -682,6 +682,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
+  onMouseLeave?: () => void
   Tooltip?: (props: TooltipProps<P>) => ReactNode
   pct?: boolean
   contractId?: string
@@ -786,6 +787,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseLeave = useEvent(() => {
     props.onMouseOver?.(undefined)
     setMouse(undefined)
+    if (!!props.onMouseLeave) {
+      props.onMouseLeave()
+    }
   })
 
   const {

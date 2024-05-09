@@ -12,6 +12,7 @@ import { PortfolioChart } from './portfolio-chart'
 import {
   GraphValueType,
   PortfolioHoveredGraphType,
+  emptyGraphValues,
 } from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
@@ -154,6 +155,10 @@ export const PortfolioGraph = (props: {
     [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
     [height, 0]
   )
+  // New scale with domain modified to reflect division by the constant
+  const spiceYScale = scaleLinear()
+    .domain(yScale.domain().map((d) => d / SPICE_TO_MANA_CONVERSION_RATE))
+    .range([height, 0])
 
   // reset axis scale if mode or duration change (since points change)
   useEffect(() => {
@@ -186,7 +191,7 @@ export const PortfolioGraph = (props: {
           w={width}
           h={height}
           xScale={xScale}
-          yScale={yScale}
+          yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
           zoomParams={zoomParams}
           yKind={
             portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
@@ -196,7 +201,10 @@ export const PortfolioGraph = (props: {
               ? balancePoints
               : portfolioFocus == 'investment'
               ? investmentPoints
-              : spicePoints
+              : spicePoints.map((d) => ({
+                  ...d,
+                  y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
+                }))
           }
           Tooltip={(props) => (
             // eslint-disable-next-line react/prop-types
@@ -208,8 +216,11 @@ export const PortfolioGraph = (props: {
               : portfolioFocus == 'investment'
               ? updateGraphValues({ invested: p ? p.y : null })
               : updateGraphValues({
-                  spice: p ? p.y / SPICE_TO_MANA_CONVERSION_RATE : null,
+                  spice: p ? p.y : null,
                 })
+          }}
+          onMouseLeave={() => {
+            updateGraphValues(emptyGraphValues)
           }}
           curve={curveLinear}
           negativeThreshold={negativeThreshold}

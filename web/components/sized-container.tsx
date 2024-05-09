@@ -14,7 +14,7 @@ export const SizedContainer = (props: {
    * So, className is not optional. Set to "" only if you know what you're doing.
    */
   className: string
-  style: CSSProperties
+  style?: CSSProperties
 }) => {
   const { children, className, style } = props
 

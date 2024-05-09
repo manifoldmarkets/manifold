@@ -157,13 +157,15 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
     })
 
     unstackedPs.forEach((p, i) => {
-      if (i == SPICE_IDX && p.prev?.y) {
-        updateGraphValues({ spice: p.prev.y / SPICE_TO_MANA_CONVERSION_RATE })
+      if (i == SPICE_IDX && !!p.prev?.y) {
+        updateGraphValues({
+          spice: p.prev.y / SPICE_TO_MANA_CONVERSION_RATE,
+        })
       }
-      if (i == BALANCE_IDX && p.prev?.y) {
+      if (i == BALANCE_IDX && !!p.prev?.y) {
         updateGraphValues({ balance: p.prev.y })
       }
-      if (i == INVESTED_IDX && p.prev?.y) {
+      if (i == INVESTED_IDX && !!p.prev?.y) {
         updateGraphValues({ invested: p.prev.y })
       }
     })
