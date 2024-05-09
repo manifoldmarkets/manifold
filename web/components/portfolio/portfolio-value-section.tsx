@@ -475,7 +475,7 @@ function PortfolioValueSkeleton(props: {
             toggleClassName="grow justify-center"
           />
         )}
-        {!hideAddFundsButton && (
+        {!hideAddFundsButton && graphMode === 'portfolio' && (
           <Row className="mt-4 w-full gap-1 sm:hidden">
             <AddFundsButton
               userId={userId}
