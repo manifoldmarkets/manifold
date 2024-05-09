@@ -1,17 +1,22 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { sum, uniq } from 'lodash'
+import { groupBy, mapValues, sum, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet } from 'common/bet'
-import { FEE_START_TIME, getFeeTotal, getTakerFee } from 'common/fees'
+import { getTakerFee } from 'common/fees'
 import { bulkInsert } from 'shared/supabase/utils'
 import { filterDefined } from 'common/util/array'
 
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
 }
-export async function calculateUserTopicInterests(startTime?: number) {
+const VIEW_COST = 0.02
+const CLICK_BENEFIT = 0.05
+export async function calculateUserTopicInterests(
+  startTime?: number,
+  readOnly?: boolean
+) {
   const startDate = new Date(startTime ?? Date.now() - DAY_MS)
   const end = new Date(startDate.valueOf() + DAY_MS).toISOString()
   const start = startDate.toISOString()
@@ -24,6 +29,7 @@ export async function calculateUserTopicInterests(startTime?: number) {
          join group_contracts gc on c.id = gc.contract_id
            where uci.created_time > $1
            and uci.created_time < $2
+             and uci.name not in ('page bet', 'card bet') -- we use bets from contract_bets
       group by uci.user_id, gc.group_id`,
     [start, end],
     (row) => [row.user_id, [row.group_id, row.interactions]]
@@ -49,20 +55,18 @@ export async function calculateUserTopicInterests(startTime?: number) {
         interaction: ValidatedAPIParams<'record-contract-interaction'>['kind']
       ) => {
         switch (interaction) {
-          case 'page bet':
-          case 'card bet':
           case 'page repost':
-            return 1
-          case 'card click':
-            return 0.1
-          case 'promoted click':
-            return 0.01
           case 'page comment':
           case 'card like':
           case 'page share':
           case 'page like':
+            return 0.5
+          case 'card click':
+            return CLICK_BENEFIT
+          case 'promoted click':
+            return VIEW_COST
           default:
-            return 0.75
+            return 0
         }
       }
     )
@@ -83,59 +87,59 @@ export async function calculateUserTopicInterests(startTime?: number) {
     [start, end],
     (row) => {
       const bet = row.data as Bet
-      const { amount, outcome, createdTime, fees, limitProb, orderAmount } = bet
-      // Simulate fees if a limit bet or created before fees were introduced
-      if (limitProb || createdTime < FEE_START_TIME) {
-        const prob =
-          bet.shares === 0 ? limitProb : Math.abs(amount / bet.shares)
-        if (prob === undefined) return
-        const probForOutcome = outcome === 'YES' ? prob : 1 - prob
-        const probForSale = amount < 0 ? 1 - probForOutcome : probForOutcome
-        const shares = Math.abs((orderAmount ?? amount) / probForSale)
-        const fees = getTakerFee(shares, probForSale)
-        addWeight(row.user_id, row.group_id, fees)
-      } else {
-        addWeight(row.user_id, row.group_id, getFeeTotal(fees))
-      }
+      const { amount, outcome, limitProb, orderAmount } = bet
+      const prob = bet.shares === 0 ? limitProb : Math.abs(amount / bet.shares)
+      if (prob === undefined) return
+      const probForOutcome = outcome === 'YES' ? prob : 1 - prob
+      const probForSale = amount < 0 ? 1 - probForOutcome : probForOutcome
+      const shares = Math.abs(
+        (limitProb && orderAmount ? orderAmount : amount) / probForSale
+      )
+      const fees = getTakerFee(shares, probForSale)
+      addWeight(row.user_id, row.group_id, Math.log10(fees + 1))
     }
   )
-  // TODO: After 6/1/2024 we should uncomment the views and recalculate real conversion scores
-
-  // const userViewedGroupIds = await pg.map(
-  //   `
-  //     select uve.user_id, json_agg(gc.group_id) as group_ids from postgres.public.user_view_events uve
-  //        join contracts c on uve.contract_id = c.id
-  //        join group_contracts gc on c.id = gc.contract_id
-  //        where uve.created_time > $1
-  //         and uve.created_time < $2
-  //     group by uve.user_id`,
-  //   [start, end],
-  //   (row) => [row.user_id, row.group_ids]
-  // )
-  // const userIdsToViewedGroupIds = Object.fromEntries(userViewedGroupIds)
+  const userViewedGroupIds = await pg.map(
+    `
+      select uve.user_id, gc.group_id, uve.name from postgres.public.user_view_events uve
+         join contracts c on uve.contract_id = c.id
+         join group_contracts gc on c.id = gc.contract_id
+         where uve.created_time > $1
+          and uve.created_time < $2
+    `,
+    [start, end],
+    (row) => {
+      const { name, user_id, group_id } = row
+      if (name === 'page') addWeight(user_id, group_id, CLICK_BENEFIT)
+      return [user_id, group_id]
+    }
+  )
+  const byUserId = groupBy(userViewedGroupIds, (row) => row[0])
+  const userIdsToViewedGroupIds = mapValues(byUserId, (rows) =>
+    rows.map((row) => row[1])
+  )
 
   const allUserIds = uniq([
     ...Object.keys(userIdsToGroupIdInteractionWeights),
-    // ...Object.keys(userIdsToViewedGroupIds),
+    ...Object.keys(userIdsToViewedGroupIds),
   ])
   log(`Writing user topic interests for ${allUserIds.length} users`)
   const scoresToWrite = filterDefined(
     allUserIds.map((userId) => {
       const myGroupWeights = userIdsToGroupIdInteractionWeights?.[userId] ?? {}
       const interactedGroupIds: string[] = Object.keys(myGroupWeights) ?? []
-      // const viewedGroupIds: string[] = userIdsToViewedGroupIds?.[userId] ?? []
-      const allGroupIds = uniq([
-        ...interactedGroupIds,
-        // ...viewedGroupIds
-      ])
+      const viewedGroupIds: string[] = userIdsToViewedGroupIds?.[userId] ?? []
+      const allGroupIds = uniq([...interactedGroupIds, ...viewedGroupIds])
       const groupIdsToConversionScore = Object.fromEntries(
         allGroupIds.map((groupId) => [
           groupId,
           {
-            conversionScore: Math.log(
-              (myGroupWeights[groupId] ?? 0) +
-                // /(viewedGroupIds.filter((id) => id === groupId).length || 1)
-                1
+            conversionScore: Math.max(
+              1 +
+                (myGroupWeights[groupId] ?? 0) -
+                (viewedGroupIds.filter((id) => id === groupId).length || 1) *
+                  VIEW_COST,
+              0
             ),
           },
         ])
@@ -161,5 +165,5 @@ export async function calculateUserTopicInterests(startTime?: number) {
       }
     })
   )
-  await bulkInsert(pg, 'user_topic_interests', scoresToWrite)
+  if (!readOnly) await bulkInsert(pg, 'user_topic_interests', scoresToWrite)
 }
