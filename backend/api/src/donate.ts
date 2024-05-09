@@ -5,6 +5,7 @@ import { APIError } from 'api/helpers/endpoint'
 import { type User } from 'common/user'
 import { insertTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { MIN_SPICE_DONATION, SPICE_TO_CHARITY_CONVERSION_RATE } from 'common/envs/constants'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
@@ -19,7 +20,11 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     const user = userSnap.data() as User
 
     if (user.spiceBalance < amount) {
-      throw new APIError(403, 'Insufficient sp balance')
+      throw new APIError(403, 'Insufficient prize points')
+    }
+
+    if (amount < MIN_SPICE_DONATION) {
+      throw new APIError(400, 'Minimum donation is 25,000 prize points')
     }
 
     // deduct spice as part of transaction
@@ -29,6 +34,7 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   })
 
   // add donation to charity
+  const donation = amount * SPICE_TO_CHARITY_CONVERSION_RATE
 
   const txn = {
     category: 'CHARITY',
@@ -36,7 +42,7 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     fromId: auth.uid,
     toType: 'CHARITY',
     toId: charity.id,
-    amount: amount,
+    amount: donation,
     token: 'SPICE',
   } as const
 

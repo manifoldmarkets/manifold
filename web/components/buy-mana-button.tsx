@@ -17,7 +17,8 @@ export function BuyManaButton(props: {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const amount = prices[formatMoney(props.amount)]
+  const amount =
+    prices[props.amount.toString() as unknown as keyof typeof prices]
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

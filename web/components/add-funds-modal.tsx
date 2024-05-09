@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
+import { formatMoney, formatSpice } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -26,9 +26,6 @@ import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { buildArray } from 'common/util/array'
-import { Col } from 'web/components/layout/col'
-import { linkClass } from 'web/components/widgets/site-link'
-import clsx from 'clsx'
 import { AmountInput } from './widgets/amount-input'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
@@ -39,7 +36,7 @@ export function AddFundsModal(props: {
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
-  const { isNative, platform } = getNativePlatform()
+
   return (
     <Modal
       open={open}
@@ -62,27 +59,6 @@ export function AddFundsModal(props: {
                 <OtherWaysToGetMana />
               </>
             ),
-          },
-
-          (!isNative || (isNative && platform !== 'ios')) && {
-            title: 'Charity',
-            content: (
-              <Col>
-                <div className="my-4">
-                  Mana is redeemable for cash to charities.
-                </div>
-                <span>
-                  Check out our{' '}
-                  <Link
-                    className={clsx(linkClass, 'text-indigo-700')}
-                    href="/charity"
-                  >
-                    charity
-                  </Link>{' '}
-                  page to donate ❤️
-                </span>
-              </Col>
-            ),
           }
         )}
       />
@@ -96,7 +72,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
   const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(2500)]
+    prices[formatMoney(25000)]
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -122,7 +98,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   useEffect(() => setUrl(window.location.href), [])
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 500
+  const pastLimit = totalPurchased >= 1000
 
   return (
     <>
@@ -130,12 +106,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
         Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
         questions.
       </div>
-
-      <AlertBox title="Mana purchase rate changing" className="my-4">
-        The mana purchase rate is changing on May 15th to give you 10 times as
-        much mana. <br /> <br /> If you purchase now, we will credit you with
-        extra mana to match the new rate at that time (unless you donate it).
-      </AlertBox>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
@@ -146,7 +116,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
       <div className="mt-6">
         <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-        <div className="text-xl">{manaToUSD(amountSelected)}</div>
+        <div className="text-xl">${amountSelected / 100}</div>
       </div>
 
       {pastLimit && (
@@ -281,7 +251,7 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
 }
 
 export function FundsSelector(props: {
-  fundAmounts: { [key: string]: number }
+  fundAmounts: { [key: number]: number }
   selected: number
   onSelect: (selected: number) => void
 }) {
