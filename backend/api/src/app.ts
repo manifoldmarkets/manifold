@@ -21,7 +21,7 @@ import { resolveMarket } from './resolve-market'
 import { closeMarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { getCurrentUser } from './get-current-user'
+import { getMe } from './get-me'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
@@ -263,7 +263,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   donate: donate,
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
-  me: getCurrentUser,
+  me: getMe,
   'me/update': updateMe,
   'me/delete': deleteMe,
   'user/by-id/:id': getUser,
