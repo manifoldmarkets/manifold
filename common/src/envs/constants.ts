@@ -16,7 +16,7 @@ export const PRODUCT_MARKET_FIT_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 2
 export const SPICE_TO_CHARITY_CONVERSION_RATE = (1 / 1000) * 0.95
-export const SPICE_NAME = 'WinPoint'
+export const SPICE_NAME = 'PrizePoint'
 
 export const DASHBOARD_ENABLED = ENV === 'DEV'
 

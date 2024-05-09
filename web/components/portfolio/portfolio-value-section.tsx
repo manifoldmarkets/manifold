@@ -9,7 +9,7 @@ import { Period, periodDurations } from 'common/period'
 import { User } from 'web/lib/firebase/users'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
 import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
-import { useZoom } from '../charts/helpers'
+import { Y_AXIS_MARGIN, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -460,9 +460,16 @@ function PortfolioValueSkeleton(props: {
         <SizedContainer
           className={clsx(
             className,
-            'mt-2 pr-11',
+            'mt-2',
             size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
           )}
+          style={{
+            paddingLeft:
+              portfolioFocus == 'all' && graphMode == 'portfolio'
+                ? Y_AXIS_MARGIN
+                : 0,
+            paddingRight: Y_AXIS_MARGIN,
+          }}
         >
           {graphElement}
         </SizedContainer>

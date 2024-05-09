@@ -1,7 +1,7 @@
 import { HistoryPoint, ValueKind } from 'common/chart'
 import { formatMoneyNumber } from 'common/util/format'
-import { axisBottom, axisRight } from 'd3-axis'
-import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
+import { axisBottom, axisLeft, axisRight } from 'd3-axis'
+import { ScaleContinuousNumeric, ScaleTime, scaleLinear } from 'd3-scale'
 import { CurveFactory, curveStepAfter } from 'd3-shape'
 import { mapValues } from 'lodash'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -24,6 +24,7 @@ import {
 } from './portfolio-value-section'
 import { StackedArea } from './stacked-data-area'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
+import { ManaSpiceChart } from '../charts/mana-spice-chart'
 
 export type AreaPointType = {
   x: number // The x-coordinate
@@ -90,13 +91,20 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
   const px = useCallback((p: P) => xScale(p.x), [xScale])
   const py = useCallback((p: P) => yScale(p.y), [yScale])
 
-  const { xAxis, yAxis } = useMemo(() => {
+  const { xAxis, yAxis, yLeftAxis } = useMemo(() => {
     const nTicks = h < 200 ? 3 : 5
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = axisRight<number>(yScale)
       .ticks(nTicks)
       .tickFormat((n) => formatMoneyNumber(n))
-    return { xAxis, yAxis }
+
+    const yLeftScale = scaleLinear()
+      .domain(yScale.domain().map((d) => d / SPICE_TO_MANA_CONVERSION_RATE))
+      .range([h, 0])
+    const yLeftAxis = axisLeft<number>(yLeftScale)
+      .ticks(nTicks)
+      .tickFormat((n) => formatMoneyNumber(n))
+    return { xAxis, yAxis, yLeftAxis }
   }, [w, h, xScale, yScale])
 
   const timeSelectors = mapValues(data, (data) =>
@@ -194,11 +202,12 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   return (
     <>
-      <SVGChart
+      <ManaSpiceChart
         w={w}
         h={h}
         xAxis={xAxis}
         yAxis={yAxis}
+        yLeftAxis={yLeftAxis}
         ttParams={ttParams}
         zoomParams={zoomParams}
         onMouseOver={onMouseOver}
@@ -257,7 +266,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
             y1={ttParams.y}
           />
         )}
-      </SVGChart>
+      </ManaSpiceChart>
       {showZoomer && zoomParams && (
         <ZoomSlider zoomParams={zoomParams} className="relative top-4" />
       )}

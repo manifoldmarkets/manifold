@@ -24,7 +24,9 @@ import { buildArray } from 'common/util/array'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 
 // min number of pixels to mouse drag over to trigger zoom
-const ZOOM_DRAG_THRESHOLD = 16
+export const ZOOM_DRAG_THRESHOLD = 16
+
+export const Y_AXIS_MARGIN = 44
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -42,10 +44,14 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
 
 export const YAxis = <Y,>(props: {
   w: number
+  h?: number
   axis: Axis<Y>
   noGridlines?: boolean
+  leftAligned?: boolean
+  color?: string
+  label?: string
 }) => {
-  const { w, axis, noGridlines } = props
+  const { w, h, axis, noGridlines, leftAligned, color, label } = props
   const axisRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
@@ -57,19 +63,36 @@ export const YAxis = <Y,>(props: {
           g.selectAll('.tick').each(function () {
             const tick = select(this)
 
-            tick
-              .select('line')
-              .attr('x2', w)
-              .attr('stroke-opacity', 0.1)
-              .attr('transform', `translate(-${w}, 0)`)
+            tick.select('line').attr('x2', w).attr('stroke-opacity', 0.1)
+
+            if (!leftAligned) {
+              tick.select('line').attr('transform', `translate(-${w}, 0)`)
+            }
           })
         )
       }
       brush.select('.domain').attr('stroke-width', 0)
+      if (color) {
+        brush.selectAll('.tick text').style('fill', color)
+      }
     }
   }, [w, axis])
 
-  return <g ref={axisRef} transform={`translate(${w}, 0)`} />
+  return (
+    <g ref={axisRef} transform={`translate(${w}, 0)`}>
+      {label && (
+        <text
+          transform={`translate(${
+            leftAligned ? -Y_AXIS_MARGIN - 4 : Y_AXIS_MARGIN + 4
+          }, ${h ? h / 2 : 0}) rotate(-90)`}
+          textAnchor="middle"
+          style={{ fill: color }}
+        >
+          {label}
+        </text>
+      )}
+    </g>
+  )
 }
 
 export const LinePath = <P,>(
@@ -600,7 +623,7 @@ export const useZoom = (
   }
 }
 
-function useInitZoomBehavior(props: {
+export function useInitZoomBehavior(props: {
   zoomParams?: ZoomParams
   w: number
   h: number
