@@ -188,7 +188,9 @@ export const PortfolioGraph = (props: {
           xScale={xScale}
           yScale={yScale}
           zoomParams={zoomParams}
-          yKind="Ṁ"
+          yKind={
+            portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
+          }
           data={
             portfolioFocus == 'balance'
               ? balancePoints

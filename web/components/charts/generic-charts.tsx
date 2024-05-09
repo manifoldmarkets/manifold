@@ -740,7 +740,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? axisRight<number>(yScale)
             .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ'
+        : yKind === 'Ṁ' || yKind === 'spice'
         ? negativeThreshold
           ? axisRight<number>(yScale)
               .tickValues(customTickValues)
@@ -825,6 +825,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onHoverAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
+        yKind={yKind}
       >
         {typeof color !== 'string' && (
           <defs>

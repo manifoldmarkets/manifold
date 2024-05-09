@@ -376,10 +376,16 @@ function PortfolioValueSkeleton(props: {
                     </span>
                   </span>
                   {!hideAddFundsButton && (
-                    <AddFundsButton
-                      userId={userId}
-                      className="h-fit whitespace-nowrap"
-                    />
+                    <>
+                      <AddFundsButton
+                        userId={userId}
+                        className="h-fit whitespace-nowrap"
+                      />
+                      <RedeemSpiceButton
+                        userId={userId}
+                        className=" self-center whitespace-nowrap"
+                      />
+                    </>
                   )}
                 </Row>
               </Row>
@@ -425,17 +431,6 @@ function PortfolioValueSkeleton(props: {
                   onClick={() => togglePortfolioFocus('spice')}
                   isSpice
                 />
-                {/* {SPICE_PRODUCTION_ENABLED && (
-                  <Row className="mt-1 items-center gap-3">
-                    <CoinNumber amount={user.spiceBalance} isSpice={true} />
-                    {!hideAddFundsButton && (
-                      <RedeemSpiceButton
-                        userId={userId}
-                        className=" self-center whitespace-nowrap"
-                      />
-                    )}
-                  </Row>
-                )} */}
               </Row>
             </Col>
           )}
@@ -464,10 +459,6 @@ function PortfolioValueSkeleton(props: {
             size == 'sm' ? 'h-[80px] sm:h-[100px]' : 'h-[125px] sm:h-[200px]'
           )}
           style={{
-            paddingLeft:
-              portfolioFocus == 'all' && graphMode == 'portfolio'
-                ? Y_AXIS_MARGIN
-                : 0,
             paddingRight: Y_AXIS_MARGIN,
           }}
         >
