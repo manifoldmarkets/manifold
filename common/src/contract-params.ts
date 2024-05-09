@@ -47,7 +47,7 @@ export async function getContractParams(
 
   const [
     totalBets,
-    betsToPass,
+    lastBetArray,
     allBetPoints,
     comments,
     pinnedComments,
@@ -68,10 +68,10 @@ export async function getContractParams(
     hasMechanism
       ? getBets(db, {
           contractId: contract.id,
-          limit: 100,
+          limit: 1,
           order: 'desc',
           filterAntes: true,
-          filterRedemptions: !isNumber, // Necessary to calculate expected value
+          filterRedemptions: true,
         })
       : ([] as Bet[]),
     hasMechanism
@@ -127,15 +127,15 @@ export async function getContractParams(
       .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
   }
 
+  const lastBet: Bet | undefined = lastBetArray[0]
+  const lastBetTime = lastBet?.createdTime
+
   return {
     state: 'authed',
     params: removeUndefinedProps({
       outcomeType: contract.outcomeType,
       contract,
-      historyData: {
-        bets: betsToPass,
-        points: [], // for backwards compat. TODO: remove
-      },
+      lastBetTime,
       betReplies,
       pointsString,
       multiPointsString,

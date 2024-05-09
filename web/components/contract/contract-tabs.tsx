@@ -1,7 +1,7 @@
 import {
   groupBy,
   keyBy,
-  last,
+  minBy,
   mapValues,
   maxBy,
   sortBy,
@@ -533,7 +533,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [page, setPage] = useState(0)
   const ITEMS_PER_PAGE = 50
   const bets = [...props.bets, ...olderBets]
-  const oldestBet = last(bets)
+  const oldestBet = minBy(bets, (b) => b.createdTime)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
 
@@ -575,13 +575,14 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
 
   const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
   const shouldLoadMore = limit > 0 && totalLoadedItems < totalItems
-  const oldestBetTime = oldestBet?.createdTime ?? contract.createdTime
+  const [now] = useState(Date.now())
+  const oldestBetTime = oldestBet?.createdTime ?? now
   useEffect(() => {
     if (!shouldLoadMore) return
     getOlderBets(contract.id, oldestBetTime, limit)
       .then((olderBets) => {
         const filteredBets = olderBets.filter((bet) => !bet.isAnte)
-        setOlderBets((bets) => [...bets, ...filteredBets])
+        setOlderBets((bets) => uniqBy([...bets, ...filteredBets], (b) => b.id))
       })
       .catch((err) => {
         console.error(err)

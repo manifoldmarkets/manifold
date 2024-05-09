@@ -474,9 +474,7 @@ export function contractPath(contract: Contract) {
 
 export type ContractParams = {
   contract: Contract
-  historyData: {
-    bets: Bet[]
-  }
+  lastBetTime?: number
   pointsString?: string
   multiPointsString?: { [answerId: string]: string }
   comments: ContractComment[]
