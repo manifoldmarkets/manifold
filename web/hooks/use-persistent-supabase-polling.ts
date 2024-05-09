@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Row, run, TableName } from 'common/supabase/utils'
 import { PostgrestBuilder } from '@supabase/postgrest-js'
 import { MINUTE_MS } from 'common/util/time'
@@ -45,57 +45,51 @@ export function usePersistentSupabasePolling<T extends TableName>(
     setResults(insertChanges(table, results ?? [], rows))
   })
 
-  const fetchNewRows = useMemo(
-    () => () => {
-      const version = state.current.version
-      runOnlyNewRowsQ()
-        .then((r) => {
-          if (state.current.version == version) {
-            updateResults(r)
-            state.current = {
-              state: 'polling',
-              version,
-              timeout: setTimeout(fetchNewRows, ms),
-            }
-          }
-        })
-        .catch((e) => {
-          console.error(e)
+  const fetchNewRows = useCallback(() => {
+    const version = state.current.version
+    runOnlyNewRowsQ()
+      .then((r) => {
+        if (state.current.version == version) {
+          updateResults(r)
           state.current = {
-            state: 'error',
+            state: 'polling',
             version,
-            timeout: setTimeout(fetchNewRows, 1000), // wait a bit longer on error
+            timeout: setTimeout(fetchNewRows, ms),
           }
-        })
-    },
-    [runOnlyNewRowsQ, opts]
-  )
+        }
+      })
+      .catch((e) => {
+        console.error(e)
+        state.current = {
+          state: 'error',
+          version,
+          timeout: setTimeout(fetchNewRows, 1000), // wait a bit longer on error
+        }
+      })
+  }, [runOnlyNewRowsQ, opts])
 
-  const fetchAllRows = useMemo(
-    () => () => {
-      const version = state.current.version
-      runAllRowsQ()
-        .then((r) => {
-          if (state.current.version == version) {
-            updateResults(r)
-            state.current = {
-              state: 'polling',
-              version,
-              timeout: setTimeout(fetchNewRows, ms),
-            }
-          }
-        })
-        .catch((e) => {
-          console.error(e)
+  const fetchAllRows = useCallback(() => {
+    const version = state.current.version
+    runAllRowsQ()
+      .then((r) => {
+        if (state.current.version == version) {
+          updateResults(r)
           state.current = {
-            state: 'error',
+            state: 'polling',
             version,
-            timeout: setTimeout(fetchAllRows, 1000), // wait a bit longer on error
+            timeout: setTimeout(fetchNewRows, ms),
           }
-        })
-    },
-    [allRowsQ, opts]
-  )
+        }
+      })
+      .catch((e) => {
+        console.error(e)
+        state.current = {
+          state: 'error',
+          version,
+          timeout: setTimeout(fetchAllRows, 1000), // wait a bit longer on error
+        }
+      })
+  }, [allRowsQ, opts])
 
   useEffect(() => {
     // TODO: seems like this should work, but could be error cases where it fails
@@ -108,6 +102,63 @@ export function usePersistentSupabasePolling<T extends TableName>(
       state.current = { state: 'waiting', version: state.current.version + 1 }
     }
   }, deps)
+
+  return results
+}
+
+export function useLiveUpdates<T>(
+  getRows: () => Promise<T>,
+  opts?: {
+    frequency?: number
+    listen?: boolean
+  }
+) {
+  const { frequency = 500, listen = true } = opts ?? {}
+
+  const state = useRef<PollingState>({ state: 'waiting', version: 0 })
+
+  const [results, setResults] = useState<T | undefined>(undefined)
+  const [ms, setMs] = useState(frequency)
+
+  const fetchRows = useCallback(() => {
+    const version = state.current.version
+    getRows()
+      .then((r) => {
+        setMs(frequency)
+        if (state.current.version == version) {
+          setResults(r)
+          if (listen) {
+            state.current = {
+              state: 'polling',
+              version,
+              timeout: setTimeout(fetchRows, ms),
+            }
+          }
+        }
+      })
+      .catch((e) => {
+        console.error(e)
+
+        // exponential backoff
+        setMs((ms) => Math.min(ms ** 1.2, 30_000))
+
+        state.current = {
+          state: 'error',
+          version,
+          timeout: setTimeout(fetchRows, ms),
+        }
+      })
+  }, [listen])
+
+  useEffect(() => {
+    if (listen) fetchRows()
+    return () => {
+      if (state.current.timeout != null) {
+        clearTimeout(state.current.timeout)
+      }
+      state.current = { state: 'waiting', version: state.current.version + 1 }
+    }
+  }, [listen])
 
   return results
 }

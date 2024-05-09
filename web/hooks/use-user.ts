@@ -2,10 +2,11 @@
 import { PrivateUser } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'
-import { listenForUser } from 'web/lib/firebase/users'
 import { db } from 'web/lib/supabase/db'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
-import { useStore, useStoreItems } from './use-store'
+import { useLiveUpdates } from './use-persistent-supabase-polling'
+import { convertUser } from 'common/supabase/users'
+import { run } from 'common/supabase/utils'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -22,14 +23,29 @@ export const useIsAuthorized = () => {
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
-/** @deprecated */
-export const useFirebaseUserById = (userId: string | undefined) => {
-  return useStore(userId, listenForUser)
+export const usePollUser = (userId: string | undefined) => {
+  return useLiveUpdates(
+    async () => {
+      const { data } = await run(
+        db
+          .from('users')
+          .select()
+          .eq('id', userId ?? '_')
+      )
+
+      return convertUser(data[0])
+    },
+    { listen: !!userId }
+  )
 }
 
-/** @deprecated */
-export const useFirebaseUsersById = (userIds: string[]) => {
-  return useStoreItems(userIds, listenForUser)
+export const usePollUserBalances = (userIds: string[]) => {
+  return useLiveUpdates(async () => {
+    const { data } = await run(
+      db.from('users').select('id, balance').in('id', userIds)
+    )
+    return data
+  })
 }
 
 export const isBlocked = (

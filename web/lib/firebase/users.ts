@@ -14,13 +14,13 @@ import {
   getAuth,
   signInWithPopup,
 } from 'firebase/auth'
-import { deleteDoc, doc, getDoc, updateDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
 import { referUser } from './api'
 import { app } from './init'
-import { coll, getValues, listenForValue } from './utils'
+import { coll, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
 
@@ -34,7 +34,6 @@ export type { User }
 export const auth = getAuth(app)
 
 export async function getPrivateUser(userId: string) {
-  /* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */
   return (await getDoc(doc(privateUsers, userId))).data()!
 }
 
@@ -53,18 +52,6 @@ export async function updatePrivateUser(
   update: Partial<PrivateUser>
 ) {
   await updateDoc(doc(privateUsers, userId), { ...update })
-}
-
-export async function deletePrivateUser(userId: string) {
-  await deleteDoc(doc(privateUsers, userId))
-}
-
-export function listenForUser(
-  userId: string,
-  setUser: (user: User | null) => void
-) {
-  const userRef = doc(users, userId)
-  return listenForValue<User>(userRef, setUser)
 }
 
 export function listenForPrivateUser(
@@ -169,10 +156,6 @@ export async function firebaseLogout() {
   if (getIsNative()) nativeSignOut()
 
   await auth.signOut()
-}
-
-export function getUsers() {
-  return getValues<User>(users)
 }
 
 export const isContractBlocked = (

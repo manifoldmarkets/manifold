@@ -2621,6 +2621,7 @@ export type Database = {
           id: string
           name: string
           name_username_vector: unknown | null
+          spice_balance: number
           total_deposits: number
           username: string
         }
@@ -2632,6 +2633,7 @@ export type Database = {
           id: string
           name: string
           name_username_vector?: unknown | null
+          spice_balance?: number
           total_deposits?: number
           username: string
         }
@@ -2643,6 +2645,7 @@ export type Database = {
           id?: string
           name?: string
           name_username_vector?: unknown | null
+          spice_balance?: number
           total_deposits?: number
           username?: string
         }

@@ -10,8 +10,7 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import Custom404 from 'web/pages/404'
 import Link from 'next/link'
-
-import { useUser, useFirebaseUserById } from 'web/hooks/use-user'
+import { useUser, usePollUser } from 'web/hooks/use-user'
 import { Avatar } from 'web/components/widgets/avatar'
 import { PARTNER_USER_IDS } from 'common/envs/constants'
 import { Subtitle } from 'web/components/widgets/subtitle'
@@ -59,7 +58,7 @@ export default function UserPartner(props: {
 }
 
 function UserPartnerDashboard(props: { user: User; username: string }) {
-  const user = useFirebaseUserById(props.user.id) ?? props.user
+  const user = usePollUser(props.user.id) ?? props.user
   const userIsPartner = PARTNER_USER_IDS.includes(user.id)
 
   const { data } = useAPIGetter('get-partner-stats', {

@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Bet, LimitBet } from 'common/bet'
-import { useFirebaseUsersById } from './use-user'
+import { usePollUserBalances } from './use-user'
 import { uniq } from 'lodash'
-import { filterDefined } from 'common/util/array'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useLiveUpdates } from './use-persistent-supabase-polling'
 
 export const useUnfilledBets = (
   contractId: string,
@@ -13,35 +13,27 @@ export const useUnfilledBets = (
     waitUntilAdvancedTrader: boolean
   }
 ) => {
-  const [now, setNow] = useState(Date.now())
   const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
     undefined,
     `unfilled-bets-${contractId}`
   )
 
-  const onPoll = () => {
-    setNow(Date.now())
-    getBets(db, {
-      contractId,
-      isOpenLimitOrder: true,
-      order: 'desc',
-    }).then((result) =>
-      setBets(
-        result.filter((bet) => !bet.expiresAt || bet.expiresAt > now) as
-          | LimitBet[]
-          | undefined
-      )
-    )
-  }
+  const pollBets = useLiveUpdates(
+    () => getBets(db, { contractId, isOpenLimitOrder: true }),
+    {
+      listen: !options?.waitUntilAdvancedTrader,
+    }
+  )
 
   useEffect(() => {
-    // poll every 5 seconds
-    if (!options?.waitUntilAdvancedTrader) {
-      onPoll()
-      const interval = setInterval(onPoll, 500)
-      return () => clearInterval(interval)
+    if (pollBets) {
+      setBets(
+        (pollBets as LimitBet[]).filter(
+          (bet) => !bet.expiresAt || bet.expiresAt > Date.now()
+        )
+      )
     }
-  }, [contractId, !!options?.waitUntilAdvancedTrader])
+  }, [pollBets])
 
   return bets
 }
@@ -49,10 +41,10 @@ export const useUnfilledBets = (
 export const useUnfilledBetsAndBalanceByUserId = (contractId: string) => {
   const unfilledBets = useUnfilledBets(contractId) ?? []
   const userIds = uniq(unfilledBets.map((b) => b.userId))
-  const users = filterDefined(useFirebaseUsersById(userIds))
+  const balances = usePollUserBalances(userIds) ?? []
 
   const balanceByUserId = Object.fromEntries(
-    users.map((user) => [user.id, user.balance])
+    balances.map(({ id, balance }) => [id, balance])
   )
   return { unfilledBets, balanceByUserId }
 }

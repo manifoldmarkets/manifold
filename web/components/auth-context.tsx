@@ -6,7 +6,6 @@ import {
   auth,
   getUserAndPrivateUser,
   listenForPrivateUser,
-  listenForUser,
 } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
@@ -20,6 +19,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
+import { usePollUser } from 'web/hooks/use-user'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -160,27 +160,29 @@ export function AuthProvider(props: {
   }, [setAuthUser])
 
   const uid = authUser ? authUser.user.id : authUser
+
   useEffect(() => {
     if (uid) {
       identifyUser(uid)
-      const userListener = listenForUser(uid, (user) => {
-        setAuthUser((currAuthUser) =>
-          currAuthUser && user ? { ...currAuthUser, user } : null
-        )
-      })
       const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
         setAuthUser((currAuthUser) =>
           currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
         )
       })
       return () => {
-        userListener()
         privateUserListener()
       }
     } else if (uid === null) {
       identifyUser(null)
     }
   }, [uid, setAuthUser])
+
+  const listenUser = usePollUser(uid ?? undefined)
+  useEffect(() => {
+    setAuthUser((currAuthUser) =>
+      currAuthUser && listenUser ? { ...currAuthUser, user: listenUser } : null
+    )
+  }, [listenUser])
 
   const username = authUser?.user.username
   useEffect(() => {
