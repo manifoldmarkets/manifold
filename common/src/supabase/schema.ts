@@ -2570,6 +2570,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_topic_interests: {
+        Row: {
+          created_time: string
+          group_ids_to_activity: Json
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          group_ids_to_activity: Json
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          group_ids_to_activity?: Json
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_topics: {
         Row: {
           created_at: string

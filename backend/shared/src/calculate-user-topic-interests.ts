@@ -5,6 +5,8 @@ import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet } from 'common/bet'
 import { FEE_START_TIME, getFeeTotal, getTakerFee } from 'common/fees'
+import { bulkInsert } from 'shared/supabase/utils'
+import { filterDefined } from 'common/util/array'
 
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
@@ -97,37 +99,42 @@ export async function calculateUserTopicInterests(startTime?: number) {
       }
     }
   )
+  // TODO: After 6/1/2024 we should uncomment the views and recalculate real conversion scores
 
-  const userViewedGroupIds = await pg.map(
-    `
-      select uve.user_id, json_agg(gc.group_id) as group_ids from postgres.public.user_view_events uve
-         join contracts c on uve.contract_id = c.id
-         join group_contracts gc on c.id = gc.contract_id
-         where uve.created_time > $1
-          and uve.created_time < $2
-      group by uve.user_id`,
-    [start, end],
-    (row) => [row.user_id, row.group_ids]
-  )
-  const userIdsToViewedGroupIds = Object.fromEntries(userViewedGroupIds)
+  // const userViewedGroupIds = await pg.map(
+  //   `
+  //     select uve.user_id, json_agg(gc.group_id) as group_ids from postgres.public.user_view_events uve
+  //        join contracts c on uve.contract_id = c.id
+  //        join group_contracts gc on c.id = gc.contract_id
+  //        where uve.created_time > $1
+  //         and uve.created_time < $2
+  //     group by uve.user_id`,
+  //   [start, end],
+  //   (row) => [row.user_id, row.group_ids]
+  // )
+  // const userIdsToViewedGroupIds = Object.fromEntries(userViewedGroupIds)
+
   const allUserIds = uniq([
     ...Object.keys(userIdsToGroupIdInteractionWeights),
-    ...Object.keys(userIdsToViewedGroupIds),
+    // ...Object.keys(userIdsToViewedGroupIds),
   ])
   log(`Writing user topic interests for ${allUserIds.length} users`)
-  await Promise.all(
-    allUserIds.map(async (userId) => {
+  const scoresToWrite = filterDefined(
+    allUserIds.map((userId) => {
       const myGroupWeights = userIdsToGroupIdInteractionWeights?.[userId] ?? {}
       const interactedGroupIds: string[] = Object.keys(myGroupWeights) ?? []
-      const viewedGroupIds: string[] = userIdsToViewedGroupIds?.[userId] ?? []
-      const allGroupIds = uniq([...interactedGroupIds, ...viewedGroupIds])
+      // const viewedGroupIds: string[] = userIdsToViewedGroupIds?.[userId] ?? []
+      const allGroupIds = uniq([
+        ...interactedGroupIds,
+        // ...viewedGroupIds
+      ])
       const groupIdsToConversionScore = Object.fromEntries(
         allGroupIds.map((groupId) => [
           groupId,
           {
             conversionScore: Math.log(
-              (myGroupWeights[groupId] ?? 0) /
-                (viewedGroupIds.filter((id) => id === groupId).length || 1) +
+              (myGroupWeights[groupId] ?? 0) +
+                // /(viewedGroupIds.filter((id) => id === groupId).length || 1)
                 1
             ),
           },
@@ -145,12 +152,14 @@ export async function calculateUserTopicInterests(startTime?: number) {
         )
       ) {
         log.error('Skipping conversion score writes for user: ' + userId)
+        return undefined
       }
-      await pg.none(
-        `insert into user_topic_interests (user_id, group_ids_to_activity, created_time)
-           values ($1, $2, $3)`,
-        [userId, groupIdsToConversionScore, start]
-      )
+      return {
+        user_id: userId,
+        group_ids_to_activity: groupIdsToConversionScore,
+        created_time: start,
+      }
     })
   )
+  await bulkInsert(pg, 'user_topic_interests', scoresToWrite)
 }
