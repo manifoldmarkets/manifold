@@ -7,15 +7,22 @@ import { Bet } from 'common/bet'
 import { getTakerFee } from 'common/fees'
 import { bulkInsert } from 'shared/supabase/utils'
 import { filterDefined } from 'common/util/array'
+import {
+  UNRANKED_GROUP_ID,
+  UNSUBSIDIZED_GROUP_ID,
+} from 'common/supabase/groups'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
 }
+const BETS_ONLY_FOR_SCORE = [UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID]
 const VIEW_COST = 0.02
 const CLICK_BENEFIT = 0.05
 export async function calculateUserTopicInterests(
   startTime?: number,
-  readOnly?: boolean
+  readOnly?: boolean,
+  testUserId?: string
 ) {
   const startDate = new Date(startTime ?? Date.now() - DAY_MS)
   const end = new Date(startDate.valueOf() + DAY_MS).toISOString()
@@ -29,9 +36,11 @@ export async function calculateUserTopicInterests(
          join group_contracts gc on c.id = gc.contract_id
            where uci.created_time > $1
            and uci.created_time < $2
-             and uci.name not in ('page bet', 'card bet') -- we use bets from contract_bets
+           and uci.name not in ('page bet', 'card bet') -- we use bets from contract_bets
+           and ($3 is null or user_id = $3)
+           and gc.group_id not in ($4:list)
       group by uci.user_id, gc.group_id`,
-    [start, end],
+    [start, end, testUserId, BETS_ONLY_FOR_SCORE],
     (row) => [row.user_id, [row.group_id, row.interactions]]
   )
   const userIdsToGroupIdInteractionWeights: {
@@ -56,11 +65,12 @@ export async function calculateUserTopicInterests(
       ) => {
         switch (interaction) {
           case 'page repost':
-          case 'page comment':
           case 'card like':
           case 'page share':
           case 'page like':
-            return 0.5
+            return 0.25
+          case 'page comment':
+            return isAdminId(userId) || isModId(userId) ? 0.1 : 0.2
           case 'card click':
             return CLICK_BENEFIT
           case 'promoted click':
@@ -83,8 +93,9 @@ export async function calculateUserTopicInterests(
           and cb.created_time < $2
           and is_redemption = false
           and (amount != 0 or cb.data->>'orderAmount' != '0')
+          and ($3 is null or user_id = $3)
         `,
-    [start, end],
+    [start, end, testUserId],
     (row) => {
       const bet = row.data as Bet
       const { amount, outcome, limitProb, orderAmount } = bet
@@ -105,9 +116,11 @@ export async function calculateUserTopicInterests(
          join contracts c on uve.contract_id = c.id
          join group_contracts gc on c.id = gc.contract_id
          where uve.created_time > $1
-          and uve.created_time < $2
+         and uve.created_time < $2
+         and ($3 is null or user_id = $3)
+         and gc.group_id not in ($4:list)
     `,
-    [start, end],
+    [start, end, testUserId, BETS_ONLY_FOR_SCORE],
     (row) => {
       const { name, user_id, group_id } = row
       if (name === 'page') addWeight(user_id, group_id, CLICK_BENEFIT)
