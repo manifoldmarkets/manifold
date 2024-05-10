@@ -21,7 +21,7 @@ export function RedeemSpiceButton(props: {
       <Button
         onClick={() => setOpen(true)}
         size="2xs"
-        color="sky-outline"
+        color="amber-outline"
         className={clsx('h-min sm:inline-flex', className)}
         disabled={disabled}
       >
