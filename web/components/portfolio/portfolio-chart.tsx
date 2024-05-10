@@ -158,7 +158,6 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
     unstackedPs.forEach((p, i) => {
       if (i == SPICE_IDX) {
-        console.log(p.prev?.y)
         updateGraphValues({
           spice: (p.prev?.y ?? 0) / SPICE_TO_MANA_CONVERSION_RATE,
         })
