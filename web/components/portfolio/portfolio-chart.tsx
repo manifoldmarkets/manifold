@@ -163,10 +163,10 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
         })
       }
       if (i == BALANCE_IDX) {
-        updateGraphValues({ balance: p.prev?.y })
+        updateGraphValues({ balance: p.prev?.y ?? null })
       }
       if (i == INVESTED_IDX) {
-        updateGraphValues({ invested: p.prev?.y })
+        updateGraphValues({ invested: p.prev?.y ?? null })
       }
     })
 
