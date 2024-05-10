@@ -27,6 +27,7 @@ import { CoinNumber } from '../widgets/manaCoinNumber'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 import { formatSpice } from 'common/util/format'
+import { Row } from '../layout/row'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -164,18 +165,21 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col className="items-center">
-          <div className="mx-auto my-1">
-            <Avatar size="xs" avatarUrl={user.avatarUrl} noLink />
-          </div>
-          <div className="flex gap-2">
-            <CoinNumber amount={user?.balance} numberType="animated" />
-            {SPICE_PRODUCTION_ENABLED && (
-              <span className="whitespace-nowrap text-xs">
-                {formatSpice(user.spiceBalance)}
-              </span>
-            )}
-          </div>
+        <Col className="mx-auto items-center">
+          <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
+          <Row className="gap-1">
+            <Row className="w-[40px] justify-end rounded-l-full">
+              <CoinNumber amount={user?.balance} numberType="short" />
+            </Row>
+            <Row className="w-[40px] rounded-r-full">
+              <CoinNumber
+                amount={user?.spiceBalance}
+                numberType="short"
+                className="text-sky-600 dark:text-sky-400"
+                isSpice
+              />
+            </Row>
+          </Row>
         </Col>
       </Link>
     )
