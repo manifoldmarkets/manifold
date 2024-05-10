@@ -28,7 +28,7 @@ import {
 } from 'shared/topic-interests'
 import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 
-const DEBUG_USER_ID: string | undefined = 'KHX2ThSFtLQlau58hrjtCX7OL2h2'
+const DEBUG_USER_ID = undefined
 
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
