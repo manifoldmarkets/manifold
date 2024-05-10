@@ -26,6 +26,7 @@ import {
 } from './portfolio-value-graph'
 import { ProfitWidget } from './profit-widget'
 import {
+  SPICE_NAME,
   SPICE_PRODUCTION_ENABLED,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
@@ -419,7 +420,7 @@ function PortfolioValueSkeleton(props: {
 
                 <PortfolioGraphNumber
                   numberType={'spice'}
-                  descriptor="prize points"
+                  descriptor={SPICE_NAME.toLowerCase() + 's'}
                   portfolioFocus={portfolioFocus}
                   portfolioHoveredGraph={portfolioHoveredGraph}
                   setPortfolioHoveredGraph={setPortfolioHoveredGraph}

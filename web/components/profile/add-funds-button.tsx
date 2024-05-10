@@ -19,7 +19,7 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
         color="gradient-pink"
         className={className}
       >
-        <PlusIcon className="mr-1 h-2 w-2" />
+        <PlusIcon className="mr-1 h-3 w-3" />
         Get mana
       </Button>
       <AddFundsModal open={open} setOpen={setOpen} />
