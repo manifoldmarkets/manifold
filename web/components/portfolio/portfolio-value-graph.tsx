@@ -23,7 +23,8 @@ export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
 export const BALANCE_COLOR = '#4f46e5'
 export const INVESTMENT_COLOR = '#818cf8'
-export const SPICE_COLOR = '#0ea5e9'
+// export const SPICE_COLOR = '#0ea5e9'
+export const SPICE_COLOR = '#f59e0b'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)

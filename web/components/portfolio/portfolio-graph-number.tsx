@@ -51,15 +51,15 @@ export function PortfolioGraphNumber(props: {
       onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
-          <CoinNumber
-            amount={displayedAmount}
-            className={clsx('font-bold text-white transition-all')}
-            isSpice={isSpice}
-          />
-  
+        <CoinNumber
+          amount={displayedAmount}
+          className={clsx('font-bold text-white transition-all')}
+          isSpice={isSpice}
+        />
+
         <div
           className={clsx(
-            'sm:sm mx-auto -mt-1 text-xs text-gray-200 transition-all group-hover:text-gray-100'
+            'sm:sm mx-auto -mt-1 text-xs text-white/80 transition-all group-hover:text-white'
           )}
         >
           {descriptor}
