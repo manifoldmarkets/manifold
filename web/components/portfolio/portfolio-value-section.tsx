@@ -437,18 +437,32 @@ function PortfolioValueSkeleton(props: {
           )}
           {graphMode == 'profit' && (
             <>
-              <CoinNumber
-                amount={displayAmounts(
-                  graphValues.profit,
-                  portfolioValues?.profit
-                )}
-                className={clsx(
-                  'text-2xl transition-colors sm:text-4xl',
-                  (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
-                    ? 'text-scarlet-500'
-                    : 'text-teal-500'
-                )}
-              />
+              <div>
+                <span>
+                  <CoinNumber
+                    amount={displayAmounts(
+                      graphValues.profit,
+                      portfolioValues?.profit
+                    )}
+                    className={clsx(
+                      'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl',
+                      (graphValues.profit ?? portfolioValues?.profit ?? 0) < 0
+                        ? 'text-scarlet-500'
+                        : 'text-teal-500'
+                    )}
+                    isInline
+                    coinClassName="top-[0.25rem] sm:top-[0.1rem]"
+                  />
+                  <span
+                    className={clsx(
+                      'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+                    )}
+                  >
+                    profit
+                  </span>
+                </span>
+              </div>
+
               <ProfitWidget user={user} portfolio={portfolio} />
             </>
           )}
