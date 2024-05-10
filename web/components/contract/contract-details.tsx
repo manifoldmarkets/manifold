@@ -15,7 +15,6 @@ import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
-import { FollowButton } from '../buttons/follow-button'
 import { updateMarket } from 'web/lib/firebase/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
@@ -27,16 +26,14 @@ export function AuthorInfo(props: { contract: Contract }) {
   const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
   const resolver = useDisplayUserById(contract.resolverId)
   return (
-    <Row className="grow flex-wrap items-center gap-1">
-      <div className="relative">
-        <UserHovercard userId={creatorId}>
-          <Avatar
-            username={creatorUsername}
-            avatarUrl={creatorAvatarUrl}
-            size={'xs'}
-          />
-        </UserHovercard>
-      </div>
+    <Row className="grow flex-wrap items-center gap-2">
+      <UserHovercard userId={creatorId}>
+        <Avatar
+          username={creatorUsername}
+          avatarUrl={creatorAvatarUrl}
+          size={'xs'}
+        />
+      </UserHovercard>
       <UserHovercard userId={creatorId}>
         <UserLink
           user={{
@@ -47,7 +44,6 @@ export function AuthorInfo(props: { contract: Contract }) {
           className={'mr-1'}
         />
       </UserHovercard>
-      <FollowButton userId={contract.creatorId} size="2xs" />
       {contract.isResolved &&
         contract.resolverId! !== contract.creatorId &&
         resolver && (
