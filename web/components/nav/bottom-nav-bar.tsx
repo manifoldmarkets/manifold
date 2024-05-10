@@ -169,7 +169,11 @@ function NavBarItem(props: {
           <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
           <Row className="gap-1">
             <Row className="w-[40px] justify-end rounded-l-full">
-              <CoinNumber amount={user?.balance} numberType="short" />
+              <CoinNumber
+                amount={user?.balance}
+                numberType="short"
+                className="text-primary-600"
+              />
             </Row>
             <Row className="w-[40px] rounded-r-full">
               <CoinNumber
