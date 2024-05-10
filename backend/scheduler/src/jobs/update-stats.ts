@@ -29,7 +29,7 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
 
-const numberOfDays = 365
+const numberOfDays = 365 * 2
 
 interface StatEvent {
   id: string
