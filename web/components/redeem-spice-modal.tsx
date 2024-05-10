@@ -27,7 +27,6 @@ export function RedeemSpiceModal(props: {
   user: User
 }) {
   const { open, setOpen, user } = props
-  const { isNative, platform } = getNativePlatform()
   const [page, setPage] = useState<RedeemSpicePageType>('main')
 
   return (
@@ -52,6 +51,8 @@ function MainSpiceRedeemPage(props: {
 }) {
   const { user, setPage } = props
   const [disableAllButtons, setDisableAllButtons] = useState(false)
+  const { isNative, platform } = getNativePlatform()
+  const isNativeIOS = isNative && platform === 'ios'
   return (
     <Col className="gap-4">
       <CoinNumber amount={user.spiceBalance} isSpice className="text-4xl" />
@@ -72,9 +73,9 @@ function MainSpiceRedeemPage(props: {
             }}
             size="xs"
             color="gray-outline"
-            className="h-fit w-1/2 text-xs sm:text-sm"
+            className="h-fit w-1/2 whitespace-nowrap text-xs sm:text-sm"
           >
-            Trade custom amount
+            Redeem custom amount
           </Button>
           <AllSpiceToManaButton
             user={user}
@@ -83,31 +84,37 @@ function MainSpiceRedeemPage(props: {
           />
         </Row>
       </Col>
-      <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
-        <Row className="gap-2">
-          <img alt="donate" src="/images/donate.png" height={80} width={80} />
-          <Col>
-            <div className="text-lg font-semibold">Donate to Charity</div>
-            <div className="text-sm">
-              Donate your {SPICE_NAME}s as USD to a charitable cause!
-            </div>
-          </Col>
-        </Row>
-        <Col className="gap-0.5">
-          <Link
-            className={clsx(baseButtonClasses, buttonClass('xs', 'indigo'))}
-            href="/charity"
-          >
-            Visit Charity Page
-          </Link>
-          <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
-            <span className="font-semibold text-green-600 dark:text-green-500">
-              ${user.spiceBalance * SPICE_TO_CHARITY_CONVERSION_RATE}
-            </span>
-            value
+      {!isNativeIOS && (
+        <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
+          <Row className="gap-2">
+            <img alt="donate" src="/images/donate.png" height={80} width={80} />
+            <Col>
+              <div className="text-lg font-semibold">Donate to Charity</div>
+              <div className="text-sm">
+                Donate your {SPICE_NAME}s as USD to a charitable cause!
+              </div>
+            </Col>
           </Row>
+          <Col className="gap-0.5">
+            <Link
+              className={clsx(
+                baseButtonClasses,
+                buttonClass('xs', 'indigo'),
+                'text-xs sm:text-sm'
+              )}
+              href="/charity"
+            >
+              Visit charity page
+            </Link>
+            <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
+              <span className="font-semibold text-green-600 dark:text-green-500">
+                ${user.spiceBalance * SPICE_TO_CHARITY_CONVERSION_RATE}
+              </span>
+              value
+            </Row>
+          </Col>
         </Col>
-      </Col>
+      )}
     </Col>
   )
 }
@@ -142,11 +149,11 @@ function AllSpiceToManaButton(props: {
       <Button
         onClick={onSubmit}
         size="xs"
-        className="w-full text-xs sm:text-sm"
+        className="w-full whitespace-nowrap text-xs sm:text-sm"
         loading={loading}
         disabled={disableAllButtons}
       >
-        Trade all for mana
+        Redeem all for mana
       </Button>
       {!error && (
         <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
