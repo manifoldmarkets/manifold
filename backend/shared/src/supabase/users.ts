@@ -73,7 +73,10 @@ export const updateUser = async (
   db: SupabaseDirectClient,
   id: string,
   update: Partial<
-    Omit<User, 'id' | 'balance' | 'spiceBalance' | 'totalDeposits'>
+    Omit<
+      User,
+      'id' | 'createdTime' | 'balance' | 'spiceBalance' | 'totalDeposits'
+    >
   >
 ) => {
   await updateData(db, 'users', 'id', { id, ...update })

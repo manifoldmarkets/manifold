@@ -1,10 +1,10 @@
 create table if not exists
   users (
-    id text not null primary key,
+    id text not null primary key default random_alphanumeric (12),
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     name text not null,
-    created_time timestamptz,
+    created_time timestamptz not null default now(),
     username text not null,
     name_username_vector tsvector generated always as (to_tsvector('english', name || ' ' || username)) stored,
     balance numeric not null default 0,
@@ -42,10 +42,6 @@ or replace function users_populate_cols () returns trigger language plpgsql as $
     if new.data is not null then
         new.name := (new.data)->>'name';
         new.username := (new.data)->>'username';
-        new.created_time := case when new.data ? 'createdTime' then millis_to_ts(((new.data)->>'createdTime')::bigint) else null end;
-        new.balance := ((new.data)->'balance')::numeric;
-        new.spice_balance := ((new.data)->'spiceBalance')::numeric;
-        new.total_deposits := ((new.data)->'totalDeposits')::numeric;
     end if;
     return new;
 end $$;
