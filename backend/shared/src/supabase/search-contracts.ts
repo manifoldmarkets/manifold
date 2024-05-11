@@ -11,6 +11,7 @@ import {
   limit as lim,
   withClause,
   groupBy,
+  leftJoin,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
@@ -70,19 +71,20 @@ export async function getForYouSQL(
   const forYou = renderSql(
     buildArray(
       select(
-        'contracts.*, avg(uti.avg_conversion_score) as topic_conversion_score'
+        'contracts.*, coalesce(avg(uti.avg_conversion_score),1) as avg_topic_conversion_score'
       ),
-      from(
+      from('contracts'),
+      join(`group_contracts on contracts.id = group_contracts.contract_id`),
+      leftJoin(
         `(select
-               unnest(array[$1]) as group_id,
-               unnest(array[$2]) as avg_conversion_score) as uti`,
+          unnest(array[$1]) as group_id,
+          unnest(array[$2]) as avg_conversion_score)
+          as uti on uti.group_id = group_contracts.group_id`,
         [
           Object.keys(userIdsToAverageTopicConversionScores[userId]),
           Object.values(userIdsToAverageTopicConversionScores[userId]),
         ]
       ),
-      join(`group_contracts on group_contracts.group_id = uti.group_id`),
-      join(`contracts on contracts.id = group_contracts.contract_id`),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
@@ -99,11 +101,17 @@ export async function getForYouSQL(
       }),
       lim(limit, offset),
       groupBy('contracts.id'),
-      orderBy(`sum(power(uti.avg_conversion_score, 0.5)  * contracts.importance_score *
-         (1 + case
-          when contracts.creator_id = any(select follow_id from user_follows) then 0.2
-          else 0.0 end))
-           desc`)
+      // If user has contract-topic scores, use ONLY the defined topic scores when ranking
+      // If the user has no contract-matching topic score, use only the contract's importance score
+      orderBy(`case
+      when bool_or(uti.avg_conversion_score is not null)
+      then avg(power(coalesce(uti.avg_conversion_score, 1),0.75) * contracts.importance_score)
+      else avg(contracts.importance_score)
+      end * (1 + case
+      when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
+      else 0.0
+      end) 
+      desc`)
     )
   )
   return forYou
