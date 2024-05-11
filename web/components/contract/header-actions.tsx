@@ -17,7 +17,6 @@ export function HeaderActions(props: {
 }) {
   const { contract, children } = props
   const user = useUser()
-  const { isPolitics } = contract
   const privateUser = usePrivateUser()
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -36,7 +35,7 @@ export function HeaderActions(props: {
           trackingLocation={'contract page'}
         />
       )}
-      {!isPolitics && <RepostButton size="xs" contract={contract} />}
+      {<RepostButton size="xs" contract={contract} />}
 
       <CopyLinkOrShareButton
         url={getShareUrl(contract, user?.username)}

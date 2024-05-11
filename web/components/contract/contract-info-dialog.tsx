@@ -402,43 +402,6 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
-              💰 Subsidized{' '}
-              <InfoTooltip
-                text={'Market receives unique trader bonuses and house subsidy'}
-              />
-            </td>
-            <td>
-              <CheckOrSwitch
-                canToggle={isMod}
-                disabled={!isPublic}
-                on={isPublic && contract.isSubsidized !== false}
-                setOn={(on) => {
-                  toast.promise(
-                    api('market/:contractId/group', {
-                      contractId: contract.id,
-                      groupId: UNSUBSIDIZED_GROUP_ID,
-                      remove: on,
-                    }),
-                    {
-                      loading: `${
-                        on ? 'Removing' : 'Adding'
-                      } question to the unsubsidized topic...`,
-                      success: `Successfully ${
-                        on ? 'removed' : 'added'
-                      } question to the unsubsidized topic!`,
-                      error: `Error ${
-                        on ? 'removing' : 'adding'
-                      } topic. Try again?`,
-                    }
-                  )
-                }}
-              />
-            </td>
-          </tr>
-        )}
       </tbody>
     </Table>
   )

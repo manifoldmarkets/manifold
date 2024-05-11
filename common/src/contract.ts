@@ -112,11 +112,29 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   collectedFees: Fees
   uniqueBettorCount: number
 
+  unlistedById?: string
+  featuredLabel?: string
+  isTwitchContract?: boolean
+
+  coverImageUrl?: string
+  isRanked?: boolean
+
+  gptCommentSummary?: string
+
+  // Manifold.love
+  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
+  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
+  matchCreatorId?: string // The user id of the person who proposed the match.
+  isLove?: boolean
+
+  /** @deprecated - no more auto-subsidization */
+  isSubsidized?: boolean // NOTE: not backfilled, undefined = true
+  /** @deprecated - no more auto-subsidization */
+  isPolitics?: boolean
   /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
   groupSlugs?: string[]
   /** @deprecated */
   groupLinks?: GroupLink[]
-
   /** @deprecated - not deprecated, only updated in supabase though*/
   popularityScore: number
   /** @deprecated - not deprecated, only updated in supabase though*/
@@ -131,24 +149,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
-
-  unlistedById?: string
-  featuredLabel?: string
-  isTwitchContract?: boolean
-
-  coverImageUrl?: string
-  isRanked?: boolean
-  isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  gptCommentSummary?: string
-
-  // Manifold.love
-  loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
-  loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
-  matchCreatorId?: string // The user id of the person who proposed the match.
-  isLove?: boolean
-
-  // Politics
-  isPolitics?: boolean
 } & T
 
 export type DPMContract = Contract & DPM
