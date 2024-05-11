@@ -126,14 +126,12 @@ const getDesktopNav = (
   openDownloadApp: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean }
 ) => {
-  const { isLiveTV } = options
-
   if (loggedIn)
     return buildArray(
       { name: 'Home', href: '/home', icon: HomeIcon },
       {
         name: 'Browse',
-        href: '/browse',
+        href: '/browse/for-you',
         icon: SearchIcon,
       },
       {
