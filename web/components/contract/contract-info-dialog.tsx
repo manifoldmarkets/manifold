@@ -30,9 +30,7 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import {
-  UNRANKED_GROUP_ID,
-} from 'common/supabase/groups'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
