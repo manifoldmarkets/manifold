@@ -554,7 +554,8 @@ export const updateStatsCore = async () => {
   }))
 
   // Write to postgres
-  await bulkUpsert(pg, 'stats', 'title', rows)
+  for (const row of rows)
+    await bulkUpsert(pg, 'stats', 'title', [row])
   log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
   await saveCalibrationData(pg)
