@@ -32,7 +32,6 @@ import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import {
   UNRANKED_GROUP_ID,
-  UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
