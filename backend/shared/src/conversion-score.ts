@@ -9,10 +9,12 @@ import { chunk } from 'lodash'
 export async function calculateConversionScore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const contractsQuery = `select id from contracts
-      where resolution_time is null
-      and (close_time > now() or close_time is null)`
-  const contractIds = await pg.map(contractsQuery, [], (c) => c.id)
+  const contractIds = await pg.map(
+    `select distinct contract_id from user_view_events
+        where created_time > now() - interval '1 week'`,
+    [],
+    (c) => c.contract_id
+  )
   const chunks = chunk(contractIds, 1000)
   log(
     `Processing ${contractIds.length} contracts in ${chunks.length} chunks...`
