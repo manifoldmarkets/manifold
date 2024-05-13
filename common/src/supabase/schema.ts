@@ -1558,6 +1558,33 @@ export type Database = {
           }
         ]
       }
+      mod_reports: {
+        Row: {
+          comment_id: string
+          contract_id: string
+          created_time: string
+          report_id: number
+          status: Database['public']['Enums']['status_type']
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          contract_id: string
+          created_time?: string
+          report_id?: number
+          status?: Database['public']['Enums']['status_type']
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          contract_id?: string
+          created_time?: string
+          report_id?: number
+          status?: Database['public']['Enums']['status_type']
+          user_id?: string
+        }
+        Relationships: []
+      }
       news: {
         Row: {
           author: string | null
@@ -4678,8 +4705,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
+
     CompositeTypes: {
       contract_ids: {
         contract_id: string
