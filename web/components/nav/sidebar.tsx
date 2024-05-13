@@ -144,16 +144,16 @@ const getDesktopNav = (
         href: '/politics',
         icon: GiCapitol,
       },
-      // {
-      //   name: 'AI',
-      //   href: '/ai',
-      //   icon: PiRobotBold,
-      // },
       {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimpleBold,
+        name: 'AI',
+        href: '/ai',
+        icon: PiRobotBold,
       },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimpleBold,
+      // },
       {
         name: 'Messages',
         href: '/messages',
