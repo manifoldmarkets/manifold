@@ -282,7 +282,7 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
   const { contract } = props
 
   return (
-    <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:grid-cols-4 sm:pl-10 sm:pr-4">
+    <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:pl-10 sm:pr-48">
       {sortAnswers(contract, contract.answers)
         .slice(0, 4)
         .map((ans) => (
