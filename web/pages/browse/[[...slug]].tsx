@@ -1,42 +1,41 @@
-import { Group, LiteGroup } from 'common/group'
-import { first, uniqBy } from 'lodash'
-import { useEffect, useState } from 'react'
-import { TopicsList } from 'web/components/topics/topics-list'
-import { Col } from 'web/components/layout/col'
-import { removeEmojis } from 'common/topics'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { buildArray } from 'common/util/array'
+import clsx from 'clsx'
+import { type DisplayUser } from 'common/api/user-types'
 import { DESTINY_GROUP_SLUG, HOUSE_BOT_USERNAME } from 'common/envs/constants'
-import { SupabaseSearch } from 'web/components/supabase-search'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Group, LiteGroup } from 'common/group'
+import { removeEmojis } from 'common/topics'
+import { BETTORS } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { formatMoney } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { first, uniqBy } from 'lodash'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { SEO } from 'web/components/SEO'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { Leaderboard } from 'web/components/leaderboard'
+import LoadingUserRows from 'web/components/loading-user-rows'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
+import { SupabaseSearch } from 'web/components/supabase-search'
 import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
-import clsx from 'clsx'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { BETTORS } from 'common/user'
-import { getGroupFromSlug } from 'web/lib/supabase/group'
-import Custom404 from 'web/pages/404'
-import { removeUndefinedProps } from 'common/util/object'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { Leaderboard } from 'web/components/leaderboard'
-import { formatMoney } from 'common/util/format'
-import { Title } from 'web/components/widgets/title'
 import { Content } from 'web/components/widgets/editor'
-import Image from 'next/image'
-import LoadingUserRows from 'web/components/loading-user-rows'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { type DisplayUser } from 'common/api/user-types'
+import { Title } from 'web/components/widgets/title'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getDisplayUsers } from 'web/lib/supabase/users'
+import Custom404 from 'web/pages/404'
 
 const NON_GROUP_SLUGS = ['for-you', 'recent']
 
@@ -225,9 +224,9 @@ export function GroupPageContent(props: {
     <>
       <Page
         trackPageView={'questions page'}
-        className="bg-canvas-0 md:bg-canvas-50 lg:col-span-10"
+        className="bg-canvas-0 md:bg-canvas-50"
       >
-        <div className={'md:grid md:grid-cols-10'}>
+        <div>
           <QuestionsTopicTitle
             currentTopic={currentTopic}
             topicSlug={topicSlug}
@@ -236,7 +235,7 @@ export function GroupPageContent(props: {
             ref={ref}
           />
           <BrowseTopicPills
-            className={'relative w-full py-1 pl-1 md:hidden'}
+            className={'relative w-full py-1 pl-1'}
             topics={shownTopics}
             currentTopicSlug={topicSlug}
             setTopicSlug={(slug) =>
@@ -244,11 +243,7 @@ export function GroupPageContent(props: {
             }
           />
           <div className="flex md:contents">
-            <Col
-              className={clsx(
-                'relative col-span-8 mx-auto w-full xl:col-span-7'
-              )}
-            >
+            <Col className={clsx('relative col-span-8 mx-auto w-full')}>
               {!currentTopic && searchComponent}
               {currentTopic && (
                 <QueryUncontrolledTabs
@@ -336,15 +331,6 @@ export function GroupPageContent(props: {
                 />
               )}
             </Col>
-
-            <TopicsList
-              topics={shownTopics}
-              currentTopicSlug={topicSlug}
-              setCurrentTopicSlug={setTopicSlugClearQuery}
-              className={clsx(
-                'col-span-2 hidden w-full md:block xl:col-span-3'
-              )}
-            />
           </div>
         </div>
       </Page>
