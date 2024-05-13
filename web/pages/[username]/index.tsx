@@ -5,7 +5,6 @@ import {
   PresentationChartLineIcon,
   ViewListIcon,
   ChevronDownIcon,
-  TagIcon,
 } from '@heroicons/react/outline'
 import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -70,7 +69,6 @@ import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
@@ -406,12 +404,6 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
-              },
-              isCurrentUser && {
-                title: 'Topics',
-                prerender: false,
-                stackedTabIcon: <TagIcon className="h-5" />,
-                content: <YourTopicsSection className="w-full" user={user} />,
               },
               {
                 title: 'Balance log',
