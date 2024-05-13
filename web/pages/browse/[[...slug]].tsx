@@ -210,7 +210,7 @@ export function GroupPageContent(props: {
       useUrlParams
       isWholePage
       showTopicTag={headerStuck}
-      headerClassName={'pt-0 px-2 mt-2 bg-canvas-0 md:bg-canvas-50'}
+      headerClassName={'pt-0 px-2 mt-2 bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter={
@@ -222,10 +222,7 @@ export function GroupPageContent(props: {
   // TODO: Overtly prompt users to follow topic, maybe w/ bottom bar
   return (
     <>
-      <Page
-        trackPageView={'questions page'}
-        className="bg-canvas-0 md:bg-canvas-50"
-      >
+      <Page trackPageView={'questions page'}>
         <div>
           <QuestionsTopicTitle
             currentTopic={currentTopic}
