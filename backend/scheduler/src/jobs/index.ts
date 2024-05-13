@@ -110,7 +110,7 @@ export function createJobs() {
     ),
     createJob(
       'weekly-markets-emails',
-      '0 * 12-14 * * 1',
+      '0 */3 11-17 * * 1',
       sendWeeklyMarketsEmails
     ),
     createJob(

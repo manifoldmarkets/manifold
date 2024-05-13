@@ -3,11 +3,12 @@ import { chunk } from 'lodash'
 import { getPrivateUsersNotSent, getUser, log } from 'shared/utils'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { PrivateUser } from 'common/user'
-import { getForYouMarkets } from 'shared/supabase/search-contracts'
+import { getForYouSQL } from 'shared/supabase/search-contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { convertContract } from 'common/supabase/contracts'
 
 // Run every minute on Monday for 3 hours starting at 12pm PT.
-// Should scale until at least 1000 * 180 = 180k users
+// Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
 const EMAILS_PER_BATCH = 1000
 export async function sendWeeklyMarketsEmails() {
   const pg = createSupabaseDirectClient()
@@ -21,7 +22,7 @@ export async function sendWeeklyMarketsEmails() {
     [privateUsers.map((u) => u.id)]
   )
 
-  const CHUNK_SIZE = 250
+  const CHUNK_SIZE = 50
   let i = 0
   const chunks = chunk(privateUsers, CHUNK_SIZE)
   for (const chunk of chunks) {
@@ -44,6 +45,25 @@ const sendEmailToPrivateUser = async (privateUser: PrivateUser) => {
   const user = await getUser(privateUser.id)
   if (!user) return
 
-  const contractsToSend = await getForYouMarkets(user.id)
+  const contractsToSend = await getForYouMarkets(user.id, 6, privateUser)
   await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
+}
+
+export async function getForYouMarkets(
+  userId: string,
+  limit: number,
+  privateUser: PrivateUser
+) {
+  const searchMarketSQL = await getForYouSQL(
+    userId,
+    'open',
+    'ALL',
+    limit,
+    0,
+    privateUser
+  )
+  const pg = createSupabaseDirectClient()
+  const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
+
+  return contracts ?? []
 }
