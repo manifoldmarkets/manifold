@@ -5,20 +5,23 @@ import clsx from 'clsx'
 import { UserHovercard } from './user/user-hovercard'
 
 export const MultipleOrSingleAvatars = (props: {
-  avatars: Array<{ avatarUrl: string; id: string }>
+  avatars: Array<{ avatarUrl: string; id?: string }>
   onClick?: () => void
   size: AvatarSizeType
   // TODO: standardize these numbers so they are calculated from the size
   spacing?: number
   startLeft?: number
   className?: string
+  showMax?: number
 }) => {
-  const { avatars, className, onClick, size } = props
+  const { avatars, className, showMax, onClick, size } = props
+  const firstAvatar = avatars[0]
+
   const combineAvatars = (
-    avatars: Array<{ avatarUrl: string; id: string }>
+    avatars: Array<{ avatarUrl: string; id?: string }>
   ) => {
     const totalAvatars = avatars.length
-    const maxToShow = Math.min(totalAvatars, 3)
+    const maxToShow = Math.min(totalAvatars, showMax ?? 3)
     const avatarsToCombine = avatars.slice(
       totalAvatars - maxToShow,
       totalAvatars
@@ -37,9 +40,7 @@ export const MultipleOrSingleAvatars = (props: {
             : {}
         }
       >
-        <UserHovercard userId={n.id}>
-          <Avatar size={size} avatarUrl={n.avatarUrl} />
-        </UserHovercard>
+        <Avatar size={size} avatarUrl={n.avatarUrl} />
       </div>
     ))
   }
@@ -48,8 +49,8 @@ export const MultipleOrSingleAvatars = (props: {
       onClick={onClick}
       className={clsx(`relative cursor-pointer items-center`, className)}
     >
-      {avatars.length === 1 ? (
-        <UserHovercard userId={avatars[0].id}>
+      {avatars.length === 1 && firstAvatar.id ? (
+        <UserHovercard userId={firstAvatar.id}>
           <Avatar size={size} avatarUrl={avatars[0].avatarUrl} />
         </UserHovercard>
       ) : (

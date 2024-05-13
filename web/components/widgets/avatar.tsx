@@ -5,7 +5,7 @@ import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
 
-export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type AvatarSizeType = '2xs' | '1.5xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
   (props: {
     username?: string
@@ -21,6 +21,8 @@ export const Avatar = memo(
     const s =
       size == '2xs'
         ? 4
+        : size == '1.5xs'
+        ? 5
         : size == 'xs'
         ? 6
         : size == 'sm'

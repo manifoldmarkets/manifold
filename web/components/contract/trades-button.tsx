@@ -19,6 +19,9 @@ import { Answer } from 'common/answer'
 import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
 import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { shortFormatNumber } from 'common/util/format'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 
 export function TradesButton(props: {
   contract: Contract
@@ -31,6 +34,13 @@ export function TradesButton(props: {
   const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
     contract.id,
     answer?.id
+  )
+  const { data: avatarUrls } = useAPIGetter(
+    'get-followed-avatars-on-contract',
+    {
+      contractId: contract.id,
+      answerId: answer?.id,
+    }
   )
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
@@ -54,13 +64,24 @@ export function TradesButton(props: {
           placement="top"
           noTap
         >
-          <Row className="relative items-center  gap-1.5 text-sm">
-            <UserIcon className="h-5 w-5" />
+          <Row className={clsx('relative items-center gap-1.5 text-sm')}>
+            {avatarUrls && avatarUrls.length > 0 ? (
+              <MultipleOrSingleAvatars
+                size={'1.5xs'}
+                className={'opacity-60'}
+                spacing={-0.2}
+                startLeft={0.1}
+                avatars={avatarUrls.map((avatarUrl) => ({ avatarUrl }))}
+              />
+            ) : (
+              <UserIcon className="h-5 w-5" />
+            )}
             {isBounty
               ? contract.bountyTxns.length || ''
               : answer
               ? uniqueAnswerBettorCount
-              : uniqueTraders || ''}
+              : shortFormatNumber(uniqueTraders) || ''}
+            <Row></Row>
           </Row>
         </Tooltip>
       </Button>

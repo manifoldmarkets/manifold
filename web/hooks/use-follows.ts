@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  getUserIdFollows,
-  getUserFollowers,
-  getUserIsFollowing,
-} from 'web/lib/supabase/follows'
+import { getUserIsFollowing } from 'web/lib/supabase/follows'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'

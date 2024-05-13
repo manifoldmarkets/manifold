@@ -1204,6 +1204,16 @@ export const API = (_apiTypeCheck = {
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
   },
+  'get-followed-avatars-on-contract': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: [] as string[],
+    props: z.object({
+      contractId: z.string(),
+      answerId: z.string().optional(),
+    }),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
