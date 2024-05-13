@@ -49,7 +49,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { isAdminId, isModId } from 'common/envs/constants'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
