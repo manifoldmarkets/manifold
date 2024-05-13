@@ -54,7 +54,6 @@ import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
-import { buyportfolio } from './buy-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendMana } from './send-mana'
@@ -389,7 +388,6 @@ app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
-app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))
