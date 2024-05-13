@@ -281,15 +281,11 @@ function ContractQuestion(props: {
 
 function ContractAnswers(props: { contract: CPMMMultiContract }) {
   const { contract } = props
-  const [now] = useState(Date.now())
-  const canAdd =
-    contract.addAnswersMode === 'ANYONE' &&
-    (contract.closeTime ?? Infinity) > now
 
   return (
     <div className="text-ink-500 my-1 grid w-full grid-cols-2 gap-x-4 pl-8 pr-4 text-sm sm:grid-cols-4 sm:pl-10 sm:pr-4">
       {sortAnswers(contract, contract.answers)
-        .slice(0, canAdd ? 3 : 4)
+        .slice(0, 4)
         .map((ans) => (
           <div key={ans.id} className="flex gap-2">
             <span className="truncate">{ans.text}</span>
@@ -298,11 +294,6 @@ function ContractAnswers(props: { contract: CPMMMultiContract }) {
             </span>
           </div>
         ))}
-      {canAdd && (
-        <span className="text-primary-600 truncate hover:underline">
-          + Add answer
-        </span>
-      )}
     </div>
   )
 }
