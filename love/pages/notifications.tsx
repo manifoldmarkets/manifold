@@ -3,12 +3,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { SEO } from 'web/components/SEO'
-import { Row } from 'web/components/layout/row'
-import {
-  ExclamationIcon,
-  InformationCircleIcon,
-  UserIcon,
-} from '@heroicons/react/outline'
+import { ExclamationIcon, UserIcon } from '@heroicons/react/outline'
 import { PrivateUser, User } from 'common/user'
 import { useGroupedNotifications } from 'web/hooks/use-notifications'
 import { NotificationsList } from 'web/pages/notifications'
@@ -18,17 +13,13 @@ import {
 } from 'common/notification'
 import { LovePage } from 'love/components/love-page'
 import { Tabs } from 'web/components/layout/tabs'
-import { ActivityLog } from 'web/components/activity-log'
-import { ENV } from 'common/envs/constants'
 import {
   NotificationSection,
   NotificationSectionData,
   optOutAll,
-  PushNotificationsBanner,
   SectionRoutingContext,
 } from 'web/components/notification-settings'
 import { Col } from 'web/components/layout/col'
-import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
 
 export const NOTIFICATION_TYPES_TO_SELECT: notification_source_types[] = [
@@ -79,18 +70,6 @@ export default function NotificationsPage() {
                 ) : null,
             },
             {
-              title: 'Site activity',
-              content: (
-                <ActivityLog
-                  className="mt-4"
-                  count={100}
-                  topicSlugs={['manifoldlove', 'manifoldlove-relationships']}
-                  blockedUserIds={[manifoldLoveUserId]}
-                  hideQuestions
-                />
-              ),
-            },
-            {
               title: 'Settings',
               content: <NotificationSettings navigateToSection={undefined} />,
             },
@@ -127,11 +106,6 @@ function NotificationsContent(props: {
   )
 }
 
-const manifoldLoveUserId =
-  ENV === 'PROD'
-    ? 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
-    : 'RlXR2xa4EFfAzdCbSe45wkcdarh1'
-
 const userInteractions: NotificationSectionData = {
   label: 'Users',
   subscriptionTypes: ['new_message', 'new_match', 'new_endorsement'],
@@ -140,25 +114,11 @@ function NotificationSettings(props: {
   navigateToSection: string | undefined
 }) {
   const { navigateToSection } = props
-  const user = useUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
 
   return (
     <SectionRoutingContext.Provider value={navigateToSection}>
       <Col className={'gap-6 p-2'}>
-        <PushNotificationsBanner />
-        <Row className={'text-ink-700 gap-2 text-xl'}>
-          {user ? (
-            <UserWatchedContractsButton user={user} />
-          ) : (
-            <span>Watched Questions</span>
-          )}
-          <InformationCircleIcon
-            className="text-ink-500 -mb-1 h-5 w-5 cursor-pointer"
-            onClick={() => setShowWatchModal(true)}
-          />
-        </Row>
-
         <NotificationSection
           icon={<UserIcon className={'h-6 w-6'} />}
           data={userInteractions}
