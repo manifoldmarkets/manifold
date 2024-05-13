@@ -11,7 +11,6 @@ import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellShareDPM } from './sell-bet'
 import { sellShares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
@@ -144,7 +143,6 @@ import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
-import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
@@ -220,7 +218,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
-  'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
   bets: getBets,
   comment: createComment,
@@ -298,7 +295,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
-  createanswer: createAnswerDpm,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,

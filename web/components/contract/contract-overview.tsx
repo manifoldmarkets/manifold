@@ -646,7 +646,7 @@ const ChoiceOverview = (props: {
           />
         ) : (
           <AnswersResolvePanel
-            contract={contract}
+            contract={contract as CPMMMultiContract}
             onClose={() => setShowResolver(false)}
           />
         )

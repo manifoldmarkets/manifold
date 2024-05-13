@@ -14,7 +14,6 @@ import {
   BetInfo,
   CandidateBet,
   getBinaryCpmmBetInfo,
-  getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
 import { removeUndefinedProps } from 'common/util/object'
@@ -110,20 +109,6 @@ export const placeBetMain = async (
             balanceByUserId,
             expiresAt
           )
-        } else if (
-          (outcomeType == 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') &&
-          mechanism == 'dpm-2'
-        ) {
-          if (!body.answerId) {
-            throw new APIError(400, 'answerId must be specified for multi bets')
-          }
-
-          const { answerId } = body
-          const answerDoc = contractDoc.collection('answers').doc(answerId)
-          const answerSnap = await trans.get(answerDoc)
-          if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
-          return getNewMultiBetInfo(answerId, amount, contract)
         } else if (
           (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
           mechanism == 'cpmm-multi-1'

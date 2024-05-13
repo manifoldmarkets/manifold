@@ -376,24 +376,6 @@ export const resolveBinarySchema = z
   })
   .passthrough() // overlaps with pseudo-numeric
 
-export const resolveFRSchema = z.union([
-  z.object({
-    outcome: z.literal('CANCEL'),
-  }),
-  z.object({
-    outcome: z.literal('MKT'),
-    resolutions: z.array(
-      z.object({
-        answer: z.number().int().nonnegative(),
-        pct: z.number().gte(0).lte(100),
-      })
-    ),
-  }),
-  z.object({
-    outcome: z.number().int().nonnegative(),
-  }),
-])
-
 export const resolveMultiSchema = z.union([
   z.object({
     outcome: z.literal('CANCEL'),
@@ -437,7 +419,6 @@ export const resolveMarketProps = z
     z.union([
       resolveBinarySchema,
       resolveMultiSchema,
-      resolveFRSchema,
       resolvePseudoNumericSchema,
       resolveNumericSchema,
     ])

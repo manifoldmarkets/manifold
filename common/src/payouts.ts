@@ -1,18 +1,8 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
 import { Bet } from './bet'
-import {
-  Contract,
-  CPMMContract,
-  CPMMMultiContract,
-  StillOpenDPMContract,
-} from './contract'
+import { Contract, CPMMContract, CPMMMultiContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
-import {
-  getDpmCancelPayouts,
-  getDpmStandardPayouts,
-  getPayoutsMultiOutcome,
-} from './payouts-dpm'
 import {
   getFixedCancelPayouts,
   getIndependentMultiMktPayouts,
@@ -71,9 +61,6 @@ export const getPayouts = (
       liquidities,
       resolutionProbability ?? prob
     )
-  }
-  if (contract.mechanism === 'dpm-2') {
-    return getDpmPayouts(outcome, contract as any, bets, resolutions)
   }
   if (
     contract.mechanism === 'cpmm-multi-1' &&
@@ -167,33 +154,5 @@ export const getIndependentMultiFixedPayouts = (
     default:
     case 'CANCEL':
       return getFixedCancelPayouts(contract, bets, filteredLiquidities)
-  }
-}
-
-const getDpmPayouts = (
-  outcome: string | undefined,
-  contract: StillOpenDPMContract,
-  bets: Bet[],
-  resolutions?: {
-    [outcome: string]: number
-  }
-): PayoutInfo => {
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-
-  switch (outcome) {
-    case 'YES':
-    case 'NO':
-      return getDpmStandardPayouts(outcome, contract, openBets)
-
-    case 'MKT':
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      return getPayoutsMultiOutcome(resolutions!, contract, openBets)
-    case 'CANCEL':
-    case undefined:
-      return getDpmCancelPayouts(contract, openBets)
-
-    default:
-      // Outcome is a free response answer id.
-      return getDpmStandardPayouts(outcome, contract, openBets)
   }
 }

@@ -136,8 +136,7 @@ export function ResolveButton(props: { contract: Contract }) {
     (contract.outcomeType === 'PSEUDO_NUMERIC' ||
       contract.outcomeType === 'BINARY' ||
       contract.outcomeType === 'QUADRATIC_FUNDING' ||
-      contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'FREE_RESPONSE')
+      contract.outcomeType === 'MULTIPLE_CHOICE')
   ) {
     return (
       <>
@@ -183,10 +182,10 @@ export function SmallResolutionPanel(props: {
       onClose={() => setOpen(false)}
       inModal
     />
-  ) : outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE' ? (
+  ) : outcomeType === 'MULTIPLE_CHOICE' ? (
     <Col className="w-full">
       <AnswersResolvePanel
-        contract={contract}
+        contract={contract as CPMMMultiContract}
         onClose={() => setOpen(false)}
         inModal
       />
