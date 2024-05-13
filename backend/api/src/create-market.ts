@@ -105,8 +105,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (!isAdminId(userId) && !isModId(userId) && visibility !== 'public') {
-    throw new APIError(403, 'Only admins can create private markets.')
+  if (visibility !== 'public') {
+    throw new APIError(403, 'Only public markets can be created.')
   }
   // if (!isVerified(user)) {
   //   throw new APIError(
