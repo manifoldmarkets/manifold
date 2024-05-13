@@ -1,6 +1,5 @@
 import { LoverCommentSection } from 'love/components/lover-comment-section'
 import LoverProfileHeader from 'love/components/profile/lover-profile-header'
-import { Matches } from 'love/components/matches/matches'
 import ProfileCarousel from 'love/components/profile-carousel'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -21,9 +20,6 @@ import { LikeData, ShipData } from 'common/api/love-types'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useGetter } from 'web/hooks/use-getter'
 import { getStars } from 'love/lib/supabase/stars'
-import { MarketsDisplay } from '../widgets/markets-display'
-import { APIResponse } from 'common/api/schema'
-import { useCompatibleLovers } from 'love/hooks/use-lovers'
 
 export function LoverProfile(props: {
   lover: Lover
@@ -43,10 +39,6 @@ export function LoverProfile(props: {
     currentUser?.id,
     getStars
   )
-
-  const { data: contractData } = useAPIGetter('get-love-market', {
-    userId: lover.user_id,
-  })
 
   const { data, refresh } = useAPIGetter('get-likes-and-ships', {
     userId: user.id,
@@ -88,7 +80,6 @@ export function LoverProfile(props: {
           refreshLover={refreshLover}
           fromLoverPage={fromLoverPage}
           fromSignup={fromSignup}
-          contractData={contractData}
           likesGiven={likesGiven ?? []}
           likesReceived={likesReceived ?? []}
           ships={ships ?? []}
@@ -136,7 +127,6 @@ function LoverContent(props: {
   refreshLover: () => void
   fromLoverPage?: Lover
   fromSignup?: boolean
-  contractData: APIResponse<'get-love-market'> | undefined
   likesGiven: LikeData[]
   likesReceived: LikeData[]
   ships: ShipData[]
@@ -148,7 +138,6 @@ function LoverContent(props: {
     refreshLover,
     fromLoverPage,
     fromSignup,
-    contractData,
     likesGiven,
     likesReceived,
     ships,
@@ -158,36 +147,15 @@ function LoverContent(props: {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
 
-  const data = useCompatibleLovers(user.id, {
-    sortWithModifiers: true,
-  })
-
   return (
     <>
-      {contractData && contractData.contract && (
-        <MarketsDisplay
-          profileLover={lover}
-          lovers={contractData.lovers}
-          contract={contractData.contract}
-          mutuallyMessagedUserIds={contractData.mutuallyMessagedUserIds}
-          compatibilityScores={data?.loverCompatibilityScores}
-        />
-      )}
       <LikesDisplay
         likesGiven={likesGiven}
         likesReceived={likesReceived}
         ships={ships}
         refreshShips={refreshShips}
         profileLover={lover}
-        mutualLikesBig={!contractData?.contract}
       />
-      {!fromLoverPage && lover.looking_for_matches && (
-        <Matches
-          profileLover={lover}
-          profileUserId={user.id}
-          browseData={data}
-        />
-      )}
       <LoverAbout lover={lover} />
       <LoverBio
         isCurrentUser={isCurrentUser}

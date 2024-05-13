@@ -1,14 +1,11 @@
-import { groupBy, uniq, sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { APIError, type APIHandler } from 'api/helpers/endpoint'
 import { getCompatibilityScore } from 'common/love/compatibility-score'
 import {
   getLover,
-  getLoverContracts,
-  getLovers,
   getCompatibilityAnswers,
   getGenderCompatibleLovers,
 } from 'shared/love/supabase'
-import { filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
 
 export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
@@ -17,10 +14,7 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
 ) => {
   const { userId } = props
 
-  const [lover, loverContracts] = await Promise.all([
-    getLover(userId),
-    getLoverContracts(userId),
-  ])
+  const lover = await getLover(userId)
 
   log('got lover', {
     id: lover?.id,
@@ -28,45 +22,15 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     username: lover?.user?.username,
   })
 
-  log('got lover contracts', {
-    contracts: loverContracts.map((c) => ({ id: c.id, question: c.question })),
-  })
-
   if (!lover) throw new APIError(404, 'Lover not found')
 
-  const matchedUserIds = filterDefined(
-    uniq(loverContracts.flatMap((c) => [c.loverUserId1, c.loverUserId2]))
-  ).filter((id) => id !== userId)
-
-  const [matchedLoversPrefiltered, allCompatibleLovers] = await Promise.all([
-    getLovers(matchedUserIds),
-    getGenderCompatibleLovers(lover),
-  ])
-  const matchedLovers = matchedLoversPrefiltered.filter(
-    (l) => !l.user.isBannedFromPosting
-  )
-
-  const matchesSet = new Set([
-    ...loverContracts.map((contract) => contract.loverUserId1),
-    ...loverContracts.map((contract) => contract.loverUserId2),
-  ])
-  const compatibleLovers = allCompatibleLovers.filter(
-    (l) => !matchesSet.has(l.user_id)
-  )
+  const lovers = await getGenderCompatibleLovers(lover)
 
   const debug = false
   if (debug) {
     console.log(
-      'got matched',
-      matchedLovers.map((l) => ({
-        id: l.id,
-        username: l.user.username,
-        user_id: l.user.id,
-      }))
-    )
-    console.log(
       'got compatible',
-      compatibleLovers.map((l) => ({
+      lovers.map((l) => ({
         id: l.id,
         username: l.user.username,
         user_id: l.user.id,
@@ -74,7 +38,6 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
     )
   }
 
-  const lovers = [...compatibleLovers, ...matchedLovers]
   const loverAnswers = await getCompatibilityAnswers([
     userId,
     ...lovers.map((l) => l.user_id),
@@ -97,38 +60,15 @@ export const getCompatibleLovers: APIHandler<'compatible-lovers'> = async (
 
   if (debug) log('got lover compatibility scores', loverCompatibilityScores)
 
-  const filteredLoverContracts = loverContracts.filter((c) =>
-    matchedLovers.some(
-      (l) => l.user_id === c.loverUserId1 || l.user_id === c.loverUserId2
-    )
-  )
-  const sortedLoverContracts = sortBy(
-    filteredLoverContracts,
-    (c) => -1 * c.answers.filter((ans) => ans.resolution).length,
-    (c) => {
-      const resolvedCount = c.answers.filter((ans) => ans.resolution).length
-      const index = Math.min(resolvedCount, c.answers.length - 1)
-      return -1 * c.answers[index].prob
-    }
-  )
-
-  const sortedMatchedLovers = sortBy(matchedLovers, (l) =>
-    sortedLoverContracts.findIndex(
-      (c) => c.loverUserId1 === l.user_id || c.loverUserId2 === l.user_id
-    )
-  )
-
   const sortedCompatibleLovers = sortBy(
-    compatibleLovers,
+    lovers,
     (l) => loverCompatibilityScores[l.user_id].score
   ).reverse()
 
   return {
     status: 'success',
     lover,
-    matchedLovers: sortedMatchedLovers,
     compatibleLovers: sortedCompatibleLovers,
     loverCompatibilityScores,
-    loverContracts: sortedLoverContracts,
   }
 }

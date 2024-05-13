@@ -84,15 +84,12 @@ import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
 import { updatelover } from 'api/love/update-lover'
-import { createMatch } from 'api/love/create-match'
 import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
-import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
 import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
-import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { getCompatibleLovers } from './love/compatible-lovers'
@@ -141,9 +138,6 @@ import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getLoverAnswers } from './love/get-lover-answers'
-import { createYourLoveMarket } from './love/create-your-love-market'
-import { getLoveMarket } from './love/get-love-market'
-import { getLoveMarkets } from './love/get-love-markets'
 import { placeMultiBet } from 'api/place-multi-bet'
 import { deletetv, settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
@@ -299,9 +293,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'create-your-love-market': createYourLoveMarket,
-  'get-love-market': getLoveMarket,
-  'get-love-markets': getLoveMarkets,
   'get-partner-stats': getPartnerStats,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
@@ -432,9 +423,6 @@ app.post(
 )
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
-app.post('/reject-lover', ...apiRoute(rejectLover))
-app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
-app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))

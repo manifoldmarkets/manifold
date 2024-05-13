@@ -6,6 +6,7 @@ export const isProd = () => {
   } else if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
     return process.env.NEXT_PUBLIC_FIREBASE_ENV == 'PROD'
   } else {
+    return true
     // For local scripts and cloud functions
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const admin = require('firebase-admin')

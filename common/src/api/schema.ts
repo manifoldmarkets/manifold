@@ -769,12 +769,10 @@ export const API = (_apiTypeCheck = {
     props: z.object({ userId: z.string() }),
     returns: {} as {
       lover: Lover
-      matchedLovers: Lover[]
       compatibleLovers: Lover[]
       loverCompatibilityScores: {
         [userId: string]: CompatibilityScore
       }
-      loverContracts: CPMMMultiContract[]
     },
   },
   post: {
@@ -1019,48 +1017,6 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
-  },
-  'create-your-love-market': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    props: z.object({}),
-    returns: {} as {
-      status: 'success'
-      contract: CPMMMultiContract
-    },
-  },
-  'get-love-market': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success'
-      contract: CPMMMultiContract | null
-      lovers: Lover[]
-      mutuallyMessagedUserIds: string[]
-    },
-  },
-  'get-love-markets': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z.object({}).strict(),
-    returns: {} as {
-      status: 'success'
-      contracts: CPMMMultiContract[]
-      creatorLovers: Lover[]
-      lovers: Lover[]
-      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
-      creatorCompatibilityScores: {
-        [creatorId: string]: { [loverId: string]: CompatibilityScore }
-      }
-    },
   },
   'get-partner-stats': {
     method: 'GET',
