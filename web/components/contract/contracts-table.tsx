@@ -26,7 +26,6 @@ import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
 import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
-import { useState } from 'react'
 import { removeEmojis } from 'common/util/string'
 import { useABTest } from 'web/hooks/use-ab-test'
 
