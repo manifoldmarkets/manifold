@@ -177,13 +177,6 @@ export const OtherWaysToGetMana = () => {
         <span className={'mx-1 font-bold'}>{formatMoney(REFERRAL_AMOUNT)}</span>
         after their first trade
       </Item>
-      <Item url="/create">
-        📈 Make a question for
-        <span className={'mx-1 font-bold'}>
-          {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)}
-        </span>
-        per unique trader
-      </Item>
     </ul>
   )
 }
