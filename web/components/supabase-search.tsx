@@ -376,11 +376,9 @@ export function SupabaseSearch(props: {
           />
         )}
       </Col>
-      {showSearchTypes ? (
+      {showSearchTypes && userResults && userResults.length > 0 ? (
         <Col>
-          {userResults && userResults.length > 0 && (
-            <UserResults userResults={userResults} />
-          )}
+          <UserResults userResults={userResults} />
           <Row className="text-ink-500 items-center gap-1 text-sm">
             <hr className="border-ink-300 ml-2 grow sm:ml-0" />
             <span>
