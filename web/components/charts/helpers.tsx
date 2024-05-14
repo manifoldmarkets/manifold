@@ -22,6 +22,8 @@ import { ScaleTime, scaleTime } from 'd3-scale'
 import { useEvent } from 'web/hooks/use-event'
 import { buildArray } from 'common/util/array'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { PositionsTooltip } from 'web/components/charts/contract/choice'
+import { ChartPosition } from 'common/chart-position'
 
 // min number of pixels to mouse drag over to trigger zoom
 const ZOOM_DRAG_THRESHOLD = 16
@@ -169,6 +171,74 @@ export const SliceMarker = (props: {
   )
 }
 
+export const PositionMarker = (props: {
+  x: number
+  y0: number
+  y1: number
+  onHover: (position: ChartPosition) => void
+  onLeave: () => void
+  isHovered: boolean
+  chartPosition: ChartPosition
+}) => {
+  const { chartPosition, x, y0, y1, onLeave, onHover, isHovered } = props
+  const { direction, userAvatarUrl, color } = chartPosition
+  const isSale = direction < 0
+  const scale = 1
+  const pinBottomPointX = x - (isSale ? -12 : 12)
+  const pinTopCenterY = y0 - (isSale ? 22 : 38)
+  const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale}) rotate(${
+    isSale ? 180 : 0
+  })`
+  return (
+    <g>
+      <path
+        transform={transform}
+        d={
+          'm12 6.586-8.707 8.707 1.414 1.414L12 9.414l7.293 7.293 1.414-1.414L12 6.586z'
+        }
+        style={{
+          fill: color,
+        }}
+        className={clsx(
+          isHovered
+            ? 'dark:fill-primary-300 fill-primary-500 z-20'
+            : !color && 'fill-ink-300 dark:fill-ink-600'
+        )}
+        z={isHovered ? 20 : 0}
+        strokeWidth={isHovered ? 2 : 1}
+      />
+      <line
+        strokeWidth={isHovered ? 3 : 2}
+        strokeDasharray={isHovered ? undefined : '5, 5'}
+        style={{
+          stroke: color,
+        }}
+        className={clsx(
+          isHovered
+            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
+            : !color && 'stroke-ink-300 dark:stroke-ink-600',
+          Math.abs(y1 - y0) < 10 && 'hidden'
+        )}
+        x1={x}
+        x2={x}
+        y1={pinTopCenterY - (isSale ? 15 : 0)}
+        y2={y1}
+      />
+      <image
+        className={'cursor-default'}
+        onMouseEnter={() => onHover(chartPosition)}
+        onMouseLeave={onLeave}
+        href={userAvatarUrl}
+        x={x - 17}
+        y={y0 - 25}
+        width={35}
+        height={35}
+        clipPath={'circle(32% at 50% 50%)'}
+      />
+    </g>
+  )
+}
+
 export const AnnotationMarker = (props: {
   x: number
   y0: number
@@ -242,6 +312,9 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   onHoverAnnotation?: (id: number | null) => void
   hoveredAnnotation?: number | null
   chartAnnotations?: ChartAnnotation[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
+  chartPositions?: ChartPosition[]
   hideXAxis?: boolean
 }) => {
   const {
@@ -266,6 +339,9 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     onHoverAnnotation,
     hoveredAnnotation,
     hideXAxis,
+    chartPositions,
+    hoveredChartPosition,
+    setHoveredChartPosition,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
@@ -316,6 +392,12 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
+      {chartPositions && (
+        <PositionsTooltip
+          chartPositions={chartPositions}
+          hoveredPosition={hoveredChartPosition}
+        />
+      )}
       {ttParams && Tooltip && (
         <TooltipContainer
           calculatePos={(ttw, tth) =>
@@ -404,6 +486,25 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                     onHover={(id) => onHoverAnnotation?.(id)}
                     onLeave={() => onHoverAnnotation?.(null)}
                     isHovered={hoveredAnnotation === a.id}
+                  />
+                ))}
+            {showAnnotations &&
+              chartPositions &&
+              chartPositions
+                .filter(
+                  (p) =>
+                    !hoveredChartPosition || p.id === hoveredChartPosition.id
+                )
+                .map((p) => (
+                  <PositionMarker
+                    key={p.id}
+                    x={xScale(p.createdTime)}
+                    y0={y0}
+                    y1={yAtTime(p.createdTime, p.answerId)}
+                    onHover={(cp) => setHoveredChartPosition?.(cp)}
+                    onLeave={() => setHoveredChartPosition?.(null)}
+                    isHovered={false}
+                    chartPosition={p}
                   />
                 ))}
           </g>

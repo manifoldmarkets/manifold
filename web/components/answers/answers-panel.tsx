@@ -276,6 +276,12 @@ export function AnswersPanel(props: {
         <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
             <Answer
+              className={
+                selectedAnswerIds.length &&
+                !selectedAnswerIds.includes(answer.id)
+                  ? 'opacity-70'
+                  : ''
+              }
               key={answer.id}
               user={user}
               answer={answer}
@@ -576,6 +582,7 @@ export function Answer(props: {
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
+  className?: string
 }) {
   const {
     answer,
@@ -591,6 +598,7 @@ export function Answer(props: {
     barColor,
     feedReason,
     shouldShowLimitOrderChart,
+    className,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -631,7 +639,7 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={'group cursor-pointer'}
+        className={clsx('group cursor-pointer', className)}
         barColor={barColor}
         label={
           <Row className={'items-center gap-1'}>

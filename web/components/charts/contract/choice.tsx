@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { groupBy, last, mapValues, sortBy } from 'lodash'
+import { first, groupBy, last, mapValues, sortBy, uniq } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
 import { Answer, DpmAnswer } from 'common/answer'
@@ -8,7 +8,7 @@ import {
   CPMMNumericContract,
   MultiContract,
 } from 'common/contract'
-import { getAnswerProbability } from 'common/calculate'
+import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import {
   TooltipProps,
   ZoomParams,
@@ -24,6 +24,9 @@ import { Row } from 'web/components/layout/row'
 import { pick } from 'lodash'
 import { buildArray } from 'common/util/array'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { formatMoney, maybePluralize } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
+import { ChartPosition } from 'common/chart-position'
 
 const CHOICE_ANSWER_COLORS = [
   '#99DDFF', // sky
@@ -137,6 +140,9 @@ export const ChoiceContractChart = (props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
+  chartPositions?: ChartPosition[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
 }) => {
   const {
     contract,
@@ -151,6 +157,9 @@ export const ChoiceContractChart = (props: {
     setHoveredAnnotation,
     hoveredAnnotation,
     chartAnnotations,
+    chartPositions,
+    hoveredChartPosition,
+    setHoveredChartPosition,
   } = props
 
   const start = contract.createdTime
@@ -225,6 +234,9 @@ export const ChoiceContractChart = (props: {
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
       chartAnnotations={chartAnnotations}
+      chartPositions={chartPositions}
+      hoveredChartPosition={hoveredChartPosition}
+      setHoveredChartPosition={setHoveredChartPosition}
     />
   )
 }
@@ -258,5 +270,63 @@ export const ChoiceTooltip = (props: {
         <span className="text-ink-600">{value}</span>
       </div>
     </>
+  )
+}
+
+export const PositionsTooltip = (props: {
+  chartPositions: ChartPosition[]
+  hoveredPosition: ChartPosition | null | undefined
+}) => {
+  const { chartPositions, hoveredPosition } = props
+  const firstPosition = first(chartPositions)
+  if (!firstPosition) return null
+  const { contract, answerId } = firstPosition
+  const bets = chartPositions.flatMap((p) => p.bets)
+  const contractMetric = getContractBetMetrics(contract, bets, answerId)
+  const answerIds = uniq(bets.map((b) => b.answerId))
+  const { profit } = contractMetric
+
+  return (
+    <Row className="text-ink-600 border-ink-200 dark:border-ink-300 bg-canvas-0/70 absolute -top-3 left-0 z-10 max-w-xs justify-between gap-1 rounded border px-3 py-1.5 text-sm ">
+      {hoveredPosition ? (
+        <>
+          <span className="">
+            {hoveredPosition.amount > 0 ? 'Bought' : 'Sold'}:
+          </span>
+          <span>{formatMoney(hoveredPosition.amount).replace('-', '')}</span>
+          <span
+            className={
+              hoveredPosition.outcome === 'YES'
+                ? 'text-green-500'
+                : 'text-red-500'
+            }
+          >
+            {hoveredPosition.outcome === 'YES' ? 'Yes' : 'No'}
+          </span>
+        </>
+      ) : (
+        <>
+          <span className="">
+            {floatingEqual(profit, 0) ? 'Profit' : profit > 0 ? 'Made' : 'Lost'}
+            :
+          </span>
+          <span
+            className={
+              profit > 0 ? 'text-green-500' : profit < 0 ? 'text-red-500' : ''
+            }
+          >
+            {formatMoney(profit).replace('-', '')}
+          </span>
+          <span>
+            {answerIds.length === 1 && contractMetric.maxSharesOutcome
+              ? ` on ${contractMetric.maxSharesOutcome}`
+              : ` on ${answerIds.length} ${maybePluralize(
+                  'answer',
+                  answerIds.length
+                )}`}
+          </span>
+        </>
+      )}
+    </Row>
   )
 }

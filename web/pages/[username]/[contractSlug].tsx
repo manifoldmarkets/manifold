@@ -190,7 +190,7 @@ export function ContractPageContent(props: ContractParams) {
       contract.id,
       contract.resolution,
       contract.closeTime,
-      'answers' in contract ? contract.answers : undefined,
+      'answers' in contract ? JSON.stringify(contract.answers) : undefined,
     ]
   )
 

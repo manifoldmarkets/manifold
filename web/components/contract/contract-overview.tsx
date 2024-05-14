@@ -81,6 +81,9 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
 import { FaChartArea } from 'react-icons/fa'
+import { filterDefined } from 'common/util/array'
+import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
+import { useChartPositions } from 'web/hooks/use-chart-positions'
 
 export const ContractOverview = memo(
   (props: {
@@ -573,10 +576,21 @@ const ChoiceOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
+  const {
+    chartPositions,
+    setHoveredChartPosition,
+    hoveredChartPosition,
+    displayUser,
+    setDisplayUser,
+  } = useChartPositions(contract)
+  const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
+  useEffect(() => {
+    setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))
+  }, [JSON.stringify(contractPositionAnswerIds)])
 
   return (
     <>
-      <Row className="justify-between gap-2">
+      <Row className="relative  justify-between gap-2">
         {contract.resolution === 'CANCEL' ? (
           <div className="flex items-end gap-2 text-2xl sm:text-3xl">
             <span className="text-base">Resolved</span>
@@ -585,7 +599,13 @@ const ChoiceOverview = (props: {
         ) : (
           <div />
         )}
-        <Row className={'gap-1'}>
+        <Row className={'relative gap-1'}>
+          <UserPositionSearchButton
+            currentUser={currentUser}
+            displayUser={displayUser}
+            contract={contract}
+            setDisplayUser={setDisplayUser}
+          />
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -625,6 +645,14 @@ const ChoiceOverview = (props: {
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
               chartAnnotations={chartAnnotations}
+              chartPositions={chartPositions?.filter((cp) =>
+                hoverAnswerId
+                  ? cp.answerId === hoverAnswerId
+                  : selectedAnswerIds.length === 0 ||
+                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+              )}
+              hoveredChartPosition={hoveredChartPosition}
+              setHoveredChartPosition={setHoveredChartPosition}
             />
           )}
         </SizedContainer>
