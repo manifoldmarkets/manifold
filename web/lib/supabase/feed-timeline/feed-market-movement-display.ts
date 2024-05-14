@@ -7,7 +7,11 @@ export const getMarketMovementInfo = (contract: Contract) => {
   const nullCase = { ignore: true, probChange: undefined, startTime: undefined }
   // Now as the start of the hour to prevent rerenders on every ms change
   const now = dayjs().startOf('hour').valueOf()
-  if (contract.mechanism !== 'cpmm-1' || contract.createdTime > now - DAY_MS) {
+  if (
+    contract.mechanism !== 'cpmm-1' ||
+    contract.isResolved ||
+    contract.createdTime > now - DAY_MS
+  ) {
     return nullCase
   }
 
@@ -15,15 +19,9 @@ export const getMarketMovementInfo = (contract: Contract) => {
   const probChangeIsSignificant = (probChange: number) =>
     Math.abs(probChange) > PROB_CHANGE_THRESHOLD
 
-  const calculatePreviousProbability = () => {
-    const dayAgoTime = now - DAY_MS
-    const dayAgoProb = contract.prob - contract.probChanges.day
-    return {
-      previousProb: dayAgoProb,
-      startTime: dayAgoTime,
-    }
-  }
-  const { previousProb, startTime } = calculatePreviousProbability()
+  const startTime = now - DAY_MS
+  const probChangeSince = contract.probChanges.day
+  const previousProb = contract.prob - probChangeSince
 
   if (
     contract.createdTime > now - 2 * DAY_MS &&
@@ -32,17 +30,12 @@ export const getMarketMovementInfo = (contract: Contract) => {
     return nullCase
   }
 
-  const probChangeSinceAdd = contract.prob - previousProb
-  // Probability change must exceed the threshold and the contract can't be resolved
-  if (!probChangeIsSignificant(probChangeSinceAdd) || contract.isResolved) {
+  // Probability change must exceed the threshold
+  if (!probChangeIsSignificant(probChangeSince)) {
     return nullCase
   }
 
-  const probChange = Math.round(probChangeSinceAdd * 100)
+  const probChange = Math.round(probChangeSince * 100)
 
-  // idk blame ian
-  const leadingBetDays = dayjs(contract.lastBetTime).diff(startTime, 'day')
-  const realStart = startTime - leadingBetDays * HOUR_MS
-
-  return { ignore: false, probChange, startTime: realStart }
+  return { ignore: false, probChange, startTime }
 }

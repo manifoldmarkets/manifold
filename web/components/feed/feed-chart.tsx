@@ -7,6 +7,7 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { getBetPoints } from 'common/supabase/bets'
 import { db } from 'web/lib/supabase/db'
 import { maxBy, minBy } from 'lodash'
+import { buildArray } from 'common/util/array'
 
 // defaults to the previous day, unless you set a startDate
 export function FeedBinaryChart(props: {
@@ -29,7 +30,15 @@ export function FeedBinaryChart(props: {
       limit: 1000,
       filterRedemptions: true,
       afterTime: startingDate,
-    }).then(setPoints)
+    }).then((points) => {
+      if (points.length > 0)
+        setPoints(
+          buildArray([
+            startDate != undefined && { x: startDate, y: points[0].y },
+            ...points,
+          ])
+        )
+    })
   }, [startDate, contract.id])
 
   const max = maxBy(points, 'y')?.y ?? 1
