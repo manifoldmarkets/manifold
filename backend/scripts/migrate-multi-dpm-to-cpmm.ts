@@ -36,8 +36,7 @@ if (require.main === module) {
     const contracts = await pg.map(
       `select data from contracts
        where
-        resolution is null
-        and mechanism = 'dpm-2'
+        mechanism = 'dpm-2'
         and (outcome_type = 'MULTIPLE_CHOICE' or outcome_type = 'FREE_RESPONSE')
         order by importance_score desc
         `,
@@ -121,7 +120,7 @@ const migrateMultiDpmToCpmm = async (
   const totalLiquidity = sum(Object.values(liquidityByAnswerId))
 
   const newAnswers: Answer[] = answers.map((a, i) => {
-    const prob = Math.max(0.002, answerProbs[i])
+    const prob = Math.max(0.0001, answerProbs[i])
     const liquidityAmount = liquidityByAnswerId[a.id]
 
     const minProb = Math.min(prob, 1 - prob)
@@ -195,7 +194,7 @@ const migrateMultiDpmToCpmm = async (
     const answerIndex = answers.findIndex((a) => a.id === b.outcome)
     const newAnswer = newAnswers[answerIndex]
 
-    const averagePrice = (b.probBefore + b.probAfter) / 2
+    const averagePrice = Math.sqrt(b.probBefore * b.probAfter)
     let shares = b.amount / averagePrice
     if (b.sale) {
       const originalBet = bets.find((b2) => b2.id === b.sale?.betId)
@@ -203,8 +202,9 @@ const migrateMultiDpmToCpmm = async (
         console.error('original bet not found', b.sale?.betId)
       } else {
         // Take negative shares of converted original bet.
-        const originalBetAvgPrice =
-          (originalBet.probBefore + originalBet.probAfter) / 2
+        const originalBetAvgPrice = Math.sqrt(
+          originalBet.probBefore * originalBet.probAfter
+        )
         shares = -originalBet.amount / originalBetAvgPrice
       }
     }
@@ -238,9 +238,14 @@ const migrateMultiDpmToCpmm = async (
     totalBets: __,
     phantomShares: ___,
     pool: ____,
+    resolution: _____,
+    resolutions: ______,
     ...otherContractProps
   } = contract
-  const newContract: CPMMMultiContract = {
+
+  const newResolutions = getNewResolutions(contract, answers, newAnswers)
+
+  const newContract: CPMMMultiContract = removeUndefinedProps({
     ...otherContractProps,
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTIPLE_CHOICE',
@@ -250,7 +255,8 @@ const migrateMultiDpmToCpmm = async (
     totalLiquidity,
     subsidyPool: 0,
     answers: newAnswers,
-  }
+    ...newResolutions,
+  })
 
   const providerId = isProd()
     ? HOUSE_LIQUIDITY_PROVIDER_ID
@@ -358,4 +364,42 @@ export const dpmMarketDataDump = async (
 
   console.log('Writing json file')
   await writeJson('dpm-market-data.json', jsonBlob)
+}
+
+const getNewResolutions = (
+  contract: DpmMultipleChoiceContract | FreeResponseContract,
+  answers: DpmAnswer[],
+  newAnswers: Answer[]
+) => {
+  const { resolution, resolutions } = contract
+  if (resolution === 'CANCEL') {
+    return {
+      resolution: 'CANCEL',
+    }
+  }
+  if (resolutions) {
+    const newResolutions: { [key: string]: number } = {}
+    for (const [outcome, weight] of Object.entries(resolutions)) {
+      const answerIndex = answers.findIndex((a) => a.id === outcome)
+      const newAnswer = newAnswers[answerIndex]
+      newResolutions[newAnswer.id] = weight
+    }
+    return {
+      resolution: 'MKT',
+      resolutions: newResolutions,
+    }
+  }
+
+  if (resolution) {
+    const answerIndex = answers.findIndex((a) => a.id === resolution)
+    const newAnswer = newAnswers[answerIndex]
+    return {
+      resolution: newAnswer.id,
+      resolutions: {
+        [newAnswer.id]: 100,
+      },
+    }
+  }
+
+  return undefined
 }
