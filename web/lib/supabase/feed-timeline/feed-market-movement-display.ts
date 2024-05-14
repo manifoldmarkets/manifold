@@ -1,5 +1,5 @@
 import { Contract } from 'common/contract'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 
 const PROB_CHANGE_THRESHOLD = 0.05
