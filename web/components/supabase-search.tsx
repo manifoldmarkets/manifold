@@ -378,7 +378,7 @@ export function SupabaseSearch(props: {
         )}
       </Col>
       {showSearchTypes ? (
-        <div className={'bg-canvas-0 md:bg-canvas-50 flex gap-1 px-1 pb-1'}>
+        <div className={'bg-canvas-50 flex gap-1 px-1 pb-1'}>
           <PillButton
             className="min-w-[120px]"
             selected={searchType === 'Questions' || !searchType}
