@@ -22,7 +22,6 @@ import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 
-import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
 import { IconButton } from 'web/components/buttons/button'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
@@ -40,7 +39,6 @@ import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { FullUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { Avatar } from './widgets/avatar'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
