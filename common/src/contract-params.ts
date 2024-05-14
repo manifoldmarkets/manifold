@@ -25,11 +25,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, mapValues, minBy, orderBy, sortBy } from 'lodash'
+import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
-import { MAX_ANSWERS } from './answer'
+import { MAX_ANSWERS, sortAnswers } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 
 export async function getContractParams(
@@ -47,7 +47,7 @@ export async function getContractParams(
 
   const [
     totalBets,
-    betsToPass,
+    lastBetArray,
     allBetPoints,
     comments,
     pinnedComments,
@@ -68,10 +68,10 @@ export async function getContractParams(
     hasMechanism
       ? getBets(db, {
           contractId: contract.id,
-          limit: 100,
+          limit: 1,
           order: 'desc',
           filterAntes: true,
-          filterRedemptions: !isNumber, // Necessary to calculate expected value
+          filterRedemptions: true,
         })
       : ([] as Bet[]),
     hasMechanism
@@ -118,15 +118,24 @@ export async function getContractParams(
     !isMulti && contract.visibility !== 'private' ? binAvg(allBetPoints) : []
   const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.mechanism === 'cpmm-multi-1'
+  ) {
+    contract.answers = sortAnswers(contract, contract.answers)
+      .slice(0, 20)
+      .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
+  }
+
+  const lastBet: Bet | undefined = lastBetArray[0]
+  const lastBetTime = lastBet?.createdTime
+
   return {
     state: 'authed',
     params: removeUndefinedProps({
       outcomeType: contract.outcomeType,
       contract,
-      historyData: {
-        bets: betsToPass,
-        points: [], // for backwards compat. TODO: remove
-      },
+      lastBetTime,
       betReplies,
       pointsString,
       multiPointsString,

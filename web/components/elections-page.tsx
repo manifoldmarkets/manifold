@@ -103,6 +103,15 @@ export function USElectionsPage(props: ElectionsPageProps) {
         className="-mt-4"
       />
 
+      {trending}
+
+      <HomepageMap
+        rawPresidencyStateContracts={rawPresidencyStateContracts}
+        rawSenateStateContracts={rawSenateStateContracts}
+        rawGovernorStateContracts={rawGovernorStateContracts}
+        houseContract={houseContract as MultiContract}
+      />
+
       <PoliticsCard
         contract={electionPartyContract as MultiContract}
         viewType="PARTY"
@@ -128,8 +137,6 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </SizedContainer>
         )}
       </PoliticsCard>
-
-      {trending}
 
       <PoliticsCard
         customTitle="Republican vice presidential nomination"
@@ -201,12 +208,7 @@ export function USElectionsPage(props: ElectionsPageProps) {
           </Row>
         </Col> */}
       </Col>
-      <HomepageMap
-        rawPresidencyStateContracts={rawPresidencyStateContracts}
-        rawSenateStateContracts={rawSenateStateContracts}
-        rawGovernorStateContracts={rawGovernorStateContracts}
-        houseContract={houseContract as MultiContract}
-      />
+
       {/* <Col className="gap-6 sm:hidden sm:gap-8">
         <PoliticsCard
           contract={democraticElectability as MultiContract}

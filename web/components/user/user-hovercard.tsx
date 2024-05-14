@@ -11,8 +11,8 @@ import { Linkify } from '../widgets/linkify'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
-import { useIsClient } from 'web/hooks/use-is-client'
 import { FullUser } from 'common/api/user-types'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -26,7 +26,7 @@ export function UserHovercard({
   className,
 }: UserHovercardProps) {
   const isClient = useIsClient()
-  if (!isClient) return null
+  if (!isClient) return <button className="inline-flex">{children}</button>
   return (
     <HoverCard.Root openDelay={150}>
       {/* Use "asChild" and wrap children in a button to prevent nested links.

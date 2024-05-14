@@ -66,7 +66,13 @@ export async function updateUserMetricsCore() {
            select id from users where username in ($2:list) and
            (users.data -> 'lastBetTime')::bigint > ts_to_millis(now() - interval '2 weeks')
         ) or
-       ($1 < 0.01 and users.data->'lastBetTime' is not null)
+       ($1 < 0.05 and id in (
+           select distinct users.id from users
+            join user_contract_metrics on users.id = user_contract_metrics.user_id
+            join contracts on user_contract_metrics.contract_id = contracts.id
+             where contracts.resolution_time is null
+             and user_contract_metrics.has_shares = true
+           ))
        )
         order by uph.last_calculated nulls first limit 400`,
     [random, BOT_USERNAMES],

@@ -35,11 +35,6 @@ export default function LabsPage() {
           href="https://manifold.love"
         />
         <LabCard
-          title="📂 Portfolios"
-          description="Curate in a set of positions to invest in"
-          href="/portfolios"
-        />
-        <LabCard
           title="🎤 Mana-chan"
           description="Tweets from our anime spokesgirl"
           href="/manachan"

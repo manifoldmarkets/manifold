@@ -5,7 +5,6 @@ import {
   PresentationChartLineIcon,
   ViewListIcon,
   ChevronDownIcon,
-  TagIcon,
 } from '@heroicons/react/outline'
 import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -49,11 +48,7 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import {
-  usePrivateUser,
-  useUser,
-  useFirebaseUserById,
-} from 'web/hooks/use-user'
+import { usePrivateUser, useUser, usePollUser } from 'web/hooks/use-user'
 import { useDiscoverUsers } from 'web/hooks/use-users'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -74,7 +69,6 @@ import { buildArray } from 'common/util/array'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { YourTopicsSection } from 'web/components/topics/your-topics'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { FaCrown } from 'react-icons/fa6'
 import { getUserForStaticProps } from 'common/supabase/users'
@@ -154,7 +148,7 @@ function UserProfile(props: {
   shouldIgnoreUser: boolean
 }) {
   const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
-  const user = useFirebaseUserById(props.user.id) ?? props.user
+  const user = usePollUser(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
@@ -410,12 +404,6 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
-              },
-              isCurrentUser && {
-                title: 'Topics',
-                prerender: false,
-                stackedTabIcon: <TagIcon className="h-5" />,
-                content: <YourTopicsSection className="w-full" user={user} />,
               },
               {
                 title: 'Balance log',

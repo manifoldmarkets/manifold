@@ -29,7 +29,7 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
 
-const numberOfDays = 365
+const numberOfDays = 365 * 2
 
 interface StatEvent {
   id: string
@@ -554,7 +554,8 @@ export const updateStatsCore = async () => {
   }))
 
   // Write to postgres
-  await bulkUpsert(pg, 'stats', 'title', rows)
+  for (const row of rows)
+    await bulkUpsert(pg, 'stats', 'title', [row])
   log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
   await saveCalibrationData(pg)

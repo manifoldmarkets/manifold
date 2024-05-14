@@ -9,10 +9,12 @@ import { chunk } from 'lodash'
 export async function calculateConversionScore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const contractsQuery = `select id from contracts
-      where resolution_time is null
-      and (close_time > now() or close_time is null)`
-  const contractIds = await pg.map(contractsQuery, [], (c) => c.id)
+  const contractIds = await pg.map(
+    `select distinct contract_id from user_view_events
+        where created_time > now() - interval '1 week'`,
+    [],
+    (c) => c.contract_id
+  )
   const chunks = chunk(contractIds, 1000)
   log(
     `Processing ${contractIds.length} contracts in ${chunks.length} chunks...`
@@ -26,30 +28,60 @@ export async function calculateConversionScore() {
           select contract_id, coalesce(count(distinct user_id), 0) as uniques
           from user_contract_views
           where card_views > 0
-          and contract_id= any ($1)
+            and contract_id= any ($1)
           group by contract_id
         ),
          page_viewers as (
            select contract_id, coalesce(count(distinct user_id), 0) as uniques
            from user_contract_views
            where page_views > 0
-           and contract_id= any ($1)
+             and contract_id= any ($1)
            group by contract_id
          ),
          page_enjoyers as (
            select contract_id, count(distinct user_id) as uniques
            from user_contract_interactions
-           where name in ('page bet', 'page comment', 'page repost', 'page like')
-           and contract_id= any ($1)
+           where name in ('page bet', 'page comment', 'page repost', 'page like', 'page share')
+             and contract_id= any ($1)
            group by contract_id
          ),
          card_enjoyers as (
            select contract_id, count(distinct user_id) as uniques
            from user_contract_interactions
-           where name in ('card bet', 'card like')
-           and contract_id= any ($1)
+           where name in ('card bet', 'card like', 'card click')
+             and contract_id= any ($1)
            group by contract_id
-         )
+         ),
+         recent_card_viewers as (
+           select contract_id, count(distinct user_id) as uniques
+           from user_view_events
+           where name = 'card'
+             and contract_id= any ($1)
+             and created_time > now() - interval '1 week'
+           group by contract_id
+         ),
+         recent_page_viewers as (
+           select contract_id, count(distinct user_id) as uniques
+           from user_view_events
+           where name = 'page'
+             and contract_id= any ($1)
+             and created_time > now() - interval '1 week'
+           group by contract_id
+         ),
+         recent_card_enjoyers as (
+           select contract_id, count(distinct user_id) as uniques
+           from user_contract_interactions
+           where name in ('card bet', 'card like', 'card click')
+             and contract_id= any ($1)
+             and created_time > now() - interval '1 week'
+           group by contract_id),
+         recent_page_enjoyers as (
+           select contract_id, count(distinct user_id) as uniques
+           from user_contract_interactions
+           where name in ('page bet', 'page comment', 'page repost', 'page like', 'page share')
+             and contract_id= any ($1)
+             and created_time > now() - interval '1 week'
+           group by contract_id)
         update contracts c
         set conversion_score = (
           select 
@@ -57,15 +89,23 @@ export async function calculateConversionScore() {
                 -- If our data is sus, return default conversion score
               (coalesce(pe.uniques,0) > coalesce(pv.uniques,0) or
               coalesce(ce.uniques,0) > coalesce(cv.uniques,0))
-              then $2 * 1.0 / $3
+              then ($2 * 1.0) / $3
             else
               power(
-             (($2+coalesce(ce.uniques, 0) * 1.0) / (coalesce(nullif(cv.uniques,0),ce.uniques,0)+$3))
-                 *
-             (($2+coalesce(pe.uniques, 0) * 1.0) / (coalesce(nullif(pv.uniques,0), pe.uniques,0)+$3)),
-             1.0 / 2
-           ) end
+                (($2+coalesce(rce.uniques, 0) * 1.0) / (coalesce(nullif(rcv.uniques,0),rce.uniques,0)+$3))
+                    *
+                (($2+coalesce(rpe.uniques, 0) * 1.0) / (coalesce(nullif(rpv.uniques,0),rpe.uniques,0)+$3))
+                    *
+                (($2+coalesce(ce.uniques, 0) * 1.0) / (coalesce(nullif(cv.uniques,0),ce.uniques,0)+$3))
+                    *
+                (($2+coalesce(pe.uniques, 0) * 1.0) / (coalesce(nullif(pv.uniques,0), pe.uniques,0)+$3)),
+                1.0 / 4
+              ) end
           from contracts c2
+             left join recent_card_enjoyers rce on c.id = rce.contract_id
+             left join recent_card_viewers rcv on c.id = rcv.contract_id
+             left join recent_page_enjoyers rpe on c.id = rpe.contract_id
+             left join recent_page_viewers rpv on c.id = rpv.contract_id
              left join card_viewers cv on c2.id = cv.contract_id
              left join card_enjoyers ce on c2.id = ce.contract_id
              left join page_viewers pv on c2.id = pv.contract_id

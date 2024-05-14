@@ -11,7 +11,6 @@ import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellShareDPM } from './sell-bet'
 import { sellShares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
@@ -21,7 +20,7 @@ import { resolveMarket } from './resolve-market'
 import { closeMarket } from './close-market'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { getCurrentUser } from './get-current-user'
+import { getMe } from './get-me'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import { addLiquidity } from './add-subsidy'
 import { validateiap } from './validate-iap'
@@ -54,7 +53,6 @@ import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
-import { buyportfolio } from './buy-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendMana } from './send-mana'
@@ -85,15 +83,12 @@ import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
 import { updatelover } from 'api/love/update-lover'
-import { createMatch } from 'api/love/create-match'
 import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
-import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
 import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
-import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { getCompatibleLovers } from './love/compatible-lovers'
@@ -142,16 +137,12 @@ import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getLoverAnswers } from './love/get-lover-answers'
-import { createYourLoveMarket } from './love/create-your-love-market'
-import { getLoveMarket } from './love/get-love-market'
-import { getLoveMarkets } from './love/get-love-markets'
 import { placeMultiBet } from 'api/place-multi-bet'
 import { deletetv, settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
-import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
@@ -227,7 +218,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
-  'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
   bets: getBets,
   comment: createComment,
@@ -263,7 +253,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   donate: donate,
   'convert-sp-to-mana': convertSpiceToMana,
   'market/:id/positions': getPositions,
-  me: getCurrentUser,
+  me: getMe,
   'me/update': updateMe,
   'me/delete': deleteMe,
   'user/by-id/:id': getUser,
@@ -300,15 +290,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'create-your-love-market': createYourLoveMarket,
-  'get-love-market': getLoveMarket,
-  'get-love-markets': getLoveMarkets,
   'get-partner-stats': getPartnerStats,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
-  createanswer: createAnswerDpm,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
@@ -389,7 +375,6 @@ app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
-app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))
@@ -434,9 +419,6 @@ app.post(
 )
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
-app.post('/reject-lover', ...apiRoute(rejectLover))
-app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
-app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))

@@ -152,7 +152,7 @@ export default function AboutPage() {
           <LabCard title="📺 TV" href="/tv" />
           <LabCard title="️🔖 Dashboards" href="/dashboard" />
           <LabCard title="⚡️ Site activity" href="/live" />
-          <LabCard title="️🧪 Lab" href="/lab" />
+          {/* <LabCard title="️🧪 Lab" href="/lab" /> */}
           <LabCard
             title="❤️ Manifold.love"
             href="https://manifold.love"

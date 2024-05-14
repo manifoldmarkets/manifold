@@ -22,16 +22,8 @@ export const LikesDisplay = (props: {
   ships: ShipData[]
   refreshShips: () => Promise<void>
   profileLover: Lover
-  mutualLikesBig?: boolean
 }) => {
-  const {
-    likesGiven,
-    likesReceived,
-    ships,
-    refreshShips,
-    profileLover,
-    mutualLikesBig,
-  } = props
+  const { likesGiven, likesReceived, ships, refreshShips, profileLover } = props
 
   const likesGivenByUserId = keyBy(likesGiven, (l) => l.user_id)
   const likesRecievedByUserId = keyBy(likesReceived, (l) => l.user_id)
@@ -67,25 +59,22 @@ export const LikesDisplay = (props: {
 
   return (
     <Col className="gap-4">
-      {sortedMutualLikes.length > 0 &&
-        (mutualLikesBig ? (
-          <Col className="gap-2">
-            <Subtitle>Mutual likes</Subtitle>
-            <Carousel>
-              {sortedMutualLikes.map((like) => {
-                return (
-                  <MatchTile
-                    key={like.user_id}
-                    matchUserId={like.user_id}
-                    profileLover={profileLover}
-                  />
-                )
-              })}
-            </Carousel>
-          </Col>
-        ) : (
-          <LikesList label="Mutual likes" likes={sortedMutualLikes} />
-        ))}
+      {sortedMutualLikes.length > 0 && (
+        <Col className="gap-2">
+          <Subtitle>Mutual likes</Subtitle>
+          <Carousel>
+            {sortedMutualLikes.map((like) => {
+              return (
+                <MatchTile
+                  key={like.user_id}
+                  matchUserId={like.user_id}
+                  profileLover={profileLover}
+                />
+              )
+            })}
+          </Carousel>
+        </Col>
+      )}
 
       {onlyLikesReceived.length > 0 && (
         <LikesList label="Likes received" likes={onlyLikesReceived} />

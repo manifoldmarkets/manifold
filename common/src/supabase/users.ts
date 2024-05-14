@@ -12,10 +12,14 @@ export async function getUserForStaticProps(
 export function convertUser(row: Row<'users'>): User
 export function convertUser(row: Row<'users'> | null): User | null {
   if (!row) return null
+
   return {
-    ...(row.data as User),
+    ...(row.data as any),
     id: row.id,
     username: row.username,
     name: row.name,
+    balance: row.balance,
+    spiceBalance: row.spice_balance,
+    totalDeposits: row.total_deposits,
   } as User
 }

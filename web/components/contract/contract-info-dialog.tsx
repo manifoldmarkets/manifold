@@ -30,10 +30,7 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import {
-  UNRANKED_GROUP_ID,
-  UNSUBSIDIZED_GROUP_ID,
-} from 'common/supabase/groups'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
@@ -392,43 +389,6 @@ export const Stats = (props: {
                       success: `Successfully ${
                         on ? 'removed' : 'added'
                       } question to the unranked topic!`,
-                      error: `Error ${
-                        on ? 'removing' : 'adding'
-                      } topic. Try again?`,
-                    }
-                  )
-                }}
-              />
-            </td>
-          </tr>
-        )}
-        {!hideAdvanced && isBettingContract && (
-          <tr className={clsx(isMod && 'bg-purple-500/30')}>
-            <td>
-              💰 Subsidized{' '}
-              <InfoTooltip
-                text={'Market receives unique trader bonuses and house subsidy'}
-              />
-            </td>
-            <td>
-              <CheckOrSwitch
-                canToggle={isMod}
-                disabled={!isPublic}
-                on={isPublic && contract.isSubsidized !== false}
-                setOn={(on) => {
-                  toast.promise(
-                    api('market/:contractId/group', {
-                      contractId: contract.id,
-                      groupId: UNSUBSIDIZED_GROUP_ID,
-                      remove: on,
-                    }),
-                    {
-                      loading: `${
-                        on ? 'Removing' : 'Adding'
-                      } question to the unsubsidized topic...`,
-                      success: `Successfully ${
-                        on ? 'removed' : 'added'
-                      } question to the unsubsidized topic!`,
                       error: `Error ${
                         on ? 'removing' : 'adding'
                       } topic. Try again?`,

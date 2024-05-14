@@ -12,8 +12,7 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import clsx from 'clsx'
 import { useAdmin } from 'web/hooks/use-admin'
-import { useIsAuthorized, useFirebaseUsersById } from 'web/hooks/use-user'
-import { filterDefined } from 'common/util/array'
+import { useIsAuthorized } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
 import { Contract } from 'common/contract'
@@ -58,17 +57,7 @@ export default function Journeys() {
   const unlikelySpammers = unBannedUsers.filter(
     (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
   )
-  const referrers = filterDefined(
-    useFirebaseUsersById(
-      filterDefined(
-        uniq(
-          unBannedUsers
-            .filter((u) => u.referredByUserId)
-            .map((u) => u.referredByUserId)
-        )
-      )
-    )
-  )
+  const referrers = unBannedUsers.filter((u) => u.referredByUserId)
 
   const getEvents = async () => {
     const start = Date.now() - hoursFromNow * HOUR_MS

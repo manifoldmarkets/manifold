@@ -29,7 +29,11 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
 import { Answer } from 'common/answer'
 import { acquireLock, releaseLock } from './firestore-lock'
-import { ENV_CONFIG, SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import {
+  SPICE_PRODUCTION_ENABLED,
+  isAdminId,
+  isModId,
+} from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 
 export type ResolutionParams = {
@@ -163,12 +167,13 @@ export const resolveMarketHelper = async (
 
     if (
       outcome === 'CANCEL' &&
-      !ENV_CONFIG.adminIds.includes(resolver.id) &&
+      !isAdminId(resolver.id) &&
+      !isModId(resolver.id) &&
       negativePayouts.length > 0
     ) {
       throw new APIError(
         403,
-        'Negative payouts too large for resolution. Contact admin.'
+        'Negative payouts too large for resolution. Contact admin or mod.'
       )
     }
 
@@ -190,7 +195,7 @@ export const resolveMarketHelper = async (
       payouts,
       contractId,
       answerId,
-      contract.isRanked != false
+      !!contract.isSpicePayout
     )
 
     await updateContractMetricsForUsers(contract, bets)
@@ -392,7 +397,7 @@ export const payUsersTransactions = async (
   }[],
   contractId: string,
   answerId: string | undefined,
-  isRanked: boolean
+  payoutSpice: boolean
 ) => {
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()
@@ -406,7 +411,7 @@ export const payUsersTransactions = async (
     await firestore
       .runTransaction(async (transaction) => {
         payoutChunk.forEach(({ userId, payout, deposit }) => {
-          if (SPICE_PRODUCTION_ENABLED && isRanked) {
+          if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
             const toDoc = firestore.doc(`users/${userId}`)
             transaction.update(toDoc, {
               spiceBalance: FieldValue.increment(payout),

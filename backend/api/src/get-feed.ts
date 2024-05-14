@@ -28,7 +28,7 @@ import {
 } from 'shared/topic-interests'
 import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 
-const DEBUG_USER_ID: string | undefined = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
+const DEBUG_USER_ID = undefined
 
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
@@ -123,8 +123,14 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
 
   const baseQueryArray = (boosts = false) =>
     buildArray(
-      select('contracts.*, uti.avg_conversion_score as topic_conversion_score'),
-      !boosts ? select(`cv.latest_seen_time`) : select(`ma.id as ad_id`),
+      select('contracts.*'),
+      !boosts
+        ? select(
+            `avg(uti.avg_conversion_score) as topic_conversion_score, cv.latest_seen_time`
+          )
+        : select(
+            `uti.avg_conversion_score as topic_conversion_score, ma.id as ad_id`
+          ),
       from(
         `(select
                unnest(array[$1]) as group_id,
@@ -157,7 +163,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
       blockedGroupSlugs.length > 0 &&
         where(`not exists (${blockedGroupsQuery})`),
-      lim(limit, offset)
+      lim(limit, offset),
+      !boosts && groupBy(`contracts.id, cv.latest_seen_time`)
     )
 
   const adsQuery = renderSql(
@@ -177,9 +184,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     order(`contracts.conversion_score desc`)
   )
   const sorts = {
-    conversion: `uti.avg_conversion_score  * contracts.conversion_score desc`,
-    importance: `uti.avg_conversion_score  * contracts.importance_score desc`,
-    freshness: `uti.avg_conversion_score  * contracts.freshness_score desc`,
+    conversion: `avg(uti.avg_conversion_score  * contracts.conversion_score) desc`,
+    importance: `avg(uti.avg_conversion_score  * contracts.importance_score) desc`,
+    freshness: `avg(uti.avg_conversion_score  * contracts.freshness_score) desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
     renderSql(...baseQueryArray(), order(orderQ))

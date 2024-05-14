@@ -2,11 +2,8 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import {
   Contract,
   CPMMNumericContract,
-  DPMContract,
-  FreeResponseContract,
   getBinaryMCProb,
   isBinaryMulti,
-  MultipleChoiceContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
 import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
@@ -18,21 +15,12 @@ import {
 import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
 import { useState } from 'react'
-import {
-  calculatePayout,
-  getAnswerProbability,
-  resolvedPayout,
-} from 'common/calculate'
-import {
-  calculateDpmSaleAmount,
-  getDpmProbabilityAfterSale,
-} from 'common/calculate-dpm'
+import { calculatePayout, resolvedPayout } from 'common/calculate'
+import { calculateDpmSaleAmount } from 'common/calculate-dpm'
 import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
 import { getStonkDisplayShares } from 'common/stonk'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatTimeShort } from 'web/lib/util/time'
-import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
-import { api } from 'web/lib/firebase/api'
 import { Button } from '../buttons/button'
 import {
   answerToRange,
@@ -48,7 +36,7 @@ export function ContractBetsTable(props: {
 }) {
   const { contract, isYourBets, hideRedemptionAndLoanMessages, truncate } =
     props
-  const { isResolved, mechanism, outcomeType, closeTime } = contract
+  const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
     props.bets.filter((b) => !b.isAnte && (b.amount !== 0 || b.loanAmount)),
@@ -85,7 +73,6 @@ export function ContractBetsTable(props: {
   const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
-  const isClosed = closeTime && Date.now() > closeTime
   const isBinaryMC = isBinaryMulti(contract)
   const isMultiNumber = outcomeType === 'NUMBER'
   const betsByBetGroupId = isMultiNumber
@@ -142,9 +129,6 @@ export function ContractBetsTable(props: {
       <Table>
         <thead>
           <tr className="p-2">
-            {isYourBets && isDPM && !isNumeric && !isResolved && !isClosed && (
-              <th></th>
-            )}
             {(isCPMM || isCpmmMulti) && <th>Type</th>}
             {isCpmmMulti && !isBinaryMC && !isMultiNumber && <th>Answer</th>}
             {isMultiNumber && <th>Range</th>}
@@ -186,7 +170,6 @@ export function ContractBetsTable(props: {
                   bet={bet}
                   saleBet={salesDict[bet.id]}
                   contract={contract}
-                  isYourBet={isYourBets}
                 />
               ))}
         </tbody>
@@ -214,13 +197,8 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: {
-  bet: Bet
-  contract: Contract
-  saleBet?: Bet
-  isYourBet: boolean
-}) {
-  const { bet, saleBet, contract, isYourBet } = props
+function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
+  const { bet, saleBet, contract } = props
   const {
     amount,
     outcome,
@@ -228,13 +206,10 @@ function BetRow(props: {
     probBefore,
     probAfter,
     shares,
-    isSold,
     isAnte,
   } = bet
 
-  const { isResolved, closeTime, mechanism, outcomeType } = contract
-
-  const isClosed = closeTime && Date.now() > closeTime
+  const { isResolved, mechanism, outcomeType } = contract
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCPMM2 = mechanism === 'cpmm-2'
@@ -244,8 +219,6 @@ function BetRow(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
   const isStonk = outcomeType === 'STONK'
-  const isMulti =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
   const isBinaryMC = isBinaryMulti(contract)
 
   const dpmPayout = (() => {
@@ -290,13 +263,6 @@ function BetRow(props: {
 
   return (
     <tr>
-      {isYourBet && isDPM && isMulti && !isResolved && !isClosed && (
-        <td className="text-ink-700">
-          {!isSold && !isAnte && (
-            <DpmSellButton contract={contract} bet={bet} />
-          )}
-        </td>
-      )}
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
       {isCpmmMulti && !isBinaryMC && (
         <td className="max-w-[200px] truncate sm:max-w-[250px]">
@@ -441,60 +407,5 @@ function MultiNumberBetRow(props: {
       </td>
       <td>{formatTimeShort(createdTime)}</td>
     </tr>
-  )
-}
-
-function DpmSellButton(props: {
-  contract: DPMContract & (MultipleChoiceContract | FreeResponseContract)
-  bet: Bet
-}) {
-  const { contract, bet } = props
-  const { outcome, shares, loanAmount } = bet
-
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  const initialProb = getAnswerProbability(contract, outcome)
-
-  const outcomeProb = getDpmProbabilityAfterSale(
-    contract.totalShares,
-    outcome,
-    shares
-  )
-
-  const saleAmount = calculateDpmSaleAmount(contract, bet)
-  const profit = saleAmount - bet.amount
-
-  return (
-    <ConfirmationButton
-      openModalBtn={{
-        label: 'Sell',
-        disabled: isSubmitting,
-      }}
-      submitBtn={{ label: 'Sell', color: 'green' }}
-      onSubmit={async () => {
-        setIsSubmitting(true)
-        await api('sell-shares-dpm', { contractId: contract.id, betId: bet.id })
-        setIsSubmitting(false)
-      }}
-    >
-      <div className="mb-4 text-xl">
-        Sell {formatWithCommas(shares)} shares of{' '}
-        <OutcomeLabel outcome={outcome} contract={contract} truncate="long" />{' '}
-        for {formatMoney(saleAmount)}?
-      </div>
-      {!!loanAmount && (
-        <div className="mt-2">
-          You will also pay back {formatMoney(loanAmount)} of your loan, for a
-          net of {formatMoney(saleAmount - loanAmount)}.
-        </div>
-      )}
-
-      <div className="mb-1 mt-2 text-sm">
-        {profit > 0 ? 'Profit' : 'Loss'}: {formatMoney(profit).replace('-', '')}
-        <br />
-        Question probability: {formatPercent(initialProb)} →{' '}
-        {formatPercent(outcomeProb)}
-      </div>
-    </ConfirmationButton>
   )
 }

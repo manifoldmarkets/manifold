@@ -10,41 +10,47 @@ import {
   orderBy,
   limit as lim,
   withClause,
+  groupBy,
+  leftJoin,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
-import { convertContract } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { log } from 'shared/utils'
-
-// TODO: if the scheduler isn't deployed once/week, a user's topics used for these markets
-//  will be cached and out of date
-export async function getForYouMarkets(userId: string, limit = 25) {
-  const searchMarketSQL = await getForYouSQL(userId, 'all', 'ALL', limit, 0)
-
-  const pg = createSupabaseDirectClient()
-  const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
-
-  return contracts ?? []
-}
+import { PrivateUser } from 'common/user'
 
 export async function getForYouSQL(
   userId: string,
   filter: string,
   contractType: string,
   limit: number,
-  offset: number
+  offset: number,
+  privateUser?: PrivateUser
 ) {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
     await buildUserInterestsCache(userId)
   }
+  const {
+    blockedByUserIds,
+    blockedContractIds,
+    blockedUserIds,
+    blockedGroupSlugs,
+  } = privateUser ?? {}
+  const blockedGroupsQuery = renderSql(
+    select('1'),
+    from(`group_contracts gc`),
+    join(`groups g on gc.group_id = g.id`),
+    where(`gc.contract_id = contracts.id`),
+    where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
+  )
+  const blockedIds = [...(blockedByUserIds ?? []), ...(blockedUserIds ?? [])]
   // Still no topic interests, return default search
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
@@ -62,28 +68,43 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
       }),
+      blockedIds.length > 0 &&
+        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
+      (blockedContractIds ?? []).length > 0 &&
+        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
+      (blockedGroupSlugs ?? []).length > 0 &&
+        where(`not exists (${blockedGroupsQuery})`),
       lim(limit, offset)
     )
   }
 
   const forYou = renderSql(
     buildArray(
-      select('contracts.*, uti.avg_conversion_score as topic_conversion_score'),
-      from(
+      select(
+        'contracts.*, coalesce(avg(uti.avg_conversion_score),1) as avg_topic_conversion_score'
+      ),
+      from('contracts'),
+      join(`group_contracts on contracts.id = group_contracts.contract_id`),
+      leftJoin(
         `(select
-               unnest(array[$1]) as group_id,
-               unnest(array[$2]) as avg_conversion_score) as uti`,
+          unnest(array[$1]) as group_id,
+          unnest(array[$2]) as avg_conversion_score)
+          as uti on uti.group_id = group_contracts.group_id`,
         [
           Object.keys(userIdsToAverageTopicConversionScores[userId]),
           Object.values(userIdsToAverageTopicConversionScores[userId]),
         ]
       ),
-      join(`group_contracts on group_contracts.group_id = uti.group_id`),
-      join(`contracts on contracts.id = group_contracts.contract_id`),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
+      blockedIds.length > 0 &&
+        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
+      (blockedContractIds ?? []).length > 0 &&
+        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
+      (blockedGroupSlugs ?? []).length > 0 &&
+        where(`not exists (${blockedGroupsQuery})`),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
         [userId]
@@ -95,11 +116,18 @@ export async function getForYouSQL(
         hideStonks: true,
       }),
       lim(limit, offset),
-      orderBy(`power(uti.avg_conversion_score, 0.75)  * contracts.importance_score *
-         (1 + case
-          when contracts.creator_id = any(select follow_id from user_follows) then 0.25
-          else 0.0 end)
-           desc`)
+      groupBy('contracts.id'),
+      // If user has contract-topic scores, use ONLY the defined topic scores when ranking
+      // If the user has no contract-matching topic score, use only the contract's importance score
+      orderBy(`case
+      when bool_or(uti.avg_conversion_score is not null)
+      then avg(power(coalesce(uti.avg_conversion_score, 1),0.75) * contracts.importance_score)
+      else avg(contracts.importance_score)
+      end * (1 + case
+      when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
+      else 0.0
+      end) 
+      desc`)
     )
   )
   return forYou

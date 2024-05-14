@@ -1,12 +1,11 @@
 'use client'
-import { createContext, ReactNode, useEffect } from 'react'
+import { createContext, ReactNode, useEffect, useState } from 'react'
 import { pickBy } from 'lodash'
-import { onIdTokenChanged, User } from 'firebase/auth'
+import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import {
   auth,
   getUserAndPrivateUser,
   listenForPrivateUser,
-  listenForUser,
 } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
 import { randomString } from 'common/util/random'
@@ -14,12 +13,18 @@ import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
-import { UserAndPrivateUser } from 'common/user'
+import {
+  type PrivateUser,
+  type User,
+  type UserAndPrivateUser,
+} from 'common/user'
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
+import { usePollUser } from 'web/hooks/use-user'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -78,16 +83,32 @@ export function AuthProvider(props: {
   serverUser?: AuthUser
 }) {
   const { children, serverUser } = props
-  const [authUser, setAuthUser] = useStateCheckEquality<AuthUser>(serverUser)
+
+  const [user, setUser] = useStateCheckEquality<User | undefined | null>(
+    serverUser ? serverUser.user : serverUser
+  )
+  const [privateUser, setPrivateUser] = useStateCheckEquality<
+    PrivateUser | undefined
+  >(serverUser ? serverUser.privateUser : undefined)
+  const [authLoaded, setAuthLoaded] = useState(false)
+
+  const authUser = !user
+    ? user
+    : !privateUser
+    ? privateUser
+    : { user, privateUser, authLoaded }
 
   useEffect(() => {
     if (serverUser === undefined) {
       const cachedUser = safeLocalStorage?.getItem(CACHED_USER_KEY)
       const parsed = cachedUser ? JSON.parse(cachedUser) : undefined
-      if (parsed) setAuthUser({ ...parsed, authLoaded: false })
-      else setAuthUser(parsed)
+      if (parsed) {
+        setUser(parsed.user)
+        setPrivateUser(parsed.privateUser)
+        setAuthLoaded(false)
+      } else setUser(undefined)
     }
-  }, [setAuthUser, serverUser])
+  }, [serverUser])
 
   useEffect(() => {
     if (authUser) {
@@ -99,8 +120,10 @@ export function AuthProvider(props: {
     }
   }, [authUser])
 
-  const onAuthLoad = (fbUser: User, newUser: UserAndPrivateUser) => {
-    setAuthUser({ ...newUser, authLoaded: true })
+  const onAuthLoad = (fbUser: FirebaseUser, newUser: UserAndPrivateUser) => {
+    setUser(newUser.user)
+    setPrivateUser(newUser.privateUser)
+    setAuthLoaded(true)
 
     nativePassUsers(
       JSON.stringify({
@@ -147,7 +170,8 @@ export function AuthProvider(props: {
         } else {
           // User logged out; reset to null
           setUserCookie(undefined)
-          setAuthUser(null)
+          setUser(null)
+          setPrivateUser(undefined)
           nativeSignOut()
           // Clear local storage only if we were signed in, otherwise we'll clear referral info
           if (safeLocalStorage?.getItem(CACHED_USER_KEY)) localStorage.clear()
@@ -157,30 +181,33 @@ export function AuthProvider(props: {
         console.error(e)
       }
     )
-  }, [setAuthUser])
+  }, [])
 
   const uid = authUser ? authUser.user.id : authUser
+
   useEffect(() => {
     if (uid) {
       identifyUser(uid)
-      const userListener = listenForUser(uid, (user) => {
-        setAuthUser((currAuthUser) =>
-          currAuthUser && user ? { ...currAuthUser, user } : null
-        )
-      })
-      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
-        setAuthUser((currAuthUser) =>
-          currAuthUser && privateUser ? { ...currAuthUser, privateUser } : null
-        )
-      })
-      return () => {
-        userListener()
-        privateUserListener()
-      }
     } else if (uid === null) {
       identifyUser(null)
     }
-  }, [uid, setAuthUser])
+  }, [uid])
+
+  useEffect(() => {
+    if (authLoaded && uid) {
+      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
+        setPrivateUser(privateUser ?? undefined)
+      })
+      return () => {
+        privateUserListener()
+      }
+    }
+  }, [authLoaded, uid])
+
+  const listenUser = usePollUser(uid ?? undefined)
+  useEffectCheckEquality(() => {
+    if (authLoaded && listenUser) setUser(listenUser)
+  }, [authLoaded, listenUser])
 
   const username = authUser?.user.username
   useEffect(() => {

@@ -11,7 +11,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { first, mergeWith, uniqBy } from 'lodash'
+import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -159,7 +159,6 @@ export function ContractPageContent(props: ContractParams) {
     comments,
     totalPositions,
     relatedContracts,
-    historyData,
     pointsString,
     multiPointsString,
     chartAnnotations,
@@ -168,6 +167,7 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     betReplies,
+    lastBetTime,
   } = props
 
   const contract =
@@ -222,8 +222,6 @@ export function ContractPageContent(props: ContractParams) {
   )
   useSaveContractVisitsLocally(user === null, contract.id)
 
-  // Static props load bets in descending order by time
-  const lastBetTime = first(historyData.bets)?.createdTime
   const isNumber = contract.outcomeType === 'NUMBER'
 
   const rows = useRealtimeBetsPolling(
@@ -247,15 +245,8 @@ export function ContractPageContent(props: ContractParams) {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () =>
-      uniqBy(
-        [
-          ...historyData.bets,
-          ...(isNumber ? newBets : newBetsWithoutRedemptions),
-        ],
-        'id'
-      ),
-    [historyData.bets, stringifiedNewBets]
+    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
+    [stringifiedNewBets]
   )
 
   const betPoints = useMemo(() => {

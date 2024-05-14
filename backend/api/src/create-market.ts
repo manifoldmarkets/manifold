@@ -49,7 +49,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { isAdminId, isModId } from 'common/envs/constants'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -105,8 +104,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (!isAdminId(userId) && !isModId(userId) && visibility !== 'public') {
-    throw new APIError(403, 'Only admins can create private markets.')
+  if (visibility !== 'public') {
+    throw new APIError(403, 'Only public markets can be created.')
   }
   // if (!isVerified(user)) {
   //   throw new APIError(
