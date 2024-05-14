@@ -102,6 +102,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   resolution?: string
   resolutionProbability?: number
   resolverId?: string
+  isSpicePayout?: boolean
 
   closeEmailsSent?: number
 
