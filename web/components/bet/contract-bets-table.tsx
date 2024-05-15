@@ -70,7 +70,6 @@ export function ContractBetsTable(props: {
   const isCPMM2 = mechanism === 'cpmm-2'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const isDPM = mechanism === 'dpm-2'
-  const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)
@@ -134,7 +133,7 @@ export function ContractBetsTable(props: {
             {isMultiNumber && <th>Range</th>}
             {!isMultiNumber && <th>Outcome</th>}
             <th>Amount</th>
-            {isDPM && !isNumeric && (
+            {isDPM && (
               <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
             )}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
@@ -215,7 +214,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
   const isCPMM2 = mechanism === 'cpmm-2'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
   const isShortSell = isCPMM2 && bet.amount > 0 && bet.shares === 0
-  const isNumeric = outcomeType === 'NUMERIC'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isDPM = mechanism === 'dpm-2'
   const isStonk = outcomeType === 'STONK'
@@ -287,7 +285,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {formatMoney(Math.abs(amount))}
         {ofTotalAmount}
       </td>
-      {isDPM && !isNumeric && <td>{saleDisplay}</td>}
+      {isDPM && <td>{saleDisplay}</td>}
       {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk

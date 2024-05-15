@@ -162,12 +162,9 @@ export function calculateStandardDpmPayout(
   outcome: string
 ) {
   const { outcome: betOutcome } = bet
-  const isNumeric = contract.outcomeType === 'NUMERIC'
-  if (!isNumeric && betOutcome !== outcome) return 0
+  if (betOutcome !== outcome) return 0
 
-  const shares = isNumeric
-    ? ((bet as NumericBet).allOutcomeShares ?? {})[outcome]
-    : bet.shares
+  const shares = bet.shares
 
   if (!shares) return 0
 
@@ -181,9 +178,7 @@ export function calculateStandardDpmPayout(
 
   const winnings = (shares / total) * poolTotal
 
-  const amount = isNumeric
-    ? (bet as NumericBet).allBetAmounts[outcome]
-    : bet.amount
+  const amount = bet.amount
 
   const payout = amount + (1 - DPM_FEES) * Math.max(0, winnings - amount)
   return payout
@@ -214,10 +209,7 @@ export function calculateDpmPayoutAfterCorrectBet(
       ...totalBets,
       [outcome]: prevTotalBet + amount,
     },
-    outcomeType:
-      outcomeType === 'NUMERIC'
-        ? 'FREE_RESPONSE' // hack to show payout at particular bet point estimate
-        : outcomeType,
+    outcomeType,
   }
 
   return calculateStandardDpmPayout(newContract as any, bet, outcome)

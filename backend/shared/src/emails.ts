@@ -177,9 +177,6 @@ const toDisplayResolution = (
     return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
 
-  if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return '[ERROR: if you can see this, Sinclair owes you 1000 mana]' // unless you see this comment
-
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
   )

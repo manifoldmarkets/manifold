@@ -832,8 +832,7 @@ function CommentStatus(props: {
     commenterPositionProb != null &&
     commenterPositionOutcome != null &&
     commenterPositionShares != null &&
-    commenterPositionShares > 0 &&
-    contract.outcomeType !== 'NUMERIC'
+    commenterPositionShares > 0
   )
     return (
       <>

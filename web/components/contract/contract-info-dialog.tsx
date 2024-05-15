@@ -89,9 +89,7 @@ export const Stats = (props: {
       ? 'Bounty'
       : outcomeType === 'POLL'
       ? 'Poll'
-      : outcomeType === 'NUMERIC' ||
-        outcomeType === 'PSEUDO_NUMERIC' ||
-        outcomeType === 'NUMBER'
+      : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMBER'
       ? 'Numeric'
       : outcomeType.toLowerCase()
 

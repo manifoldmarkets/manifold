@@ -15,7 +15,6 @@ import { ValidatedAPIParams } from 'common/api/schema'
 import {
   resolveBinarySchema,
   resolveMultiSchema,
-  resolveNumericSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
@@ -138,12 +137,6 @@ function getResolutionParams(
       ...binaryParams,
       value: undefined,
       resolutions: undefined,
-    }
-  } else if (outcomeType === 'NUMERIC') {
-    return {
-      ...validate(resolveNumericSchema, props),
-      resolutions: undefined,
-      probabilityInt: undefined,
     }
   } else if (outcomeType === 'PSEUDO_NUMERIC') {
     return {

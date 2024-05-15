@@ -8,7 +8,6 @@ import {
   CPMMStonkContract,
   Contract,
   MultiContract,
-  NumericContract,
   PseudoNumericContract,
   isBinaryMulti,
   CPMMMultiContract,
@@ -16,7 +15,6 @@ import {
   CPMMNumericContract,
   BountiedQuestionContract,
 } from 'common/contract'
-import { NumericContractChart } from '../charts/contract/numeric'
 import {
   BinaryContractChart,
   MultiBinaryChart,
@@ -26,7 +24,6 @@ import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
   MultiNumericResolutionOrExpectation,
-  NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -115,13 +112,6 @@ export const ContractOverview = memo(
             chartAnnotations={chartAnnotations}
           />
         )
-      case 'NUMERIC':
-        return (
-          <NumericOverview
-            contract={contract}
-            resolutionRating={resolutionRating}
-          />
-        )
       case 'PSEUDO_NUMERIC':
         return (
           <PseudoNumericOverview
@@ -183,24 +173,6 @@ export const ContractOverview = memo(
     }
   }
 )
-
-const NumericOverview = (props: {
-  contract: NumericContract
-  resolutionRating?: ReactNode
-}) => {
-  const { contract, resolutionRating } = props
-  return (
-    <>
-      <NumericResolutionOrExpectation contract={contract} />
-      {resolutionRating}
-      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
-        {(w, h) => (
-          <NumericContractChart width={w} height={h} contract={contract} />
-        )}
-      </SizedContainer>
-    </>
-  )
-}
 
 export const BinaryOverview = (props: {
   contract: BinaryContract

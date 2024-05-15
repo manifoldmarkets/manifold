@@ -20,12 +20,10 @@ import {
   BinaryContractChart,
   MultiBinaryChart,
 } from 'web/components/charts/contract/binary'
-import { NumericContractChart } from 'web/components/charts/contract/numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import {
   BinaryResolutionOrChance,
-  NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -160,8 +158,6 @@ const ContractChart = (props: {
           betPoints={points}
         />
       )
-    case 'NUMERIC':
-      return <NumericContractChart {...rest} contract={contract} />
     case 'STONK':
       return (
         <StonkContractChart {...rest} betPoints={points} contract={contract} />
@@ -257,9 +253,6 @@ function ContractSmolView(props: {
           />
         )}
 
-        {outcomeType === 'NUMERIC' && (
-          <NumericResolutionOrExpectation contract={contract} />
-        )}
         {outcomeType === 'STONK' && (
           <StonkPrice className="!flex-col !gap-0" contract={contract} />
         )}

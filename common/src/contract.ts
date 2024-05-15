@@ -41,7 +41,6 @@ type AnyOutcomeType =
   | MultipleChoice
   | PseudoNumeric
   | FreeResponse
-  | Numeric
   | Cert
   | QuadraticFunding
   | Stonk
@@ -54,7 +53,6 @@ type AnyContractType =
   | (CPMM & PseudoNumeric)
   | (DPM & Binary)
   | (DPM & FreeResponse)
-  | (DPM & Numeric)
   | (DPM & MultipleChoice)
   | (Uniswap2 & Cert)
   | (CPMM2 & MultipleChoice)
@@ -161,7 +159,6 @@ export type BinaryContract = Contract & Binary
 export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
-export type NumericContract = Contract & Numeric
 export type FreeResponseContract = Contract & FreeResponse
 export type MultipleChoiceContract = Contract & MultipleChoice
 export type CertContract = Contract & Cert
@@ -326,15 +323,6 @@ export type MultipleNumeric = {
   max: number
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
-}
-
-export type Numeric = {
-  outcomeType: 'NUMERIC'
-  bucketCount: number
-  min: number
-  max: number
-  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
-  resolutionValue?: number
 }
 
 export type Stonk = {

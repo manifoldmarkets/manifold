@@ -195,15 +195,6 @@ export function ContractStatusLabel(props: {
       const val = getFormattedExpectedValue(contract)
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
-    case 'NUMERIC': {
-      // all old numeric contracts are resolved
-      const val = contract.resolutionValue ?? NaN
-      return (
-        <span className={clsx(probTextColor, className)}>
-          {getFormattedMappedValue(contract, val)}
-        </span>
-      )
-    }
     case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
       return <ContractMinibar contract={contract} />

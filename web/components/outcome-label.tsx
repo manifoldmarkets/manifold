@@ -41,8 +41,6 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'NUMERIC') return <></>
-
   if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING')
     return <></>
 

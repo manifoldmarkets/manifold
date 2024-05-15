@@ -395,11 +395,6 @@ export const resolveMultiSchema = z.union([
   }),
 ])
 
-export const resolveNumericSchema = z.object({
-  outcome: z.union([z.literal('CANCEL'), z.string()]),
-  value: z.number().optional(),
-})
-
 export const resolvePseudoNumericSchema = z.union([
   z.object({
     outcome: z.literal('CANCEL'),
@@ -420,6 +415,5 @@ export const resolveMarketProps = z
       resolveBinarySchema,
       resolveMultiSchema,
       resolvePseudoNumericSchema,
-      resolveNumericSchema,
     ])
   )
