@@ -43,6 +43,11 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+  if (isSpicePayout !== undefined) {
+    if (!isAdminId(auth.uid)) {
+      throw new APIError(400, 'Only admins choose prize markets')
+    }
+  }
 
   await trackPublicEvent(
     auth.uid,
@@ -55,13 +60,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     })
   )
 
-  if (isSpicePayout !== undefined) {
-    if (!isAdminId(auth.uid)) {
-      throw new APIError(400, 'Only admins choose prize markets')
-    }
-    await firestore.doc(`contracts/${contractId}`).update({ isSpicePayout })
-  }
-
   await firestore.doc(`contracts/${contractId}`).update(
     removeUndefinedProps({
       question,
@@ -72,6 +70,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       addAnswersMode,
       sort,
       description,
+      isSpicePayout,
     })
   )
 
