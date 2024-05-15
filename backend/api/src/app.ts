@@ -159,6 +159,7 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
+import { searchContractPositions } from 'api/search-contract-positions'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -308,6 +309,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
+  'search-contract-positions': searchContractPositions,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

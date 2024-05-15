@@ -5,6 +5,7 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
+import { shortFormatNumber } from 'common/util/format'
 
 export type ColumnFormat = {
   header: string
@@ -14,15 +15,21 @@ export type ColumnFormat = {
 export const traderColumn = {
   header: 'Traders',
   content: (contract: Contract) =>
-    contract.outcomeType == 'BOUNTIED_QUESTION' ? (
+    contract.outcomeType === 'BOUNTIED_QUESTION' ? (
       <div className="text-ink-700 h-min align-top">
         <BountiedContractComments contractId={contract.id} />
       </div>
-    ) : (
+    ) : contract.outcomeType === 'POLL' ? (
       <div className="text-ink-700 h-min align-top">
         <Row className="align-center shrink-0 items-center gap-0.5">
           <UserIcon className="h-4 w-4" />
           {shortenNumber(contract.uniqueBettorCount ?? 0)}
+        </Row>
+      </div>
+    ) : (
+      <div className="text-ink-700 h-min align-top">
+        <Row className="align-center mr-1 shrink-0 items-center gap-0.5 text-sm">
+          Ṁ{shortFormatNumber(contract.volume)}
         </Row>
       </div>
     ),

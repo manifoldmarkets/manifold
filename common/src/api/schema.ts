@@ -688,6 +688,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'search-contract-positions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as DisplayUser[],
+    props: z
+      .object({
+        term: z.string(),
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100).default(10),
+      })
+      .strict(),
+  },
   'save-twitch': {
     method: 'POST',
     visibility: 'undocumented',
