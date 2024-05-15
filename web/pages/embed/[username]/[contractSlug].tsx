@@ -206,8 +206,7 @@ function ContractSmolView(props: {
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isMulti =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE'
+  const isMulti = outcomeType === 'MULTIPLE_CHOICE'
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'

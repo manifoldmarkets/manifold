@@ -37,7 +37,7 @@ import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { AnswersPanel } from '../answers/answers-panel'
-import { Answer, DpmAnswer, MultiSort, getDefaultSort } from 'common/answer'
+import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import {
   AnswersResolvePanel,
@@ -89,7 +89,7 @@ export const ContractOverview = memo(
     showResolver: boolean
     resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
-    onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+    onAnswerCommentClick: (answer: Answer) => void
     chartAnnotations: ChartAnnotation[]
   }) => {
     const {
@@ -123,7 +123,6 @@ export const ContractOverview = memo(
 
       case 'QUADRATIC_FUNDING':
         return <AlertBox title="Quadratic Funding markets are deprecated" />
-      case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         if (isBinaryMulti(contract)) {
           return (
@@ -491,7 +490,7 @@ const ChoiceOverview = (props: {
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
 }) => {
   const {
@@ -689,7 +688,7 @@ const MultiNumericOverview = (props: {
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
 }) => {
   const { points, contract, showResolver, resolutionRating, setShowResolver } =

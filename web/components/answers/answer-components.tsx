@@ -1,11 +1,9 @@
 import { ChatIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import {
   CPMMMultiContract,
   CPMMNumericContract,
-  DpmMultipleChoiceContract,
-  FreeResponseContract,
   getMainBinaryMCAnswer,
   MultiContract,
   resolution,
@@ -15,7 +13,7 @@ import { formatMoney, formatPercent } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { AnswerBetPanel, AnswerCpmmBetPanel } from './answer-bet-panel'
+import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useUser } from 'web/hooks/use-user'
 import { Bet } from 'common/bet'
 import { sumBy } from 'lodash'
@@ -203,40 +201,6 @@ export const AddComment = (props: { onClick: () => void }) => {
   )
 }
 
-export const DPMMultiBettor = (props: {
-  answer: DpmAnswer
-  contract: DpmMultipleChoiceContract | FreeResponseContract
-}) => {
-  const { answer, contract } = props
-  const [open, setOpen] = useState(false)
-
-  return (
-    <>
-      <Modal open={open} setOpen={setOpen} className={MODAL_CLASS}>
-        <AnswerBetPanel
-          answer={answer}
-          contract={contract}
-          closePanel={() => setOpen(false)}
-        />
-      </Modal>
-
-      <Button
-        size="2xs"
-        color="indigo-outline"
-        className="bg-primary-50"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          track('bet intent', { location: 'answer panel' })
-          setOpen(true)
-        }}
-      >
-        Bet
-      </Button>
-    </>
-  )
-}
-
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
@@ -412,7 +376,7 @@ export const BinaryMultiSellRow = (props: {
 
 export const OpenProb = (props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   noNewIcon?: boolean
   size?: 'sm' | 'md'
   className?: string
@@ -465,7 +429,7 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
 
 export const AnswerStatus = (props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   noNewIcon?: boolean
 }) => {
   const { contract, answer } = props
@@ -509,21 +473,17 @@ export const AnswerStatus = (props: {
 }
 export const BetButtons = (props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   feedReason?: string
   fillColor?: string
 }) => {
   const { contract, answer, fillColor, feedReason } = props
-  const isDpm = contract.mechanism === 'dpm-2'
 
   const isOpen = tradingAllowed(
     contract,
     'resolution' in answer ? answer : undefined
   )
   if (!isOpen) return null
-  if (isDpm)
-    return <DPMMultiBettor answer={answer as any} contract={contract} />
-
   return (
     <YesNoBetButtons
       feedReason={feedReason}

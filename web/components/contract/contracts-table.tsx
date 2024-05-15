@@ -195,7 +195,6 @@ export function ContractStatusLabel(props: {
       const val = getFormattedExpectedValue(contract)
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
-    case 'FREE_RESPONSE':
     case 'MULTIPLE_CHOICE': {
       return <ContractMinibar contract={contract} />
     }

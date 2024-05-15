@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { first, groupBy, last, mapValues, sortBy, uniq } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
 import { Bet } from 'common/bet'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import {
   CPMMMultiContract,
   CPMMNumericContract,
@@ -84,12 +84,8 @@ export const getVersusColor = (answer: Answer) => {
 export const getVersusColors = (answers: Answer[]) =>
   answers.map(getVersusColor)
 
-export function getAnswerColor(
-  answer: Answer | DpmAnswer,
-  answerIdOrder: string[]
-) {
-  const index =
-    'index' in answer ? answer.index : answerIdOrder.indexOf(answer.text)
+export function getAnswerColor(answer: Answer, answerIdOrder: string[]) {
+  const index = answer.index
 
   if (answer.text === 'Democratic Party') return '#adc4e3'
   if (answer.text === 'Republican Party') return '#ecbab5'
@@ -109,11 +105,7 @@ const getAnswers = (contract: MultiContract) => {
   const validAnswers = (answers ?? []).filter(
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
-  return sortBy(validAnswers, (answer) =>
-    'index' in answer
-      ? answer.index
-      : -1 * getAnswerProbability(contract, answer.id)
-  )
+  return sortBy(validAnswers, (answer) => answer.index)
 }
 
 // new multi only
@@ -247,7 +239,7 @@ export const ChoiceContractChart = (props: {
 export const ChoiceTooltip = (props: {
   ttProps: TooltipProps<HistoryPoint> & { ans: string }
   xScale: any
-  answers: (DpmAnswer | Answer)[]
+  answers: Answer[]
 }) => {
   const { ttProps, xScale, answers } = props
   const { prev, next, x, ans } = ttProps

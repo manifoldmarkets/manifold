@@ -54,7 +54,7 @@ const getReplyInfo = async (
 ) => {
   if (
     comment.answerOutcome &&
-    contract.outcomeType === 'FREE_RESPONSE' &&
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
     contract.answers
   ) {
     const answer = contract.answers.find((a) => a.id === comment.answerOutcome)

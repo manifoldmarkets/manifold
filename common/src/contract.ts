@@ -1,4 +1,4 @@
-import { Answer, DpmAnswer } from './answer'
+import { Answer } from './answer'
 import { Bet } from './bet'
 import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
@@ -38,24 +38,19 @@ the supabase trigger, or replication of contracts may fail!
 
 type AnyOutcomeType =
   | Binary
-  | MultipleChoice
-  | PseudoNumeric
-  | FreeResponse
   | Cert
   | QuadraticFunding
   | Stonk
   | BountiedQuestion
   | Poll
   | MultipleNumeric
+  | CPMMMulti
+  | PseudoNumeric
 
 type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
-  | (DPM & Binary)
-  | (DPM & FreeResponse)
-  | (DPM & MultipleChoice)
   | (Uniswap2 & Cert)
-  | (CPMM2 & MultipleChoice)
   | QuadraticFunding
   | (CPMM & Stonk)
   | CPMMMulti
@@ -150,20 +145,15 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   likedByUserCount?: number
 } & T
 
-export type DPMContract = Contract & DPM
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMMultiNumeric
 
 export type BinaryContract = Contract & Binary
-export type DPMBinaryContract = BinaryContract & DPM
 export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
-export type FreeResponseContract = Contract & FreeResponse
-export type MultipleChoiceContract = Contract & MultipleChoice
 export type CertContract = Contract & Cert
 export type Uniswap2CertContract = CertContract & Uniswap2
-export type DpmMultipleChoiceContract = Contract & MultipleChoice & DPM
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type CPMMStonkContract = StonkContract & CPMM
@@ -173,15 +163,6 @@ export type PollContract = Contract & Poll & NonBet
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract
-
-export type DPM = {
-  mechanism: 'dpm-2'
-
-  pool: { [outcome: string]: number }
-  phantomShares?: { [outcome: string]: number }
-  totalShares: { [outcome: string]: number }
-  totalBets: { [outcome: string]: number }
-}
 
 // Deprecated: Simple constant product market maker for a variable number of outcomes.
 /** @deprecated */
@@ -243,6 +224,7 @@ export type CPMMMulti = {
 
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
+  sort?: SortType
 }
 
 export type CPMMMultiNumeric = {
@@ -262,6 +244,7 @@ export type CPMMMultiNumeric = {
 
   // NOTE: This field is stored in the answers table and must be denormalized to the client.
   answers: Answer[]
+  sort?: SortType
 }
 
 export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
@@ -273,7 +256,7 @@ export type Cert = {
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
   mechanism: 'qf'
-  answers: DpmAnswer[]
+  answers: any[]
   // Mapping of how much each user has contributed to the matching pool
   // Note: Our codebase assumes every contract has a pool, which is why this isn't just a constant
   pool: { M$: number }
@@ -300,20 +283,6 @@ export type PseudoNumeric = {
   // same as binary market; map everything to probability
   initialProbability: number
   resolutionProbability?: number
-}
-
-export type FreeResponse = {
-  outcomeType: 'FREE_RESPONSE'
-  answers: DpmAnswer[] // Used for outcomeType 'FREE_RESPONSE'.
-  resolution?: string | 'MKT' | 'CANCEL'
-  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
-}
-
-export type MultipleChoice = {
-  outcomeType: 'MULTIPLE_CHOICE'
-  answers: DpmAnswer[]
-  resolution?: string | 'MKT' | 'CANCEL'
-  resolutions?: { [outcome: string]: number } // Used for MKT resolution.
 }
 
 export type MultipleNumeric = {
@@ -347,16 +316,7 @@ export type Poll = {
   resolutions?: string[]
 }
 
-export type MultiContract = (
-  | FreeResponseContract
-  | MultipleChoiceContract
-  | CPMMMultiContract
-  | CPMMNumericContract
-) & {
-  answers: (DpmAnswer | Answer)[]
-  resolutions?: { [outcome: string]: number }
-  sort?: SortType
-}
+export type MultiContract = CPMMMultiContract | CPMMNumericContract
 
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
@@ -397,10 +357,6 @@ export function contractUrl(contract: Contract) {
 export function contractPool(contract: Contract) {
   return contract.mechanism === 'cpmm-1'
     ? formatMoney(contract.totalLiquidity)
-    : contract.mechanism === 'cpmm-2'
-    ? formatMoney(getLiquidity(contract.pool))
-    : contract.mechanism === 'dpm-2'
-    ? formatMoney(sum(Object.values(contract.pool)))
     : contract.mechanism === 'cpmm-multi-1'
     ? formatMoney(
         sum(

@@ -1,11 +1,6 @@
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import {
-  OTHER_TOOLTIP_TEXT,
-  sortAnswers,
-  type Answer,
-  type DpmAnswer,
-} from 'common/answer'
+import { OTHER_TOOLTIP_TEXT, sortAnswers, type Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
@@ -86,7 +81,7 @@ export function SmallAnswerBars(props: {
 
 export function SmallAnswer(props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
@@ -144,7 +139,7 @@ export const SmallAnswerBar = (props: {
   renderBackgroundLayer?: React.ReactNode
   barColor?: string
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
 }) => {
   const {
     color,

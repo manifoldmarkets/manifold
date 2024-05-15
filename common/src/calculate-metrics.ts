@@ -1,9 +1,9 @@
 import { Dictionary, first, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMContract, DPMContract } from './contract'
+import { Contract, CPMMContract } from './contract'
 import { User } from './user'
-import { computeFills, getNewMultiBetInfo } from './new-bet'
+import { computeFills } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
@@ -78,8 +78,6 @@ export const computeElasticity = (
   switch (contract.mechanism) {
     case 'cpmm-1':
       return computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
-    case 'dpm-2':
-      return computeDpmElasticity(contract, betAmount)
     default: // there are some contracts on the dev DB with crazy mechanisms
       return 1
   }
@@ -163,18 +161,6 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const safeNo = Number.isFinite(resultNo) ? resultNo : 0
 
   return logit(safeYes) - logit(safeNo)
-}
-
-export const computeDpmElasticity = (
-  contract: DPMContract,
-  betAmount: number
-) => {
-  const afterProb = getNewMultiBetInfo('', betAmount + 1, contract).newBet
-    .probAfter
-
-  const initialProb = getNewMultiBetInfo('', 1, contract).newBet.probAfter
-
-  return logit(afterProb) - logit(initialProb)
 }
 
 export const calculateNewPortfolioMetrics = (

@@ -1,12 +1,7 @@
-import { DpmAnswer } from 'common/answer'
 import { toUserAPIResponse } from 'common/api/user-types'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import {
-  Contract,
-  FreeResponseContract,
-  MultipleChoiceContract,
-} from 'common/contract'
+import { Contract } from 'common/contract'
 import { RESERVED_PATHS } from 'common/envs/constants'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
@@ -16,8 +11,6 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import * as admin from 'firebase-admin'
-
-type ChoiceContract = FreeResponseContract | MultipleChoiceContract
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const firestore = admin.firestore()
@@ -116,42 +109,6 @@ const updateUserDenormalizedFields = async (
     bulkWriter.update(ref, betUpdate)
   }
   log(`Updated ${betRows.length} bets.`)
-
-  log('Updating denormalized user data on answers...')
-  const answerRows = await pg.manyOrNone(
-    `select contract_id, answer_id from contract_answers where data->>'userId' = $1`,
-    [userId]
-  )
-  const answerUpdate: Partial<DpmAnswer> = removeUndefinedProps(update)
-  for (const row of answerRows) {
-    const ref = firestore
-      .collection('contracts')
-      .doc(row.contract_id)
-      .collection('answers')
-      .doc(row.answer_id)
-    bulkWriter.update(ref, answerUpdate)
-  }
-
-  const answerContractIds = uniq(answerRows.map((r) => r.contract_id as string))
-  // firestore.getall() will fail with zero params, so add this check
-  if (answerContractIds.length > 0) {
-    const refs = answerContractIds.map((c) =>
-      firestore.collection('contracts').doc(c)
-    )
-    const answerContracts = await firestore.getAll(...refs)
-    for (const doc of answerContracts) {
-      const contract = doc.data() as ChoiceContract
-      for (const a of contract.answers) {
-        if (a.userId === userId) {
-          a.username = update.username ?? a.username
-          a.avatarUrl = update.avatarUrl ?? a.avatarUrl
-          a.name = update.name ?? a.name
-        }
-      }
-      bulkWriter.update(doc.ref, { answers: contract.answers })
-    }
-  }
-  log(`Updated ${answerRows.length} answers.`)
 
   await bulkWriter.flush()
   log('Done denormalizing!')

@@ -1,4 +1,4 @@
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
@@ -105,7 +105,7 @@ export const ChoiceMiniGraph = (props: {
 
 const ChoiceTooltip = (props: {
   ttProps: TooltipProps<HistoryPoint> & { ans: string }
-  answers: (DpmAnswer | Answer)[]
+  answers: Answer[]
 }) => {
   const { ttProps, answers } = props
   const { prev, ans } = ttProps

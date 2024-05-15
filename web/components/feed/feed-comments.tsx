@@ -56,7 +56,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { isAdminId } from 'common/envs/constants'
 import { PaymentsModal } from 'web/pages/payments'
 import TipJar from 'web/public/custom-components/tipJar'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { CommentOnAnswer } from './comment-on-answer'
 import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { BuyPanel } from 'web/components/bet/bet-panel'
@@ -852,7 +852,7 @@ function CommentStatus(props: {
 export function ContractCommentInput(props: {
   contract: Contract
   className?: string
-  replyTo?: Answer | DpmAnswer | Bet
+  replyTo?: Answer | Bet
   replyToUserInfo?: ReplyToUserInfo
   parentCommentId?: string
   clearReply?: () => void
@@ -1178,9 +1178,7 @@ export function CommentReplyHeader(props: {
     )
   }
   if (answerOutcome && 'answers' in contract) {
-    const answer = (contract.answers as (DpmAnswer | Answer)[]).find(
-      (a) => a.id === answerOutcome
-    )
+    const answer = contract.answers.find((a) => a.id === answerOutcome)
     if (answer)
       return <CommentOnAnswer answer={answer} contract={contract as any} />
   }

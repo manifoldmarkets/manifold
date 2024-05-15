@@ -977,8 +977,8 @@ export const createUniqueBettorBonusNotification = async (
       data: removeUndefinedProps({
         bet,
         answerText:
-          outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
-            ? (contract.answers as Answer[]).find(
+          outcomeType === 'MULTIPLE_CHOICE'
+            ? contract.answers.find(
                 (a) => a.id === bet.outcome || a.id === bet.answerId
               )?.text
             : outcomeType === 'NUMBER' && range
@@ -1138,11 +1138,8 @@ export const createContractResolvedNotifications = async (
       outcome,
       probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
     )}`
-  } else if (
-    contract.outcomeType === 'FREE_RESPONSE' ||
-    contract.outcomeType === 'MULTIPLE_CHOICE'
-  ) {
-    const answerText = (contract as MultiContract).answers.find(
+  } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+    const answerText = contract.answers.find(
       (answer) => answer.id === outcome
     )?.text
     if (answerText) resolutionText = answerText

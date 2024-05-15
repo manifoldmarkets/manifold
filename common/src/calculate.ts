@@ -15,14 +15,6 @@ import {
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { buy, getProb } from './calculate-cpmm-multi'
-import {
-  calculateDpmPayout,
-  calculateDpmShares,
-  getDpmOutcomeProbability,
-  getDpmOutcomeProbabilityAfterBet,
-  getDpmProbability,
-} from './calculate-dpm'
 import {
   calculateFixedPayout,
   calculateFixedPayoutMulti,
@@ -39,16 +31,14 @@ import {
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
-import { Answer, DpmAnswer } from './answer'
+import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
 import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
-  return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbability(contract.pool, contract.p)
-    : getDpmProbability(contract.totalShares)
+  return getCpmmProbability(contract.pool, contract.p)
 }
 
 export function getDisplayProbability(
@@ -62,12 +52,6 @@ export function getInitialProbability(
 ) {
   if (contract.initialProbability) return contract.initialProbability
 
-  if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)
-    // use totalShares to calculate prob for ported contracts
-    return getDpmProbability(
-      (contract as any).phantomShares ?? (contract as any).totalShares
-    )
-
   return getCpmmProbability(contract.pool, contract.p)
 }
 
@@ -78,10 +62,6 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       return outcome === 'YES'
         ? getCpmmProbability(contract.pool, contract.p)
         : 1 - getCpmmProbability(contract.pool, contract.p)
-    case 'cpmm-2':
-      return getProb(contract.pool, outcome)
-    case 'dpm-2':
-      return getDpmOutcomeProbability(contract.totalShares, outcome)
     case 'cpmm-multi-1':
       return 0
     default:
@@ -93,10 +73,6 @@ export function getAnswerProbability(
   contract: MultiContract,
   answerId: string
 ) {
-  if (contract.mechanism === 'dpm-2') {
-    return getDpmOutcomeProbability(contract.totalShares, answerId)
-  }
-
   if (contract.mechanism === 'cpmm-multi-1') {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (!answer) return 0
@@ -123,7 +99,7 @@ export function getAnswerProbability(
 
 export function getInitialAnswerProbability(
   contract: MultiContract | CPMMNumericContract,
-  answer: Answer | DpmAnswer
+  answer: Answer
 ) {
   if (contract.mechanism === 'cpmm-multi-1') {
     if (!contract.shouldAnswersSumToOne) {
@@ -146,10 +122,6 @@ export function getInitialAnswerProbability(
     }
   }
 
-  if (contract.mechanism === 'dpm-2') {
-    return undefined
-  }
-
   if (contract.mechanism === 'cpmm-2') {
     return 1 / contract.answers.length
   }
@@ -169,14 +141,6 @@ export function getOutcomeProbabilityAfterBet(
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
-    case 'cpmm-2':
-      return getProb(buy(contract.pool, outcome, bet).newPool, outcome)
-    case 'dpm-2':
-      return getDpmOutcomeProbabilityAfterBet(
-        contract.totalShares,
-        outcome,
-        bet
-      )
     case 'cpmm-multi-1':
       return 0
     default:
@@ -214,10 +178,6 @@ export function calculateSharesBought(
   switch (mechanism) {
     case 'cpmm-1':
       return calculateCpmmPurchase(contract, amount, outcome).shares
-    case 'cpmm-2':
-      return buy(contract.pool, outcome, amount).shares
-    case 'dpm-2':
-      return calculateDpmShares(contract.totalShares, amount, outcome)
     default:
       throw new Error('calculateSharesBought not implemented')
   }
@@ -246,8 +206,6 @@ export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
     ? calculateFixedPayout(contract, bet, outcome)
     : mechanism === 'cpmm-multi-1'
     ? calculateFixedPayoutMulti(contract, bet, outcome)
-    : mechanism === 'dpm-2'
-    ? calculateDpmPayout(contract, bet, outcome)
     : bet?.amount ?? 0
 }
 
@@ -259,8 +217,6 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
     ? calculateFixedPayout(contract, bet, resolution)
     : mechanism === 'cpmm-multi-1'
     ? calculateFixedPayoutMulti(contract, bet, resolution)
-    : mechanism === 'dpm-2'
-    ? calculateDpmPayout(contract, bet, resolution)
     : bet?.amount ?? 0
 }
 

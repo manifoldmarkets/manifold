@@ -223,7 +223,6 @@ export function BetOutcomeLabel(props: {
     return <PseudoNumericOutcomeLabel outcome={bet.outcome as resolution} />
   }
   if (
-    contractOutcomeType === 'FREE_RESPONSE' ||
     contractOutcomeType === 'MULTIPLE_CHOICE' ||
     contractOutcomeType === 'NUMBER'
   ) {

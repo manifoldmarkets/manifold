@@ -16,7 +16,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { DpmAnswer, Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
+import { Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import {
@@ -312,7 +312,7 @@ export const AnswersResolvePanel = (props: {
 }
 
 export function ResolutionAnswerItem(props: {
-  answer: DpmAnswer | Answer
+  answer: Answer
   contract: MultiContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined

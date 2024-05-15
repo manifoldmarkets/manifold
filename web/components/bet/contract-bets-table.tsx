@@ -15,8 +15,6 @@ import {
 import { Spacer } from 'web/components/layout/spacer'
 import { Table } from 'web/components/widgets/table'
 import { useState } from 'react'
-import { calculatePayout, resolvedPayout } from 'common/calculate'
-import { calculateDpmSaleAmount } from 'common/calculate-dpm'
 import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
 import { getStonkDisplayShares } from 'common/stonk'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
@@ -43,16 +41,7 @@ export function ContractBetsTable(props: {
     (bet) => bet.createdTime
   ).reverse()
 
-  const [sales, buys] = partition(bets, (bet) => bet.sale)
-
-  const salesDict = Object.fromEntries(
-    sales.map((sale) => [sale.sale?.betId ?? '', sale])
-  )
-
-  const [redemptions, normalBets] = partition(
-    mechanism === 'dpm-2' ? buys : bets,
-    (b) => b.isRedemption
-  )
+  const [redemptions, normalBets] = partition(bets, (b) => b.isRedemption)
   const firstOutcome = redemptions[0]?.outcome
   const amountRedeemed = Math.floor(
     sumBy(
@@ -67,9 +56,7 @@ export function ContractBetsTable(props: {
   )
 
   const isCPMM = mechanism === 'cpmm-1'
-  const isCPMM2 = mechanism === 'cpmm-2'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
-  const isDPM = mechanism === 'dpm-2'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)
@@ -93,18 +80,9 @@ export function ContractBetsTable(props: {
       {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
         <>
           <div className="text-ink-500 pl-2 text-sm">
-            {isCPMM2 ? (
-              <>
-                {amountRedeemed} shares of each outcome redeemed for{' '}
-                {formatMoney(amountRedeemed)}.
-              </>
-            ) : (
-              <>
-                {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
-                {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-                automatically redeemed for {formatMoney(amountRedeemed)}.
-              </>
-            )}
+            {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
+            {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
+            automatically redeemed for {formatMoney(amountRedeemed)}.
           </div>
           <Spacer h={4} />
         </>
@@ -133,8 +111,6 @@ export function ContractBetsTable(props: {
             {isMultiNumber && <th>Range</th>}
             {!isMultiNumber && <th>Outcome</th>}
             <th>Amount</th>
-            {isDPM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
-            {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             {isPseudoNumeric || isMultiNumber ? (
               <th>Value</th>
@@ -162,12 +138,7 @@ export function ContractBetsTable(props: {
                 ? normalBets.slice(0, truncatedBetCount)
                 : normalBets
               ).map((bet) => (
-                <BetRow
-                  key={bet.id}
-                  bet={bet}
-                  saleBet={salesDict[bet.id]}
-                  contract={contract}
-                />
+                <BetRow key={bet.id} bet={bet} contract={contract} />
               ))}
         </tbody>
       </Table>
@@ -194,56 +165,17 @@ export function ContractBetsTable(props: {
   )
 }
 
-function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
-  const { bet, saleBet, contract } = props
-  const {
-    amount,
-    outcome,
-    createdTime,
-    probBefore,
-    probAfter,
-    shares,
-    isAnte,
-  } = bet
+function BetRow(props: { bet: Bet; contract: Contract }) {
+  const { bet, contract } = props
+  const { amount, outcome, createdTime, probBefore, probAfter, shares } = bet
 
-  const { isResolved, mechanism, outcomeType } = contract
+  const { mechanism, outcomeType } = contract
 
   const isCPMM = mechanism === 'cpmm-1'
-  const isCPMM2 = mechanism === 'cpmm-2'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
-  const isShortSell = isCPMM2 && bet.amount > 0 && bet.shares === 0
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
-  const isDPM = mechanism === 'dpm-2'
   const isStonk = outcomeType === 'STONK'
   const isBinaryMC = isBinaryMulti(contract)
-
-  const dpmPayout = (() => {
-    if (!isDPM) return 0
-
-    const saleBetAmount = saleBet?.sale?.amount
-    if (saleBetAmount) {
-      return saleBetAmount
-    } else if (contract.isResolved) {
-      return resolvedPayout(contract, bet)
-    } else {
-      return calculateDpmSaleAmount(contract, bet)
-    }
-  })()
-
-  const saleDisplay = !isDPM ? (
-    ''
-  ) : isAnte ? (
-    'ANTE'
-  ) : saleBet ? (
-    <>{formatMoney(dpmPayout)} (sold)</>
-  ) : (
-    formatMoney(dpmPayout)
-  )
-
-  const payoutIfChosenDisplay =
-    bet.isAnte && outcomeType === 'FREE_RESPONSE' && bet.outcome === '0'
-      ? 'N/A'
-      : formatMoney(calculatePayout(contract as any, bet, bet.outcome))
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -266,7 +198,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         </td>
       )}
       <td>
-        {isCPMM2 && (isShortSell ? 'NO ' : 'YES ')}
         {bet.isAnte ? (
           'ANTE'
         ) : isCpmmMulti && !isBinaryMC ? (
@@ -283,8 +214,6 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
         {formatMoney(Math.abs(amount))}
         {ofTotalAmount}
       </td>
-      {isDPM && <td>{saleDisplay}</td>}
-      {isDPM && !isResolved && <td>{payoutIfChosenDisplay}</td>}
       <td>
         {isStonk
           ? getStonkDisplayShares(contract, sharesOrShortSellShares, 2)
@@ -292,7 +221,7 @@ function BetRow(props: { bet: Bet; contract: Contract; saleBet?: Bet }) {
       </td>
 
       <td>
-        {outcomeType === 'FREE_RESPONSE' || hadPoolMatch ? (
+        {hadPoolMatch ? (
           isStonk || isPseudoNumeric ? (
             <>
               {getFormattedMappedValue(contract, probBefore)} →{' '}

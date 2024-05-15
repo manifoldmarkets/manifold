@@ -61,12 +61,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const { closeTime, mechanism, volume } = contract
 
-    if (mechanism === 'dpm-2') {
-      throw new APIError(
-        403,
-        'To sell positions on dpm-2, use sell-shares-dpm endpoint instead.'
-      )
-    }
     if (mechanism !== 'cpmm-1' && mechanism !== 'cpmm-multi-1')
       throw new APIError(
         403,

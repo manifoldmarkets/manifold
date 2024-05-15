@@ -1,6 +1,6 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { unserializeBase64Multi } from 'common/chart'
 import {
   ContractParams,
@@ -252,7 +252,6 @@ export function ContractPageContent(props: ContractParams) {
   const betPoints = useMemo(() => {
     if (
       contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'FREE_RESPONSE' ||
       contract.outcomeType === 'NUMBER'
     ) {
       const data = multiPointsString
@@ -295,7 +294,7 @@ export function ContractPageContent(props: ContractParams) {
   })
   // Request new user signup bonus on every contract page visited
   useRequestNewUserSignupBonus(contract.id)
-  const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
+  const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)

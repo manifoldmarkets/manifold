@@ -22,7 +22,7 @@ export const getAnte = (
 ) => {
   const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
 
-  if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'FREE_RESPONSE') {
+  if (outcomeType === 'MULTIPLE_CHOICE') {
     return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
   }
 
