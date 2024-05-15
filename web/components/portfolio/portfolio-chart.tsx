@@ -177,9 +177,7 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
-    updateGraphValues(
-    emptyGraphValues
-    )
+    updateGraphValues(emptyGraphValues)
   })
 
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
