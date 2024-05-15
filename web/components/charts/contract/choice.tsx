@@ -175,27 +175,30 @@ export const ChoiceContractChart = (props: {
       { points: HistoryPoint<never>[]; color: string }
     >
 
-    answers.forEach((a) => {
-      const startingPoints = multiPoints[a.id] ?? []
-      const additionalPoints = []
+    answers.forEach(
+      (a) => {
+        const startingPoints = multiPoints[a.id] ?? []
+        const additionalPoints = []
 
-      if ('resolution' in a) {
-        if (a.resolutionTime) {
+        if ('resolution' in a) {
+          if (a.resolutionTime) {
+            additionalPoints.push({
+              x: a.resolutionTime,
+              y: getAnswerProbability(contract, a.id),
+            })
+          }
+        } else {
           additionalPoints.push({
-            x: a.resolutionTime,
+            x: end ?? now,
             y: getAnswerProbability(contract, a.id),
           })
         }
-      } else {
-        additionalPoints.push({
-          x: end ?? now,
-          y: getAnswerProbability(contract, a.id),
-        })
-      }
 
-      const color = getAnswerColor(a, answerOrder)
-      ret[a.id] = { points: [...startingPoints, ...additionalPoints], color }
-    })
+        const color = getAnswerColor(a, answerOrder)
+        ret[a.id] = { points: [...startingPoints, ...additionalPoints], color }
+      },
+      [multiPoints]
+    )
 
     return ret
   }, [answers.length, multiPoints, start, end, now])

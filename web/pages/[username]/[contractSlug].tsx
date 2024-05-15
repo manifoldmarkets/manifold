@@ -224,19 +224,19 @@ export function ContractPageContent(props: ContractParams) {
 
   const isNumber = contract.outcomeType === 'NUMBER'
 
-  const rows = useRealtimeBetsPolling(
-    {
-      contractId: contract.id,
-      afterTime: lastBetTime,
-      filterRedemptions:
-        contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
-      order: 'asc',
-    },
-    500,
-    `contract-bets-${contract.id}-500ms-v1`
-  )
+  const newBets =
+    useRealtimeBetsPolling(
+      {
+        contractId: contract.id,
+        afterTime: lastBetTime,
+        filterRedemptions:
+          contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
+        order: 'asc',
+      },
+      500,
+      `contract-bets-${contract.id}-500ms-v1`
+    ) ?? []
 
-  const newBets = rows ?? []
   const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
@@ -261,7 +261,9 @@ export function ContractPageContent(props: ContractParams) {
       const newData =
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
-      return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
+      return mergeWith(data, newData, (array1, array2) =>
+        [...array1, ...array2].sort((a, b) => a.x - b.x)
+      )
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBets.map((bet) => ({
