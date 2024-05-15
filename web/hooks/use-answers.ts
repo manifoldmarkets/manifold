@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Answer } from 'common/answer'
-import {
-  listenForAnswersCpmm,
-} from 'web/lib/firebase/answers'
+import { listenForAnswersCpmm } from 'web/lib/firebase/answers'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
