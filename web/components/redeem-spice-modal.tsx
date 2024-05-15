@@ -28,9 +28,27 @@ export function RedeemSpiceModal(props: {
 }) {
   const { open, setOpen, user } = props
   const [page, setPage] = useState<RedeemSpicePageType>('main')
-
+  const spiceBalance = user.spiceBalance
   return (
     <Modal open={open} setOpen={setOpen} className={clsx(MODAL_CLASS)}>
+      <Row className="mb-4">
+        <span className={clsx('cursor-pointer select-none transition-opacity')}>
+          <CoinNumber
+            amount={spiceBalance}
+            className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
+            isInline
+            coinClassName="top-[0.1rem]"
+          />
+          <span
+            className={clsx(
+              'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+            )}
+          >
+            {SPICE_NAME}
+            {spiceBalance > 1 ? 's' : ''}
+          </span>
+        </span>
+      </Row>
       {page == 'main' ? (
         <MainSpiceRedeemPage user={user} setPage={setPage} setOpen={setOpen} />
       ) : page == 'customMana' ? (
@@ -54,27 +72,9 @@ function MainSpiceRedeemPage(props: {
   const [disableAllButtons, setDisableAllButtons] = useState(false)
   const { isNative, platform } = getNativePlatform()
   const isNativeIOS = isNative && platform === 'ios'
-  const spiceBalance = user.spiceBalance
+
   return (
     <Col className="gap-4">
-      <Row>
-        <span className={clsx('cursor-pointer select-none transition-opacity')}>
-          <CoinNumber
-            amount={spiceBalance}
-            className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
-            isInline
-            coinClassName="top-[0.1rem]"
-          />
-          <span
-            className={clsx(
-              'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
-            )}
-          >
-            {SPICE_NAME}
-            {spiceBalance > 1 ? 's' : ''}
-          </span>
-        </span>
-      </Row>
       <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
         <Row className="gap-2">
           <ManaCoin className="text-7xl" />
@@ -135,6 +135,15 @@ function MainSpiceRedeemPage(props: {
           </Col>
         </Col>
       )}
+      <Col className="bg-canvas-50 gap-4 rounded-lg p-4">
+        <Row className="gap-2">
+          <img alt="donate" src="/images/gift-box.png" height={80} width={80} />
+          <Col>
+            <div className="text-lg font-semibold">More prizes</div>
+            <div className="text-sm">Coming soon...</div>
+          </Col>
+        </Row>
+      </Col>
     </Col>
   )
 }

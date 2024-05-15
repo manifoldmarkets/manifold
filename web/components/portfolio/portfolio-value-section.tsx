@@ -385,7 +385,7 @@ function PortfolioValueSkeleton(props: {
                     <RedeemSpiceButton
                       userId={userId}
                       className="h-fit whitespace-nowrap"
-                      spice={portfolioValues?.spice}
+                      spice={user.spiceBalance}
                     />
                   </Col>
                 )}
@@ -426,7 +426,7 @@ function PortfolioValueSkeleton(props: {
                   setPortfolioHoveredGraph={setPortfolioHoveredGraph}
                   displayedAmount={displayAmounts(
                     graphValues.spice,
-                    portfolioValues?.spice
+                    user.spiceBalance
                   )}
                   color={SPICE_COLOR}
                   onClick={() => togglePortfolioFocus('spice')}
