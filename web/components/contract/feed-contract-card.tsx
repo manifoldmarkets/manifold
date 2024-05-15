@@ -153,14 +153,16 @@ export function FeedContractCard(props: {
     )
 
   const nonTextDescription = !JSONEmpty(contract.description)
-  const isPrizeMarket = contract.outcomeType === 'BINARY'
+  const isPrizeMarket = !!contract.isSpicePayout
 
   return (
     <ClickFrame
       className={clsx(
-        isPrizeMarket ? 'mt-2 ring-amber-300' : 'ring-primary-200 ',
+        isPrizeMarket
+          ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
+          : 'ring-primary-200 hover:ring-1',
         className,
-        'relative cursor-pointer rounded-xl transition-all hover:ring-1',
+        'relative cursor-pointer rounded-xl transition-all ',
         'flex w-full flex-col gap-0.5 px-4',
         size === 'sm'
           ? 'bg-canvas-50'
@@ -176,18 +178,16 @@ export function FeedContractCard(props: {
       ref={ref}
     >
       {isPrizeMarket && (
-        <Tooltip text={SPICE_MARKET_TOOLTIP} className="mr-1">
-          <div
-            className={clsx(
-              'absolute right-4 top-0 -translate-y-1/2 transform bg-amber-200 text-amber-700',
-              'bg-ink-200 text-ink-500 rounded-full px-2 py-0.5 text-xs font-semibold'
-            )}
-          >
-            <span>
-              <SpiceCoin className="-mt-0.5" /> Prize Market
-            </span>
-          </div>
-        </Tooltip>
+        <div
+          className={clsx(
+            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
+            'bg-ink-200 text-ink-500 rounded-full px-2 py-0.5 text-xs font-semibold'
+          )}
+        >
+          <span>
+            <SpiceCoin className="-mt-0.5" /> Prize Market
+          </span>
+        </div>
       )}
       <Col
         className={clsx(
