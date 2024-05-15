@@ -364,7 +364,6 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && isBettingContract && (
-
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               🏆 Ranked{' '}
