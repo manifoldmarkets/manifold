@@ -181,11 +181,11 @@ export const PositionMarker = (props: {
   chartPosition: ChartPosition
 }) => {
   const { chartPosition, x, y0, y1, onLeave, onHover, isHovered } = props
-  const { direction, userAvatarUrl, color } = chartPosition
+  const { direction, color } = chartPosition
   const isSale = direction < 0
   const scale = 1
   const pinBottomPointX = x - (isSale ? -12 : 12)
-  const pinTopCenterY = y0 - (isSale ? 22 : 38)
+  const pinTopCenterY = y0 - (isSale ? 5 : 17)
   const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale}) rotate(${
     isSale ? 180 : 0
   })`
@@ -202,7 +202,8 @@ export const PositionMarker = (props: {
         className={clsx(
           isHovered
             ? 'dark:fill-primary-300 fill-primary-500 z-20'
-            : !color && 'fill-ink-300 dark:fill-ink-600'
+            : !color && 'fill-ink-300 dark:fill-ink-600',
+          ' cursor-default'
         )}
         z={isHovered ? 20 : 0}
         strokeWidth={isHovered ? 2 : 1}
@@ -224,16 +225,15 @@ export const PositionMarker = (props: {
         y1={pinTopCenterY - (isSale ? 15 : 0)}
         y2={y1}
       />
-      <image
+      <rect
+        fill="transparent"
         className={'cursor-default'}
         onMouseEnter={() => onHover(chartPosition)}
         onMouseLeave={onLeave}
-        href={userAvatarUrl}
-        x={x - 17}
-        y={y0 - 25}
-        width={35}
-        height={35}
-        clipPath={'circle(32% at 50% 50%)'}
+        x={x - 10}
+        y={pinTopCenterY - (isSale ? 15 : 0)}
+        width={20}
+        height={20}
       />
     </g>
   )
