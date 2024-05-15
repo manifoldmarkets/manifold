@@ -21,7 +21,7 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MultiContract, renderResolution } from 'common/contract'
+import { Contract, renderResolution } from 'common/contract'
 import { getContract, getPrivateUser, getUser, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
