@@ -34,7 +34,7 @@ export function RedeemSpiceButton(props: {
           />
         </Row>
       </Button>
-      <RedeemSpiceModal open={open} setOpen={setOpen} user={user} />
+      {open && <RedeemSpiceModal open={open} setOpen={setOpen} user={user} />}
     </>
   )
 }

@@ -1,23 +1,23 @@
 'use client'
 import { useState } from 'react'
+import { getNativePlatform } from 'web/lib/native/is-native'
 import { Button, baseButtonClasses, buttonClass } from './buttons/button'
 import { MODAL_CLASS, Modal } from './layout/modal'
-import { getNativePlatform } from 'web/lib/native/is-native'
 
-import { APIError, api } from 'web/lib/firebase/api'
-import { Row } from 'web/components/layout/row'
+import clsx from 'clsx'
 import {
   SPICE_NAME,
   SPICE_TO_CHARITY_CONVERSION_RATE,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
-import { Col } from 'web/components/layout/col'
-import clsx from 'clsx'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { User } from 'common/user'
-import { CoinNumber } from './widgets/manaCoinNumber'
-import { SpiceToManaForm } from './add-funds-modal'
 import Link from 'next/link'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { APIError, api } from 'web/lib/firebase/api'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { SpiceToManaForm } from './add-funds-modal'
+import { CoinNumber } from './widgets/manaCoinNumber'
 
 export type RedeemSpicePageType = 'main' | 'customMana'
 
@@ -32,7 +32,7 @@ export function RedeemSpiceModal(props: {
   return (
     <Modal open={open} setOpen={setOpen} className={clsx(MODAL_CLASS)}>
       {page == 'main' ? (
-        <MainSpiceRedeemPage user={user} setPage={setPage} />
+        <MainSpiceRedeemPage user={user} setPage={setPage} setOpen={setOpen} />
       ) : page == 'customMana' ? (
         <SpiceToManaForm
           onBack={() => setPage('main')}
@@ -48,14 +48,33 @@ export function RedeemSpiceModal(props: {
 function MainSpiceRedeemPage(props: {
   user: User
   setPage: (page: RedeemSpicePageType) => void
+  setOpen: (open: boolean) => void
 }) {
-  const { user, setPage } = props
+  const { user, setPage, setOpen } = props
   const [disableAllButtons, setDisableAllButtons] = useState(false)
   const { isNative, platform } = getNativePlatform()
   const isNativeIOS = isNative && platform === 'ios'
+  const spiceBalance = user.spiceBalance
   return (
     <Col className="gap-4">
-      <CoinNumber amount={user.spiceBalance} isSpice className="text-4xl" />
+      <Row>
+        <span className={clsx('cursor-pointer select-none transition-opacity')}>
+          <CoinNumber
+            amount={spiceBalance}
+            className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
+            isInline
+            coinClassName="top-[0.1rem]"
+          />
+          <span
+            className={clsx(
+              'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
+            )}
+          >
+            {SPICE_NAME}
+            {spiceBalance > 1 ? 's' : ''}
+          </span>
+        </span>
+      </Row>
       <Col className="bg-canvas-50 gap-4 rounded-lg p-4 pb-1">
         <Row className="gap-2">
           <ManaCoin className="text-7xl" />
@@ -81,6 +100,7 @@ function MainSpiceRedeemPage(props: {
             user={user}
             setDisableAllButtons={setDisableAllButtons}
             disableAllButtons={disableAllButtons}
+            setOpen={setOpen}
           />
         </Row>
       </Col>
@@ -123,8 +143,9 @@ function AllSpiceToManaButton(props: {
   user: User
   disableAllButtons: boolean
   setDisableAllButtons: (disabled: boolean) => void
+  setOpen: (open: boolean) => void
 }) {
-  const { user, disableAllButtons, setDisableAllButtons } = props
+  const { user, disableAllButtons, setDisableAllButtons, setOpen } = props
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const spiceBalance = user.spiceBalance
@@ -137,6 +158,7 @@ function AllSpiceToManaButton(props: {
       setLoading(false)
       setError(null)
       setDisableAllButtons(false)
+      setOpen(false)
     } catch (e) {
       console.error(e)
       setError(e instanceof APIError ? e.message : 'Error converting')
