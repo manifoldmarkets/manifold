@@ -18,6 +18,7 @@ export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const MIN_SPICE_DONATION = 25000
 export const SPICE_TO_CHARITY_CONVERSION_RATE = (1 / 1000) * 0.95
 export const SPICE_NAME = 'Prize Point'
+export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
 
 export const DASHBOARD_ENABLED = ENV === 'DEV'
 
