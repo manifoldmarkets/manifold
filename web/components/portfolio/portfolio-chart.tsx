@@ -20,6 +20,7 @@ import { PortfolioMode, PortfolioTooltip } from './portfolio-value-graph'
 import {
   GraphValueType,
   PortfolioHoveredGraphType,
+  emptyGraphValues,
 } from './portfolio-value-section'
 import { StackedArea } from './stacked-data-area'
 
@@ -176,10 +177,9 @@ export const PortfolioChart = <P extends HistoryPoint>(props: {
 
   const onMouseLeave = useEvent(() => {
     setTTParams(undefined)
-    updateGraphValues({
-      balance: undefined,
-      invested: undefined,
-    })
+    updateGraphValues(
+    emptyGraphValues
+    )
   })
 
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
