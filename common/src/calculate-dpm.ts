@@ -1,5 +1,5 @@
 import { sum, sumBy, mapValues } from 'lodash'
-import { Bet, NumericBet } from './bet'
+import { Bet } from './bet'
 import { DPMBinaryContract, DPMContract } from './contract'
 import { DPM_FEES } from './fees'
 
