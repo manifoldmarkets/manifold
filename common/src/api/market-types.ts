@@ -355,7 +355,7 @@ export const updateMarketProps = z
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
     coverImageUrl: z.string().or(z.null()).optional(),
     sort: z.string().optional(),
-    isPolitics: z.boolean().optional(),
+    isSpicePayout: z.boolean().optional(),
 
     description: z.string().optional(),
     descriptionHtml: z.string().optional(),

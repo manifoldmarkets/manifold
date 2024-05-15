@@ -13,6 +13,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
+import { isAdminId } from 'common/envs/constants'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -29,7 +30,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     sort,
     question,
     coverImageUrl,
-    isPolitics,
+    isSpicePayout,
 
     description: raw,
     descriptionHtml: html,
@@ -54,6 +55,13 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     })
   )
 
+  if (isSpicePayout !== undefined) {
+    if (!isAdminId(auth.uid)) {
+      throw new APIError(400, 'Only admins choose prize markets')
+    }
+    await firestore.doc(`contracts/${contractId}`).update({ isSpicePayout })
+  }
+
   await firestore.doc(`contracts/${contractId}`).update(
     removeUndefinedProps({
       question,
@@ -64,7 +72,6 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       addAnswersMode,
       sort,
       description,
-      isPolitics,
     })
   )
 

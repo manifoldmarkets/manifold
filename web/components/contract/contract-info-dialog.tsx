@@ -75,6 +75,7 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
+    isSpicePayout,
   } = contract
 
   const typeDisplay =
@@ -363,6 +364,7 @@ export const Stats = (props: {
         )}
 
         {!hideAdvanced && isBettingContract && (
+
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               🏆 Ranked{' '}
@@ -395,6 +397,26 @@ export const Stats = (props: {
                     }
                   )
                 }}
+              />
+            </td>
+          </tr>
+        )}
+        {!hideAdvanced && isBettingContract && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              💰 Prize market{' '}
+              <InfoTooltip
+                text={'Whether this market issue prizes points on resolution'}
+              />
+            </td>
+            <td>
+              <CheckOrSwitch
+                canToggle={isAdmin}
+                disabled={!isAdmin}
+                on={!!isSpicePayout}
+                setOn={(val) =>
+                  updateMarket({ contractId: contract.id, isSpicePayout: val })
+                }
               />
             </td>
           </tr>
