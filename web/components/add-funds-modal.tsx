@@ -8,10 +8,7 @@ import { Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import {
-  BETTING_STREAK_BONUS_MAX,
-  REFERRAL_AMOUNT,
-} from 'common/economy'
+import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import Link from 'next/link'
 import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
@@ -30,6 +27,7 @@ import { db } from 'web/lib/supabase/db'
 import { convertTxn } from 'common/supabase/txns'
 import { CoinNumber } from './widgets/manaCoinNumber'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function AddFundsModal(props: {
   open: boolean
@@ -103,8 +101,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   return (
     <>
       <div className="my-4">
-        Buy <ManaCoin /> mana to trade in your favorite
-        questions.
+        Buy <ManaCoin /> mana to trade in your favorite questions.
       </div>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
@@ -214,7 +211,8 @@ export const SpiceToManaForm = (props: {
           loading={loading}
           onClick={onSubmit}
         >
-          Convert to {formatSpice(amount ?? 0)}
+          Convert to {ENV_CONFIG.moneyMoniker}
+          {amount}
         </Button>
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
