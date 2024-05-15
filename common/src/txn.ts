@@ -51,6 +51,7 @@ type AnyTxnType =
   | ReclaimMana
   | ManachanTweet
   | BotCommentFee
+  | AirDrop
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -472,6 +473,13 @@ type BotCommentFee = {
   token: 'M$'
 }
 
+type AirDrop = {
+  category: 'AIR_DROP'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -521,3 +529,4 @@ export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet
 export type BotCommentFeeTxn = Txn & BotCommentFee
+export type AirDropTxn = Txn & AirDrop
