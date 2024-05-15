@@ -101,7 +101,7 @@ export async function getContractParams(
       : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
-    getDashboardsToDisplayOnContract(contract.slug, db),
+    getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
 
   const multiPoints = isMulti
