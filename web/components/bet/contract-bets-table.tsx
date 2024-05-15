@@ -133,9 +133,7 @@ export function ContractBetsTable(props: {
             {isMultiNumber && <th>Range</th>}
             {!isMultiNumber && <th>Outcome</th>}
             <th>Amount</th>
-            {isDPM && (
-              <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>
-            )}
+            {isDPM && <th>{isResolved ? <>Payout</> : <>Sale price</>}</th>}
             {isDPM && !isResolved && <th>Payout if chosen</th>}
             <th>Shares</th>
             {isPseudoNumeric || isMultiNumber ? (
