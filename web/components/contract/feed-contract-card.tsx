@@ -189,14 +189,7 @@ export function FeedContractCard(props: {
           </span>
         </div>
       )}
-      <Col
-        className={clsx(
-          'w-full',
-          size === 'xs' ? '' : 'gap-1.5 ',
-          // isPrizeMarket ? 'pt-4' : 'pt-2'
-          'pt-4'
-        )}
-      >
+      <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>
