@@ -122,7 +122,11 @@ function AnswersResolveOptions(props: {
     })
 
     try {
-      const result = await api('market/:contractId/resolve', resolutionProps)
+      // NOTE(James): I don't understand why this doesn't work without the cast to any.
+      const result = await api(
+        'market/:contractId/resolve',
+        resolutionProps as any
+      )
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {

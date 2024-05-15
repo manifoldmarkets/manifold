@@ -376,6 +376,7 @@ export const resolveBinarySchema = z
   })
   .passthrough() // overlaps with pseudo-numeric
 
+// For multiple choice with shouldAnswersSumToOne = true
 export const resolveMultiSchema = z.union([
   z.object({
     outcome: z.literal('CANCEL'),
