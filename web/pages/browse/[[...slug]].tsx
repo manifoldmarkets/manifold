@@ -216,6 +216,10 @@ export function GroupPageContent(props: {
       defaultFilter={
         !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
       }
+      shownTopics={shownTopics}
+      setTopicSlug={(slug) =>
+        setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
+      }
     />
   )
 
@@ -231,14 +235,14 @@ export function GroupPageContent(props: {
             setTopicSlug={setTopicSlugClearQuery}
             ref={ref}
           />
-          <BrowseTopicPills
+          {/* <BrowseTopicPills
             className={'relative w-full py-1 pl-1'}
             topics={shownTopics}
             currentTopicSlug={topicSlug}
             setTopicSlug={(slug) =>
               setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
             }
-          />
+          /> */}
           <div className="flex md:contents">
             <Col className={clsx('relative col-span-8 mx-auto w-full')}>
               {!currentTopic && searchComponent}

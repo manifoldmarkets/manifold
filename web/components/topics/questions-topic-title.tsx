@@ -1,5 +1,5 @@
 import { Group } from 'common/group'
-import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import { ArrowLeftIcon, BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
@@ -17,6 +17,9 @@ import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { toast } from 'react-hot-toast'
 import { getTopicShareUrl } from 'common/util/share'
 import { BackButton } from '../contract/back-button'
+import clsx from 'clsx'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export const QuestionsTopicTitle = forwardRef(
   (
@@ -36,6 +39,7 @@ export const QuestionsTopicTitle = forwardRef(
     const isFollowing =
       currentTopic && (yourGroupIds ?? []).includes(currentTopic.id)
 
+      if (currentTopic) {
     return (
       <Row
         className={
@@ -44,7 +48,13 @@ export const QuestionsTopicTitle = forwardRef(
         ref={ref}
       >
         <Row className={'gap-1 truncate'}>
-          <BackButton className="lg:hidden" />
+          <Link
+            href="/browse/for-you"
+            className="text-ink-600 hover:bg-ink-200 disabled:text-ink-300 font-md text-center' my-auto inline-flex items-center justify-center rounded-md p-2 ring-inset transition-colors disabled:cursor-not-allowed disabled:bg-transparent"
+          >
+            <ArrowLeftIcon className="h-5 w-5" aria-hidden />
+            <div className="sr-only">Back</div>
+          </Link>
           <span
             className="text-primary-700 self-center truncate text-2xl"
             onClick={() =>
@@ -55,8 +65,7 @@ export const QuestionsTopicTitle = forwardRef(
           </span>
         </Row>
         <Row>
-          {currentTopic && (
-            <>
+   
               <CopyLinkOrShareButton
                 url={getTopicShareUrl(currentTopic?.slug ?? '', user?.username)}
                 className={'gap-1 whitespace-nowrap'}
@@ -108,8 +117,7 @@ export const QuestionsTopicTitle = forwardRef(
                   </Button>
                 )
               )}
-            </>
-          )}
+   
           {currentTopic ? (
             <TopicOptionsButton
               group={currentTopic}
@@ -127,5 +135,8 @@ export const QuestionsTopicTitle = forwardRef(
         </Row>
       </Row>
     )
+  }
+
+return <></>
   }
 )

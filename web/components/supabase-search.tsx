@@ -39,6 +39,7 @@ import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { FullUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { BrowseTopicPills } from './topics/browse-topic-pills'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -181,6 +182,8 @@ export function SupabaseSearch(props: {
   showTopicTag?: boolean
   hideSearchTypes?: boolean
   hideAvatars?: boolean
+  shownTopics?: LiteGroup[]
+  setTopicSlug?: (slug: string) => void
 }) {
   const {
     defaultSort,
@@ -207,6 +210,8 @@ export function SupabaseSearch(props: {
     hideSearch,
     hideSearchTypes,
     hideAvatars,
+    shownTopics,
+    setTopicSlug
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -241,8 +246,7 @@ export function SupabaseSearch(props: {
 
   const showSearchTypes =
     !hideSearchTypes &&
-    !contractsOnly &&
-    (((!topicSlug || topicSlug === 'for-you') && query !== '') || searchType)
+    !contractsOnly && topicSlug == 'for-you'
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -311,6 +315,11 @@ export function SupabaseSearch(props: {
       </Col>
     ))
 
+
+  const showUsers = userResults &&
+            userResults.length > 0 &&
+            query !== '' 
+  const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
   return (
     <Col className="w-full">
       <Col
@@ -374,23 +383,47 @@ export function SupabaseSearch(props: {
           />
         )}
       </Col>
-      {showSearchTypes && userResults && userResults.length > 0 ? (
+      {showSearchTypes ? (
         <Col>
-          <UserResults userResults={userResults} />
-          <Row className="text-ink-500 items-center gap-1 text-sm">
-            <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-            <span>
-              {!query || !contracts?.length
-                ? ''
-                : contracts.length >= 100
-                ? '100+'
-                : shouldLoadMore && !loading
-                ? `${contracts.length}+`
-                : `${contracts.length}`}{' '}
-              questions
-            </span>
-            <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-          </Row>
+          {showTopics && (
+            <>
+              <Row className="text-ink-500 items-center gap-1 text-sm">
+                <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                <span>
+                  {!query || !shownTopics?.length
+                    ? ''
+                    : shownTopics.length >= 100
+                    ? '100+'
+                    : `${shownTopics.length}`}{' '}
+                  {!query || !shownTopics?.length ? 'Topics' : 'topics'}
+                </span>
+                <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+              </Row>
+              <BrowseTopicPills
+                className={'relative w-full px-2 pb-4 sm:px-0'}
+                topics={shownTopics}
+                currentTopicSlug={topicSlug}
+                setTopicSlug={setTopicSlug}
+              />
+            </>
+          )}
+          {showUsers && <UserResults userResults={userResults} />}
+          {(showTopics || showUsers) && (
+            <Row className="text-ink-500 items-center gap-1 text-sm">
+              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+              <span>
+                {!query || !contracts?.length
+                  ? ''
+                  : contracts.length >= 100
+                  ? '100+'
+                  : shouldLoadMore && !loading
+                  ? `${contracts.length}+`
+                  : `${contracts.length}`}{' '}
+                {!query || !contracts?.length ? 'Questions' : 'questions'}
+              </span>
+              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+            </Row>
+          )}
         </Col>
       ) : (
         rowBelowFilters
