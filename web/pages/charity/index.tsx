@@ -16,6 +16,7 @@ import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export async function getStaticProps() {

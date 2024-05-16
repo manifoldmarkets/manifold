@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatSpice } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'

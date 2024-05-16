@@ -2,7 +2,11 @@ import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
-import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import {
+  ENV_CONFIG,
+  SPICE_MARKET_TOOLTIP,
+  SPICE_NAME,
+} from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
@@ -24,9 +28,11 @@ import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { useHasBetOnContract } from 'web/hooks/use-bet-on-contracts'
 import { Tooltip } from '../widgets/tooltip'
+import { ManaCircleIcon } from '../icons/mana-circle-icon'
 import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
 import { useABTest } from 'web/hooks/use-ab-test'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export function ContractsTable(props: {

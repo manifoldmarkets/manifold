@@ -10,6 +10,7 @@ import { dataAtTimeSelector, dataAtXSelector } from '../charts/generic-charts'
 import {
   LinePath,
   PointerMode,
+  SVGChart,
   SliceMarker,
   TooltipProps,
   ZoomParams,
