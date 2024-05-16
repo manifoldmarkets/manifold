@@ -11,6 +11,9 @@ import {
 
 const SWITCHBOARD = new Switchboard()
 
+// if a connection doesn't ping for this long, we assume the other side is toast
+const CONNECTION_TIMEOUT_MS = 60 * 1000
+
 export class MessageParseError extends Error {
   details?: unknown
   constructor(message: string, details?: unknown) {
@@ -94,6 +97,18 @@ export function broadcast(topic: string, data: Record<string, unknown>) {
 
 export function listen(server: HttpServer, path: string) {
   const wss = new WebSocketServer({ server, path })
+  let deadConnectionCleaner: NodeJS.Timeout | undefined
+  wss.on('listening', () => {
+    deadConnectionCleaner = setInterval(function ping() {
+      const now = Date.now()
+      for (const ws of wss.clients) {
+        const lastSeen = SWITCHBOARD.getClient(ws).lastSeen
+        if (lastSeen < now - CONNECTION_TIMEOUT_MS) {
+          ws.terminate()
+        }
+      }
+    }, CONNECTION_TIMEOUT_MS)
+  })
   wss.on('error', (err) => {
     log.error('Error on websocket server.', { error: err })
   })
@@ -117,6 +132,9 @@ export function listen(server: HttpServer, path: string) {
     ws.on('error', (err) => {
       log.error('Error on websocket connection.', { error: err })
     })
+  })
+  wss.on('close', function close() {
+    clearInterval(deadConnectionCleaner)
   })
   return wss
 }
