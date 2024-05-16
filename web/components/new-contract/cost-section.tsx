@@ -49,9 +49,7 @@ export const CostSection = (props: {
         {amountSuppliedByUser === 0 ? (
           <span className="text-teal-500">FREE </span>
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
-          <>
-            {formatMoney(amountSuppliedByUser)}
-          </>
+          <>{formatMoney(amountSuppliedByUser)}</>
         ) : (
           <span>
             {amountSuppliedByUser
