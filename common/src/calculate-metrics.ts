@@ -17,7 +17,6 @@ export const computeInvestmentValue = (
   return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
     if (!contract || contract.isResolved) return 0
-    if (bet.sale || bet.isSold) return 0
 
     let payout
     try {
@@ -45,7 +44,6 @@ export const computeInvestmentValueCustomProb = (
 ) => {
   return sumBy(bets, (bet) => {
     if (!contract) return 0
-    if (bet.sale || bet.isSold) return 0
     const { outcome, shares } = bet
 
     const betP = outcome === 'YES' ? p : 1 - p
@@ -63,7 +61,6 @@ const getLoanTotal = (
   return sumBy(bets, (bet) => {
     const contract = contractsDict[bet.contractId]
     if (!contract || contract.isResolved) return 0
-    if (bet.sale || bet.isSold) return 0
     return bet.loanAmount ?? 0
   })
 }

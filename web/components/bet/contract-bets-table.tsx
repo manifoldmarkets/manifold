@@ -50,10 +50,7 @@ export function ContractBetsTable(props: {
     )
   )
 
-  const amountLoaned = sumBy(
-    bets.filter((bet) => !bet.isSold && !bet.sale),
-    (bet) => bet.loanAmount ?? 0
-  )
+  const amountLoaned = sumBy(bets, (bet) => bet.loanAmount ?? 0)
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'

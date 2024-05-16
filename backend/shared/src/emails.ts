@@ -359,9 +359,9 @@ export const sendNewCommentEmail = async (
 
   let betDescription = ''
   if (bet) {
-    const { amount, sale } = bet
+    const { amount } = bet
     betDescription = `${
-      sale || amount < 0 ? 'sold' : 'bought'
+      amount < 0 ? 'sold' : 'bought'
     } ${emailMoneyFormat(Math.abs(amount))}`
   }
 
@@ -655,9 +655,9 @@ export const sendNewUniqueBettorsEmail = async (
     if (p.avatarUrl) templateData[`bettor${i + 1}AvatarUrl`] = p.avatarUrl
     const bet = userBets[p.id][0]
     if (bet) {
-      const { amount, sale } = bet
+      const { amount } = bet
       templateData[`bet${i + 1}Description`] = `${
-        sale || amount < 0 ? 'sold' : 'bought'
+        amount < 0 ? 'sold' : 'bought'
       } ${emailMoneyFormat(Math.abs(amount))}`
     }
   })

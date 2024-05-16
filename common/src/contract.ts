@@ -7,12 +7,12 @@ import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
 import { ContractComment } from './comment'
 import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
 import { formatMoney, formatPercent } from './util/format'
-import { getLiquidity } from './calculate-cpmm-multi'
 import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
 import { PollOption } from './poll-option'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { MINUTE_MS } from './util/time'
+import { getLiquidity } from './calculate-cpmm'
 
 /************************************************
 
@@ -163,14 +163,6 @@ export type PollContract = Contract & Poll & NonBet
 export type BinaryOrPseudoNumericContract =
   | CPMMBinaryContract
   | PseudoNumericContract
-
-// Deprecated: Simple constant product market maker for a variable number of outcomes.
-/** @deprecated */
-export type CPMM2 = {
-  mechanism: 'cpmm-2'
-  pool: { [outcome: string]: number }
-  subsidyPool: number // current value of subsidy pool in M$
-}
 
 export type CPMM = {
   mechanism: 'cpmm-1'

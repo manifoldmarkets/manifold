@@ -202,9 +202,7 @@ export const onCreateBets = async (
         )
 
         await Promise.all([
-          bet.amount >= 0 &&
-            !bet.isSold &&
-            addUserToContractFollowers(contract.id, bettor.id),
+          bet.amount >= 0 && addUserToContractFollowers(contract.id, bettor.id),
 
           updateUserInterestEmbedding(pg, bettor.id),
 

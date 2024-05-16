@@ -305,8 +305,7 @@ export const getDataAndPayoutInfo = async (
         return mapValues(resolutions, (p) => p / total)
       })()
     : undefined
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const loanPayouts = getLoanPayouts(openBets)
+  const loanPayouts = getLoanPayouts(bets)
 
   const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,

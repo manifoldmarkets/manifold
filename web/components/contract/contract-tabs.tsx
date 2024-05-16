@@ -560,7 +560,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         }))
       : bets.map((bet) => ({
           type: 'bet' as const,
-          id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
+          id: 'bets-tab-' + bet.id + '-' + 'false',
           bet,
         }))),
     ...visibleLps.map((lp) => ({
