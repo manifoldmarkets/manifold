@@ -69,7 +69,7 @@ export class APIRealtimeClient {
   reconnect() {
     this.ws = new WebSocket(this.url)
     this.ws.onmessage = (ev) => {
-      this.receiveMessage(ev.data)
+      this.receiveMessage(JSON.parse(ev.data))
     }
     this.ws.onerror = (ev) => {
       console.error('API websocket error: ', ev)
@@ -125,6 +125,7 @@ export class APIRealtimeClient {
             // mqp: only reason this should happen is getting an ack after timeout
             console.warn(`Websocket message with old txid=${msg.txid}.`)
           } else {
+            clearTimeout(txn.timeout)
             if (msg.error != null) {
               txn.reject(new Error(msg.error))
             } else {
@@ -133,9 +134,10 @@ export class APIRealtimeClient {
             this.txns.delete(msg.txid)
           }
         }
+        return
       }
       default:
-        console.warn(`Unknown API websocket message type received: ${msg.type}`)
+        console.warn(`Unknown API websocket message type received: ${msg}`)
     }
   }
 
@@ -157,7 +159,7 @@ export class APIRealtimeClient {
         this.ws.send(JSON.stringify({ type, txid, ...data }))
       })
     } else {
-      throw new Error(`Can't send message; state=${formatState(this.state)}`)
+      // expected if components in the code try to subscribe before connected
     }
   }
 
@@ -195,4 +197,7 @@ export class APIRealtimeClient {
   }
 }
 
-export const client = new APIRealtimeClient(getApiUrl('ws'))
+export const client =
+  typeof window !== 'undefined'
+    ? new APIRealtimeClient(getApiUrl('ws'))
+    : undefined

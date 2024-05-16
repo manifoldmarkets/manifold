@@ -11,12 +11,14 @@ export type SubscriptionOptions = {
 
 export function useApiSubscription(opts: SubscriptionOptions) {
   useEffect(() => {
-    if (opts.enabled ?? true) {
-      client.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
-      return () => {
-        client.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+    const ws = client
+    if (ws != null) {
+      if (opts.enabled ?? true) {
+        ws.subscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        return () => {
+          ws.unsubscribe(opts.topics, opts.onBroadcast).catch(opts.onError)
+        }
       }
     }
   }, [opts.enabled])
-  return client.state
 }

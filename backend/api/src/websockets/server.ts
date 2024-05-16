@@ -99,12 +99,10 @@ export function listen(server: HttpServer, path: string) {
   })
   wss.on('connection', (ws) => {
     // todo: should likely kill connections that haven't sent any ping for a long time
-    ws.on('open', () => {
-      metrics.inc('ws/connections_established')
-      metrics.set('ws/open_connections', wss.clients.size)
-      log.debug(`WS client connected to ${ws.url}.`)
-      SWITCHBOARD.connect(ws)
-    })
+    metrics.inc('ws/connections_established')
+    metrics.set('ws/open_connections', wss.clients.size)
+    log.debug('WS client connected.')
+    SWITCHBOARD.connect(ws)
     ws.on('message', (data) => {
       const result = processMessage(ws, data)
       // mqp: check ws.readyState before sending?
@@ -113,7 +111,7 @@ export function listen(server: HttpServer, path: string) {
     ws.on('close', (code, reason) => {
       metrics.inc('ws/connections_terminated')
       metrics.set('ws/open_connections', wss.clients.size)
-      log.debug(`WS client disconnected from ${ws.url}.`, { code, reason })
+      log.debug(`WS client disconnected.`, { code, reason: reason.toString() })
       SWITCHBOARD.disconnect(ws)
     })
     ws.on('error', (err) => {
