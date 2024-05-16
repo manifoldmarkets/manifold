@@ -40,10 +40,10 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <CoinNumber
             amount={user?.balance}
             numberType="animated"
-            className="text-primary-600 mr-2"
+            className="mr-2"
           />
           <button
-            className="hover:bg-primary-300 hover:dark:bg-primary-600 text-primary-600 group rounded-md p-1 ring-[1.5px] ring-inset ring-current transition-all hover:dark:text-white"
+            className="hover:bg-ink-300 rounded-md p-1 ring-[1.5px] ring-inset ring-current"
             onClick={(e) => {
               e.preventDefault()
               setBuyModalOpen(true)
@@ -55,11 +55,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
         {SPICE_PRODUCTION_ENABLED && (
-          <CoinNumber
-            className="text-sm text-amber-600 dark:text-amber-400"
-            amount={user.spiceBalance}
-            isSpice
-          />
+          <CoinNumber className="text-sm" amount={user.spiceBalance} isSpice />
         )}
       </div>
       <div className="w-2 shrink" />

@@ -4,7 +4,6 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
-  | 'amber-outline'
   | 'green'
   | 'green-outline'
   | 'red'
@@ -22,7 +21,6 @@ export type ColorType =
   | 'yellow-outline'
   | 'gold'
   | 'none'
-  | 'white-outline'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -46,7 +44,6 @@ export function buttonClass(size: SizeType, color: ColorType) {
   return clsx(
     baseButtonClasses,
     sizeClasses[size],
-    color === 'amber-outline' && [outline, 'text-amber-500 hover:bg-amber-500'],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
     color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
@@ -76,8 +73,7 @@ export function buttonClass(size: SizeType, color: ColorType) {
     color === 'gold' && [
       gradient,
       'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
-    ],
-    color === 'white-outline' && [outline, 'text-white hover:bg-white']
+    ]
   )
 }
 

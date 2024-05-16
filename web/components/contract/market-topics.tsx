@@ -13,16 +13,11 @@ import { Group, groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
 import { removeEmojis } from 'common/topics'
 import { TopicTag } from 'web/components/topics/topic-tag'
-import { Tooltip } from '../widgets/tooltip'
-import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
-import { Row } from '../layout/row'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 type TopicRowProps = {
   contract: Contract
   dashboards: { slug: string; title: string }[]
   topics: Topic[]
-  isSpiceMarket: boolean
 }
 
 export function MarketTopics(props: TopicRowProps) {
@@ -77,7 +72,7 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
 
 export function PublicMarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
-  const { contract, topics, dashboards, isSpiceMarket } = props
+  const { contract, topics, dashboards } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
   const adminGroups = useGroupsWhereUserHasRole(user?.id)
@@ -93,13 +88,6 @@ export function PublicMarketTopics(props: TopicRowProps) {
   return (
     <>
       <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
-        {isSpiceMarket && (
-          <Tooltip text={SPICE_MARKET_TOOLTIP}>
-            <Row className="text-2xs select-none items-center gap-1 whitespace-nowrap rounded-full bg-amber-200 px-1.5 font-semibold text-amber-700">
-              <SpiceCoin /> Prize Market
-            </Row>
-          </Tooltip>
-        )}
         {dashboards.map((d) => (
           <DashboardLink key={d.slug} dashboard={d} />
         ))}

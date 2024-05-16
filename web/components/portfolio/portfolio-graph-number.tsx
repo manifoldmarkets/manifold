@@ -3,10 +3,9 @@ import { PortfolioMode } from './portfolio-value-graph'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 import { Col } from '../layout/col'
-import { Row } from '../layout/row'
 
 export function PortfolioGraphNumber(props: {
-  numberType: 'balance' | 'investment' | 'spice'
+  numberType: 'balance' | 'investment'
   descriptor: string
   portfolioFocus: PortfolioMode
   portfolioHoveredGraph: PortfolioHoveredGraphType
@@ -15,7 +14,6 @@ export function PortfolioGraphNumber(props: {
   color: string
   onClick: () => void
   className?: string
-  isSpice?: boolean
 }) {
   const {
     portfolioFocus,
@@ -27,7 +25,6 @@ export function PortfolioGraphNumber(props: {
     color,
     onClick,
     className,
-    isSpice,
   } = props
   return (
     <div
@@ -54,12 +51,10 @@ export function PortfolioGraphNumber(props: {
         <CoinNumber
           amount={displayedAmount}
           className={clsx('font-bold text-white transition-all')}
-          isSpice={isSpice}
         />
-
         <div
           className={clsx(
-            'sm:sm mx-auto -mt-1 text-xs text-white/80 transition-all group-hover:text-white'
+            'sm:sm mx-auto -mt-1 text-xs text-gray-200 transition-all group-hover:text-gray-100'
           )}
         >
           {descriptor}

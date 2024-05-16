@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode } from 'react'
+import { ReactNode } from 'react'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 
 /** Automatically calculate size and pass it to children */
@@ -14,15 +14,14 @@ export const SizedContainer = (props: {
    * So, className is not optional. Set to "" only if you know what you're doing.
    */
   className: string
-  style?: CSSProperties
 }) => {
-  const { children, className, style } = props
+  const { children, className } = props
 
   const { elemRef, width, height } = useMeasureSize()
 
   // put containerRef on the inner div so that size excludes padding
   return (
-    <div className={className} style={style}>
+    <div className={className}>
       <div ref={elemRef} className="h-full w-full">
         {width && height ? children(width, height) : null}
       </div>

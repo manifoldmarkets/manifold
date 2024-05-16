@@ -51,6 +51,32 @@ export const CostSection = (props: {
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
           <>
             {formatMoney(amountSuppliedByUser)}
+            {visibility === 'public' && !isPartner && (
+              <span>
+                {' '}
+                or <span className=" text-teal-500">FREE </span>
+                if you get{' '}
+                {isMulti
+                  ? Math.ceil(
+                      amountSuppliedByUser / UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+                    )
+                  : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
+                + participants{' '}
+                <InfoTooltip
+                  text={
+                    isMulti
+                      ? `You'll earn a bonus of ${formatMoney(
+                          UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
+                        )} for each unique trader you get on each answer.`
+                      : `You'll earn a bonus of ${formatMoney(
+                          UNIQUE_BETTOR_BONUS_AMOUNT
+                        )} for each unique trader you get on your question, up to 50 traders. Then ${formatMoney(
+                          SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
+                        )} for every unique trader after that.`
+                  }
+                />
+              </span>
+            )}
           </>
         ) : (
           <span>

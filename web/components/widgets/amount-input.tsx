@@ -19,15 +19,13 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { User, verifiedPhone } from 'common/user'
 import { STARTING_BALANCE } from 'common/economy'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 export function AmountInput(
   props: {
     amount: number | undefined
     onChangeAmount: (newAmount: number | undefined) => void
     error?: boolean
-    label?: any
+    label?: string
     disabled?: boolean
     className?: string
     inputClassName?: string
@@ -242,7 +240,7 @@ export function BuyAmountInput(props: {
               (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
             inputClassName
           )}
-          label={token === 'SPICE' ? <SpiceCoin /> : <ManaCoin />}
+          label={token === 'SPICE' ? 'SP' : ENV_CONFIG.moneyMoniker}
           amount={amount}
           onChangeAmount={onChange}
           error={!!error}

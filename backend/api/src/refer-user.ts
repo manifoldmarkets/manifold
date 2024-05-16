@@ -113,7 +113,7 @@ async function handleReferral(
       toId: referredByUserId,
       toType: 'USER',
       amount: REFERRAL_AMOUNT,
-      token: 'SPICE',
+      token: 'M$',
       category: 'REFERRAL',
       description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
     } as const

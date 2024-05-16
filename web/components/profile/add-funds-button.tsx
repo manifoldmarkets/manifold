@@ -15,7 +15,7 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
     <>
       <Button
         onClick={() => setOpen(true)}
-        size="2xs"
+        size={isMobile ? '2xs' : 'xs'}
         color="gradient-pink"
         className={className}
       >

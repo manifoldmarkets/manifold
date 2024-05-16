@@ -10,7 +10,6 @@ import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -41,9 +40,8 @@ export default function ReferralsPage() {
           />
 
           <div className={'mb-4'}>
-            Invite new users to Manifold and get{' '}
-            <CoinNumber amount={REFERRAL_AMOUNT} isSpice isInline /> if they
-            sign up and place a trade!
+            Invite new users to Manifold and get {formatMoney(REFERRAL_AMOUNT)}{' '}
+            if they sign up and place a trade!
           </div>
 
           <CopyLinkRow url={url} eventTrackingName="copy referral link" />

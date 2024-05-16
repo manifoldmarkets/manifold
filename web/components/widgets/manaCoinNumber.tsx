@@ -29,8 +29,9 @@ export function CoinNumber(props: {
     <Row
       className={clsx(
         'items-center whitespace-nowrap',
-        isInline && 'relative ml-[1.1em] inline-flex items-baseline',
-        className
+        className,
+        isSpice ? 'text-sky-600 dark:text-sky-400' : '',
+        isInline && 'relative ml-[1.1em] inline-flex items-baseline'
       )}
       style={style}
     >

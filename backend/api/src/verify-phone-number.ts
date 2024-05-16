@@ -2,7 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
-import { PHONE_VERIFICATION_BONUS, SUS_STARTING_BALANCE } from 'common/economy'
+import { STARTING_BALANCE, SUS_STARTING_BALANCE } from 'common/economy'
 import { PrivateUser, User } from 'common/user'
 import { SignupBonusTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -69,10 +69,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
     const { initialDeviceToken: deviceToken } = privateUser
     const deviceUsedBefore =
       !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
-    
-    const amount = deviceUsedBefore
-      ? SUS_STARTING_BALANCE
-      : PHONE_VERIFICATION_BONUS
+    const amount = deviceUsedBefore ? SUS_STARTING_BALANCE : STARTING_BALANCE
 
     const deservesSignupBonus = await firestore.runTransaction(
       async (transaction) => {

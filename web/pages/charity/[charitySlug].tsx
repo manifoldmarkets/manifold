@@ -11,7 +11,7 @@ import { User } from 'common/user'
 import { useUser } from 'web/hooks/use-user'
 import { usePagination } from 'web/hooks/use-pagination'
 import { Linkify } from 'web/components/widgets/linkify'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api, transact } from 'web/lib/firebase/api'
 import { charities, Charity } from 'common/charity'
 import Custom404 from '../404'
 import {
@@ -19,18 +19,14 @@ import {
   getDonationsPageQuery,
 } from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { formatMoneyUSD, manaToUSD } from 'common/util/format'
+import { manaToUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import {
-  MIN_SPICE_DONATION,
-  SPICE_TO_CHARITY_CONVERSION_RATE,
-} from 'common/envs/constants'
+import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 
 type DonationItem = { user: User; ts: number; amount: number }
 
@@ -160,6 +156,8 @@ function Details(props: {
   )
 }
 
+const MIN_DONATION_MANA = 100
+
 function DonationBox(props: {
   user?: User | null
   charity: Charity
@@ -171,7 +169,7 @@ function DonationBox(props: {
   const [error, setError] = useState<string | undefined>()
 
   const donateDisabled =
-    isSubmitting || !amount || !!error || amount < MIN_SPICE_DONATION
+    isSubmitting || !amount || !!error || amount < MIN_DONATION_MANA
 
   const onSubmit: React.FormEventHandler = async (e) => {
     if (!user || donateDisabled) return
@@ -180,10 +178,23 @@ function DonationBox(props: {
     setIsSubmitting(true)
     setError(undefined)
 
-    await api('donate', { amount, to: charity.id }).catch((e) => {
-      console.error(e)
-      if (e instanceof APIError) setError(e.message)
-    })
+    if (SPICE_PRODUCTION_ENABLED) {
+      await api('donate', { amount, to: charity.id }).catch((e) => {
+        console.error(e)
+        if (e instanceof APIError) setError(e.message)
+      })
+    } else {
+      await transact({
+        amount,
+        fromId: user.id,
+        fromType: 'USER',
+        toId: charity.id,
+        toType: 'CHARITY',
+        token: 'M$',
+        category: 'CHARITY',
+        description: `${user.name} donated M$ ${amount} to ${charity.name}`,
+      }).catch((err) => console.error(err))
+    }
 
     setIsSubmitting(false)
     setAmount(undefined)
@@ -197,20 +208,18 @@ function DonationBox(props: {
       <label className="text-ink-700 mb-2 block text-sm">Amount</label>
       <BuyAmountInput
         inputClassName="donate-input"
-        minimumAmount={MIN_SPICE_DONATION}
+        minimumAmount={MIN_DONATION_MANA}
         amount={amount}
         onChange={setAmount}
         error={error}
         setError={setError}
-        token={'SPICE'}
+        token={SPICE_PRODUCTION_ENABLED ? 'SPICE' : 'M$'}
       />
 
       <Col className="mt-3 w-full gap-3">
         <Row className="items-center text-sm xl:justify-between">
           <span className="text-ink-500 mr-1">{charity.name} receives</span>
-          <span>
-            {formatMoneyUSD(SPICE_TO_CHARITY_CONVERSION_RATE * (amount || 0))}
-          </span>
+          <span>{manaToUSD(amount || 0)}</span>
         </Row>
       </Col>
 
@@ -226,14 +235,9 @@ function DonationBox(props: {
           loading={isSubmitting}
           onClick={onSubmit}
         >
-          Donate
+          {(amount ?? 0) < MIN_DONATION_MANA ? '$1 minimum' : 'Donate'}
         </Button>
       )}
-
-      <div className="mt-2 text-xs">
-        <CoinNumber amount={MIN_SPICE_DONATION} isInline isSpice /> donation
-        minimum
-      </div>
     </div>
   )
 }

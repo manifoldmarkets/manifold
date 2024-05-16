@@ -16,11 +16,7 @@ import * as dayjs from 'dayjs'
 import { LoanTxn } from 'common/txn'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 
-const LOANS_DIABLED = true
-
 export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
-  if (LOANS_DIABLED) throw new APIError(500, 'Loans are disabled')
-
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 

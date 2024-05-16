@@ -12,19 +12,15 @@ import { PortfolioChart } from './portfolio-chart'
 import {
   GraphValueType,
   PortfolioHoveredGraphType,
-  emptyGraphValues,
 } from './portfolio-value-section'
 import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
-export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
+export type PortfolioMode = 'balance' | 'investment' | 'all'
 export const BALANCE_COLOR = '#4f46e5'
 export const INVESTMENT_COLOR = '#818cf8'
-// export const SPICE_COLOR = '#0ea5e9'
-export const SPICE_COLOR = '#f59e0b'
 
 export const PortfolioTooltip = (props: { date: Date }) => {
   const d = dayjs(props.date)
@@ -71,13 +67,8 @@ export const PortfolioGraph = (props: {
     setPortfolioHoveredGraph,
   } = props
 
-  const {
-    profitPoints,
-    investmentPoints,
-    balancePoints,
-    networthPoints,
-    spicePoints,
-  } = usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     if (mode == 'portfolio') {
@@ -97,44 +88,30 @@ export const PortfolioGraph = (props: {
       const { min: networthYMin, max: networthYMax } =
         findMinMax(networthYPoints)
 
-      const spiceYPointsInMana = spicePoints.map((d) => d.y)!
-      const { min: spiceYMinInMana, max: spiceYMaxInMana } =
-        findMinMax(spiceYPointsInMana)
-      const spiceXPoints = spicePoints.map((d) => d.x)!
-      const { min: spiceXMin, max: spiceXMax } = findMinMax(spiceXPoints)
-
       const minDate =
         portfolioFocus == 'all'
           ? min([balanceXMin, investmentXMin])!
           : portfolioFocus == 'balance'
           ? balanceXMin
-          : portfolioFocus == 'investment'
-          ? investmentXMin
-          : spiceXMin
+          : investmentXMin
       const maxDate =
         portfolioFocus == 'all'
           ? max([balanceXMax, investmentXMax])!
           : portfolioFocus == 'balance'
           ? balanceXMax
-          : portfolioFocus == 'investment'
-          ? investmentXMax
-          : spiceXMax
+          : investmentXMax
       const minValue =
         portfolioFocus == 'all'
-          ? min([balanceYMin, networthYMin, spiceYMinInMana])!
+          ? min([balanceYMin, networthYMin])!
           : portfolioFocus == 'balance'
           ? balanceYMin
-          : portfolioFocus == 'investment'
-          ? investmentYMin
-          : spiceYMinInMana
+          : investmentYMin
       const maxValue =
         portfolioFocus == 'all'
-          ? max([networthYMax, balanceYMax + spiceYMaxInMana])!
+          ? max([networthYMax, balanceYMax])!
           : portfolioFocus == 'balance'
           ? balanceYMax
-          : portfolioFocus == 'investment'
-          ? investmentYMax
-          : spiceYMaxInMana
+          : investmentYMax
       return { minDate, maxDate, minValue, maxValue }
     } else {
       const profitXPoints = profitPoints.map((d) => d.x)!
@@ -156,10 +133,6 @@ export const PortfolioGraph = (props: {
     [tinyDiff ? minValue - 50 : minValue, tinyDiff ? maxValue + 50 : maxValue],
     [height, 0]
   )
-  // New scale with domain modified to reflect division by the constant
-  const spiceYScale = scaleLinear()
-    .domain(yScale.domain().map((d) => d / SPICE_TO_MANA_CONVERSION_RATE))
-    .range([height, 0])
 
   // reset axis scale if mode or duration change (since points change)
   useEffect(() => {
@@ -171,7 +144,6 @@ export const PortfolioGraph = (props: {
       return (
         <PortfolioChart
           data={{
-            spice: { points: spicePoints, color: SPICE_COLOR },
             balance: { points: balancePoints, color: BALANCE_COLOR },
             investment: { points: investmentPoints, color: INVESTMENT_COLOR },
           }}
@@ -192,47 +164,23 @@ export const PortfolioGraph = (props: {
           w={width}
           h={height}
           xScale={xScale}
-          yScale={portfolioFocus == 'spice' ? spiceYScale : yScale}
+          yScale={yScale}
           zoomParams={zoomParams}
-          yKind={
-            portfolioFocus === 'spice' && mode == 'portfolio' ? 'spice' : 'Ṁ'
-          }
-          data={
-            portfolioFocus == 'balance'
-              ? balancePoints
-              : portfolioFocus == 'investment'
-              ? investmentPoints
-              : spicePoints.map((d) => ({
-                  ...d,
-                  y: d.y / SPICE_TO_MANA_CONVERSION_RATE,
-                }))
-          }
+          yKind="Ṁ"
+          data={portfolioFocus == 'balance' ? balancePoints : investmentPoints}
           Tooltip={(props) => (
             // eslint-disable-next-line react/prop-types
             <PortfolioTooltip date={xScale.invert(props.x)} />
           )}
           onMouseOver={(p) => {
             portfolioFocus == 'balance'
-              ? updateGraphValues({ balance: p ? p.y : null })
-              : portfolioFocus == 'investment'
-              ? updateGraphValues({ invested: p ? p.y : null })
-              : updateGraphValues({
-                  spice: p ? p.y : null,
-                })
-          }}
-          onMouseLeave={() => {
-            updateGraphValues(emptyGraphValues)
+              ? updateGraphValues({ balance: p ? p.y : undefined })
+              : updateGraphValues({ invested: p ? p.y : undefined })
           }}
           curve={curveLinear}
           negativeThreshold={negativeThreshold}
           hideXAxis={hideXAxis}
-          color={
-            portfolioFocus == 'balance'
-              ? BALANCE_COLOR
-              : portfolioFocus == 'investment'
-              ? INVESTMENT_COLOR
-              : SPICE_COLOR
-          }
+          color={portfolioFocus == 'balance' ? BALANCE_COLOR : INVESTMENT_COLOR}
           onGraphClick={() => {
             setPortfolioFocus('all')
           }}
@@ -267,73 +215,47 @@ function usePortfolioPointsFromHistory(
   portfolioHistory: PortfolioSnapshot[],
   firstProfit: number
 ) {
-  const {
-    profitPoints,
-    investmentPoints,
-    balancePoints,
-    networthPoints,
-    spicePoints,
-  } = useMemo(() => {
-    if (!portfolioHistory?.length) {
-      return {
-        profitPoints: [],
-        investmentPoints: [],
-        balancePoints: [],
-        networthPoints: [],
-        spicePoints: [],
+  const { profitPoints, investmentPoints, balancePoints, networthPoints } =
+    useMemo(() => {
+      if (!portfolioHistory?.length) {
+        return {
+          profitPoints: [],
+          investmentPoints: [],
+          balancePoints: [],
+          networthPoints: [],
+        }
       }
-    }
 
-    const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
-    const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const profitPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const investmentPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const balancePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
+      const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
 
-    portfolioHistory.forEach((p) => {
-      profitPoints.push({
-        x: p.timestamp,
-        y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-        obj: p,
+      portfolioHistory.forEach((p) => {
+        profitPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+          obj: p,
+        })
+        investmentPoints.push({
+          x: p.timestamp,
+          y: p.investmentValue,
+          obj: p,
+        })
+        balancePoints.push({
+          x: p.timestamp,
+          y: p.balance,
+          obj: p,
+        })
+        networthPoints.push({
+          x: p.timestamp,
+          y: p.balance + p.investmentValue,
+          obj: p,
+        })
       })
-      investmentPoints.push({
-        x: p.timestamp,
-        y: p.investmentValue,
-        obj: p,
-      })
-      balancePoints.push({
-        x: p.timestamp,
-        y: p.balance,
-        obj: p,
-      })
-      networthPoints.push({
-        x: p.timestamp,
-        y:
-          p.balance +
-          p.investmentValue +
-          p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
-        obj: p,
-      })
-      spicePoints.push({
-        x: p.timestamp,
-        y: p.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE,
-        obj: p,
-      })
-    })
-    return {
-      profitPoints,
-      investmentPoints,
-      balancePoints,
-      networthPoints,
-      spicePoints,
-    }
-  }, [portfolioHistory])
 
-  return {
-    profitPoints,
-    investmentPoints,
-    balancePoints,
-    networthPoints,
-    spicePoints,
-  }
+      return { profitPoints, investmentPoints, balancePoints, networthPoints }
+    }, [portfolioHistory])
+
+  return { profitPoints, investmentPoints, balancePoints, networthPoints }
 }
