@@ -124,6 +124,17 @@ export class MetricStore {
     )
   }
 
+  // mqp: we could clear all gauges but then we should centralize the process for polling
+  // them in order to not have weird gaps.
+  clearDistributionGauges() {
+    for (const k of this.data.keys()) {
+      const { metricKind, valueKind } = CUSTOM_METRICS[k]
+      if (metricKind === 'GAUGE' && valueKind === 'distributionValue') {
+        this.data.delete(k)
+      }
+    }
+  }
+
   getOrCreate(type: MetricType, labels?: MetricLabels) {
     let entries = this.data.get(type)
     if (entries == null) {

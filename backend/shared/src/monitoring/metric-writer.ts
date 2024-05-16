@@ -29,23 +29,29 @@ function serializeInterval(entry: MetricStoreEntry, ts: number) {
   }
 }
 
+function serializeDistribution(points: number[]) {
+  // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#distribution
+  const result = {
+    count: points.length,
+    mean: average(points),
+    sumOfSquaredDeviation: sumOfSquaredError(points),
+    // not interested in handling histograms right now
+    bucketOptions: { explicitBuckets: { bounds: [0] } },
+    bucketCounts: [0, points.length],
+  } as any
+  if (points.length > 0) {
+    result['range'] = { min: Math.min(...points), max: Math.max(...points) }
+  }
+  return result
+}
+
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue
 function serializeValue(entry: MetricStoreEntry) {
   switch (CUSTOM_METRICS[entry.type].valueKind) {
     case 'int64Value':
       return { int64Value: entry.value }
     case 'distributionValue': {
-      const points = entry.points ?? []
-      // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#distribution
-      const result = {
-        count: points.length,
-        mean: average(points),
-        sumOfSquaredDeviation: sumOfSquaredError(points),
-      } as any
-      if (points.length > 0) {
-        result['range'] = { min: Math.min(...points), max: Math.max(...points) }
-      }
-      return { distributionValue: result }
+      return { distributionValue: serializeDistribution(entry.points ?? []) }
     }
     default:
       throw new Error('Other value kinds not yet implemented.')
@@ -110,11 +116,11 @@ export class MetricWriter {
             instance: this.instance,
           })
         }
+        const name = this.client.projectPath(this.instance.projectId)
+        const timeSeries = serializeEntries(this.instance, freshEntries, now)
+        this.store.clearDistributionGauges()
         // see https://cloud.google.com/monitoring/custom-metrics/creating-metrics
-        await this.client.createTimeSeries({
-          name: this.client.projectPath(this.instance.projectId),
-          timeSeries: serializeEntries(this.instance, freshEntries, now),
-        })
+        await this.client.createTimeSeries({ timeSeries, name })
       }
     }
   }
