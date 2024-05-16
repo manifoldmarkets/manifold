@@ -1,7 +1,7 @@
 import { Server as HttpServer } from 'node:http'
 import { Server as WebSocketServer, RawData, WebSocket } from 'ws'
 import { isError } from 'lodash'
-import { log } from 'shared/utils'
+import { log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
 import {
   ClientMessage,
@@ -89,6 +89,7 @@ export function broadcast(topic: string, data: Record<string, unknown>) {
     // mqp: check ws.readyState before sending?
     ws.send(json)
   }
+  metrics.inc('ws/broadcasts_sent', { topic })
 }
 
 export function listen(server: HttpServer, path: string) {
@@ -99,6 +100,8 @@ export function listen(server: HttpServer, path: string) {
   wss.on('connection', (ws) => {
     // todo: should likely kill connections that haven't sent any ping for a long time
     ws.on('open', () => {
+      metrics.inc('ws/connections_established')
+      metrics.set('ws/open_connections', wss.clients.size)
       log.debug(`WS client connected to ${ws.url}.`)
       SWITCHBOARD.connect(ws)
     })
@@ -108,6 +111,8 @@ export function listen(server: HttpServer, path: string) {
       ws.send(JSON.stringify(result))
     })
     ws.on('close', (code, reason) => {
+      metrics.inc('ws/connections_terminated')
+      metrics.set('ws/open_connections', wss.clients.size)
       log.debug(`WS client disconnected from ${ws.url}.`, { code, reason })
       SWITCHBOARD.disconnect(ws)
     })
