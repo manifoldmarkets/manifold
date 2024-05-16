@@ -1,5 +1,5 @@
 'use client'
-import { formatMoney, formatSpice, manaToUSD } from 'common/util/format'
+import { formatMoney, formatSpice } from 'common/util/format'
 import { useEffect, useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { checkoutURL } from 'web/lib/service/stripe'
@@ -8,16 +8,11 @@ import { Modal } from './layout/modal'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { Tabs } from './layout/tabs'
 import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import {
-  BETTING_STREAK_BONUS_MAX,
-  REFERRAL_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import Link from 'next/link'
 import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
 import { sum } from 'lodash'
 import { AlertBox } from './widgets/alert-box'
@@ -26,20 +21,20 @@ import { Txn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { buildArray } from 'common/util/array'
-import { Col } from 'web/components/layout/col'
-import { linkClass } from 'web/components/widgets/site-link'
-import clsx from 'clsx'
 import { AmountInput } from './widgets/amount-input'
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { convertTxn } from 'common/supabase/txns'
+import { CoinNumber } from './widgets/manaCoinNumber'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
-  const { isNative, platform } = getNativePlatform()
+
   return (
     <Modal
       open={open}
@@ -62,27 +57,6 @@ export function AddFundsModal(props: {
                 <OtherWaysToGetMana />
               </>
             ),
-          },
-
-          (!isNative || (isNative && platform !== 'ios')) && {
-            title: 'Charity',
-            content: (
-              <Col>
-                <div className="my-4">
-                  Mana is redeemable for cash to charities.
-                </div>
-                <span>
-                  Check out our{' '}
-                  <Link
-                    className={clsx(linkClass, 'text-indigo-700')}
-                    href="/charity"
-                  >
-                    charity
-                  </Link>{' '}
-                  page to donate ❤️
-                </span>
-              </Col>
-            ),
           }
         )}
       />
@@ -96,7 +70,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
   const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(2500)]
+    prices[formatMoney(25000)]
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -122,20 +96,13 @@ export function BuyManaTab(props: { onClose: () => void }) {
   useEffect(() => setUrl(window.location.href), [])
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 500
+  const pastLimit = totalPurchased >= 1000
 
   return (
     <>
       <div className="my-4">
-        Buy mana ({ENV_CONFIG.moneyMoniker}) to trade in your favorite
-        questions.
+        Buy <ManaCoin /> mana to trade in your favorite questions.
       </div>
-
-      <AlertBox title="Mana purchase rate changing" className="my-4">
-        The mana purchase rate is changing on May 15th to give you 10 times as
-        much mana. <br /> <br /> If you purchase now, we will credit you with
-        extra mana to match the new rate at that time (unless you donate it).
-      </AlertBox>
 
       <div className="text-ink-500 mb-2 text-sm">Amount</div>
       <FundsSelector
@@ -146,7 +113,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
 
       <div className="mt-6">
         <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-        <div className="text-xl">{manaToUSD(amountSelected)}</div>
+        <div className="text-xl">${amountSelected / 100}</div>
       </div>
 
       {pastLimit && (
@@ -189,30 +156,17 @@ export const OtherWaysToGetMana = () => {
   return (
     <ul className="border-ink-100 border-t">
       <Item>
-        🚀 Browse feed for
-        <span className={'mx-1 font-bold'}>
-          {formatMoney(AD_REDEEM_REWARD)}
-        </span>
+        🚀 Browse feed for <CoinNumber amount={AD_REDEEM_REWARD} isInline />{' '}
         from each boosted question
       </Item>
       <Item>
-        🔥 Streak bonus (up to
-        <span className={'mx-1 font-bold'}>
-          {formatMoney(BETTING_STREAK_BONUS_MAX)}
-        </span>
-        per day)
+        🔥 Streak bonus (up to{' '}
+        <CoinNumber amount={BETTING_STREAK_BONUS_MAX} isInline /> per day)
       </Item>
       <Item url="/referrals">
-        👋 Refer a friend for
-        <span className={'mx-1 font-bold'}>{formatMoney(REFERRAL_AMOUNT)}</span>
-        after their first trade
-      </Item>
-      <Item url="/create">
-        📈 Make a question for
-        <span className={'mx-1 font-bold'}>
-          {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)}
-        </span>
-        per unique trader
+        👋 Refer a friend for{' '}
+        <CoinNumber amount={REFERRAL_AMOUNT} isSpice isInline /> after their
+        first trade
       </Item>
     </ul>
   )
@@ -257,7 +211,8 @@ export const SpiceToManaForm = (props: {
           loading={loading}
           onClick={onSubmit}
         >
-          Convert to {formatSpice(amount ?? 0)}
+          Convert to {ENV_CONFIG.moneyMoniker}
+          {amount}
         </Button>
       </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
@@ -281,7 +236,7 @@ const Item = (props: { children: React.ReactNode; url?: string }) => {
 }
 
 export function FundsSelector(props: {
-  fundAmounts: { [key: string]: number }
+  fundAmounts: { [key: number]: number }
   selected: number
   onSelect: (selected: number) => void
 }) {

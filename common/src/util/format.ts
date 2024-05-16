@@ -70,11 +70,12 @@ export function formatWithCommas(amount: number) {
 }
 
 export function manaToUSD(mana: number) {
-  return (mana / 100).toLocaleString('en-US', {
+  return (mana / 1000).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
   })
 }
+
 
 export function formatPercentShort(zeroToOne: number) {
   return getPercent(zeroToOne).toFixed(0) + '%'

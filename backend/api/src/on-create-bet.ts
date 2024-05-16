@@ -183,23 +183,14 @@ export const onCreateBets = async (
       .map(async (bet) => {
         const bettor = betUsers.find((user) => user.id === bet.userId)
         if (!bettor) return
+
         // Follow suggestion should be before betting streak update (which updates lastBetTime)
         !bettor.lastBetTime &&
           !bettor.referredByUserId &&
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
+
         const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
-
-        const usersNonRedemptionBets = bets.filter(
-          (b) => b.userId === bettor.id && !b.isRedemption
-        )
-        await giveUniqueBettorBonus(
-          contract,
-          eventId,
-          bettor,
-          bet,
-          usersNonRedemptionBets
-        )
 
         await Promise.all([
           bet.amount >= 0 && addUserToContractFollowers(contract.id, bettor.id),

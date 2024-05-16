@@ -9,7 +9,8 @@ import {
 } from 'react-native-iap'
 import { nativeToWebMessageType } from 'common/native-message'
 
-const SKUS = ['mana_1000', 'mana_2500', 'mana_10000']
+const SKUS = ['mana_1000', 'mana_2500', 'mana_10000'] // skus created before rate change
+
 export const IosIapListener = (props: {
   checkoutAmount: number | null
   setCheckoutAmount: (amount: number | null) => void
