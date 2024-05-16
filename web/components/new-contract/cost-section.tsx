@@ -4,7 +4,6 @@ import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { formatMoney } from 'common/util/format'
 
-
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
