@@ -15,34 +15,36 @@ export const METRICS_INTERVAL_MS = 5000
 
 const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
+function serializeTimestamp(ts: number) {
+  const seconds = ts / 1000
+  const nanos = (ts % 1000) * 1000
+  return { seconds, nanos } as const
+}
+
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.snoozes#timeinterval
 function serializeInterval(entry: MetricStoreEntry, ts: number) {
   switch (CUSTOM_METRICS[entry.type].metricKind) {
     case 'CUMULATIVE':
       return {
-        startTime: { seconds: entry.startTime / 1000 },
-        endTime: { seconds: ts / 1000 },
+        startTime: serializeTimestamp(entry.startTime),
+        endTime: serializeTimestamp(ts),
       }
     case 'GAUGE': {
-      return { endTime: { seconds: ts / 1000 } }
+      return { endTime: serializeTimestamp(ts) }
     }
   }
 }
 
 function serializeDistribution(points: number[]) {
   // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue#distribution
-  const result = {
+  return {
     count: points.length,
     mean: average(points),
     sumOfSquaredDeviation: sumOfSquaredError(points),
     // not interested in handling histograms right now
     bucketOptions: { explicitBuckets: { bounds: [0] } },
     bucketCounts: [0, points.length],
-  } as any
-  if (points.length > 0) {
-    result['range'] = { min: Math.min(...points), max: Math.max(...points) }
   }
-  return result
 }
 
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/TypedValue
@@ -102,7 +104,6 @@ export class MetricWriter {
   }
 
   async write() {
-    const now = Date.now()
     const freshEntries = this.store.freshEntries()
     if (freshEntries.length > 0) {
       for (const entry of freshEntries) {
@@ -116,6 +117,8 @@ export class MetricWriter {
             instance: this.instance,
           })
         }
+        // mqp: bump now by 1ms to avoid it being === to just written entry times
+        const now = Date.now() + 1
         const name = this.client.projectPath(this.instance.projectId)
         const timeSeries = serializeEntries(this.instance, freshEntries, now)
         this.store.clearDistributionGauges()
