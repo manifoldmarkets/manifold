@@ -234,7 +234,9 @@ function usePortfolioPointsFromHistory(
       portfolioHistory.forEach((p) => {
         profitPoints.push({
           x: p.timestamp,
-          y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
+          y:
+            (p.profit ?? p.balance + p.investmentValue - p.totalDeposits) -
+            firstProfit,
           obj: p,
         })
         investmentPoints.push({

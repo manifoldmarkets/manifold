@@ -159,10 +159,14 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const { balance, investmentValue, totalDeposits } = lastPortfolioMetrics
+    const {
+      balance,
+      investmentValue,
+      totalDeposits,
+      profit: recordedProfit,
+    } = lastPortfolioMetrics
     const totalValue = balance + investmentValue
-
-    const profit = totalValue - totalDeposits - firstProfit
+    const profit = recordedProfit ?? totalValue - totalDeposits - firstProfit
 
     const portfolioValues = {
       balance,

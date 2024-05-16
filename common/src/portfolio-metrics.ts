@@ -5,4 +5,5 @@ export type PortfolioMetrics = {
   totalDeposits: number
   loanTotal: number
   timestamp: number
+  profit?: number
 }

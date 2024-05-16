@@ -2445,6 +2445,7 @@ export type Database = {
           total_deposits: number | null
           ts: string | null
           user_id: string
+          profit: number | null
         }
         Insert: {
           balance?: number | null
@@ -2455,6 +2456,7 @@ export type Database = {
           total_deposits?: number | null
           ts?: string | null
           user_id: string
+          profit?: number | null
         }
         Update: {
           balance?: number | null
@@ -2465,6 +2467,7 @@ export type Database = {
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
+          profit?: number | null
         }
         Relationships: []
       }
@@ -2624,6 +2627,7 @@ export type Database = {
           spice_balance: number
           total_deposits: number
           username: string
+          profit_adjustment: number | null
         }
         Insert: {
           balance?: number
@@ -2636,6 +2640,7 @@ export type Database = {
           spice_balance?: number
           total_deposits?: number
           username: string
+          profit_adjustment?: number | null
         }
         Update: {
           balance?: number
@@ -2648,6 +2653,7 @@ export type Database = {
           spice_balance?: number
           total_deposits?: number
           username?: string
+          profit_adjustment?: number | null
         }
         Relationships: []
       }

@@ -6,6 +6,7 @@ create table if not exists user_portfolio_history_latest (
   spice_balance numeric not null,
   total_deposits numeric not null,
   loan_total numeric,
+  profit numeric,
   last_calculated timestamp not null default now() -- We don't insert new rows to u_p_h if no metrics have changed
 );
 
@@ -21,6 +22,7 @@ begin
       total_deposits = excluded.total_deposits,
       spice_balance = excluded.spice_balance,
       loan_total = excluded.loan_total,
+      profit = excluded.profit,
       last_calculated = excluded.ts
   where user_portfolio_history_latest.ts < excluded.ts;
   return new;

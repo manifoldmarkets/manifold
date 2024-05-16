@@ -69,7 +69,7 @@ export function createJobs() {
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      updateUserMetricsCore,
+      () => updateUserMetricsCore(),
       10 * MINUTE_MS // The caches take time to build
     ),
     // Daily jobs:

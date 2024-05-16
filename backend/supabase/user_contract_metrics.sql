@@ -11,7 +11,8 @@ create table if not exists
     total_shares_no numeric,
     profit numeric,
     has_shares boolean,
-    answer_id text
+    answer_id text,
+    profit_adjustment numeric
   );
 
 alter table user_contract_metrics enable row level security;

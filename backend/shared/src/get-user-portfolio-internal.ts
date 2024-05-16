@@ -104,12 +104,14 @@ export const getUserPortfolioInternal = async (userId: string) => {
     answers.length
   )
 
+  const { totalDeposits, spiceBalance, balance, profitAdjustment } = user
   return {
     loanTotal,
     investmentValue,
-    balance: user.balance,
-    spiceBalance: user.spiceBalance,
-    totalDeposits: user.totalDeposits,
+    balance,
+    spiceBalance,
+    totalDeposits,
     timestamp: Date.now(),
+    profit: (profitAdjustment ?? 0) + investmentValue + balance - totalDeposits,
   }
 }
