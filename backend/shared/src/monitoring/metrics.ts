@@ -9,6 +9,7 @@ export type MetricValueKind =
   | 'doubleValue'
   | 'stringValue'
   | 'boolValue'
+  | 'distributionValue'
 
 export type MetricDescriptor = {
   metricKind: MetricKind
@@ -18,6 +19,14 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'http/request_count': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'http/request_latency': {
+    metricKind: 'GAUGE',
+    valueKind: 'distributionValue',
+  },
   'app/bet_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
@@ -60,16 +69,17 @@ export const CUSTOM_METRICS = {
   },
 } as const satisfies { [k: string]: MetricDescriptor }
 
+// the typing for all this could be way fancier, but seems overkill
+
 export type CustomMetrics = typeof CUSTOM_METRICS
 export type MetricType = keyof CustomMetrics
 
-// if we want to use string or boolean metrics, we will have to make the store more flexible
-
 export type MetricStoreEntry = {
   type: MetricType
-  fresh: boolean // whether this metric was touched since last time
   labels?: MetricLabels
-  startTime: number
+  fresh: boolean // whether this metric was touched since last time
+  startTime: number // used for cumulative metrics
+  points?: number[] // used for distribution metrics
   value: number
 }
 
@@ -84,6 +94,16 @@ export class MetricStore {
 
   clear() {
     this.data.clear()
+  }
+
+  push(type: MetricType, val: number, labels?: MetricLabels) {
+    const entry = this.getOrCreate(type, labels)
+    let points = entry.points
+    if (points == null) {
+      points = entry.points = []
+    }
+    points.push(val)
+    entry.fresh = true
   }
 
   set(type: MetricType, val: number, labels?: MetricLabels) {
@@ -104,6 +124,17 @@ export class MetricStore {
     )
   }
 
+  // mqp: we could clear all gauges but then we should centralize the process for polling
+  // them in order to not have weird gaps.
+  clearDistributionGauges() {
+    for (const k of this.data.keys()) {
+      const { metricKind, valueKind } = CUSTOM_METRICS[k]
+      if (metricKind === 'GAUGE' && valueKind === 'distributionValue') {
+        this.data.delete(k)
+      }
+    }
+  }
+
   getOrCreate(type: MetricType, labels?: MetricLabels) {
     let entries = this.data.get(type)
     if (entries == null) {
@@ -117,7 +148,7 @@ export class MetricStore {
     // none exists, so create it
     const entry = { type, labels, startTime: Date.now(), fresh: true, value: 0 }
     entries.push(entry)
-    return entry
+    return entry as MetricStoreEntry
   }
 }
 
