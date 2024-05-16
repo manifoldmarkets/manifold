@@ -1,4 +1,3 @@
-import { formatMoney } from 'common/util/format'
 import { useState, useEffect } from 'react'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { useUser } from 'web/hooks/use-user'

@@ -4,7 +4,6 @@ import { Axis } from 'd3-axis'
 import { ScaleTime } from 'd3-scale'
 import { pointer } from 'd3-selection'
 import React, { ReactNode, useEffect, useId } from 'react'
-import { BALANCE_COLOR } from '../portfolio/portfolio-value-graph'
 import {
   AnnotationMarker,
   PointerMode,

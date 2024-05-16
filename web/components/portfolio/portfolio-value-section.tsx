@@ -27,7 +27,6 @@ import {
 import { ProfitWidget } from './profit-widget'
 import {
   SPICE_NAME,
-  SPICE_PRODUCTION_ENABLED,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { RedeemSpiceButton } from '../profile/redeem-spice-button'
