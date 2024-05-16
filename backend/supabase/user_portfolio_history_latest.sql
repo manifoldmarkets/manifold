@@ -13,8 +13,8 @@ create table if not exists user_portfolio_history_latest (
 create or replace function update_user_portfolio_history_latest()
 returns trigger as $$
 begin
-  insert into user_portfolio_history_latest (user_id, ts, investment_value, balance, total_deposits, spice_balance, loan_total, last_calculated)
-  values (new.user_id, new.ts, new.investment_value, new.balance, new.total_deposits, new.spice_balance, new.loan_total, new.ts)
+  insert into user_portfolio_history_latest (user_id, ts, investment_value, balance, total_deposits, spice_balance, loan_total,profit, last_calculated)
+  values (new.user_id, new.ts, new.investment_value, new.balance, new.total_deposits, new.spice_balance, new.loan_total, new.profit, new.ts)
   on conflict (user_id) do update
   set ts = excluded.ts,
       investment_value = excluded.investment_value,
