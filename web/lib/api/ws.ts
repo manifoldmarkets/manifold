@@ -8,24 +8,58 @@ import { getApiUrl } from 'common/api/utils'
 // mqp: useful for debugging
 const VERBOSE_LOGGING = true
 
+// mqp: no way should our server ever take 5 seconds to reply
+const TIMEOUT_MS = 5000
+
+type ConnectingState = typeof WebSocket.CONNECTING
+type OpenState = typeof WebSocket.OPEN
+type ClosingState = typeof WebSocket.CLOSING
+type ClosedState = typeof WebSocket.CLOSED
+type ReadyState = OpenState | ConnectingState | ClosedState | ClosingState
+
+export function formatState(state: ReadyState) {
+  switch (state) {
+    case WebSocket.CONNECTING:
+      return 'connecting'
+    case WebSocket.OPEN:
+      return 'open'
+    case WebSocket.CLOSING:
+      return 'closing'
+    case WebSocket.CLOSED:
+      return 'closed'
+    default:
+      throw new Error('Invalid websocket state.')
+  }
+}
+
 export type BroadcastHandler = (msg: ServerMessage<'broadcast'>) => void
+
+type OutstandingTxn = {
+  resolve: () => void
+  reject: (err: Error) => void
+  timeout?: NodeJS.Timeout
+}
 
 export class APIRealtimeClient {
   ws!: WebSocket
   url: string
   txid: number
+  // all txns that are in flight, with no ack/error/timeout
+  txns: Map<number, OutstandingTxn>
+  // subscribers by the topic they are subscribed to
   subscriptions: Map<string, BroadcastHandler[]>
   heartbeat?: NodeJS.Timeout
 
   constructor(url: string) {
     this.url = url
     this.txid = 0
+    this.txns = new Map()
     this.subscriptions = new Map()
     this.reconnect()
   }
 
   get state() {
-    return this.ws.readyState
+    return this.ws.readyState as ReadyState
   }
 
   close() {
@@ -44,11 +78,14 @@ export class APIRealtimeClient {
       if (VERBOSE_LOGGING) {
         console.info('API websocket opened.')
       }
-      this.heartbeat = setInterval(() => this.sendMessage('ping', {}), 30000)
+      this.heartbeat = setInterval(
+        async () => this.sendMessage('ping', {}).catch(console.error),
+        30000
+      )
       if (this.subscriptions.size > 0) {
         this.sendMessage('subscribe', {
           topics: Array.from(this.subscriptions.keys()),
-        })
+        }).catch(console.error)
       }
     }
     this.ws.onclose = (ev) => {
@@ -82,15 +119,27 @@ export class APIRealtimeClient {
         return
       }
       case 'ack': {
-        // no need to do anything in particular... might want to manage acks for
-        // our messages later
+        if (msg.txid != null) {
+          const txn = this.txns.get(msg.txid)
+          if (txn == null) {
+            // mqp: only reason this should happen is getting an ack after timeout
+            console.warn(`Websocket message with old txid=${msg.txid}.`)
+          } else {
+            if (msg.error != null) {
+              txn.reject(new Error(msg.error))
+            } else {
+              txn.resolve()
+            }
+            this.txns.delete(msg.txid)
+          }
+        }
       }
       default:
         console.warn(`Unknown API websocket message type received: ${msg.type}`)
     }
   }
 
-  sendMessage<T extends ClientMessageType>(
+  async sendMessage<T extends ClientMessageType>(
     type: T,
     data: Omit<ClientMessage<T>, 'type' | 'txid'>
   ) {
@@ -98,26 +147,37 @@ export class APIRealtimeClient {
       console.info(`> Outgoing API websocket ${type} message: `, data)
     }
     if (this.state === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type, txid: this.txid++, ...data }))
+      return new Promise<void>((resolve, reject) => {
+        const txid = this.txid++
+        const timeout = setTimeout(() => {
+          this.txns.delete(txid)
+          reject(new Error(`Websocket message with txid ${txid} timed out.`))
+        }, TIMEOUT_MS)
+        this.txns.set(txid, { resolve, reject, timeout })
+        this.ws.send(JSON.stringify({ type, txid, ...data }))
+      })
+    } else {
+      throw new Error(`Can't send message; state=${formatState(this.state)}`)
     }
   }
 
-  identify(uid: string) {
-    this.sendMessage('identify', { uid })
+  async identify(uid: string) {
+    return await this.sendMessage('identify', { uid })
   }
 
-  subscribe(topics: string[], handler: BroadcastHandler) {
+  async subscribe(topics: string[], handler: BroadcastHandler) {
     for (const topic of topics) {
       let existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
-        this.subscriptions.set(topic, (existingHandlers = []))
-        this.sendMessage('subscribe', { topics: [topic] })
+        this.subscriptions.set(topic, (existingHandlers = [handler]))
+        return await this.sendMessage('subscribe', { topics: [topic] })
+      } else {
+        existingHandlers.push(handler)
       }
-      existingHandlers.push(handler)
     }
   }
 
-  unsubscribe(topics: string[], handler: BroadcastHandler) {
+  async unsubscribe(topics: string[], handler: BroadcastHandler) {
     for (const topic of topics) {
       const existingHandlers = this.subscriptions.get(topic)
       if (existingHandlers == null) {
@@ -128,7 +188,7 @@ export class APIRealtimeClient {
           this.subscriptions.set(topic, remainingHandlers)
         } else {
           this.subscriptions.delete(topic)
-          this.sendMessage('unsubscribe', { topics: [topic] })
+          return await this.sendMessage('unsubscribe', { topics: [topic] })
         }
       }
     }
