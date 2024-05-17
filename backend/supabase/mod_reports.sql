@@ -7,7 +7,11 @@ create table if not exists
     comment_id text not null,
     contract_id text not null,
     user_id text not null,
-    status status_type not null default 'new'
+    status status_type not null default 'new',
+    contract_slug text not null,
+    contract_question text not null,
+    content jsonb not null,
+    creator_username not null
   );
 
 alter table mod_reports enable row level security;

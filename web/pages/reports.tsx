@@ -14,6 +14,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { getUserById } from 'web/lib/supabase/users'
 import { api } from 'web/lib/firebase/api'
 import { Report, ReportStatus } from 'common/api/report-types'
+import Link from 'next/link'
 
 const updateReportStatus = async (
   reportId: number,
@@ -36,18 +37,24 @@ const App = () => {
   const [reportStatuses, setReportStatuses] = useState<{
     [key: number]: ReportStatus
   }>({})
-
-  const initialLoadRef = useRef(true) // Ref to track the initial load
+  const initialLoadRef = useRef(true)
 
   const getReports = async () => {
     const response = await api('get-reports', {})
     if (response && response.status === 'success') {
       const newReports = response.data
 
-      // Only update the state if the new reports are different from the current ones
       if (JSON.stringify(newReports) !== JSON.stringify(reports)) {
-        setReports(newReports)
-        const initialStatuses = newReports.reduce(
+        const sortedReports = newReports
+          .filter((report: Report) => report.created_time)
+          .sort(
+            (a: Report, b: Report) =>
+              new Date(b.created_time ?? 0).getTime() -
+              new Date(a.created_time ?? 0).getTime()
+          )
+
+        setReports(sortedReports)
+        const initialStatuses = sortedReports.reduce(
           (acc: any, report: Report) => {
             acc[report.report_id] = report.status
             return acc
@@ -71,32 +78,21 @@ const App = () => {
 
     const intervalId = setInterval(() => {
       getReports()
-    }, 1000) // Adjust the interval time as needed (e.g., 1000 ms = 1 second)
+    }, 1000)
 
-    return () => clearInterval(intervalId) // Cleanup the interval on component unmount
+    return () => clearInterval(intervalId)
   }, [])
 
   const handleStatusChange = async (
     reportId: number,
     newStatus: ReportStatus
   ) => {
-    // Optimistic update
     setReportStatuses((prevStatuses) => ({
       ...prevStatuses,
       [reportId]: newStatus,
     }))
 
-    const result = await updateReportStatus(reportId, newStatus)
-
-    if (!result) {
-      // Revert back to the previous status if the update fails
-      setReportStatuses((prevStatuses) => ({
-        ...prevStatuses,
-        [reportId]:
-          reports.find((report) => report.report_id === reportId)?.status ||
-          prevStatuses[reportId],
-      }))
-    }
+    await updateReportStatus(reportId, newStatus)
   }
 
   useEffect(() => {
@@ -141,6 +137,28 @@ const App = () => {
     (report) => report.status === 'resolved'
   )
 
+  const renderContent = (content: any) => {
+    if (typeof content === 'string') {
+      return <span>{content}</span>
+    } else if (Array.isArray(content)) {
+      return content.map((item, index) => (
+        <div key={index}>{renderContent(item)}</div>
+      ))
+    } else if (typeof content === 'object') {
+      return (
+        <div>
+          {content.text && <span>{content.text}</span>}
+          {content.content &&
+            content.content.map((item: any, index: number) => (
+              <div key={index}>{renderContent(item)}</div>
+            ))}
+        </div>
+      )
+    } else {
+      return null
+    }
+  }
+
   const renderReportList = (reportList: Report[]) => (
     <Col className="w-full">
       {reportList.map((report: Report) => (
@@ -166,20 +184,29 @@ const App = () => {
                     </div>
                   </UserHovercard>
                 )}
-                <div className="ml-2">needs help with this comment.</div>
+                <div className="ml-2">
+                  needs help with this{' '}
+                  <Link
+                    className="text-primary-700 hover:text-primary-500 hover:underline"
+                    href={`/${report.creator_username}/${report.contract_slug}#${report.comment_id}`}
+                  >
+                    comment
+                  </Link>
+                  .
+                </div>
               </div>
               {report.created_time && (
                 <RelativeTimestamp
-                  time={new Date(report.created_time ?? new Date()).getTime()}
+                  time={new Date(report.created_time!).getTime()}
                   className="ml-4"
                 />
               )}
             </Row>
 
-            <Row>Contract ID: {report.contract_id}</Row>
-            <Row>Comment ID: {report.comment_id}</Row>
-            <Row className="items-center">
-              <div className="pr-2"> Status: </div>
+            <Row className="text-lg">{report.contract_question}</Row>
+            <Row>{renderContent(report.content)}</Row>
+            <Row className="mt-1 items-center">
+              <div className="pr-2 "> Status: </div>
               <ChoicesToggleGroup
                 currentChoice={reportStatuses[report.report_id] || 'new'}
                 choicesMap={{
@@ -206,10 +233,7 @@ const App = () => {
         unresolvedReports.length > 0 ? (
           renderReportList(unresolvedReports)
         ) : (
-          <div
-            className="mt-8
-           text-center"
-          >
+          <div className="mt-8 text-center">
             All reports have been resolved, great job! Keep it up and one day
             you'll get a payrise :D
           </div>

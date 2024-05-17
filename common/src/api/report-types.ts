@@ -1,3 +1,5 @@
+import type { JSONContent } from '@tiptap/core'
+
 export type ReportStatus = 'new' | 'under review' | 'resolved' | 'needs admin'
 
 export type Report = {
@@ -6,5 +8,9 @@ export type Report = {
   contract_id: string
   comment_id: string
   status: ReportStatus
-  created_time?: string
+  created_time: string
+  contract_slug: string
+  contract_question: string
+  content: JSONContent
+  creator_username: string
 }

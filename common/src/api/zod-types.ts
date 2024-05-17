@@ -65,5 +65,9 @@ export const Report = z.object({
   contract_id: z.string(),
   comment_id: z.string(),
   status: ReportStatus,
-  created_time: z.string().optional(),
+  created_time: z.string(),
+  contract_slug: z.string(),
+  contract_question: z.string(),
+  content: contentSchema,
+  creator_username: z.string(),
 })
