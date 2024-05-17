@@ -1,6 +1,12 @@
 import { useEffect } from 'react'
-import { client } from 'web/lib/api/ws'
+import { getApiUrl } from 'common/api/utils'
 import { ServerMessage } from 'common/api/websockets'
+import { APIRealtimeClient } from 'common/api/websocket-client'
+
+const client =
+  typeof window !== 'undefined'
+    ? new APIRealtimeClient(getApiUrl('ws'))
+    : undefined
 
 export type SubscriptionOptions = {
   topics: string[]

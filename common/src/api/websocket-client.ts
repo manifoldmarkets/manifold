@@ -1,9 +1,4 @@
-import {
-  ClientMessage,
-  ClientMessageType,
-  ServerMessage,
-} from 'common/api/websockets'
-import { getApiUrl } from 'common/api/utils'
+import { ClientMessage, ClientMessageType, ServerMessage } from './websockets'
 
 // mqp: useful for debugging
 const VERBOSE_LOGGING = true
@@ -15,7 +10,12 @@ type ConnectingState = typeof WebSocket.CONNECTING
 type OpenState = typeof WebSocket.OPEN
 type ClosingState = typeof WebSocket.CLOSING
 type ClosedState = typeof WebSocket.CLOSED
-type ReadyState = OpenState | ConnectingState | ClosedState | ClosingState
+
+export type ReadyState =
+  | OpenState
+  | ConnectingState
+  | ClosedState
+  | ClosingState
 
 export function formatState(state: ReadyState) {
   switch (state) {
@@ -40,6 +40,9 @@ type OutstandingTxn = {
   timeout?: NodeJS.Timeout
 }
 
+/** Client for the API websocket realtime server. Automatically manages reconnection
+ * and resubscription on disconnect, and allows subscribers to get a callback
+ * when something is broadcasted. */
 export class APIRealtimeClient {
   ws!: WebSocket
   url: string
@@ -55,7 +58,7 @@ export class APIRealtimeClient {
     this.txid = 0
     this.txns = new Map()
     this.subscriptions = new Map()
-    this.reconnect()
+    this.connect()
   }
 
   get state() {
@@ -66,7 +69,7 @@ export class APIRealtimeClient {
     this.ws.close(1000, 'Closed manually.')
   }
 
-  reconnect() {
+  connect() {
     this.ws = new WebSocket(this.url)
     this.ws.onmessage = (ev) => {
       this.receiveMessage(JSON.parse(ev.data))
@@ -96,7 +99,7 @@ export class APIRealtimeClient {
       // 1000 is RFC code for normal on-purpose closure
       if (ev.code !== 1000) {
         // mqp: extremely simple reconnect policy
-        setTimeout(() => this.reconnect(), 5000)
+        setTimeout(() => this.connect(), 5000)
       }
     }
   }
@@ -196,8 +199,3 @@ export class APIRealtimeClient {
     }
   }
 }
-
-export const client =
-  typeof window !== 'undefined'
-    ? new APIRealtimeClient(getApiUrl('ws'))
-    : undefined
