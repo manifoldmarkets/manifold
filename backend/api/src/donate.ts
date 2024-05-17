@@ -5,7 +5,10 @@ import { APIError } from 'api/helpers/endpoint'
 import { type User } from 'common/user'
 import { insertTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { MIN_SPICE_DONATION, SPICE_TO_CHARITY_CONVERSION_RATE } from 'common/envs/constants'
+import {
+  CHARITY_FEE,
+  MIN_SPICE_DONATION,
+} from 'common/envs/constants'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
@@ -34,9 +37,23 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   })
 
   // add donation to charity
-  const donation = amount * SPICE_TO_CHARITY_CONVERSION_RATE
+  const fee = CHARITY_FEE * amount
+  const donation = amount - fee
 
-  const txn = {
+  const feeTxn = {
+    category: 'CHARITY_FEE',
+    fromType: 'USER',
+    fromId: auth.uid,
+    toType: 'BANK',
+    toId: 'BANK',
+    amount: fee,
+    token: 'SPICE',
+    data: {
+      charityId: charity.id,
+    },
+  } as const
+
+  const donationTxn = {
     category: 'CHARITY',
     fromType: 'USER',
     fromId: auth.uid,
@@ -46,7 +63,8 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     token: 'SPICE',
   } as const
 
-  await pg.tx((tx) => insertTxn(tx, txn))
+  await pg.tx((tx) => insertTxn(tx, feeTxn))
+  await pg.tx((tx) => insertTxn(tx, donationTxn))
 }
 
 const firestore = admin.firestore()

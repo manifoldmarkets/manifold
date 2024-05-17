@@ -7,7 +7,7 @@ import { MODAL_CLASS, Modal } from './layout/modal'
 import clsx from 'clsx'
 import {
   SPICE_NAME,
-  SPICE_TO_CHARITY_CONVERSION_RATE,
+  SPICE_TO_CHARITY_DOLLARS,
   SPICE_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
 import { User } from 'common/user'
@@ -128,7 +128,7 @@ function MainSpiceRedeemPage(props: {
             </Link>
             <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
               <span className="font-semibold text-green-600 dark:text-green-500">
-                ${user.spiceBalance * SPICE_TO_CHARITY_CONVERSION_RATE}
+                ${user.spiceBalance * SPICE_TO_CHARITY_DOLLARS}
               </span>
               value
             </Row>

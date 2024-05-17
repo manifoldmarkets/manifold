@@ -19,7 +19,7 @@ import {
   getDonationsPageQuery,
 } from 'web/lib/supabase/txns'
 import { Donation } from 'web/components/charity/feed-items'
-import { formatMoneyUSD, manaToUSD } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
@@ -29,7 +29,7 @@ import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 import {
   MIN_SPICE_DONATION,
-  SPICE_TO_CHARITY_CONVERSION_RATE,
+  SPICE_TO_CHARITY_DOLLARS,
 } from 'common/envs/constants'
 
 type DonationItem = { user: User; ts: number; amount: number }
@@ -150,7 +150,7 @@ function Details(props: {
   return (
     <Col className="gap-1 text-right">
       <div className="mb-2 text-4xl text-teal-500">
-        {manaToUSD(total ?? 0)} raised
+        {formatMoneyUSD(total ?? 0)} raised
       </div>
       {numSupporters && (
         <div className="text-ink-500">{numSupporters} supporters</div>
@@ -209,7 +209,7 @@ function DonationBox(props: {
         <Row className="items-center text-sm xl:justify-between">
           <span className="text-ink-500 mr-1">{charity.name} receives</span>
           <span>
-            {formatMoneyUSD(SPICE_TO_CHARITY_CONVERSION_RATE * (amount || 0))}
+            {formatMoneyUSD(SPICE_TO_CHARITY_DOLLARS * (amount || 0))}
           </span>
         </Row>
       </Col>

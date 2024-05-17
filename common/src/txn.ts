@@ -13,6 +13,7 @@ type AnyTxnType =
   | UniqueBettorBonus
   | BettingStreakBonus
   | CancelUniqueBettorBonus
+  | CharityFee
   | ManaPurchase
   | SignupBonus
   | CertMint
@@ -193,6 +194,16 @@ type CancelUniqueBettorBonus = {
   category: 'CANCEL_UNIQUE_BETTOR_BONUS'
   data: {
     contractId: string
+  }
+}
+
+type CharityFee = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CHARITY_FEE'
+  token: 'SPICE'
+  data: {
+    charityId: string
   }
 }
 
@@ -496,6 +507,7 @@ export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
+export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
 export type CertTxn = Txn & CertId
