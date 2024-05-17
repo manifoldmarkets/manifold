@@ -218,7 +218,9 @@ export const BuyPanelBody = (props: {
     isBinaryMC && multiProps
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
-  const initialBetAmount = 10
+
+  const initialBetAmount = 100
+
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
   )
