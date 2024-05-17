@@ -12,9 +12,9 @@ export function FilterPill(props: {
   return (
     <button
       className={clsx(
-        'flex flex-row items-center cursor-pointer select-none whitespace-nowrap rounded-full px-2 py-1.5 outline-none text-sm',
+        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 py-0.5 text-sm outline-none',
         selected
-          ? 'bg-blue-500 text-white hover:bg-blue-600 focus-visible:bg-blue-600'
+          ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : 'bg-ink-200 hover:bg-ink-300 focus-visible:bg-ink-300 text-ink-700',
         className
       )}

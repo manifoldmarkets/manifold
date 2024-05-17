@@ -42,6 +42,10 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { PillButton } from './buttons/pill-button'
 import { FilterPill } from './search/filter-pills'
+import { FaSliders } from 'react-icons/fa6'
+import { Carousel } from './widgets/carousel'
+import {Spacer} from './layout/spacer'
+import { ContractFilters } from './search/contract-filters'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -63,7 +67,7 @@ export const SORTS = [
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
-const predictionMarketSorts = new Set([
+export const predictionMarketSorts = new Set([
   'daily-score',
   '24-hour-vol',
   'liquidity',
@@ -75,7 +79,7 @@ const predictionMarketSorts = new Set([
   'freshness-score',
 ])
 
-const bountySorts = new Set(['bounty-amount'])
+export const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
@@ -97,7 +101,7 @@ const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
 
 export type Sort = (typeof SORTS)[number]['value']
 
-const FILTERS = [
+export const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
@@ -108,7 +112,7 @@ const FILTERS = [
 
 export type Filter = (typeof FILTERS)[number]['value']
 
-const CONTRACT_TYPES = [
+export const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
@@ -117,6 +121,10 @@ const CONTRACT_TYPES = [
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
 ] as const
+
+export const DEFAULT_SORTS = ['score', 'freshness-score', 'close-date', 'newest']
+export const DEFAULT_FILTERS = ['open','closing-this-month']
+export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
@@ -651,172 +659,3 @@ const useShim = <T extends Record<string, string | undefined>>(x: T) => {
   return [state, setState, true] as const
 }
 
-function ContractFilters(props: {
-  className?: string
-  includeProbSorts?: boolean
-  params: SearchParams
-  updateParams: (params: Partial<SearchParams>) => void
-  topicSlug: string
-  showTopicTag?: boolean
-  setTopicSlug?: (slug: string) => void
-}) {
-  const {
-    className,
-    topicSlug,
-    setTopicSlug,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
-
-  const { s: sort, f: filter, ct: contractType } = params
-
-  const selectFilter = (selection: Filter) => {
-    if (selection === filter) return
-
-    updateParams({ f: selection })
-    track('select search filter', { filter: selection })
-  }
-
-  const selectSort = (selection: Sort) => {
-    if (selection === sort) return
-
-    if (selection === 'close-date') {
-      updateParams({ s: selection, f: 'open' })
-    } else if (selection === 'resolve-date') {
-      updateParams({ s: selection, f: 'resolved' })
-    } else {
-      updateParams({ s: selection })
-    }
-
-    track('select search sort', { sort: selection })
-  }
-
-  const selectContractType = (selection: ContractTypeType) => {
-    if (selection === contractType) return
-
-    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      updateParams({ s: 'bounty-amount', ct: selection })
-    } else if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      updateParams({ s: 'score', ct: selection })
-    } else {
-      updateParams({ ct: selection })
-    }
-    track('select contract type', { contractType: selection })
-  }
-  const hideFilter =
-    sort === 'resolve-date' ||
-    sort === 'close-date' ||
-    contractType === 'BOUNTIED_QUESTION'
-
-  const filterLabel = getLabelFromValue(FILTERS, filter)
-  const sortLabel = getLabelFromValue(SORTS, sort)
-  const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-  const topic = useGroupFromSlug(topicSlug ?? '')
-  const resetTopic = () => router.push(`/browse`)
-
-  return (
-    <Col className={clsx('my-1 items-stretch gap-2 pt-px sm:gap-2', className)}>
-      <Row className={'h-5 gap-2'}>
-        {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
-          <FilterPill
-            selected={topicSlug === 'for-you'}
-            onSelect={() => setTopicSlug('for-you')}
-          >
-            ⭐️ For you
-          </FilterPill>
-        )}
-        <DropdownMenu
-          items={generateFilterDropdownItems(
-            contractType == 'BOUNTIED_QUESTION'
-              ? BOUNTY_MARKET_SORTS
-              : contractType == 'POLL'
-              ? POLL_SORTS
-              : includeProbSorts &&
-                (contractType === 'ALL' || contractType === 'BINARY')
-              ? PREDICTION_MARKET_PROB_SORTS
-              : PREDICTION_MARKET_SORTS,
-            selectSort
-          )}
-          icon={
-            <Row className="text-ink-500 items-center gap-0.5">
-              <span className="whitespace-nowrap text-sm font-medium">
-                {sortLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" />
-            </Row>
-          }
-          menuWidth={'w-36'}
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={sortLabel}
-          closeOnClick={true}
-        />
-
-        {!hideFilter && (
-          <DropdownMenu
-            items={generateFilterDropdownItems(FILTERS, selectFilter)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {filterLabel}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-            menuItemsClass="left-0 right-auto"
-            menuWidth={'w-40'}
-            selectedItemName={filterLabel}
-            closeOnClick={true}
-          />
-        )}
-        <DropdownMenu
-          items={generateFilterDropdownItems(
-            CONTRACT_TYPES,
-            selectContractType
-          )}
-          icon={
-            <Row className="text-ink-500 items-center gap-0.5">
-              <span className="whitespace-nowrap text-sm font-medium">
-                {contractTypeLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" />
-            </Row>
-          }
-          menuWidth={'w-36'}
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={contractTypeLabel}
-          closeOnClick={true}
-        />
-        {topicSlug == topic?.slug && topic && showTopicTag && (
-          <TopicTag
-            className={
-              'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
-            }
-            topic={topic}
-            location={'questions page'}
-          >
-            <button onClick={resetTopic}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1  h-4 w-4" />
-            </button>
-          </TopicTag>
-        )}
-        {topicSlug === 'for-you' && showTopicTag && (
-          <Row
-            className={
-              'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
-            }
-          >
-            <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
-              #
-            </span>
-            ⭐️ For you
-            <button onClick={resetTopic}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-            </button>
-          </Row>
-        )}
-      </Row>
-    </Col>
-  )
-}
