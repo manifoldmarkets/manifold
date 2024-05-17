@@ -222,9 +222,7 @@ export const createCommentOnContractNotification = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId,
-      sourceType: isManifoldLoveContract(sourceContract)
-        ? 'love_comment'
-        : 'comment',
+      sourceType: 'comment',
       sourceUpdateType: 'created',
       sourceContractId: sourceContract.id,
       sourceUserName: sourceUser.name,
@@ -1184,9 +1182,7 @@ export const createContractResolvedNotifications = async (
       createdTime: Date.now(),
       isSeen: false,
       sourceId: contract.id,
-      sourceType: isManifoldLoveContract(contract)
-        ? 'love_contract'
-        : 'contract',
+      sourceType: 'contract',
       sourceUpdateType: 'resolved',
       sourceContractId: contract.id,
       sourceUserName: resolver.name,
