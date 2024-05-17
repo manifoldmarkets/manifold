@@ -127,7 +127,8 @@ export function BuyManaTab(props: { onClose: () => void }) {
           <Button
             color={'gradient'}
             loading={loading}
-            disabled={pastLimit}
+            // disabled={pastLimit}
+            disabled
             onClick={() => {
               setError(null)
               setLoading(true)
@@ -141,12 +142,18 @@ export function BuyManaTab(props: { onClose: () => void }) {
             action={checkoutURL(user?.id || '', amountSelected, url)}
             method="POST"
           >
-            <Button type="submit" color="gradient" disabled={pastLimit}>
+            <Button
+              type="submit"
+              color="gradient"
+              //  disabled={pastLimit}
+              disabled
+            >
               Checkout
             </Button>
           </form>
         )}
       </div>
+      <div className='mt-2'>Purchases are temporarily disabled due to technical issues.</div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )
