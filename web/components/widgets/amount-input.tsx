@@ -221,9 +221,7 @@ export function BuyAmountInput(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const advancedIncrementValues = hasLotsOfMana
-    ? [10, 50, 250]
-    : [1, 10, 50]
+  const advancedIncrementValues = hasLotsOfMana ? [10, 50, 250] : [1, 10, 50]
   const defaultIncrementValues = hasLotsOfMana ? [10, 100] : [1, 10]
 
   const incrementValues =
