@@ -24,7 +24,7 @@ function waitForConnected(client: APIRealtimeClient) {
 async function subscribeToSomething(client: APIRealtimeClient) {
   const topic = crypto.randomUUID()
   await client.subscribe([topic], (msg) => {
-    log.info(`Received message on ${topic}: `, msg)
+    log.debug(`Received message on ${topic}: ${JSON.stringify(msg)}`)
   })
   log.info(`Subscribed handler to ${topic}.`)
   return topic
@@ -39,12 +39,13 @@ async function unsubscribeFromSomething(client: APIRealtimeClient) {
 
 async function broadcastSomething(client: APIRealtimeClient, testUrl: string) {
   const topic = sample(Array.from(client.subscriptions.keys()))!
-  await fetch(testUrl, {
+  const resp = fetch(testUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ topic, message: {} }),
   })
-  log.info(`Broadcasted message to ${topic}.`)
+  log.debug(`Broadcasted message to ${topic}.`)
+  await resp
 }
 
 async function testWebsocket(address: string) {
@@ -55,15 +56,19 @@ async function testWebsocket(address: string) {
 
   return setInterval(() => {
     const n = Math.random()
-    if (client.subscriptions.size == 0 || n < 0.05) {
-      subscribeToSomething(client)
-    } else if (n < 0.1) {
-      unsubscribeFromSomething(client)
+    try {
+      if (client.subscriptions.size == 0 || n < 0.05) {
+        subscribeToSomething(client)
+      } else if (n < 0.1) {
+        unsubscribeFromSomething(client)
+      }
+      if (client.subscriptions.size > 0) {
+        broadcastSomething(client, `http://${address}/broadcast-test`)
+      }
+    } catch (err) {
+      log.error(err)
     }
-    if (client.subscriptions.size > 0) {
-      broadcastSomething(client, `http://${address}/broadcast-test`)
-    }
-  }, 10)
+  }, 200)
 }
 
 if (require.main === module) {

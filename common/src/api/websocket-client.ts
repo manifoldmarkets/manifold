@@ -1,10 +1,12 @@
 import { ClientMessage, ClientMessageType, ServerMessage } from './websockets'
 
 // mqp: useful for debugging
-const VERBOSE_LOGGING = true
+const VERBOSE_LOGGING = false
 
 // mqp: no way should our server ever take 5 seconds to reply
 const TIMEOUT_MS = 5000
+
+const RECONNECT_WAIT_MS = 5000
 
 type ConnectingState = typeof WebSocket.CONNECTING
 type OpenState = typeof WebSocket.OPEN
@@ -51,6 +53,7 @@ export class APIRealtimeClient {
   txns: Map<number, OutstandingTxn>
   // subscribers by the topic they are subscribed to
   subscriptions: Map<string, BroadcastHandler[]>
+  connectTimeout?: NodeJS.Timeout
   heartbeat?: NodeJS.Timeout
 
   constructor(url: string) {
@@ -67,15 +70,21 @@ export class APIRealtimeClient {
 
   close() {
     this.ws.close(1000, 'Closed manually.')
+    clearTimeout(this.connectTimeout)
   }
 
   connect() {
+    // you may wish to refer to https://websockets.spec.whatwg.org/
+    // in order to check the semantics of events etc.
     this.ws = new WebSocket(this.url)
     this.ws.onmessage = (ev) => {
       this.receiveMessage(JSON.parse(ev.data))
     }
     this.ws.onerror = (ev) => {
       console.error('API websocket error: ', ev)
+      // this can fire without an onclose if this is the first time we ever try
+      // to connect, so we need to turn on our reconnect in that case
+      this.waitAndReconnect()
     }
     this.ws.onopen = (_ev) => {
       if (VERBOSE_LOGGING) {
@@ -92,15 +101,34 @@ export class APIRealtimeClient {
       }
     }
     this.ws.onclose = (ev) => {
+      // note that if the connection closes due to an error, onerror fires and then this
       if (VERBOSE_LOGGING) {
         console.info(`API websocket closed with code=${ev.code}: ${ev.reason}`)
       }
       clearInterval(this.heartbeat)
+
+      // mqp: we might need to change how the txn stuff works if we ever want to
+      // implement "wait until i am subscribed, and then do something" in a component.
+      // right now it cannot be reliably used to detect that in the presence of reconnects
+      for (const txn of Array.from(this.txns.values())) {
+        clearTimeout(txn.timeout)
+        txn.reject(new Error('Websocket was closed.'))
+      }
+      this.txns.clear()
+
       // 1000 is RFC code for normal on-purpose closure
       if (ev.code !== 1000) {
-        // mqp: extremely simple reconnect policy
-        setTimeout(() => this.connect(), 5000)
+        this.waitAndReconnect()
       }
+    }
+  }
+
+  waitAndReconnect() {
+    if (this.connectTimeout == null) {
+      this.connectTimeout = setTimeout(() => {
+        this.connectTimeout = undefined
+        this.connect()
+      }, RECONNECT_WAIT_MS)
     }
   }
 
@@ -162,7 +190,9 @@ export class APIRealtimeClient {
         this.ws.send(JSON.stringify({ type, txid, ...data }))
       })
     } else {
-      // expected if components in the code try to subscribe before connected
+      // expected if components in the code try to subscribe or unsubscribe
+      // while the socket is closed -- in this case we expect to get the state
+      // fixed up in the websocket onopen handler when we reconnect
     }
   }
 

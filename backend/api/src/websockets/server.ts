@@ -99,6 +99,7 @@ export function listen(server: HttpServer, path: string) {
   const wss = new WebSocketServer({ server, path })
   let deadConnectionCleaner: NodeJS.Timeout | undefined
   wss.on('listening', () => {
+    log.info(`Web socket server listening on ${path}.`)
     deadConnectionCleaner = setInterval(function ping() {
       const now = Date.now()
       for (const ws of wss.clients) {
