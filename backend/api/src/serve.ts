@@ -4,6 +4,7 @@ import { loadSecretsToEnv, getServiceAccountCredentials } from 'common/secrets'
 import { log } from 'shared/utils'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 import { initCaches } from 'shared/init-caches'
+import { listen as webSocketListen } from './websockets/server'
 
 log('Api server starting up...')
 
@@ -26,6 +27,7 @@ const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
   : // No explicit credentials needed for deployed service.
     undefined
+
 loadSecretsToEnv(credentials).then(async () => {
   log('Secrets loaded.')
 
@@ -33,7 +35,8 @@ loadSecretsToEnv(credentials).then(async () => {
   log('Caches loaded.')
 
   const PORT = process.env.PORT ?? 8088
-  app.listen(PORT, () => {
+  const httpServer = app.listen(PORT, () => {
     log.info(`Serving API on port ${PORT}.`)
   })
+  webSocketListen(httpServer, '/ws')
 })
