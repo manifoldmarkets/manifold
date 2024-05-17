@@ -40,7 +40,7 @@ import { LiveTVIcon } from '../tv-icon'
 import { useTVisActive } from '../tv/tv-schedule'
 import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { FlagIcon } from '@heroicons/react/outline'
+import { ReportsIcon } from '../reports-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -170,7 +170,7 @@ const getDesktopNav = (
       options.isAdminorMod && {
         name: 'Reports',
         href: '/reports',
-        icon: FlagIcon,
+        icon: ReportsIcon,
       }
       // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
@@ -228,7 +228,7 @@ const getMobileNav = (
     isAdminorMod && {
       name: 'Reports',
       href: '/reports',
-      icon: FlagIcon,
+      icon: ReportsIcon,
     },
     !isNewUser && {
       name: 'Dashboards',
