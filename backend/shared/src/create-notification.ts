@@ -1041,6 +1041,132 @@ export const createUniqueBettorBonusNotification = async (
   )
 }
 
+export const createNewBettorNotification = async (
+  // Creator of contract or answer that was bet on.
+  creatorId: string,
+  bettor: User,
+  contract: Contract,
+  uniqueBettorIds: string[],
+  bet: Bet,
+  bets: Bet[] | undefined
+) => {
+  const privateUser = await getPrivateUser(creatorId)
+  if (!privateUser) return
+  const { sendToBrowser, sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'unique_bettors_on_your_contract'
+  )
+  const pg = createSupabaseDirectClient()
+
+  if (sendToBrowser) {
+    const { outcomeType } = contract
+    const pseudoNumericData =
+      outcomeType === 'PSEUDO_NUMERIC'
+        ? {
+            min: contract.min,
+            max: contract.max,
+            isLogScale: contract.isLogScale,
+          }
+        : {}
+    const allBetOnAnswerIds = (bets ?? []).map((b) => b.answerId)
+    const range =
+      outcomeType === 'NUMBER'
+        ? getRangeContainingValues(
+            contract.answers
+              .filter((a) => allBetOnAnswerIds.includes(a.id))
+              .map(answerToMidpoint),
+            contract
+          )
+        : undefined
+
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: creatorId,
+      reason: 'unique_bettors_on_your_contract',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: bet.id,
+      sourceType: 'bet',
+      sourceUpdateType: 'created',
+      sourceUserName: bettor.name,
+      sourceUserUsername: bettor.username,
+      sourceUserAvatarUrl: bettor.avatarUrl,
+      sourceText: '',
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+      // Perhaps not necessary, but just in case
+      sourceContractSlug: contract.slug,
+      sourceContractId: contract.id,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      data: removeUndefinedProps({
+        bet,
+        answerText:
+          outcomeType === 'MULTIPLE_CHOICE'
+            ? contract.answers.find(
+                (a) => a.id === bet.outcome || a.id === bet.answerId
+              )?.text
+            : outcomeType === 'NUMBER' && range
+            ? `${range[0]}-${range[1]}`
+            : undefined,
+        outcomeType,
+        ...pseudoNumericData,
+        totalAmountBet: sumBy(bets, 'amount'),
+      } as UniqueBettorData),
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+
+  if (!sendToEmail) return
+  const uniqueBettorsExcludingCreator = uniqueBettorIds.filter(
+    (id) => id !== contract.creatorId
+  )
+  const TOTAL_NEW_BETTORS_TO_REPORT = 5
+  // Only send on 5th bettor
+  if (uniqueBettorsExcludingCreator.length !== TOTAL_NEW_BETTORS_TO_REPORT)
+    return
+
+  const lastBettorIds = uniqueBettorsExcludingCreator.slice(
+    uniqueBettorsExcludingCreator.length - TOTAL_NEW_BETTORS_TO_REPORT,
+    uniqueBettorsExcludingCreator.length
+  )
+
+  const mostRecentUniqueBettors = await pg.map(
+    `select * from users where id in ($1:list)`,
+    [lastBettorIds],
+    convertUser
+  )
+
+  const unseenBets = await pg.map<Bet>(
+    `select * from contract_bets where contract_id = $1
+            and user_id in ($2:list)`,
+    [contract.id, lastBettorIds],
+    convertBet
+  )
+
+  const bettorsToTheirBets = groupBy(unseenBets, (bet) => bet.userId)
+
+  // Don't send if creator has seen their market since the 1st bet was placed
+  const creatorHasSeenMarketSinceBet = await hasUserSeenMarket(
+    contract.id,
+    privateUser.id,
+    minBy(unseenBets, 'createdTime')?.createdTime ?? contract.createdTime,
+    pg
+  )
+  if (creatorHasSeenMarketSinceBet) return
+
+  // TODO: fix without bonus amount
+  await sendNewUniqueBettorsEmail(
+    'unique_bettors_on_your_contract',
+    privateUser,
+    contract,
+    uniqueBettorsExcludingCreator.length,
+    mostRecentUniqueBettors,
+    bettorsToTheirBets,
+    0 * TOTAL_NEW_BETTORS_TO_REPORT
+  )
+}
+
 export const createNewContractNotification = async (
   contractCreator: User,
   contract: Contract,

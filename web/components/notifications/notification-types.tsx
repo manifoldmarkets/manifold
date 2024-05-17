@@ -36,6 +36,7 @@ import {
   PushNotificationBonusNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
+  UniqueBettorNotification,
   UserJoinedNotification,
 } from 'web/components/notifications/income-summary-notifications'
 import {
@@ -74,9 +75,17 @@ export function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-  if (reason === 'unique_bettors_on_your_contract') {
+  if (reason === 'unique_bettors_on_your_contract' && sourceType === 'bonus') {
     return (
       <UniqueBettorBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'unique_bettors_on_your_contract') {
+    return (
+      <UniqueBettorNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
