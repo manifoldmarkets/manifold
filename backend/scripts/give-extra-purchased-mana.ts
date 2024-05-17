@@ -1,6 +1,8 @@
 import { sumBy } from 'lodash'
 import { runScript } from 'run-script'
+import { createExtraPurchasedManaNotification } from 'shared/create-notification'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { getUser } from 'shared/utils'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -24,6 +26,7 @@ if (require.main === module) {
         join users on tp.to_id = users.id
         where tp.category = 'MANA_PURCHASE'
           and tp.created_time > '2024-01-01'
+          and tp.created_time < '2024-05-16 18:20:00'
           and (users.data->>'isBannedFromPosting' is null or users.data->>'isBannedFromPosting' = 'false')
         group by tp.to_id, users.username
         having sum(tp.amount - coalesce(tc.amount, 0) - coalesce(tm.amount, 0)) > 0
@@ -50,12 +53,20 @@ if (require.main === module) {
     console.log('Net purchases', netPurchasesWithExclusions)
     console.log(
       'Sum',
-      sumBy(netPurchasesWithExclusions, (np) => np.amount)
+      sumBy(netPurchasesWithExclusions, (np) => np.amount * 9)
     )
 
     await pg.tx(async (tx) => {
-      for (const { userId, amount} of netPurchasesWithExclusions) {
+      for (const { userId, username, amount } of netPurchasesWithExclusions) {
         const awardedAmount = amount * 9
+        console.log('Awarding to user', username, 'amount', awardedAmount)
+        const user = await getUser(userId)
+        if (user)
+          await createExtraPurchasedManaNotification(
+            user,
+            `extra-purchased-mana-${userId}`,
+            awardedAmount
+          )
         await runTxnFromBank(tx, {
           fromType: 'BANK',
           toType: 'USER',
@@ -63,7 +74,8 @@ if (require.main === module) {
           amount: awardedAmount,
           category: 'EXTRA_PURCHASED_MANA',
           token: 'M$',
-          description: '9x your purchased mana in 2024 minus donations and some mana payments',
+          description:
+            '9x your purchased mana in 2024 minus donations and some mana payments',
         })
       }
     })

@@ -6,6 +6,7 @@ import {
   BetFillData,
   BetReplyNotificationData,
   ContractResolutionData,
+  ExtraPurchasedManaData,
   getSourceUrl,
   Notification,
   ReactionNotificationTypes,
@@ -372,6 +373,15 @@ export function NotificationItem(props: {
   } else if (reason === 'airdrop') {
     return (
       <AirdropNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'extra_purchased_mana') {
+    return (
+      <ExtraPurchasedManaNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1743,6 +1753,31 @@ function AirdropNotification(props: {
       Congratulations! You just received{' '}
       <span className="font-semibold">{formatMoney(amount)}</span> as a gift
       from Manifold for being active for 30 days this year!
+    </NotificationFrame>
+  )
+}
+
+function ExtraPurchasedManaNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { amount } = notification.data as ExtraPurchasedManaData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      subtitle={<></>}
+    >
+      Thank you for buying mana in 2024! You just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span>, which is 9
+      times what you purchased, as a gift from Manifold!
     </NotificationFrame>
   )
 }

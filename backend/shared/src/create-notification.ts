@@ -1966,3 +1966,30 @@ export const createAirdropNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createExtraPurchasedManaNotification = async (
+  user: User,
+  idempotencyKey: string,
+  amount: number
+) => {
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: user.id,
+    reason: 'extra_purchased_mana',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: 'extra_purchased_mana',
+    sourceType: 'extra_purchased_mana',
+    sourceUpdateType: 'created',
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: user.avatarUrl,
+    sourceText: '',
+    data: {
+      amount,
+    },
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}

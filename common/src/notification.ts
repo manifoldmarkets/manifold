@@ -76,6 +76,7 @@ export type notification_source_types =
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
+  | 'extra_purchased_mana'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -317,6 +318,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'You received a gift of mana',
     detailed: 'Manifold has sent you a gift of mana',
   },
+  extra_purchased_mana: {
+    simple: 'You just received 9x your purchased mana in 2024',
+    detailed: 'Manifold has sent you a gift of 9x your purchased mana in 2024.',
+  },
 }
 
 export type BettingStreakData = {
@@ -379,6 +384,10 @@ export type BetReplyNotificationData = {
 }
 
 export type AirdropData = {
+  amount: number
+}
+
+export type ExtraPurchasedManaData = {
   amount: number
 }
 
