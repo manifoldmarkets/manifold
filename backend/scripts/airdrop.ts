@@ -15,13 +15,21 @@ if (require.main === module) {
       order by unique_bet_days desc
     `,
       [],
-      (r) => r.id
+      (r) => r.user_id
     )
 
-    console.log('Recently active users', recentlyActiveUserIds.length)
+    console.log('Recently active users', recentlyActiveUserIds)
 
+    let i = 0
     await pg.tx(async (tx) => {
       for (const userId of recentlyActiveUserIds) {
+        console.log(
+          'Airdropping to user',
+          userId,
+          i++,
+          'of',
+          recentlyActiveUserIds.length
+        )
         await runTxnFromBank(tx, {
           fromType: 'BANK',
           toType: 'USER',
@@ -33,5 +41,7 @@ if (require.main === module) {
         })
       }
     })
+
+    console.log('Airdrop complete!')
   })
 }
