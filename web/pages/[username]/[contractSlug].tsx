@@ -8,7 +8,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { mergeWith, uniqBy } from 'lodash'
@@ -86,6 +86,8 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
 import { Title } from 'web/components/widgets/title'
 import { base64toPoints } from 'common/edge/og'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -333,6 +335,8 @@ export function ContractPageContent(props: ContractParams) {
   const showRelatedMarketsBelowBet =
     parseJsonContentToText(contract.description).trim().length >= 200
 
+  const isSpiceMarket = !!contract.isSpicePayout
+
   return (
     <>
       {contract.visibility == 'private' && isAdmin && user && (
@@ -404,6 +408,11 @@ export function ContractPageContent(props: ContractParams) {
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
                   >
+                    {isSpiceMarket && (
+                      <Tooltip text={SPICE_MARKET_TOOLTIP}>
+                        <SpiceCoin />
+                      </Tooltip>
+                    )}
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
@@ -423,9 +432,7 @@ export function ContractPageContent(props: ContractParams) {
           </div>
           {coverImageUrl && (
             <Row className="h-10 w-full justify-between">
-              <div>
-                <BackButton className="pr-8" />
-              </div>
+              <BackButton className="pr-8" />
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
@@ -450,11 +457,14 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
-                <MarketTopics
-                  contract={contract}
-                  dashboards={dashboards}
-                  topics={topics}
-                />
+                <Row className="items-center gap-2">
+                  <MarketTopics
+                    contract={contract}
+                    dashboards={dashboards}
+                    topics={topics}
+                    isSpiceMarket={isSpiceMarket}
+                  />
+                </Row>
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">

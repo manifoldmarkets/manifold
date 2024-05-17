@@ -94,12 +94,11 @@ export async function runTxn(
   return txn
 }
 
-/** This creates does a firestore write within. DO NOT run within another firestore transaction! */
-export async function runTxnFromBank(
-  pgTransaction: SupabaseTransaction,
-  data: Omit<TxnData, 'fromId'> & { fromType: 'BANK' },
-  affectsProfit = false
-) {
+/** This does a firestore write within. DO NOT run within another firestore transaction! */
+export async function runTxnFromBank(pgTransaction: SupabaseTransaction, data: Omit<TxnData, 'fromId'> & {
+    fromType: 'BANK'
+  }
+, affectsProfit = false) {
   const firestore = admin.firestore()
   const { amount, fromType, toId, toType, token } = data
   if (fromType !== 'BANK') {

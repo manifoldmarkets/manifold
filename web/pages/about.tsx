@@ -49,8 +49,7 @@ export default function AboutPage() {
     <Page trackPageView={'about page'}>
       <SEO
         title="About"
-        description="Manifold is the world's largest prediction market platform. Bet on politics,
-          tech, sports, and more. Or create your own play-money market."
+        description="Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market."
       />
 
       <Col className="p-4">
@@ -58,9 +57,9 @@ export default function AboutPage() {
         <ManifoldLogo className="mb-4 flex sm:hidden" />
 
         <div className="mb-4 text-lg">
-          Manifold is the world's largest prediction market platform. Bet on
-          politics, tech, sports, and more. Or create your own play-money
-          betting market on any topic you care about!
+          Manifold is a social prediction game. Bet on politics, tech, sports,
+          and more with play money. Or create your own prediction market on any
+          topic you care about!
         </div>
 
         <iframe

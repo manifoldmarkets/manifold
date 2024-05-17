@@ -48,6 +48,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { TopicTag } from 'web/components/topics/topic-tag'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -152,12 +153,16 @@ export function FeedContractCard(props: {
     )
 
   const nonTextDescription = !JSONEmpty(contract.description)
+  const isPrizeMarket = !!contract.isSpicePayout
 
   return (
     <ClickFrame
       className={clsx(
+        isPrizeMarket
+          ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
+          : 'ring-primary-200 hover:ring-1',
         className,
-        'ring-primary-200 relative cursor-pointer rounded-xl hover:ring-1',
+        'relative cursor-pointer rounded-xl transition-all ',
         'flex w-full flex-col gap-0.5 px-4',
         size === 'sm'
           ? 'bg-canvas-50'
@@ -172,7 +177,19 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
+      {isPrizeMarket && (
+        <div
+          className={clsx(
+            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
+            'bg-ink-200 text-ink-500 rounded-full px-2 py-0.5 text-xs font-semibold'
+          )}
+        >
+          <span>
+            <SpiceCoin className="-mt-0.5" /> Prize Market
+          </span>
+        </div>
+      )}
+      <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>

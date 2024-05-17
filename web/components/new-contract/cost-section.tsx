@@ -3,11 +3,8 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { formatMoney } from 'common/util/format'
-import {
-  SMALL_UNIQUE_BETTOR_BONUS_AMOUNT,
-  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+
+
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
@@ -51,32 +48,6 @@ export const CostSection = (props: {
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
           <>
             {formatMoney(amountSuppliedByUser)}
-            {visibility === 'public' && !isPartner && (
-              <span>
-                {' '}
-                or <span className=" text-teal-500">FREE </span>
-                if you get{' '}
-                {isMulti
-                  ? Math.ceil(
-                      amountSuppliedByUser / UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-                    )
-                  : amountSuppliedByUser / UNIQUE_BETTOR_BONUS_AMOUNT}
-                + participants{' '}
-                <InfoTooltip
-                  text={
-                    isMulti
-                      ? `You'll earn a bonus of ${formatMoney(
-                          UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-                        )} for each unique trader you get on each answer.`
-                      : `You'll earn a bonus of ${formatMoney(
-                          UNIQUE_BETTOR_BONUS_AMOUNT
-                        )} for each unique trader you get on your question, up to 50 traders. Then ${formatMoney(
-                          SMALL_UNIQUE_BETTOR_BONUS_AMOUNT
-                        )} for every unique trader after that.`
-                  }
-                />
-              </span>
-            )}
           </>
         ) : (
           <span>
