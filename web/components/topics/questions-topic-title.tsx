@@ -49,7 +49,7 @@ export const QuestionsTopicTitle = forwardRef(
       >
         <Row className={'gap-1 truncate'}>
           <Link
-            href="/browse/for-you"
+            href="/browse"
             className="text-ink-600 hover:bg-ink-200 disabled:text-ink-300 font-md text-center' my-auto inline-flex items-center justify-center rounded-md p-2 ring-inset transition-colors disabled:cursor-not-allowed disabled:bg-transparent"
           >
             <ArrowLeftIcon className="h-5 w-5" aria-hidden />

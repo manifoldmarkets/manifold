@@ -40,6 +40,8 @@ import { FullUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
+import { PillButton } from './buttons/pill-button'
+import { FilterPill } from './search/filter-pills'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -246,7 +248,7 @@ export function SupabaseSearch(props: {
 
   const showSearchTypes =
     !hideSearchTypes &&
-    !contractsOnly && topicSlug == 'for-you'
+    !contractsOnly && (topicSlug == 'for-you' || !topicSlug)
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -379,6 +381,7 @@ export function SupabaseSearch(props: {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             topicSlug={topicSlug}
+            setTopicSlug={setTopicSlug}
             showTopicTag={showTopicTag}
           />
         )}
@@ -655,10 +658,12 @@ function ContractFilters(props: {
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug: string
   showTopicTag?: boolean
+  setTopicSlug?: (slug: string) => void
 }) {
   const {
     className,
     topicSlug,
+    setTopicSlug,
     includeProbSorts,
     params,
     updateParams,
@@ -714,6 +719,14 @@ function ContractFilters(props: {
   return (
     <Col className={clsx('my-1 items-stretch gap-2 pt-px sm:gap-2', className)}>
       <Row className={'h-5 gap-3'}>
+        {!!setTopicSlug && (
+          <FilterPill
+            selected={topicSlug === 'for-you'}
+            onSelect={() => setTopicSlug('for-you')}
+          >
+            ⭐️ For you
+          </FilterPill>
+        )}
         <DropdownMenu
           items={generateFilterDropdownItems(
             contractType == 'BOUNTIED_QUESTION'
