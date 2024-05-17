@@ -153,7 +153,9 @@ export function BuyManaTab(props: { onClose: () => void }) {
           </form>
         )}
       </div>
-      <div className='mt-2'>Purchases are temporarily disabled due to technical issues.</div>
+      <div className="mt-2">
+        Purchases are temporarily disabled due to technical issues.
+      </div>
       <Row className="text-error mt-2 text-sm">{error}</Row>
     </>
   )
