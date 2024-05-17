@@ -1,5 +1,7 @@
 import { runScript } from 'run-script'
+import { createAirdropNotification } from 'shared/create-notification'
 import { runTxnFromBank } from 'shared/txn/run-txn'
+import { getUser } from 'shared/utils'
 
 const AIR_DROP_AMOUNT = 10 * 1000
 
@@ -30,6 +32,13 @@ if (require.main === module) {
           'of',
           recentlyActiveUserIds.length
         )
+        const user = await getUser(userId)
+        if (user)
+          await createAirdropNotification(
+            user,
+            `airdrop-${userId}`,
+            AIR_DROP_AMOUNT
+          )
         await runTxnFromBank(tx, {
           fromType: 'BANK',
           toType: 'USER',
