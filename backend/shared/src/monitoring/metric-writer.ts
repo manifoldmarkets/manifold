@@ -2,6 +2,7 @@ import { MetricServiceClient } from '@google-cloud/monitoring'
 import { average, sumOfSquaredError } from 'common/util/math'
 import { log } from 'shared/utils'
 import { InstanceInfo, getInstanceInfo } from './instance-info'
+import { chunk } from 'lodash'
 import {
   CUSTOM_METRICS,
   MetricStore,
@@ -121,9 +122,12 @@ export class MetricWriter {
         const now = Date.now() + 1
         const name = this.client.projectPath(this.instance.projectId)
         const timeSeries = serializeEntries(this.instance, freshEntries, now)
-        this.store.clearDistributionGauges()
-        // see https://cloud.google.com/monitoring/custom-metrics/creating-metrics
-        await this.client.createTimeSeries({ timeSeries, name })
+        // GCP imposes a max 200 per call limit
+        for (const batch of chunk(timeSeries, 200)) {
+          this.store.clearDistributionGauges()
+          // see https://cloud.google.com/monitoring/custom-metrics/creating-metrics
+          await this.client.createTimeSeries({ timeSeries: batch, name })
+        }
       }
     }
   }
