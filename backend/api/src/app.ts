@@ -161,6 +161,8 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
+import { updateReportStatus } from './update-report-status'
+import { getReports } from './get-reports'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -312,6 +314,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
+  'update-report-status': updateReportStatus,
+  'get-reports': getReports,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

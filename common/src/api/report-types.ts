@@ -1,0 +1,10 @@
+export type ReportStatus = 'new' | 'under review' | 'resolved' | 'needs admin'
+
+export type Report = {
+  report_id: number
+  user_id: string
+  contract_id: string
+  comment_id: string
+  status: ReportStatus
+  created_time?: string
+}

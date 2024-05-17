@@ -18,7 +18,7 @@ import {
 import type { ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
-import { contentSchema } from 'common/api/zod-types'
+import { contentSchema, Report } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { CPMMMultiContract, Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
@@ -43,7 +43,7 @@ import { PERIODS } from 'common/period'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 // mqp: very unscientific, just balancing our willingness to accept load
-// with user willingness to put up with stale data
+// with user willingness to put up with stale reports
 export const DEFAULT_CACHE_STRATEGY =
   'public, max-age=5, stale-while-revalidate=10'
 
@@ -1158,6 +1158,25 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: {} as ManaSupply,
+    props: z.object({}).strict(),
+  },
+  'update-report-status': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        reportId: z.number(),
+        newStatus: z.enum(['new', 'under review', 'resolved', 'needs admin']),
+      })
+      .strict(),
+    returns: {} as { status: string; data: any },
+  },
+  'get-reports': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { status: string; data: any },
     props: z.object({}).strict(),
   },
 } as const)
