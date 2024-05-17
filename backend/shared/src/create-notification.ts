@@ -1939,3 +1939,30 @@ export const createPushNotificationBonusNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createAirdropNotification = async (
+  user: User,
+  idempotencyKey: string,
+  amount: number
+) => {
+  const notification: Notification = {
+    id: idempotencyKey,
+    userId: user.id,
+    reason: 'airdrop',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: 'airdrop',
+    sourceType: 'airdrop',
+    sourceUpdateType: 'created',
+    sourceUserName: user.name,
+    sourceUserUsername: user.username,
+    sourceUserAvatarUrl: user.avatarUrl,
+    sourceText: '',
+    data: {
+      amount,
+    },
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}

@@ -1,8 +1,9 @@
-import { StarIcon } from '@heroicons/react/solid'
+import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import {
+  AirdropData,
   BetFillData,
   BetReplyNotificationData,
   ContractResolutionData,
@@ -403,6 +404,15 @@ export function NotificationItem(props: {
   } else if (reason === 'new_love_ship') {
     return (
       <LoveShipNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'airdrop') {
+    return (
+      <AirdropNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1848,6 +1858,31 @@ function LoveShipNotification(props: {
         open={open}
         setOpen={setOpen}
       />
+    </NotificationFrame>
+  )
+}
+
+function AirdropNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { amount } = notification.data as AirdropData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="h-8 w-8 text-primary-500" />}
+      subtitle={<></>}
+    >
+      Congratulations! You just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span> as a gift
+      from Manifold for being active for 30 days this year!
     </NotificationFrame>
   )
 }
