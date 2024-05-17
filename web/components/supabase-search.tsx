@@ -718,8 +718,8 @@ function ContractFilters(props: {
 
   return (
     <Col className={clsx('my-1 items-stretch gap-2 pt-px sm:gap-2', className)}>
-      <Row className={'h-5 gap-3'}>
-        {!!setTopicSlug && (
+      <Row className={'h-5 gap-2'}>
+        {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
             selected={topicSlug === 'for-you'}
             onSelect={() => setTopicSlug('for-you')}
