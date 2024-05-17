@@ -13,6 +13,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
+import { isAdminId } from 'common/envs/constants'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -29,7 +30,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     sort,
     question,
     coverImageUrl,
-    isPolitics,
+    isSpicePayout,
 
     description: raw,
     descriptionHtml: html,
@@ -42,6 +43,11 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+  if (isSpicePayout !== undefined) {
+    if (!isAdminId(auth.uid)) {
+      throw new APIError(400, 'Only admins choose prize markets')
+    }
+  }
 
   await trackPublicEvent(
     auth.uid,
@@ -64,7 +70,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       addAnswersMode,
       sort,
       description,
-      isPolitics,
+      isSpicePayout,
     })
   )
 

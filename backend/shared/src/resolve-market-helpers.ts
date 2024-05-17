@@ -195,7 +195,7 @@ export const resolveMarketHelper = async (
       payouts,
       contractId,
       answerId,
-      contract.isRanked != false
+      !!contract.isSpicePayout
     )
 
     await updateContractMetricsForUsers(contract, bets)
@@ -305,8 +305,7 @@ export const getDataAndPayoutInfo = async (
         return mapValues(resolutions, (p) => p / total)
       })()
     : undefined
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const loanPayouts = getLoanPayouts(openBets)
+  const loanPayouts = getLoanPayouts(bets)
 
   const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
@@ -397,7 +396,7 @@ export const payUsersTransactions = async (
   }[],
   contractId: string,
   answerId: string | undefined,
-  isRanked: boolean
+  payoutSpice: boolean
 ) => {
   const pg = createSupabaseDirectClient()
   const firestore = admin.firestore()
@@ -411,7 +410,7 @@ export const payUsersTransactions = async (
     await firestore
       .runTransaction(async (transaction) => {
         payoutChunk.forEach(({ userId, payout, deposit }) => {
-          if (SPICE_PRODUCTION_ENABLED && isRanked) {
+          if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
             const toDoc = firestore.doc(`users/${userId}`)
             transaction.update(toDoc, {
               spiceBalance: FieldValue.increment(payout),

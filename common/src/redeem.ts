@@ -8,7 +8,7 @@ import { removeUndefinedProps } from './util/object'
 
 type RedeemableBet = Pick<
   Bet,
-  'outcome' | 'shares' | 'sharesByOutcome' | 'loanAmount'
+  'outcome' | 'shares' | 'loanAmount'
 >
 
 export const getBinaryRedeemableAmount = (bets: RedeemableBet[]) => {

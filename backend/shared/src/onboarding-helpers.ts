@@ -24,10 +24,10 @@ import {
 } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
 import * as crypto from 'crypto'
-import { getForYouMarkets } from 'shared/supabase/search-contracts'
 import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
+import { getForYouMarkets } from 'shared/weekly-markets-emails'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -238,7 +238,7 @@ const createSignupBonusNotification = async (
     return
   }
 
-  const contractsToSend = await getForYouMarkets(privateUser.id)
+  const contractsToSend = await getForYouMarkets(privateUser.id, 6, privateUser)
 
   await sendBonusWithInterestingMarketsEmail(
     user,

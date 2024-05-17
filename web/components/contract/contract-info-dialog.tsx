@@ -75,22 +75,19 @@ export const Stats = (props: {
     outcomeType,
     id,
     elasticity,
+    isSpicePayout,
   } = contract
 
   const typeDisplay =
     outcomeType === 'BINARY'
       ? 'YES / NO'
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'Free response'
       : outcomeType === 'MULTIPLE_CHOICE'
       ? 'Multiple choice'
       : outcomeType === 'BOUNTIED_QUESTION'
       ? 'Bounty'
       : outcomeType === 'POLL'
       ? 'Poll'
-      : outcomeType === 'NUMERIC' ||
-        outcomeType === 'PSEUDO_NUMERIC' ||
-        outcomeType === 'NUMBER'
+      : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'NUMBER'
       ? 'Numeric'
       : outcomeType.toLowerCase()
 
@@ -99,11 +96,6 @@ export const Stats = (props: {
       ? {
           label: 'Fixed',
           desc: `Each YES share is worth ${ENV_CONFIG.moneyMoniker}1 if YES wins`,
-        }
-      : mechanism === 'cpmm-2'
-      ? {
-          label: 'Fixed',
-          desc: `Each share in an outcome is worth ${ENV_CONFIG.moneyMoniker}1 if it is chosen`,
         }
       : mechanism === 'cpmm-multi-1'
       ? contract.shouldAnswersSumToOne
@@ -115,11 +107,6 @@ export const Stats = (props: {
             label: 'Independent',
             desc: `Each answer is a separate binary contract with shares worth ${ENV_CONFIG.moneyMoniker}1 if chosen. Any number of answers can be chosen`,
           }
-      : mechanism == 'dpm-2'
-      ? {
-          label: 'Parimutuel',
-          desc: 'Each share is a fraction of the pool. Only one outcome can be chosen',
-        }
       : mechanism == 'none'
       ? undefined
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
@@ -225,10 +212,6 @@ export const Stats = (props: {
                       ? `Log-odds change between a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
                         )} bet on YES and NO`
-                      : mechanism === 'cpmm-2'
-                      ? `Log-odds change between a ${formatMoney(
-                          ELASTICITY_BET_AMOUNT
-                        )}bet for and against each outcome`
                       : `Log-odds change from a ${formatMoney(
                           ELASTICITY_BET_AMOUNT
                         )} bet`
@@ -395,6 +378,26 @@ export const Stats = (props: {
                     }
                   )
                 }}
+              />
+            </td>
+          </tr>
+        )}
+        {!hideAdvanced && isBettingContract && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              💰 Prize market{' '}
+              <InfoTooltip
+                text={'Whether this market issue prizes points on resolution'}
+              />
+            </td>
+            <td>
+              <CheckOrSwitch
+                canToggle={isAdmin}
+                disabled={!isAdmin}
+                on={!!isSpicePayout}
+                setOn={(val) =>
+                  updateMarket({ contractId: contract.id, isSpicePayout: val })
+                }
               />
             </td>
           </tr>

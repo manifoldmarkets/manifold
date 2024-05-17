@@ -22,7 +22,6 @@ import { LiteGroup } from 'common/group'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 
-import { PillButton } from 'web/components/buttons/pill-button'
 import { searchUsers } from 'web/lib/supabase/users'
 import { IconButton } from 'web/components/buttons/button'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
@@ -40,7 +39,6 @@ import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
 import { FullUser } from 'common/api/user-types'
 import router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { Avatar } from './widgets/avatar'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -240,7 +238,6 @@ export function SupabaseSearch(props: {
   }
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
-  const setSearchType = (t: SearchType) => onChange({ [SEARCH_TYPE_KEY]: t })
 
   const showSearchTypes =
     !hideSearchTypes &&
@@ -377,100 +374,64 @@ export function SupabaseSearch(props: {
           />
         )}
       </Col>
-      {showSearchTypes ? (
-        <div className={'bg-canvas-0 md:bg-canvas-50 flex gap-1 px-1 pb-1'}>
-          <PillButton
-            className="min-w-[120px]"
-            selected={searchType === 'Questions' || !searchType}
-            onSelect={() => setSearchType('Questions')}
-          >
-            {!query || !contracts?.length
-              ? ''
-              : contracts.length >= 100
-              ? '100+ '
-              : shouldLoadMore && !loading
-              ? `${contracts.length}+ `
-              : `${contracts.length} `}
-            Questions
-          </PillButton>
-
-          <PillButton
-            selected={searchType === 'Users'}
-            onSelect={() => setSearchType('Users')}
-            className={clsx(
-              'flex items-center justify-center gap-2',
-              query && userResults?.length ? '!py-1' : 'min-w-[100px]'
-            )}
-          >
-            {!userResults?.length && '0 '}
-            Users
-            {userResults &&
-              userResults
-                .slice(0, 3)
-                .map((u) => (
-                  <Avatar
-                    key={u.id}
-                    username={u.username}
-                    avatarUrl={u.avatarUrl}
-                    size="xs"
-                    className="-my-0.5 -mr-1 last:mr-0"
-                    noLink
-                  />
-                ))}
-          </PillButton>
-        </div>
+      {showSearchTypes && userResults && userResults.length > 0 ? (
+        <Col>
+          <UserResults userResults={userResults} />
+          <Row className="text-ink-500 items-center gap-1 text-sm">
+            <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+            <span>
+              {!query || !contracts?.length
+                ? ''
+                : contracts.length >= 100
+                ? '100+'
+                : shouldLoadMore && !loading
+                ? `${contracts.length}+`
+                : `${contracts.length}`}{' '}
+              questions
+            </span>
+            <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+          </Row>
+        </Col>
       ) : (
         rowBelowFilters
       )}
-      {!searchType || searchType === 'Questions' ? (
-        !contracts ? (
-          <LoadingResults />
-        ) : contracts.length === 0 ? (
-          emptyContractsState
-        ) : (
-          <>
-            <ContractsTable
-              hideAvatar={hideAvatars}
-              contracts={contracts}
-              onContractClick={onContractClick}
-              highlightContractIds={highlightContractIds}
-              columns={buildArray([
-                traderColumn,
-                probColumn,
-                !hideActions && actionColumn,
-              ])}
-            />
-            <LoadMoreUntilNotVisible loadMore={queryContracts} />
-            {shouldLoadMore && <LoadingResults />}
-            {!shouldLoadMore &&
-              (filter !== 'all' || contractType !== 'ALL') && (
-                <div className="text-ink-500 mx-2 my-8 text-center">
-                  No more results under this filter.{' '}
-                  <button
-                    className="text-primary-500 hover:underline focus:underline"
-                    onClick={() =>
-                      onChange({
-                        [FILTER_KEY]: 'all',
-                        [CONTRACT_TYPE_KEY]: 'ALL',
-                      })
-                    }
-                  >
-                    Clear filter
-                  </button>
-                </div>
-              )}
-          </>
-        )
-      ) : searchType === 'Users' ? (
-        userResults && userResults.length === 0 ? (
-          <Col className="text-ink-700 mx-2 my-6 text-center">
-            No users found.
-          </Col>
-        ) : (
-          <UserResults users={userResults ?? []} />
-          // TODO: load more users when scroll to end
-        )
-      ) : null}
+      {!contracts ? (
+        <LoadingResults />
+      ) : contracts.length === 0 ? (
+        emptyContractsState
+      ) : (
+        <>
+          <ContractsTable
+            hideAvatar={hideAvatars}
+            contracts={contracts}
+            onContractClick={onContractClick}
+            highlightContractIds={highlightContractIds}
+            columns={buildArray([
+              traderColumn,
+              probColumn,
+              !hideActions && actionColumn,
+            ])}
+          />
+          <LoadMoreUntilNotVisible loadMore={queryContracts} />
+          {shouldLoadMore && <LoadingResults />}
+          {!shouldLoadMore && (filter !== 'all' || contractType !== 'ALL') && (
+            <div className="text-ink-500 mx-2 my-8 text-center">
+              No more results under this filter.{' '}
+              <button
+                className="text-primary-500 hover:underline focus:underline"
+                onClick={() =>
+                  onChange({
+                    [FILTER_KEY]: 'all',
+                    [CONTRACT_TYPE_KEY]: 'ALL',
+                  })
+                }
+              >
+                Clear filter
+              </button>
+            </div>
+          )}
+        </>
+      )}
     </Col>
   )
 }

@@ -3,7 +3,6 @@ import { sumBy } from 'lodash'
 import {
   CPMMMultiContract,
   Contract,
-  MultiContract,
   CPMMNumericContract,
   canCancelContract,
 } from 'common/contract'
@@ -15,9 +14,7 @@ import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   resolveBinarySchema,
-  resolveFRSchema,
   resolveMultiSchema,
-  resolveNumericSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
@@ -141,12 +138,6 @@ function getResolutionParams(
       value: undefined,
       resolutions: undefined,
     }
-  } else if (outcomeType === 'NUMERIC') {
-    return {
-      ...validate(resolveNumericSchema, props),
-      resolutions: undefined,
-      probabilityInt: undefined,
-    }
   } else if (outcomeType === 'PSEUDO_NUMERIC') {
     return {
       ...validate(resolvePseudoNumericSchema, props),
@@ -192,56 +183,10 @@ function getResolutionParams(
         probabilityInt: undefined,
       }
     }
-  } else if (
-    outcomeType === 'FREE_RESPONSE' ||
-    outcomeType === 'MULTIPLE_CHOICE'
-  ) {
-    const freeResponseParams = validate(resolveFRSchema, props)
-    const { outcome } = freeResponseParams
-    switch (outcome) {
-      case 'CANCEL':
-        return {
-          outcome: outcome.toString(),
-          resolutions: undefined,
-          value: undefined,
-          probabilityInt: undefined,
-        }
-      case 'MKT': {
-        const { resolutions } = freeResponseParams
-        resolutions.forEach(({ answer }) => validateAnswer(contract, answer))
-        const pctSum = sumBy(resolutions, ({ pct }) => pct)
-        if (Math.abs(pctSum - 100) > 0.1) {
-          throw new APIError(400, 'Resolution percentages must sum to 100')
-        }
-        return {
-          outcome: outcome.toString(),
-          resolutions: Object.fromEntries(
-            resolutions.map((r) => [r.answer, r.pct])
-          ),
-          value: undefined,
-          probabilityInt: undefined,
-        }
-      }
-      default: {
-        validateAnswer(contract, outcome)
-        return {
-          outcome: outcome.toString(),
-          resolutions: undefined,
-          value: undefined,
-          probabilityInt: undefined,
-        }
-      }
-    }
   }
   throw new APIError(400, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateAnswer(contract: MultiContract, answer: number) {
-  const validIds = contract.answers.map((a) => a.id)
-  if (!validIds.includes(answer.toString())) {
-    throw new APIError(403, `${answer} is not a valid answer ID`)
-  }
-}
 function validateAnswerCpmm(
   contract: CPMMMultiContract | CPMMNumericContract,
   answerId: string

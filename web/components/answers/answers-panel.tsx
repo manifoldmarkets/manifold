@@ -11,7 +11,6 @@ import clsx from 'clsx'
 import {
   sortAnswers,
   type Answer,
-  type DpmAnswer,
   type MultiSort,
   OTHER_TOOLTIP_TEXT,
   getMaximumAnswers,
@@ -87,9 +86,9 @@ export function AnswersPanel(props: {
   setSort: (sort: MultiSort) => void
   query: string
   setQuery: (query: string) => void
-  onAnswerCommentClick?: (answer: Answer | DpmAnswer) => void
-  onAnswerHover: (answer: Answer | DpmAnswer | undefined) => void
-  onAnswerClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick?: (answer: Answer) => void
+  onAnswerHover: (answer: Answer | undefined) => void
+  onAnswerClick: (answer: Answer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
@@ -110,11 +109,7 @@ export function AnswersPanel(props: {
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
+    'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
@@ -276,6 +271,12 @@ export function AnswersPanel(props: {
         <Col className="mx-[2px] mt-1 gap-2">
           {answersToShow.map((answer) => (
             <Answer
+              className={
+                selectedAnswerIds.length &&
+                !selectedAnswerIds.includes(answer.id)
+                  ? 'opacity-70'
+                  : ''
+              }
               key={answer.id}
               user={user}
               answer={answer}
@@ -564,7 +565,7 @@ export function SimpleAnswerBars(props: {
 
 export function Answer(props: {
   contract: MultiContract
-  answer: Answer | DpmAnswer
+  answer: Answer
   unfilledBets?: Array<LimitBet>
   color: string
   user: User | undefined | null
@@ -576,6 +577,7 @@ export function Answer(props: {
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
+  className?: string
 }) {
   const {
     answer,
@@ -591,12 +593,12 @@ export function Answer(props: {
     barColor,
     feedReason,
     shouldShowLimitOrderChart,
+    className,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
 
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const isOther = 'isOther' in answer && answer.isOther
 
   const { resolution, resolutions } = contract
@@ -631,7 +633,7 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={'group cursor-pointer'}
+        className={clsx('group cursor-pointer', className)}
         barColor={barColor}
         label={
           <Row className={'items-center gap-1'}>
@@ -692,7 +694,7 @@ export function Answer(props: {
           )
         }
       />
-      {!resolution && hasBets && isCpmm && user && (
+      {!resolution && hasBets && user && (
         <AnswerPosition
           contract={contract}
           answer={answer as Answer}
@@ -774,7 +776,7 @@ export function Answer(props: {
 }
 
 export function canEditAnswer(
-  answer: Answer | DpmAnswer,
+  answer: Answer,
   contract: MultiContract,
   user?: User | undefined | null
 ) {
@@ -789,10 +791,7 @@ export function canEditAnswer(
   )
 }
 
-const AnswerAvatar = (props: {
-  answer: Answer | DpmAnswer
-  isMobile: boolean
-}) => {
+const AnswerAvatar = (props: { answer: Answer; isMobile: boolean }) => {
   const { answer, isMobile } = props
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
   if (!answerCreator) return <LoadingIndicator size={'sm'} />

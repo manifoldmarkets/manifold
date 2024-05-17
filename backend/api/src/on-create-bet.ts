@@ -16,6 +16,7 @@ import {
   createBettingStreakBonusNotification,
   createFollowSuggestionNotification,
   createLimitBetCanceledNotification,
+  createNewBettorNotification,
   createUniqueBettorBonusNotification,
 } from 'shared/create-notification'
 import { calculateUserMetrics } from 'common/calculate-metrics'
@@ -68,7 +69,7 @@ import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
 import { FLAT_TRADE_FEE, Fees } from 'common/fees'
 import { FieldValue } from 'firebase-admin/firestore'
-import { APIError } from './helpers/endpoint'
+import { APIError } from 'common/api/utils'
 
 const firestore = admin.firestore()
 
@@ -183,29 +184,19 @@ export const onCreateBets = async (
       .map(async (bet) => {
         const bettor = betUsers.find((user) => user.id === bet.userId)
         if (!bettor) return
+
         // Follow suggestion should be before betting streak update (which updates lastBetTime)
         !bettor.lastBetTime &&
           !bettor.referredByUserId &&
           (await createFollowSuggestionNotification(bettor.id, contract, pg))
+
         const eventId = originalBettor.id + '-' + bet.id
         await updateBettingStreak(bettor, bet, contract, eventId)
 
-        const usersNonRedemptionBets = bets.filter(
-          (b) => b.userId === bettor.id && !b.isRedemption
-        )
-        await giveUniqueBettorBonus(
-          contract,
-          eventId,
-          bettor,
-          bet,
-          usersNonRedemptionBets
-        )
-
         await Promise.all([
-          bet.amount >= 0 &&
-            !bet.isSold &&
-            addUserToContractFollowers(contract.id, bettor.id),
+          bet.amount >= 0 && addUserToContractFollowers(contract.id, bettor.id),
 
+          sendUniqueBettorNotification(contract, bettor, bet, bets),
           updateUserInterestEmbedding(pg, bettor.id),
 
           addToLeagueIfNotInOne(pg, bettor.id),
@@ -679,6 +670,57 @@ export const giveUniqueBettorBonus = async (
       uniqueBonusResult.txn?.data?.isPartner
     )
   }
+}
+
+export const sendUniqueBettorNotification = async (
+  contract: Contract,
+  bettor: User,
+  bet: Bet,
+  usersNonRedemptionBets?: Bet[]
+) => {
+  const { answerId, isRedemption, isApi } = bet
+  const pg = createSupabaseDirectClient()
+
+  const isBot = BOT_USERNAMES.includes(bettor.username)
+
+  const answer =
+    answerId && 'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id == answerId)
+      : undefined
+  const answerCreatorId = answer?.userId
+  const creatorId = answerCreatorId ?? contract.creatorId
+  const isCreator = bettor.id == creatorId
+
+  if (isCreator || isBot || isRedemption || isApi) return
+
+  const previousBet = await pg.oneOrNone(
+    `select bet_id from contract_bets
+        where contract_id = $1
+          and ($2 is null or answer_id = $2)
+          and user_id = $3
+          and created_time < $4
+          and is_redemption = false
+        limit 1`,
+    [contract.id, answerId, bettor.id, new Date(bet.createdTime).toISOString()]
+  )
+  // Check previous bet.
+  if (previousBet) return
+
+  // For bets with answerId (multiple choice), give a bonus for the first bet on each answer.
+  // NOTE: this may miscount unique bettors if they place multiple bets quickly b/c of replication delay.
+  const uniqueBettorIds = answerId
+    ? await getUniqueBettorIdsForAnswer(contract.id, answerId, pg)
+    : await getUniqueBettorIds(contract.id, pg)
+  if (!uniqueBettorIds.includes(bettor.id)) uniqueBettorIds.push(bettor.id)
+
+  await createNewBettorNotification(
+    creatorId,
+    bettor,
+    contract,
+    uniqueBettorIds,
+    bet,
+    usersNonRedemptionBets
+  )
 }
 
 export const injectLiquidityBonus = async (

@@ -13,6 +13,7 @@ type AnyTxnType =
   | UniqueBettorBonus
   | BettingStreakBonus
   | CancelUniqueBettorBonus
+  | CharityFee
   | ManaPurchase
   | SignupBonus
   | CertMint
@@ -51,6 +52,8 @@ type AnyTxnType =
   | ReclaimMana
   | ManachanTweet
   | BotCommentFee
+  | AirDrop
+  | ExtraPurchasedMana
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -191,6 +194,16 @@ type CancelUniqueBettorBonus = {
   category: 'CANCEL_UNIQUE_BETTOR_BONUS'
   data: {
     contractId: string
+  }
+}
+
+type CharityFee = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CHARITY_FEE'
+  token: 'SPICE'
+  data: {
+    charityId: string
   }
 }
 
@@ -472,6 +485,20 @@ type BotCommentFee = {
   token: 'M$'
 }
 
+type AirDrop = {
+  category: 'AIR_DROP'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
+type ExtraPurchasedMana = {
+  category: 'EXTRA_PURCHASED_MANA'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
@@ -480,6 +507,7 @@ export type ReferralTxn = Txn & Referral
 export type BettingStreakBonusTxn = Txn & BettingStreakBonus
 export type UniqueBettorBonusTxn = Txn & UniqueBettorBonus
 export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
+export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
 export type CertTxn = Txn & CertId
@@ -521,3 +549,5 @@ export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet
 export type BotCommentFeeTxn = Txn & BotCommentFee
+export type AirDropTxn = Txn & AirDrop
+export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana

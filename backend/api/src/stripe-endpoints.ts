@@ -34,27 +34,23 @@ const initStripe = () => {
 // manage at https://dashboard.stripe.com/test/products?active=true
 const manticDollarStripePrice = isProd()
   ? {
-      // 500: 'price_1KFQXcGdoFKoCJW770gTNBrm',
       1399: 'price_1P5bG1GdoFKoCJW7aoWlFYL2',
       2999: 'price_1P5bIQGdoFKoCJW7MXrOwn7l',
       10999: 'price_1P5bJ2GdoFKoCJW7YBXcxaEx',
-      // 20000: 'price_1NYYkmGdoFKoCJW73bEpIR93', // temporary conference amount
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
-      500: 'price_1K8W10GdoFKoCJW7KWORLec1',
-      1000: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
-      2500: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
-      10000: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
-      20000: 'price_1NYHJ2GdoFKoCJW7WK0wOeBJ',
+      1399: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
+      2999: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
+      10999: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
       100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
 const mappedDollarAmounts = {
-  1399: 1000,
-  2999: 2500,
-  10999: 10000,
-  100000: 100000,
+  1399: 10000,
+  2999: 25000,
+  10999: 100000,
+  100000: 1000000,
 } as { [key: string]: number }
 
 export const createcheckoutsession = async (req: Request, res: Response) => {

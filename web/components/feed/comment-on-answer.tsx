@@ -1,6 +1,5 @@
 'use client'
-import { Answer, DpmAnswer } from 'common/answer'
-import { FreeResponseContract, MultipleChoiceContract } from 'common/contract'
+import { Answer } from 'common/answer'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -10,10 +9,11 @@ import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
+import { MultiContract } from 'common/contract'
 
 export function CommentOnAnswer(props: {
-  answer: Answer | DpmAnswer
-  contract: FreeResponseContract | MultipleChoiceContract
+  answer: Answer
+  contract: MultiContract
   clear?: () => void
 }) {
   const { answer, contract, clear } = props
@@ -40,7 +40,7 @@ export function CommentOnAnswer(props: {
 }
 
 function AnswerSectionForCommentOnAnswer(props: {
-  answer: Answer | DpmAnswer
+  answer: Answer
   color: string
 }) {
   const { answer, color } = props

@@ -41,8 +41,6 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'NUMERIC') return <></>
-
   if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING')
     return <></>
 
@@ -225,7 +223,6 @@ export function BetOutcomeLabel(props: {
     return <PseudoNumericOutcomeLabel outcome={bet.outcome as resolution} />
   }
   if (
-    contractOutcomeType === 'FREE_RESPONSE' ||
     contractOutcomeType === 'MULTIPLE_CHOICE' ||
     contractOutcomeType === 'NUMBER'
   ) {

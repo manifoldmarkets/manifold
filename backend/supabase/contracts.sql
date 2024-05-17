@@ -13,6 +13,7 @@ create table if not exists
                   resolution_time timestamptz,
                   resolution_probability numeric,
                   resolution text,
+                  is_spice_payout boolean default false,
                   popularity_score numeric,
                   importance_score numeric,
                   freshness_score numeric default 0,
@@ -99,6 +100,7 @@ begin
             end;
         new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
         new.resolution := (new.data) ->> 'resolution';
+        new.is_spice_payout := coalesce(((new.data) ->> 'isSpicePayout')::boolean, false);
         new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
         new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
         new.group_slugs := case

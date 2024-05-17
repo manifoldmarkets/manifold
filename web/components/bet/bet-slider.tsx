@@ -1,14 +1,14 @@
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
 import { Slider } from 'web/components/widgets/slider'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyShort } from 'common/util/format'
 import { buildArray } from 'common/util/array'
 
 export const LARGE_SLIDER_VALUES = [
-  1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 125,
-  150, 175, 200, 250, 300, 350, 400, 450, 500, 600, 700, 800, 900, 1000,
+  100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000, 2500, 3000, 3500, 4000,
+  4500, 5000, 6000, 7000, 8000, 9000, 10000, 15000, 20000, 25000,
 ]
 export const LOW_MANA_SLIDER_VALUES = [
-  1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 70, 80, 90, 100,
+  1, 5, 10, 25, 50, 75, 100, 200, 300, 400, 500, 750, 1000,
 ]
 
 export const BetSlider = (props: {
@@ -27,9 +27,11 @@ export const BetSlider = (props: {
     disabled,
     className,
   } = props
+
   const sliderAmounts = smallManaAmounts
     ? LOW_MANA_SLIDER_VALUES
     : LARGE_SLIDER_VALUES
+
   const maxSliderIndex = sliderAmounts.length - 1
   const amountToSliderIndex = (amount: number) => {
     const index = sliderAmounts.findLastIndex((a) => amount >= a)
@@ -37,8 +39,9 @@ export const BetSlider = (props: {
   }
 
   const sliderIndex = amountToSliderIndex(amount ?? 0)
-  const tenIndex = sliderAmounts.findIndex((a) => a === 10)
   const hundredIndex = sliderAmounts.findIndex((a) => a === 100)
+  const thousandIndex = sliderAmounts.findIndex((a) => a === 1000)
+  const tenThousandIndex = sliderAmounts.findIndex((a) => a === 10000)
 
   return (
     <Slider
@@ -51,16 +54,20 @@ export const BetSlider = (props: {
           label: formatMoney(sliderAmounts[0]),
         },
         {
-          value: tenIndex,
-          label: formatMoney(sliderAmounts[tenIndex]),
-        },
-        !smallManaAmounts && {
           value: hundredIndex,
           label: formatMoney(sliderAmounts[hundredIndex]),
         },
+        !smallManaAmounts && {
+          value: thousandIndex,
+          label: formatMoneyShort(sliderAmounts[thousandIndex]),
+        },
+        !smallManaAmounts && {
+          value: tenThousandIndex,
+          label: formatMoneyShort(sliderAmounts[tenThousandIndex]),
+        },
         {
           value: maxSliderIndex,
-          label: formatMoney(sliderAmounts[maxSliderIndex]),
+          label: formatMoneyShort(sliderAmounts[maxSliderIndex]),
         }
       )}
       color={

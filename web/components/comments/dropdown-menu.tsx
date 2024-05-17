@@ -92,7 +92,7 @@ export default function DropdownMenu(props: {
                         ? 'bg-primary-100'
                         : 'hover:bg-ink-100 hover:text-ink-900',
                       'text-ink-700',
-                      'flex w-full gap-2 px-4 py-2 text-left text-sm'
+                      'flex w-full items-center gap-2 px-4 py-2 text-left text-sm'
                     )}
                   >
                     {item.icon && <div className="w-5">{item.icon}</div>}

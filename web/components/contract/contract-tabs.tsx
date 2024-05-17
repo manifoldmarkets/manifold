@@ -12,7 +12,7 @@ import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -60,8 +60,8 @@ export function ContractTabs(props: {
   bets: Bet[]
   comments: ContractComment[]
   userPositionsByOutcome: ContractMetricsByOutcome
-  replyTo?: Answer | DpmAnswer | Bet
-  setReplyTo?: (replyTo?: Answer | DpmAnswer | Bet) => void
+  replyTo?: Answer | Bet
+  setReplyTo?: (replyTo?: Answer | Bet) => void
   cancelReplyToAnswer?: () => void
   blockedUserIds: string[]
   activeIndex: number
@@ -181,7 +181,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   comments: ContractComment[]
   blockedUserIds: string[]
   setCommentsLength?: (length: number) => void
-  replyTo?: Answer | DpmAnswer | Bet
+  replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
   bets?: Bet[]
@@ -560,7 +560,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         }))
       : bets.map((bet) => ({
           type: 'bet' as const,
-          id: 'bets-tab-' + bet.id + '-' + (bet.isSold ?? 'false'),
+          id: 'bets-tab-' + bet.id + '-' + 'false',
           bet,
         }))),
     ...visibleLps.map((lp) => ({

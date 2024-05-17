@@ -19,7 +19,7 @@ export default function Create() {
     ? (Object.fromEntries(
         Object.keys(paramsEntries).map((key) => [
           key,
-          JSON.parse(paramsEntries[key]),
+          JSON.parse(paramsEntries[key] || 'null'),
         ])
       ).params as NewQuestionParams)
     : ({} as NewQuestionParams)

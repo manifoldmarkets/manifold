@@ -1,9 +1,10 @@
+import { hrtime } from 'node:process'
 import * as cors from 'cors'
 import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/monitoring/log'
+import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
@@ -11,7 +12,6 @@ import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellShareDPM } from './sell-bet'
 import { sellShares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
@@ -144,7 +144,6 @@ import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
-import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
@@ -163,6 +162,8 @@ import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
 import { updateReport } from './update-report'
 import { getReports } from './get-reports'
+import { searchContractPositions } from 'api/search-contract-positions'
+
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -173,15 +174,20 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestContext: RequestHandler = (req, _res, next) => {
+const requestMonitoring: RequestHandler = (req, _res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
   withMonitoringContext(context, () => {
+    const startTs = hrtime.bigint()
     log(`${req.method} ${req.url}`)
+    metrics.inc('http/request_count', { endpoint: req.path })
     next()
+    const endTs = hrtime.bigint()
+    const latencyMs = Number(endTs - startTs) / 1e6
+    metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
   })
 }
 
@@ -213,7 +219,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestContext)
+app.use(requestMonitoring)
 
 app.options('*', allowCorsUnrestricted)
 
@@ -222,7 +228,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
-  'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
   bets: getBets,
   comment: createComment,
@@ -300,7 +305,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
-  createanswer: createAnswerDpm,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
@@ -316,6 +320,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-mana-supply': getManaSupply,
   'update-report': updateReport,
   'get-reports': getReports,
+  'search-contract-positions': searchContractPositions,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -437,6 +442,11 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
+
+// mqp: definitely don't enable this in production since there's no authorization
+// import { broadcastTest } from 'api/broadcast-test'
+// app.post('/broadcast-test', ...apiRoute(broadcastTest))
+
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

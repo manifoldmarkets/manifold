@@ -21,6 +21,7 @@ import { Col } from 'web/components/layout/col'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
+
 export function DailyLoan(props: {
   user: User
   refreshPortfolio?: () => void

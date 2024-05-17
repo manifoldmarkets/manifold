@@ -14,7 +14,6 @@ import {
   BetInfo,
   CandidateBet,
   getBinaryCpmmBetInfo,
-  getNewMultiBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
 import { removeUndefinedProps } from 'common/util/object'
@@ -29,6 +28,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
+import { broadcast } from './websockets/server'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -111,20 +111,6 @@ export const placeBetMain = async (
             expiresAt
           )
         } else if (
-          (outcomeType == 'FREE_RESPONSE' ||
-            outcomeType === 'MULTIPLE_CHOICE') &&
-          mechanism == 'dpm-2'
-        ) {
-          if (!body.answerId) {
-            throw new APIError(400, 'answerId must be specified for multi bets')
-          }
-
-          const { answerId } = body
-          const answerDoc = contractDoc.collection('answers').doc(answerId)
-          const answerSnap = await trans.get(answerDoc)
-          if (!answerSnap.exists) throw new APIError(404, 'Answer not found')
-          return getNewMultiBetInfo(answerId, amount, contract)
-        } else if (
           (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
           mechanism == 'cpmm-multi-1'
         ) {
@@ -200,6 +186,7 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
+  broadcast('global/new-bet', { contractId: contractId, betId: result.betId })
 
   const {
     newBet,

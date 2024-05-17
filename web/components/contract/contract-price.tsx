@@ -1,7 +1,6 @@
 import {
   BinaryContract,
   CPMMNumericContract,
-  NumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -75,25 +74,6 @@ export function BinaryResolutionOrChance(props: {
         </>
       )}
     </div>
-  )
-}
-
-export function NumericResolutionOrExpectation(props: {
-  contract: NumericContract
-}) {
-  const { contract } = props
-  const { resolution, resolutionValue = NaN } = contract
-
-  // All distributional numeric questions are resolved now
-  return (
-    <Row className="items-baseline gap-2 text-3xl">
-      <div className={clsx('text-base')}>Resolved</div>
-      {resolution === 'CANCEL' ? (
-        <CancelLabel />
-      ) : (
-        <NumericValueLabel value={resolutionValue} />
-      )}
-    </Row>
   )
 }
 

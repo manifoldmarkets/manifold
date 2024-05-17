@@ -4,7 +4,7 @@ import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
 import { formatMoneyNumber, formatPercent } from './util/format'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { Answer, DpmAnswer, sortAnswers } from './answer'
+import { Answer, sortAnswers } from './answer'
 
 export const getContractOGProps = (
   contract: Contract
@@ -20,10 +20,10 @@ export const getContractOGProps = (
   } = contract
 
   const topAnswer =
-    outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE'
+    outcomeType === 'MULTIPLE_CHOICE'
       ? resolution
         ? (contract as MultiContract).answers.find((a) => a.id === resolution)
-        : sortAnswers(contract, contract.answers as (Answer | DpmAnswer)[])[0]
+        : sortAnswers(contract, contract.answers as Answer[])[0]
       : undefined
 
   const probPercent =

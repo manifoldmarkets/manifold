@@ -70,7 +70,14 @@ export function formatWithCommas(amount: number) {
 }
 
 export function manaToUSD(mana: number) {
-  return (mana / 100).toLocaleString('en-US', {
+  return (mana / 1000).toLocaleString('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  })
+}
+
+export function formatCents(cents: number) {
+  return (cents / 100).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
   })
@@ -115,7 +122,7 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
   if (absNum < 1000) return showPrecision(num, 3)
   if (absNum < 10000) return showPrecision(num, 4)
 
-  const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
+  const suffix = ['', 'k', 'm', 'b', 't', 'q']
   const i = Math.floor(Math.log10(absNum) / 3)
 
   const numStr = showPrecision(num / Math.pow(10, 3 * i), sigfigs)
@@ -127,7 +134,7 @@ export function shortFormatNumber(num: number): string {
   if (num < 100 && num > -100) return showPrecision(num, 2)
   if (num < 1000 && num > -1000) return showPrecision(num, 3)
 
-  const suffix = ['', 'K', 'M', 'B', 'T', 'Q']
+  const suffix = ['', 'k', 'm', 'b', 't', 'q']
   const i = Math.floor(Math.log10(Math.abs(num)) / 3)
 
   const numStr = showPrecision(num / Math.pow(10, 3 * i), 2)

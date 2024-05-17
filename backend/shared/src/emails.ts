@@ -177,9 +177,6 @@ const toDisplayResolution = (
     return 'MULTI'
   if (resolution === 'CANCEL') return 'N/A'
 
-  if (contract.outcomeType === 'NUMERIC' && contract.mechanism === 'dpm-2')
-    return '[ERROR: if you can see this, Sinclair owes you 1000 mana]' // unless you see this comment
-
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
   )
@@ -362,56 +359,35 @@ export const sendNewCommentEmail = async (
 
   let betDescription = ''
   if (bet) {
-    const { amount, sale } = bet
+    const { amount } = bet
     betDescription = `${
-      sale || amount < 0 ? 'sold' : 'bought'
+      amount < 0 ? 'sold' : 'bought'
     } ${emailMoneyFormat(Math.abs(amount))}`
   }
 
   const subject = `Comment on ${question}`
   const from = `${commentorName} on Manifold <no-reply@manifold.markets>`
 
-  if (contract.outcomeType === 'FREE_RESPONSE' && answerId && answerText) {
-    const answerNumber = answerId ? `#${answerId}` : ''
-
-    return await sendTemplateEmail(
-      privateUser.email,
-      subject,
-      'market-answer-comment',
-      {
-        answer: answerText,
-        answerNumber,
-        commentorName,
-        commentorAvatarUrl: commentorAvatarUrl ?? '',
-        comment: commentText,
-        marketUrl,
-        unsubscribeUrl,
-        betDescription,
-      },
-      { from }
-    )
-  } else {
-    if (bet) {
-      betDescription = `${betDescription} of ${toDisplayResolution(
-        contract,
-        bet.outcome
-      )}`
-    }
-    return await sendTemplateEmail(
-      privateUser.email,
-      subject,
-      'market-comment',
-      {
-        commentorName,
-        commentorAvatarUrl: commentorAvatarUrl ?? '',
-        comment: commentText,
-        marketUrl,
-        unsubscribeUrl,
-        betDescription,
-      },
-      { from }
-    )
+  if (bet) {
+    betDescription = `${betDescription} of ${toDisplayResolution(
+      contract,
+      bet.outcome
+    )}`
   }
+  return await sendTemplateEmail(
+    privateUser.email,
+    subject,
+    'market-comment',
+    {
+      commentorName,
+      commentorAvatarUrl: commentorAvatarUrl ?? '',
+      comment: commentText,
+      marketUrl,
+      unsubscribeUrl,
+      betDescription,
+    },
+    { from }
+  )
 }
 
 export const sendNewAnswerEmail = async (
@@ -679,9 +655,9 @@ export const sendNewUniqueBettorsEmail = async (
     if (p.avatarUrl) templateData[`bettor${i + 1}AvatarUrl`] = p.avatarUrl
     const bet = userBets[p.id][0]
     if (bet) {
-      const { amount, sale } = bet
+      const { amount } = bet
       templateData[`bet${i + 1}Description`] = `${
-        sale || amount < 0 ? 'sold' : 'bought'
+        amount < 0 ? 'sold' : 'bought'
       } ${emailMoneyFormat(Math.abs(amount))}`
     }
   })
