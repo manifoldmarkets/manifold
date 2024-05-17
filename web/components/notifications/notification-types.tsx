@@ -1877,7 +1877,7 @@ function AirdropNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      icon={<GiftIcon className="h-8 w-8 text-primary-500" />}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
       subtitle={<></>}
     >
       Congratulations! You just received{' '}
