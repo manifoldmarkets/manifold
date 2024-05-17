@@ -183,7 +183,7 @@ const App = () => {
   const renderReportList = (reportList: Report[]) => (
     <Col className="w-full">
       {reportList.map((report: Report) => (
-        <Row key={report.report_id} className="p-4">
+        <Row key={report.report_id} className="m-4 mb-8 ">
           <Col className="w-full gap-1">
             <Row className="flex w-full items-center justify-between">
               <div className="flex items-center">
@@ -205,16 +205,7 @@ const App = () => {
                     </div>
                   </UserHovercard>
                 )}
-                <div className="ml-2">
-                  needs help with this{' '}
-                  <Link
-                    className="text-primary-700 hover:text-primary-500 hover:underline"
-                    href={`/${report.creator_username}/${report.contract_slug}#${report.comment_id}`}
-                  >
-                    comment
-                  </Link>
-                  .
-                </div>
+                <Row className="ml-2">commented:</Row>
               </div>
               {report.created_time && (
                 <RelativeTimestamp
@@ -223,9 +214,16 @@ const App = () => {
                 />
               )}
             </Row>
+            <Row className="ml-10">
+              <Link
+                className="text-primary-700 hover:text-primary-500 hover:underline"
+                href={`/${report.creator_username}/${report.contract_slug}#${report.comment_id}`}
+              >
+                {renderContent(report.content)}
+              </Link>
+            </Row>
+            <Row className="mt-2">Market: {report.contract_question}</Row>
 
-            <Row className="text-lg">{report.contract_question}</Row>
-            <Row>{renderContent(report.content)}</Row>
             <Row className="mt-1 items-center">
               <div className="pr-2"> Status: </div>
               <ChoicesToggleGroup
@@ -283,13 +281,15 @@ const App = () => {
         description="A page for mods to review reports and support tickets from users."
         url="/reports"
       />
-      <Title>Reports</Title>
-      <QueryUncontrolledTabs
-        tabs={tabs}
-        defaultIndex={0}
-        scrollToTop={true}
-        trackingName="mod-reports-tabs"
-      />
+      <Col className="p-4">
+        <Title>Reports</Title>
+        <QueryUncontrolledTabs
+          tabs={tabs}
+          defaultIndex={0}
+          scrollToTop={true}
+          trackingName="mod-reports-tabs"
+        />
+      </Col>
     </Page>
   )
 }
