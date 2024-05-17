@@ -1,7 +1,6 @@
 import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   AirdropData,
   BetFillData,
@@ -21,10 +20,6 @@ import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
-import {
-  CommentOnLoverNotification,
-  NewMatchNotification,
-} from 'manifold-love/components/love-notification-types'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Referrals } from 'web/components/buttons/referrals-button'
@@ -196,24 +191,6 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment_on_lover') {
-    return (
-      <CommentOnLoverNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'new_match') {
-    return (
-      <NewMatchNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
   } else if (reason === 'tagged_user') {
     return (
       <TaggedUserNotification
@@ -303,7 +280,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'answer' || sourceType === 'love_answer') {
+  } else if (sourceType === 'answer') {
     return (
       <AnswerNotification
         notification={notification}
@@ -390,24 +367,6 @@ export function NotificationItem(props: {
         highlighted={highlighted}
         setHighlighted={setHighlighted}
         isChildOfGroup={isChildOfGroup}
-      />
-    )
-  } else if (reason === 'new_love_like') {
-    return (
-      <LoveLikeNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (reason === 'new_love_ship') {
-    return (
-      <LoveShipNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
       />
     )
   } else if (reason === 'airdrop') {
@@ -1759,105 +1718,6 @@ function PollClosedNotification(props: {
           has autoclosed!
         </span>
       </>
-    </NotificationFrame>
-  )
-}
-
-function LoveLikeNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const [open, setOpen] = useState(false)
-  const { sourceUserName, sourceUserUsername } = notification
-  const relatedNotifications: Notification[] = notification.data
-    ?.relatedNotifications ?? [notification]
-  const reactorsText =
-    relatedNotifications.length > 1
-      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-          relatedNotifications.length > 2 ? 's' : ''
-        }`
-      : sourceUserName
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <MultipleAvatarIcons
-          notification={notification}
-          symbol={'💖'}
-          setOpen={setOpen}
-        />
-      }
-      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
-      subtitle={<></>}
-    >
-      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
-      you!
-      <MultiUserReactionModal
-        similarNotifications={relatedNotifications}
-        modalLabel={'Who liked it?'}
-        open={open}
-        setOpen={setOpen}
-      />
-    </NotificationFrame>
-  )
-}
-
-function LoveShipNotification(props: {
-  notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
-  isChildOfGroup?: boolean
-}) {
-  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const [open, setOpen] = useState(false)
-  const { sourceUserName, sourceUserUsername } = notification
-  const relatedNotifications: Notification[] = notification.data
-    ?.relatedNotifications ?? [notification]
-  const reactorsText =
-    relatedNotifications.length > 1
-      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-          relatedNotifications.length > 2 ? 's' : ''
-        }`
-      : sourceUserName
-  const { creatorId, creatorName, creatorUsername } = notification.data ?? {}
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={isChildOfGroup}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      icon={
-        <MultipleAvatarIcons
-          notification={notification}
-          symbol={'💖'}
-          setOpen={setOpen}
-        />
-      }
-      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
-      subtitle={<></>}
-    >
-      You and {reactorsText && <PrimaryNotificationLink text={reactorsText} />}{' '}
-      are being shipped by{' '}
-      <NotificationUserLink
-        name={creatorName}
-        username={creatorUsername}
-        userId={creatorId}
-        hideBadge
-      />
-      !
-      <MultiUserReactionModal
-        similarNotifications={relatedNotifications}
-        modalLabel={'Who liked it?'}
-        open={open}
-        setOpen={setOpen}
-      />
     </NotificationFrame>
   )
 }
