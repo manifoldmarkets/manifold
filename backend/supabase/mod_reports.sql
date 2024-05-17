@@ -11,7 +11,8 @@ create table if not exists
     contract_slug text not null,
     contract_question text not null,
     content jsonb not null,
-    creator_username not null
+    creator_username text not null,
+    mod_note text
   );
 
 alter table mod_reports enable row level security;

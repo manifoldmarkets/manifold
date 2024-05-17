@@ -70,4 +70,5 @@ export const Report = z.object({
   contract_question: z.string(),
   content: contentSchema,
   creator_username: z.string(),
+  mod_note: z.string().optional(),
 })

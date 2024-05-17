@@ -32,6 +32,7 @@ export const insertModReport = async (comment: ContractComment) => {
     contract_question: contract_question,
     content: content,
     creator_username: creator_username,
+    mod_note: '',
   }
 
   const { data, error } = await db.from('mod_reports').insert(reportData)

@@ -13,4 +13,5 @@ export type Report = {
   contract_question: string
   content: JSONContent
   creator_username: string
+  mod_note: string
 }

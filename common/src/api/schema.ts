@@ -1160,14 +1160,21 @@ export const API = (_apiTypeCheck = {
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
   },
-  'update-report-status': {
+  'update-report': {
     method: 'POST',
     visibility: 'public',
     authed: true,
     props: z
       .object({
         reportId: z.number(),
-        newStatus: z.enum(['new', 'under review', 'resolved', 'needs admin']),
+        updates: z
+          .object({
+            status: z
+              .enum(['new', 'under review', 'resolved', 'needs admin'])
+              .optional(),
+            mod_note: z.string()
+          })
+          .partial(),
       })
       .strict(),
     returns: {} as { status: string; data: any },

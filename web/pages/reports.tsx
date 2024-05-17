@@ -15,16 +15,17 @@ import { getUserById } from 'web/lib/supabase/users'
 import { api } from 'web/lib/firebase/api'
 import { Report, ReportStatus } from 'common/api/report-types'
 import Link from 'next/link'
+import { EditableModNote } from 'web/components/contract/editable-mod-note'
 
-const updateReportStatus = async (
+const updateReport = async (
   reportId: number,
-  newStatus: ReportStatus
+  updates: Partial<{ status: ReportStatus; mod_note: string }>
 ) => {
-  const response = await api('update-report-status', { reportId, newStatus })
+  const response = await api('update-report', { reportId, updates })
   if (response.status === 'success') {
     return response.data
   } else {
-    console.error('Error updating report status:', response)
+    console.error('Error updating report:', response)
     return null
   }
 }
@@ -36,6 +37,9 @@ const App = () => {
   const [owner, setOwner] = useState<{ [key: string]: any }>({})
   const [reportStatuses, setReportStatuses] = useState<{
     [key: number]: ReportStatus
+  }>({})
+  const [modNotes, setModNotes] = useState<{
+    [key: number]: string | undefined
   }>({})
   const initialLoadRef = useRef(true)
 
@@ -61,7 +65,15 @@ const App = () => {
           },
           {} as { [key: number]: ReportStatus }
         )
+        const initialNotes = sortedReports.reduce(
+          (acc: any, report: Report) => {
+            acc[report.report_id] = report.mod_note
+            return acc
+          },
+          {} as { [key: number]: string | undefined }
+        )
         setReportStatuses(initialStatuses)
+        setModNotes(initialNotes)
       }
     } else {
       console.error('Failed to fetch reports:', response)
@@ -92,7 +104,16 @@ const App = () => {
       [reportId]: newStatus,
     }))
 
-    await updateReportStatus(reportId, newStatus)
+    await updateReport(reportId, { status: newStatus })
+  }
+
+  const handleNoteSave = async (reportId: number, newNote: string) => {
+    setModNotes((prevNotes) => ({
+      ...prevNotes,
+      [reportId]: newNote,
+    }))
+
+    await updateReport(reportId, { mod_note: newNote })
   }
 
   useEffect(() => {
@@ -206,7 +227,7 @@ const App = () => {
             <Row className="text-lg">{report.contract_question}</Row>
             <Row>{renderContent(report.content)}</Row>
             <Row className="mt-1 items-center">
-              <div className="pr-2 "> Status: </div>
+              <div className="pr-2"> Status: </div>
               <ChoicesToggleGroup
                 currentChoice={reportStatuses[report.report_id] || 'new'}
                 choicesMap={{
@@ -218,6 +239,14 @@ const App = () => {
                 setChoice={(val) =>
                   handleStatusChange(report.report_id, val as ReportStatus)
                 }
+              />
+            </Row>
+            <Row className="mt-2 items-center">
+              Mod note: &nbsp;
+              <EditableModNote
+                reportId={report.report_id}
+                initialNote={modNotes[report.report_id] || ''}
+                onSave={handleNoteSave}
               />
             </Row>
           </Col>
