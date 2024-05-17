@@ -181,7 +181,7 @@ export function FeedContractCard(props: {
         <div
           className={clsx(
             'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
-            'bg-ink-200 text-ink-500 rounded-full px-2 py-0.5 text-xs font-semibold'
+            'rounded-full px-2 py-0.5 text-xs font-semibold'
           )}
         >
           <span>
