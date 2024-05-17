@@ -112,6 +112,12 @@ export const getUserPortfolioInternal = async (userId: string) => {
     spiceBalance,
     totalDeposits,
     timestamp: Date.now(),
-    profit: (profitAdjustment ?? 0) + investmentValue + balance - totalDeposits,
+    // Not used for profit graphs, only the leaderboard
+    profit:
+      (profitAdjustment ?? 0) +
+      spiceBalance +
+      investmentValue +
+      balance -
+      totalDeposits,
   }
 }

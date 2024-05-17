@@ -86,7 +86,10 @@ export const PortfolioValueSection = memo(
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
-      ? first.balance + first.investmentValue - first.totalDeposits
+      ? first.spiceBalance +
+        first.balance +
+        first.investmentValue -
+        first.totalDeposits
       : 0
 
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
@@ -159,14 +162,10 @@ export const PortfolioValueSection = memo(
       )
     }
 
-    const {
-      balance,
-      investmentValue,
-      totalDeposits,
-      profit: recordedProfit,
-    } = lastPortfolioMetrics
+    const { balance, investmentValue, totalDeposits, spiceBalance } =
+      lastPortfolioMetrics
     const totalValue = balance + investmentValue
-    const profit = recordedProfit ?? totalValue - totalDeposits - firstProfit
+    const profit = spiceBalance + totalValue - totalDeposits - firstProfit
 
     const portfolioValues = {
       balance,
@@ -251,7 +250,6 @@ function PortfolioValueSkeleton(props: {
     switcherColor,
     userId,
     disabled,
-    placement,
     className,
     hideAddFundsButton,
     onlyShowProfit,
