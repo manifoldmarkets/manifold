@@ -2,10 +2,7 @@ import { LockClosedIcon, EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
 import { CPMMMultiContract, Contract, contractPath } from 'common/contract'
-import {
-  ENV_CONFIG,
-  SPICE_MARKET_TOOLTIP,
-} from 'common/envs/constants'
+import { ENV_CONFIG, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatMoney, formatPercentShort } from 'common/util/format'
 import Link from 'next/link'
