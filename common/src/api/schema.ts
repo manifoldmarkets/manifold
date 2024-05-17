@@ -43,7 +43,7 @@ import { PERIODS } from 'common/period'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 // mqp: very unscientific, just balancing our willingness to accept load
-// with user willingness to put up with stale reports
+// with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
   'public, max-age=5, stale-while-revalidate=10'
 
@@ -1172,7 +1172,7 @@ export const API = (_apiTypeCheck = {
             status: z
               .enum(['new', 'under review', 'resolved', 'needs admin'])
               .optional(),
-            mod_note: z.string()
+            mod_note: z.string(),
           })
           .partial(),
       })
