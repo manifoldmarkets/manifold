@@ -260,10 +260,16 @@ const App = () => {
         unresolvedReports.length > 0 ? (
           renderReportList(unresolvedReports)
         ) : (
-          <div className="mt-8 text-center">
+          <Col className="mt-8 text-center">
             All reports have been resolved, great job! Keep it up and one day
             you'll get a payrise :D
-          </div>
+            <Link
+              href="/admin/reports"
+              className="text-primary-700 hover:text-primary-500 mt-3 text-center hover:underline"
+            >
+              Other reports...
+            </Link>
+          </Col>
         ),
       queryString: 'unresolved',
     },
