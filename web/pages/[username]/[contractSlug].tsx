@@ -263,7 +263,7 @@ export function ContractPageContent(props: ContractParams) {
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
       return mergeWith(data, newData, (array1, array2) =>
-        [...array1, ...array2].sort((a, b) => a.x - b.x)
+        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       )
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
