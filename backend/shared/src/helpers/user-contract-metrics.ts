@@ -67,10 +67,12 @@ export const setAdjustProfitFromResolvedMarkets = async (
     [resolvedContractId],
     (row) => row.user_id
   )
-  log('Adjusting profit for resolved market', {
+  log(
+    'Setting resolved_profit_adjustment for resolved bettors on market',
     resolvedContractId,
-    userIds: userIds.length,
-  })
+    'users:',
+    userIds.length
+  )
   await pg.none(
     `
   with resolved_metrics as (
@@ -109,7 +111,10 @@ export const setAdjustProfitFromResolvedMarkets = async (
     `,
     [userIds, DPM_CUTOFF_TIMESTAMP, PROFIT_CUTOFF_TIME]
   )
-  log('Adjusted profit for resolved market', { resolvedContractId })
+  log(
+    'Updated resolved_profit_adjustment for bettors on market',
+    resolvedContractId
+  )
 }
 
 export const rerankContractMetrics = async (contractId: string) => {
