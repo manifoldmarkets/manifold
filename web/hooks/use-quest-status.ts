@@ -20,9 +20,7 @@ export const useQuestStatus = (user: User | undefined | null) => {
 }
 
 const getQuestCompletionStatus = async (user: User) => {
-  const questTypes = QUEST_TYPES.filter(
-    (questType) => questType !== 'ARCHAEOLOGIST'
-  )
+  const questTypes = QUEST_TYPES
   const questToCompletionStatus = Object.fromEntries(
     questTypes.map((t) => [t, { requiredCount: 0, currentCount: 0 }])
   )
