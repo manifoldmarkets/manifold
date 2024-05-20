@@ -189,6 +189,68 @@ export function UniqueBettorBonusIncomeNotification(props: {
     </NotificationFrame>
   )
 }
+export function UniqueBettorNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const data = (notification.data ?? {}) as UniqueBettorData
+  const { outcomeType } = data
+  const relatedNotifications =
+    data && 'relatedNotifications' in data
+      ? (data as any).relatedNotifications
+      : []
+  const numNewTraders =
+    relatedNotifications.length > 0 ? relatedNotifications.length : 1
+  const answerText =
+    relatedNotifications.length > 0
+      ? relatedNotifications[0].data?.answerText
+      : undefined
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <MultipleAvatarIcons
+          notification={notification}
+          symbol={'🆕'}
+          setOpen={setOpen}
+        />
+      }
+      subtitle={
+        notification.data?.bet &&
+        notification.data?.outcomeType && (
+          <div className={'ml-0.5'}>
+            <BettorStatusLabel uniqueBettorData={data} />
+          </div>
+        )
+      }
+      link={getSourceUrl(notification)}
+    >
+      <span className="line-clamp-3">
+        <PrimaryNotificationLink
+          text={`${numNewTraders} ${maybePluralize(
+            'new trader',
+            numNewTraders
+          )}`}
+        />{' '}
+        on <QuestionOrGroupLink notification={notification} />{' '}
+        {answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : ''}
+      </span>
+      <MultiUserNotificationModal
+        notification={notification}
+        modalLabel={'Traders'}
+        open={open}
+        setOpen={setOpen}
+      />
+    </NotificationFrame>
+  )
+}
 export function PushNotificationBonusNotification(props: {
   notification: Notification
   highlighted: boolean

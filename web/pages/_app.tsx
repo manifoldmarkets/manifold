@@ -70,9 +70,9 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
 
   useThemeManager()
 
-  const title = 'Manifold | The Most Popular Prediction Markets'
+  const title = 'Manifold'
   const description =
-    "Manifold is the world's largest prediction market. Bet on news, politics, science, AI, and more with play-money. Accurate forecasts via the wisdom of the crowd."
+    'Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market.'
 
   return (
     <>

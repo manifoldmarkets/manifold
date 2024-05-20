@@ -28,6 +28,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
+import { broadcast } from './websockets/server'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -185,6 +186,7 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
+  broadcast('global/new-bet', { contractId: contractId, betId: result.betId })
 
   const {
     newBet,

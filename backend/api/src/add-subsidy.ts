@@ -10,11 +10,15 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
 > = async ({ contractId, amount }, auth) => {
+  return addContractLiquidity(contractId, amount, auth.uid)
+}
+
+export const addContractLiquidity = async (contractId: string, amount: number, userId: string) => {
   const pg = createSupabaseDirectClient()
 
   // run as transaction to prevent race conditions
   const provision = await firestore.runTransaction(async (transaction) => {
-    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const userDoc = firestore.doc(`users/${userId}`)
     const userSnap = await transaction.get(userDoc)
     if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
     const user = userSnap.data() as User
@@ -55,7 +59,7 @@ export const addLiquidity: APIHandler<
 
     const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
       getNewLiquidityProvision(
-        auth.uid,
+        userId,
         subsidyAmount,
         contract,
         newLiquidityProvisionDoc.id
@@ -72,7 +76,7 @@ export const addLiquidity: APIHandler<
 
   await pg.tx((tx) =>
     insertTxn(tx, {
-      fromId: auth.uid,
+      fromId: userId,
       amount: amount,
       toId: contractId,
       toType: 'CONTRACT',

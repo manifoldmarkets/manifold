@@ -16,6 +16,7 @@ import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { runTxn } from 'shared/txn/run-txn'
+import { broadcast } from './websockets/server'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -117,6 +118,10 @@ export const createCommentOnContractInternal = async (
   if (ret.error) {
     throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
   }
+  broadcast('global/new-comment', {
+    contractId: contractId,
+    commentId: comment.id,
+  })
 
   return {
     result: comment,

@@ -712,6 +712,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
+  onMouseLeave?: () => void
   Tooltip?: (props: TooltipProps<P>) => ReactNode
   pct?: boolean
   contractId?: string
@@ -770,7 +771,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? axisRight<number>(yScale)
             .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ'
+        : yKind === 'Ṁ' || yKind === 'spice'
         ? negativeThreshold
           ? axisRight<number>(yScale)
               .tickValues(customTickValues)
@@ -816,6 +817,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseLeave = useEvent(() => {
     props.onMouseOver?.(undefined)
     setMouse(undefined)
+    if (!!props.onMouseLeave) {
+      props.onMouseLeave()
+    }
   })
 
   const {
@@ -855,6 +859,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onHoverAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
+        yKind={yKind}
       >
         {typeof color !== 'string' && (
           <defs>
