@@ -77,29 +77,34 @@ export const setAdjustProfitFromResolvedMarkets = async (
       select ucm.profit_adjustment, ucm.user_id
       from user_contract_metrics ucm
        join contracts on contracts.id = ucm.contract_id
-        -- don't get ucm's per answer id unless it's not resolved or resolved after cutoff time
-       left join answers on answers.id = ucm.answer_id and answers.contract_id = contracts.id and
-          (contracts.resolution_time is null or contracts.resolution_time > millis_to_ts($3))
+        -- don't get ucm's per answer id unless it's not fully resolved
+       left join answers on answers.id = ucm.answer_id and answers.contract_id = contracts.id
       where ucm.user_id = any($1)
       -- ignore old dpm markets
       and (contracts.mechanism != 'cpmm-multi-1' or
            contracts.created_time >$2)
       and (
+          -- get ucm's for resolved, non-multi markets
           (contracts.resolution_time is not null
           and ucm.answer_id is null
           and ucm.profit_adjustment is not null
-          and (contracts.mechanism!='cpmm-multi-1' or
-               contracts.resolution_time < millis_to_ts($3)))
+          and contracts.mechanism!='cpmm-multi-1')
           or
+          -- get ucm's for resolved multi market answers
           (answers.data->'resolutionTime' is not null
             and ucm.answer_id is not null
             and ucm.profit_adjustment is not null)
         )
+  ),
+  aggregated_metrics as (
+    select user_id, sum(resolved_metrics.profit_adjustment) as resolved_profit_adjustment
+    from resolved_metrics
+    group by user_id
   )
   update users
-  set resolved_profit_adjustment = sum(resolved_metrics.profit_adjustment)
-  from resolved_metrics
-  where users.id = resolved_metrics.user_id
+  set resolved_profit_adjustment = aggregated_metrics.resolved_profit_adjustment
+  from aggregated_metrics
+  where users.id = aggregated_metrics.user_id
   and users.id = any($1)
     `,
     [userIds, DPM_CUTOFF_TIMESTAMP, PROFIT_CUTOFF_TIME]

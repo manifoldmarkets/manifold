@@ -448,13 +448,36 @@ export const isMarketRanked = (contract: Contract) =>
 
 export const PROFIT_CUTOFF_TIME = 1715805887741
 export const DPM_CUTOFF_TIMESTAMP = '2023-08-01 18:06:58.813000 +00:00'
-export const getAdjustedProfit = (contract: Contract, profit: number) =>
-  isMarketRanked(contract) &&
-  contract.resolutionTime &&
-  contract.resolutionTime <= PROFIT_CUTOFF_TIME &&
-  (contract.mechanism !== 'cpmm-multi-1' ||
-    contract.createdTime > Date.parse(DPM_CUTOFF_TIMESTAMP))
+export const getAdjustedProfit = (
+  contract: Contract,
+  profit: number,
+  answers: Answer[] | undefined,
+  answerId: string | null
+) => {
+  if (contract.mechanism === 'cpmm-multi-1') {
+    if (!answerId) return undefined
+    const answer = answers?.find((a) => a.id === answerId)
+    if (!answer) {
+      console.log(
+        `answer with id ${answerId} not found, but is required for cpmm-multi-1 contract: ${contract.id}`
+      )
+      return undefined
+    }
+    return isMarketRanked(contract) &&
+      answer.resolutionTime &&
+      answer.resolutionTime <= PROFIT_CUTOFF_TIME &&
+      contract.createdTime > Date.parse(DPM_CUTOFF_TIMESTAMP)
+      ? 9 * profit
+      : isMarketRanked(contract)
+      ? undefined
+      : -1 * profit
+  }
+
+  return isMarketRanked(contract) &&
+    contract.resolutionTime &&
+    contract.resolutionTime <= PROFIT_CUTOFF_TIME
     ? 9 * profit
     : isMarketRanked(contract)
     ? undefined
     : -1 * profit
+}

@@ -39,7 +39,10 @@ const userToPortfolioMetrics: {
   }
 } = {}
 
-export async function updateUserMetricsCore(userIds?: string[]) {
+export async function updateUserMetricsCore(
+  userIds?: string[],
+  allTime?: boolean
+) {
   const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
@@ -134,7 +137,7 @@ export async function updateUserMetricsCore(userIds?: string[]) {
   const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
     pg,
     activeUserIds,
-    weekAgo
+    allTime ? 0 : weekAgo
   )
   log(
     `Loaded ${sumBy(
@@ -239,21 +242,49 @@ export async function updateUserMetricsCore(userIds?: string[]) {
       })
     )
 
-    const unresolvedMarketIds = uniq(
-      unresolvedBetsOnly.map((b) => b.contractId)
-    )
-
     const { balance, investmentValue, totalDeposits } = newPortfolio
     const allTimeProfit = balance + investmentValue - totalDeposits
+    const unresolvedMetrics = freshMetrics.filter((m) => {
+      const contract = contractsById[m.contractId]
+      if (contract.mechanism === 'cpmm-multi-1') {
+        // Don't double count null answer profits
+        if (!m.answerId) return false
+        const answer = answersByContractId[m.contractId]?.find(
+          (a) => a.id === m.answerId
+        )
+        return !answer?.resolutionTime
+      }
+      return !contract.isResolved
+    })
+    let resolvedProfitAdjustment = user.resolvedProfitAdjustment ?? 0
+    if (allTime) {
+      const resolvedMetrics = freshMetrics.filter((m) => {
+        const contract = contractsById[m.contractId]
+        if (contract.mechanism === 'cpmm-multi-1') {
+          // Don't double count null answer profits
+          if (!m.answerId) return false
+          const answer = answersByContractId[m.contractId]?.find(
+            (a) => a.id === m.answerId
+          )
+          return !!answer?.resolutionTime
+        }
+        return contract.isResolved
+      })
+      resolvedProfitAdjustment = sumBy(
+        resolvedMetrics,
+        (m) => m.profitAdjustment ?? 0
+      )
+      await pg.none(
+        `update users
+         set resolved_profit_adjustment = $1
+         where id = $2`,
+        [resolvedProfitAdjustment, user.id]
+      )
+    }
     const leaderBoardProfit =
-      (user.resolvedProfitAdjustment ?? 0) +
+      resolvedProfitAdjustment +
       // Resolved profits are already included in the user's balance - deposits
-      sumBy(
-        freshMetrics.filter(
-          (m) => !m.answerId && unresolvedMarketIds.includes(m.contractId)
-        ),
-        (m) => (m.profitAdjustment ?? 0) + m.profit
-      ) +
+      sumBy(unresolvedMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
       allTimeProfit
 
     const didPortfolioChange =
@@ -327,10 +358,11 @@ export async function updateUserMetricsCore(userIds?: string[]) {
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
-      pg.query(
-        `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
-        [new Date(now).toISOString(), userIdsNotWritten]
-      ),
+      userIdsNotWritten.length > 0 &&
+        pg.query(
+          `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
+          [new Date(now).toISOString(), userIdsNotWritten]
+        ),
       writer
         .close()
         .catch((e) => log.error('Error bulk writing user updates', e))

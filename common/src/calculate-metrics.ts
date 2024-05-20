@@ -199,11 +199,12 @@ export const calculateUserMetrics = (
 ) => {
   const useDenormalizedAnswers =
     contract.mechanism === 'cpmm-multi-1' && !answers
+  const answersToUse = useDenormalizedAnswers ? contract.answers : answers
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
   const currentMetrics = getContractBetMetricsPerAnswer(
     contract,
     bets,
-    useDenormalizedAnswers ? contract.answers : answers
+    answersToUse
   )
   const bet = first(bets)
   return currentMetrics.map((current) => {
@@ -214,7 +215,12 @@ export const calculateUserMetrics = (
       userId: user?.id ?? bet?.userId,
       userUsername: user?.username ?? bet?.userUsername,
       userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
-      profitAdjustment: getAdjustedProfit(contract, current.profit),
+      profitAdjustment: getAdjustedProfit(
+        contract,
+        current.profit,
+        answersToUse,
+        current.answerId
+      ),
     } as ContractMetric)
   })
 }
