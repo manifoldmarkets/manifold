@@ -19,14 +19,14 @@ export function FilterPill(props: {
         type === 'filter'
           ? selected
             ? 'bg-sky-500 text-white hover:bg-sky-600'
-            : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30'
+            : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'
           : type === 'sort'
           ? selected
             ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-            : 'bg-primary-500/10 hover:bg-primary-500/30 text-ink-600'
+            : 'bg-primary-500/10 hover:bg-primary-500/30 text-ink-600 dark:bg-primary-500/20 dark:hover:bg-primary-500/30 '
           : selected
           ? 'bg-purple-500 text-white hover:bg-purple-600 focus-visible:bg-purple-600'
-          : 'text-ink-600 bg-purple-500/10 hover:bg-purple-500/30',
+          : 'text-ink-600 bg-purple-500/10 hover:bg-purple-500/30 dark:bg-purple-500/20 dark:hover:bg-purple-500/30',
         className
       )}
       onClick={onSelect}
