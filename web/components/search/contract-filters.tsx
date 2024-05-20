@@ -7,7 +7,6 @@ import { getLabelFromValue } from './search-dropdown-helpers'
 import router from 'next/router'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
-import { Spacer } from 'web/components/layout/spacer'
 import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { Carousel } from 'web/components/widgets/carousel'
 import {
@@ -36,7 +35,6 @@ import {
 import { useState } from 'react'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import { IoFilter } from 'react-icons/io5'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 
 export function ContractFilters(props: {

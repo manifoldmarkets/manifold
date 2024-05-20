@@ -23,7 +23,6 @@ import {
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
 import { SupabaseSearch } from 'web/components/supabase-search'
-import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'

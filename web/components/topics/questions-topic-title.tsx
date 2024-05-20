@@ -20,9 +20,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { toast } from 'react-hot-toast'
 import { getTopicShareUrl } from 'common/util/share'
-import { BackButton } from '../contract/back-button'
-import clsx from 'clsx'
-import { useRouter } from 'next/router'
 import Link from 'next/link'
 
 export const QuestionsTopicTitle = forwardRef(
