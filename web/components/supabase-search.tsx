@@ -1,44 +1,39 @@
 'use client'
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { Contract } from 'common/contract'
+import { LiteGroup } from 'common/group'
 import { capitalize, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
-import { Contract } from 'common/contract'
-import { useEvent } from 'web/hooks/use-event'
+import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
+import { useEvent } from 'web/hooks/use-event'
+import { usePartialUpdater } from 'web/hooks/use-partial-updater'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { track, trackCallback } from 'web/lib/service/analytics'
-import DropdownMenu from './comments/dropdown-menu'
+import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
+import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
-import generateFilterDropdownItems, {
-  getLabelFromValue,
-} from './search/search-dropdown-helpers'
 import { Input } from './widgets/input'
-import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { usePartialUpdater } from 'web/hooks/use-partial-updater'
-import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
-import { LiteGroup } from 'common/group'
-import { TopicTag } from 'web/components/topics/topic-tag'
-import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 
-import { searchUsers } from 'web/lib/supabase/users'
-import { IconButton } from 'web/components/buttons/button'
+import { FullUser } from 'common/api/user-types'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
-import { UserResults } from './search/user-results'
+import { buildArray } from 'common/util/array'
+import { IconButton } from 'web/components/buttons/button'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { searchContracts, searchGroups } from 'web/lib/firebase/api'
-import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
-import { LoadingIndicator } from './widgets/loading-indicator'
+import { searchUsers } from 'web/lib/supabase/users'
 import {
   actionColumn,
   probColumn,
   traderColumn,
 } from './contract/contract-table-col-formats'
-import { buildArray } from 'common/util/array'
 import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
-import { FullUser } from 'common/api/user-types'
-import router from 'next/router'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { ContractFilters } from './search/contract-filters'
+import { UserResults } from './search/user-results'
+import { BrowseTopicPills } from './topics/browse-topic-pills'
+import { LoadingIndicator } from './widgets/loading-indicator'
+import { LoadMoreUntilNotVisible } from './widgets/visibility-observer'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -60,7 +55,7 @@ export const SORTS = [
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
-const predictionMarketSorts = new Set([
+export const predictionMarketSorts = new Set([
   'daily-score',
   '24-hour-vol',
   'liquidity',
@@ -72,29 +67,29 @@ const predictionMarketSorts = new Set([
   'freshness-score',
 ])
 
-const bountySorts = new Set(['bounty-amount'])
+export const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
-const BOUNTY_MARKET_SORTS = SORTS.filter(
+export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
-const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-const PREDICTION_MARKET_SORTS = SORTS.filter(
+export const PREDICTION_MARKET_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
 )
 
-const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
+export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
 export type Sort = (typeof SORTS)[number]['value']
 
-const FILTERS = [
+export const FILTERS = [
   { label: 'Any status', value: 'all' },
   { label: 'Open', value: 'open' },
   { label: 'Closing this month', value: 'closing-this-month' },
@@ -105,7 +100,7 @@ const FILTERS = [
 
 export type Filter = (typeof FILTERS)[number]['value']
 
-const CONTRACT_TYPES = [
+export const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
@@ -114,6 +109,17 @@ const CONTRACT_TYPES = [
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
 ] as const
+
+export const DEFAULT_SORT = 'score'
+export const DEFAULT_SORTS = ['freshness-score', 'close-date', 'newest']
+export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
+export const DEFAULT_POLL_SORTS = ['newest']
+
+export const DEFAULT_FILTER = 'all'
+export const DEFAULT_FILTERS = ['open','closing-this-month']
+
+export const DEFAULT_CONTRACT_TYPE = 'ALL'
+export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
@@ -181,6 +187,8 @@ export function SupabaseSearch(props: {
   showTopicTag?: boolean
   hideSearchTypes?: boolean
   hideAvatars?: boolean
+  shownTopics?: LiteGroup[]
+  setTopicSlug?: (slug: string) => void
 }) {
   const {
     defaultSort,
@@ -207,6 +215,8 @@ export function SupabaseSearch(props: {
     hideSearch,
     hideSearchTypes,
     hideAvatars,
+    shownTopics,
+    setTopicSlug
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -241,8 +251,7 @@ export function SupabaseSearch(props: {
 
   const showSearchTypes =
     !hideSearchTypes &&
-    !contractsOnly &&
-    (((!topicSlug || topicSlug === 'for-you') && query !== '') || searchType)
+    !contractsOnly && (topicSlug == 'for-you' || !topicSlug)
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -311,6 +320,11 @@ export function SupabaseSearch(props: {
       </Col>
     ))
 
+
+  const showUsers = userResults &&
+            userResults.length > 0 &&
+            query !== '' 
+  const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
   return (
     <Col className="w-full">
       <Col
@@ -370,27 +384,52 @@ export function SupabaseSearch(props: {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             topicSlug={topicSlug}
+            setTopicSlug={setTopicSlug}
             showTopicTag={showTopicTag}
           />
         )}
       </Col>
-      {showSearchTypes && userResults && userResults.length > 0 ? (
+      {showSearchTypes ? (
         <Col>
-          <UserResults userResults={userResults} />
-          <Row className="text-ink-500 items-center gap-1 text-sm">
-            <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-            <span>
-              {!query || !contracts?.length
-                ? ''
-                : contracts.length >= 100
-                ? '100+'
-                : shouldLoadMore && !loading
-                ? `${contracts.length}+`
-                : `${contracts.length}`}{' '}
-              questions
-            </span>
-            <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-          </Row>
+          {showTopics && (
+            <>
+              <Row className="text-ink-500 items-center gap-1 text-sm">
+                <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                <span>
+                  {!query || !shownTopics?.length
+                    ? ''
+                    : shownTopics.length >= 100
+                    ? '100+'
+                    : `${shownTopics.length}`}{' '}
+                  {!query || !shownTopics?.length ? 'Topics' : 'topics'}
+                </span>
+                <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+              </Row>
+              <BrowseTopicPills
+                className={'relative w-full px-2 pb-4'}
+                topics={shownTopics}
+                currentTopicSlug={topicSlug}
+                setTopicSlug={setTopicSlug}
+              />
+            </>
+          )}
+          {showUsers && <UserResults userResults={userResults} />}
+          {(showTopics || showUsers) && (
+            <Row className="text-ink-500 items-center gap-1 text-sm">
+              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+              <span>
+                {!query || !contracts?.length
+                  ? ''
+                  : contracts.length >= 100
+                  ? '100+'
+                  : shouldLoadMore && !loading
+                  ? `${contracts.length}+`
+                  : `${contracts.length}`}{' '}
+                {!query || !contracts?.length ? 'Questions' : 'questions'}
+              </span>
+              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+            </Row>
+          )}
         </Col>
       ) : (
         rowBelowFilters
@@ -615,162 +654,3 @@ const useShim = <T extends Record<string, string | undefined>>(x: T) => {
   return [state, setState, true] as const
 }
 
-function ContractFilters(props: {
-  className?: string
-  includeProbSorts?: boolean
-  params: SearchParams
-  updateParams: (params: Partial<SearchParams>) => void
-  topicSlug: string
-  showTopicTag?: boolean
-}) {
-  const {
-    className,
-    topicSlug,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
-
-  const { s: sort, f: filter, ct: contractType } = params
-
-  const selectFilter = (selection: Filter) => {
-    if (selection === filter) return
-
-    updateParams({ f: selection })
-    track('select search filter', { filter: selection })
-  }
-
-  const selectSort = (selection: Sort) => {
-    if (selection === sort) return
-
-    if (selection === 'close-date') {
-      updateParams({ s: selection, f: 'open' })
-    } else if (selection === 'resolve-date') {
-      updateParams({ s: selection, f: 'resolved' })
-    } else {
-      updateParams({ s: selection })
-    }
-
-    track('select search sort', { sort: selection })
-  }
-
-  const selectContractType = (selection: ContractTypeType) => {
-    if (selection === contractType) return
-
-    if (selection === 'BOUNTIED_QUESTION' && predictionMarketSorts.has(sort)) {
-      updateParams({ s: 'bounty-amount', ct: selection })
-    } else if (selection !== 'BOUNTIED_QUESTION' && bountySorts.has(sort)) {
-      updateParams({ s: 'score', ct: selection })
-    } else {
-      updateParams({ ct: selection })
-    }
-    track('select contract type', { contractType: selection })
-  }
-  const hideFilter =
-    sort === 'resolve-date' ||
-    sort === 'close-date' ||
-    contractType === 'BOUNTIED_QUESTION'
-
-  const filterLabel = getLabelFromValue(FILTERS, filter)
-  const sortLabel = getLabelFromValue(SORTS, sort)
-  const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-  const topic = useGroupFromSlug(topicSlug ?? '')
-  const resetTopic = () => router.push(`/browse`)
-
-  return (
-    <Col className={clsx('my-1 items-stretch gap-2 pt-px sm:gap-2', className)}>
-      <Row className={'h-5 gap-3'}>
-        <DropdownMenu
-          items={generateFilterDropdownItems(
-            contractType == 'BOUNTIED_QUESTION'
-              ? BOUNTY_MARKET_SORTS
-              : contractType == 'POLL'
-              ? POLL_SORTS
-              : includeProbSorts &&
-                (contractType === 'ALL' || contractType === 'BINARY')
-              ? PREDICTION_MARKET_PROB_SORTS
-              : PREDICTION_MARKET_SORTS,
-            selectSort
-          )}
-          icon={
-            <Row className="text-ink-500 items-center gap-0.5">
-              <span className="whitespace-nowrap text-sm font-medium">
-                {sortLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" />
-            </Row>
-          }
-          menuWidth={'w-36'}
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={sortLabel}
-          closeOnClick={true}
-        />
-
-        {!hideFilter && (
-          <DropdownMenu
-            items={generateFilterDropdownItems(FILTERS, selectFilter)}
-            icon={
-              <Row className="text-ink-500 items-center gap-0.5">
-                <span className="whitespace-nowrap text-sm font-medium">
-                  {filterLabel}
-                </span>
-                <ChevronDownIcon className="h-4 w-4" />
-              </Row>
-            }
-            menuItemsClass="left-0 right-auto"
-            menuWidth={'w-40'}
-            selectedItemName={filterLabel}
-            closeOnClick={true}
-          />
-        )}
-        <DropdownMenu
-          items={generateFilterDropdownItems(
-            CONTRACT_TYPES,
-            selectContractType
-          )}
-          icon={
-            <Row className="text-ink-500 items-center gap-0.5">
-              <span className="whitespace-nowrap text-sm font-medium">
-                {contractTypeLabel}
-              </span>
-              <ChevronDownIcon className="h-4 w-4" />
-            </Row>
-          }
-          menuWidth={'w-36'}
-          menuItemsClass="left-0 right-auto"
-          selectedItemName={contractTypeLabel}
-          closeOnClick={true}
-        />
-        {topicSlug == topic?.slug && topic && showTopicTag && (
-          <TopicTag
-            className={
-              'text-primary-500 overflow-x-hidden text-ellipsis !py-0 lg:hidden'
-            }
-            topic={topic}
-            location={'questions page'}
-          >
-            <button onClick={resetTopic}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1  h-4 w-4" />
-            </button>
-          </TopicTag>
-        )}
-        {topicSlug === 'for-you' && showTopicTag && (
-          <Row
-            className={
-              'text-primary-500 dark:text-ink-400 hover:text-ink-600 hover:bg-primary-400/10 group items-center justify-center whitespace-nowrap rounded px-1 text-right text-sm transition-colors lg:hidden'
-            }
-          >
-            <span className="mr-px opacity-50 transition-colors group-hover:text-inherit">
-              #
-            </span>
-            ⭐️ For you
-            <button onClick={resetTopic}>
-              <XIcon className="hover:text-ink-700 text-ink-400 ml-1 h-4 w-4" />
-            </button>
-          </Row>
-        )}
-      </Row>
-    </Col>
-  )
-}

@@ -6,8 +6,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 
-const MAX_SHOWN = 15
-const MAX_SHOWN_MOBILE = 8
+export const MAX_SHOWN = 15
+export const MAX_SHOWN_MOBILE = 8
 
 export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
@@ -31,7 +31,7 @@ export function UserResults(props: { userResults: FullUser[] }) {
           <Link
             key={u.id}
             href={`/${u.username}`}
-            className="bg-ink-200 hover:bg-ink-300 dark:bg-canvas-0 hover:dark:bg-canvas-100 flex flex-row items-center gap-1 rounded-full py-1 pl-1 pr-2 transition-colors"
+            className="bg-ink-200 hover:bg-ink-300 flex flex-row items-center gap-1 rounded-full py-1 pl-1 pr-2 transition-colors"
           >
             <Avatar
               key={u.id}
@@ -47,7 +47,7 @@ export function UserResults(props: { userResults: FullUser[] }) {
         {userResults.length > MAX_INIT_USERS && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="text-primary-700 bg-ink-200 hover:bg-ink-300 dark:bg-canvas-0 hover:dark:bg-canvas-100 flex flex-row items-center gap-1 rounded-full p-2 py-1"
+            className="text-primary-700 bg-ink-200 hover:bg-ink-300 flex flex-row items-center gap-1 rounded-full p-2 py-1"
           >
             {expanded
               ? `Show less`
