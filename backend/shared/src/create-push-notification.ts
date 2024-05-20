@@ -6,7 +6,7 @@ import { Notification } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { log } from 'shared/utils'
-import { PushTicket } from 'common/push-ticket'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 type ExpoPushMessageWithNotification = ExpoPushMessage & {
   data: Notification
@@ -19,6 +19,7 @@ export const createPushNotification = async (
   body: string
 ) => {
   const firestore = admin.firestore()
+  const pg = createSupabaseDirectClient()
   const expo = new Expo()
   const { sendToMobile } = getNotificationDestinationsForUser(
     privateUser,
@@ -52,16 +53,19 @@ export const createPushNotification = async (
   )
   await Promise.all(
     (successTickets as ExpoPushSuccessTicket[]).map(async (ticket) =>
-      firestore
-        .collection(`users/${privateUser.id}/pushNotificationTickets`)
-        .doc(ticket.id)
-        .set({
-          ...ticket,
-          userId: privateUser.id,
-          notificationId: notification.id,
-          createdTime: Date.now(),
-          receiptStatus: 'not-checked',
-        } as PushTicket)
+      pg.none(
+        `
+          insert into push_notification_tickets (id,status, user_id, notification_id, receipt_status)
+          values ($1, $2, $3, $4, $5)
+          `,
+        [
+          ticket.id,
+          ticket.status,
+          privateUser.id,
+          notification.id,
+          'not-checked',
+        ]
+      )
     )
   )
   await Promise.all(
