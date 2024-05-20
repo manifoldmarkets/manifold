@@ -83,19 +83,19 @@ export const bountySorts = new Set(['bounty-amount'])
 
 const probSorts = new Set(['prob-descending', 'prob-ascending'])
 
-const BOUNTY_MARKET_SORTS = SORTS.filter(
+export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
 )
 
-const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
+export const POLL_SORTS = BOUNTY_MARKET_SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
-const PREDICTION_MARKET_SORTS = SORTS.filter(
+export const PREDICTION_MARKET_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value) && !probSorts.has(item.value)
 )
 
-const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
+export const PREDICTION_MARKET_PROB_SORTS = SORTS.filter(
   (item) => !bountySorts.has(item.value)
 )
 
@@ -122,8 +122,15 @@ export const CONTRACT_TYPES = [
   { label: 'Poll', value: 'POLL' },
 ] as const
 
-export const DEFAULT_SORTS = ['score', 'freshness-score', 'close-date', 'newest']
+export const DEFAULT_SORT = 'score'
+export const DEFAULT_SORTS = ['freshness-score', 'close-date', 'newest']
+export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
+export const DEFAULT_POLL_SORTS = ['newest']
+
+export const DEFAULT_FILTER = 'all'
 export const DEFAULT_FILTERS = ['open','closing-this-month']
+
+export const DEFAULT_CONTRACT_TYPE = 'ALL'
 export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
