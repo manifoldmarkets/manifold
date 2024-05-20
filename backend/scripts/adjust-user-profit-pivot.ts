@@ -18,8 +18,10 @@ if (require.main === module) {
     let total = 0
     for (const userIds of chunks) {
       await updateUserMetricsCore(userIds, true)
-      total += chunk.length
-      console.log(`Updated ${chunk.length} users, total ${total} users updated`)
+      total += userIds.length
+      console.log(
+        `Updated ${userIds.length} users, total ${total} users updated`
+      )
     }
   })
 }
