@@ -4,7 +4,7 @@ import { log } from 'shared/utils'
 import { DPM_CUTOFF_TIMESTAMP, PROFIT_CUTOFF_TIME } from 'common/contract'
 
 const UNRANK_AND_ZERO_PROFITS = true
-const ONLY_UNRANK_AND_ZERO_PROFITS = false
+const ONLY_UNRANK_AND_ZERO_PROFITS = true
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
@@ -19,12 +19,12 @@ if (require.main === module) {
              -- unranked
              coalesce((contracts.data -> 'isRanked')::boolean, true) = false or
              -- or unlisted
-             contracts.visibility != 'public' or
+             contracts.visibility != 'public'
              -- or formerly dpm
-              (contracts.mechanism = 'cpmm-multi-1' and contracts.created_time < $2::timestamptz)
+--              or (contracts.mechanism = 'cpmm-multi-1' and contracts.created_time < $2::timestamptz)
              )
            and contracts.resolution_time is not null
-           and contracts.resolution_time <= millis_to_ts($1)
+--            and contracts.resolution_time <= millis_to_ts($1)
         `,
         [PROFIT_CUTOFF_TIME, DPM_CUTOFF_TIMESTAMP],
         (row) => row.id
@@ -37,7 +37,7 @@ if (require.main === module) {
           chunk.map(async (userId) => {
             await pg.none(
               `
-                  with filtered_metrics as (select ucm.profit, ucm.id as ucm_id
+                  with filtered_metrics as (select ucm.id as ucm_id
                     from user_contract_metrics ucm
                     join contracts on contracts.id = ucm.contract_id
                       where ucm.user_id = $1
@@ -46,15 +46,15 @@ if (require.main === module) {
                         -- unranked    
                        coalesce((contracts.data -> 'isRanked')::boolean, true) = false or
                        -- or unlisted
-                       contracts.visibility != 'public' or
-                       -- or formerly dpm
-                        (contracts.mechanism = 'cpmm-multi-1' and contracts.created_time < $3::timestamptz)
+                       contracts.visibility != 'public'
+--                        formerly dpm get set to null
+--                        or (contracts.mechanism = 'cpmm-multi-1' and contracts.created_time < $3::timestamptz)
                        )
                      and contracts.resolution_time is not null
-                     and contracts.resolution_time <= millis_to_ts($2)
+--                      and contracts.resolution_time <= millis_to_ts($2)
                     )
                   update user_contract_metrics
-                  set profit_adjustment = null
+                  set profit_adjustment = -profit
                   from filtered_metrics
                   where user_contract_metrics.id = filtered_metrics.ucm_id;
               `,
