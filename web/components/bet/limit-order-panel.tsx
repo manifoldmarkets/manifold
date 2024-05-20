@@ -83,7 +83,7 @@ export default function LimitOrderPanel(props: {
   }
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
-  const defaultBetAmount = 100
+  const defaultBetAmount = 1000
   const [betAmount, setBetAmount] = useState<number | undefined>(
     defaultBetAmount
   )

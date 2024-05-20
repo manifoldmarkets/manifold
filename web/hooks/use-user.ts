@@ -35,7 +35,7 @@ export const usePollUser = (userId: string | undefined) => {
 
       return convertUser(data[0])
     },
-    { listen: !!userId }
+    { listen: !!userId, keys: [userId] }
   )
 }
 

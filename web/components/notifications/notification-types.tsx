@@ -1,11 +1,12 @@
-import { StarIcon } from '@heroicons/react/solid'
+import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { REFERRAL_AMOUNT } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
+  AirdropData,
   BetFillData,
   BetReplyNotificationData,
   ContractResolutionData,
+  ExtraPurchasedManaData,
   getSourceUrl,
   Notification,
   ReactionNotificationTypes,
@@ -20,10 +21,6 @@ import { formatMoney } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
-import {
-  CommentOnLoverNotification,
-  NewMatchNotification,
-} from 'manifold-love/components/love-notification-types'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Referrals } from 'web/components/buttons/referrals-button'
@@ -39,6 +36,7 @@ import {
   PushNotificationBonusNotification,
   QuestIncomeNotification,
   UniqueBettorBonusIncomeNotification,
+  UniqueBettorNotification,
   UserJoinedNotification,
 } from 'web/components/notifications/income-summary-notifications'
 import {
@@ -77,9 +75,17 @@ export function NotificationItem(props: {
   const { sourceType, reason, sourceUpdateType } = notification
 
   const [highlighted, setHighlighted] = useState(!notification.isSeen)
-  if (reason === 'unique_bettors_on_your_contract') {
+  if (reason === 'unique_bettors_on_your_contract' && sourceType === 'bonus') {
     return (
       <UniqueBettorBonusIncomeNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'unique_bettors_on_your_contract') {
+    return (
+      <UniqueBettorNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -195,24 +201,6 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment_on_lover') {
-    return (
-      <CommentOnLoverNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
-  } else if (sourceType === 'new_match') {
-    return (
-      <NewMatchNotification
-        notification={notification}
-        isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-      />
-    )
   } else if (reason === 'tagged_user') {
     return (
       <TaggedUserNotification
@@ -302,7 +290,7 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'answer' || sourceType === 'love_answer') {
+  } else if (sourceType === 'answer') {
     return (
       <AnswerNotification
         notification={notification}
@@ -391,18 +379,18 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'new_love_like') {
+  } else if (reason === 'airdrop') {
     return (
-      <LoveLikeNotification
+      <AirdropNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
       />
     )
-  } else if (reason === 'new_love_ship') {
+  } else if (reason === 'extra_purchased_mana') {
     return (
-      <LoveShipNotification
+      <ExtraPurchasedManaNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1753,69 +1741,39 @@ function PollClosedNotification(props: {
   )
 }
 
-function LoveLikeNotification(props: {
+function AirdropNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const [open, setOpen] = useState(false)
-  const { sourceUserName, sourceUserUsername } = notification
-  const relatedNotifications: Notification[] = notification.data
-    ?.relatedNotifications ?? [notification]
-  const reactorsText =
-    relatedNotifications.length > 1
-      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-          relatedNotifications.length > 2 ? 's' : ''
-        }`
-      : sourceUserName
+  const { amount } = notification.data as AirdropData
+
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      icon={
-        <MultipleAvatarIcons
-          notification={notification}
-          symbol={'💖'}
-          setOpen={setOpen}
-        />
-      }
-      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
       subtitle={<></>}
     >
-      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
-      you!
-      <MultiUserReactionModal
-        similarNotifications={relatedNotifications}
-        modalLabel={'Who liked it?'}
-        open={open}
-        setOpen={setOpen}
-      />
+      Congratulations! You just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span> as a gift
+      from Manifold for being active for 30 days this year!
     </NotificationFrame>
   )
 }
 
-function LoveShipNotification(props: {
+function ExtraPurchasedManaNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
-  const [open, setOpen] = useState(false)
-  const { sourceUserName, sourceUserUsername } = notification
-  const relatedNotifications: Notification[] = notification.data
-    ?.relatedNotifications ?? [notification]
-  const reactorsText =
-    relatedNotifications.length > 1
-      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-          relatedNotifications.length > 2 ? 's' : ''
-        }`
-      : sourceUserName
-  const { creatorId, creatorName, creatorUsername } = notification.data ?? {}
+  const { amount } = notification.data as ExtraPurchasedManaData
 
   return (
     <NotificationFrame
@@ -1823,31 +1781,12 @@ function LoveShipNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      icon={
-        <MultipleAvatarIcons
-          notification={notification}
-          symbol={'💖'}
-          setOpen={setOpen}
-        />
-      }
-      link={`https://${ENV_CONFIG.loveDomain}/${sourceUserUsername}`}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
       subtitle={<></>}
     >
-      You and {reactorsText && <PrimaryNotificationLink text={reactorsText} />}{' '}
-      are being shipped by{' '}
-      <NotificationUserLink
-        name={creatorName}
-        username={creatorUsername}
-        userId={creatorId}
-        hideBadge
-      />
-      !
-      <MultiUserReactionModal
-        similarNotifications={relatedNotifications}
-        modalLabel={'Who liked it?'}
-        open={open}
-        setOpen={setOpen}
-      />
+      Thank you for buying mana in 2024! You just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span>, which is 9
+      times what you purchased, as a gift from Manifold!
     </NotificationFrame>
   )
 }

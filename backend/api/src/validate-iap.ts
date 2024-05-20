@@ -15,10 +15,11 @@ const bodySchema = z
   })
   .strict()
 
+
 const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
-  mana_1000: 1000,
-  mana_2500: 2500,
-  mana_10000: 10000,
+  mana_1000: 10000, // note: SKUs created before rate change
+  mana_2500: 25000,
+  mana_10000: 100000,
 }
 
 const IAP_TYPES_PROCESSED = 'apple'

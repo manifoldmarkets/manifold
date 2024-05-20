@@ -12,6 +12,7 @@ export const readJson = async <T>(filename: string) => {
   } catch (e) {
     if (e && typeof e === 'object' && 'code' in e && e.code === 'ENOENT') {
       // File doesn't exist.
+      console.log('File does not exist:', filename)
       return undefined
     } else {
       throw e

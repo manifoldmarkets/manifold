@@ -2,7 +2,7 @@
 
 Everything you wanted to know about [Manifold](https://manifold.markets) in one place!
 
-## Basics
+## Basics - How does Manifold work?
 
 ### What is a prediction market?
 
@@ -14,7 +14,7 @@ As more people trade on the market, the probability estimate converges to reflec
 
 On Manifold, anyone can create their own prediction market about any question they want! We believe prediction markets are not only the best way to forecast difficult questions, but also a fun way to interact with friends, build communities over shared interests, and facilitate the sharing of information.
 
-Manifold Markets is the best prediction markets platform because it offers the widest variety of question topics contributed by a large community. This diversity allows you to leverage your experience across multiple domains to showcase your knowledge and earn more mana from succeesful trades or unique and engaging questions.
+Manifold is the best prediction markets platform because it offers the widest variety of question topics contributed by a large community. This diversity allows you to leverage your experience across multiple domains to showcase your knowledge and earn more mana from successful trades or unique and engaging questions.
 
 #### An example
 
@@ -28,19 +28,19 @@ Now, you or I could be mistaken and overshooting the true probability one way or
 
 ### Do prediction markets work without real money?
 
-Yes! Manifold Markets has consistently proven its validity and efficacy as a leading prediction market platform. Manifold Markets compiles site wide prediction data to determine how well calibrated the site is at predicting events, you can assess Manifold's predictive track record in real time from our [platform calibration page](https://manifold.markets/calibration).
+Yes! Manifold has consistently proven its validity and efficacy as a leading prediction market platform. Manifold compiles site wide prediction data to determine how well calibrated the site is at predicting events, you can assess Manifold's predictive track record in real time on our [platform calibration page](https://manifold.markets/calibration).
 
-Beside our own platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
+Beyond our platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
 
-Traders in a play-money environments are competing for the social prestige and sense of progression that come from predicting and trading well.
+Traders in a play-money environment are competing for social prestige and a sense of progression that come from predicting and trading well. Manifold also has prizes available in some regions.
 
 ## Using Manifold
 
 ### Why Manifold?
 
-Manifold Markets is the easiest prediction site to use. New users can instantly sign in with existing Google or Apple accounts and start predicting for free in less than a minute. No deposits required.
+Manifold is a social prediction game, which makes it the easiest prediction site to use. New users can instantly sign in with existing Google or Apple accounts and start predicting for free in less than a minute. No purchase is required to join and use Manifold.
 
-Manifold is the best prediction site because it offers the widest variety of questions and topics, contributed by an expansive community. Community made markets means that you can easily find more markets that you actually care about and have more opportunities to leverage your knowledge to win mana!
+Manifold is the best prediction site because it offers the largest variety of questions and topics, contributed by an expansive community. Community made markets means that you can easily find more markets that you actually care about and have more opportunities to leverage your knowledge to win mana!
 
 If a market doesn't exist... [Create a market yourself!](https://manifold.markets/create)
 
@@ -54,17 +54,16 @@ In addition, you can [purchase more mana](https://manifold.markets/add-funds).
 
 ### What are prize points
 
-- When a question or a multiple choice answer resolves you recieve prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only recieve mana. Of course, if you hold to the end but the market resolves against you, you recieve nothing. See resolution and payouts sections below for more details.
+- When a prize points enabled question or multiple choice answer resolves, you recieve prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only recieve mana. Of course, if you hold to the end but the market resolves against you, you recieve nothing. See resolution and payouts sections below for more details.
 - You may convert prize points back into mana
-- Prize points can be [redeemed for charity donations](#how-can-i-donate-to-charity) at a rate of $1 per 100 points
+- Prize points can be [redeemed for charity donations](#how-can-i-donate-to-charity) at a rate of $0.95 per 1,000 points
 
 ### How can I earn mana?
 
 Mana can be earned by making correct predictions, successful trades, creating popular markets, completing quests, referring friends or completing bounties.
 
 - **Trader activity** -
-  As the creator of a market, Manifold will give you M5 each time a unique user bets on your market. This bonus is capped per market at 100 unique traders.
-  In addition, Manifold charges a fee on all bets, of which half goes to the creator.
+  As the creator of a market, you are entitled to half of the fees Manifold charges on all bets.
 
 - **Quests** -
   Quests provide specific incentives to engage with Manifold Markets in different ways.
@@ -74,13 +73,11 @@ There is a daily quest to bet, which gives a reward of M10. For each consecutive
 
 You can find all other available quests by navigating to your profile page and clicking on the streak button.
 
-- **Claiming bounties** -
-  [Bounty markets](https://manifold.markets/browse?ct=BOUNTIED_QUESTION&s=bounty-amount) enable the bounty creator to grant mana to respondents. This is both an easy way for users to make mana, and a great method of getting answers to questions or help with a task. At the time of writing, the largest bounty available is ["What will be the first Manifold question to be #1 on Hacker News?"](https://manifold.markets/SG/what-will-be-the-first-manifold-que-031e9cb3a36a?r=R2Vu) with an avaialable reward of M25,000.
 
-### How else can I earn prize points
+### How else can I earn prize points?
 
 - [**Referring friends**](https://manifold.markets/referrals) -
-  Receive M250 for each person who signs up when you share a market or group! Make sure they use your link and place at least one trade after signing up.
+  Receive 1,000 Prize Points for each person who signs up when you share a market or group! Make sure they use your share link and place at least one trade after signing up. Click share, DO NOT copy the URL.
 
 - **Leagues** -
   [Manifold Leagues](https://manifold.markets/leagues) are a fun way to compete with people globally who predict at a similar skill/intensity. They are a month long competition with significant rewards, so keep an eye on opportunities to advance in your league!
@@ -88,6 +85,8 @@ You can find all other available quests by navigating to your profile page and c
 ### What types of questions can I use Manifold to answer?
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
+
+Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not compy with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-39739056690b46f49b3573378eb484eb)
 
 Here are some of the top use cases for our markets, with corresponding examples.
 
@@ -146,13 +145,11 @@ There are several things you can do to create high-quality, impactful markets:
 - **Share your market!** -
   Post your market to other social networks that have communities that would be interested in your question.
 - **Subsidise your market!** -
-  Add mana to the [liquidity pool](https://www.notion.so/What-is-the-liquidity-pool-1286559113b44986b9ac01ad4830936f) or set up some limit orders to increase the potential profit traders can make.
-- **Unlisted markets** -
-  Choose to unlist your market if you don’t want it to be on the public feeds or if it breaches our [guidelines](https://www.notion.so/Community-Guidelines-39739056690b46f49b3573378eb484eb). It can still be discovered through groups and your profile page.
+  Add mana to the [liquidity pool](https://manifoldmarkets.notion.site/What-is-the-liquidity-pool-1286559113b44986b9ac01ad4830936f?pvs=4) or set up some limit orders to increase the potential profit traders can make.
 
 ### How do I become a good trader?
 
-A good first step is to have a firm understanding of what various numbers mean and understanding how to [track your portfolio](https://www.notion.so/How-can-I-track-my-profit-and-losses-3512c209f47e4a1a8fb678c1ff2a5420).
+A good first step is to have a firm understanding of what various numbers mean and understanding how to [track your portfolio](https://manifoldmarkets.notion.site/How-can-I-track-my-profit-and-losses-3512c209f47e4a1a8fb678c1ff2a5420?pvs=4).
 
 Here are some other tips to get you started:
 
@@ -171,13 +168,13 @@ Here are some other tips to get you started:
 - **Follow successful traders** -
   This increases your exposure to winning strategies. Watching how some of the [top traders on Manifold Markets](https://manifold.markets/leaderboards) use their mana can provide a good indication of what works. If you're ever curious how someone made a large profit on a market with a small position, or predicted an event, ask them!
 
-But there is no strategy that can garuntee success. Never put in more than you are willing to lose
+But there is no strategy that can guarantee success. Never put in more than you are willing to lose.
 
 ## Resolving markets
 
 ### How does resolving markets work?
 
-Whoever created the market gets to resolve it! Manifold puts trust in its users to resolve their own markets in a timely and accurate manner. We encourage creators to set clear resolution criteria in advance. In exceptional circumstances, our team of moderators will resolve based on a 3 person vote.
+Whoever created the market gets to resolve it! Manifold puts trust in its users to resolve their own markets in a timely and accurate manner. We encourage creators to set clear resolution criteria in advance. In exceptional circumstances, our team of moderators will overturn resolutions.
 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
@@ -190,13 +187,13 @@ Markets should be resolved in a timely fashion once the resolution conditions ar
 
 If a market closes and there won’t be a resolution in the foreseeable future, consider editing and extending the closing date.
 
-- For Yes/No markets it is generally recommended to resolve fully to one outcome. Only resolve to a particular probability (PROB) if you have a good justification for it.
-- Resolving to PROB allows you to choose a specific % if you think the outcome lies between Yes and No.
+- For Yes/No markets it is generally recommended to resolve fully to one outcome. Only resolve to a particular probability (PARTIAL) if you have a good justification for it.
+- Resolving to PARTIAL allows you to choose a specific % if you think the outcome lies between Yes and No.
 - When resolving Free response and multiple choice markets, you can resolve fully to one answer, or select multiple and the % of the winnings you want to go towards each type of share.
 
 ### What does resolving to N/A do?
 
-Resolving a market to N/A effectively cancels the market.
+Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectationt that an N/A resolution will be possible.
 
 This means that:
 
@@ -204,7 +201,7 @@ This means that:
 - Any user who made a profit by selling shares before resolution will have that mana subtracted from their balance. This could lead to a negative balance in some cases.
 - All liquidity providers will have their mana returned to them, including the initial amount it cost to make the market.
 
-Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors.
+Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fees paid to manifold are deducted from any refunds granted during the N/A cancellation process. Fees paid to the market creator are refunded to traders.
 
 ### Closed versus resolved markets
 
@@ -221,7 +218,8 @@ Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors.
 
 - Resolution criteria for an outcome have been met.
 - Creator chooses the correct answer.
-- Winners are paid out and loans are taken back.
+- Winners are paid out and loans are taken back. 
+- If a market has prize points enabled, winnings will be paid in prize points. Otherwise, winners will receive mana.
 
 ## Market mechanics
 
@@ -256,20 +254,13 @@ Due to the price of shares fluctuating with the probability you can potentially 
 - Users’ potential profits are locked in at the moment they place their trade. The amount is equivalent to how many shares they buy. This means subsequent bets by other users on a market do not affect a previous trader’s profit on resolution.
 - E.g. 300 YES shares means a M300 payout if the market resolves YES.
 
-#### Parimutuel pay-out
-
-Parimutuel payouts are deprecated. Some older markets ran under this mechanism.
-
-- Users’ potential profit is not locked in when they bet; they are purchasing shares in the final betting pool, whose size may change.
-- For example, say you choose the correct answer so will make a profit when the market resolves. If since the time of betting the probability of the answer you chose has decreased (other users have bet on other answers) then you will win more Mana. However, if since the time of betting lots of users have chosen the same answer as you then you will make less. Betting earlier at a lower probability is still advantageous and you will make more money than those who bet later but will still be lowered overall.
-- E.g. 10 YES shares means a payout of M100 if there 100 outstanding YES shares when the market resolves and the final betting pool is worth M1,000.
-
 ### What is a limit order?
 
 Limit orders allow you to place a bet at a specific probability, rather than just the current market probability. This means you can set up ‘open orders’ that wait for other users to come and trade against. All open limit orders can be viewed in the order book.
 
 #### Advantages of limit orders
 
+- When a limit order is filled by another user, the person filling or "taking" the order pays all of the trading fees.
 - Choose the exact probability at which you make a bet
 - Can make large bets in markets with low liquidity (if you do this with a quick bet you will move the probability a lot and cause the average price of your shares to be expensive)
 - Provide an opportunity for other users to bet against
@@ -331,7 +322,7 @@ Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. 
 ### How can I donate to charity
 
 - First [select a non-profit](https://manifold.markets/charity) from the charity page
-- For every 100 prize points you redeem we will donate $1.00 USD.
+- For every 1000 prize points you redeem we will donate $0.95 USD.
 - There is no limit to how much you can donate!
 
 ### What kinds of charities can I donate to through Manifold Markets?
@@ -366,7 +357,7 @@ To get the fastest possible response, all user reports should include:
 3. Where on the site did it occur?
 4. How does it violate the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400)?
 5. Potential causes (if known)
-6. Evidence of 1-5, submitted to DavidChee/SirSalty via [Discord](https://discord.com/invite/eHQBNBqXuh).
+6. Evidence of 1-5, submitted to DavidChee/SirSalty via [Discord](https://discord.com/invite/eHQBNBqXuh) or [email](mailto:info@manifold.markets).
 
 This changes the moderation task from "investigation" to "response" and allows for swift action to be taken.
 
@@ -384,12 +375,16 @@ Here you can find the [Manifold Markets terms and conditions](https://manifold.m
 
 ### How to resolve a dispute on Manifold Markets?
 
-To resolve a dispute on Manifold Markets, users can report issues for review. Staff will act as mediators, but final say goes to market outcomes - if a resolution decision seems valid, the final resolution and trades will stand as is. For obvious abuse, misresolution, or technical failures, reimbursements may occur in the form of markets being re-resolved. The decentralized nature means arbitration resource needs remain low.
+To resolve a dispute on Manifold Markets, users can report issues to moderators for review. If a resolution decision is in line with our rules, the resolution will stand as-is. For abuse, misresolution, or technical failures, markets may be re-resolved.
 
 ### What kinds of predictions can I make on Manifold?
 
-You can make predictions on everything on Manifold Markets - from sports scores, election results, stock market movements to reality show winners, celebrity news, product launches, and much more. Creativity and current events help people crowdsource new question topics on essentially any imaginable subject. Anyone can sign up for free and submit a question; your curiosity and knowledge are the only limits.
+You can make predictions on everything on Manifold Markets - from sports scores, election results, and stock market movements, to reality show winners, celebrity news, product launches, and much more. Creativity and current events help people crowdsource new question topics on essentially any imaginable subject. Anyone can sign up for free and submit a question; your curiosity and knowledge are the only limits.
 
 ### How does Manifold Markets ensure fair play?
 
 Manifold Markets believes users should have autonomy over their own markets as much as possible, and tries to keep moderation to a minimum and empower users with tools to control the content that they want to see. Manifold Markets ensures fair play through its [community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400); content moderation; bug abuse detection; auditing user activity; and careful game design.
+
+### Can you play Manifold Markets for free?
+
+Yes, Manifold is a free to play social prediction game with prizes enabled in select regions. Outside of permitted regions, you are unable to redeem your Prize Points for prizes. Prize Points can always be exchanged back to mana to continue playing.

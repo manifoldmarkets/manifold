@@ -1,4 +1,3 @@
-import { formatMoney } from 'common/util/format'
 import { useState, useEffect } from 'react'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { useUser } from 'web/hooks/use-user'
@@ -17,7 +16,8 @@ export function BuyManaButton(props: {
   const user = useUser()
   const { isNative, platform } = getNativePlatform()
   const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const amount = prices[formatMoney(props.amount)]
+  const amount =
+    prices[props.amount.toString() as unknown as keyof typeof prices]
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

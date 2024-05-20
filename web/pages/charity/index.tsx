@@ -10,16 +10,13 @@ import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { manaToUSD } from 'common/util/format'
+import { formatCents } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import Link from 'next/link'
 import { SEO } from 'web/components/SEO'
 import { Input } from 'web/components/widgets/input'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { AlertBox } from 'web/components/widgets/alert-box'
-import { ExternalLink } from 'web/components/widgets/external-link'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export async function getStaticProps() {
   try {
@@ -122,41 +119,15 @@ export default function Charity(props: {
           <Title>Manifold for Charity</Title>
 
           <div className="text-ink-500">
-            {SPICE_PRODUCTION_ENABLED ? (
-              <span>
-                Convert your prize points into real charitable donations at a
-                ratio of{' '}
-                <span className="semibold">
-                  <CoinNumber amount={1000} isSpice isInline /> : $0.95
-                </span>
-                {/* TODO: update about page copy, then link here? */}
-              </span>
-            ) : (
-              <>
-                Convert your mana earnings into real charitable donations at a
-                ratio of{' '}
-                <span className="semibold">
-                  <CoinNumber amount={100} isInline /> : $1
-                </span>
-                .
-              </>
-            )}
+            Convert your <SpiceCoin /> prize points into real charitable
+            donations.
           </div>
-
-          <AlertBox title="Charity program is changing" className="mt-4">
-            In preparation for the upcoming move to real cash prizes, after May
-            15th, only Prize Points (not mana) will be donatable. <br />
-            <ExternalLink
-              title="Read more here"
-              href="https://manifoldmarkets.notion.site/A-New-Deal-for-Manifold-c6e9de8f08b549859c64afb3af1dd393"
-            />
-          </AlertBox>
 
           <DonatedStats
             stats={[
               {
                 name: 'Raised by Manifold users',
-                stat: manaToUSD(totalRaised),
+                stat: formatCents(totalRaised),
               },
               {
                 name: 'Most recent donor',
@@ -197,16 +168,6 @@ export default function Charity(props: {
         <div className="prose text-ink-500 mt-10 max-w-none">
           <span className="text-lg font-semibold">Notes</span>
           <ul>
-            <li>
-              Don't see your favorite 501c3 charity? Contact us at{' '}
-              <a
-                href="mailto:charity@manifold.markets?subject=Add%20Charity"
-                className="text-primary-500"
-              >
-                charity@manifold.markets
-              </a>
-              !
-            </li>
             <li>Manifold is not affiliated with any of the above charities.</li>
             <li>
               Unfortunately, your contributions will not be tax deductible.

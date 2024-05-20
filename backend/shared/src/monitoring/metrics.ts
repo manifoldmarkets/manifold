@@ -19,6 +19,22 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'ws/open_connections': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'ws/connections_established': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/connections_terminated': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/broadcasts_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'http/request_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',

@@ -30,8 +30,8 @@ export async function api<P extends APIPath>(path: P, params: APIParams<P>) {
     while (!auth.currentUser) {
       i++
       await sleep(i * 10)
-      if (i > 10) {
-        console.error('User did not load after 10 iterations')
+      if (i > 30) {
+        console.error('User did not load after 30 iterations')
         break
       }
     }
