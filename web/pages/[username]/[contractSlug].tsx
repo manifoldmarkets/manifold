@@ -432,7 +432,10 @@ export function ContractPageContent(props: ContractParams) {
           </div>
           {coverImageUrl && (
             <Row className="h-10 w-full justify-between">
-              <BackButton className="pr-8" />
+              {/* Wrap in div so that justify-between works when BackButton is null. */}
+              <div>
+                <BackButton className="pr-8" />
+              </div>
               <HeaderActions contract={contract}>
                 {!coverImageUrl && isCreator && (
                   <ChangeBannerButton
