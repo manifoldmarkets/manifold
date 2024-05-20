@@ -440,7 +440,7 @@ const updateBettingStreak = async (
 
     // If they've already bet after the reset time
     if (lastBetTime > betStreakResetTime) {
-      return { status: 'error' }
+      return { status: 'error', message: 'streak already updated' }
     }
 
     const newBettingStreak = (bettor?.currentBettingStreak ?? 0) + 1
