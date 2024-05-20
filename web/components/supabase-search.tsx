@@ -418,7 +418,7 @@ export function SupabaseSearch(props: {
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
               <BrowseTopicPills
-                className={'relative w-full px-2 pb-4 sm:px-0'}
+                className={'relative w-full px-2 pb-4'}
                 topics={shownTopics}
                 currentTopicSlug={topicSlug}
                 setTopicSlug={setTopicSlug}

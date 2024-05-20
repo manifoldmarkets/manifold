@@ -1,4 +1,4 @@
-import { XCircleIcon, XIcon } from "@heroicons/react/solid"
+import { XCircleIcon } from "@heroicons/react/solid"
 import clsx from "clsx"
 import { ReactNode } from "react"
 import { Row } from "../layout/row"
