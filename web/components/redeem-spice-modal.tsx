@@ -38,6 +38,7 @@ export function RedeemSpiceModal(props: {
             className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
             isInline
             coinClassName="top-[0.1rem]"
+            isSpice
           />
           <span
             className={clsx(
@@ -128,7 +129,7 @@ function MainSpiceRedeemPage(props: {
             </Link>
             <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
               <span className="font-semibold text-green-600 dark:text-green-500">
-                ${user.spiceBalance * SPICE_TO_CHARITY_DOLLARS}
+                ${(user.spiceBalance * SPICE_TO_CHARITY_DOLLARS).toFixed(2)}
               </span>
               value
             </Row>
