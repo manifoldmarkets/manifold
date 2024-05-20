@@ -1,7 +1,7 @@
-import { XCircleIcon } from "@heroicons/react/solid"
-import clsx from "clsx"
-import { ReactNode } from "react"
-import { Row } from "../layout/row"
+import { XCircleIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { ReactNode } from 'react'
+import { Row } from '../layout/row'
 
 export function FilterPill(props: {
   selected: boolean
@@ -58,7 +58,7 @@ export function AdditionalFilterPill(props: {
     >
       {children}
       <button
-        className="transition-colors cursor-pointer rounded-full text-ink-200 dark:text-ink-800 hover:text-white hover:dark:text-white"
+        className="text-ink-200 dark:text-ink-800 cursor-pointer rounded-full transition-colors hover:text-white hover:dark:text-white"
         onClick={onXClick}
       >
         <XCircleIcon className="h-4 w-4 " />

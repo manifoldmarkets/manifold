@@ -17,22 +17,16 @@ export const BrowseTopicPills = (props: {
 }) => {
   const { topics, className, setTopicSlug, currentTopicSlug } = props
   const isAuth = useIsAuthorized()
-  const [showMore, setShowMore] = useState<boolean>(
-    false
-  )
+  const [showMore, setShowMore] = useState<boolean>(false)
   const router = useRouter()
   const sort = router.query[SORT_KEY] as string
-    const isMobile = useIsMobile()
-    const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
-    const shownTopics = showMore ? topics : topics.slice(0, MAX_INIT_TOPICS)
+  const isMobile = useIsMobile()
+  const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
+  const shownTopics = showMore ? topics : topics.slice(0, MAX_INIT_TOPICS)
 
   return (
     <Col className={className}>
-      <Row
-        className={clsx(
-          'flex-wrap gap-1 text-sm'
-        )}
-      >
+      <Row className={clsx('flex-wrap gap-1 text-sm')}>
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}

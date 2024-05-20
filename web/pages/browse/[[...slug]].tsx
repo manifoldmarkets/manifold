@@ -192,7 +192,11 @@ export function GroupPageContent(props: {
   const { ref, headerStuck } = useHeaderIsStuck()
   const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
 
-    const [isForYouSelected, setIsForYouSelected] = usePersistentInMemoryState<boolean>(topicSlug === 'for-you', 'for-you-selected')
+  const [isForYouSelected, setIsForYouSelected] =
+    usePersistentInMemoryState<boolean>(
+      topicSlug === 'for-you',
+      'for-you-selected'
+    )
 
   const searchComponent = (
     <SupabaseSearch
@@ -218,13 +222,12 @@ export function GroupPageContent(props: {
         !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
       }
       shownTopics={shownTopics}
-      setTopicSlug={(slug) =>{
+      setTopicSlug={(slug) => {
         if (slug === 'for-you') {
-           setIsForYouSelected(!(topicSlug === 'for-you'))
+          setIsForYouSelected(!(topicSlug === 'for-you'))
         }
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
-      }
-      }
+      }}
     />
   )
 

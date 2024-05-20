@@ -2,9 +2,7 @@ import clsx from 'clsx'
 import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
-import {
-    getLabelFromValue,
-} from './search-dropdown-helpers'
+import { getLabelFromValue } from './search-dropdown-helpers'
 
 import router from 'next/router'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
@@ -12,11 +10,33 @@ import { IconButton } from 'web/components/buttons/button'
 import { Spacer } from 'web/components/layout/spacer'
 import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { Carousel } from 'web/components/widgets/carousel'
-import { BOUNTY_MARKET_SORTS, CONTRACT_TYPES, ContractTypeType,  DEFAULT_BOUNTY_SORTS,  DEFAULT_CONTRACT_TYPE,  DEFAULT_CONTRACT_TYPES, DEFAULT_FILTER, DEFAULT_FILTERS, DEFAULT_POLL_SORTS, DEFAULT_SORT, DEFAULT_SORTS, FILTERS, Filter, POLL_SORTS, PREDICTION_MARKET_PROB_SORTS, PREDICTION_MARKET_SORTS, SORTS, SearchParams, Sort, bountySorts, predictionMarketSorts } from '../supabase-search'
+import {
+  BOUNTY_MARKET_SORTS,
+  CONTRACT_TYPES,
+  ContractTypeType,
+  DEFAULT_BOUNTY_SORTS,
+  DEFAULT_CONTRACT_TYPE,
+  DEFAULT_CONTRACT_TYPES,
+  DEFAULT_FILTER,
+  DEFAULT_FILTERS,
+  DEFAULT_POLL_SORTS,
+  DEFAULT_SORT,
+  DEFAULT_SORTS,
+  FILTERS,
+  Filter,
+  POLL_SORTS,
+  PREDICTION_MARKET_PROB_SORTS,
+  PREDICTION_MARKET_SORTS,
+  SORTS,
+  SearchParams,
+  Sort,
+  bountySorts,
+  predictionMarketSorts,
+} from '../supabase-search'
 import { useState } from 'react'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
-import {IoFilter} from 'react-icons/io5'
+import { IoFilter } from 'react-icons/io5'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 
 export function ContractFilters(props: {
@@ -93,9 +113,13 @@ export function ContractFilters(props: {
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter = !DEFAULT_FILTERS.some((f) => f == filter) && filter!==DEFAULT_FILTER
-  const nonDefaultSort = !DEFAULT_SORTS.some((s) => s == sort) && sort!==DEFAULT_SORT
-  const nonDefaultContractType = !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) && contractType!==DEFAULT_CONTRACT_TYPE
+  const nonDefaultFilter =
+    !DEFAULT_FILTERS.some((f) => f == filter) && filter !== DEFAULT_FILTER
+  const nonDefaultSort =
+    !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
+  const nonDefaultContractType =
+    !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
+    contractType !== DEFAULT_CONTRACT_TYPE
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
@@ -124,7 +148,10 @@ export function ContractFilters(props: {
           </AdditionalFilterPill>
         )}
         {nonDefaultContractType && (
-          <AdditionalFilterPill type="contractType" onXClick={()=>selectContractType(DEFAULT_CONTRACT_TYPE)}>
+          <AdditionalFilterPill
+            type="contractType"
+            onXClick={() => selectContractType(DEFAULT_CONTRACT_TYPE)}
+          >
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}

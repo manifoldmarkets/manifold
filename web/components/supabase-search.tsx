@@ -116,7 +116,7 @@ export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
 export const DEFAULT_FILTER = 'all'
-export const DEFAULT_FILTERS = ['open','closing-this-month']
+export const DEFAULT_FILTERS = ['open', 'closing-this-month']
 
 export const DEFAULT_CONTRACT_TYPE = 'ALL'
 export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
@@ -216,7 +216,7 @@ export function SupabaseSearch(props: {
     hideSearchTypes,
     hideAvatars,
     shownTopics,
-    setTopicSlug
+    setTopicSlug,
   } = props
 
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
@@ -250,8 +250,7 @@ export function SupabaseSearch(props: {
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
   const showSearchTypes =
-    !hideSearchTypes &&
-    !contractsOnly && (topicSlug == 'for-you' || !topicSlug)
+    !hideSearchTypes && !contractsOnly && (topicSlug == 'for-you' || !topicSlug)
 
   const queryUsers = useEvent(async (query: string) =>
     searchUsers(query, USERS_PER_PAGE)
@@ -320,10 +319,7 @@ export function SupabaseSearch(props: {
       </Col>
     ))
 
-
-  const showUsers = userResults &&
-            userResults.length > 0 &&
-            query !== '' 
+  const showUsers = userResults && userResults.length > 0 && query !== ''
   const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
   return (
     <Col className="w-full">
@@ -653,4 +649,3 @@ const useShim = <T extends Record<string, string | undefined>>(x: T) => {
   const [state, setState] = usePartialUpdater(x)
   return [state, setState, true] as const
 }
-
