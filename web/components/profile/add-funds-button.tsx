@@ -8,7 +8,7 @@ export function AddFundsButton(props: { userId?: string; className?: string }) {
   const { userId, className } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
-  
+
   if (!userId || user?.id !== userId) return null
   return (
     <>
