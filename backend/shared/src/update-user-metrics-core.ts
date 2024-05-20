@@ -248,7 +248,10 @@ export async function updateUserMetricsCore(userIds?: string[]) {
     const leaderBoardProfit =
       (user.resolvedProfitAdjustment ?? 0) +
       sumBy(freshMetrics, (m) =>
-        unresolvedMarketIds.includes(m.contractId) ? m.profitAdjustment ?? 0 : 0
+        unresolvedMarketIds.includes(m.contractId)
+          ? (m.profitAdjustment ?? 0) + m.profit
+          : // Resolved profits are already included in the user's balance - deposits
+            0
       ) +
       allTimeProfit
 
