@@ -113,28 +113,23 @@ export const bulkIncrementBalances = async (
 ) => {
   if (userUpdates.length === 0) return
 
-  const cs = new pgp.helpers.ColumnSet(
-    [
-      'id',
-      {
-        name: 'balance',
-        init: (c) => 'balance + ' + c.value ?? 0,
-        mod: ':raw',
-      },
-      {
-        name: 'spice_balance',
-        init: (c) => 'spice_balance + ' + c.value ?? 0,
-        mod: ':raw',
-      },
-      {
-        name: 'total_deposits',
-        init: (c) => 'total_deposits + ' + c.value ?? 0,
-        mod: ':raw',
-      },
-    ],
-    { table: 'users' }
-  )
+  const values = userUpdates
+    .map((update) =>
+      pgp.as.format(`($1, $2, $3, $4)`, [
+        update.id,
+        update.balance ?? 0,
+        update.spiceBalance ?? 0,
+        update.totalDeposits ?? 0,
+      ])
+    )
+    .join(',\n')
 
-  const q = pgp.helpers.update(userUpdates, cs) + ' WHERE v.id = t.id'
-  await db.none(q)
+  await db.none(`update users as u
+    set 
+        balance = u.balance + v.balance,
+        spice_balance = u.spice_balance + v.spice_balance,
+        total_deposits = u.total_deposits + v.total_deposits
+    from (values ${values}) as v(id, balance, spice_balance, total_deposits)
+    where u.id = v.id
+  `)
 }
