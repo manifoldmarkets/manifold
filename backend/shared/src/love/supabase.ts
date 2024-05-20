@@ -1,4 +1,3 @@
-import { CPMMMultiContract } from 'common/contract'
 import { areGenderCompatible } from 'common/love/compatibility-util'
 import { Lover, LoverRow } from 'common/love/lover'
 import { Row } from 'common/supabase/utils'
@@ -38,23 +37,6 @@ export const getLovers = async (userIds: string[]) => {
   )
 }
 
-export const getLoverContracts = async (userId: string) => {
-  const pg = createSupabaseDirectClient()
-  return await pg.map<CPMMMultiContract>(
-    `
-      select data from contracts
-      where outcome_type = 'MULTIPLE_CHOICE'
-      and resolution is null
-      and (
-        data->>'loverUserId1' = $1
-        or data->>'loverUserId2' = $1
-      )
-    `,
-    [userId],
-    (r) => r.data
-  )
-}
-
 export const getGenderCompatibleLovers = async (lover: LoverRow) => {
   const pg = createSupabaseDirectClient()
   const lovers = await pg.manyOrNone<Lover>(
@@ -72,7 +54,7 @@ export const getGenderCompatibleLovers = async (lover: LoverRow) => {
       `,
     { ...lover }
   )
-  return lovers.filter(l => areGenderCompatible(lover, l))
+  return lovers.filter((l) => areGenderCompatible(lover, l))
 }
 
 export const getCompatibleLovers = async (

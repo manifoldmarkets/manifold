@@ -12,6 +12,10 @@ import { incrementBalance } from 'shared/supabase/users'
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
 > = async ({ contractId, amount }, auth) => {
+  return addContractLiquidity(contractId, amount, auth.uid)
+}
+
+export const addContractLiquidity = async (contractId: string, amount: number, userId: string) => {
   const pg = createSupabaseDirectClient()
 
   const contract = await getContractSupabase(contractId)
@@ -28,7 +32,7 @@ export const addLiquidity: APIHandler<
 
   // run as transaction to prevent race conditions
   return await pg.tx(async (tx) => {
-    const user = await getUser(auth.uid, tx)
+    const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
@@ -39,7 +43,7 @@ export const addLiquidity: APIHandler<
     })
 
     await insertTxn(tx, {
-      fromId: auth.uid,
+      fromId: userId,
       amount: amount,
       toId: contractId,
       toType: 'CONTRACT',

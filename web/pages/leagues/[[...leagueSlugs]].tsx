@@ -37,27 +37,11 @@ import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
-export async function getStaticProps() {
-  const rows = await getLeagueRows(CURRENT_SEASON)
-  return {
-    props: {
-      rows,
-    },
-  }
-}
-
-export function getStaticPaths() {
-  return {
-    paths: [],
-    fallback: 'blocking',
-  }
-}
-
-export default function Leagues(props: { rows: league_user_info[] }) {
+export default function Leagues() {
   const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
-    props.rows,
+    [],
     'league-rows'
   )
 

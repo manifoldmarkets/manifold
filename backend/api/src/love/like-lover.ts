@@ -1,11 +1,7 @@
 import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from '../helpers/endpoint'
 import { createLoveLikeNotification } from 'shared/create-love-notification'
-import { runLikePurchaseTxn } from 'shared/txn/run-like-purchase-txn'
 import { getHasFreeLike } from './has-free-like'
-import { createAnswerCpmmMain } from 'api/create-answer-cpmm'
-import { addTargetToUserMarket } from 'shared/love/love-markets'
-import { LOVE_MARKET_COST } from 'common/love/constants'
 import { log } from 'shared/utils'
 
 export const likeLover: APIHandler<'like-lover'> = async (props, auth) => {
@@ -43,7 +39,7 @@ export const likeLover: APIHandler<'like-lover'> = async (props, auth) => {
 
   if (!hasFreeLike) {
     // Charge for like.
-    await runLikePurchaseTxn(creatorId, targetUserId)
+    throw new APIError(403, 'You already liked someone today!')
   }
 
   // Insert the new like
@@ -61,21 +57,7 @@ export const likeLover: APIHandler<'like-lover'> = async (props, auth) => {
   }
 
   const continuation = async () => {
-    const createAnswer = (
-      contractId: string,
-      creatorId: string,
-      targetUserId: string,
-      text: string
-    ) =>
-      createAnswerCpmmMain(contractId, text, creatorId, {
-        overrideAddAnswersMode: 'ONLY_CREATOR',
-        specialLiquidityPerAnswer: LOVE_MARKET_COST,
-        loverUserId: targetUserId,
-      })
-
     await createLoveLikeNotification(data)
-    await addTargetToUserMarket(creatorId, targetUserId, createAnswer)
-    await addTargetToUserMarket(targetUserId, creatorId, createAnswer)
   }
 
   return {

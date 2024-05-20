@@ -8,7 +8,6 @@ import {
   CPMMStonkContract,
   Contract,
   MultiContract,
-  NumericContract,
   PseudoNumericContract,
   isBinaryMulti,
   CPMMMultiContract,
@@ -16,7 +15,6 @@ import {
   CPMMNumericContract,
   BountiedQuestionContract,
 } from 'common/contract'
-import { NumericContractChart } from '../charts/contract/numeric'
 import {
   BinaryContractChart,
   MultiBinaryChart,
@@ -26,7 +24,6 @@ import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import {
   BinaryResolutionOrChance,
   MultiNumericResolutionOrExpectation,
-  NumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -40,7 +37,7 @@ import { ZoomParams, getEndDate, useZoom, PointerMode } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Row } from '../layout/row'
 import { AnswersPanel } from '../answers/answers-panel'
-import { Answer, DpmAnswer, MultiSort, getDefaultSort } from 'common/answer'
+import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { UserBetsSummary } from '../bet/bet-summary'
 import {
   AnswersResolvePanel,
@@ -81,6 +78,10 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
 import { FaChartArea } from 'react-icons/fa'
+import { filterDefined } from 'common/util/array'
+import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
+import { useChartPositions } from 'web/hooks/use-chart-positions'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export const ContractOverview = memo(
   (props: {
@@ -89,7 +90,7 @@ export const ContractOverview = memo(
     showResolver: boolean
     resolutionRating?: ReactNode
     setShowResolver: (show: boolean) => void
-    onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+    onAnswerCommentClick: (answer: Answer) => void
     chartAnnotations: ChartAnnotation[]
   }) => {
     const {
@@ -112,13 +113,6 @@ export const ContractOverview = memo(
             chartAnnotations={chartAnnotations}
           />
         )
-      case 'NUMERIC':
-        return (
-          <NumericOverview
-            contract={contract}
-            resolutionRating={resolutionRating}
-          />
-        )
       case 'PSEUDO_NUMERIC':
         return (
           <PseudoNumericOverview
@@ -130,7 +124,6 @@ export const ContractOverview = memo(
 
       case 'QUADRATIC_FUNDING':
         return <AlertBox title="Quadratic Funding markets are deprecated" />
-      case 'FREE_RESPONSE':
       case 'MULTIPLE_CHOICE':
         if (isBinaryMulti(contract)) {
           return (
@@ -180,24 +173,6 @@ export const ContractOverview = memo(
     }
   }
 )
-
-const NumericOverview = (props: {
-  contract: NumericContract
-  resolutionRating?: ReactNode
-}) => {
-  const { contract, resolutionRating } = props
-  return (
-    <>
-      <NumericResolutionOrExpectation contract={contract} />
-      {resolutionRating}
-      <SizedContainer className="h-[150px] w-full pb-4 pr-10 sm:h-[250px]">
-        {(w, h) => (
-          <NumericContractChart width={w} height={h} contract={contract} />
-        )}
-      </SizedContainer>
-    </>
-  )
-}
 
 export const BinaryOverview = (props: {
   contract: BinaryContract
@@ -413,6 +388,7 @@ const ChartAnnotation = (props: {
   } = annotation
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const isClient = useIsClient()
 
   const scrollIntoView = useEvent(() => {
     const card = ref.current
@@ -491,10 +467,11 @@ const ChartAnnotation = (props: {
               </Row>
             )}
             <span className={'ml-1 shrink-0 text-xs'}>
-              {new Date(event_time).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
+              {isClient &&
+                new Date(event_time).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
             </span>
           </Row>
         </div>
@@ -516,7 +493,7 @@ const ChoiceOverview = (props: {
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
 }) => {
   const {
@@ -573,10 +550,21 @@ const ChoiceOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
+  const {
+    chartPositions,
+    setHoveredChartPosition,
+    hoveredChartPosition,
+    displayUser,
+    setDisplayUser,
+  } = useChartPositions(contract)
+  const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
+  useEffect(() => {
+    setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))
+  }, [JSON.stringify(contractPositionAnswerIds)])
 
   return (
     <>
-      <Row className="justify-between gap-2">
+      <Row className="relative  justify-between gap-2">
         {contract.resolution === 'CANCEL' ? (
           <div className="flex items-end gap-2 text-2xl sm:text-3xl">
             <span className="text-base">Resolved</span>
@@ -585,7 +573,13 @@ const ChoiceOverview = (props: {
         ) : (
           <div />
         )}
-        <Row className={'gap-1'}>
+        <Row className={'relative gap-1'}>
+          <UserPositionSearchButton
+            currentUser={currentUser}
+            displayUser={displayUser}
+            contract={contract}
+            setDisplayUser={setDisplayUser}
+          />
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -625,6 +619,14 @@ const ChoiceOverview = (props: {
               setHoveredAnnotation={setHoveredAnnotation}
               hoveredAnnotation={hoveredAnnotation}
               chartAnnotations={chartAnnotations}
+              chartPositions={chartPositions?.filter((cp) =>
+                hoverAnswerId
+                  ? cp.answerId === hoverAnswerId
+                  : selectedAnswerIds.length === 0 ||
+                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+              )}
+              hoveredChartPosition={hoveredChartPosition}
+              setHoveredChartPosition={setHoveredChartPosition}
             />
           )}
         </SizedContainer>
@@ -646,7 +648,7 @@ const ChoiceOverview = (props: {
           />
         ) : (
           <AnswersResolvePanel
-            contract={contract}
+            contract={contract as CPMMMultiContract}
             onClose={() => setShowResolver(false)}
           />
         )
@@ -689,7 +691,7 @@ const MultiNumericOverview = (props: {
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
-  onAnswerCommentClick: (answer: Answer | DpmAnswer) => void
+  onAnswerCommentClick: (answer: Answer) => void
   chartAnnotations: ChartAnnotation[]
 }) => {
   const { points, contract, showResolver, resolutionRating, setShowResolver } =

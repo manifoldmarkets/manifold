@@ -6,11 +6,9 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
-  DPMContract,
 } from './contract'
 import { filterDefined } from './util/array'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { calculateDpmRawShareValue } from './calculate-dpm'
 
 export const LOAN_DAILY_RATE = 0.04
 
@@ -61,9 +59,7 @@ const calculateLoanBetUpdates = (
           return getCpmmContractLoanUpdate(c, bets)
         })
       )
-    } else if (c.mechanism === 'dpm-2')
-      return filterDefined(getDpmContractLoanUpdate(c, bets))
-    else {
+    } else {
       // Unsupported contract / mechanism for loans.
       return []
     }
@@ -92,30 +88,4 @@ const getCpmmContractLoanUpdate = (
     newLoan,
     loanTotal,
   }
-}
-
-const getDpmContractLoanUpdate = (contract: DPMContract, bets: Bet[]) => {
-  const openBets = bets.filter((bet) => !bet.isSold && !bet.sale)
-
-  return openBets.map((bet) => {
-    const loanAmount = bet.loanAmount ?? 0
-    const value = calculateDpmRawShareValue(
-      contract.totalShares,
-      bet.shares,
-      bet.outcome
-    )
-    const loanBasis = Math.min(value, bet.amount)
-    const newLoan = calculateNewLoan(loanBasis, loanAmount)
-    const loanTotal = loanAmount + newLoan
-
-    if (!isFinite(newLoan) || newLoan <= 0) return undefined
-
-    return {
-      userId: bet.userId,
-      contractId: contract.id,
-      betId: bet.id,
-      newLoan,
-      loanTotal,
-    }
-  })
 }

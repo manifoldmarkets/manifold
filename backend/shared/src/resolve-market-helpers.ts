@@ -196,7 +196,7 @@ export const resolveMarketHelper = async (
       payouts,
       contractId,
       answerId,
-      contract.isRanked != false
+      !!contract.isSpicePayout
     )
 
     await updateContractMetricsForUsers(contract, bets)
@@ -306,8 +306,7 @@ export const getDataAndPayoutInfo = async (
         return mapValues(resolutions, (p) => p / total)
       })()
     : undefined
-  const openBets = bets.filter((b) => !b.isSold && !b.sale)
-  const loanPayouts = getLoanPayouts(openBets)
+  const loanPayouts = getLoanPayouts(bets)
 
   const { payouts: traderPayouts, liquidityPayouts } = getPayouts(
     outcome,
@@ -398,7 +397,7 @@ export const payUsersTransactions = async (
   }[],
   contractId: string,
   answerId: string | undefined,
-  isRanked: boolean
+  payoutSpice: boolean
 ) => {
   const pg = createSupabaseDirectClient()
   const mergedPayouts = checkAndMergePayouts(payouts)
@@ -415,7 +414,7 @@ export const payUsersTransactions = async (
     const txns: TxnData[] = []
 
     payoutChunk.forEach(async ({ userId, payout, deposit }) => {
-      if (SPICE_PRODUCTION_ENABLED && isRanked) {
+      if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
         balanceUpdates.push({
           id: userId,
           spiceBalance: payout,

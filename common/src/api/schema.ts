@@ -20,14 +20,14 @@ import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
-import { CPMMMultiContract, Contract } from 'common/contract'
+import { Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { DisplayUser, FullUser } from './user-types'
 import { League } from 'common/leagues'
 import { searchProps } from './market-search-types'
-import { DpmAnswer, MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
@@ -221,12 +221,6 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(), // Required for multi binary markets
       })
       .strict(),
-  },
-  'sell-shares-dpm': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    props: z.object({ contractId: z.string(), betId: z.string() }).strict(),
   },
   bets: {
     method: 'GET',
@@ -445,20 +439,6 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string().max(MAX_ANSWER_LENGTH),
-        text: z.string().min(1).max(MAX_ANSWER_LENGTH),
-      })
-      .strict(),
-  },
-  // dpm answers
-  createanswer: {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as { answer: DpmAnswer },
-    props: z
-      .object({
-        contractId: z.string().max(MAX_ANSWER_LENGTH),
-        amount: z.number().gt(0).int().finite(),
         text: z.string().min(1).max(MAX_ANSWER_LENGTH),
       })
       .strict(),
@@ -708,6 +688,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'search-contract-positions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as DisplayUser[],
+    props: z
+      .object({
+        term: z.string(),
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100).default(10),
+      })
+      .strict(),
+  },
   'save-twitch': {
     method: 'POST',
     visibility: 'undocumented',
@@ -769,12 +763,10 @@ export const API = (_apiTypeCheck = {
     props: z.object({ userId: z.string() }),
     returns: {} as {
       lover: Lover
-      matchedLovers: Lover[]
       compatibleLovers: Lover[]
       loverCompatibilityScores: {
         [userId: string]: CompatibilityScore
       }
-      loverContracts: CPMMMultiContract[]
     },
   },
   post: {
@@ -1019,48 +1011,6 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
-  },
-  'create-your-love-market': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    props: z.object({}),
-    returns: {} as {
-      status: 'success'
-      contract: CPMMMultiContract
-    },
-  },
-  'get-love-market': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success'
-      contract: CPMMMultiContract | null
-      lovers: Lover[]
-      mutuallyMessagedUserIds: string[]
-    },
-  },
-  'get-love-markets': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z.object({}).strict(),
-    returns: {} as {
-      status: 'success'
-      contracts: CPMMMultiContract[]
-      creatorLovers: Lover[]
-      lovers: Lover[]
-      creatorMutuallyMessagedUserIds: { [creatorId: string]: string[] }
-      creatorCompatibilityScores: {
-        [creatorId: string]: { [loverId: string]: CompatibilityScore }
-      }
-    },
   },
   'get-partner-stats': {
     method: 'GET',

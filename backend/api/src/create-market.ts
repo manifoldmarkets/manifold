@@ -49,6 +49,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { broadcast } from './websockets/server'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateUser } from 'shared/supabase/users'
 
@@ -106,8 +107,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const user = await getUser(userId)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (!isAdminId(userId) && !isModId(userId) && visibility !== 'public') {
-    throw new APIError(403, 'Only admins can create private markets.')
+  if (visibility !== 'public') {
+    throw new APIError(403, 'Only public markets can be created.')
   }
   // if (!isVerified(user)) {
   //   throw new APIError(
@@ -258,6 +259,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   await generateContractEmbeddings(contract, pg)
 
+  broadcast('global/new-contract', { contractId: contract.id })
   return contract
 }
 

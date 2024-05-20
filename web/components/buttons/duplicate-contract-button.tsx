@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { isDpmAnswer } from 'common/answer'
 import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
@@ -59,7 +58,7 @@ function duplicateContractHref(contract: Contract) {
 
   if (contract.outcomeType === 'MULTIPLE_CHOICE') {
     params.answers = contract.answers
-      .filter((a) => isDpmAnswer(a) || !a.isOther)
+      .filter((a) => !a.isOther)
       .map((a) => a.text)
   }
 

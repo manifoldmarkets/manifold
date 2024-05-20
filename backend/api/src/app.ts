@@ -1,9 +1,10 @@
+import { hrtime } from 'node:process'
 import * as cors from 'cors'
 import * as crypto from 'crypto'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 
-import { log } from 'shared/monitoring/log'
+import { log, metrics } from 'shared/utils'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { health } from './health'
@@ -11,7 +12,6 @@ import { transact } from './transact'
 import { updateMe } from './update-me'
 import { placeBet } from './place-bet'
 import { cancelBet } from './cancel-bet'
-import { sellShareDPM } from './sell-bet'
 import { sellShares } from './sell-shares'
 import { claimmanalink } from './claim-manalink'
 import { createMarket } from './create-market'
@@ -54,7 +54,6 @@ import { cancelbounty } from './cancel-bounty'
 import { createAnswerCPMM } from './create-answer-cpmm'
 import { createportfolio } from './create-portfolio'
 import { updateportfolio } from './update-portfolio'
-import { buyportfolio } from './buy-portfolio'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { sendMana } from './send-mana'
@@ -85,15 +84,12 @@ import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
 import { createlover } from 'api/love/create-lover'
 import { updatelover } from 'api/love/update-lover'
-import { createMatch } from 'api/love/create-match'
 import { createcommentonlover } from 'api/love/create-comment-on-lover'
 import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
-import { rejectLover } from './love/reject-lover'
 import { searchlocation } from './search-location'
 import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
-import { confirmLoverStage } from './love/confirm-lover-stage'
 import { editanswercpmm } from 'api/edit-answer'
 import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { getCompatibleLovers } from './love/compatible-lovers'
@@ -142,16 +138,12 @@ import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getLoverAnswers } from './love/get-lover-answers'
-import { createYourLoveMarket } from './love/create-your-love-market'
-import { getLoveMarket } from './love/get-love-market'
-import { getLoveMarkets } from './love/get-love-markets'
 import { placeMultiBet } from 'api/place-multi-bet'
 import { deletetv, settv } from './set-tv'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
 import { recordContractView } from 'api/record-contract-view'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
-import { createAnswerDpm } from 'api/create-answer-dpm'
 import { getFollowedGroups } from './get-followed-groups'
 import { getUniqueBetGroupCount } from 'api/get-unique-bet-groups'
 import { deleteGroup } from './delete-group'
@@ -168,6 +160,7 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
+import { searchContractPositions } from 'api/search-contract-positions'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -178,15 +171,20 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 
-const requestContext: RequestHandler = (req, _res, next) => {
+const requestMonitoring: RequestHandler = (req, _res, next) => {
   const traceContext = req.get('X-Cloud-Trace-Context')
   const traceId = traceContext
     ? traceContext.split('/')[0]
     : crypto.randomUUID()
   const context = { endpoint: req.path, traceId }
   withMonitoringContext(context, () => {
+    const startTs = hrtime.bigint()
     log(`${req.method} ${req.url}`)
+    metrics.inc('http/request_count', { endpoint: req.path })
     next()
+    const endTs = hrtime.bigint()
+    const latencyMs = Number(endTs - startTs) / 1e6
+    metrics.push('http/request_latency', latencyMs, { endpoint: req.path })
   })
 }
 
@@ -218,7 +216,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 }
 
 export const app = express()
-app.use(requestContext)
+app.use(requestMonitoring)
 
 app.options('*', allowCorsUnrestricted)
 
@@ -227,7 +225,6 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'bet/cancel/:betId': cancelBet,
-  'sell-shares-dpm': sellShareDPM,
   'market/:contractId/sell': sellShares,
   bets: getBets,
   comment: createComment,
@@ -300,15 +297,11 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': supabasesearchmygroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'create-your-love-market': createYourLoveMarket,
-  'get-love-market': getLoveMarket,
-  'get-love-markets': getLoveMarkets,
   'get-partner-stats': getPartnerStats,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
-  createanswer: createAnswerDpm,
   unresolve: unresolve,
   'get-followed-groups': getFollowedGroups,
   'unique-bet-group-count': getUniqueBetGroupCount,
@@ -322,6 +315,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
+  'search-contract-positions': searchContractPositions,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {
@@ -389,7 +383,6 @@ app.post('/cancel-bounty', ...apiRoute(cancelbounty))
 app.post('/edit-answer-cpmm', ...apiRoute(editanswercpmm))
 app.post('/createportfolio', ...apiRoute(createportfolio))
 app.post('/updateportfolio', ...apiRoute(updateportfolio))
-app.post('/buyportfolio', ...apiRoute(buyportfolio))
 app.post('/searchgiphy', ...apiRoute(searchgiphy))
 app.post('/manachantweet', ...apiRoute(manachantweet))
 app.post('/refer-user', ...apiRoute(referuser))
@@ -434,9 +427,6 @@ app.post(
 )
 app.post('/create-lover', ...apiRoute(createlover))
 app.post('/update-lover', ...apiRoute(updatelover))
-app.post('/reject-lover', ...apiRoute(rejectLover))
-app.post('/confirm-lover-stage', ...apiRoute(confirmLoverStage))
-app.post('/create-match', ...apiRoute(createMatch))
 app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
 app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
 app.post('/searchlocation', ...apiRoute(searchlocation))
@@ -447,6 +437,11 @@ app.post(
 )
 app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
 app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
+
+// mqp: definitely don't enable this in production since there's no authorization
+// import { broadcastTest } from 'api/broadcast-test'
+// app.post('/broadcast-test', ...apiRoute(broadcastTest))
+
 // Catch 404 errors - this should be the last route
 app.use(allowCorsUnrestricted, (req, res) => {
   res

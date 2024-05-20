@@ -41,10 +41,6 @@ export type Bet = {
   outcome: string
   shares: number // dynamic parimutuel pool weight or fixed ; negative if SELL bet
 
-  // Deprecated: Gain shares in multiple outcomes. Part of cpmm-2 multiple choice.
-  /** @deprecated */
-  sharesByOutcome?: { [outcome: string]: number }
-
   probBefore: number
   probAfter: number
 
@@ -59,14 +55,6 @@ export type Bet = {
   /** @deprecated */
   challengeSlug?: string
 
-  // Props for bets in DPM contract below.
-  // A bet is either a BUY or a SELL that sells all of a previous buy.
-  isSold?: boolean // true if this BUY bet has been sold
-  // This field marks a SELL bet.
-  sale?: {
-    amount: number // amount user makes from sale
-    betId: string // id of BUY bet being sold
-  }
   replyToCommentId?: string
   betGroupId?: string // Used to group buys on MC sumsToOne contracts
 } & Partial<LimitProps>

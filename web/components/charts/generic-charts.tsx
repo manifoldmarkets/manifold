@@ -42,6 +42,7 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
 import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
 import { CPMMNumericContract } from 'common/contract'
+import { ChartPosition } from 'common/chart-position'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -390,6 +391,9 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
+  chartPositions?: ChartPosition[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
 }) => {
   const {
     data,
@@ -404,6 +408,9 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     setHoveredAnnotation,
     contractId,
     chartAnnotations = [],
+    chartPositions = [],
+    setHoveredChartPosition,
+    hoveredChartPosition,
   } = props
 
   useEffect(() => {
@@ -494,8 +501,26 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
       return undefined
     }
   })
+
   const onMouseOver = useEvent((mouseX: number, mouseY: number) => {
-    setTTParams(getMarkerPosition(mouseX, mouseY))
+    if (hoveredChartPosition?.answerId) {
+      const params = getMarkerPosition(
+        xScale(hoveredChartPosition.createdTime),
+        getYValueByAnswerIdAndTime(
+          hoveredChartPosition.createdTime,
+          hoveredChartPosition.answerId
+        ) ?? 1
+      )
+
+      setTTParams(
+        params
+          ? {
+              ...params,
+              ans: hoveredChartPosition.answerId,
+            }
+          : undefined
+      )
+    } else setTTParams(getMarkerPosition(mouseX, mouseY))
   })
 
   const onMouseLeave = useEvent(() => {
@@ -529,6 +554,11 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
         chartAnnotations={chartAnnotations}
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
+        chartPositions={chartPositions?.filter(
+          (cp) => xScale(cp.createdTime) < w && xScale(cp.createdTime) > 0
+        )}
+        setHoveredChartPosition={setHoveredChartPosition}
+        hoveredChartPosition={hoveredChartPosition}
         y0={yScale(0)}
         xScale={xScale}
         yAtTime={(time, answerId) =>
@@ -682,6 +712,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   yKind?: ValueKind
   curve?: CurveFactory
   onMouseOver?: (p: P | undefined) => void
+  onMouseLeave?: () => void
   Tooltip?: (props: TooltipProps<P>) => ReactNode
   pct?: boolean
   contractId?: string
@@ -740,7 +771,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? axisRight<number>(yScale)
             .tickValues(customTickValues)
             .tickFormat((n) => formatPct(n))
-        : yKind === 'Ṁ'
+        : yKind === 'Ṁ' || yKind === 'spice'
         ? negativeThreshold
           ? axisRight<number>(yScale)
               .tickValues(customTickValues)
@@ -786,6 +817,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const onMouseLeave = useEvent(() => {
     props.onMouseOver?.(undefined)
     setMouse(undefined)
+    if (!!props.onMouseLeave) {
+      props.onMouseLeave()
+    }
   })
 
   const {
@@ -825,6 +859,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         onHoverAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
+        yKind={yKind}
       >
         {typeof color !== 'string' && (
           <defs>

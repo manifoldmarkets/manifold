@@ -1,7 +1,6 @@
 import {
   get,
   groupBy,
-  keyBy,
   mapValues,
   maxBy,
   partition,
@@ -15,14 +14,6 @@ import {
   getCpmmOutcomeProbabilityAfterBet,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { buy, getProb } from './calculate-cpmm-multi'
-import {
-  calculateDpmPayout,
-  calculateDpmShares,
-  getDpmOutcomeProbability,
-  getDpmOutcomeProbabilityAfterBet,
-  getDpmProbability,
-} from './calculate-dpm'
 import {
   calculateFixedPayout,
   calculateFixedPayoutMulti,
@@ -39,16 +30,14 @@ import {
 } from './contract'
 import { floatingEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
-import { Answer, DpmAnswer } from './answer'
+import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
 import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
 ) {
-  return contract.mechanism === 'cpmm-1'
-    ? getCpmmProbability(contract.pool, contract.p)
-    : getDpmProbability(contract.totalShares)
+  return getCpmmProbability(contract.pool, contract.p)
 }
 
 export function getDisplayProbability(
@@ -62,12 +51,6 @@ export function getInitialProbability(
 ) {
   if (contract.initialProbability) return contract.initialProbability
 
-  if (contract.mechanism === 'dpm-2' || (contract as any).totalShares)
-    // use totalShares to calculate prob for ported contracts
-    return getDpmProbability(
-      (contract as any).phantomShares ?? (contract as any).totalShares
-    )
-
   return getCpmmProbability(contract.pool, contract.p)
 }
 
@@ -78,10 +61,6 @@ export function getOutcomeProbability(contract: Contract, outcome: string) {
       return outcome === 'YES'
         ? getCpmmProbability(contract.pool, contract.p)
         : 1 - getCpmmProbability(contract.pool, contract.p)
-    case 'cpmm-2':
-      return getProb(contract.pool, outcome)
-    case 'dpm-2':
-      return getDpmOutcomeProbability(contract.totalShares, outcome)
     case 'cpmm-multi-1':
       return 0
     default:
@@ -93,71 +72,41 @@ export function getAnswerProbability(
   contract: MultiContract,
   answerId: string
 ) {
-  if (contract.mechanism === 'dpm-2') {
-    return getDpmOutcomeProbability(contract.totalShares, answerId)
+  const answer = contract.answers.find((a) => a.id === answerId)
+  if (!answer) return 0
+
+  const { poolYes, poolNo, resolution, resolutionProbability } = answer
+  if (resolution) {
+    if (resolution === 'MKT') return resolutionProbability ?? answer.prob
+    if (resolution === 'YES') return 1
+    if (resolution === 'NO') return 0
   }
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    const answer = contract.answers.find((a) => a.id === answerId)
-    if (!answer) return 0
-
-    const { poolYes, poolNo, resolution, resolutionProbability } = answer
-    if (resolution) {
-      if (resolution === 'MKT') return resolutionProbability ?? answer.prob
-      if (resolution === 'YES') return 1
-      if (resolution === 'NO') return 0
-    }
-    const pool = { YES: poolYes, NO: poolNo }
-    return getCpmmProbability(pool, 0.5)
-  }
-
-  if (contract.mechanism === 'cpmm-2') {
-    return 0
-  }
-
-  throw new Error(
-    'getAnswerProbability not implemented for mechanism ' +
-      (contract as any).mechanism
-  )
+  const pool = { YES: poolYes, NO: poolNo }
+  return getCpmmProbability(pool, 0.5)
 }
 
 export function getInitialAnswerProbability(
   contract: MultiContract | CPMMNumericContract,
-  answer: Answer | DpmAnswer
+  answer: Answer
 ) {
-  if (contract.mechanism === 'cpmm-multi-1') {
-    if (!contract.shouldAnswersSumToOne) {
-      return 0.5
+  if (!contract.shouldAnswersSumToOne) {
+    return 0.5
+  } else {
+    if (contract.addAnswersMode === 'DISABLED') {
+      return 1 / contract.answers.length
     } else {
-      if (contract.addAnswersMode === 'DISABLED') {
-        return 1 / contract.answers.length
-      } else {
-        const answers = contract.answers as Answer[]
-        const initialTime = answers.find((a) => a.isOther)?.createdTime
+      const answers = contract.answers as Answer[]
+      const initialTime = answers.find((a) => a.isOther)?.createdTime
 
-        if (answer.createdTime === initialTime) {
-          const numberOfInitialAnswers = sumBy(answers, (a) =>
-            a.createdTime === initialTime ? 1 : 0
-          )
-          return 1 / numberOfInitialAnswers
-        }
-        return undefined
+      if (answer.createdTime === initialTime) {
+        const numberOfInitialAnswers = sumBy(answers, (a) =>
+          a.createdTime === initialTime ? 1 : 0
+        )
+        return 1 / numberOfInitialAnswers
       }
+      return undefined
     }
   }
-
-  if (contract.mechanism === 'dpm-2') {
-    return undefined
-  }
-
-  if (contract.mechanism === 'cpmm-2') {
-    return 1 / contract.answers.length
-  }
-
-  throw new Error(
-    'getAnswerInitialProbability not implemented for mechanism ' +
-      (contract as any).mechanism
-  )
 }
 
 export function getOutcomeProbabilityAfterBet(
@@ -169,14 +118,6 @@ export function getOutcomeProbabilityAfterBet(
   switch (mechanism) {
     case 'cpmm-1':
       return getCpmmOutcomeProbabilityAfterBet(contract, outcome, bet)
-    case 'cpmm-2':
-      return getProb(buy(contract.pool, outcome, bet).newPool, outcome)
-    case 'dpm-2':
-      return getDpmOutcomeProbabilityAfterBet(
-        contract.totalShares,
-        outcome,
-        bet
-      )
     case 'cpmm-multi-1':
       return 0
     default:
@@ -214,10 +155,6 @@ export function calculateSharesBought(
   switch (mechanism) {
     case 'cpmm-1':
       return calculateCpmmPurchase(contract, amount, outcome).shares
-    case 'cpmm-2':
-      return buy(contract.pool, outcome, amount).shares
-    case 'dpm-2':
-      return calculateDpmShares(contract.totalShares, amount, outcome)
     default:
       throw new Error('calculateSharesBought not implemented')
   }
@@ -246,8 +183,6 @@ export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
     ? calculateFixedPayout(contract, bet, outcome)
     : mechanism === 'cpmm-multi-1'
     ? calculateFixedPayoutMulti(contract, bet, outcome)
-    : mechanism === 'dpm-2'
-    ? calculateDpmPayout(contract, bet, outcome)
     : bet?.amount ?? 0
 }
 
@@ -259,8 +194,6 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
     ? calculateFixedPayout(contract, bet, resolution)
     : mechanism === 'cpmm-multi-1'
     ? calculateFixedPayoutMulti(contract, bet, resolution)
-    : mechanism === 'dpm-2'
-    ? calculateDpmPayout(contract, bet, resolution)
     : bet?.amount ?? 0
 }
 
@@ -291,22 +224,6 @@ function getCpmmInvested(yourBets: Bet[]) {
   return sum(Object.values(totalSpent))
 }
 
-function getDpmInvested(yourBets: Bet[]) {
-  const sortedBets = sortBy(yourBets, 'createdTime')
-
-  return sumBy(sortedBets, (bet) => {
-    const { amount, sale } = bet
-
-    if (sale) {
-      const originalBet = sortedBets.find((b) => b.id === sale.betId)
-      if (originalBet) return -originalBet.amount
-      return 0
-    }
-
-    return amount
-  })
-}
-
 export function getSimpleCpmmInvested(yourBets: Bet[]) {
   const total = sumBy(yourBets, (b) => b.amount)
   if (total < 0) return 0
@@ -321,7 +238,7 @@ export function getInvested(contract: Contract, yourBets: Bet[]) {
     const investedByAnswerId = mapValues(betsByAnswerId, getCpmmInvested)
     return sum(Object.values(investedByAnswerId))
   }
-  return getDpmInvested(yourBets)
+  throw new Error('getInvested not implemented for mechanism ' + mechanism)
 }
 
 function getCpmmOrDpmProfit(
@@ -336,39 +253,20 @@ function getCpmmOrDpmProfit(
   let saleValue = 0
   let redeemed = 0
 
-  const betsById = keyBy(yourBets, 'id')
-  const betIdToSaleBet = keyBy(
-    yourBets.filter((b) => b.sale),
-    (bet) => bet.sale!.betId
-  )
-
   for (const bet of yourBets) {
-    const { isSold, sale, amount, isRedemption } = bet
+    const { amount, isRedemption } = bet
 
-    if (isSold) {
-      const saleBet = betIdToSaleBet[bet.id]
-      if (saleBet) {
-        // Only counts if the sale bet is also in the list.
-        totalInvested += amount
-      }
-    } else if (sale) {
-      if (betsById[sale.betId]) {
-        // Only counts if the original bet is also in the list.
-        saleValue += sale.amount
-      }
+    if (isRedemption) {
+      redeemed += -1 * amount
+    } else if (amount > 0) {
+      totalInvested += amount
     } else {
-      if (isRedemption) {
-        redeemed += -1 * amount
-      } else if (amount > 0) {
-        totalInvested += amount
-      } else {
-        saleValue -= amount
-      }
-
-      payout += resolution
-        ? calculatePayout(contract, bet, resolution)
-        : calculatePayout(contract, bet, 'MKT')
+      saleValue -= amount
     }
+
+    payout += resolution
+      ? calculatePayout(contract, bet, resolution)
+      : calculatePayout(contract, bet, 'MKT')
   }
 
   const profit = payout + saleValue + redeemed - totalInvested

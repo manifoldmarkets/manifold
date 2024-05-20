@@ -1,6 +1,6 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { unserializeBase64Multi } from 'common/chart'
 import {
   ContractParams,
@@ -8,7 +8,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { HOUSE_BOT_USERNAME } from 'common/envs/constants'
+import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
 import { mergeWith, uniqBy } from 'lodash'
@@ -86,6 +86,8 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DAY_MS } from 'common/util/time'
 import { Title } from 'web/components/widgets/title'
 import { base64toPoints } from 'common/edge/og'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { Tooltip } from 'web/components/widgets/tooltip'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -190,7 +192,7 @@ export function ContractPageContent(props: ContractParams) {
       contract.id,
       contract.resolution,
       contract.closeTime,
-      'answers' in contract ? contract.answers : undefined,
+      'answers' in contract ? JSON.stringify(contract.answers) : undefined,
     ]
   )
 
@@ -224,19 +226,19 @@ export function ContractPageContent(props: ContractParams) {
 
   const isNumber = contract.outcomeType === 'NUMBER'
 
-  const rows = useRealtimeBetsPolling(
-    {
-      contractId: contract.id,
-      afterTime: lastBetTime,
-      filterRedemptions:
-        contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
-      order: 'asc',
-    },
-    500,
-    `contract-bets-${contract.id}-500ms-v1`
-  )
+  const newBets =
+    useRealtimeBetsPolling(
+      {
+        contractId: contract.id,
+        afterTime: lastBetTime,
+        filterRedemptions:
+          contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
+        order: 'asc',
+      },
+      500,
+      `contract-bets-${contract.id}-500ms-v1`
+    ) ?? []
 
-  const newBets = rows ?? []
   const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
@@ -252,7 +254,6 @@ export function ContractPageContent(props: ContractParams) {
   const betPoints = useMemo(() => {
     if (
       contract.outcomeType === 'MULTIPLE_CHOICE' ||
-      contract.outcomeType === 'FREE_RESPONSE' ||
       contract.outcomeType === 'NUMBER'
     ) {
       const data = multiPointsString
@@ -261,7 +262,9 @@ export function ContractPageContent(props: ContractParams) {
       const newData =
         contract.mechanism === 'cpmm-multi-1' ? getMultiBetPoints(newBets) : []
 
-      return mergeWith(data, newData, (a, b) => [...(a ?? []), ...(b ?? [])])
+      return mergeWith(data, newData, (array1, array2) =>
+        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
+      )
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBets.map((bet) => ({
@@ -293,7 +296,7 @@ export function ContractPageContent(props: ContractParams) {
   })
   // Request new user signup bonus on every contract page visited
   useRequestNewUserSignupBonus(contract.id)
-  const [replyTo, setReplyTo] = useState<Answer | DpmAnswer | Bet>()
+  const [replyTo, setReplyTo] = useState<Answer | Bet>()
 
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
@@ -331,6 +334,8 @@ export function ContractPageContent(props: ContractParams) {
   }, [user?.lastBetTime])
   const showRelatedMarketsBelowBet =
     parseJsonContentToText(contract.description).trim().length >= 200
+
+  const isSpiceMarket = !!contract.isSpicePayout
 
   return (
     <>
@@ -403,6 +408,11 @@ export function ContractPageContent(props: ContractParams) {
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
                   >
+                    {isSpiceMarket && (
+                      <Tooltip text={SPICE_MARKET_TOOLTIP}>
+                        <SpiceCoin />
+                      </Tooltip>
+                    )}
                     <VisibilityIcon contract={contract} /> {contract.question}
                   </span>
                 )}
@@ -422,6 +432,7 @@ export function ContractPageContent(props: ContractParams) {
           </div>
           {coverImageUrl && (
             <Row className="h-10 w-full justify-between">
+              {/* Wrap in div so that justify-between works when BackButton is null. */}
               <div>
                 <BackButton className="pr-8" />
               </div>
@@ -449,11 +460,14 @@ export function ContractPageContent(props: ContractParams) {
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
-                <MarketTopics
-                  contract={contract}
-                  dashboards={dashboards}
-                  topics={topics}
-                />
+                <Row className="items-center gap-2">
+                  <MarketTopics
+                    contract={contract}
+                    dashboards={dashboards}
+                    topics={topics}
+                    isSpiceMarket={isSpiceMarket}
+                  />
+                </Row>
               </Col>
 
               <div className="text-ink-600 flex flex-wrap items-center justify-between gap-y-1 text-sm">

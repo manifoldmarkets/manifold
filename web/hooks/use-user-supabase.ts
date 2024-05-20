@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { Answer, DpmAnswer } from 'common/answer'
+import { Answer } from 'common/answer'
 import { uniqBy, uniq } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { filterDefined } from 'common/util/array'
@@ -109,16 +109,9 @@ export function useUsersInStore(
   return users?.filter((user) => userIds.includes(user?.id))
 }
 
-export function useDisplayUserByIdOrAnswer(answer: Answer | DpmAnswer) {
+export function useDisplayUserByIdOrAnswer(answer: Answer) {
   const userId = answer.userId
   const user = useDisplayUserById(userId)
-  if ('name' in answer)
-    return {
-      id: userId,
-      name: answer.name,
-      username: answer.username,
-      avatarUrl: answer.avatarUrl,
-    }
   if (!user) return user
   return {
     id: userId,

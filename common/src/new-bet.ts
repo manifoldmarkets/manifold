@@ -1,7 +1,6 @@
 import { sortBy, sumBy } from 'lodash'
 
 import { Bet, fill, LimitBet } from './bet'
-import { calculateDpmShares, getDpmOutcomeProbability } from './calculate-dpm'
 import {
   calculateCpmmAmountToProb,
   calculateCpmmAmountToProbIncludingFees,
@@ -13,7 +12,6 @@ import {
   CPMMBinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
-  DPMContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
@@ -387,46 +385,6 @@ export const getBinaryCpmmBetInfo = (
     makers,
     ordersToCancel,
   }
-}
-
-export const getNewMultiBetInfo = (
-  outcome: string,
-  amount: number,
-  contract: DPMContract
-) => {
-  const { pool, totalShares, totalBets } = contract
-
-  const prevOutcomePool = pool[outcome] ?? 0
-  const newPool = { ...pool, [outcome]: prevOutcomePool + amount }
-
-  const shares = calculateDpmShares(contract.totalShares, amount, outcome)
-
-  const prevShares = totalShares[outcome] ?? 0
-  const newTotalShares = { ...totalShares, [outcome]: prevShares + shares }
-
-  const prevTotalBets = totalBets[outcome] ?? 0
-  const newTotalBets = { ...totalBets, [outcome]: prevTotalBets + amount }
-
-  const probBefore = getDpmOutcomeProbability(totalShares, outcome)
-  const probAfter = getDpmOutcomeProbability(newTotalShares, outcome)
-
-  const newBet: CandidateBet = {
-    contractId: contract.id,
-    amount,
-    loanAmount: 0,
-    shares,
-    outcome,
-    probBefore,
-    probAfter,
-    createdTime: Date.now(),
-    fees: noFees,
-    isAnte: false,
-    isRedemption: false,
-    isChallenge: false,
-    visibility: contract.visibility,
-  }
-
-  return { newBet, newPool, newTotalShares, newTotalBets }
 }
 
 export const getNewMultiCpmmBetInfo = (

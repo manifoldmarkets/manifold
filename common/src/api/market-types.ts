@@ -1,5 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { Answer, DpmAnswer, MAX_ANSWERS } from 'common/answer'
+import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   CREATEABLE_OUTCOME_TYPES,
@@ -58,17 +58,13 @@ export type LiteMarket = {
   lastUpdatedTime?: number
   lastBetTime?: number
 }
-export type ApiAnswer =
-  | (DpmAnswer & {
-      probability: number
-    })
-  | Omit<
-      Answer & {
-        probability: number
-        pool: { YES: number; NO: number }
-      },
-      'prob' | 'poolYes' | 'poolNo'
-    >
+export type ApiAnswer = Omit<
+  Answer & {
+    probability: number
+    pool: { YES: number; NO: number }
+  },
+  'prob' | 'poolYes' | 'poolNo'
+>
 export type FullMarket = LiteMarket & {
   // bets?: Bet[]
   // comments?: Comment[]
@@ -180,8 +176,7 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
   const answers =
-    (outcomeType === 'FREE_RESPONSE' || outcomeType === 'MULTIPLE_CHOICE') &&
-    contract.answers
+    outcomeType === 'MULTIPLE_CHOICE' && contract.answers
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )
@@ -201,13 +196,6 @@ export function toFullMarket(contract: Contract): FullMarket {
       }
     }
   }
-  if (outcomeType === 'FREE_RESPONSE') {
-    multiValues = {
-      shouldAnswersSumToOne: true,
-      addAnswersMode: 'ANYONE',
-    }
-  }
-
   const options =
     outcomeType === 'POLL'
       ? contract.options.map(({ text, votes }) => ({ text, votes }))
@@ -241,26 +229,18 @@ export function toFullMarket(contract: Contract): FullMarket {
 
 function augmentAnswerWithProbability(
   contract: MultiContract,
-  answer: DpmAnswer | Answer
+  answer: Answer
 ): ApiAnswer {
   const probability = getAnswerProbability(contract, answer.id)
-  if (contract.mechanism === 'cpmm-multi-1') {
-    const { poolYes, poolNo, prob: _, ...other } = answer as Answer
-    const pool = {
-      YES: poolYes,
-      NO: poolNo,
-    }
-    return {
-      ...other,
-      pool,
-      probability,
-    }
-  } else {
-    const dpmAnswer = answer as DpmAnswer
-    return {
-      ...dpmAnswer,
-      probability,
-    }
+  const { poolYes, poolNo, prob: _, ...other } = answer as Answer
+  const pool = {
+    YES: poolYes,
+    NO: poolNo,
+  }
+  return {
+    ...other,
+    pool,
+    probability,
   }
 }
 
@@ -355,7 +335,7 @@ export const updateMarketProps = z
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
     coverImageUrl: z.string().or(z.null()).optional(),
     sort: z.string().optional(),
-    isPolitics: z.boolean().optional(),
+    isSpicePayout: z.boolean().optional(),
 
     description: z.string().optional(),
     descriptionHtml: z.string().optional(),
@@ -376,24 +356,7 @@ export const resolveBinarySchema = z
   })
   .passthrough() // overlaps with pseudo-numeric
 
-export const resolveFRSchema = z.union([
-  z.object({
-    outcome: z.literal('CANCEL'),
-  }),
-  z.object({
-    outcome: z.literal('MKT'),
-    resolutions: z.array(
-      z.object({
-        answer: z.number().int().nonnegative(),
-        pct: z.number().gte(0).lte(100),
-      })
-    ),
-  }),
-  z.object({
-    outcome: z.number().int().nonnegative(),
-  }),
-])
-
+// For multiple choice with shouldAnswersSumToOne = true
 export const resolveMultiSchema = z.union([
   z.object({
     outcome: z.literal('CANCEL'),
@@ -412,11 +375,6 @@ export const resolveMultiSchema = z.union([
     ),
   }),
 ])
-
-export const resolveNumericSchema = z.object({
-  outcome: z.union([z.literal('CANCEL'), z.string()]),
-  value: z.number().optional(),
-})
 
 export const resolvePseudoNumericSchema = z.union([
   z.object({
@@ -437,8 +395,6 @@ export const resolveMarketProps = z
     z.union([
       resolveBinarySchema,
       resolveMultiSchema,
-      resolveFRSchema,
       resolvePseudoNumericSchema,
-      resolveNumericSchema,
     ])
   )

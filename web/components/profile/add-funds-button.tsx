@@ -3,19 +3,18 @@ import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { PlusIcon } from '@heroicons/react/solid'
 import { Button } from '../buttons/button'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AddFundsButton(props: { userId?: string; className?: string }) {
   const { userId, className } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const isMobile = useIsMobile()
+
   if (!userId || user?.id !== userId) return null
   return (
     <>
       <Button
         onClick={() => setOpen(true)}
-        size={isMobile ? '2xs' : 'xs'}
+        size="md"
         color="gradient-pink"
         className={className}
       >

@@ -592,6 +592,15 @@ export function getCpmmLiquidityPoolWeights(liquidities: LiquidityProvision[]) {
   )
 }
 
+const getK = (pool: { [outcome: string]: number }) => {
+  const values = Object.values(pool)
+  return sumBy(values, Math.log)
+}
+
+export const getLiquidity = (pool: { [outcome: string]: number }) => {
+  return Math.exp(getK(pool) / Object.keys(pool).length)
+}
+
 export function getUserLiquidityShares(
   userId: string,
   pool: { [outcome: string]: number },

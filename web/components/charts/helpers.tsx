@@ -1,9 +1,16 @@
 import clsx from 'clsx'
+import { ValueKind } from 'common/chart'
+import { Contract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { buildArray } from 'common/util/array'
 import { Axis } from 'd3-axis'
+import { ScaleTime, scaleTime } from 'd3-scale'
 import { pointer, select } from 'd3-selection'
 import { CurveFactory, area, line } from 'd3-shape'
 import { ZoomBehavior, zoom, zoomIdentity } from 'd3-zoom'
 import dayjs from 'dayjs'
+import { clamp, sortBy } from 'lodash'
 import React, {
   ReactNode,
   SVGProps,
@@ -15,16 +22,16 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { Contract } from 'common/contract'
-import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { clamp, sortBy } from 'lodash'
-import { ScaleTime, scaleTime } from 'd3-scale'
 import { useEvent } from 'web/hooks/use-event'
-import { buildArray } from 'common/util/array'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { useMeasureSize } from 'web/hooks/use-measure-size'
+import { ManaSvg, SpiceSvg } from './mana-spice-chart'
+import { PositionsTooltip } from 'web/components/charts/contract/choice'
+import { ChartPosition } from 'common/chart-position'
 
 // min number of pixels to mouse drag over to trigger zoom
-const ZOOM_DRAG_THRESHOLD = 16
+export const ZOOM_DRAG_THRESHOLD = 16
+
+export const Y_AXIS_MARGIN = 44
 
 export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const { h, axis } = props
@@ -44,8 +51,9 @@ export const YAxis = <Y,>(props: {
   w: number
   axis: Axis<Y>
   noGridlines?: boolean
+  iconSVG?: string
 }) => {
-  const { w, axis, noGridlines } = props
+  const { w, axis, noGridlines, iconSVG } = props
   const axisRef = useRef<SVGGElement>(null)
 
   useEffect(() => {
@@ -65,7 +73,25 @@ export const YAxis = <Y,>(props: {
           })
         )
       }
+
+      // Append SVG icons next to each tick label
+      if (iconSVG) {
+        brush.selectAll('.tick').each(function () {
+          const tick = select(this)
+          tick
+            .append('svg')
+            .attr('width', '1em') // Specify the width and height of the SVG
+            .attr('height', '1em')
+            .attr('x', '0.5em') // Horizontal offset from the text
+            .attr('y', '-0.5em') // Vertical offset to align with text
+            .html(iconSVG) // Insert the SVG path using .html() or a similar method
+        })
+      }
+
       brush.select('.domain').attr('stroke-width', 0)
+      if (iconSVG) {
+        brush.selectAll('.tick text').attr('x', '1.7em') // Horizontal offset from the text
+      }
     }
   }, [w, axis])
 
@@ -169,6 +195,74 @@ export const SliceMarker = (props: {
   )
 }
 
+export const PositionMarker = (props: {
+  x: number
+  y0: number
+  y1: number
+  onHover: (position: ChartPosition) => void
+  onLeave: () => void
+  isHovered: boolean
+  chartPosition: ChartPosition
+}) => {
+  const { chartPosition, x, y0, y1, onLeave, onHover, isHovered } = props
+  const { direction, color } = chartPosition
+  const isSale = direction < 0
+  const scale = 1
+  const pinBottomPointX = x - (isSale ? -12 : 12)
+  const pinTopCenterY = y0 - (isSale ? 5 : 17)
+  const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale}) rotate(${
+    isSale ? 180 : 0
+  })`
+  return (
+    <g>
+      <path
+        transform={transform}
+        d={
+          'm12 6.586-8.707 8.707 1.414 1.414L12 9.414l7.293 7.293 1.414-1.414L12 6.586z'
+        }
+        style={{
+          fill: color,
+        }}
+        className={clsx(
+          isHovered
+            ? 'dark:fill-primary-300 fill-primary-500 z-20'
+            : !color && 'fill-ink-300 dark:fill-ink-600',
+          ' cursor-default'
+        )}
+        z={isHovered ? 20 : 0}
+        strokeWidth={isHovered ? 2 : 1}
+      />
+      <line
+        strokeWidth={isHovered ? 3 : 2}
+        strokeDasharray={isHovered ? undefined : '5, 5'}
+        style={{
+          stroke: color,
+        }}
+        className={clsx(
+          isHovered
+            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
+            : !color && 'stroke-ink-300 dark:stroke-ink-600',
+          Math.abs(y1 - y0) < 10 && 'hidden'
+        )}
+        x1={x}
+        x2={x}
+        y1={pinTopCenterY - (isSale ? 15 : 0)}
+        y2={y1}
+      />
+      <rect
+        fill="transparent"
+        className={'cursor-default'}
+        onMouseEnter={() => onHover(chartPosition)}
+        onMouseLeave={onLeave}
+        x={x - 10}
+        y={pinTopCenterY - (isSale ? 15 : 0)}
+        width={20}
+        height={20}
+      />
+    </g>
+  )
+}
+
 export const AnnotationMarker = (props: {
   x: number
   y0: number
@@ -242,7 +336,11 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   onHoverAnnotation?: (id: number | null) => void
   hoveredAnnotation?: number | null
   chartAnnotations?: ChartAnnotation[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
+  chartPositions?: ChartPosition[]
   hideXAxis?: boolean
+  yKind?: ValueKind
 }) => {
   const {
     children,
@@ -266,6 +364,10 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     onHoverAnnotation,
     hoveredAnnotation,
     hideXAxis,
+    yKind,
+    chartPositions,
+    hoveredChartPosition,
+    setHoveredChartPosition,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
@@ -316,6 +418,12 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
+      {chartPositions && (
+        <PositionsTooltip
+          chartPositions={chartPositions}
+          hoveredPosition={hoveredChartPosition}
+        />
+      )}
       {ttParams && Tooltip && (
         <TooltipContainer
           calculatePos={(ttw, tth) =>
@@ -371,7 +479,19 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
         <g>
           {!hideXAxis && <XAxis axis={xAxis} w={w} h={h} />}
 
-          <YAxis axis={yAxis} w={w} noGridlines={noGridlines} />
+          <YAxis
+            axis={yAxis}
+            w={w}
+            noGridlines={noGridlines}
+            iconSVG={
+              yKind === ENV_CONFIG.moneyMoniker
+                ? ManaSvg
+                : yKind === 'spice'
+                ? SpiceSvg
+                : undefined
+            }
+          />
+
           {/* clip to stop pointer events outside of graph, and mask for the blur to indicate zoom */}
           <g clipPath={`url(#${id}-clip)`} mask={`url(#${id}-mask)`}>
             {children}
@@ -404,6 +524,25 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                     onHover={(id) => onHoverAnnotation?.(id)}
                     onLeave={() => onHoverAnnotation?.(null)}
                     isHovered={hoveredAnnotation === a.id}
+                  />
+                ))}
+            {showAnnotations &&
+              chartPositions &&
+              chartPositions
+                .filter(
+                  (p) =>
+                    !hoveredChartPosition || p.id === hoveredChartPosition.id
+                )
+                .map((p) => (
+                  <PositionMarker
+                    key={p.id}
+                    x={xScale(p.createdTime)}
+                    y0={y0}
+                    y1={yAtTime(p.createdTime, p.answerId)}
+                    onHover={(cp) => setHoveredChartPosition?.(cp)}
+                    onLeave={() => setHoveredChartPosition?.(null)}
+                    isHovered={false}
+                    chartPosition={p}
                   />
                 ))}
           </g>
@@ -600,7 +739,7 @@ export const useZoom = (
   }
 }
 
-function useInitZoomBehavior(props: {
+export function useInitZoomBehavior(props: {
   zoomParams?: ZoomParams
   w: number
   h: number

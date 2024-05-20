@@ -384,6 +384,18 @@ function TopicsPage(props: {
     ) {
       await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
     }
+
+    // if user is following AI topics
+    if (
+      intersection(selectedTopics, [
+        'yEWvvwFFIqzf8JklMewp',
+        'a3ikurqO9fT46Pv9ZGkY',
+        'GbbX9U5pYnDeftX9lxUh',
+      ]).length > 0
+    ) {
+      await followUser('8lZo8X5lewh4hnCoreI7iSc0GxK2') // follow @ManifoldAI
+    }
+
     if (
       intersection(selectedTopics, ['0d39aa2b-1447-4298-bc60-5ef67d9cea4f'])
         .length > 0

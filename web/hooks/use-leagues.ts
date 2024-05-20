@@ -7,9 +7,10 @@ import {
   getOwnedLeagueChats,
 } from 'web/lib/supabase/leagues'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentLocalState } from './use-persistent-local-state'
 
 export const useLeagueInfo = (userId: string | null | undefined) => {
-  const [leagueInfo, setLeagueInfo] = usePersistentInMemoryState<
+  const [leagueInfo, setLeagueInfo] = usePersistentLocalState<
     league_user_info | null | undefined
   >(undefined, `league-info-${userId}`)
 

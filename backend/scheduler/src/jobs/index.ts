@@ -75,17 +75,17 @@ export function createJobs() {
     // Daily jobs:
     createJob(
       'truncate-incoming-writes',
-      '0 0 0 * * *', // midnight daily
+      '0 0 2 * * *', // 2am daily
       truncateIncomingWrites
     ),
     createJob(
       'clean-old-tombstones',
-      '0 0 0 * * *', // midnight daily
+      '0 0 2 * * *', // 2am daily
       cleanOldTombstones
     ),
     createJob(
       'clean-old-notifications',
-      '0 0 2 * * *', // 2 AM daily
+      '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
     ),
     createJob(
@@ -110,7 +110,7 @@ export function createJobs() {
     ),
     createJob(
       'weekly-markets-emails',
-      '0 * 12-14 * * 1',
+      '0 */3 11-17 * * 1',
       sendWeeklyMarketsEmails
     ),
     createJob(

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import {
   CPMMMultiContract,
+  CPMMNumericContract,
   MultiContract,
   canCancelContract,
 } from 'common/contract'
@@ -15,7 +16,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { BETTORS } from 'common/user'
 import { Button } from '../buttons/button'
 import { useUser } from 'web/hooks/use-user'
-import { DpmAnswer, Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
+import { Answer, OTHER_TOOLTIP_TEXT } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import {
@@ -78,7 +79,7 @@ function getAnswerResolveButtonLabel(
 }
 
 function AnswersResolveOptions(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   setResolveOption: (
     option: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
@@ -93,18 +94,12 @@ function AnswersResolveOptions(props: {
     chosenAnswers,
     isInModal,
   } = props
-  const isCpmm = contract.mechanism === 'cpmm-multi-1'
   const answerIds = Object.keys(chosenAnswers)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | undefined>(undefined)
 
-  const answer = isCpmm
-    ? contract.answers.find((a) => a.id === answerIds[0])
-    : contract.answers[
-        (contract.outcomeType === 'FREE_RESPONSE' ? -1 : 0) +
-          parseInt(answerIds[0])
-      ]
+  const answer = contract.answers.find((a) => a.id === answerIds[0])
   const chosenText = answer?.text ?? 'an answer'
 
   const onResolve = async () => {
@@ -114,36 +109,24 @@ function AnswersResolveOptions(props: {
     setIsSubmitting(true)
 
     const totalProb = sum(Object.values(chosenAnswers))
-    const resolutions = isCpmm
-      ? Object.entries(chosenAnswers).map(([answerId, p]) => {
-          return { answerId, pct: (100 * p) / totalProb }
-        })
-      : Object.entries(chosenAnswers).map(([i, p]) => {
-          return { answer: parseInt(i), pct: (100 * p) / totalProb }
-        })
+    const resolutions = Object.entries(chosenAnswers).map(([answerId, p]) => {
+      return { answerId, pct: (100 * p) / totalProb }
+    })
 
-    const resolutionProps = isCpmm
-      ? removeUndefinedProps({
-          contractId: contract.id,
-          outcome: resolveOption,
-          resolutions:
-            resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
-          answerId: resolveOption === 'CHOOSE_ONE' ? answerIds[0] : undefined,
-        })
-      : removeUndefinedProps({
-          contractId: contract.id,
-          outcome:
-            resolveOption === 'CHOOSE_ONE'
-              ? parseInt(answerIds[0])
-              : resolveOption === 'CHOOSE_MULTIPLE'
-              ? 'MKT'
-              : 'CANCEL',
-          resolutions:
-            resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
-        })
+    const resolutionProps = removeUndefinedProps({
+      contractId: contract.id,
+      outcome: resolveOption,
+      resolutions:
+        resolveOption === 'CHOOSE_MULTIPLE' ? resolutions : undefined,
+      answerId: resolveOption === 'CHOOSE_ONE' ? answerIds[0] : undefined,
+    })
 
     try {
-      const result = await api('market/:contractId/resolve', resolutionProps)
+      // NOTE(James): I don't understand why this doesn't work without the cast to any.
+      const result = await api(
+        'market/:contractId/resolve',
+        resolutionProps as any
+      )
       console.log('resolved', resolutionProps, 'result:', result)
     } catch (e) {
       if (e instanceof APIError) {
@@ -233,12 +216,12 @@ function AnswersResolveOptions(props: {
 }
 
 export const AnswersResolvePanel = (props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | CPMMNumericContract
   onClose: () => void
   inModal?: boolean
 }) => {
   const { contract, onClose, inModal } = props
-  const { answers, outcomeType } = contract
+  const { answers } = contract
 
   const user = useUser()
 
@@ -287,11 +270,7 @@ export const AnswersResolvePanel = (props: {
     ? 'checkbox'
     : undefined
   const addAnswersMode =
-    'addAnswersMode' in contract
-      ? contract.addAnswersMode
-      : outcomeType === 'FREE_RESPONSE'
-      ? 'ANYONE'
-      : 'DISABLED'
+    'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
   const showAvatars =
     addAnswersMode === 'ANYONE' ||
     answers.some((a) => a.userId !== contract.creatorId)
@@ -333,7 +312,7 @@ export const AnswersResolvePanel = (props: {
 }
 
 export function ResolutionAnswerItem(props: {
-  answer: DpmAnswer | Answer
+  answer: Answer
   contract: MultiContract
   showChoice: 'radio' | 'checkbox' | undefined
   chosenProb: number | undefined
