@@ -1,10 +1,5 @@
 import * as admin from 'firebase-admin'
-import {
-  DocumentReference,
-  FieldValue,
-  Query,
-  Transaction,
-} from 'firebase-admin/firestore'
+import { DocumentReference, Query, Transaction } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 
 import { APIError, type APIHandler } from './helpers/endpoint'
@@ -27,11 +22,7 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import {
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-  SERIAL,
-} from 'shared/supabase/init'
+import { SupabaseTransaction } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { broadcast } from './websockets/server'
@@ -262,7 +253,6 @@ export type NewBetResult = BetInfo & {
   }[]
 }
 
-/** does not account for account deduction! */
 export const processNewBetResult = async (
   newBetResult: NewBetResult,
   contractDoc: DocumentReference,
@@ -372,6 +362,9 @@ export const processNewBetResult = async (
     allOrdersToCancel.push(...ordersToCancel)
   }
 
+  await incrementBalance(pgTrans, user.id, {
+    balance: -newBet.amount,
+  })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 
   const totalCreatorFee =
