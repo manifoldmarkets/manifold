@@ -209,7 +209,7 @@ export function BuyAmountInput(props: {
 
   const portfolio = useCurrentPortfolio(user?.id)
   const hasLotsOfMana =
-    !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
+    !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
 
   const amountWithDefault = amount ?? 0
 
@@ -221,8 +221,10 @@ export function BuyAmountInput(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const advancedIncrementValues = hasLotsOfMana ? [10, 50, 250] : [1, 10, 50]
-  const defaultIncrementValues = hasLotsOfMana ? [10, 100] : [1, 10]
+  const advancedIncrementValues = hasLotsOfMana
+    ? [50, 250, 1000]
+    : [10, 50, 250]
+  const defaultIncrementValues = hasLotsOfMana ? [50, 250] : [10, 100]
 
   const incrementValues =
     quickButtonValues === 'large'

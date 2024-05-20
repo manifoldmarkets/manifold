@@ -219,7 +219,7 @@ export const BuyPanelBody = (props: {
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
 
-  const initialBetAmount = 10
+  const initialBetAmount = 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
