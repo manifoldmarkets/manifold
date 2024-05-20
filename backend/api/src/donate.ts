@@ -1,14 +1,11 @@
-import * as admin from 'firebase-admin'
 import { type APIHandler } from './helpers/endpoint'
 import { charities } from 'common/charity'
 import { APIError } from 'api/helpers/endpoint'
-import { type User } from 'common/user'
 import { insertTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import {
-  CHARITY_FEE,
-  MIN_SPICE_DONATION,
-} from 'common/envs/constants'
+import { CHARITY_FEE, MIN_SPICE_DONATION } from 'common/envs/constants'
+import { getUser } from 'shared/utils'
+import { incrementBalance } from 'shared/supabase/users'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
@@ -16,11 +13,9 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  await firestore.runTransaction(async (trans) => {
-    const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await trans.get(userDoc)
-    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
-    const user = userSnap.data() as User
+  await pg.tx(async (tx) => {
+    const user = await getUser(auth.uid, tx)
+    if (!user) throw new APIError(401, 'Your account was not found')
 
     if (user.spiceBalance < amount) {
       throw new APIError(403, 'Insufficient prize points')
@@ -31,40 +26,38 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     }
 
     // deduct spice as part of transaction
-    trans.update(userDoc, {
-      spiceBalance: admin.firestore.FieldValue.increment(-amount),
+    await incrementBalance(tx, auth.uid, {
+      spiceBalance: -amount,
     })
+
+    // add donation to charity
+    const fee = CHARITY_FEE * amount
+    const donation = amount - fee
+
+    const feeTxn = {
+      category: 'CHARITY_FEE',
+      fromType: 'USER',
+      fromId: auth.uid,
+      toType: 'BANK',
+      toId: 'BANK',
+      amount: fee,
+      token: 'SPICE',
+      data: {
+        charityId: charity.id,
+      },
+    } as const
+
+    const donationTxn = {
+      category: 'CHARITY',
+      fromType: 'USER',
+      fromId: auth.uid,
+      toType: 'CHARITY',
+      toId: charity.id,
+      amount: donation,
+      token: 'SPICE',
+    } as const
+
+    await insertTxn(tx, feeTxn)
+    await insertTxn(tx, donationTxn)
   })
-
-  // add donation to charity
-  const fee = CHARITY_FEE * amount
-  const donation = amount - fee
-
-  const feeTxn = {
-    category: 'CHARITY_FEE',
-    fromType: 'USER',
-    fromId: auth.uid,
-    toType: 'BANK',
-    toId: 'BANK',
-    amount: fee,
-    token: 'SPICE',
-    data: {
-      charityId: charity.id,
-    },
-  } as const
-
-  const donationTxn = {
-    category: 'CHARITY',
-    fromType: 'USER',
-    fromId: auth.uid,
-    toType: 'CHARITY',
-    toId: charity.id,
-    amount: donation,
-    token: 'SPICE',
-  } as const
-
-  await pg.tx((tx) => insertTxn(tx, feeTxn))
-  await pg.tx((tx) => insertTxn(tx, donationTxn))
 }
-
-const firestore = admin.firestore()
