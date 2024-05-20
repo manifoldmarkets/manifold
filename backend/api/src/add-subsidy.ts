@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
-import { Contract, CPMMContract } from 'common/contract'
-import { User } from 'common/user'
+import { CPMMContract } from 'common/contract'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
@@ -15,7 +14,11 @@ export const addLiquidity: APIHandler<
   return addContractLiquidity(contractId, amount, auth.uid)
 }
 
-export const addContractLiquidity = async (contractId: string, amount: number, userId: string) => {
+export const addContractLiquidity = async (
+  contractId: string,
+  amount: number,
+  userId: string
+) => {
   const pg = createSupabaseDirectClient()
 
   const contract = await getContractSupabase(contractId)
@@ -37,7 +40,7 @@ export const addContractLiquidity = async (contractId: string, amount: number, u
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
-    await incrementBalance(tx, auth.uid, {
+    await incrementBalance(tx, userId, {
       balance: -amount,
       totalDeposits: -amount,
     })
@@ -63,7 +66,7 @@ export const addContractLiquidity = async (contractId: string, amount: number, u
 
       const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
         getNewLiquidityProvision(
-          auth.uid,
+          userId,
           subsidyAmount,
           contract,
           newLiquidityProvisionDoc.id

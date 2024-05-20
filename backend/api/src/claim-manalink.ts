@@ -1,6 +1,5 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { isVerified, User } from 'common/user'
+import { isVerified } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxn } from 'shared/txn/run-txn'
@@ -107,5 +106,3 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
 
   return { message: 'Manalink claimed' }
 })
-
-const firestore = admin.firestore()
