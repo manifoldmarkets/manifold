@@ -111,6 +111,8 @@ export const bulkIncrementBalances = async (
     totalDeposits?: number
   }[]
 ) => {
+  if (userUpdates.length === 0) return
+
   const cs = new pgp.helpers.ColumnSet(
     [
       'id',
