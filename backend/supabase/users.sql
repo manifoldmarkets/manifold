@@ -10,7 +10,7 @@ create table if not exists
               balance numeric not null default 0,
               spice_balance numeric not null default 0,
               total_deposits numeric not null default 0,
-              profit_adjustment numeric
+              resolved_profit_adjustment numeric
 );
 
 alter table users

@@ -1,7 +1,7 @@
 import { Dictionary, first, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMContract } from './contract'
+import { Contract, CPMMContract, getAdjustedProfit } from './contract'
 import { User } from './user'
 import { computeFills } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
@@ -214,6 +214,7 @@ export const calculateUserMetrics = (
       userId: user?.id ?? bet?.userId,
       userUsername: user?.username ?? bet?.userUsername,
       userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
+      profitAdjustment: getAdjustedProfit(contract, current.profit),
     } as ContractMetric)
   })
 }

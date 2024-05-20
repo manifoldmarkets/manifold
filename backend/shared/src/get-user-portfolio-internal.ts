@@ -104,7 +104,8 @@ export const getUserPortfolioInternal = async (userId: string) => {
     answers.length
   )
 
-  const { totalDeposits, spiceBalance, balance, profitAdjustment } = user
+  const { totalDeposits, spiceBalance, balance, resolvedProfitAdjustment } =
+    user
   return {
     loanTotal,
     investmentValue,
@@ -113,8 +114,9 @@ export const getUserPortfolioInternal = async (userId: string) => {
     totalDeposits,
     timestamp: Date.now(),
     // Not used for profit graphs, only the leaderboard
+    // TODO: have to sum profit adjustments from open contract metrics to get real leaderboard profit
     profit:
-      (profitAdjustment ?? 0) +
+      (resolvedProfitAdjustment ?? 0) +
       spiceBalance +
       investmentValue +
       balance -

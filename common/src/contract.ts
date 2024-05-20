@@ -442,3 +442,19 @@ export const canCancelContract = (userId: string, contract: Contract) => {
   const createdRecently = (Date.now() - contract.createdTime) / MINUTE_MS < 15
   return createdRecently || isModId(userId) || isAdminId(userId)
 }
+
+export const isMarketRanked = (contract: Contract) =>
+  contract.isRanked != false && contract.visibility === 'public'
+
+export const PROFIT_CUTOFF_TIME = 1715805887741
+export const DPM_CUTOFF_TIMESTAMP = '2023-08-01 18:06:58.813000 +00:00'
+export const getAdjustedProfit = (contract: Contract, profit: number) =>
+  isMarketRanked(contract) &&
+  contract.resolutionTime &&
+  contract.resolutionTime <= PROFIT_CUTOFF_TIME &&
+  (contract.mechanism !== 'cpmm-multi-1' ||
+    contract.createdTime > Date.parse(DPM_CUTOFF_TIMESTAMP))
+    ? 9 * profit
+    : isMarketRanked(contract)
+    ? undefined
+    : -1 * profit

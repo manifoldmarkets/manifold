@@ -20,7 +20,7 @@ export type User = {
   balance: number // M$
   spiceBalance: number
   totalDeposits: number
-  profitAdjustment?: number
+  resolvedProfitAdjustment?: number
   profitCached: {
     daily: number
     weekly: number

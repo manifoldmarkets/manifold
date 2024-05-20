@@ -46,8 +46,9 @@ export async function addGroupToContract(
       })
 
     if (group.id === UNRANKED_GROUP_ID) {
+      const isRanked = false
       await firestore.collection('contracts').doc(contract.id).update({
-        isRanked: false,
+        isRanked,
       })
       if (userId) {
         await recordContractEdit(contract, userId, ['isRanked'])
@@ -99,8 +100,9 @@ export async function removeGroupFromContract(
     })
 
   if (group.id === UNRANKED_GROUP_ID) {
+    const isRanked = true
     await firestore.collection('contracts').doc(contract.id).update({
-      isRanked: true,
+      isRanked,
     })
     await recordContractEdit(contract, userId, ['isRanked'])
   }

@@ -1,8 +1,8 @@
 import { runScript } from './run-script'
 import { chunk } from 'lodash'
 import { log } from 'shared/utils'
-const PROFIT_CUTOFF_TIME = 1715805887741
-const DPM_CUTOFF_TIMESTAMP = '2023-08-01 18:06:58.813000 +00:00'
+import { DPM_CUTOFF_TIMESTAMP, PROFIT_CUTOFF_TIME } from 'common/contract'
+
 const UNRANK_AND_ZERO_PROFITS = true
 const ONLY_UNRANK_AND_ZERO_PROFITS = false
 
@@ -62,7 +62,7 @@ if (require.main === module) {
             )
             await pg.none(
               `update users
-               set profit_adjustment = (select sum(ucm.profit_adjustment)
+               set resolved_profit_adjustment = (select sum(ucm.profit_adjustment)
                                         from user_contract_metrics ucm
                                         where ucm.user_id = users.id)
                where id = $1`,
@@ -144,7 +144,7 @@ if (require.main === module) {
           )
           await pg.none(
             `update users
-             set profit_adjustment = (
+             set resolved_profit_adjustment = (
                  case
                  when users.data->>'isBannedFromPosting' = 'true' then 0
                  else (

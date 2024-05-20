@@ -131,7 +131,7 @@ export async function updateUserMetricsCore(userIds?: string[]) {
 
   // We need to update metrics for contracts that resolved up through a week ago,
   // so we can calculate the daily/weekly profit on them
-  const metricRelevantBets = await getRecentlyResolvedOrUnresolvedBets(
+  const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
     pg,
     activeUserIds,
     weekAgo
@@ -216,34 +216,6 @@ export async function updateUserMetricsCore(userIds?: string[]) {
       contractsById,
       unresolvedBetsOnly
     )
-    const { balance, investmentValue, totalDeposits } = newPortfolio
-    const profit =
-      (user.profitAdjustment ?? 0) + balance + investmentValue - totalDeposits
-
-    const didPortfolioChange =
-      currentPortfolio === undefined ||
-      currentPortfolio.balance !== newPortfolio.balance ||
-      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
-      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
-      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
-      currentPortfolio.spiceBalance !== newPortfolio.spiceBalance ||
-      currentPortfolio.profit !== profit
-
-    const allTimeProfit =
-      newPortfolio.balance +
-      newPortfolio.investmentValue -
-      newPortfolio.totalDeposits
-    const newProfit = {
-      daily:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
-      weekly:
-        allTimeProfit -
-        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
-      monthly: 0,
-      allTime: allTimeProfit,
-    }
-
     const metricRelevantBetsByContract = groupBy(
       userMetricRelevantBets,
       (b) => b.contractId
@@ -263,9 +235,42 @@ export async function updateUserMetricsCore(userIds?: string[]) {
             freshMetric.answerId === m.answerId
         )
         if (!currentMetric) return true
-        return hasSignificantDeepChanges(freshMetric, currentMetric, 0.1)
+        return hasSignificantDeepChanges(currentMetric, freshMetric, 0.1)
       })
     )
+
+    const unresolvedMarketIds = uniq(
+      unresolvedBetsOnly.map((b) => b.contractId)
+    )
+
+    const { balance, investmentValue, totalDeposits } = newPortfolio
+    const allTimeProfit = balance + investmentValue - totalDeposits
+    const leaderBoardProfit =
+      (user.resolvedProfitAdjustment ?? 0) +
+      sumBy(freshMetrics, (m) =>
+        unresolvedMarketIds.includes(m.contractId) ? m.profitAdjustment ?? 0 : 0
+      ) +
+      allTimeProfit
+
+    const didPortfolioChange =
+      currentPortfolio === undefined ||
+      currentPortfolio.balance !== newPortfolio.balance ||
+      currentPortfolio.totalDeposits !== newPortfolio.totalDeposits ||
+      currentPortfolio.investmentValue !== newPortfolio.investmentValue ||
+      currentPortfolio.loanTotal !== newPortfolio.loanTotal ||
+      currentPortfolio.spiceBalance !== newPortfolio.spiceBalance ||
+      currentPortfolio.profit !== leaderBoardProfit
+
+    const newProfit = {
+      daily:
+        allTimeProfit -
+        (userToPortfolioMetrics[user.id].dayAgoProfit ?? allTimeProfit),
+      weekly:
+        allTimeProfit -
+        (userToPortfolioMetrics[user.id].weekAgoProfit ?? allTimeProfit),
+      monthly: 0,
+      allTime: allTimeProfit,
+    }
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
@@ -280,7 +285,7 @@ export async function updateUserMetricsCore(userIds?: string[]) {
         spice_balance: newPortfolio.spiceBalance,
         total_deposits: newPortfolio.totalDeposits,
         loan_total: newPortfolio.loanTotal,
-        profit: profit,
+        profit: leaderBoardProfit,
       })
       userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
     }
@@ -343,7 +348,7 @@ const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   )
 }
 
-const getRecentlyResolvedOrUnresolvedBets = async (
+const getUnresolvedOrRecentlyResolvedBets = async (
   pg: SupabaseDirectClient,
   userIds: string[],
   since: number
@@ -392,7 +397,7 @@ const getPortfolioHistoricalProfits = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, coalesce(profit,investment_value + balance - total_deposits) as profit
+      `select distinct on (user_id) user_id, spice_balance + investment_value + balance - total_deposits as profit
       from user_portfolio_history
       where ts < $2 and user_id in ($1:list)
       order by user_id, ts desc`,
