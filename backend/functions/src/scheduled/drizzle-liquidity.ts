@@ -45,7 +45,7 @@ export const drizzleLiquidity = async () => {
 }
 
 export const drizzleLiquidityScheduler = functions
-  .runWith({ memory: '1GB' })
+  .runWith({ memory: '1GB', timeoutSeconds: 540 })
   .pubsub.schedule('*/7 * * * *')
   .onRun(drizzleLiquidity)
 
