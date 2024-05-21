@@ -167,7 +167,7 @@ const issueMoneys = async (session: StripeSession) => {
     amount: deposit,
     token: 'M$',
     category: 'MANA_PURCHASE',
-    data: { stripeTransactionId: id, type: 'stripe' },
+    data: { stripeTransactionId: id, type: 'stripe', paidInCents: price },
     description: `Deposit M$${deposit} from BANK for mana purchase`,
   } as const
 

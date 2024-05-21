@@ -15,7 +15,6 @@ const bodySchema = z
   })
   .strict()
 
-
 const PRODUCTS_TO_AMOUNTS: { [key: string]: number } = {
   mana_1000: 10000, // note: SKUs created before rate change
   mana_2500: 25000,
@@ -76,10 +75,10 @@ export const validateiap = authEndpoint(async (req, auth) => {
   }
 
   const payout = PRODUCTS_TO_AMOUNTS[productId] * quantity
-  const revenue = (payout / 100) * 0.2 + payout / 100 - 0.01
+  const revenue = (payout / 1000) * 0.2 + payout / 1000 - 0.01
 
   log('payout', payout)
-  const iapTransRef = await firestore.collection('iaps').doc()
+  const iapTransRef = firestore.collection('iaps').doc()
   const iapTransaction: IapTransaction = {
     userId,
     manaQuantity: payout, // save as number
