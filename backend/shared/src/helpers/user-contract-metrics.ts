@@ -139,21 +139,37 @@ export const rerankContractMetrics = async (contractId: string) => {
 export const rerankContractMetricsManually = async (
   contractId: string,
   isRanked: boolean,
-  isResolved: boolean
+  resolutionTime: number | undefined
 ) => {
+  const should10xProfit =
+    (resolutionTime ?? PROFIT_CUTOFF_TIME + 1) <= PROFIT_CUTOFF_TIME && isRanked
   const pg = createSupabaseDirectClient()
-  await pg.none(
-    `
-        update user_contract_metrics
-        set profit_adjustment = case
-            when $2::boolean = true then null
-            else -profit
-            end
-        where contract_id = $1
-    `,
-    [contractId, isRanked]
-  )
-  if (isResolved) {
+  if (should10xProfit) {
+    await pg.none(
+      `
+          update user_contract_metrics
+          set profit_adjustment = case
+              when $2::boolean = true then profit * 9
+              else -profit * 9
+              end
+          where contract_id = $1
+      `,
+      [contractId, isRanked]
+    )
+  } else {
+    await pg.none(
+      `
+          update user_contract_metrics
+          set profit_adjustment = case
+              when $2::boolean = true then null
+              else -profit
+              end
+          where contract_id = $1
+      `,
+      [contractId, isRanked]
+    )
+  }
+  if (resolutionTime !== undefined) {
     await setAdjustProfitFromResolvedMarkets(contractId)
   }
 }

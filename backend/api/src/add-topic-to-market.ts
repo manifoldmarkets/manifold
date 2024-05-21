@@ -89,7 +89,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
       await rerankContractMetricsManually(
         contract.id,
         remove && contract.visibility === 'public',
-        contract.isResolved
+        contract.resolutionTime
       )
     }
     await upsertGroupEmbedding(createSupabaseDirectClient(), groupId)

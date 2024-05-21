@@ -97,7 +97,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       await rerankContractMetricsManually(
         contract.id,
         contract.isRanked != false && visibility === 'public',
-        contract.isResolved
+        contract.resolutionTime
       )
     }
     log(`Updating lastUpdatedTime for contract ${contract.id}.`)
