@@ -76,7 +76,7 @@ export function createJobs() {
     createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      updateUserMetricsCore,
+      () => updateUserMetricsCore(),
       10 * MINUTE_MS // The caches take time to build
     ),
     // Daily jobs:
@@ -117,7 +117,7 @@ export function createJobs() {
     ),
     createJob(
       'weekly-markets-emails',
-      '0 */3 11-17 * * 1',
+      '0 */3 11-17 * * 2',
       sendWeeklyMarketsEmails
     ),
     createJob(

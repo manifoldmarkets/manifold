@@ -18,6 +18,7 @@ import {
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
+import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -104,7 +105,12 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   }
 
   await resolveMarketHelper(contract, caller, creator, resolutionParams)
-  // TODO: return?
+  return {
+    result: { message: 'success' },
+    continue: async () => {
+      await setAdjustProfitFromResolvedMarkets(contract.id)
+    },
+  }
 }
 
 function getResolutionParams(

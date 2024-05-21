@@ -379,6 +379,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
+    returns: {} as { message: string },
     props: resolveMarketProps,
   },
   'market/:contractId/add-liquidity': {

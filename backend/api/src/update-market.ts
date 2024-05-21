@@ -14,6 +14,7 @@ import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
+import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -92,7 +93,13 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   const continuation = async () => {
     log(`Revalidating contract ${contract.id}.`)
     await revalidateContractStaticProps(contract)
-
+    if (visibility) {
+      await rerankContractMetricsManually(
+        contract.id,
+        contract.isRanked != false && visibility === 'public',
+        contract.isResolved
+      )
+    }
     log(`Updating lastUpdatedTime for contract ${contract.id}.`)
     await firestore.collection('contracts').doc(contract.id).update({
       lastUpdatedTime: Date.now(),

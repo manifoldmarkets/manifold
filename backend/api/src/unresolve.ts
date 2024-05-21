@@ -17,6 +17,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
+import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 
 const firestore = admin.firestore()
 
@@ -47,7 +48,12 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
     await releaseLock(lockId)
   }
 
-  return { success: true }
+  return {
+    success: true,
+    continue: async () => {
+      await setAdjustProfitFromResolvedMarkets(contract.id)
+    },
+  }
 }
 
 const verifyUserCanUnresolve = async (

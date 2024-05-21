@@ -290,11 +290,16 @@ function usePortfolioPointsFromHistory(
     const networthPoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
     const spicePoints: HistoryPoint<Partial<PortfolioMetrics>>[] = []
 
-    portfolioHistory.forEach((p) => {
-      profitPoints.push({
-        x: p.timestamp,
-        y: p.balance + p.investmentValue - p.totalDeposits - firstProfit,
-        obj: p,
+      portfolioHistory.forEach((p) => {
+        profitPoints.push({
+          x: p.timestamp,
+          y:
+            p.spiceBalance +
+            p.balance +
+            p.investmentValue -
+            p.totalDeposits -
+            firstProfit,
+          obj: p,
       })
       investmentPoints.push({
         x: p.timestamp,
