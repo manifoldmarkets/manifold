@@ -165,7 +165,7 @@ export function ContractFilters(props: {
           onSelect={togglePrizeMarket}
           type="spice"
         >
-          <Row className="items-center gap-1 w-full">
+          <Row className="w-full items-center gap-1">
             <SpiceCoin
               className={isPrizeMarketString !== 'true' ? 'opacity-50' : ''}
             />
