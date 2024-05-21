@@ -158,7 +158,7 @@ export type SearchState = {
     filter: Filter
     contractType: ContractTypeType
     topicSlug: string
-    isPrizeMarket: 'true' | 'false' 
+    isPrizeMarket: 'true' | 'false'
   }
 }
 
@@ -527,7 +527,13 @@ const useContractSearch = (
   const requestId = useRef(0)
 
   const queryContracts = useEvent(async (freshQuery?: boolean) => {
-    const { q: query, s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = searchParams
+    const {
+      q: query,
+      s: sort,
+      f: filter,
+      ct: contractType,
+      p: isPrizeMarketString,
+    } = searchParams
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
       freshQuery &&
@@ -563,9 +569,9 @@ const useContractSearch = (
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
         isPolitics: additionalFilter?.isPolitics,
-        isPrizeMarket: isPrizeMarketString ,
+        isPrizeMarket: isPrizeMarketString,
       })
-      
+
       if (id === requestId.current) {
         const freshContracts = freshQuery
           ? newContracts
@@ -633,7 +639,7 @@ const useSearchQueryState = (props: {
     defaultContractType = 'ALL',
     defaultSearchType,
     useUrlParams,
-    defaultPrizeMarket = 'false'
+    defaultPrizeMarket = 'false',
   } = props
 
   const [lastSort, setLastSort] = usePersistentLocalState<Sort>(

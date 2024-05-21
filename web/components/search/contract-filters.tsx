@@ -55,7 +55,12 @@ export function ContractFilters(props: {
     showTopicTag,
   } = props
 
-  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
+  const {
+    s: sort,
+    f: filter,
+    ct: contractType,
+    p: isPrizeMarketString,
+  } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -91,10 +96,10 @@ export function ContractFilters(props: {
     track('select contract type', { contractType: selection })
   }
 
-  const togglePrizeMarket = ()=>{
-      updateParams({
-        p: isPrizeMarketString == 'true' ? 'false' : 'true',
-      })
+  const togglePrizeMarket = () => {
+    updateParams({
+      p: isPrizeMarketString == 'true' ? 'false' : 'true',
+    })
   }
 
   const hideFilter =
@@ -163,7 +168,10 @@ export function ContractFilters(props: {
           type="spice"
         >
           <Row className="items-center gap-1">
-            <SpiceCoin className={isPrizeMarketString !== 'true' ? 'opacity-50':''}/> Prize Market
+            <SpiceCoin
+              className={isPrizeMarketString !== 'true' ? 'opacity-50' : ''}
+            />{' '}
+            Prize Market
           </Row>
         </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
@@ -265,7 +273,12 @@ function FilterModal(props: {
     setTopicSlug,
     topicSlug,
   } = props
-  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
+  const {
+    s: sort,
+    f: filter,
+    ct: contractType,
+    p: isPrizeMarketString,
+  } = params
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
