@@ -116,7 +116,6 @@ export const DEFAULT_BOUNTY_SORTS = ['bounty-amount', 'newest']
 export const DEFAULT_POLL_SORTS = ['newest']
 
 export const DEFAULT_FILTER = 'all'
-export const DEFAULT_FILTERS = ['open', 'closing-this-month']
 
 export const DEFAULT_CONTRACT_TYPE = 'ALL'
 export const DEFAULT_CONTRACT_TYPES = ['BINARY', 'MULTIPLE_CHOICE', 'POLL']
