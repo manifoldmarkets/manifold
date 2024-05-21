@@ -214,11 +214,10 @@ export async function updateUserMetricsCore(
       }
       return !contractsById[b.contractId].resolution
     })
-    const newPortfolio = calculateNewPortfolioMetrics(
-      user,
-      contractsById,
-      unresolvedBetsOnly
-    )
+    const newPortfolio = {
+      ...calculateNewPortfolioMetrics(user, contractsById, unresolvedBetsOnly),
+      profit: 0,
+    }
     const metricRelevantBetsByContract = groupBy(
       userMetricRelevantBets,
       (b) => b.contractId
@@ -286,6 +285,7 @@ export async function updateUserMetricsCore(
       // Resolved profits are already included in the user's balance - deposits
       sumBy(unresolvedMetrics, (m) => (m.profitAdjustment ?? 0) + m.profit) +
       allTimeProfit
+    newPortfolio.profit = leaderBoardProfit
 
     const didPortfolioChange =
       currentPortfolio === undefined ||
@@ -417,7 +417,7 @@ const getPortfolioSnapshot = async (
   }
   return Object.fromEntries(
     await pg.map(
-      `select distinct on (user_id) user_id, investment_value, balance, total_deposits, loan_total
+      `select user_id, investment_value, spice_balance, balance, total_deposits, loan_total, profit
       from user_portfolio_history_latest
       where user_id in ($1:list)
       order by user_id, ts desc`,
@@ -432,6 +432,7 @@ const getPortfolioHistoricalProfits = async (
   userIds: string[],
   when: number
 ) => {
+  // We don't load the leaderboard profit here bc these numbers are used for comparing to the daily/weekly profit from contract metrics
   return Object.fromEntries(
     await pg.map(
       `select distinct on (user_id) user_id, spice_balance + investment_value + balance - total_deposits as profit

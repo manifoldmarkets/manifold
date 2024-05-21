@@ -2640,6 +2640,7 @@ export type Database = {
           total_deposits: number
           ts: string
           user_id: string
+          profit: number | null
         }
         Insert: {
           balance: number
@@ -2650,6 +2651,7 @@ export type Database = {
           total_deposits: number
           ts: string
           user_id: string
+          profit?: number | null
         }
         Update: {
           balance?: number
@@ -2660,6 +2662,7 @@ export type Database = {
           total_deposits?: number
           ts?: string
           user_id?: string
+          profit?: number | null
         }
         Relationships: []
       }
