@@ -59,13 +59,19 @@ const search = async (
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
   let contracts
-  if (isForYou && !term && sort === 'score' && userId) {
+  if (
+    isForYou &&
+    !term &&
+    userId &&
+    (sort === 'score' || sort === 'freshness-score')
+  ) {
     const forYouSql = await getForYouSQL(
       userId,
       filter,
       contractType,
       limit,
-      offset
+      offset,
+      sort
     )
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
