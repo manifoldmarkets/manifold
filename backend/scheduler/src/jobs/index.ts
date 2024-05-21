@@ -21,6 +21,7 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
 import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
+import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
 
 export function createJobs() {
   return [
@@ -123,6 +124,11 @@ export function createJobs() {
       'reset-weekly-email-flags',
       '0 0 0 * * 6',
       resetWeeklyEmailsFlags
+    ),
+    createJob(
+      'send-streak-notifications',
+      '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
+      sendStreakExpirationNotification
     ),
   ]
 }

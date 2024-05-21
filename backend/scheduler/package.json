@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts --ext '*'",
+    "start": "ENVIRONMENT=PROD nodemon src/index.ts --ext '*'",
     "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
     "dist": "yarn dist:prepare && yarn dist:copy",
     "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/scheduler/lib",
