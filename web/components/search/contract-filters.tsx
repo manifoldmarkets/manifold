@@ -18,7 +18,6 @@ import {
   DEFAULT_CONTRACT_TYPE,
   DEFAULT_CONTRACT_TYPES,
   DEFAULT_FILTER,
-  DEFAULT_FILTERS,
   DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
@@ -120,8 +119,7 @@ export function ContractFilters(props: {
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter =
-    !DEFAULT_FILTERS.some((f) => f == filter) && filter !== DEFAULT_FILTER
+  const nonDefaultFilter = filter !== DEFAULT_FILTER
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
   const nonDefaultContractType =
@@ -167,11 +165,11 @@ export function ContractFilters(props: {
           onSelect={togglePrizeMarket}
           type="spice"
         >
-          <Row className="items-center gap-1">
+          <Row className="items-center gap-1 w-full">
             <SpiceCoin
               className={isPrizeMarketString !== 'true' ? 'opacity-50' : ''}
-            />{' '}
-            Prize Market
+            />
+            Prize
           </Row>
         </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
@@ -183,23 +181,6 @@ export function ContractFilters(props: {
             For you
           </FilterPill>
         )}
-        {!hideFilter &&
-          DEFAULT_FILTERS.map((filterValue) => (
-            <FilterPill
-              key={filterValue}
-              selected={filterValue === filter}
-              onSelect={() => {
-                if (filterValue === filter) {
-                  selectFilter(DEFAULT_FILTER)
-                } else {
-                  selectFilter(filterValue as Filter)
-                }
-              }}
-              type="filter"
-            >
-              {getLabelFromValue(FILTERS, filterValue)}
-            </FilterPill>
-          ))}
         {sortItems.map((sortValue) => (
           <FilterPill
             key={sortValue}
@@ -309,7 +290,7 @@ function FilterModal(props: {
                       isPrizeMarketString !== 'true' ? 'opacity-50' : ''
                     }
                   />
-                  Prize Market
+                  Prize
                 </Row>
               </FilterPill>
               {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
