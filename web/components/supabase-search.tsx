@@ -553,7 +553,6 @@ const useContractSearch = (
         }, 500)
       }
 
-      console.log(isPrizeMarketString, isPrizeMarketString == 'true')
       const newContracts = await searchContracts({
         term: query,
         filter,
@@ -566,7 +565,7 @@ const useContractSearch = (
         isPolitics: additionalFilter?.isPolitics,
         isPrizeMarket: isPrizeMarketString ,
       })
-
+      
       if (id === requestId.current) {
         const freshContracts = freshQuery
           ? newContracts

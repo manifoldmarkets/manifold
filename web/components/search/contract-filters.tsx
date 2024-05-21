@@ -89,6 +89,13 @@ export function ContractFilters(props: {
     }
     track('select contract type', { contractType: selection })
   }
+
+  const togglePrizeMarket = ()=>{
+      updateParams({
+        p: isPrizeMarketString == 'true' ? 'false' : 'true',
+      })
+  }
+
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -151,11 +158,7 @@ export function ContractFilters(props: {
         )}
         <FilterPill
           selected={isPrizeMarketString === 'true'}
-          onSelect={() =>
-            updateParams({
-              p: isPrizeMarketString == 'true' ? 'false' : 'true',
-            })
-          }
+          onSelect={togglePrizeMarket}
           type="filter"
         >
           Prize Market
@@ -226,6 +229,7 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
+        togglePrizeMarket={togglePrizeMarket}
         hideFilter={hideFilter}
         setTopicSlug={setTopicSlug}
         topicSlug={topicSlug}
@@ -241,6 +245,7 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
+  togglePrizeMarket: () => void
   hideFilter: boolean
   setTopicSlug?: (slug: string) => void
   topicSlug?: string
@@ -252,11 +257,12 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
+    togglePrizeMarket,
     hideFilter,
     setTopicSlug,
     topicSlug,
   } = props
-  const { s: sort, f: filter, ct: contractType } = params
+  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -276,6 +282,13 @@ function FilterModal(props: {
               Filters
             </Row>
             <Row className="flex-wrap gap-1">
+              <FilterPill
+                selected={isPrizeMarketString === 'true'}
+                onSelect={togglePrizeMarket}
+                type="filter"
+              >
+                Prize Market
+              </FilterPill>
               {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
                 <FilterPill
                   selected={topicSlug === 'for-you'}

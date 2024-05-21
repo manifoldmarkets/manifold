@@ -50,7 +50,6 @@ const search = async (
   if (limit === 0) {
     return []
   }
-
   const isForYou = possibleTopicSlug === 'for-you'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
