@@ -1,14 +1,15 @@
 import clsx from 'clsx'
-import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import router from 'next/router'
+import { useState } from 'react'
+import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
-import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { Carousel } from 'web/components/widgets/carousel'
+import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 import {
   BOUNTY_MARKET_SORTS,
   CONTRACT_TYPES,
@@ -32,10 +33,7 @@ import {
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
-import { useState } from 'react'
-import { MODAL_CLASS, Modal } from '../layout/modal'
-import { Row } from '../layout/row'
-import { FaSortAmountDownAlt } from 'react-icons/fa'
+import { AdditionalFilterPill, FilterPill } from './filter-pills'
 
 export function ContractFilters(props: {
   className?: string
@@ -56,7 +54,7 @@ export function ContractFilters(props: {
     showTopicTag,
   } = props
 
-  const { s: sort, f: filter, ct: contractType } = params
+  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -99,8 +97,6 @@ export function ContractFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-  const topic = useGroupFromSlug(topicSlug ?? '')
-  const resetTopic = () => router.push(`/browse`)
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -153,6 +149,17 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
+        <FilterPill
+          selected={isPrizeMarketString === 'true'}
+          onSelect={() =>
+            updateParams({
+              p: isPrizeMarketString == 'true' ? 'false' : 'true',
+            })
+          }
+          type="filter"
+        >
+          Prize Market
+        </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
             selected={topicSlug === 'for-you'}

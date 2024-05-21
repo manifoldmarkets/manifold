@@ -166,6 +166,7 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPolitics?: boolean
+  isPrizeMarket?: boolean
 }) {
   const {
     term,
@@ -176,6 +177,7 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
+    isPrizeMarket
   } = args
 
   const hideStonks = sort === 'score' && !term.length && !groupId
@@ -214,6 +216,7 @@ export function getSearchContractSQL(args: {
 
     whereSql,
     isPolitics && where('is_politics = true'),
+    isPrizeMarket && where('is_spice_payout = true'),
     term.length && [
       searchType === 'prefix' &&
         where(

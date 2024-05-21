@@ -130,6 +130,7 @@ export type SearchParams = {
   [FILTER_KEY]: Filter
   [CONTRACT_TYPE_KEY]: ContractTypeType
   [SEARCH_TYPE_KEY]: SearchType
+  [PRIZE_MARKET_KEY]: 'true' | 'false'
 }
 
 const QUERY_KEY = 'q'
@@ -137,6 +138,7 @@ export const SORT_KEY = 's'
 const FILTER_KEY = 'f'
 const CONTRACT_TYPE_KEY = 'ct'
 export const SEARCH_TYPE_KEY = 't'
+export const PRIZE_MARKET_KEY = 'p'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -156,6 +158,7 @@ export type SearchState = {
     filter: Filter
     contractType: ContractTypeType
     topicSlug: string
+    isPrizeMarket: 'true' | 'false' 
   }
 }
 
@@ -234,6 +237,7 @@ export function SupabaseSearch(props: {
   const sort = searchParams[SORT_KEY]
   const filter = searchParams[FILTER_KEY]
   const contractType = searchParams[CONTRACT_TYPE_KEY]
+  const isPrizeMarketString = searchParams[PRIZE_MARKET_KEY]
 
   const [userResults, setUserResults] = usePersistentInMemoryState<
     FullUser[] | undefined
@@ -271,7 +275,7 @@ export function SupabaseSearch(props: {
       }
     },
     100,
-    [query, topicSlug, sort, filter, contractType, isReady]
+    [query, topicSlug, sort, filter, contractType, isReady, isPrizeMarketString]
   )
 
   const searchCountRef = useRef(0)
@@ -523,8 +527,7 @@ const useContractSearch = (
   const requestId = useRef(0)
 
   const queryContracts = useEvent(async (freshQuery?: boolean) => {
-    const { q: query, s: sort, f: filter, ct: contractType } = searchParams
-
+    const { q: query, s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = searchParams
     // if fresh query and the search params haven't changed (like user clicked back) do nothing
     if (
       freshQuery &&
@@ -533,7 +536,8 @@ const useContractSearch = (
       filter === state.lastSearchParams?.filter &&
       contractType === state.lastSearchParams?.contractType &&
       topicSlug === state.lastSearchParams?.topicSlug &&
-      topicSlug !== 'recent'
+      topicSlug !== 'recent' &&
+      isPrizeMarketString == state.lastSearchParams?.isPrizeMarket
     ) {
       return state.shouldLoadMore
     }
@@ -549,6 +553,7 @@ const useContractSearch = (
         }, 500)
       }
 
+      console.log(isPrizeMarketString, isPrizeMarketString == 'true')
       const newContracts = await searchContracts({
         term: query,
         filter,
@@ -559,6 +564,7 @@ const useContractSearch = (
         topicSlug: topicSlug !== '' ? topicSlug : undefined,
         creatorId: additionalFilter?.creatorId,
         isPolitics: additionalFilter?.isPolitics,
+        isPrizeMarket: isPrizeMarketString ,
       })
 
       if (id === requestId.current) {
@@ -571,7 +577,14 @@ const useContractSearch = (
         setState({
           contracts: freshContracts,
           shouldLoadMore,
-          lastSearchParams: { query, sort, filter, contractType, topicSlug },
+          lastSearchParams: {
+            query,
+            sort,
+            filter,
+            contractType,
+            topicSlug,
+            isPrizeMarket: isPrizeMarketString,
+          },
         })
         clearTimeout(timeoutId)
         setLoading(false)
@@ -611,6 +624,7 @@ const useSearchQueryState = (props: {
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
+  defaultPrizeMarket?: 'true' | 'false'
   useUrlParams?: boolean
 }) => {
   const {
@@ -620,6 +634,7 @@ const useSearchQueryState = (props: {
     defaultContractType = 'ALL',
     defaultSearchType,
     useUrlParams,
+    defaultPrizeMarket = 'false'
   } = props
 
   const [lastSort, setLastSort] = usePersistentLocalState<Sort>(
@@ -633,6 +648,7 @@ const useSearchQueryState = (props: {
     [FILTER_KEY]: defaultFilter,
     [CONTRACT_TYPE_KEY]: defaultContractType,
     [SEARCH_TYPE_KEY]: defaultSearchType,
+    [PRIZE_MARKET_KEY]: defaultPrizeMarket,
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useShim
