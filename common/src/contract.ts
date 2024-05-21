@@ -444,7 +444,9 @@ export const canCancelContract = (userId: string, contract: Contract) => {
 }
 
 export const isMarketRanked = (contract: Contract) =>
-  contract.isRanked != false && contract.visibility === 'public'
+  contract.isRanked != false &&
+  contract.visibility === 'public' &&
+  contract.deleted !== true
 
 export const PROFIT_CUTOFF_TIME = 1715805887741
 export const DPM_CUTOFF_TIMESTAMP = '2023-08-01 18:06:58.813000 +00:00'
