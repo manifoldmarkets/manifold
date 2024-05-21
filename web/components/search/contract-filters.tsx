@@ -34,6 +34,7 @@ import {
   predictionMarketSorts,
 } from '../supabase-search'
 import { AdditionalFilterPill, FilterPill } from './filter-pills'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export function ContractFilters(props: {
   className?: string
@@ -159,9 +160,9 @@ export function ContractFilters(props: {
         <FilterPill
           selected={isPrizeMarketString === 'true'}
           onSelect={togglePrizeMarket}
-          type="filter"
+          type="spice"
         >
-          Prize Market
+          <SpiceCoin /> Prize Market
         </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
@@ -285,9 +286,9 @@ function FilterModal(props: {
               <FilterPill
                 selected={isPrizeMarketString === 'true'}
                 onSelect={togglePrizeMarket}
-                type="filter"
+                type="spice"
               >
-                Prize Market
+                <SpiceCoin/> Prize Market
               </FilterPill>
               {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
                 <FilterPill
@@ -295,7 +296,7 @@ function FilterModal(props: {
                   onSelect={() => setTopicSlug('for-you')}
                   type="filter"
                 >
-                  ⭐️ For you
+                  For you
                 </FilterPill>
               )}
               {!hideFilter &&
