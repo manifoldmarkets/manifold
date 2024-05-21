@@ -1,7 +1,7 @@
 import { runAwardBountyTxn } from './txn/run-bounty-txn'
 import { createSupabaseDirectClient } from './supabase/init'
 import { updateData } from './supabase/utils'
-import { getContractSupabase, getUser, log } from 'shared/utils'
+import { getContractSupabase, getUser } from 'shared/utils'
 import { APIError } from 'common/api/utils'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { canSendMana } from 'common/can-send-mana'

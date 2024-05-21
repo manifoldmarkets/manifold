@@ -57,13 +57,7 @@ type AnyTxnType =
 
 export type AnyTxnCategory = AnyTxnType['category']
 
-export type SourceType =
-  | 'USER'
-  | 'CONTRACT'
-  | 'CHARITY'
-  | 'BANK'
-  | 'AD'
-  | 'LEAGUE'
+export type SourceType = 'USER' | 'CONTRACT' | 'CHARITY' | 'BANK' | 'AD'
 
 export type Txn<T extends AnyTxnType = AnyTxnType> = {
   id: string

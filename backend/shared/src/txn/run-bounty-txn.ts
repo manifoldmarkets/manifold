@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { APIError } from 'common//api/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
-import { insertTxn } from './run-txn'
+import { insertTxn, runTxn } from './run-txn'
 import {
   SupabaseTransaction,
   createSupabaseDirectClient,
@@ -32,18 +32,7 @@ export async function runAddBountyTxn(
   }
 
   const txn = await pg.tx(async (tx) => {
-    const user = await getUser(fromId, tx)
-    if (!user) throw new APIError(404, `User ${fromId} not found`)
-
-    if (amount > user.balance)
-      throw new APIError(403, `Balance must be at least ${amount}.`)
-
-    await incrementBalance(tx, fromId, {
-      balance: -amount,
-      totalDeposits: -amount,
-    })
-
-    const txn = await insertTxn(tx, txnData)
+    const txn = await runTxn(tx, txnData)
 
     // update bountied contract
     contractDoc.update(contractDoc, {
@@ -60,14 +49,9 @@ export async function runAwardBountyTxn(
   tx: SupabaseTransaction,
   txnData: Omit<BountyAwardedTxn, 'id' | 'createdTime'>
 ) {
-  const { amount, toId, fromId } = txnData
+  const { amount, fromId } = txnData
 
-  await incrementBalance(tx, toId, {
-    balance: amount,
-    totalDeposits: amount,
-  })
-
-  const txn = await insertTxn(tx, txnData)
+  const txn = await runTxn(tx, txnData)
 
   await firestore.runTransaction(async (fbTransaction) => {
     const contractDoc = firestore.doc(`contracts/${fromId}`)
@@ -109,7 +93,7 @@ export async function runCancelBountyTxn(
       totalDeposits: txnData.amount,
     })
 
-    const txn = await insertTxn(tx, txnData)
+    const txn = await runTxn(tx, txnData)
 
     await firestore.runTransaction(async (fbTransaction) => {
       const contractRef = firestore.doc(`contracts/${fromId}`)

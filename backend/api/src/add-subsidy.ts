@@ -3,10 +3,9 @@ import { CPMMContract } from 'common/contract'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
-import { insertTxn } from 'shared/txn/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
-import { incrementBalance } from 'shared/supabase/users'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -40,12 +39,7 @@ export const addContractLiquidity = async (
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 
-    await incrementBalance(tx, userId, {
-      balance: -amount,
-      totalDeposits: -amount,
-    })
-
-    await insertTxn(tx, {
+    await runTxn(tx, {
       fromId: userId,
       amount: amount,
       toId: contractId,

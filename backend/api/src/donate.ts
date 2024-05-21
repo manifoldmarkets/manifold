@@ -1,11 +1,10 @@
 import { type APIHandler } from './helpers/endpoint'
 import { charities } from 'common/charity'
 import { APIError } from 'api/helpers/endpoint'
-import { insertTxn } from 'shared/txn/run-txn'
+import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { CHARITY_FEE, MIN_SPICE_DONATION } from 'common/envs/constants'
 import { getUser } from 'shared/utils'
-import { incrementBalance } from 'shared/supabase/users'
 
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
@@ -24,11 +23,6 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
     if (amount < MIN_SPICE_DONATION) {
       throw new APIError(400, 'Minimum donation is 25,000 prize points')
     }
-
-    // deduct spice as part of transaction
-    await incrementBalance(tx, auth.uid, {
-      spiceBalance: -amount,
-    })
 
     // add donation to charity
     const fee = CHARITY_FEE * amount
@@ -57,7 +51,7 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       token: 'SPICE',
     } as const
 
-    await insertTxn(tx, feeTxn)
-    await insertTxn(tx, donationTxn)
+    await runTxn(tx, feeTxn)
+    await runTxn(tx, donationTxn)
   })
 }

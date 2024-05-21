@@ -2617,7 +2617,7 @@ export type Database = {
           balance: number
           created_time: string | null
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           id: string
           name: string
           name_username_vector: unknown | null
@@ -2629,8 +2629,8 @@ export type Database = {
           balance?: number
           created_time?: string | null
           data: Json
-          fs_updated_time: string
-          id: string
+          fs_updated_time?: string | null
+          id?: string
           name: string
           name_username_vector?: unknown | null
           spice_balance?: number
@@ -2641,7 +2641,7 @@ export type Database = {
           balance?: number
           created_time?: string | null
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           id?: string
           name?: string
           name_username_vector?: unknown | null
