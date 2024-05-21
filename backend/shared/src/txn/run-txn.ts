@@ -32,8 +32,7 @@ export async function runTxn(
 
   if (fromType === 'BANK' || fromType === 'CONTRACT') {
     // Do nothing
-  }
-  if (fromType === 'USER') {
+  } else if (fromType === 'USER') {
     const fromUser = await getUser(fromId, pgTransaction)
 
     if (!fromUser) {
@@ -58,11 +57,12 @@ export async function runTxn(
           `Insufficient balance: ${fromUser.username} needed ${amount} but only had ${fromUser.balance}`
         )
       }
+
+      await incrementBalance(pgTransaction, fromId, {
+        balance: -amount,
+        totalDeposits: -amount,
+      })
     }
-    await incrementBalance(pgTransaction, fromId, {
-      balance: -amount,
-      totalDeposits: -amount,
-    })
   } else {
     throw new APIError(
       400,
