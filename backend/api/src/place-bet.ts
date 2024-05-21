@@ -377,16 +377,19 @@ export const processNewBetResult = (
     newBet.fees.creatorFee +
     sumBy(otherBetResults, (r) => r.bet.fees.creatorFee)
   if (totalCreatorFee !== 0) {
-    const creatorUserDoc = firestore.doc(`users/${contract.creatorId}`)
+    let creatorId = contract.creatorId
+    if (contract.mechanism === 'cpmm-multi-1') {
+      const answer = contract.answers.find((a) => a.id === newBet.answerId)
+      if (answer) creatorId = answer.userId
+    }
+    const creatorUserDoc = firestore.doc(`users/${creatorId}`)
     trans.update(creatorUserDoc, {
       balance: FieldValue.increment(totalCreatorFee),
     })
     log(
-      `Updated creator ${
-        contract.creatorUsername
-      } with fee gain ${formatMoneyWithDecimals(totalCreatorFee)} - ${
-        contract.creatorId
-      }.`
+      `Updated creator with fee gain ${formatMoneyWithDecimals(
+        totalCreatorFee
+      )} - ${creatorId}.`
     )
   }
 

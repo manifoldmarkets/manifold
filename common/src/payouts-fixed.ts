@@ -29,8 +29,15 @@ export const getFixedCancelPayouts = (
 
   // Creator pays back all creator fees for N/A resolution.
   const creatorFees = sumBy(bets, (b) => b.fees.creatorFee)
+
+  let creatorId = contract.creatorId
+  if (contract.mechanism === 'cpmm-multi-1') {
+    // For multi, creator is the creator of the answer.
+    const answer = contract.answers.find((a) => a.id === bets[0].answerId)
+    if (answer) creatorId = answer.userId
+  }
   payouts.push({
-    userId: contract.creatorId,
+    userId: creatorId,
     payout: -creatorFees,
   })
 
