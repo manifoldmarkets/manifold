@@ -3,6 +3,7 @@ import { DIVISION_NAMES, prizesByDivisionAndRank } from 'common/leagues'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
+import { SPICE_NAME } from 'common/envs/constants'
 
 export function PrizesModal(props: {
   open: boolean
@@ -19,7 +20,7 @@ export function PrizesModal(props: {
         <Col className="gap-4 px-3 sm:px-4">
           <Title className={'!mb-0'}>Prizes</Title>
           <div>
-            Win mana at the end of the season based on your division and
+            Win {SPICE_NAME}s at the end of the season based on your division and
             finishing rank.
           </div>
         </Col>

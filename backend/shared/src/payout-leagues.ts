@@ -66,7 +66,7 @@ const sendEndOfSeasonNotificationAndBonus = async (
       toId: userId,
       toType: 'USER',
       amount: prize,
-      token: 'M$',
+      token: 'SPICE',
       category: 'LEAGUE_PRIZE',
       data: prevRow,
     }
