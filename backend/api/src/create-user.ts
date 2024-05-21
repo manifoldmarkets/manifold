@@ -26,7 +26,6 @@ import {
   normalizeAndAverageVectors,
 } from 'shared/helpers/embeddings'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -148,7 +147,6 @@ export const createuser: APIHandler<'createuser'> = async (
       name: user.name,
       username: user.username,
       data: user,
-      fs_updated_time: 'TODO REMOVE',
     })
 
     await firestore.collection('private-users').doc(auth.uid).set(privateUser)

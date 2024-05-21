@@ -1,7 +1,7 @@
 import { db } from './db'
 import { run, selectFrom } from 'common/supabase/utils'
 import { type User } from 'common/user'
-import { api } from '../firebase/api'
+import { APIError, api } from '../firebase/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 export type { DisplayUser } from 'common/api/user-types'
@@ -22,6 +22,15 @@ export async function getFullUserByUsername(username: string) {
 
 export async function getFullUserById(id: string) {
   return api('user/by-id/:id', { id })
+}
+
+export function getUserSafe(userId: string) {
+  return getFullUserById(userId).catch((e: unknown) => {
+    if (e instanceof APIError && e.code === 404) {
+      return null
+    }
+    throw e
+  })
 }
 
 export async function searchUsers(prompt: string, limit: number) {
