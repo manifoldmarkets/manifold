@@ -18,9 +18,9 @@ if (require.main === module) {
         resolverId: row.resolver_id ? (row.resolver_id as string) : undefined,
       })
     )
-
+    const toUpdate = resolvedAnswers.length
+    let total = 0
     for (const answer of resolvedAnswers) {
-      console.log('update answer', answer.id)
       await firestore
         .doc(`contracts/${answer.contractId}/answersCpmm/${answer.id}`)
         .update(
@@ -29,6 +29,8 @@ if (require.main === module) {
             resolverId: answer.resolverId,
           })
         )
+      total++
+      console.log(`Updated ${total}/${toUpdate} answers`)
     }
   })
 }
