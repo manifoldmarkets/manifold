@@ -194,10 +194,11 @@ export async function updateUserMetricsCore(
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
     const unresolvedBetsOnly = userMetricRelevantBets.filter((b) => {
       if (contractsById[b.contractId].isResolved) return false
-      const answers = answersByContractId[b.contractId]
       if (b.answerId === 'undefined' || !b.answerId) {
         return !contractsById[b.contractId].resolution
-      } else if (b.answerId && answers) {
+      }
+      const answers = answersByContractId[b.contractId]
+      if (b.answerId && answers) {
         const answer = answers.find((a) => a.id === b.answerId)
         if (!answer) {
           log(
@@ -206,7 +207,9 @@ export async function updateUserMetricsCore(
           // We're assuming if there's no answer found, it's not resolved
           return true
         }
-        return !answer.resolution
+        // sum to one answers are resolved when the contract is resolved
+        // indie answers are resolved when they have a resolution time
+        return !answer.resolutionTime
       } else if (b.answerId && !answers) {
         log(
           `No answers found for contract ${b.contractId}, answer ${b.answerId}, bet ${b.id}`
@@ -246,7 +249,7 @@ export async function updateUserMetricsCore(
     const unresolvedMetrics = freshMetrics.filter((m) => {
       const contract = contractsById[m.contractId]
       if (contract.mechanism === 'cpmm-multi-1') {
-        // Don't double count null answer profits
+        // Don't double count null answer (summary) profits
         if (!m.answerId) return false
         const answer = answersByContractId[m.contractId]?.find(
           (a) => a.id === m.answerId
@@ -260,7 +263,7 @@ export async function updateUserMetricsCore(
       const resolvedMetrics = freshMetrics.filter((m) => {
         const contract = contractsById[m.contractId]
         if (contract.mechanism === 'cpmm-multi-1') {
-          // Don't double count null answer profits
+          // Don't double count null answer (summary) profits
           if (!m.answerId) return false
           const answer = answersByContractId[m.contractId]?.find(
             (a) => a.id === m.answerId

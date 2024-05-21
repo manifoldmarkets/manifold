@@ -455,7 +455,17 @@ export const getAdjustedProfit = (
   answerId: string | null
 ) => {
   if (contract.mechanism === 'cpmm-multi-1') {
-    if (!answerId) return undefined
+    // Null answerId stands for the summary of all answer metrics
+    if (!answerId) {
+      return isMarketRanked(contract) &&
+        contract.resolutionTime &&
+        contract.resolutionTime <= PROFIT_CUTOFF_TIME &&
+        contract.createdTime > Date.parse(DPM_CUTOFF_TIMESTAMP)
+        ? 9 * profit
+        : isMarketRanked(contract)
+        ? undefined
+        : -1 * profit
+    }
     const answer = answers?.find((a) => a.id === answerId)
     if (!answer) {
       console.log(
