@@ -162,7 +162,9 @@ export function ContractFilters(props: {
           onSelect={togglePrizeMarket}
           type="spice"
         >
-          <SpiceCoin /> Prize Market
+          <Row className="items-center gap-1 pr-4">
+            <SpiceCoin className={isPrizeMarketString !== 'true' ? 'opacity-50':''}/> Prize Market
+          </Row>
         </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
@@ -170,7 +172,7 @@ export function ContractFilters(props: {
             onSelect={() => setTopicSlug('for-you')}
             type="filter"
           >
-            ⭐️ For you
+            For you
           </FilterPill>
         )}
         {!hideFilter &&
@@ -288,7 +290,14 @@ function FilterModal(props: {
                 onSelect={togglePrizeMarket}
                 type="spice"
               >
-                <SpiceCoin/> Prize Market
+                <Row className="items-center gap-1">
+                  <SpiceCoin
+                    className={
+                      isPrizeMarketString !== 'true' ? 'opacity-50' : ''
+                    }
+                  />
+                  Prize Market
+                </Row>
               </FilterPill>
               {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
                 <FilterPill

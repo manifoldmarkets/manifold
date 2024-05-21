@@ -179,7 +179,6 @@ export function getSearchContractSQL(args: {
     isPolitics,
     isPrizeMarket
   } = args
-
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
