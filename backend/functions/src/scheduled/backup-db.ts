@@ -20,7 +20,7 @@ import * as functions from 'firebase-functions'
 import * as firestore from '@google-cloud/firestore'
 import { FirestoreAdminClient } from '@google-cloud/firestore/types/v1/firestore_admin_client'
 
-export const backupDbCore = async (
+const backupDbCore = async (
   client: FirestoreAdminClient,
   project: string,
   bucket: string
