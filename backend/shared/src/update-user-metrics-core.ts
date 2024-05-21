@@ -377,6 +377,7 @@ export async function updateUserMetricsCore(
 
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
+  // TODO shoud remove extraneous data from this
   return await pg.map(
     `select data from contracts where id in ($1:list)`,
     [betContractIds],
@@ -389,8 +390,9 @@ const getUnresolvedOrRecentlyResolvedBets = async (
   userIds: string[],
   since: number
 ) => {
-  const bets = await pg.manyOrNone(
-    `select cb.data
+  const bets = await pg.map(
+    `
+    select cb.amount, cb.shares, cb.outcome, cb.data->'loanAmount' as loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.data->'createdTime' as "createdTime", cb.is_redemption
     from contract_bets as cb
     join contracts as c on cb.contract_id = c.id
     left join answers as a on cb.answer_id = a.id
@@ -399,12 +401,11 @@ const getUnresolvedOrRecentlyResolvedBets = async (
       and (c.resolution_time is null or c.resolution_time > $2)
       and (a is null or a.data->'resolution' is null or millis_to_ts(coalesce(((a.data->'resolutionTime')::bigint),0)) > $2)
     order by cb.created_time`,
-    [userIds, new Date(since).toISOString()]
+    [userIds, new Date(since).toISOString()],
+    convertBet
   )
-  return mapValues(
-    groupBy(bets, (r) => r.data.userId as string),
-    (rows) => rows.map(convertBet)
-  )
+
+  return groupBy(bets, (r) => r.userId as string)
 }
 
 const getPortfolioSnapshot = async (
