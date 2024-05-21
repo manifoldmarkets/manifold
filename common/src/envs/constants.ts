@@ -487,3 +487,5 @@ export const RESERVED_PATHS = [
   'web',
   'welcome',
 ]
+
+export const MANA_PURCHASE_RATE_CHANGE_DATE = new Date('2024-05-16T18:20:00Z')
