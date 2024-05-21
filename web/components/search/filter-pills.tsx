@@ -8,7 +8,7 @@ export function FilterPill(props: {
   onSelect: () => void
   className?: string
   children: ReactNode
-  type: 'filter' | 'sort' | 'contractType'
+  type: 'filter' | 'sort' | 'contractType' | 'spice'
 }) {
   const { children, selected, onSelect, className, type } = props
 
@@ -16,7 +16,11 @@ export function FilterPill(props: {
     <button
       className={clsx(
         'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 py-0.5 text-sm outline-none transition-colors',
-        type === 'filter'
+        type === 'spice'
+          ? selected
+            ? 'bg-amber-500 text-white hover:bg-amber-600'
+            : 'text-ink-600 hover:bg-sky-amber/30 bg-amber-500/10 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
+          : type === 'filter'
           ? selected
             ? 'bg-sky-500 text-white hover:bg-sky-600'
             : 'text-ink-600 bg-sky-500/10 hover:bg-sky-500/30 dark:bg-sky-500/20 dark:hover:bg-sky-500/30'

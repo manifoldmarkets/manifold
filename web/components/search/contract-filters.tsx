@@ -1,14 +1,15 @@
 import clsx from 'clsx'
-import { useGroupFromSlug } from 'web/hooks/use-group-supabase'
 import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import router from 'next/router'
+import { useState } from 'react'
+import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
-import { AdditionalFilterPill, FilterPill } from './filter-pills'
 import { Carousel } from 'web/components/widgets/carousel'
+import { MODAL_CLASS, Modal } from '../layout/modal'
+import { Row } from '../layout/row'
 import {
   BOUNTY_MARKET_SORTS,
   CONTRACT_TYPES,
@@ -32,10 +33,8 @@ import {
   bountySorts,
   predictionMarketSorts,
 } from '../supabase-search'
-import { useState } from 'react'
-import { MODAL_CLASS, Modal } from '../layout/modal'
-import { Row } from '../layout/row'
-import { FaSortAmountDownAlt } from 'react-icons/fa'
+import { AdditionalFilterPill, FilterPill } from './filter-pills'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export function ContractFilters(props: {
   className?: string
@@ -56,7 +55,7 @@ export function ContractFilters(props: {
     showTopicTag,
   } = props
 
-  const { s: sort, f: filter, ct: contractType } = params
+  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -91,6 +90,13 @@ export function ContractFilters(props: {
     }
     track('select contract type', { contractType: selection })
   }
+
+  const togglePrizeMarket = ()=>{
+      updateParams({
+        p: isPrizeMarketString == 'true' ? 'false' : 'true',
+      })
+  }
+
   const hideFilter =
     sort === 'resolve-date' ||
     sort === 'close-date' ||
@@ -99,8 +105,6 @@ export function ContractFilters(props: {
   const filterLabel = getLabelFromValue(FILTERS, filter)
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
-  const topic = useGroupFromSlug(topicSlug ?? '')
-  const resetTopic = () => router.push(`/browse`)
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -153,13 +157,22 @@ export function ContractFilters(props: {
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
+        <FilterPill
+          selected={isPrizeMarketString === 'true'}
+          onSelect={togglePrizeMarket}
+          type="spice"
+        >
+          <Row className="items-center gap-1">
+            <SpiceCoin className={isPrizeMarketString !== 'true' ? 'opacity-50':''}/> Prize Market
+          </Row>
+        </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
             selected={topicSlug === 'for-you'}
             onSelect={() => setTopicSlug('for-you')}
             type="filter"
           >
-            ⭐️ For you
+            For you
           </FilterPill>
         )}
         {!hideFilter &&
@@ -219,6 +232,7 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
+        togglePrizeMarket={togglePrizeMarket}
         hideFilter={hideFilter}
         setTopicSlug={setTopicSlug}
         topicSlug={topicSlug}
@@ -234,6 +248,7 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
+  togglePrizeMarket: () => void
   hideFilter: boolean
   setTopicSlug?: (slug: string) => void
   topicSlug?: string
@@ -245,11 +260,12 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
+    togglePrizeMarket,
     hideFilter,
     setTopicSlug,
     topicSlug,
   } = props
-  const { s: sort, f: filter, ct: contractType } = params
+  const { s: sort, f: filter, ct: contractType, p: isPrizeMarketString } = params
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -269,13 +285,27 @@ function FilterModal(props: {
               Filters
             </Row>
             <Row className="flex-wrap gap-1">
+              <FilterPill
+                selected={isPrizeMarketString === 'true'}
+                onSelect={togglePrizeMarket}
+                type="spice"
+              >
+                <Row className="items-center gap-1">
+                  <SpiceCoin
+                    className={
+                      isPrizeMarketString !== 'true' ? 'opacity-50' : ''
+                    }
+                  />
+                  Prize Market
+                </Row>
+              </FilterPill>
               {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
                 <FilterPill
                   selected={topicSlug === 'for-you'}
                   onSelect={() => setTopicSlug('for-you')}
                   type="filter"
                 >
-                  ⭐️ For you
+                  For you
                 </FilterPill>
               )}
               {!hideFilter &&
