@@ -21,7 +21,7 @@ import { freeQuestionRemaining, DAYS_TO_USE_FREE_QUESTIONS } from 'common/user'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { DowntimeBanner, useBanner } from 'web/components/nav/banner'
+import { DowntimeBanner } from 'web/components/nav/banner'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export async function getStaticProps() {
