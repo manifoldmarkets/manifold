@@ -59,11 +59,6 @@ export function createJobs() {
       30 * MINUTE_MS
     ),
     createJob(
-      'update-stats',
-      '0 20 * * * *', // on the 20th minute of every hour
-      updateStatsCore
-    ),
-    createJob(
       'calculate-conversion-scores',
       '0 46 * * * *', // on the 46th minute of every hour
       calculateConversionScore
@@ -104,6 +99,11 @@ export function createJobs() {
       'calculate-user-topic-interests',
       '0 0 3 * * *', // 3 AM daily
       () => calculateUserTopicInterests()
+    ),
+    createJob(
+      'update-stats',
+      '0 20 4 * * *', // on 4:20am daily
+      updateStatsCore
     ),
     createJob(
       'onboarding-notification',
