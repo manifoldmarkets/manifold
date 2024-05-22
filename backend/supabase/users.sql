@@ -2,7 +2,6 @@ create table if not exists
   users (
     id text not null primary key default random_alphanumeric (12),
     data jsonb not null,
-    fs_updated_time timestamp,
     name text not null,
     created_time timestamptz not null default now(),
     username text not null,
