@@ -164,13 +164,14 @@ export function ContractFilters(props: {
           selected={isPrizeMarketString === 'true'}
           onSelect={togglePrizeMarket}
           type="spice"
+          className="gap-1"
         >
-          <Row className="w-full items-center gap-1">
+          <div className="flex w-4 items-center">
             <SpiceCoin
               className={isPrizeMarketString !== 'true' ? 'opacity-50' : ''}
             />
-            Prize
-          </Row>
+          </div>
+          Prize
         </FilterPill>
         {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
           <FilterPill
