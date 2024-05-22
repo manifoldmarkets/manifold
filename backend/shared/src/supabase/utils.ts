@@ -1,5 +1,5 @@
 import { pgp, SupabaseDirectClient } from './init'
-import { DataFor, Tables, TableName, Column } from 'common/supabase/utils'
+import { DataFor, Tables, TableName, Column, Row } from 'common/supabase/utils'
 
 export async function getIds<T extends TableName>(
   db: SupabaseDirectClient,
@@ -24,7 +24,7 @@ export async function insert<
   const query = pgp.helpers.insert(values, cs)
   // Hack to properly cast jsonb values.
   const q = query.replace(/::jsonb'/g, "'::jsonb")
-  await db.none(q)
+  return await db.one<Row<T>>(q + ` returning *`)
 }
 
 export async function bulkInsert<

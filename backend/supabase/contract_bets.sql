@@ -1,10 +1,10 @@
 create table if not exists
   contract_bets (
     contract_id text not null,
-    bet_id text not null,
+    bet_id text not null default random_alphanumeric (12),
     user_id text not null,
     answer_id text,
-    created_time timestamptz not null,
+    created_time timestamptz not null default now(),
     amount numeric,
     shares numeric,
     outcome text,
@@ -16,7 +16,7 @@ create table if not exists
     is_challenge boolean,
     visibility text,
     data jsonb not null,
-    fs_updated_time timestamp not null,
+    fs_updated_time timestamp,
     primary key (contract_id, bet_id)
   );
 
@@ -33,8 +33,6 @@ or replace function contract_bet_populate_cols () returns trigger language plpgs
 begin
     if new.data is not null then
         new.user_id := (new.data) ->> 'userId';
-        new.created_time :=
-                case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
         new.amount := ((new.data) ->> 'amount')::numeric;
         new.shares := ((new.data) ->> 'shares')::numeric;
         new.outcome := ((new.data) ->> 'outcome');

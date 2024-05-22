@@ -1,4 +1,3 @@
-
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Answer } from 'common/answer'
@@ -64,12 +63,7 @@ export const placeMultiBetMain = async (
     const unfilledBetsAndBalances = await Promise.all(
       answerIds.map(
         async (answerId) =>
-          await getUnfilledBetsAndUserBalances(
-            pgTrans,
-            fbTrans,
-            contractDoc,
-            answerId
-          )
+          await getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answerId)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)

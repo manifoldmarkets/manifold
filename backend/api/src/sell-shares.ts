@@ -16,6 +16,8 @@ import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import { convertBet } from 'common/supabase/bets'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -31,10 +33,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const contractSnap = await fbTrans.get(contractDoc)
     if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
     const contract = contractSnap.data() as Contract
-    let betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
-    if (answerId) {
-      betsQ = betsQ.where('answerId', '==', answerId)
-    }
+
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
@@ -42,18 +41,20 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const isIndependentMulti =
       contract.mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne
 
-    const [userBetsSnap, { unfilledBets, balanceByUserId }] = await Promise.all(
-      [
-        fbTrans.get(betsQ),
-        getUnfilledBetsAndUserBalances(
-          pgTrans,
-          fbTrans,
-          contractDoc,
-          answerId && isIndependentMulti ? answerId : undefined
-        ),
-      ]
-    )
-    const userBets = userBetsSnap.docs.map((doc) => doc.data() as Bet)
+    const [userBets, { unfilledBets, balanceByUserId }] = await Promise.all([
+      pgTrans.map(
+        `select * from contract_bets where user_id = $1 ${
+          answerId ? 'and answer_id = $2' : ''
+        }`,
+        [auth.uid, answerId],
+        convertBet
+      ),
+      getUnfilledBetsAndUserBalances(
+        pgTrans,
+        contractDoc,
+        answerId && isIndependentMulti ? answerId : undefined
+      ),
+    ])
 
     const { closeTime, mechanism, volume } = contract
 
@@ -185,9 +186,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const allOrdersToCancel = []
     const fullBets = []
-    const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
-
-    await updateMakers(makers, newBetDoc.id, contractDoc, pgTrans, fbTrans)
 
     await incrementBalance(pgTrans, user.id, {
       balance: -newBet.amount + (newBet.loanAmount ?? 0),
@@ -211,21 +209,23 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     }
 
     const isApi = auth.creds.kind === 'key'
-    const fullBet: Bet = {
-      id: newBetDoc.id,
+
+    const fullBet = {
       userId: user.id,
       isApi,
       ...newBet,
       betGroupId,
     }
-    fbTrans.create(newBetDoc, fullBet)
-    fullBets.push(fullBet)
+    const bet = await insertBet(fullBet, pgTrans)
+    fullBets.push(convertBet(bet))
 
-    for (const bet of ordersToCancel) {
-      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-        isCancelled: true,
-      })
-    }
+    await updateMakers(makers, bet.bet_id, pgTrans)
+
+    await cancelLimitOrders(
+      pgTrans,
+      ordersToCancel.map((o) => o.id)
+    )
+
     allOrdersToCancel.push(...ordersToCancel)
 
     if (mechanism === 'cpmm-1') {
@@ -257,16 +257,14 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       makers,
       ordersToCancel,
     } of otherResultsWithBet) {
-      const betDoc = contractDoc.collection('bets').doc()
-      const fullBet: Bet = {
-        id: betDoc.id,
+      const fullBet = {
         userId: user.id,
         isApi,
         ...bet,
         betGroupId,
       }
-      fbTrans.create(betDoc, fullBet)
-      fullBets.push(fullBet)
+      const betRow = await insertBet(fullBet, pgTrans)
+      fullBets.push(convertBet(betRow))
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
       fbTrans.update(
@@ -277,12 +275,11 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           prob,
         })
       )
-      await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
-      for (const bet of ordersToCancel) {
-        fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-          isCancelled: true,
-        })
-      }
+      await updateMakers(makers, betRow.bet_id, pgTrans)
+      await cancelLimitOrders(
+        pgTrans,
+        ordersToCancel.map((o) => o.id)
+      )
       allOrdersToCancel.push(...ordersToCancel)
     }
 
@@ -290,7 +287,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       newBet,
       user,
       fullBets,
-      betId: newBetDoc.id,
+      betId: bet.bet_id,
       makers,
       maxShares,
       soldShares,

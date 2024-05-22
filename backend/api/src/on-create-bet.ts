@@ -312,6 +312,7 @@ const notifyUsersOfLimitFills = async (
   eventId: string
 ) => {
   if (!bet.fills || !bet.fills.length) return
+  const pg = createSupabaseDirectClient()
 
   const matchingLimitBetIds = filterDefined(
     bet.fills.map((fill) => fill.matchedBetId)
@@ -319,16 +320,10 @@ const notifyUsersOfLimitFills = async (
   if (!matchingLimitBetIds.length) return
 
   const matchingLimitBets = filterDefined(
-    await Promise.all(
-      matchingLimitBetIds.map(
-        async (matchedBetId) =>
-          getDoc<LimitBet>(`contracts/${contract.id}/bets`, matchedBetId)
-        // pg.map(
-        //   `select data from contract_bets where bet_id = $1`,
-        //   [fill.matchedBetId],
-        //   (r) => r.data as LimitBet
-        // )
-      )
+    await pg.map(
+      `select * from contract_bets where bet_id in ($1:list)`,
+      [matchingLimitBetIds],
+      (r) => convertBet(r) as LimitBet
     )
   ).flat()
 

@@ -221,7 +221,7 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           is_ante: boolean | null
           is_api: boolean | null
           is_challenge: boolean | null
@@ -230,17 +230,18 @@ export type Database = {
           prob_after: number | null
           prob_before: number | null
           shares: number | null
+          updated_time: string
           user_id: string
           visibility: string | null
         }
         Insert: {
           amount?: number | null
           answer_id?: string | null
-          bet_id: string
+          bet_id?: string
           contract_id: string
-          created_time: string
+          created_time?: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -249,6 +250,7 @@ export type Database = {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string
           user_id: string
           visibility?: string | null
         }
@@ -259,7 +261,7 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -268,6 +270,7 @@ export type Database = {
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string
           user_id?: string
           visibility?: string | null
         }
@@ -2928,52 +2931,61 @@ export type Database = {
       contract_bets_rbac: {
         Row: {
           amount: number | null
+          answer_id: string | null
           bet_id: string | null
           contract_id: string | null
           created_time: string | null
           data: Json | null
           fs_updated_time: string | null
           is_ante: boolean | null
+          is_api: boolean | null
           is_challenge: boolean | null
           is_redemption: boolean | null
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
           shares: number | null
+          updated_time: string | null
           user_id: string | null
           visibility: string | null
         }
         Insert: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string | null
           user_id?: string | null
           visibility?: string | null
         }
         Update: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string | null
           user_id?: string | null
           visibility?: string | null
         }

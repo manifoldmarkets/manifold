@@ -50,7 +50,6 @@ export type TableSpec<T extends TableName> = {
 export const REALTIME_TABLES: Partial<{ [T in TableName]: TableSpec<T> }> = {
   contract_bets: {
     pk: ['contract_id', 'bet_id'],
-    ts: (r) => Date.parse(r.fs_updated_time),
   },
   tv_schedule: {
     pk: ['id'],

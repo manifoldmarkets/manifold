@@ -15,18 +15,24 @@ import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
 import { incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { SERIAL, createSupabaseDirectClient } from 'shared/supabase/init'
+import { convertBet } from 'common/supabase/bets'
+import { bulkInsertBets } from 'shared/supabase/bets'
 
 export const redeemShares = async (
   userId: string,
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
 ) => {
-  return await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const { id: contractId } = contract
+  const pg = createSupabaseDirectClient()
+  const { id: contractId } = contract
 
-    const betsColl = firestore.collection(`contracts/${contractId}/bets`)
-    const betsSnap = await fbTrans.get(betsColl.where('userId', '==', userId))
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+  return await pg.tx({ mode: SERIAL }, async (tx) => {
+    const bets = await tx.map(
+      `select * from contract_bets where contract_id = $1 and user_id = $2`,
+      [contractId, userId],
+      convertBet
+    )
+
     log(
       `Loaded ${bets.length} bets for user ${userId} on contract ${contractId} to redeem shares`
     )
@@ -71,20 +77,19 @@ export const redeemShares = async (
         const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
         const loanPaid = sum(Object.values(loanAmountByAnswerId))
 
-        await incrementBalance(pgTrans, userId, {
+        await incrementBalance(tx, userId, {
           balance: saleValue - loanPaid,
         })
 
         const betGroupId = crypto.randomBytes(12).toString('hex')
-        for (const sale of sellBetCandidates) {
-          const doc = betsColl.doc()
-          fbTrans.create(doc, {
-            id: doc.id,
+        await bulkInsertBets(
+          sellBetCandidates.map((b) => ({
             userId,
-            ...sale.newBet,
+            ...b.newBet,
             betGroupId,
-          })
-        }
+          }))
+        )
+
         log('cpmm-multi-1 redeemed', {
           shares: minShares,
           totalAmount: saleValue,
@@ -119,11 +124,12 @@ export const redeemShares = async (
         lastProb,
         answerId === 'undefined' ? undefined : answerId
       )
-      const yesDoc = betsColl.doc()
-      const noDoc = betsColl.doc()
-
-      fbTrans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
-      fbTrans.create(noDoc, { id: noDoc.id, userId, ...noBet })
+      await bulkInsertBets(
+        [yesBet, noBet].map((b) => ({
+          userId,
+          ...b,
+        }))
+      )
 
       log('redeemed', {
         shares,
@@ -131,10 +137,8 @@ export const redeemShares = async (
       })
     }
 
-    await incrementBalance(pgTrans, userId, { balance: totalAmount })
+    await incrementBalance(tx, userId, { balance: totalAmount })
 
     return { status: 'success' }
   })
 }
-
-const firestore = admin.firestore()

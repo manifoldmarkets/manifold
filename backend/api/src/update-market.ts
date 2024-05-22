@@ -15,6 +15,10 @@ import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
 import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -123,15 +127,10 @@ async function updateContractSubcollectionsVisibility(
   contractId: string,
   newVisibility: 'public' | 'unlisted'
 ) {
-  const contractRef = firestore.collection('contracts').doc(contractId)
-  const batchSize = 500
+  const pg = createSupabaseDirectClient()
 
-  // Update bets' visibility
-  const betsRef = contractRef.collection('bets')
-  await processPaginated(betsRef, batchSize, (ts) => {
-    const updatePromises = ts.docs.map((doc) => {
-      return doc.ref.update({ visibility: newVisibility })
-    })
-    return Promise.all(updatePromises)
-  })
+  await pg.none(
+    `update contract_bets set data = data || $1 where contract_id = $2`,
+    [JSON.stringify({ visibility: newVisibility }), contractId]
+  )
 }
