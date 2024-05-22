@@ -11,6 +11,8 @@ import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
+import clsx from 'clsx'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -42,8 +44,16 @@ export default function ReferralsPage() {
 
           <div className={'mb-4'}>
             Invite new users to Manifold and get{' '}
-            <CoinNumber amount={REFERRAL_AMOUNT} isSpice isInline /> if they
-            sign up and place a trade!
+            <CoinNumber
+              isSpice
+              amount={REFERRAL_AMOUNT}
+              style={{
+                color: SPICE_COLOR,
+              }}
+              className={clsx('font-bold')}
+              isInline
+            />{' '}
+            if they sign up and place a trade!
           </div>
 
           <CopyLinkRow url={url} eventTrackingName="copy referral link" />

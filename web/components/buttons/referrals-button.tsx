@@ -18,10 +18,11 @@ import { referUser } from 'web/lib/firebase/api'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { canSetReferrer } from 'web/lib/firebase/users'
-import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { Subtitle } from '../widgets/subtitle'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -58,7 +59,15 @@ export function Referrals(props: { user: User }) {
           <span className={'text-primary-700 pb-2 text-xl'}>
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
-              {formatMoney(REFERRAL_AMOUNT)}
+              <CoinNumber
+                isSpice
+                amount={REFERRAL_AMOUNT}
+                style={{
+                  color: SPICE_COLOR,
+                }}
+                className={clsx('mr-1 font-bold')}
+                isInline
+              />
             </span>{' '}
             each!
           </span>

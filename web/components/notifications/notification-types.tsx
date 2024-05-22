@@ -66,6 +66,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1344,8 +1345,16 @@ function ReferralProgramNotification(props: {
     >
       <span>
         Refer friends and get{' '}
-        <span className="text-teal-500">{formatMoney(REFERRAL_AMOUNT)}</span> on
-        every sign up!
+        <CoinNumber
+          isSpice
+          amount={REFERRAL_AMOUNT}
+          style={{
+            color: SPICE_COLOR,
+          }}
+          className={clsx('mr-1 font-bold')}
+          isInline
+        />
+        on every sign up!
       </span>
       {user && showModal && (
         <Modal open setOpen={setShowModal}>
