@@ -1,4 +1,4 @@
-import { Dictionary, first, sumBy, uniq } from 'lodash'
+import { Dictionary, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
 import { Contract, CPMMContract, getAdjustedProfit } from './contract'
@@ -10,6 +10,7 @@ import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
 import { noFees } from './fees'
+import { DisplayUser } from './api/user-types'
 
 export const computeInvestmentValue = (
   bets: Bet[],
@@ -197,7 +198,7 @@ export const calculateMetricsByContractAndAnswer = (
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
-  user?: User,
+  user: DisplayUser,
   answers?: Answer[]
 ) => {
   const useDenormalizedAnswers =
@@ -209,15 +210,15 @@ export const calculateUserMetrics = (
     bets,
     answersToUse
   )
-  const bet = first(bets)
+
   return currentMetrics.map((current) => {
     return removeUndefinedProps({
       ...current,
       contractId: contract.id,
-      userName: user?.name ?? bet?.userName,
-      userId: user?.id ?? bet?.userId,
-      userUsername: user?.username ?? bet?.userUsername,
-      userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
+      userName: user.name,
+      userId: user.id,
+      userUsername: user.username,
+      userAvatarUrl: user.avatarUrl,
       profitAdjustment: getAdjustedProfit(
         contract,
         current.profit,

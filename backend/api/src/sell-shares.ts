@@ -214,9 +214,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const fullBet: Bet = {
       id: newBetDoc.id,
       userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
       isApi,
       ...newBet,
       betGroupId,
@@ -264,9 +261,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       const fullBet: Bet = {
         id: betDoc.id,
         userId: user.id,
-        userAvatarUrl: user.avatarUrl,
-        userUsername: user.username,
-        userName: user.name,
         isApi,
         ...bet,
         betGroupId,

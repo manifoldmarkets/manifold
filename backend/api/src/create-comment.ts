@@ -17,6 +17,7 @@ import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { runTxn } from 'shared/txn/run-txn'
 import { broadcast } from './websockets/server'
+import { DisplayUser } from 'common/api/user-types'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -80,6 +81,8 @@ export const createCommentOnContractInternal = async (
         .then(convertBet)
     : undefined
 
+  const bettor = bet && (await getUser(bet.userId))
+
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
@@ -101,7 +104,7 @@ export const createCommentOnContractInternal = async (
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
 
-    ...denormalizeBet(bet),
+    ...denormalizeBet(bet, bettor),
     isApi,
     isRepost,
   } as ContractComment)
@@ -148,6 +151,7 @@ export const createCommentOnContractInternal = async (
         now,
         replyToAnswerId
       )
+      const bettor = bet && (await getUser(bet.userId))
 
       const position = await getLargestPosition(pg, contract.id, creator.id)
 
@@ -160,7 +164,7 @@ export const createCommentOnContractInternal = async (
           position && contract.mechanism === 'cpmm-1'
             ? contract.prob
             : undefined,
-        ...denormalizeBet(bet),
+        ...denormalizeBet(bet, bettor),
       })
 
       await db
@@ -177,13 +181,16 @@ export const createCommentOnContractInternal = async (
     },
   }
 }
-const denormalizeBet = (bet: Bet | undefined) => {
+const denormalizeBet = (
+  bet: Bet | undefined,
+  bettor: DisplayUser | undefined | null
+) => {
   return {
     betAmount: bet?.amount,
     betOutcome: bet?.outcome,
     betAnswerId: bet?.answerId,
-    bettorName: bet?.userName,
-    bettorUsername: bet?.userUsername,
+    bettorName: bettor?.name,
+    bettorUsername: bettor?.username,
     betOrderAmount: bet?.orderAmount,
     betLimitProb: bet?.limitProb,
     betId: bet?.id,

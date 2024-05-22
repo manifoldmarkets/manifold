@@ -104,26 +104,6 @@ const updateUserDenormalizedFields = async (
   )
   log(`Updated ${commentIds.length} comments.`)
 
-  log('Updating denormalized user data on bets...')
-  const betRows = await pg.manyOrNone(
-    `select contract_id, bet_id from contract_bets where user_id = $1`,
-    [userId]
-  )
-  const betUpdate: Partial<Bet> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-  for (const row of betRows) {
-    const ref = firestore
-      .collection('contracts')
-      .doc(row.contract_id)
-      .collection('bets')
-      .doc(row.bet_id)
-    bulkWriter.update(ref, betUpdate)
-  }
-  log(`Updated ${betRows.length} bets.`)
-
   await bulkWriter.flush()
   log('Done denormalizing!')
 }

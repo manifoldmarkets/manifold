@@ -166,8 +166,9 @@ export const onCreateBets = async (
 
   // assess flat fee for bots
   // TODO: make part of FEES so creator can get some!
+  // TODO: charge for known bots no matter what
   const botFeeUpdates = uniqueNonRedemptionBetsByUserId
-    .filter((bet) => bet.isApi || BOT_USERNAMES.includes(bet.userUsername))
+    .filter((bet) => bet.isApi)
     .map((bet) => ({
       id: bet.userId,
       balance: -FLAT_TRADE_FEE,

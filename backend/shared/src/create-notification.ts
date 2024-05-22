@@ -495,6 +495,9 @@ export const createBetFillNotification = async (
   )
   if (!sendToBrowser) return
 
+  const fromUser = await getUser(bet.userId)
+  if (!fromUser) return
+
   // The limit order fills array has a matchedBetId that does not match this bet id
   // (even though this bet has a fills array that is matched to the limit order)
   // This is likely bc this bet is an arbitrage bet. This should be fixed.
@@ -525,9 +528,9 @@ export const createBetFillNotification = async (
     sourceId: limitBet.id,
     sourceType: 'bet',
     sourceUpdateType: 'updated',
-    sourceUserName: bet.userName,
-    sourceUserUsername: bet.userUsername,
-    sourceUserAvatarUrl: bet.userAvatarUrl ?? '',
+    sourceUserName: fromUser.name,
+    sourceUserUsername: fromUser.username,
+    sourceUserAvatarUrl: fromUser.avatarUrl,
     sourceText: fillAmount.toString(),
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractTitle: contract.question,
