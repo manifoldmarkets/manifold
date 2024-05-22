@@ -44,9 +44,9 @@ const search = async (
     topicSlug: possibleTopicSlug,
     creatorId,
     isPolitics,
-    isPrizeMarket,
   } = props
 
+  const isPrizeMarket = props.isPrizeMarket == 'true'
   if (limit === 0) {
     return []
   }
@@ -71,7 +71,8 @@ const search = async (
       contractType,
       limit,
       offset,
-      sort
+      sort,
+   isPrizeMarket,
     )
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
@@ -113,7 +114,7 @@ const search = async (
           groupAccess,
           searchType,
           isPolitics,
-          isPrizeMarket: isPrizeMarket=='true',
+          isPrizeMarket,
         })
         return pg
           .map(searchSQL, null, (r) => ({

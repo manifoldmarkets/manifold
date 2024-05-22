@@ -36,6 +36,7 @@ export async function getForYouSQL(
   limit: number,
   offset: number,
   sort: 'score' | 'freshness-score',
+  isPrizeMarket: boolean,
   privateUser?: PrivateUser,
   threshold: number = DEFAULT_THRESHOLD
 ) {
@@ -85,6 +86,7 @@ export async function getForYouSQL(
         contractType,
         uid: userId,
         hideStonks: true,
+        isPrizeMarket
       }),
       blockedIds.length > 0 &&
         where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
@@ -132,6 +134,7 @@ export async function getForYouSQL(
         contractType,
         uid: userId,
         hideStonks: true,
+        isPrizeMarket
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -241,7 +244,6 @@ export function getSearchContractSQL(args: {
 
     whereSql,
     isPolitics && where('is_politics = true'),
-    isPrizeMarket && where('is_spice_payout = true'),
     term.length && [
       searchType === 'prefix' &&
         where(
@@ -274,6 +276,7 @@ function getSearchContractWhereSQL(args: {
   hasGroupAccess?: boolean
   hideStonks?: boolean
   hideLove?: boolean
+  isPrizeMarket?: boolean
 }) {
   const {
     filter,
@@ -285,6 +288,7 @@ function getSearchContractWhereSQL(args: {
     hasGroupAccess,
     hideStonks,
     hideLove,
+    isPrizeMarket
   } = args
 
   type FilterSQL = Record<string, string>
@@ -322,6 +326,8 @@ function getSearchContractWhereSQL(args: {
 
   const deletedFilter = `deleted = false`
 
+   const isPrizeMarketFilter =  isPrizeMarket ? 'is_spice_payout = true':''
+
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -331,6 +337,7 @@ function getSearchContractWhereSQL(args: {
     where(visibilitySQL),
     where(creatorFilter),
     where(deletedFilter),
+    where(isPrizeMarketFilter)
   ]
 }
 
