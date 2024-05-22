@@ -27,6 +27,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
+import { type User } from 'common/user'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -365,10 +366,11 @@ export async function updateUserMetricsCore(
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
-      userIdsNotWritten.length > 0 && pg.query(
-        `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
-        [new Date(now).toISOString(), userIdsNotWritten]
-      )
+      userIdsNotWritten.length > 0 &&
+        pg.query(
+          `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
+          [new Date(now).toISOString(), userIdsNotWritten]
+        )
     )
   )
 
