@@ -129,6 +129,7 @@ export default function AboutPage() {
           {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
           {user && <LabCard title="💸 Send mana" href="/payments" />}
           <LabCard title="🎯 Calibration & track record" href="/calibration" />
+          <LabCard title="🏁 Leagues" href="/leagues" />
           <LabCard title="🏆 Leaderboards" href="/leaderboards" />
           <LabCard
             title="📜 Community guidelines"
