@@ -47,7 +47,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         )
       : props.userId
 
-  if (userIdsToAverageTopicConversionScores[userId] === undefined) {
+  if (
+    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
+  ) {
     await buildUserInterestsCache(userId)
   }
   const privateUser = await pg.one(
@@ -64,7 +66,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const blockedIds = blockedUserIds.concat(blockedByUserIds)
 
   // If they don't follow any topics and have no recorded topic activity, show them top trending markets
-  if (userIdsToAverageTopicConversionScores[userId] === undefined) {
+  if (
+    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
+  ) {
+    log('no topic interests for user', userId)
     const defaultContracts = await pg.map(
       `select data, importance_score, conversion_score, freshness_score, view_count from contracts
                 order by importance_score desc 
