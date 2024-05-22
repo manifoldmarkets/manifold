@@ -8,26 +8,5 @@ create table if not exists
     contract_id text not null,
     user_id text not null,
     status status_type not null default 'new',
-    contract_slug text not null,
-    contract_question text not null,
-    content jsonb not null,
-    creator_username text not null,
     mod_note text
   );
-
-alter table mod_reports enable row level security;
-
-drop policy if exists "public read" on mod_reports;
-
-create policy "public read" on mod_reports for
-select
-  using (true);
-
-create index mod_reports_contract_id_time_created_idx on mod_reports (contract_id, created_time desc);
-
-create index mod_reports_status on mod_reports (status);
-
-create index mod_reports_user_id on mod_reports (user_id);
-
-alter table mod_reports
-cluster on mod_reports_pkey;

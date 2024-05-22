@@ -68,12 +68,12 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
-        isAdminorMod: isAdminOrMod,
+        isAdminOrMod: isAdminOrMod,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
-        isAdminorMod: isAdminOrMod,
+        isAdminOrMod: isAdminOrMod,
       })
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
@@ -132,7 +132,7 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminorMod: boolean }
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
   if (loggedIn)
     return buildArray(
@@ -167,7 +167,7 @@ const getDesktopNav = (
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      options.isAdminorMod && {
+      options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
@@ -198,9 +198,9 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (
   toggleModal: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminorMod: boolean }
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
-  const { isNewUser, isLiveTV, isAdminorMod } = options
+  const { isNewUser, isLiveTV, isAdminOrMod } = options
 
   return buildArray<NavItem>(
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
@@ -225,7 +225,7 @@ const getMobileNav = (
       href: '/messages',
       icon: PrivateMessagesIcon,
     },
-    isAdminorMod && {
+    isAdminOrMod && {
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,

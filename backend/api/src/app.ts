@@ -160,10 +160,9 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
-import { updateReport } from './update-report'
-import { getReports } from './get-reports'
+import { updateModReport } from './update-mod-report'
+import { getModReports } from './get-mod-reports'
 import { searchContractPositions } from 'api/search-contract-positions'
-
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -318,8 +317,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
-  'update-report': updateReport,
-  'get-reports': getReports,
+  'update-mod-report': updateModReport,
+  'get-mod-reports': getModReports,
   'search-contract-positions': searchContractPositions,
 }
 

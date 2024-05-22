@@ -18,7 +18,7 @@ import {
 import type { ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
-import { contentSchema, Report } from 'common/api/zod-types'
+import { contentSchema } from 'common/api/zod-types'
 import { Lover } from 'common/love/lover'
 import { Contract } from 'common/contract'
 import { CompatibilityScore } from 'common/love/compatibility-score'
@@ -41,6 +41,7 @@ import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { ModReport } from '../mod-report'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1154,7 +1155,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
   },
-  'update-report': {
+  'update-mod-report': {
     method: 'POST',
     visibility: 'public',
     authed: true,
@@ -1166,19 +1167,19 @@ export const API = (_apiTypeCheck = {
             status: z
               .enum(['new', 'under review', 'resolved', 'needs admin'])
               .optional(),
-            mod_note: z.string(),
+            mod_note: z.string().optional(),
           })
           .partial(),
       })
       .strict(),
-    returns: {} as { status: string; data: any },
+    returns: {} as { status: string; report: ModReport },
   },
-  'get-reports': {
+  'get-mod-reports': {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    returns: {} as { status: string; data: any },
     props: z.object({}).strict(),
+    returns: {} as { status: string; reports: ModReport[] },
   },
 } as const)
 

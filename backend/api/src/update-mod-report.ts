@@ -1,7 +1,10 @@
+import { ModReport } from 'common/mod-report'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 
-export const updateReport: APIHandler<'update-report'> = async (props) => {
+export const updateModReport: APIHandler<'update-mod-report'> = async (
+  props
+) => {
   const { reportId, updates } = props
   const db = createSupabaseClient()
 
@@ -25,6 +28,9 @@ export const updateReport: APIHandler<'update-report'> = async (props) => {
   if (error) {
     throw new APIError(500, 'Error updating report', { error })
   }
+  if (!data) {
+    throw new APIError(404, 'Report not found')
+  }
 
-  return { status: 'success', data }
+  return { status: 'success', report: data as ModReport }
 }

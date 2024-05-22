@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
 import { Input } from '../widgets/input'
+import { Row } from '../layout/row'
 
 type EditableModNoteProps = {
   reportId: number
@@ -27,7 +28,7 @@ export const EditableModNote = ({
   }
 
   return isEditing ? (
-    <div className="flex items-center gap-2">
+    <Row className=" items-center gap-2">
       <Input
         className="grow"
         type="text"
@@ -42,9 +43,9 @@ export const EditableModNote = ({
       <IconButton onClick={() => setEditing(false)} className="p-1">
         <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
-    </div>
+    </Row>
   ) : (
-    <div className="text-md flex items-center">
+    <Row className="text-md items-center">
       <span>{modNote}</span>
       <button
         onClick={edit}
@@ -52,6 +53,6 @@ export const EditableModNote = ({
       >
         <PencilIcon className="h-4 w-4" />
       </button>
-    </div>
+    </Row>
   )
 }

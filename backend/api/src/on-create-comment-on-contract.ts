@@ -108,8 +108,6 @@ export const handleCommentNotifications = async (
   const mentionedUsers = compact(parseMentions(comment.content))
   const mentionedMods = mentionedUsers.includes(modsId)
 
-  console.log('mentionedUsers:', mentionedUsers)
-  console.log('mentionedMods:', mentionedMods)
   const repliedUsers: replied_users_info = {}
   if (replyInfo) {
     const {

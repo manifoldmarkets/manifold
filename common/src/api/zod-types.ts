@@ -52,23 +52,5 @@ export const DashboardItemSchema = z.union([
   DashboardTextItemSchema,
 ])
 
-export const ReportStatus = z.enum([
-  'new',
-  'under review',
-  'resolved',
-  'needs admin',
-])
 
-export const Report = z.object({
-  report_id: z.number(),
-  user_id: z.string(),
-  contract_id: z.string(),
-  comment_id: z.string(),
-  status: ReportStatus,
-  created_time: z.string(),
-  contract_slug: z.string(),
-  contract_question: z.string(),
-  content: contentSchema,
-  creator_username: z.string(),
-  mod_note: z.string().optional(),
-})
+

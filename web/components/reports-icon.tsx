@@ -3,16 +3,17 @@ import { FlagIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
 import { api } from 'web/lib/firebase/api'
+import { ModReport } from 'common/mod-report'
 
 export function ReportsIcon(props: { className?: string }) {
   const { className } = props
   const [newReportsCount, setNewReportsCount] = useState(0)
 
   const fetchNewReportsCount = async () => {
-    const response = await api('get-reports', {})
+    const response = await api('get-mod-reports', {})
     if (response.status === 'success') {
-      const newReports = response.data.filter(
-        (report: any) => report.status === 'new'
+      const newReports = response.reports.filter(
+        (report: ModReport) => report.status === 'new'
       )
       setNewReportsCount(newReports.length)
     } else {

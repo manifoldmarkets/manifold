@@ -1,6 +1,7 @@
 import { createSupabaseClient } from './supabase/init'
 import type { ContractComment } from 'common/src/comment'
 import { getContract } from './utils'
+import { APIError } from 'common/api/utils'
 
 export const insertModReport = async (comment: ContractComment) => {
   const {
@@ -16,30 +17,30 @@ export const insertModReport = async (comment: ContractComment) => {
   const creator_username = contract?.creatorUsername
 
   if (!creator_username) {
-    console.error('Creator username not found for contract:', contract_id)
-    return
+    throw new APIError(
+      404,
+      `Creator username not found for contract: ${contract_id}`
+    )
   }
 
   const db = createSupabaseClient()
 
   const reportData = {
-    created_time: new Date().toISOString(),
-    comment_id: comment_id,
-    contract_id: contract_id,
-    user_id: user_id,
+    comment_id,
+    contract_id,
+    user_id,
     status: 'new' as const,
-    contract_slug: contract_slug,
-    contract_question: contract_question,
-    content: content,
-    creator_username: creator_username,
+    contract_slug,
+    contract_question,
+    content,
+    creator_username,
     mod_note: '',
   }
 
   const { data, error } = await db.from('mod_reports').insert(reportData)
 
   if (error) {
-    console.error('Error inserting mod report:', error)
-    return
+    throw new APIError(404, 'Error inserting mod report:')
   }
 
   console.log('Mod report created successfully:', data)
