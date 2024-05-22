@@ -17,7 +17,7 @@ import {
 } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { User, verifiedPhone } from 'common/user'
-import { STARTING_BALANCE } from 'common/economy'
+import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
@@ -323,7 +323,7 @@ const BuyMoreFunds = (props: { user: User | null | undefined }) => {
           className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
           onClick={() => setShowVerifyPhone(true)}
         >
-          Verify your phone number for {formatMoney(STARTING_BALANCE)}
+          Verify your phone number for {formatMoney(PHONE_VERIFICATION_BONUS)}
         </button>
       )}
       <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />

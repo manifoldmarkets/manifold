@@ -70,7 +70,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
     const { initialDeviceToken: deviceToken } = privateUser
     const deviceUsedBefore =
       !deviceToken || (await isPrivateUserWithMatchingDeviceToken(deviceToken))
-    
+
     const amount = deviceUsedBefore
       ? SUS_STARTING_BALANCE
       : PHONE_VERIFICATION_BONUS
@@ -94,7 +94,7 @@ export const verifyPhoneNumber: APIHandler<'verify-phone-number'> =
           toId: auth.uid,
           token: 'M$',
           toType: 'USER',
-          description: 'Signup bonus for verifying phone number',
+          description: 'Phone number verification bonus',
         }
         await runTxnFromBank(tx, signupBonusTxn)
         log(`Sent phone verification bonus to user ${auth.uid}`)

@@ -31,8 +31,10 @@ import {
 } from 'shared/supabase/init'
 
 import { onCreateUser } from 'api/helpers/on-create-user'
-import { STARTING_BALANCE } from 'common/economy'
 import { insert } from 'shared/supabase/utils'
+import { runTxnFromBank } from 'shared/txn/run-txn'
+import { SignupBonusTxn } from 'common/txn'
+import { STARTING_BALANCE } from 'common/economy'
 
 export const createuser: APIHandler<'createuser'> = async (
   props,
@@ -112,9 +114,9 @@ export const createuser: APIHandler<'createuser'> = async (
       name,
       username,
       avatarUrl,
-      balance: STARTING_BALANCE,
+      balance: 0,
       spiceBalance: 0,
-      totalDeposits: STARTING_BALANCE,
+      totalDeposits: 0,
       createdTime: Date.now(),
       profitCached: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
       nextLoanCached: 0,
@@ -148,6 +150,20 @@ export const createuser: APIHandler<'createuser'> = async (
       username: user.username,
       data: user,
     })
+
+    const startingBonusTxn: Omit<
+      SignupBonusTxn,
+      'id' | 'createdTime' | 'fromId'
+    > = {
+      fromType: 'BANK',
+      toId: user.id,
+      toType: 'USER',
+      amount: STARTING_BALANCE,
+      token: 'M$',
+      category: 'SIGNUP_BONUS',
+      description: 'Signup bonus',
+    }
+    await runTxnFromBank(tx, startingBonusTxn)
 
     await firestore.collection('private-users').doc(auth.uid).set(privateUser)
 

@@ -114,7 +114,7 @@ const sendNextDayManaBonus = async (
       toId: user.id,
       token: 'M$',
       toType: 'USER',
-      description: 'Signup bonus',
+      description: 'Next day signup bonus',
     }
 
   const txn = await pg
@@ -178,7 +178,7 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
       toId: userId,
       token: 'M$',
       toType: 'USER',
-      description: 'Market visit signup bonus',
+      description: 'New user market visit bonus',
     }
 
     const txn = await runTxnFromBank(tx, signupBonusTxn)
