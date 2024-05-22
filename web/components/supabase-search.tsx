@@ -634,7 +634,7 @@ const useSearchQueryState = (props: {
   const {
     persistPrefix,
     defaultSort,
-    defaultFilter = 'open',
+    defaultFilter = 'all',
     defaultContractType = 'ALL',
     defaultSearchType,
     useUrlParams,
