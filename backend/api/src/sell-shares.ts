@@ -1,6 +1,5 @@
 import { mapValues, groupBy, sumBy } from 'lodash'
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'

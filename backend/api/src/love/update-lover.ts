@@ -4,7 +4,6 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import * as admin from 'firebase-admin'
 import { baseLoversSchema } from 'api/love/create-lover'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { contentSchema } from 'common/api/zod-types'

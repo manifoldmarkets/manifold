@@ -1,6 +1,5 @@
-import * as admin from 'firebase-admin'
 
-import { isVerified, User } from 'common/user'
+import { isVerified } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { insertTxns } from 'shared/txn/run-txn'
@@ -11,7 +10,7 @@ import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUsers } from 'shared/utils'
-import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
+import { bulkIncrementBalances } from 'shared/supabase/users'
 import { buildArray } from 'common/util/array'
 
 export const sendMana: APIHandler<'managram'> = async (props, auth) => {

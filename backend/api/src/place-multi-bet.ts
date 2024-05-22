@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin'
 
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'

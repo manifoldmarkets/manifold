@@ -6,7 +6,6 @@ import {
 } from 'shared/supabase/init'
 import { log, getUser } from 'shared/utils'
 import { HOUR_MS } from 'common/util/time'
-import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { getIp, track } from 'shared/analytics'
 import { updateUser } from 'shared/supabase/users'

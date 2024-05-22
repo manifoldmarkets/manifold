@@ -69,7 +69,6 @@ import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
 import { FLAT_TRADE_FEE, Fees } from 'common/fees'
-import { FieldValue } from 'firebase-admin/firestore'
 import { APIError } from 'common/api/utils'
 import { bulkIncrementBalances, updateUser } from 'shared/supabase/users'
 

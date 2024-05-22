@@ -8,11 +8,9 @@ import {
   CollectionGroup,
   CollectionReference,
   DocumentData,
-  FieldValue,
   Query,
   QueryDocumentSnapshot,
   QuerySnapshot,
-  Transaction,
 } from 'firebase-admin/firestore'
 import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'

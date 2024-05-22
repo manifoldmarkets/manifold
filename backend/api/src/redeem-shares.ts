@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import { groupBy, mapValues, maxBy, min, sum, sumBy } from 'lodash'
 
 import { Bet } from 'common/bet'

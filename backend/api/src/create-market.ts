@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import { Transaction } from 'firebase-admin/firestore'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   add_answers_mode,
@@ -14,7 +14,7 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { marketCreationCosts, User } from 'common/user'
+import { marketCreationCosts } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
@@ -50,7 +50,6 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcast } from './websockets/server'
-import { isAdminId, isModId } from 'common/envs/constants'
 import { updateUser } from 'shared/supabase/users'
 
 type Body = ValidatedAPIParams<'market'> & {

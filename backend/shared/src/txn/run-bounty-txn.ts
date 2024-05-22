@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { APIError } from 'common//api/utils'
 import { BountiedQuestionContract, Contract } from 'common/contract'
-import { insertTxn, runTxn } from './run-txn'
+import { runTxn } from './run-txn'
 import {
   SupabaseTransaction,
   createSupabaseDirectClient,

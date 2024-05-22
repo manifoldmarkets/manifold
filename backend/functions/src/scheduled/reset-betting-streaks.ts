@@ -1,7 +1,6 @@
 // check every day if the user has created a bet since 4pm UTC, and if not, reset their streak
 
 import * as functions from 'firebase-functions'
-import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
