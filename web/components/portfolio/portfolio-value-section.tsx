@@ -142,7 +142,7 @@ export const PortfolioValueSection = memo(
 
     if (
       !portfolioHistory ||
-      portfolioHistory.length < 1 ||
+      // portfolioHistory.length < 1 ||
       !lastPortfolioMetrics
     ) {
       const showDisclaimer = portfolioHistory
