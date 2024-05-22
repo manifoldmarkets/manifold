@@ -63,7 +63,7 @@ export function UserAvatarAndBadge(props: {
 }
 
 export function UserLink(props: {
-  user: { id: string; name: string; username: string }
+  user?: { id: string; name: string; username: string } | undefined | null
   className?: string
   short?: boolean
   noLink?: boolean
@@ -72,7 +72,7 @@ export function UserLink(props: {
   marketCreator?: boolean
 }) {
   const {
-    user: { id, name, username },
+    user,
     className,
     short,
     noLink,
@@ -80,6 +80,15 @@ export function UserLink(props: {
     hideBadge,
     marketCreator,
   } = props
+
+  if (!user) {
+    // skeleton
+    return (
+      <div className="bg-ink-100 dark:bg-ink-800 text-ink-200 dark:text-ink-400 h-5 w-20 animate-pulse rounded-full" />
+    )
+  }
+
+  const { id, name, username } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   const children = (

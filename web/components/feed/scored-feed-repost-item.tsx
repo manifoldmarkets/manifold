@@ -43,7 +43,7 @@ export const ScoredFeedRepost = memo(function (props: {
   const { userUsername, userAvatarUrl, userId } = comment
   const marketCreator = contract.creatorId === comment.userId
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
-  const commenterIsBettor = bet?.userUsername === comment.userUsername
+  const commenterIsBettor = bet?.userId === comment.userId
   const creatorRepostedTheirComment = repost.user_id === comment.userId
   const showTopLevelRow =
     (!commenterIsBettor && bet) || !creatorRepostedTheirComment

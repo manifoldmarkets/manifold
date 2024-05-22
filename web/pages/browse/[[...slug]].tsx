@@ -218,7 +218,8 @@ export function GroupPageContent(props: {
       setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter={
-        !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+        // !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+        'all'
       }
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {

@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { BOT_USERNAMES, DESTINY_GROUP_SLUG } from 'common/envs/constants'
+import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import {
   difference,
@@ -124,9 +124,7 @@ export function ActivityLog(props: {
   ).filter(
     (bet) =>
       !blockedContractIds.includes(bet.contractId) &&
-      !blockedUserIds.includes(bet.userId) &&
-      !BOT_USERNAMES.includes(bet.userUsername) &&
-      !EXTRA_USERNAMES_TO_EXCLUDE.includes(bet.userUsername)
+      !blockedUserIds.includes(bet.userId)
   )
   const comments = uniqBy(
     (realtimeComments ?? []).concat(recentTopicalComments ?? []),

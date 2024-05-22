@@ -38,13 +38,13 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     DEBUG_TOPIC_INTERESTS && DEBUG_USER_ID
       ? DEBUG_USER_ID
       : DEBUG_TOPIC_INTERESTS
-      ? await pg.one(
+      ? (await pg.oneOrNone(
           `select user_id from user_contract_interactions
             where created_time > now() - interval $1
             order by random() limit 1`,
           [DEBUG_TIME_FRAME],
-          (r) => r.user_id as string
-        )
+          (r) => r?.user_id as string | undefined
+        )) ?? props.userId
       : props.userId
 
   if (

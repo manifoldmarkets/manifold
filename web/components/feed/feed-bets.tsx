@@ -22,13 +22,14 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { filterDefined } from 'common/util/array'
 import { sumBy, uniq } from 'lodash'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { Button } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
+import { DisplayUser } from 'common/api/user-types'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -38,7 +39,8 @@ export const FeedBet = memo(function FeedBet(props: {
   onReply?: (bet: Bet) => void
 }) {
   const { contract, bet, avatarSize, className, onReply } = props
-  const { userAvatarUrl, userUsername, createdTime, userId } = bet
+  const { createdTime, userId } = bet
+  const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
 
   return (
@@ -49,8 +51,8 @@ export const FeedBet = memo(function FeedBet(props: {
             <UserHovercard userId={userId}>
               <Avatar
                 size={avatarSize}
-                avatarUrl={userAvatarUrl}
-                username={userUsername}
+                avatarUrl={user?.avatarUrl}
+                username={user?.username}
               />
             </UserHovercard>
           ) : (
@@ -77,31 +79,32 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  const avatars = filterDefined(
-    uniq(bets.map((b) => ({ avatarUrl: b.userAvatarUrl ?? '', id: b.userId })))
-  )
+  useDisplayUserById
+
+  const users = useUsers(bets.map((b) => b.userId))
+
   const [showBets, setShowBets] = useState(false)
   return (
     <Col className={'w-full'}>
       <Row className={'w-full gap-2'}>
-        {!showUser || avatars.length === 0 ? (
+        {!showUser || !users || users.length === 0 ? (
           <EmptyAvatar className="mx-1" />
-        ) : avatars.length === 1 ? (
+        ) : users.length === 1 ? (
           <UserHovercard userId={bets[0].userId}>
             <Avatar
               size={avatarSize}
-              avatarUrl={bets[0].userAvatarUrl}
-              username={bets[0].userUsername}
+              avatarUrl={users[0]?.avatarUrl}
+              username={users[0]?.username}
             />
           </UserHovercard>
         ) : (
-          avatars.length > 1 && (
+          users.length > 1 && (
             <MultipleOrSingleAvatars
               size={'2xs'}
               spacing={-0.2}
               startLeft={0.2}
               onClick={() => setShowBets(true)}
-              avatars={avatars}
+              avatars={users.filter((u): u is DisplayUser => u != null)}
             />
           )
         )}
@@ -147,15 +150,8 @@ export function BetStatusesText(props: {
   inTimeline?: boolean
 }) {
   const { bets, contract, className, inTimeline } = props
-  const {
-    amount,
-    outcome,
-    createdTime,
-    answerId,
-    userId,
-    userName,
-    userUsername,
-  } = bets[0]
+  const { amount, outcome, createdTime, answerId, userId } = bets[0]
+  const user = useDisplayUserById(userId)
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
@@ -167,10 +163,7 @@ export function BetStatusesText(props: {
       {!inTimeline &&
         (uniqueUsers.length === 1 ? (
           <UserHovercard userId={userId}>
-            <UserLink
-              user={{ id: userId, name: userName, username: userUsername }}
-              className={'font-semibold'}
-            />
+            <UserLink user={user} className={'font-semibold'} />
           </UserHovercard>
         ) : (
           <span>{`${uniq(bets.map((b) => b.userId)).length} traders`}</span>
@@ -197,6 +190,7 @@ export function BetStatusText(props: {
   inTimeline?: boolean
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
+  const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
   const { amount, outcome, createdTime, answerId, isApi } = bet
   const getProb = (prob: number) =>
@@ -236,14 +230,7 @@ export function BetStatusText(props: {
       {!inTimeline ? (
         !hideUser ? (
           <UserHovercard userId={bet.userId}>
-            <UserLink
-              user={{
-                id: bet.userId,
-                name: bet.userName,
-                username: bet.userUsername,
-              }}
-              className={'font-semibold'}
-            />
+            <UserLink user={betUser} className={'font-semibold'} />
           </UserHovercard>
         ) : (
           <span>{self?.id === bet.userId ? 'You' : `A ${BETTOR}`}</span>
@@ -305,11 +292,7 @@ function BetActions(props: {
         contract={contract}
       />
       {onReply && (
-        <Tooltip
-          text={` Reply to ${bet.userName}'s bet`}
-          placement="top"
-          className="mr-2"
-        >
+        <Tooltip text={`Reply to this bet`} placement="top" className="mr-2">
           <Button
             className={'!p-1'}
             color={'gray-white'}

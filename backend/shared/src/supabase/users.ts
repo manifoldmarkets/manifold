@@ -69,15 +69,11 @@ export const getMostlyActiveUserIds = async (
   )
 }
 
+/** only updates data column. do not use for name, username, or balances */
 export const updateUser = async (
   db: SupabaseDirectClient,
   id: string,
-  update: Partial<
-    Omit<
-      User,
-      'id' | 'createdTime' | 'balance' | 'spiceBalance' | 'totalDeposits'
-    >
-  >
+  update: Partial<User>
 ) => {
   await updateData(db, 'users', 'id', { id, ...update })
 }

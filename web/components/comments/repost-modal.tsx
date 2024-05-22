@@ -73,7 +73,7 @@ export const RepostModal = (props: {
         toast.error(e.message)
       })
 
-  const commenterIsBettor = comment?.userUsername === bet?.userUsername
+  const commenterIsBettor = comment?.userId === bet?.userId
   return (
     <Modal
       open={open}

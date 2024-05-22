@@ -2,7 +2,6 @@ create table if not exists
   users (
     id text not null primary key default random_alphanumeric (12),
     data jsonb not null,
-    fs_updated_time timestamp,
     name text not null,
     created_time timestamptz not null default now(),
     username text not null,
@@ -37,17 +36,3 @@ drop policy if exists "public read" on users;
 create policy "public read" on users for
 select
   using (true);
-
-create
-or replace function users_populate_cols () returns trigger language plpgsql as $$ begin
-    if new.data is not null then
-        new.name := (new.data)->>'name';
-        new.username := (new.data)->>'username';
-    end if;
-    return new;
-end $$;
-
-create trigger users_popuate before insert
-or
-update on users for each row
-execute function users_populate_cols ();

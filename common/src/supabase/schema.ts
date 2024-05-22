@@ -2812,40 +2812,37 @@ export type Database = {
           balance: number
           created_time: string | null
           data: Json
-          fs_updated_time: string | null
           id: string
           name: string
           name_username_vector: unknown | null
+          resolved_profit_adjustment: number | null
           spice_balance: number
           total_deposits: number
           username: string
-          resolved_profit_adjustment: number | null
         }
         Insert: {
           balance?: number
           created_time?: string | null
           data: Json
-          fs_updated_time?: string | null
           id?: string
           name: string
           name_username_vector?: unknown | null
+          resolved_profit_adjustment?: number | null
           spice_balance?: number
           total_deposits?: number
           username: string
-          resolved_profit_adjustment?: number | null
         }
         Update: {
           balance?: number
           created_time?: string | null
           data?: Json
-          fs_updated_time?: string | null
           id?: string
           name?: string
           name_username_vector?: unknown | null
+          resolved_profit_adjustment?: number | null
           spice_balance?: number
           total_deposits?: number
           username?: string
-          resolved_profit_adjustment?: number | null
         }
         Relationships: []
       }

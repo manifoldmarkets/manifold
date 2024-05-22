@@ -72,6 +72,7 @@ import { RepostModal } from 'web/components/comments/repost-modal'
 import { TiPin } from 'react-icons/ti'
 import Router from 'next/router'
 import { UserHovercard } from '../user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -657,8 +658,6 @@ export function DotMenu(props: {
                   outcome: comment.betOutcome,
                   limitProb: comment.betLimitProb,
                   orderAmount: comment.betOrderAmount,
-                  userUsername: comment.bettorUsername,
-                  userName: comment.bettorName,
                   id: comment.betId,
                 } as Bet)
               : undefined
@@ -923,9 +922,7 @@ export function ContractCommentInput(props: {
           commenterIsBettor={replyTo?.userId === user?.id}
           betAmount={replyTo.amount}
           betOutcome={replyTo.outcome}
-          bettorName={replyTo.userName}
           bettorId={replyTo.userId}
-          bettorUsername={replyTo.userUsername}
           betOrderAmount={replyTo.orderAmount}
           betLimitProb={replyTo.limitProb}
           betAnswerId={replyTo.answerId}
@@ -1114,21 +1111,11 @@ export function CommentReplyHeaderWithBet(props: {
   contract: Contract
 }) {
   const { comment, bet, contract } = props
-  const {
-    outcome,
-    answerId,
-    amount,
-    userName,
-    userUsername,
-    orderAmount,
-    limitProb,
-  } = bet
+  const { outcome, answerId, amount, orderAmount, limitProb } = bet
   return (
     <CommentReplyHeader
       comment={{
         ...comment,
-        bettorName: userName,
-        bettorUsername: userUsername,
         betOutcome: outcome,
         betAmount: amount,
         betOrderAmount: orderAmount,
@@ -1169,8 +1156,6 @@ export function CommentReplyHeader(props: {
         betOutcome={betOutcome}
         betAnswerId={betAnswerId}
         betAmount={betAmount}
-        bettorName={bettorName}
-        bettorUsername={bettorUsername}
         betOrderAmount={betOrderAmount}
         betLimitProb={betLimitProb}
         contract={contract}
@@ -1191,9 +1176,7 @@ export function ReplyToBetRow(props: {
   commenterIsBettor: boolean
   betOutcome: string
   betAmount: number
-  bettorName: string
   bettorId?: string
-  bettorUsername: string
   betOrderAmount?: number
   betLimitProb?: number
   betAnswerId?: string
@@ -1203,9 +1186,7 @@ export function ReplyToBetRow(props: {
     betOutcome,
     commenterIsBettor,
     betAmount,
-    bettorName,
     bettorId,
-    bettorUsername,
     betAnswerId,
     contract,
     clearReply,
@@ -1213,6 +1194,8 @@ export function ReplyToBetRow(props: {
     betOrderAmount,
   } = props
   const { bought, money } = getBoughtMoney(betAmount)
+  const user = useDisplayUserById(bettorId)
+
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   const isMobile = useIsMobile()
   return (
@@ -1229,11 +1212,11 @@ export function ReplyToBetRow(props: {
           isLimitBet ? 'flex-wrap' : 'whitespace-nowrap'
         )}
       >
-        {!commenterIsBettor && (
-          <UserHovercard userId={bettorId ?? ''}>
+        {!commenterIsBettor && bettorId && (
+          <UserHovercard userId={bettorId}>
             <UserLink
               short={(isLimitBet || betAnswerId !== undefined) && isMobile}
-              user={{ id: '', name: bettorName, username: bettorUsername }}
+              user={user}
             />
           </UserHovercard>
         )}
