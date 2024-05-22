@@ -247,6 +247,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           topicConversionScore: r.topic_conversion_score as number,
         } as contractAndMore)
     ),
+    // TODO: we should add reposts for non-followed users in interesting contracts
     pg.map(
       `select
          contracts.data as contract_data,
@@ -285,14 +286,16 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           ...rest
         } = r as any
         const timeDelta = Date.now() - new Date(r.created_time).getTime()
-        const daysDelta = Math.max(Math.round(timeDelta / DAY_MS), 1)
+        const daysDelta = Math.max(Math.floor(timeDelta / DAY_MS), 1)
+        const diminishingAgeFactor = 1 / Math.cbrt(daysDelta)
 
         return {
           contract: convertContract({
             data: contract_data,
-            importance_score: (importance_score + comment_likes) / daysDelta,
+            importance_score:
+              (importance_score + comment_likes) * diminishingAgeFactor,
             view_count,
-            freshness_score: (freshness_score + 1) / daysDelta,
+            freshness_score: (freshness_score + 1) * diminishingAgeFactor,
             conversion_score,
           }),
           comment: {
