@@ -4,6 +4,7 @@ import { isError } from 'lodash'
 import { log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
 import {
+  BroadcastPayload,
   ClientMessage,
   ServerMessage,
   CLIENT_MESSAGE_SCHEMA,
@@ -85,7 +86,13 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
   }
 }
 
-export function broadcast(topic: string, data: Record<string, unknown>) {
+export function broadcastMulti(topics: string[], data: BroadcastPayload) {
+  for (const topic of topics) {
+    broadcast(topic, data)
+  }
+}
+
+export function broadcast(topic: string, data: BroadcastPayload) {
   const msg = { type: 'broadcast', topic, data } as ServerMessage<'broadcast'>
   const json = JSON.stringify(msg)
   for (const [ws, _] of SWITCHBOARD.getSubscribers(topic)) {
