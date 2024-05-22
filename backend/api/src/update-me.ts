@@ -1,5 +1,4 @@
 import { toUserAPIResponse } from 'common/api/user-types'
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { RESERVED_PATHS } from 'common/envs/constants'
