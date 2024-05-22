@@ -228,6 +228,7 @@ export function SupabaseSearch(props: {
     defaultSearchType,
     useUrlParams,
     persistPrefix,
+    defaultPrizeMarket: 'false',
   })
 
   const query = searchParams[QUERY_KEY]
@@ -324,6 +325,7 @@ export function SupabaseSearch(props: {
 
   const showUsers = userResults && userResults.length > 0 && query !== ''
   const showTopics = shownTopics && shownTopics.length > 0 && !!setTopicSlug
+
   return (
     <Col className="w-full">
       <Col

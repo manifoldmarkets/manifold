@@ -61,6 +61,7 @@ export async function getForYouMarkets(
     limit,
     0,
     'score',
+    false,
     privateUser,
     200
   )
