@@ -21,7 +21,7 @@ import { freeQuestionRemaining, DAYS_TO_USE_FREE_QUESTIONS } from 'common/user'
 import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
-import { useBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, useBanner } from 'web/components/nav/banner'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
 export async function getStaticProps() {
@@ -44,21 +44,13 @@ export default function Home(props: { headlines: Headline[] }) {
   useSaveReferral(user)
   useSaveScroll('home')
 
-  const [showBanner] = useBanner('manifest')
-  const olderUser = !user || (user && user.createdTime < Date.now() - DAY_MS)
   const { headlines } = props
   return (
     <Page
       trackPageView={'home'}
       trackPageProps={{ kind: 'desktop' }}
       className=" !mt-0"
-      banner={
-        showBanner && olderUser
-          ? // <ManifestBanner hideBanner={hideBanner} />
-            null
-          : // <VerifyPhoneNumberBanner user={user} />
-            null
-      }
+      banner={<DowntimeBanner />}
     >
       <HeadlineTabs
         endpoint={'news'}
