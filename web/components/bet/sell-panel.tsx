@@ -278,10 +278,7 @@ export function SellPanel(props: {
         </Row>
         <Row className="text-ink-500 items-center justify-between gap-2">
           Fees
-          <FeeDisplay
-            totalFees={totalFees}
-            amount={buyAmount}
-          />
+          <FeeDisplay totalFees={totalFees} amount={buyAmount} />
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">

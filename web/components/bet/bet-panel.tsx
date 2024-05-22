@@ -708,11 +708,7 @@ export const BuyPanelBody = (props: {
 
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
-            Fees{' '}
-            <FeeDisplay
-              amount={betAmount}
-              totalFees={fees}
-            />
+            Fees <FeeDisplay amount={betAmount} totalFees={fees} />
           </div>
         )}
 

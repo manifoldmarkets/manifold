@@ -290,10 +290,7 @@ export const NumericSellPanel = (props: {
             )}
           </div>
           <span className="text-ink-700">{formatMoney(netProceeds)}</span>
-          <FeeDisplay
-            totalFees={totalFee}
-            amount={potentialPayout}
-          />
+          <FeeDisplay totalFees={totalFee} amount={potentialPayout} />
         </Col>
       </Row>
       <Row className={'justify-between sm:gap-36 md:justify-center'}>

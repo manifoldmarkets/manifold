@@ -427,10 +427,7 @@ export const NumericBetPanel = (props: {
           {fees && (
             <div className="text-ink-700 mt-1 text-sm">
               Fees{' '}
-              <FeeDisplay
-                amount={betAmount}
-                totalFees={getFeeTotal(fees)}
-              />
+              <FeeDisplay amount={betAmount} totalFees={getFeeTotal(fees)} />
             </div>
           )}
         </Col>
