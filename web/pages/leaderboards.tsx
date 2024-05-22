@@ -33,6 +33,7 @@ import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { BackButton } from 'web/components/contract/back-button'
 import { filterDefined } from 'common/util/array'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 
 export async function getStaticProps() {
   const allTime = await queryLeaderboardUsers().catch(() => ({
@@ -84,6 +85,7 @@ export default function Leaderboards(props: {
     useState<Awaited<ReturnType<typeof getUserReferralsInfo>>>()
   const [showSelectGroupModal, setShowSelectGroupModal] = useState(false)
   const user = useUser()
+  const currentHistory = useCurrentPortfolio(user?.id)
 
   useEffect(() => {
     if (!user?.profitCached) return
@@ -162,14 +164,14 @@ export default function Leaderboards(props: {
     rank: i + 1,
   }))
 
-  if (user && myRanks != null && !topic) {
+  if (user && currentHistory && myRanks != null && !topic) {
     if (
       myRanks.profitRank != null &&
       !topTraderEntries.find((x) => x.id === user.id)
     ) {
       topTraderEntries.push({
         ...user,
-        score: user.profitCached.allTime,
+        score: currentHistory.profit ?? user.profitCached.allTime,
         rank: myRanks.profitRank,
       })
     }

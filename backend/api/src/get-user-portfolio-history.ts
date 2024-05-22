@@ -13,7 +13,7 @@ export const getUserPortfolioHistory: APIHandler<
   const startDate = new Date(getCutoff(period)).toISOString()
 
   const data = await pg.map(
-    `select ts, investment_value, total_deposits, balance, spice_balance, loan_total
+    `select ts, investment_value, total_deposits, balance, spice_balance, loan_total, profit
     from user_portfolio_history
     where
       user_id = $1
@@ -28,6 +28,7 @@ export const getUserPortfolioHistory: APIHandler<
       loanTotal: Number(r.loan_total),
       totalDeposits: Number(r.total_deposits),
       timestamp: new Date(r.ts).getTime(),
+      profit: r.profit ? Number(r.profit) : undefined,
     })
   )
 

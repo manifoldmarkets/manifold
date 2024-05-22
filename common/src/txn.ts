@@ -210,10 +210,14 @@ type ManaPurchase = {
     | {
         iapTransactionId: string
         type: 'apple'
+        // TODO: backfill this.
+        paidInCents?: number
       }
     | {
         stripeTransactionId: string
         type: 'stripe'
+        // TODO: backfill this.
+        paidInCents?: number
       }
 }
 

@@ -20,20 +20,42 @@ import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-ema
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
 import { calculateGroupImportanceScore } from 'shared/group-importance-score'
+import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
+import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
 
 export function createJobs() {
   return [
     // Hourly jobs:
     createJob(
-      'update-contract-metrics-non-multi',
-      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
-      () => updateContractMetricsCore('non-multi'),
-      30 * MINUTE_MS
-    ),
-    createJob(
       'update-contract-metrics-multi',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
       () => updateContractMetricsCore('multi'),
+      30 * MINUTE_MS
+    ),
+    createJob(
+      'update-creator-metrics',
+      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
+      updateCreatorMetricsCore
+    ),
+    createJob(
+      'group-importance-score',
+      '0 6 * * * *', // on the 6th minute of every hour
+      () => calculateGroupImportanceScore()
+    ),
+    createJob(
+      'update-group-metrics',
+      '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
+      updateGroupMetricsCore
+    ),
+    createJob(
+      'check-push-receipts',
+      '0 15 * * * *', // on the 15th minute of every hour
+      checkPushNotificationReceipts
+    ),
+    createJob(
+      'update-contract-metrics-non-multi',
+      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
+      () => updateContractMetricsCore('non-multi'),
       30 * MINUTE_MS
     ),
     createJob(
@@ -43,7 +65,7 @@ export function createJobs() {
     ),
     createJob(
       'calculate-conversion-scores',
-      '0 5 * * * *', // on the 5th minute of every hour
+      '0 46 * * * *', // on the 46th minute of every hour
       calculateConversionScore
     ),
     createJob(
@@ -52,24 +74,9 @@ export function createJobs() {
       autoAwardBounty
     ),
     createJob(
-      'update-group-metrics',
-      '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
-      updateGroupMetricsCore
-    ),
-    createJob(
-      'group-importance-score',
-      '0 6 * * * *', // on the 6th minute of every hour
-      () => calculateGroupImportanceScore()
-    ),
-    createJob(
-      'update-creator-metrics',
-      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
-      updateCreatorMetricsCore
-    ),
-    createJob(
       'update-user-metrics',
       '0 * * * * *', // every minute
-      updateUserMetricsCore,
+      () => updateUserMetricsCore(),
       10 * MINUTE_MS // The caches take time to build
     ),
     // Daily jobs:
@@ -117,6 +124,11 @@ export function createJobs() {
       'reset-weekly-email-flags',
       '0 0 0 * * 6',
       resetWeeklyEmailsFlags
+    ),
+    createJob(
+      'send-streak-notifications',
+      '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
+      sendStreakExpirationNotification
     ),
   ]
 }

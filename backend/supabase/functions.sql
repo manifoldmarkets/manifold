@@ -673,8 +673,8 @@ or replace function profit_rank (
   select count(*) + 1
   from user_portfolio_history_latest
   where not user_id = any(excluded_ids)
-  and balance + spice_balance + investment_value - total_deposits > (
-    select balance + spice_balance + investment_value - total_deposits
+  and coalesce(profit ,balance + spice_balance + investment_value - total_deposits) > (
+    select coalesce(u.profit, balance + spice_balance + investment_value - total_deposits)
     from user_portfolio_history_latest u
     where u.user_id = uid
   )
@@ -695,7 +695,7 @@ or replace function profit_leaderboard (limit_n int) returns table (
   username text,
   avatar_url text
 ) language sql stable parallel safe as $$
-  select p.user_id, p.balance + p.spice_balance + p.investment_value - p.total_deposits as profit, u.name, u.username, u.data->>'avatarUrl' as avatar_url
+  select p.user_id, coalesce(p.profit, p.balance + p.spice_balance + p.investment_value - p.total_deposits) as profit, u.name, u.username, u.data->>'avatarUrl' as avatar_url
   from user_portfolio_history_latest p join users u on p.user_id = u.id
   order by profit desc
   limit limit_n

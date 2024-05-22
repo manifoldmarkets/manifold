@@ -16,6 +16,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
+import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 
 const firestore = admin.firestore()
@@ -47,7 +48,12 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
     await releaseLock(lockId)
   }
 
-  return { success: true }
+  return {
+    success: true,
+    continue: async () => {
+      await setAdjustProfitFromResolvedMarkets(contract.id)
+    },
+  }
 }
 
 const verifyUserCanUnresolve = async (
@@ -244,7 +250,18 @@ const undoResolution = async (
     await firestore.doc(`contracts/${contractId}`).update(updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
-  if (answerId) {
+  if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
+    const updatedAttrs = {
+      resolutionTime: admin.firestore.FieldValue.delete(),
+      resolverId: admin.firestore.FieldValue.delete(),
+    }
+    for (const answer of contract.answers) {
+      const answerDoc = firestore.doc(
+        `contracts/${contractId}/answersCpmm/${answer.id}`
+      )
+      await answerDoc.update(updatedAttrs)
+    }
+  } else if (answerId) {
     const updatedAttrs = {
       resolution: admin.firestore.FieldValue.delete(),
       resolutionTime: admin.firestore.FieldValue.delete(),

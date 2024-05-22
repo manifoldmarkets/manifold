@@ -1,4 +1,5 @@
-import { SupabaseClient, millisToTs, run, tsToMillis } from './utils'
+import { SupabaseClient, millisToTs, run, tsToMillis, Row } from './utils'
+import { PortfolioMetrics } from 'common/portfolio-metrics'
 
 export async function getPortfolioHistory(
   userId: string,
@@ -8,9 +9,7 @@ export async function getPortfolioHistory(
 ) {
   let query = db
     .from('user_portfolio_history')
-    .select(
-      'ts, investment_value, total_deposits, balance, spice_balance, loan_total'
-    )
+    .select('*')
     .eq('user_id', userId)
     .gt('ts', millisToTs(start))
   if (end) {
@@ -25,9 +24,7 @@ export async function getPortfolioHistory(
 export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
   const query = db
     .from('user_portfolio_history')
-    .select(
-      'ts, investment_value, total_deposits, balance, spice_balance, loan_total'
-    )
+    .select('*')
     .eq('user_id', userId)
     .order('ts', { ascending: false })
     .limit(1)
@@ -38,16 +35,19 @@ export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
   return convertPortfolioHistory(d)
 }
 
-export const convertPortfolioHistory = (row: any) => {
+export const convertPortfolioHistory = (
+  row: Row<'user_portfolio_history' | 'user_portfolio_history_latest'>
+) => {
   return {
     // mqp: hack for temporary unwise choice of postgres timestamp without time zone type
     // -- we have to make it look like an ISO9601 date or the JS date constructor will
     // assume that it's in local time. will fix this up soon
     timestamp: tsToMillis(row.ts + '+0000'),
-    investmentValue: +row.investment_value,
-    totalDeposits: +row.total_deposits,
-    balance: +row.balance,
+    investmentValue: +(row.investment_value ?? 0),
+    totalDeposits: +(row.total_deposits ?? 0),
+    balance: +(row.balance ?? 0),
     spiceBalance: +row.spice_balance,
-    loanTotal: +row.loan_total,
-  }
+    loanTotal: +(row.loan_total ?? 0),
+    profit: row.profit,
+  } as PortfolioMetrics
 }

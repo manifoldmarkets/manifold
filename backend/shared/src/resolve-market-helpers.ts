@@ -147,6 +147,22 @@ export const resolveMarketHelper = async (
             : a
         ),
       } as Partial<CPMMMultiContract>
+    } else if (
+      unresolvedContract.mechanism === 'cpmm-multi-1' &&
+      updatedContractAttrs.isResolved
+    ) {
+      updateAnswerAttrs = removeUndefinedProps({
+        resolutionTime,
+        resolverId: resolver.id,
+      }) as Partial<Answer>
+      // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+      updatedContractAttrs = {
+        ...(updatedContractAttrs ?? {}),
+        answers: unresolvedContract.answers.map((a) => ({
+          ...a,
+          ...updateAnswerAttrs,
+        })),
+      } as Partial<CPMMMultiContract>
     }
 
     const contract = {
@@ -185,11 +201,21 @@ export const resolveMarketHelper = async (
       await contractDoc.update(updatedContractAttrs)
       log('contract resolved')
     }
-    if (updateAnswerAttrs) {
+    if (updateAnswerAttrs && answerId) {
       const answerDoc = firestore.doc(
         `contracts/${contractId}/answersCpmm/${answerId}`
       )
       await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+    } else if (
+      updateAnswerAttrs &&
+      unresolvedContract.mechanism === 'cpmm-multi-1'
+    ) {
+      for (const answer of unresolvedContract.answers) {
+        const answerDoc = firestore.doc(
+          `contracts/${contractId}/answersCpmm/${answer.id}`
+        )
+        await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+      }
     }
     log('processing payouts', { payouts })
     await payUsersTransactions(

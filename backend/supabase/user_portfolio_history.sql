@@ -7,7 +7,8 @@ create table if not exists
     balance numeric not null,
     spice_balance numeric not null default 0,
     total_deposits numeric not null,
-    loan_total numeric
+    loan_total numeric,
+    profit numeric
   );
 
 alter table user_portfolio_history enable row level security;

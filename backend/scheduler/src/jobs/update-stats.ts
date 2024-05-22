@@ -28,6 +28,7 @@ import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
+import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
 
 const numberOfDays = 365 * 2
 
@@ -185,7 +186,8 @@ export async function getSales(
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
   for (const sale of sales) {
     const ts = sale.createdTime
-    const amount = sale.amount / 100 // convert to dollars
+    const rate = ts < MANA_PURCHASE_RATE_CHANGE_DATE.getTime() ? 100 : 1000
+    const amount = sale.amount / rate // convert to dollars
     const userId = sale.toId
     const id = sale.id
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)

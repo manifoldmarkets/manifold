@@ -44,12 +44,12 @@ const search = async (
     topicSlug: possibleTopicSlug,
     creatorId,
     isPolitics,
+    isPrizeMarket,
   } = props
 
   if (limit === 0) {
     return []
   }
-
   const isForYou = possibleTopicSlug === 'for-you'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
@@ -59,13 +59,19 @@ const search = async (
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
   let contracts
-  if (isForYou && !term && sort === 'score' && userId) {
+  if (
+    isForYou &&
+    !term &&
+    userId &&
+    (sort === 'score' || sort === 'freshness-score')
+  ) {
     const forYouSql = await getForYouSQL(
       userId,
       filter,
       contractType,
       limit,
-      offset
+      offset,
+      sort
     )
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
@@ -107,6 +113,7 @@ const search = async (
           groupAccess,
           searchType,
           isPolitics,
+          isPrizeMarket: isPrizeMarket=='true',
         })
         return pg
           .map(searchSQL, null, (r) => ({
