@@ -140,7 +140,7 @@ export const PortfolioValueSection = memo(
       updateGraphValues(emptyGraphValues)
     }
 
-    if (!portfolioHistory || !lastPortfolioMetrics) {
+    if ((!portfolioHistory || portfolioHistory.length < 1)|| !lastPortfolioMetrics) {
       const showDisclaimer = portfolioHistory
       return (
         <PortfolioValueSkeleton
