@@ -20,7 +20,6 @@ import { Row } from '../layout/row'
 import { api } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import { UserHovercard } from '../user/user-hovercard'
-import { DisplayUser } from 'common/api/user-types'
 
 export const RepostButton = (props: {
   contract: Contract
