@@ -1,7 +1,7 @@
 import { generateJSON } from '@tiptap/html'
 import { getCloudRunServiceUrl } from 'common//api/utils'
 import { Contract, contractPath } from 'common/contract'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
 import {
