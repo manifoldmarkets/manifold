@@ -14,8 +14,6 @@ import * as admin from 'firebase-admin'
 import { updateUser } from 'shared/supabase/users'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
-  const firestore = admin.firestore()
-
   const update = cloneDeep(props)
 
   const user = await getUser(auth.uid)
@@ -37,9 +35,22 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
 
   const pg = createSupabaseDirectClient()
 
-  await updateUser(pg, auth.uid, removeUndefinedProps(update))
-  const { name, username, avatarUrl } = update
+  const { name, username, avatarUrl, ...rest } = update
+  await updateUser(pg, auth.uid, removeUndefinedProps(rest))
   if (name || username || avatarUrl) {
+    if (name) {
+      await pg.none(`update users set name = $1 where id = $2`, [
+        name,
+        auth.uid,
+      ])
+    }
+    if (username) {
+      await pg.none(`update users set username = $1 where id = $2`, [
+        username,
+        auth.uid,
+      ])
+    }
+
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
 
