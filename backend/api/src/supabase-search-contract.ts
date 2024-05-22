@@ -114,6 +114,7 @@ const search = async (
           groupAccess,
           searchType,
           isPolitics,
+          isPrizeMarket
         })
         return pg
           .map(searchSQL, null, (r) => ({

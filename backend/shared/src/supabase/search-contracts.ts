@@ -195,6 +195,7 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPolitics?: boolean
+  isPrizeMarket?: boolean
 }) {
   const {
     term,
@@ -205,6 +206,7 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
+    isPrizeMarket,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
