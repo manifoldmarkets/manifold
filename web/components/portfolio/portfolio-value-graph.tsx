@@ -79,8 +79,6 @@ export const PortfolioGraph = (props: {
     spicePoints,
   } = usePortfolioPointsFromHistory(portfolioHistory, firstProfit)
 
-  console.log(profitPoints, investmentPoints, balancePoints, networthPoints, spicePoints)
-
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     if (mode == 'portfolio') {
       const balanceXPoints = balancePoints.map((d) => d.x)!
