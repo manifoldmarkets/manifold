@@ -212,7 +212,8 @@ export const NumericBetPanel = (props: {
         betAmount,
         undefined,
         unfilledBets,
-        balanceByUserId
+        balanceByUserId,
+        contract.collectedFees
       )
     const fees = [...newBetResults, ...otherBetResults].reduce(
       (acc, r) => addObjects(acc, r.totalFees),
@@ -429,7 +430,6 @@ export const NumericBetPanel = (props: {
               <FeeDisplay
                 amount={betAmount}
                 totalFees={getFeeTotal(fees)}
-                isMultiSumsToOne={false}
               />
             </div>
           )}

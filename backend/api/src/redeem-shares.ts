@@ -53,6 +53,7 @@ export const redeemShares = async (
         const saleBets = getSellAllRedemptionPreliminaryBets(
           contract.answers,
           minShares,
+          contract.collectedFees,
           Date.now()
         )
 

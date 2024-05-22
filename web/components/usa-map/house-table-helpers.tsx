@@ -297,6 +297,7 @@ export const BuyPanelBody = (props: {
       NO: multiProps!.answerToBuy.poolNo,
     },
     p: 0.5,
+    collectedFees: contract.collectedFees,
   }
 
   const result = computeCpmmBet(

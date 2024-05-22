@@ -9,6 +9,7 @@ import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
+import { noFees } from './fees'
 
 export const computeInvestmentValue = (
   bets: Bet[],
@@ -96,6 +97,7 @@ export const computeBinaryCpmmElasticity = (
   const cpmmState = {
     pool: contract.pool,
     p: contract.p,
+    collectedFees: contract.collectedFees,
   }
 
   const {
@@ -141,6 +143,7 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const cpmmState = {
     pool,
     p,
+    collectedFees: noFees,
   }
 
   const {

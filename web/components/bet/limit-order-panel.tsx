@@ -159,8 +159,13 @@ export default function LimitOrderPanel(props: {
           NO: multiProps!.answerToBuy.poolNo,
         },
         p: 0.5,
+        collectedFees: contract.collectedFees,
       }
-    : { pool: contract.pool, p: contract.p }
+    : {
+        pool: contract.pool,
+        p: contract.p,
+        collectedFees: contract.collectedFees,
+      }
 
   async function submitBet() {
     if (!user || betDisabled) return
@@ -395,11 +400,7 @@ export default function LimitOrderPanel(props: {
           <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
             Fees
           </Row>
-          <FeeDisplay
-            amount={filledAmount}
-            totalFees={totalFees}
-            isMultiSumsToOne={shouldAnswersSumToOne}
-          />
+          <FeeDisplay amount={filledAmount} totalFees={totalFees} />
         </Row>
 
         <Row className="items-center justify-between gap-2">
@@ -463,7 +464,8 @@ const getBetReturns = (
       betAmount,
       limitProb,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      cpmmState.collectedFees
     )
     amount = sumBy(newBetResult.takers, 'amount')
     shares = sumBy(newBetResult.takers, 'shares')

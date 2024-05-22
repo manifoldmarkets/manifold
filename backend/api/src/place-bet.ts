@@ -271,8 +271,6 @@ export const processNewBetResult = async (
     newBet,
     otherBetResults,
     newPool,
-    newTotalShares,
-    newTotalBets,
     newTotalLiquidity,
     newP,
     makers,
@@ -405,8 +403,6 @@ export const processNewBetResult = async (
         removeUndefinedProps({
           pool: newPool,
           p: newP,
-          totalShares: newTotalShares,
-          totalBets: newTotalBets,
           totalLiquidity: newTotalLiquidity,
         })
       )

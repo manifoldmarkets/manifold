@@ -159,7 +159,8 @@ export const NumericSellPanel = (props: {
         contract.answers,
         userBetsToSellByAnswerId,
         unfilledBets,
-        balanceByUserId
+        balanceByUserId,
+        contract.collectedFees
       )
     const potentialPayout = sumBy(
       newBetResults.flatMap((r) => r.takers),
@@ -292,7 +293,6 @@ export const NumericSellPanel = (props: {
           <FeeDisplay
             totalFees={totalFee}
             amount={potentialPayout}
-            isMultiSumsToOne={true}
           />
         </Col>
       </Row>

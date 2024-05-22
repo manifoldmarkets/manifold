@@ -281,7 +281,6 @@ export function SellPanel(props: {
           <FeeDisplay
             totalFees={totalFees}
             amount={buyAmount}
-            isMultiSumsToOne={isMultiSumsToOne}
           />
         </Row>
         <Row className="items-center justify-between">
@@ -345,8 +344,16 @@ const getSaleResult = (
     ? answer.prob
     : getProbability(contract as CPMMContract)
   const initialCpmmState = answer
-    ? { pool: { YES: answer.poolYes, NO: answer.poolNo }, p: 0.5 }
-    : { pool: (contract as CPMMContract).pool, p: (contract as CPMMContract).p }
+    ? {
+        pool: { YES: answer.poolYes, NO: answer.poolNo },
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
+    : {
+        pool: (contract as CPMMContract).pool,
+        p: (contract as CPMMContract).p,
+        collectedFees: contract.collectedFees,
+      }
 
   const { cpmmState, saleValue, buyAmount, fees } = calculateCpmmSale(
     initialCpmmState,
@@ -387,7 +394,8 @@ const getSaleResultMultiSumsToOne = (
       outcome,
       undefined,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      contract.collectedFees
     )
   const { cpmmState, totalFees } = newBetResult
   const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)

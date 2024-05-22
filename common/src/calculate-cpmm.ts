@@ -1,7 +1,7 @@
 import { groupBy, mapValues, sumBy } from 'lodash'
 import { LimitBet } from './bet'
 
-import { CREATOR_FEE_FRAC, Fees, getTakerFee, noFees } from './fees'
+import { Fees, getFeesSplit, getTakerFee, noFees } from './fees'
 import { LiquidityProvision } from './liquidity-provision'
 import { computeFills } from './new-bet'
 import { binarySearch } from './util/algos'
@@ -16,6 +16,7 @@ import { CPMMContract, CPMMMultiContract } from 'common/contract'
 export type CpmmState = {
   pool: { [outcome: string]: number }
   p: number
+  collectedFees: Fees
 }
 
 export function getCpmmProbability(
@@ -94,10 +95,7 @@ export function getCpmmFees(
   }
 
   const totalFees = betAmount === 0 ? 0 : fee
-  const creatorFee = totalFees * CREATOR_FEE_FRAC
-  const platformFee = totalFees * (1 - CREATOR_FEE_FRAC)
-  const liquidityFee = 0
-  const fees: Fees = { liquidityFee, platformFee, creatorFee }
+  const fees = getFeesSplit(totalFees, state.collectedFees)
 
   const remainingBet = betAmount - totalFees
 
@@ -275,7 +273,8 @@ export function calculateCpmmMultiSumsToOneSale(
   outcome: 'YES' | 'NO',
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
+  balanceByUserId: { [userId: string]: number },
+  collectedFees: Fees
 ) {
   if (Math.round(shares) < 0) {
     throw new Error('Cannot sell non-positive shares')
@@ -289,7 +288,8 @@ export function calculateCpmmMultiSumsToOneSale(
           shares,
           limitProb,
           unfilledBets,
-          balanceByUserId
+          balanceByUserId,
+          collectedFees
         )
       : calculateCpmmMultiArbitrageSellNo(
           answers,
@@ -297,7 +297,8 @@ export function calculateCpmmMultiSumsToOneSale(
           shares,
           limitProb,
           unfilledBets,
-          balanceByUserId
+          balanceByUserId,
+          collectedFees
         )
 
   const buyAmount = sumBy(newBetResult.takers, (taker) => taker.amount)
@@ -370,6 +371,7 @@ export function calculateCpmmAmountToBuyShares(
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
           p: 0.5,
+          collectedFees: contract.collectedFees,
         }
 
   const unfilledBets = answer?.id

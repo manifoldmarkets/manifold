@@ -125,27 +125,6 @@ export function getOutcomeProbabilityAfterBet(
   }
 }
 
-export function getOutcomeProbabilityAfterBetMulti(
-  answers: Answer[],
-  answerId: string,
-  outcome: 'YES' | 'NO',
-  amount: number
-) {
-  const answer = answers.find((a) => a.id === answerId)
-  if (!answer) throw new Error('Answer not found')
-
-  const { poolYes, poolNo } = answer
-
-  return getCpmmOutcomeProbabilityAfterBet(
-    {
-      pool: { YES: poolYes, NO: poolNo },
-      p: 0.5,
-    },
-    outcome,
-    amount
-  )
-}
-
 export function calculateSharesBought(
   contract: Contract,
   outcome: string,
@@ -158,23 +137,6 @@ export function calculateSharesBought(
     default:
       throw new Error('calculateSharesBought not implemented')
   }
-}
-export function calculateSharesBoughtMulti(
-  answers: Answer[],
-  answerId: string,
-  outcome: 'YES' | 'NO',
-  amount: number
-) {
-  const answer = answers.find((a) => a.id === answerId)
-  if (!answer) throw new Error('Answer not found')
-
-  const { poolYes, poolNo } = answer
-
-  return calculateCpmmPurchase(
-    { pool: { YES: poolYes, NO: poolNo }, p: 0.5 },
-    amount,
-    outcome
-  ).shares
 }
 
 export function calculatePayout(contract: Contract, bet: Bet, outcome: string) {
