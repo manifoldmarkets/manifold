@@ -267,6 +267,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
             and posts.created_time > coalesce(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
             and posts.created_time > now() - interval '1 week'
             and contracts.close_time > now()
+            and coalesce((contract_comments.data->'hidden')::boolean, false) = false
         order by posts.created_time desc
         offset $2 limit $3
 `,
