@@ -161,6 +161,9 @@ import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
 import { searchContractPositions } from 'api/search-contract-positions'
+import { blockUser, unblockUser } from './block-user'
+import { blockGroup, unblockGroup } from './block-group'
+import { blockMarket, unblockMarket } from './block-market'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -239,6 +242,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
     getMarkets({ groupId: id, limit }, ...rest),
   'group/:slug/delete': deleteGroup,
   'group/by-id/:id/delete': deleteGroup,
+  'group/:slug/block': blockGroup,
+  'group/:slug/unblock': unblockGroup,
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
@@ -250,6 +255,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:contractId/add-bounty': addBounty,
   'market/:contractId/award-bounty': awardBounty,
   'market/:contractId/answer': createAnswerCPMM,
+  'market/:contractId/block': blockMarket,
+  'market/:contractId/unblock': unblockMarket,
   leagues: getLeagues,
   markets: getMarkets,
   'search-markets': searchMarketsLite,
@@ -268,6 +275,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/:username': getUser,
   'user/:username/lite': getDisplayUser,
   'user/:username/bets': (...props) => getBets(...props),
+  'user/by-id/:id/block': blockUser,
+  'user/by-id/:id/unblock': unblockUser,
   users: getUsers,
   'search-users': searchUsers,
   react: addOrRemoveReaction,

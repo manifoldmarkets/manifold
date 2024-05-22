@@ -70,8 +70,8 @@ export function TopicOptions(props: {
         icon: <BiSolidVolumeMute className="h-5 w-5" />,
         onClick: () =>
           privateUser.blockedGroupSlugs?.includes(group.slug)
-            ? unBlockGroup(privateUser, group.slug)
-            : blockGroup(privateUser, group.slug),
+            ? unBlockGroup(group.slug)
+            : blockGroup(group.slug),
       },
     userRole === 'admin' && {
       name: 'Delete',
