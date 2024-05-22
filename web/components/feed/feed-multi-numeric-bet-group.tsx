@@ -59,12 +59,15 @@ function BetGroupStatusText(props: {
     expectedValueBefore,
     expectedValueAfter,
   } = groupMultiNumericBets(bets, contract)
+
+  const user = useDisplayUserById(bet?.userId ?? '')
+
   if (!bet) return null
+
   const { amount, isApi, shares } = bet
   const bought = shares >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
   const money = formatMoney(absAmount)
-  const user = useDisplayUserById(bet.userId)
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
