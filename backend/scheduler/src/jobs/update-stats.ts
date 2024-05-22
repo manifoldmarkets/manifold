@@ -199,8 +199,14 @@ export async function getSales(
 
 export const updateStatsCore = async () => {
   const pg = createSupabaseDirectClient()
+  // We run the script at 4am, but we want data from the start of each day up until last midnight.
+  const midnightLastNight = dayjs()
+    .tz('America/Los_Angeles')
+    .startOf('day')
+    .subtract(1, 'second')
+    .valueOf()
 
-  const start = dayjs()
+  const start = dayjs(midnightLastNight)
     .subtract(numberOfDays, 'day')
     .tz('America/Los_Angeles')
     .startOf('day')
@@ -556,8 +562,7 @@ export const updateStatsCore = async () => {
   }))
 
   // Write to postgres
-  for (const row of rows)
-    await bulkUpsert(pg, 'stats', 'title', [row])
+  for (const row of rows) await bulkUpsert(pg, 'stats', 'title', [row])
   log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
   await saveCalibrationData(pg)
