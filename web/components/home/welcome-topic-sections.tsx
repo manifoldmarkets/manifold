@@ -15,7 +15,7 @@ export const WelcomeTopicSections = (props: {
   const { memberTopicsWithContracts } = props
   if (!memberTopicsWithContracts.length) return null
   return (
-    <Col className={'mt-1 w-full max-w-3xl gap-2'}>
+    <Col className={'mt-1 w-full gap-2'}>
       {memberTopicsWithContracts.map((topicWithContracts) => {
         const { topic, contracts } = topicWithContracts
         return (
