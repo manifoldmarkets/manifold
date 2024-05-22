@@ -270,7 +270,6 @@ export function ContractPageContent(props: ContractParams) {
       const newPoints = newBets.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
-        obj: { userAvatarUrl: bet.userAvatarUrl },
       }))
       return [...points, ...newPoints]
     }

@@ -369,14 +369,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       <div ref={endOfMessagesRef} />
       <ContractCommentInput
         replyTo={replyTo}
-        replyToUserInfo={
-          replyTo && 'userUsername' in replyTo
-            ? {
-                username: replyTo.userUsername,
-                id: replyTo.userId,
-              }
-            : undefined
-        }
         className="mb-4 mr-px mt-px"
         contract={contract}
         clearReply={clearReply}

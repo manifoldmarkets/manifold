@@ -20,6 +20,7 @@ import { Row } from '../layout/row'
 import { api } from 'web/lib/firebase/api'
 import { toast } from 'react-hot-toast'
 import { UserHovercard } from '../user/user-hovercard'
+import { DisplayUser } from 'common/api/user-types'
 
 export const RepostButton = (props: {
   contract: Contract
@@ -73,7 +74,7 @@ export const RepostModal = (props: {
         toast.error(e.message)
       })
 
-  const commenterIsBettor = comment?.userUsername === bet?.userUsername
+  const commenterIsBettor = comment?.userId === bet?.userId
   return (
     <Modal
       open={open}
