@@ -2,7 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUserFirebase } from 'shared/utils'
+import { getContract, getUser } from 'shared/utils'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
@@ -197,7 +197,7 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
-  const you = await getUserFirebase(userId)
+  const you = await getUser(userId)
   const contract = await getContract(contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')

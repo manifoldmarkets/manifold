@@ -257,10 +257,6 @@ export const getContractFromSlugSupabase = async (contractSlug: string) => {
   return first(res)
 }
 
-export const getUserFirebase = (userId: string) => {
-  return getDoc<User>('users', userId)
-}
-
 export const getUser = async (
   userId: string,
   pg: SupabaseDirectClient = createSupabaseDirectClient()
