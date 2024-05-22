@@ -34,3 +34,11 @@ export function broadcastNewContract(contract: Contract, creator: User) {
     broadcast('global/new-contract', payload)
   }
 }
+
+export function broadcastNewSubsidy(contract: Contract, amount: number) {
+  const payload = { contract, amount }
+  if (contract.visibility === 'public') {
+    broadcast('global/new-subsidy', payload)
+  }
+  broadcast(`contract/${contract.id}/new-subsidy`, payload)
+}
