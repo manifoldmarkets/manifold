@@ -36,6 +36,15 @@ export function pathWithPrefix(path: APIPath) {
   return API[path].visibility === 'public' ? `v0/${path}` : path
 }
 
+export function getWebsocketUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return `ws://${process.env.NEXT_PUBLIC_API_URL}/ws`
+  } else {
+    const { apiEndpoint } = ENV_CONFIG
+    return `wss://${apiEndpoint}/ws`
+  }
+}
+
 // TODO: strictly type
 export function getApiUrl(path: string) {
   if (path in API) {
@@ -43,9 +52,9 @@ export function getApiUrl(path: string) {
   }
 
   if (process.env.NEXT_PUBLIC_API_URL) {
-    return `${process.env.NEXT_PUBLIC_API_URL}/${path}`
+    return `http://${process.env.NEXT_PUBLIC_API_URL}/${path}`
   } else {
     const { apiEndpoint } = ENV_CONFIG
-    return `${apiEndpoint}/${path}`
+    return `https://${apiEndpoint}/${path}`
   }
 }

@@ -34,7 +34,7 @@ then
       -c green,white,magenta,cyan \
       "yarn --cwd=backend/functions localDbScript" \
       "yarn --cwd=backend/api dev" \
-      "cross-env NEXT_PUBLIC_API_URL=http://localhost:8088
+      "cross-env NEXT_PUBLIC_API_URL=localhost:8088
                NEXT_PUBLIC_FIREBASE_EMULATE=TRUE \
                NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
                yarn --cwd=${DIR} serve" \
@@ -45,7 +45,7 @@ else
       -c white,magenta,cyan \
       "cross-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
                        yarn --cwd=backend/api dev" \
-      "cross-env NEXT_PUBLIC_API_URL=http://localhost:8088 \
+      "cross-env NEXT_PUBLIC_API_URL=localhost:8088 \
                NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
                yarn --cwd=${DIR} serve" \
       "cross-env yarn --cwd=${DIR} ts-watch"
