@@ -8,7 +8,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getUsers, log } from 'shared/utils'
+import { getUser, getUsers, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -28,6 +28,7 @@ import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
+import { updateUser } from './supabase/users'
 
 const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
 
@@ -134,15 +135,15 @@ const sendNextDayManaBonus = async (
 }
 
 export const sendOnboardingMarketVisitBonus = async (userId: string) => {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 
-  await firestore.runTransaction(async (transaction) => {
-    const toDoc = firestore.doc(`users/${userId}`)
-    const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) throw new APIError(404, `User ${userId} not found`)
+  return await pg.tx(async (tx) => {
+    const user = await getUser(userId, tx)
 
-    const user = toUserSnap.data() as User
+    if (!user) {
+      throw new APIError(404, `User ${userId} not found`)
+    }
+
     if (!isVerified(user)) {
       throw new APIError(403, 'User not yet verified phone number.')
     }
@@ -163,13 +164,14 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
       )
     }
 
-    transaction.update(toDoc, {
+    await updateUser(tx, user.id, {
       signupBonusPaid: user.signupBonusPaid + MARKET_VISIT_BONUS,
     })
-  })
 
-  const signupBonusTxn: Omit<SignupBonusTxn, 'fromId' | 'id' | 'createdTime'> =
-    {
+    const signupBonusTxn: Omit<
+      SignupBonusTxn,
+      'fromId' | 'id' | 'createdTime'
+    > = {
       fromType: 'BANK',
       amount: MARKET_VISIT_BONUS,
       category: 'SIGNUP_BONUS',
@@ -179,17 +181,10 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
       description: 'Market visit signup bonus',
     }
 
-  try {
-    const txn = await pg.tx((tx) => runTxnFromBank(tx, signupBonusTxn))
+    const txn = await runTxnFromBank(tx, signupBonusTxn)
     log(`Sent mana bonus to user ${userId}`)
     return txn
-  } catch (e) {
-    log.error(
-      `User ${userId} had market visit signup bonus added but may not have recieved mana! Must manually reconcile`
-    )
-    log.error(e && typeof e === 'object' && 'message' in e ? e.message : e)
-    throw e
-  }
+  })
 }
 
 const sendBonusNotifications = async (userIds: string[]) => {

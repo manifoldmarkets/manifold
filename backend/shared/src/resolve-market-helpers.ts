@@ -35,6 +35,7 @@ import {
   isModId,
 } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
+import { bulkIncrementBalances } from './supabase/users'
 
 export type ResolutionParams = {
   outcome: string
@@ -425,73 +426,77 @@ export const payUsersTransactions = async (
   payoutSpice: boolean
 ) => {
   const pg = createSupabaseDirectClient()
-  const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 250)
   const payoutStartTime = Date.now()
 
   for (const payoutChunk of payoutChunks) {
+    const balanceUpdates: {
+      id: string
+      balance?: number
+      spiceBalance?: number
+      totalDeposits: number
+    }[] = []
     const txns: TxnData[] = []
-    let error = false
-    await firestore
-      .runTransaction(async (transaction) => {
-        payoutChunk.forEach(({ userId, payout, deposit }) => {
-          if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
-            const toDoc = firestore.doc(`users/${userId}`)
-            transaction.update(toDoc, {
-              spiceBalance: FieldValue.increment(payout),
-              totalDeposits: FieldValue.increment(deposit ?? 0),
-            })
 
-            txns.push({
-              category: 'PRODUCE_SPICE',
-              fromType: 'CONTRACT',
-              fromId: contractId,
-              toType: 'USER',
-              toId: userId,
-              amount: payout,
-              token: 'SPICE',
-              data: removeUndefinedProps({
-                deposit: deposit ?? 0,
-                payoutStartTime,
-                answerId,
-              }),
-              description: 'Contract payout for resolution',
-            })
-          } else {
-            const toDoc = firestore.doc(`users/${userId}`)
-            transaction.update(toDoc, {
-              balance: FieldValue.increment(payout),
-              totalDeposits: FieldValue.increment(deposit ?? 0),
-            })
-
-            txns.push({
-              category: 'CONTRACT_RESOLUTION_PAYOUT',
-              fromType: 'CONTRACT',
-              fromId: contractId,
-              toType: 'USER',
-              toId: userId,
-              amount: payout,
-              token: 'M$',
-              data: removeUndefinedProps({
-                deposit: deposit ?? 0,
-                payoutStartTime,
-                answerId,
-              }),
-              description: 'Contract payout for resolution: ' + contractId,
-            })
-          }
+    payoutChunk.forEach(async ({ userId, payout, deposit }) => {
+      if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
+        balanceUpdates.push({
+          id: userId,
+          spiceBalance: payout,
+          totalDeposits: deposit ?? 0,
         })
-      })
-      .catch(() => {
-        // don't rethrow error without undoing previous payouts
-        log('Error running payout chunk transaction', { error, payoutChunk })
-        error = true
-      })
 
-    if (!error) {
-      await pg.tx((tx) => insertTxns(tx, txns))
-    }
+        txns.push({
+          category: 'PRODUCE_SPICE',
+          fromType: 'CONTRACT',
+          fromId: contractId,
+          toType: 'USER',
+          toId: userId,
+          amount: payout,
+          token: 'SPICE',
+          data: removeUndefinedProps({
+            deposit: deposit ?? 0,
+            payoutStartTime,
+            answerId,
+          }),
+          description: 'Contract payout for resolution',
+        })
+      } else {
+        balanceUpdates.push({
+          id: userId,
+          balance: payout,
+          totalDeposits: deposit ?? 0,
+        })
+
+        txns.push({
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromType: 'CONTRACT',
+          fromId: contractId,
+          toType: 'USER',
+          toId: userId,
+          amount: payout,
+          token: 'M$',
+          data: removeUndefinedProps({
+            deposit: deposit ?? 0,
+            payoutStartTime,
+            answerId,
+          }),
+          description: 'Contract payout for resolution: ' + contractId,
+        })
+      }
+    })
+
+    await pg
+      .tx(async (tx) => {
+        await bulkIncrementBalances(tx, balanceUpdates)
+        await insertTxns(tx, txns)
+      })
+      .catch((e) => {
+        // don't rethrow error without undoing previous payouts
+        log.error(e)
+        log.error('Error running payout chunk transaction', { payoutChunk })
+      })
   }
 }
 

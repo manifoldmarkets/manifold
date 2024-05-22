@@ -12,7 +12,7 @@ import {
 } from 'common/calculate-metrics'
 import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
-import { buildArray, filterDefined } from 'common/util/array'
+import { buildArray } from 'common/util/array'
 import {
   hasChanges,
   hasSignificantDeepChanges,
@@ -20,15 +20,14 @@ import {
 } from 'common/util/object'
 import { Bet } from 'common/bet'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
-import * as admin from 'firebase-admin'
 import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { Row } from 'common/supabase/utils'
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { bulkInsert } from 'shared/supabase/utils'
+import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
+import { type User } from 'common/user'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -43,12 +42,10 @@ export async function updateUserMetricsCore(
   userIds?: string[],
   allTime?: boolean
 ) {
-  const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
   const pg = createSupabaseDirectClient()
-  const writer = new SafeBulkWriter(undefined, firestore)
 
   log('Loading active users...')
   const random = Math.random()
@@ -180,7 +177,7 @@ export async function updateUserMetricsCore(
     (m) => m.userId
   )
 
-  const userUpdates = []
+  const userUpdates: User[] = []
   const portfolioUpdates = [] as Omit<Row<'user_portfolio_history'>, 'id'>[]
   const contractMetricUpdates = []
 
@@ -312,7 +309,7 @@ export async function updateUserMetricsCore(
 
     const nextLoanPayout = isUserEligibleForLoan(newPortfolio)
       ? getUserLoanUpdates(metricRelevantBetsByContract, contractsById).payout
-      : undefined
+      : 0
 
     if (didPortfolioChange) {
       portfolioUpdates.push({
@@ -328,22 +325,30 @@ export async function updateUserMetricsCore(
       userToPortfolioMetrics[user.id].currentPortfolio = newPortfolio
     }
 
-    userUpdates.push({
-      user: user,
-      fields: removeUndefinedProps({
+    if (
+      hasChanges(user, {
         profitCached: newProfit,
-        nextLoanCached: nextLoanPayout ?? 0,
-      }),
-    })
+        nextLoanCached: nextLoanPayout,
+      })
+    ) {
+      userUpdates.push({
+        ...user,
+        profitCached: newProfit,
+        nextLoanCached: nextLoanPayout,
+      })
+    }
   }
   log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
   log('Writing user updates...')
-  for (const { user, fields } of filterDefined(userUpdates)) {
-    if (hasChanges(user, fields)) {
-      writer.update(firestore.collection('users').doc(user.id), fields)
-    }
-  }
+
+  await bulkUpdate(
+    pg,
+    'users',
+    ['id'],
+    userUpdates.map((u) => ({ id: u.id, data: removeUndefinedProps(u) }))
+  )
+
   log('Finished user updates.')
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
@@ -365,11 +370,7 @@ export async function updateUserMetricsCore(
         pg.query(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
-        ),
-      writer
-        .close()
-        .catch((e) => log.error('Error bulk writing user updates', e))
-        .then(() => log('Committed Firestore writes.'))
+        )
     )
   )
 

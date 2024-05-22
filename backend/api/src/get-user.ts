@@ -1,5 +1,5 @@
-import type { User } from 'common/user'
 import { toUserAPIResponse } from 'common/api/user-types'
+import { convertUser } from 'common/supabase/users'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { APIError } from './helpers/endpoint'
 import { removeUndefinedProps } from 'common/util/object'
@@ -7,7 +7,7 @@ import { removeUndefinedProps } from 'common/util/object'
 export const getUser = async (props: { id: string } | { username: string }) => {
   const db = createSupabaseClient()
 
-  const q = db.from('users').select('data')
+  const q = db.from('users').select()
 
   if ('id' in props) {
     q.eq('id', props.id)
@@ -18,7 +18,7 @@ export const getUser = async (props: { id: string } | { username: string }) => {
   const { data, error } = await q.single()
   if (error) throw new APIError(404, `Could not find user`)
 
-  return toUserAPIResponse(data.data as unknown as User)
+  return toUserAPIResponse(convertUser(data))
 }
 
 export const getDisplayUser = async (

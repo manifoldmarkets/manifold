@@ -3,7 +3,6 @@ import * as admin from 'firebase-admin'
 import { FieldValue } from 'firebase-admin/firestore'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
-import { User } from 'common/user'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet } from 'common/bet'
@@ -13,9 +12,11 @@ import { removeUserFromContractFollowers } from 'shared/follow-market'
 import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
+import { incrementBalance } from 'shared/supabase/users'
+import { runEvilTransaction } from 'shared/evil-transaction'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -23,10 +24,14 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 ) => {
   const { contractId, shares, outcome, answerId } = props
 
-  // Run as transaction to prevent race conditions.
-  const result = await firestore.runTransaction(async (transaction) => {
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(401, 'Your account was not found')
+
+  const result = await runEvilTransaction(async (pgTrans, fbTrans) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
-    const userDoc = firestore.doc(`users/${auth.uid}`)
+    const contractSnap = await fbTrans.get(contractDoc)
+    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+    const contract = contractSnap.data() as Contract
     let betsQ = contractDoc.collection('bets').where('userId', '==', auth.uid)
     if (answerId) {
       betsQ = betsQ.where('answerId', '==', answerId)
@@ -34,24 +39,16 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     log(
       `Checking for limit orders and bets in sellshares for user ${auth.uid} on contract id ${contractId}.`
     )
-    const [contractSnap, userSnap] = await transaction.getAll(
-      contractDoc,
-      userDoc
-    )
-
-    if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
-    const contract = contractSnap.data() as Contract
-    const user = userSnap.data() as User
 
     const isIndependentMulti =
       contract.mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne
 
     const [userBetsSnap, { unfilledBets, balanceByUserId }] = await Promise.all(
       [
-        transaction.get(betsQ),
+        fbTrans.get(betsQ),
         getUnfilledBetsAndUserBalances(
-          transaction,
+          pgTrans,
+          fbTrans,
           contractDoc,
           answerId && isIndependentMulti ? answerId : undefined
         ),
@@ -125,7 +122,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       ) {
         let answer
         if (answerId) {
-          const answerSnap = await transaction.get(
+          const answerSnap = await fbTrans.get(
             contractDoc.collection('answersCpmm').doc(answerId)
           )
           answer = answerSnap.data() as Answer
@@ -149,7 +146,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           ),
         }
       } else {
-        const answersSnap = await transaction.get(
+        const answersSnap = await fbTrans.get(
           contractDoc.collection('answersCpmm')
         )
         const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
@@ -191,20 +188,20 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const fullBets = []
     const newBetDoc = firestore.collection(`contracts/${contractId}/bets`).doc()
 
-    updateMakers(makers, newBetDoc.id, contractDoc, transaction)
+    await updateMakers(makers, newBetDoc.id, contractDoc, pgTrans, fbTrans)
 
-    transaction.update(userDoc, {
-      balance: FieldValue.increment(-newBet.amount + (newBet.loanAmount ?? 0)),
+    await incrementBalance(pgTrans, user.id, {
+      balance: -newBet.amount + (newBet.loanAmount ?? 0),
     })
 
     const totalCreatorFee =
       newBet.fees.creatorFee +
       sumBy(otherResultsWithBet, (r) => r.bet.fees.creatorFee)
     if (totalCreatorFee !== 0) {
-      const creatorUserDoc = firestore.doc(`users/${contract.creatorId}`)
-      transaction.update(creatorUserDoc, {
-        balance: FieldValue.increment(totalCreatorFee),
+      await incrementBalance(pgTrans, contract.creatorId, {
+        balance: totalCreatorFee,
       })
+
       log(
         `Updated creator ${
           contract.creatorUsername
@@ -225,18 +222,18 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       ...newBet,
       betGroupId,
     }
-    transaction.create(newBetDoc, fullBet)
+    fbTrans.create(newBetDoc, fullBet)
     fullBets.push(fullBet)
 
     for (const bet of ordersToCancel) {
-      transaction.update(contractDoc.collection('bets').doc(bet.id), {
+      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
     }
     allOrdersToCancel.push(...ordersToCancel)
 
     if (mechanism === 'cpmm-1') {
-      transaction.update(
+      fbTrans.update(
         contractDoc,
         removeUndefinedProps({
           pool: newPool,
@@ -247,7 +244,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     } else if (newBet.answerId) {
       const prob = getCpmmProbability(newPool, 0.5)
       const { YES: poolYes, NO: poolNo } = newPool
-      transaction.update(
+      fbTrans.update(
         contractDoc.collection('answersCpmm').doc(newBet.answerId),
         removeUndefinedProps({
           poolYes,
@@ -275,11 +272,11 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         ...bet,
         betGroupId,
       }
-      transaction.create(betDoc, fullBet)
+      fbTrans.create(betDoc, fullBet)
       fullBets.push(fullBet)
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
-      transaction.update(
+      fbTrans.update(
         contractDoc.collection('answersCpmm').doc(answer.id),
         removeUndefinedProps({
           poolYes,
@@ -287,9 +284,9 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           prob,
         })
       )
-      updateMakers(makers, betDoc.id, contractDoc, transaction)
+      await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
       for (const bet of ordersToCancel) {
-        transaction.update(contractDoc.collection('bets').doc(bet.id), {
+        fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
           isCancelled: true,
         })
       }
@@ -320,7 +317,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     otherResultsWithBet,
     fullBets,
     allOrdersToCancel,
-    user,
   } = result
 
   if (contract.mechanism === 'cpmm-1' && floatingEqual(maxShares, soldShares)) {

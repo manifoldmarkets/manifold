@@ -5,7 +5,6 @@ import {
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
 } from 'common/txn'
-import { FieldValue } from 'firebase-admin/firestore'
 import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
@@ -18,6 +17,7 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { acquireLock, releaseLock } from 'shared/firestore-lock'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
+import { bulkIncrementBalances } from 'shared/supabase/users'
 
 const firestore = admin.firestore()
 
@@ -180,12 +180,21 @@ const undoResolution = async (
   log('With max payout start time ' + maxSpicePayoutStartTime)
   const chunkedTxns = chunk(spiceTxns, 250)
   for (const chunk of chunkedTxns) {
-    await firestore.runTransaction(async (transaction) => {
-      for (const txn of chunk) {
-        undoContractPayoutSpiceTxn(transaction, txn)
-      }
+    const balanceUpdates: any[] = []
+    const txns: TxnData[] = []
+
+    for (const txnToRevert of chunk) {
+      const { balanceUpdate, txn } = getUndoContractPayoutSpice(txnToRevert)
+      balanceUpdates.push(balanceUpdate)
+      txns.push(txn)
+    }
+
+    await pg.tx(async (tx) => {
+      await bulkIncrementBalances(tx, balanceUpdates)
+      await insertTxns(tx, txns)
     })
   }
+
   log('reverted txns')
 
   // old payouts
@@ -212,14 +221,21 @@ const undoResolution = async (
   log('With max payout start time ' + maxManaPayoutStartTime)
   const chunkedManaTxns = chunk(manaTxns, 250)
   for (const chunk of chunkedManaTxns) {
+    const balanceUpdates: any[] = []
     const txns: TxnData[] = []
-    await firestore.runTransaction(async (transaction) => {
-      for (const txn of chunk) {
-        txns.push(undoOldContractPayoutTxn(transaction, txn))
-      }
+
+    for (const txnToRevert of chunk) {
+      const { balanceUpdate, txn } = getUndoOldContractPayout(txnToRevert)
+      balanceUpdates.push(balanceUpdate)
+      txns.push(txn)
+    }
+
+    await pg.tx(async (tx) => {
+      await bulkIncrementBalances(tx, balanceUpdates)
+      await insertTxns(tx, txns)
     })
-    await pg.tx((tx) => insertTxns(tx, txns))
   }
+
   log('reverted txns')
 
   if (contract.isResolved || contract.resolutionTime) {
@@ -260,17 +276,14 @@ const undoResolution = async (
   log('updated contract')
 }
 
-export function undoContractPayoutSpiceTxn(
-  fbTransaction: admin.firestore.Transaction,
-  txnData: ContractProduceSpiceTxn
-) {
+export function getUndoContractPayoutSpice(txnData: ContractProduceSpiceTxn) {
   const { amount, toId, data, fromId, id } = txnData
   const { deposit } = data ?? {}
-  const toDoc = firestore.doc(`users/${toId}`)
-  fbTransaction.update(toDoc, {
-    spiceBalance: FieldValue.increment(-amount),
-    totalDeposits: FieldValue.increment(-(deposit ?? 0)),
-  })
+
+  const balanceUpdate = {
+    spiceBalance: -amount,
+    totalDeposits: -(deposit ?? 0),
+  }
 
   const txn: Omit<ContractUndoProduceSpiceTxn, 'id' | 'createdTime'> = {
     amount: amount,
@@ -283,20 +296,19 @@ export function undoContractPayoutSpiceTxn(
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
-  return txn
+  return { balanceUpdate, txn }
 }
 
-export function undoOldContractPayoutTxn(
-  fbTransaction: admin.firestore.Transaction,
+export function getUndoOldContractPayout(
   txnData: ContractOldResolutionPayoutTxn
 ) {
   const { amount, toId, data, fromId, id } = txnData
   const { deposit } = data ?? {}
-  const toDoc = firestore.doc(`users/${toId}`)
-  fbTransaction.update(toDoc, {
-    balance: FieldValue.increment(-amount),
-    totalDeposits: FieldValue.increment(-(deposit ?? 0)),
-  })
+
+  const balanceUpdate = {
+    balance: -amount,
+    totalDeposits: -(deposit ?? 0),
+  }
 
   const txn: Omit<ContractUndoOldResolutionPayoutTxn, 'id' | 'createdTime'> = {
     amount: amount,
@@ -309,5 +321,5 @@ export function undoOldContractPayoutTxn(
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
   }
-  return txn
+  return { balanceUpdate, txn }
 }

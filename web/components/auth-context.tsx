@@ -4,7 +4,7 @@ import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import {
   auth,
-  getUserAndPrivateUser,
+  getPrivateUser,
   listenForPrivateUser,
 } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/firebase/api'
@@ -25,6 +25,7 @@ import { getSupabaseToken } from 'web/lib/firebase/api'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
 import { usePollUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import { getUserSafe } from 'web/lib/supabase/users'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -120,15 +121,19 @@ export function AuthProvider(props: {
     }
   }, [authUser])
 
-  const onAuthLoad = (fbUser: FirebaseUser, newUser: UserAndPrivateUser) => {
-    setUser(newUser.user)
-    setPrivateUser(newUser.privateUser)
+  const onAuthLoad = (
+    fbUser: FirebaseUser,
+    user: User,
+    privateUser: PrivateUser
+  ) => {
+    setUser(user)
+    setPrivateUser(privateUser)
     setAuthLoaded(true)
 
     nativePassUsers(
       JSON.stringify({
         fbUser: fbUser.toJSON(),
-        privateUser: newUser.privateUser,
+        privateUser: privateUser,
       })
     )
 
@@ -143,8 +148,9 @@ export function AuthProvider(props: {
         if (fbUser) {
           setUserCookie(fbUser.toJSON())
 
-          const [currentAuthUser, supabaseJwt] = await Promise.all([
-            getUserAndPrivateUser(fbUser.uid),
+          const [user, privateUser, supabaseJwt] = await Promise.all([
+            getUserSafe(fbUser.uid),
+            getPrivateUser(fbUser.uid),
             getSupabaseToken().catch((e) => {
               console.error('Error getting supabase token', e)
               return null
@@ -153,7 +159,7 @@ export function AuthProvider(props: {
           // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
           if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
-          if (!currentAuthUser.user || !currentAuthUser.privateUser) {
+          if (!user || !privateUser) {
             const deviceToken = ensureDeviceToken()
             const adminToken = getAdminToken()
 
@@ -163,9 +169,9 @@ export function AuthProvider(props: {
               visitedContractIds: getSavedContractVisitsLocally(),
             })) as UserAndPrivateUser
 
-            onAuthLoad(fbUser, newUser)
+            onAuthLoad(fbUser, newUser.user, newUser.privateUser)
           } else {
-            onAuthLoad(fbUser, currentAuthUser)
+            onAuthLoad(fbUser, user, privateUser)
           }
         } else {
           // User logged out; reset to null

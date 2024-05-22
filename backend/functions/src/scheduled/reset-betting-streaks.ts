@@ -5,7 +5,12 @@ import * as admin from 'firebase-admin'
 import { User } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
-const firestore = admin.firestore()
+import { updateUser } from 'shared/supabase/users'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { convertUser } from 'common/supabase/users'
 
 export const resetBettingStreaksForUsers = functions
   .runWith({ timeoutSeconds: 540, memory: '4GB' })
@@ -16,19 +21,23 @@ export const resetBettingStreaksForUsers = functions
   })
 
 const resetBettingStreaksInternal = async () => {
-  const usersSnap = await firestore
-    .collection('users')
-    .where('currentBettingStreak', '>', 0)
-    .get()
+  const pg = createSupabaseDirectClient()
 
-  const users = usersSnap.docs.map((doc) => doc.data() as User)
+  const users = await pg.map(
+    `select * from users
+    where (data->'currentBettingStreak')::numeric > 0`,
+    [],
+    convertUser
+  )
+
   const betStreakResetTime = Date.now() - DAY_MS
   await Promise.all(
-    users.map((user) => resetBettingStreakForUser(user, betStreakResetTime))
+    users.map((user) => resetBettingStreakForUser(pg, user, betStreakResetTime))
   )
 }
 
 const resetBettingStreakForUser = async (
+  db: SupabaseDirectClient,
   user: User,
   betStreakResetTime: number
 ) => {
@@ -41,15 +50,12 @@ const resetBettingStreakForUser = async (
     return
 
   if (user.streakForgiveness > 0) {
-    await firestore
-      .collection('users')
-      .doc(user.id)
-      .update({
-        streakForgiveness: user.streakForgiveness - 1,
-      })
+    await updateUser(db, user.id, {
+      streakForgiveness: user.streakForgiveness - 1,
+    })
     // Should we send a notification to the user?
   } else {
-    await firestore.collection('users').doc(user.id).update({
+    await updateUser(db, user.id, {
       currentBettingStreak: 0,
     })
   }

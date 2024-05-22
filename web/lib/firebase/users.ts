@@ -18,7 +18,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from '../util/local'
-import { referUser } from './api'
+import { api, referUser } from './api'
 import { app } from './init'
 import { coll, listenForValue } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
@@ -38,12 +38,10 @@ export async function getPrivateUser(userId: string) {
 }
 
 export async function getUserAndPrivateUser(userId: string) {
-  const [user, privateUser] = (
-    await Promise.all([
-      getDoc(doc(users, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-      getDoc(doc(privateUsers, userId))!, // eslint-disable-line @typescript-eslint/no-non-null-assertion
-    ])
-  ).map((d) => d.data()) as [User, PrivateUser]
+  const [user, privateUser] = await Promise.all([
+    api('user/by-id/:id', { id: userId }),
+    getPrivateUser(userId),
+  ])
   return { user, privateUser } as UserAndPrivateUser
 }
 

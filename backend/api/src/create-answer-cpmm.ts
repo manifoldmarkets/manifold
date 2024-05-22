@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin'
 import { groupBy, partition, sumBy } from 'lodash'
-import { CPMMMultiContract, Contract, add_answers_mode } from 'common/contract'
+import { CPMMMultiContract, add_answers_mode } from 'common/contract'
 import { User } from 'common/user'
 import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
@@ -19,9 +19,15 @@ import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import { addUserToContractFollowers } from 'shared/follow-market'
-import { log } from 'shared/utils'
+import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { incrementBalance } from 'shared/supabase/users'
+import { runEvilTransaction } from 'shared/evil-transaction'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -45,150 +51,150 @@ export const createAnswerCpmmMain = async (
     options
   log('Received ' + contractId + ' ' + text)
 
-  // Run as transaction to prevent race conditions.
-  const { newAnswerId, contract, user } = await firestore.runTransaction(
-    async (transaction) => {
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-      const contractSnap = await transaction.get(contractDoc)
-      if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-      const contract = contractSnap.data() as Contract
+  const contract = await getContractSupabase(contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
+  if (contract.mechanism !== 'cpmm-multi-1')
+    throw new APIError(403, 'Requires a cpmm multiple choice contract')
+  if (contract.outcomeType === 'NUMBER')
+    throw new APIError(403, 'Cannot create new answers for numeric contracts')
 
-      // TODO if mechanism === 'dpm' call dpm create answer
+  const { closeTime, shouldAnswersSumToOne } = contract
+  if (closeTime && Date.now() > closeTime)
+    throw new APIError(403, 'Trading is closed')
 
-      if (contract.mechanism !== 'cpmm-multi-1')
-        throw new APIError(403, 'Requires a cpmm multiple choice contract')
-      if (contract.outcomeType === 'NUMBER')
-        throw new APIError(
-          403,
-          'Cannot create new answers for numeric contracts'
-        )
+  const addAnswersMode = overrideAddAnswersMode ?? contract.addAnswersMode
 
-      const { closeTime, shouldAnswersSumToOne } = contract
-      if (closeTime && Date.now() > closeTime)
-        throw new APIError(403, 'Trading is closed')
-
-      const addAnswersMode = overrideAddAnswersMode ?? contract.addAnswersMode
-
-      if (!addAnswersMode || addAnswersMode === 'DISABLED') {
-        throw new APIError(400, 'Adding answers is disabled')
-      }
-      if (
-        contract.addAnswersMode === 'ONLY_CREATOR' &&
-        contract.creatorId !== creatorId &&
-        !isAdminId(creatorId)
-      ) {
-        throw new APIError(
-          403,
-          'Only the creator or an admin can create an answer'
-        )
-      }
-
-      const userDoc = firestore.doc(`users/${creatorId}`)
-      const userSnap = await transaction.get(userDoc)
-      if (!userSnap.exists)
-        throw new APIError(401, 'Your account was not found')
-      const user = userSnap.data() as User
-
-      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
-
-      if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
-        throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
-
-      const answersSnap = await transaction.get(
-        firestore.collection(`contracts/${contractId}/answersCpmm`)
-      )
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-      const unresolvedAnswers = answers.filter((a) => !a.resolution)
-      const maxAnswers = getMaximumAnswers(contract.shouldAnswersSumToOne)
-      if (unresolvedAnswers.length >= maxAnswers) {
-        throw new APIError(
-          403,
-          `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
-        )
-      }
-
-      let poolYes = ANSWER_COST
-      let poolNo = ANSWER_COST
-      let totalLiquidity = ANSWER_COST
-      let prob = 0.5
-
-      if (specialLiquidityPerAnswer) {
-        if (shouldAnswersSumToOne)
-          throw new APIError(
-            500,
-            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
-          )
-        prob = 0.02
-        poolYes = specialLiquidityPerAnswer
-        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-        totalLiquidity = specialLiquidityPerAnswer
-      }
-
-      const id = randomString()
-      const n = answers.length
-      const createdTime = Date.now()
-      const newAnswer: Answer = removeUndefinedProps({
-        id,
-        index: n,
-        contractId,
-        createdTime,
-        userId: user.id,
-        text,
-        isOther: false,
-        poolYes,
-        poolNo,
-        prob,
-        totalLiquidity,
-        subsidyPool: 0,
-        probChanges: { day: 0, week: 0, month: 0 },
-        loverUserId,
-      })
-
-      if (shouldAnswersSumToOne) {
-        await createAnswerAndSumAnswersToOne(
-          transaction,
-          user,
-          contract,
-          answers,
-          newAnswer
-        )
-      } else {
-        const newAnswerDoc = contractDoc
-          .collection('answersCpmm')
-          .doc(newAnswer.id)
-        transaction.create(newAnswerDoc, newAnswer)
-      }
-
-      if (!specialLiquidityPerAnswer) {
-        transaction.update(userDoc, {
-          balance: FieldValue.increment(-ANSWER_COST),
-          totalDeposits: FieldValue.increment(-ANSWER_COST),
-        })
-        transaction.update(contractDoc, {
-          totalLiquidity: FieldValue.increment(ANSWER_COST),
-        })
-        const liquidityDoc = firestore
-          .collection(`contracts/${contract.id}/liquidity`)
-          .doc()
-        const lp = getCpmmInitialLiquidity(
-          user.id,
-          contract,
-          liquidityDoc.id,
-          ANSWER_COST,
-          createdTime,
-          newAnswer.id
-        )
-        transaction.create(liquidityDoc, lp)
-      }
-
-      return { newAnswerId: newAnswer.id, contract, user }
-    }
-  )
-
-  const { shouldAnswersSumToOne, addAnswersMode } = contract
-  if (shouldAnswersSumToOne && addAnswersMode !== 'DISABLED') {
-    await convertOtherAnswerShares(contractId, newAnswerId)
+  if (!addAnswersMode || addAnswersMode === 'DISABLED') {
+    throw new APIError(400, 'Adding answers is disabled')
   }
+
+  if (
+    contract.addAnswersMode === 'ONLY_CREATOR' &&
+    contract.creatorId !== creatorId &&
+    !isAdminId(creatorId)
+  ) {
+    throw new APIError(403, 'Only the creator or an admin can create an answer')
+  }
+
+  // Run as transaction to prevent race conditions.
+  const pg = createSupabaseDirectClient()
+
+  const { newAnswerId, user } = await pg.tx(async (tx) => {
+    const user = await getUser(creatorId, tx)
+    if (!user) throw new APIError(401, 'Your account was not found')
+    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+
+    if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
+      throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
+
+    if (!specialLiquidityPerAnswer) {
+      await incrementBalance(tx, user.id, {
+        balance: -ANSWER_COST,
+        totalDeposits: -ANSWER_COST,
+      })
+    }
+
+    const { newAnswerId } = await runEvilTransaction(
+      async (pgTrans, fbTrans) => {
+        const contractDoc = firestore.doc(`contracts/${contractId}`)
+        // const contractSnap = await transaction.get(contractDoc)
+        // if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
+        // const contract = contractSnap.data() as Contract
+
+        const answersSnap = await fbTrans.get(
+          firestore.collection(`contracts/${contractId}/answersCpmm`)
+        )
+        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const unresolvedAnswers = answers.filter((a) => !a.resolution)
+        const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
+        if (unresolvedAnswers.length >= maxAnswers) {
+          throw new APIError(
+            403,
+            `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
+          )
+        }
+
+        let poolYes = ANSWER_COST
+        let poolNo = ANSWER_COST
+        let totalLiquidity = ANSWER_COST
+        let prob = 0.5
+
+        if (specialLiquidityPerAnswer) {
+          if (shouldAnswersSumToOne)
+            throw new APIError(
+              500,
+              "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
+            )
+          prob = 0.02
+          poolYes = specialLiquidityPerAnswer
+          poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
+          totalLiquidity = specialLiquidityPerAnswer
+        }
+
+        const id = randomString()
+        const n = answers.length
+        const createdTime = Date.now()
+        const newAnswer: Answer = removeUndefinedProps({
+          id,
+          index: n,
+          contractId,
+          createdTime,
+          userId: user.id,
+          text,
+          isOther: false,
+          poolYes,
+          poolNo,
+          prob,
+          totalLiquidity,
+          subsidyPool: 0,
+          probChanges: { day: 0, week: 0, month: 0 },
+          loverUserId,
+        })
+
+        if (shouldAnswersSumToOne) {
+          await createAnswerAndSumAnswersToOne(
+            pgTrans,
+            fbTrans,
+            user,
+            contract,
+            answers,
+            newAnswer
+          )
+        } else {
+          const newAnswerDoc = contractDoc
+            .collection('answersCpmm')
+            .doc(newAnswer.id)
+          fbTrans.create(newAnswerDoc, newAnswer)
+        }
+
+        if (!specialLiquidityPerAnswer) {
+          fbTrans.update(contractDoc, {
+            totalLiquidity: FieldValue.increment(ANSWER_COST),
+          })
+          const liquidityDoc = firestore
+            .collection(`contracts/${contract.id}/liquidity`)
+            .doc()
+          const lp = getCpmmInitialLiquidity(
+            user.id,
+            contract,
+            liquidityDoc.id,
+            ANSWER_COST,
+            createdTime,
+            newAnswer.id
+          )
+          fbTrans.create(liquidityDoc, lp)
+        }
+
+        return { newAnswerId: newAnswer.id }
+      }
+    )
+
+    if (shouldAnswersSumToOne) {
+      await convertOtherAnswerShares(contractId, newAnswerId)
+    }
+
+    return { newAnswerId, user }
+  })
 
   const continuation = async () => {
     await createNewAnswerOnContractNotification(
@@ -203,7 +209,8 @@ export const createAnswerCpmmMain = async (
 }
 
 async function createAnswerAndSumAnswersToOne(
-  transaction: FirebaseFirestore.Transaction,
+  pgTrans: SupabaseTransaction,
+  fbTrans: FirebaseFirestore.Transaction,
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
@@ -292,7 +299,7 @@ async function createAnswerAndSumAnswersToOne(
     updatedOtherAnswer,
   ]
   const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(transaction, contractDoc)
+    await getUnfilledBetsAndUserBalances(pgTrans, fbTrans, contractDoc)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
@@ -319,8 +326,8 @@ async function createAnswerAndSumAnswersToOne(
     ),
   })
 
-  transaction.create(newAnswerDoc, newAnswer)
-  transaction.update(
+  fbTrans.create(newAnswerDoc, newAnswer)
+  fbTrans.update(
     contractDoc.collection('answersCpmm').doc(otherAnswer.id),
     updatedOtherAnswerProps
   )
@@ -350,7 +357,7 @@ async function createAnswerAndSumAnswersToOne(
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
     const betDoc = contractDoc.collection('bets').doc()
-    transaction.create(betDoc, {
+    fbTrans.create(betDoc, {
       id: betDoc.id,
       userId: user.id,
       userAvatarUrl: user.avatarUrl,
@@ -368,21 +375,21 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    transaction.update(contractDoc.collection('answersCpmm').doc(answer.id), {
+    fbTrans.update(contractDoc.collection('answersCpmm').doc(answer.id), {
       poolYes,
       poolNo,
       prob,
     })
-    updateMakers(makers, betDoc.id, contractDoc, transaction)
+    await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
     for (const bet of ordersToCancel) {
-      transaction.update(contractDoc.collection('bets').doc(bet.id), {
+      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
         isCancelled: true,
       })
     }
   }
 
   for (const bet of unfilledBetsOnOther) {
-    transaction.update(contractDoc.collection('bets').doc(bet.id), {
+    fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
       isCancelled: true,
     })
   }

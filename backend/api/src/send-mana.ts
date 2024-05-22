@@ -10,6 +10,9 @@ import { isAdminId } from 'common/envs/constants'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUser, getUsers } from 'shared/utils'
+import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
+import { buildArray } from 'common/util/array'
 
 export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, groupId: passedGroupId } = props
@@ -20,20 +23,27 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     )
   }
   const fromId = auth.uid
+
+  if (!isAdminId(fromId) && amount < 10) {
+    throw new APIError(403, 'Only admins can send less than 10 mana')
+  }
+  if (toIds.includes(fromId)) {
+    throw new APIError(400, 'Cannot send mana to yourself.')
+  }
+
+  if (toIds.length <= 0) {
+    throw new APIError(400, 'Destination users not found.')
+  }
+
+  const pg = createSupabaseDirectClient()
+
   // Run as transaction to prevent race conditions.
-  const fromUser = await firestore.runTransaction(async (transaction) => {
-    if (!isAdminId(fromId) && amount < 10) {
-      throw new APIError(400, 'Only admins can send less than 10 mana')
+  const fromUser = await pg.tx(async (tx) => {
+    const fromUser = await getUser(fromId, tx)
+    if (!fromUser) {
+      throw new APIError(401, `User ${fromId} not found`)
     }
-    if (toIds.includes(fromId)) {
-      throw new APIError(400, 'Cannot send mana to yourself.')
-    }
-    const fromDoc = firestore.doc(`users/${fromId}`)
-    const fromSnap = await transaction.get(fromDoc)
-    if (!fromSnap.exists) {
-      throw new APIError(404, `User ${fromId} not found`)
-    }
-    const fromUser = fromSnap.data() as User
+
     if (!isVerified(fromUser)) {
       throw new APIError(403, 'You must verify your phone number to send mana.')
     }
@@ -43,10 +53,6 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     )
     if (!canSend) {
       throw new APIError(403, errorMessage)
-    }
-
-    if (toIds.length <= 0) {
-      throw new APIError(400, 'Destination users not found.')
     }
 
     const total = amount * toIds.length
@@ -59,32 +65,27 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
       )
     }
 
-    const toDocs = await Promise.all(
-      toIds.map(async (toId) => {
-        const toDoc = firestore.doc(`users/${toId}`)
-        const toSnap = await transaction.get(toDoc)
-        if (!toSnap.exists) {
-          throw new APIError(404, `User ${toId} not found`)
-        }
-        const user = toSnap.data() as User
-        if (!isVerified(user)) {
-          throw new APIError(403, 'All destination users must be verified.')
-        }
-        return toDoc
-      })
-    )
+    const toUsers = await getUsers(toIds, tx)
+    if (toUsers.length !== toIds.length) {
+      throw new APIError(404, 'Some destination users not found.')
+    }
+    if (toUsers.some((toUser) => !isVerified(toUser))) {
+      throw new APIError(403, 'All destination users must be verified.')
+    }
 
-    transaction.update(fromDoc, {
-      balance: admin.firestore.FieldValue.increment(-total),
-      totalDeposits: admin.firestore.FieldValue.increment(-total),
-    })
-
-    await Promise.all(
-      toDocs.map((toDoc) =>
-        transaction.update(toDoc, {
-          balance: admin.firestore.FieldValue.increment(amount),
-          totalDeposits: admin.firestore.FieldValue.increment(amount),
-        })
+    await bulkIncrementBalances(
+      tx,
+      buildArray(
+        {
+          id: fromId,
+          balance: -total,
+          totalDeposits: -total,
+        },
+        toIds.map((toId) => ({
+          id: toId,
+          balance: amount,
+          totalDeposits: amount,
+        }))
       )
     )
 
@@ -92,7 +93,6 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
   })
 
   const groupId = passedGroupId ? passedGroupId : crypto.randomUUID()
-  const pg = createSupabaseDirectClient()
 
   const txns = toIds.map(
     (toId) =>
@@ -120,5 +120,3 @@ export const sendMana: APIHandler<'managram'> = async (props, auth) => {
     )
   )
 }
-
-const firestore = admin.firestore()

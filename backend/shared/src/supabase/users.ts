@@ -1,7 +1,9 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
 import { SupabaseClient } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
+import { User } from 'common/user'
+import { updateData } from './utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
@@ -65,4 +67,69 @@ export const getMostlyActiveUserIds = async (
     [longAgo, new Date(longAgo).toISOString(), randomNumberThreshold, userIds],
     (r: { id: string }) => r.id
   )
+}
+
+export const updateUser = async (
+  db: SupabaseDirectClient,
+  id: string,
+  update: Partial<
+    Omit<
+      User,
+      'id' | 'createdTime' | 'balance' | 'spiceBalance' | 'totalDeposits'
+    >
+  >
+) => {
+  await updateData(db, 'users', 'id', { id, ...update })
+}
+
+export const incrementBalance = async (
+  db: SupabaseDirectClient,
+  id: string,
+  deltas: { balance?: number; spiceBalance?: number; totalDeposits?: number }
+) => {
+  await db.none(
+    `update users
+    set balance = balance + $1,
+        spice_balance = spice_balance + $2,
+        total_deposits = total_deposits + $3
+    where id = $4`,
+    [
+      deltas.balance ?? 0,
+      deltas.spiceBalance ?? 0,
+      deltas.totalDeposits ?? 0,
+      id,
+    ]
+  )
+}
+
+export const bulkIncrementBalances = async (
+  db: SupabaseDirectClient,
+  userUpdates: {
+    id: string
+    balance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+  }[]
+) => {
+  if (userUpdates.length === 0) return
+
+  const values = userUpdates
+    .map((update) =>
+      pgp.as.format(`($1, $2, $3, $4)`, [
+        update.id,
+        update.balance ?? 0,
+        update.spiceBalance ?? 0,
+        update.totalDeposits ?? 0,
+      ])
+    )
+    .join(',\n')
+
+  await db.none(`update users as u
+    set 
+        balance = u.balance + v.balance,
+        spice_balance = u.spice_balance + v.spice_balance,
+        total_deposits = u.total_deposits + v.total_deposits
+    from (values ${values}) as v(id, balance, spice_balance, total_deposits)
+    where u.id = v.id
+  `)
 }
