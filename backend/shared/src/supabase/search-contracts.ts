@@ -26,6 +26,7 @@ import { PrivateUser } from 'common/user'
 
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
+const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
 
 export async function getForYouSQL(
@@ -36,7 +37,7 @@ export async function getForYouSQL(
   offset: number,
   sort: 'score' | 'freshness-score',
   privateUser?: PrivateUser,
-  threshold?: number
+  threshold: number = DEFAULT_THRESHOLD
 ) {
   if (
     importanceScoreThreshold === undefined ||
@@ -132,11 +133,11 @@ export async function getForYouSQL(
         uid: userId,
         hideStonks: true,
       }),
-      offset === 0 &&
+      offset <= threshold / 2 &&
         sort === 'score' &&
         importanceScoreThreshold &&
         where(`contracts.importance_score > $1`, [importanceScoreThreshold]),
-      offset === 0 &&
+      offset <= threshold / 2 &&
         sort === 'freshness-score' &&
         freshnessScoreThreshold &&
         where(`contracts.freshness_score > $1`, [freshnessScoreThreshold]),
@@ -418,7 +419,7 @@ function getSearchContractSortSQL(sort: string) {
   return `${sortFields[sort].sql} ${sortFields[sort].order}`
 }
 
-const loadScoreThresholds = async (threshold: number = 1000) => {
+const loadScoreThresholds = async (threshold: number) => {
   const pg = createSupabaseDirectClient()
   importanceScoreThreshold = await pg.one(
     `
