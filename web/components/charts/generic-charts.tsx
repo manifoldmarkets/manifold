@@ -876,16 +876,17 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           </defs>
         )}
         {data.length > 0 && (
-        <AreaWithTopStroke
-          color={typeof color === 'string' ? color : `url(#${gradientId})`}
-          data={data}
-          px={px}
-          py0={py0}
-          py1={py1}
-          curve={curve}
-          className={areaClassName}
-          onClick={onGraphClick}
-        />)}
+          <AreaWithTopStroke
+            color={typeof color === 'string' ? color : `url(#${gradientId})`}
+            data={data}
+            px={px}
+            py0={py0}
+            py1={py1}
+            curve={curve}
+            className={areaClassName}
+            onClick={onGraphClick}
+          />
+        )}
         {mouse && (
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />
         )}
