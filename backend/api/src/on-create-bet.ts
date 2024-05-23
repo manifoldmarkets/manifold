@@ -1,6 +1,5 @@
 import {
   log,
-  getDoc,
   getUsers,
   revalidateContractStaticProps,
   getBettingStreakResetTimeBeforeNow,
@@ -28,7 +27,6 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { NormalizedBet } from 'common/new-bet'
 import { maker } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
@@ -76,13 +74,13 @@ import { broadcastNewBets } from './websockets/helpers'
 const firestore = admin.firestore()
 
 export const onCreateBets = async (
-  normalBets: NormalizedBet[],
+  bets: Bet[],
   contract: Contract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
-  broadcastNewBets(contract, normalBets)
+  broadcastNewBets(contract, bets)
 
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
@@ -110,20 +108,11 @@ export const onCreateBets = async (
     )
   }
 
-  const betUsers = await getUsers(uniq(normalBets.map((bet) => bet.userId)))
+  const betUsers = await getUsers(uniq(bets.map((bet) => bet.userId)))
   if (!betUsers.find((u) => u.id == originalBettor.id))
     betUsers.push(originalBettor)
 
   const pg = createSupabaseDirectClient()
-  const bets = normalBets.map((bet) => {
-    const user = betUsers.find((user) => user.id === bet.userId)
-    return {
-      ...bet,
-      userName: user?.name,
-      userAvatarUrl: user?.avatarUrl,
-      userUsername: user?.username,
-    } as Bet
-  })
   const usersToRefreshMetrics = betUsers.filter((user) =>
     uniq(
       bets.filter((b) => b.shares !== 0 && !b.isApi).map((bet) => bet.userId)
@@ -212,7 +201,7 @@ export const onCreateBets = async (
 
   // New users in last month.
   if (originalBettor.createdTime > Date.now() - MONTH_MS) {
-    const bet = normalBets[0]
+    const bet = bets[0]
 
     const otherBetToday = await pg.oneOrNone(
       `select bet_id from contract_bets
@@ -220,11 +209,7 @@ export const onCreateBets = async (
           and DATE(created_time) = DATE($2)
           and bet_id != $3
           limit 1`,
-      [
-        originalBettor.id,
-        new Date(normalBets[0].createdTime).toISOString(),
-        bet.id,
-      ]
+      [originalBettor.id, new Date(bets[0].createdTime).toISOString(), bet.id]
     )
     if (!otherBetToday) {
       const numBetDays = await pg.one<number>(

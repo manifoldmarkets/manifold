@@ -35,14 +35,7 @@ import {
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
 
-export type CandidateBet<T extends Bet = Bet> = Omit<
-  T,
-  'id' | 'userId' | 'userAvatarUrl' | 'userName' | 'userUsername'
->
-export type NormalizedBet<T extends Bet = Bet> = Omit<
-  T,
-  'userAvatarUrl' | 'userName' | 'userUsername'
->
+export type CandidateBet<T extends Bet = Bet> = Omit<T, 'id' | 'userId'>
 
 export type BetInfo = {
   newBet: CandidateBet
