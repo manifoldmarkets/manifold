@@ -4,18 +4,13 @@ import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
 
-export function broadcastNewBets(
-  contract: Contract,
-  creator: User,
-  bets: Bet[]
-) {
-  const payload = { contract, creator, bets }
+export function broadcastNewBets(contract: Contract, bets: Bet[]) {
   const contractTopic = `contract/${contract.id}`
-  const topics = [contractTopic, `${contractTopic}/new-bet`]
+  broadcastMulti([contractTopic, `${contractTopic}/new-bet`], { bets })
+
   if (contract.visibility === 'public') {
-    topics.push('global', 'global/new-bet')
+    broadcastMulti(['global', 'global/new-bet'], { contract, bets })
   }
-  broadcastMulti(topics, payload)
 }
 
 export function broadcastNewComment(

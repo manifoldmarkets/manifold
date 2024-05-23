@@ -48,7 +48,7 @@ import { useAnswersCpmm } from 'web/hooks/use-answers'
 import {
   useBets,
   useRealtimeBets,
-  useRealtimeBetsPolling,
+  useSubscribeNewBets,
 } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
@@ -225,19 +225,12 @@ export function ContractPageContent(props: ContractParams) {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   const isNumber = contract.outcomeType === 'NUMBER'
+  const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
 
-  const newBets =
-    useRealtimeBetsPolling(
-      {
-        contractId: contract.id,
-        afterTime: lastBetTime,
-        filterRedemptions:
-          contract.outcomeType !== 'MULTIPLE_CHOICE' && !isNumber,
-        order: 'asc',
-      },
-      500,
-      `contract-bets-${contract.id}-500ms-v1`
-    ) ?? []
+  const newBets = useSubscribeNewBets(contract.id, {
+    afterTime: lastBetTime ?? 0,
+    includeRedemptions: isMultipleChoice || isNumber,
+  })
 
   const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)

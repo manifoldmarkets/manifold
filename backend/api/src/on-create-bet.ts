@@ -71,6 +71,7 @@ import { track } from 'shared/analytics'
 import { FLAT_TRADE_FEE, Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { bulkIncrementBalances, updateUser } from 'shared/supabase/users'
+import { broadcastNewBets } from './websockets/helpers'
 
 const firestore = admin.firestore()
 
@@ -81,6 +82,8 @@ export const onCreateBets = async (
   ordersToCancel: LimitBet[] | undefined,
   makers: maker[] | undefined
 ) => {
+  broadcastNewBets(contract, normalBets)
+
   const { mechanism } = contract
   if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
     const userIds = uniq([

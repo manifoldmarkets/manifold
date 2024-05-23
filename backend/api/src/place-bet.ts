@@ -25,7 +25,6 @@ import { formatMoneyWithDecimals } from 'common/util/format'
 import { SupabaseTransaction } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
-import { broadcastNewBets } from './websockets/helpers'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -193,7 +192,6 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
-  broadcastNewBets(contract, user, fullBets)
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
