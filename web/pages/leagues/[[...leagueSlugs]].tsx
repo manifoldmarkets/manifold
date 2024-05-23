@@ -36,6 +36,7 @@ import { Countdown } from 'web/components/widgets/countdown'
 import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 
 export default function Leagues() {
   const user = useUser()
@@ -122,7 +123,7 @@ export default function Leagues() {
     })
   }
 
-  useEffect(() => {
+  useEffectCheckEquality(() => {
     if (!isReady || !seasonLoaded) return
     console.log('leagueSlugs', leagueSlugs, 'user', user?.id)
 
@@ -154,12 +155,16 @@ export default function Leagues() {
   const userDivision = userRow?.division
   const userCohort = userRow?.cohort
 
+  const url = cohort
+    ? `/leagues/${season}/${DIVISION_NAMES[division]}/${cohort}`
+    : `/leagues`
+
   return (
     <Page trackPageView={'leagues'}>
       <SEO
         title="Leagues"
         description="See the top-ranking users this season in each league."
-        url="/leagues"
+        url={url}
       />
 
       <Col className="mx-auto w-full max-w-xl gap-2 pt-2 sm:pt-0">
