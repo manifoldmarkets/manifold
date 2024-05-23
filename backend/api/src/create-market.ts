@@ -49,7 +49,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { broadcast } from './websockets/server'
+import { broadcastNewContract } from './websockets/helpers'
 import { updateUser } from 'shared/supabase/users'
 
 type Body = ValidatedAPIParams<'market'> & {
@@ -258,7 +258,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   await generateContractEmbeddings(contract, pg)
 
-  broadcast('global/new-contract', { contractId: contract.id })
+  broadcastNewContract(contract, user)
   return contract
 }
 

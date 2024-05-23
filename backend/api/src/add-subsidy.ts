@@ -6,6 +6,7 @@ import { SUBSIDY_FEE } from 'common/economy'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
+import { broadcastNewSubsidy } from './websockets/helpers'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -72,6 +73,8 @@ export const addContractLiquidity = async (
       } as Partial<CPMMContract>)
 
       transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
+
+      broadcastNewSubsidy(contract, subsidyAmount)
       return newLiquidityProvision
     })
   })
