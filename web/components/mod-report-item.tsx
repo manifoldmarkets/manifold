@@ -71,8 +71,6 @@ const ModReportItem: React.FC<ReportItemProps> = ({
 
   const parsedContent = parseCommentContent(report.comment_content)
 
-  console.log('Parsed Comment Content:', parsedContent)
-
   const owner = {
     id: report.user_id,
     name: report.owner_name,

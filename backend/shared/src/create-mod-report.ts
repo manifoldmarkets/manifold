@@ -31,6 +31,4 @@ export const insertModReport = async (comment: ContractComment) => {
   if (error) {
     throw new APIError(404, 'Error inserting mod report:')
   }
-
-  console.log('Mod report created successfully:', data)
 }

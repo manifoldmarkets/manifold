@@ -8,9 +8,6 @@ export const updateModReport: APIHandler<'update-mod-report'> = async (
   const { reportId, updates } = props
   const db = createSupabaseClient()
 
-  console.log('Updating report with ID:', reportId)
-  console.log('Updates:', updates)
-
   const updateData: {
     status?: 'new' | 'under review' | 'resolved' | 'needs admin'
     mod_note?: string
@@ -38,6 +35,5 @@ export const updateModReport: APIHandler<'update-mod-report'> = async (
     throw new APIError(404, 'Report not found')
   }
 
-  console.log('Report updated successfully:', data[0])
   return { status: 'success', report: data[0] as ModReport }
 }
