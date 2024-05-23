@@ -4,6 +4,7 @@ import { isError } from 'lodash'
 import { log, metrics } from 'shared/utils'
 import { Switchboard } from './switchboard'
 import {
+  BroadcastPayload,
   ClientMessage,
   ServerMessage,
   CLIENT_MESSAGE_SCHEMA,
@@ -13,6 +14,8 @@ const SWITCHBOARD = new Switchboard()
 
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
+
+const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 export class MessageParseError extends Error {
   details?: unknown
@@ -85,14 +88,28 @@ function processMessage(ws: WebSocket, data: RawData): ServerMessage<'ack'> {
   }
 }
 
-export function broadcast(topic: string, data: Record<string, unknown>) {
-  const msg = { type: 'broadcast', topic, data } as ServerMessage<'broadcast'>
-  const json = JSON.stringify(msg)
-  for (const [ws, _] of SWITCHBOARD.getSubscribers(topic)) {
-    // mqp: check ws.readyState before sending?
-    ws.send(json)
+export function broadcastMulti(topics: string[], data: BroadcastPayload) {
+  // mqp: it isn't secure to do this in prod because we rely on security-through-
+  // topic-id-obscurity for unlisted contracts. but it's super convenient for testing
+  if (LOCAL_DEV) {
+    const msg = { type: 'broadcast', topic: '*', topics, data }
+    const json = JSON.stringify(msg)
+    for (const [ws, _] of SWITCHBOARD.getSubscribers('*')) {
+      ws.send(json)
+    }
   }
-  metrics.inc('ws/broadcasts_sent', { topic })
+  for (const topic of topics) {
+    const msg = { type: 'broadcast', topic, data } as ServerMessage<'broadcast'>
+    const json = JSON.stringify(msg)
+    for (const [ws, _] of SWITCHBOARD.getSubscribers(topic)) {
+      ws.send(json)
+    }
+    metrics.inc('ws/broadcasts_sent', { topic })
+  }
+}
+
+export function broadcast(topic: string, data: BroadcastPayload) {
+  return broadcastMulti([topic], data)
 }
 
 export function listen(server: HttpServer, path: string) {

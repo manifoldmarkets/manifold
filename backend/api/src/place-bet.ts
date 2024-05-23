@@ -24,7 +24,6 @@ import { formatMoneyWithDecimals } from 'common/util/format'
 import { SupabaseTransaction } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
-import { broadcast } from './websockets/server'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 
@@ -180,10 +179,6 @@ export const placeBetMain = async (
     )
   })
 
-  log(`Main transaction finished - auth ${uid}.`)
-  metrics.inc('app/bet_count', { contract_id: contractId })
-  broadcast('global/new-bet', { contractId: contractId, betId: result.betId })
-
   const {
     newBet,
     fullBets,
@@ -194,6 +189,10 @@ export const placeBetMain = async (
     user,
     betGroupId,
   } = result
+
+  log(`Main transaction finished - auth ${uid}.`)
+  metrics.inc('app/bet_count', { contract_id: contractId })
+
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
   }

@@ -29,6 +29,12 @@ export const CLIENT_MESSAGE_SCHEMA = z.union([
   CLIENT_MESSAGE_SCHEMAS.ping,
 ])
 
+// mqp: it may be not unusual for clients to subscribe to topics in ways such that they
+// receive multiple messages at the same time if there is something like a new bet.
+// in that case i'm not sure if it would be worthwhile to implement a message format
+// so that multiple broadcasts can come down in a single websocket frame. for now,
+// default to simplicity
+
 export const SERVER_MESSAGE_SCHEMAS = {
   ack: z.object({
     type: z.literal('ack'),
@@ -55,3 +61,5 @@ export type ClientMessage<T extends ClientMessageType = ClientMessageType> =
 export type ServerMessageType = keyof typeof SERVER_MESSAGE_SCHEMAS
 export type ServerMessage<T extends ServerMessageType = ServerMessageType> =
   z.infer<(typeof SERVER_MESSAGE_SCHEMAS)[T]>
+
+export type BroadcastPayload = ServerMessage<'broadcast'>['data']

@@ -340,16 +340,6 @@ export async function updateUserMetricsCore(
   }
   log(`Computed ${contractMetricUpdates.length} metric updates.`)
 
-  log('Writing user updates...')
-
-  await bulkUpdate(
-    pg,
-    'users',
-    ['id'],
-    userUpdates.map((u) => ({ id: u.id, data: removeUndefinedProps(u) }))
-  )
-
-  log('Finished user updates.')
   const userIdsNotWritten = activeUserIds.filter(
     (id) => !portfolioUpdates.some((p) => p.user_id === id)
   )
@@ -370,7 +360,18 @@ export async function updateUserMetricsCore(
         pg.query(
           `update user_portfolio_history_latest set last_calculated = $1 where user_id in ($2:list)`,
           [new Date(now).toISOString(), userIdsNotWritten]
-        )
+        ),
+      bulkUpdate(
+        pg,
+        'users',
+        ['id'],
+        userUpdates.map((u) => ({
+          id: u.id,
+          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+        }))
+      )
+        .catch((e) => log.error('Error writing user updates', e))
+        .then(() => log('Finished user updates.'))
     )
   )
 
