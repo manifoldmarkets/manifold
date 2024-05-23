@@ -54,6 +54,7 @@ export function ProfitWidget(props: {
   const metricsValue = contractMetrics
     ? sum(contractMetrics.metrics.map((m) => m.payout ?? 0))
     : 0
+    
   const netWorth =
     metricsValue !== portfolioValue &&
     metricsValue !== 0 &&
