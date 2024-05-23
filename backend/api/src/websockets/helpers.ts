@@ -10,11 +10,12 @@ export function broadcastNewBets(
   bets: Bet[]
 ) {
   const payload = { contract, creator, bets }
-  if (contract.visibility === 'public') {
-    broadcastMulti(['global', 'global/new-bet'], payload)
-  }
   const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/new-bet`], payload)
+  const topics = [contractTopic, `${contractTopic}/new-bet`]
+  if (contract.visibility === 'public') {
+    topics.push('global', 'global/new-bet')
+  }
+  broadcastMulti(topics, payload)
 }
 
 export function broadcastNewComment(
@@ -23,11 +24,12 @@ export function broadcastNewComment(
   comment: ContractComment
 ) {
   const payload = { contract, creator, comment }
-  if (contract.visibility === 'public') {
-    broadcastMulti(['global', 'global/new-comment'], payload)
-  }
   const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/new-comment`], payload)
+  const topics = [contractTopic, `${contractTopic}/new-comment`]
+  if (contract.visibility === 'public') {
+    topics.push('global', 'global/new-comment')
+  }
+  broadcastMulti(topics, payload)
 }
 
 export function broadcastNewContract(contract: Contract, creator: User) {
@@ -39,15 +41,17 @@ export function broadcastNewContract(contract: Contract, creator: User) {
 
 export function broadcastNewSubsidy(contract: Contract, amount: number) {
   const payload = { contract, amount }
-  if (contract.visibility === 'public') {
-    broadcastMulti(['global', 'global/new-subsidy'], payload)
-  }
   const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/new-subsidy`], payload)
+  const topics = [contractTopic, `${contractTopic}/new-subsidy`]
+  if (contract.visibility === 'public') {
+    topics.push('global', 'global/new-subsidy')
+  }
+  broadcastMulti(topics, payload)
 }
 
 export function broadcastUpdatedContract(contract: Contract) {
   const payload = { contract }
   const contractTopic = `contract/${contract.id}`
-  broadcastMulti([contractTopic, `${contractTopic}/updated-metadata`], payload)
+  const topics = [contractTopic, `${contractTopic}/updated-metadata`]
+  broadcastMulti(topics, payload)
 }

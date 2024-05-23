@@ -6,7 +6,7 @@ import { SUBSIDY_FEE } from 'common/economy'
 import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
-import { broadcastNewSubsidy } from 'api/websockets/helpers'
+import { broadcastNewSubsidy } from './websockets/helpers'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
