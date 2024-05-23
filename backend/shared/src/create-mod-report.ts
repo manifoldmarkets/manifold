@@ -4,14 +4,7 @@ import { getContract } from './utils'
 import { APIError } from 'common/api/utils'
 
 export const insertModReport = async (comment: ContractComment) => {
-  const {
-    id: comment_id,
-    contractId: contract_id,
-    userId: user_id,
-    contractSlug: contract_slug,
-    contractQuestion: contract_question,
-    content: content,
-  } = comment
+  const { id: comment_id, contractId: contract_id, userId: user_id } = comment
 
   const contract = await getContract(contract_id)
   const creator_username = contract?.creatorUsername
@@ -30,10 +23,6 @@ export const insertModReport = async (comment: ContractComment) => {
     contract_id,
     user_id,
     status: 'new' as const,
-    contract_slug,
-    contract_question,
-    content,
-    creator_username,
     mod_note: '',
   }
 

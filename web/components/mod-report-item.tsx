@@ -29,27 +29,54 @@ const ModReportItem: React.FC<ReportItemProps> = ({
   handleStatusChange,
   handleNoteSave,
 }) => {
-
-  const renderContent = (content: any) => {
-    if (typeof content === 'string') {
-      return <span>{content}</span>
-    } else if (Array.isArray(content)) {
-      return content.map((item, index) => (
-        <div key={index}>{renderContent(item)}</div>
-      ))
-    } else if (typeof content === 'object') {
-      return (
-        <div>
-          {content.text && <span>{content.text}</span>}
-          {content.content &&
-            content.content.map((item: any, index: number) => (
-              <div key={index}>{renderContent(item)}</div>
-            ))}
-        </div>
-      )
-    } else {
-      return null
+  const extractTextFromJSONContent = (content: any): string => {
+    if (!content) {
+      console.warn('No content provided')
+      return ''
     }
+
+    if (!Array.isArray(content)) {
+      console.warn('Content is not an array', content)
+      return ''
+    }
+
+    let text = ''
+    content.forEach((node: any) => {
+      if (node.type === 'text') {
+        text += node.text
+      } else if (node.type === 'mention' && node.attrs) {
+        text += `@${node.attrs.label} `
+      } else if (node.type === 'paragraph' && node.content) {
+        text += extractTextFromJSONContent(node.content) + '\n'
+      } else if (node.content) {
+        text += extractTextFromJSONContent(node.content)
+      } else {
+        console.warn('Unknown node type or missing content', node)
+      }
+    })
+    return text.trim()
+  }
+
+  const parseCommentContent = (commentContent: any) => {
+    if (typeof commentContent === 'string') {
+      try {
+        return JSON.parse(commentContent)
+      } catch (error) {
+        console.error('Failed to parse comment content', error)
+        return null
+      }
+    }
+    return commentContent
+  }
+
+  const parsedContent = parseCommentContent(report.comment_content)
+
+  console.log('Parsed Comment Content:', parsedContent)
+
+  const owner = {
+    id: report.user_id,
+    name: report.owner_name,
+    username: report.owner_username,
   }
 
   return (
@@ -61,18 +88,11 @@ const ModReportItem: React.FC<ReportItemProps> = ({
               <div className="flex items-center">
                 <Avatar
                   username={report.owner_username}
-                  avatarUrl={report.owner_avatarUrl || ''}
+                  avatarUrl={report.owner_avatar_url || ''}
                   size="sm"
                 />
-                <UserLink
-                  user={{
-                    id: report.user_id,
-                    name: '',
-                    username: report.owner_username,
-                  }}
-                  className="text-ink-800 ml-2"
-                />
-                {report.owner_isBannedFromPosting && <BannedBadge />}
+                <UserLink user={owner} className="text-ink-800 ml-2" />
+                {report.owner_is_banned_from_posting && <BannedBadge />}
               </div>
             </UserHovercard>
             <Row className="ml-2">commented:</Row>
@@ -89,7 +109,9 @@ const ModReportItem: React.FC<ReportItemProps> = ({
             className="text-primary-700 hover:text-primary-500 hover:underline"
             href={`/${report.creator_username}/${report.contract_slug}#${report.comment_id}`}
           >
-            {renderContent(report.comment_content)}
+            {parsedContent
+              ? extractTextFromJSONContent(parsedContent.content)
+              : 'Invalid comment content'}
           </Link>
         </Row>
         <Row className="mt-2">Market: {report.contract_question}</Row>
@@ -110,7 +132,7 @@ const ModReportItem: React.FC<ReportItemProps> = ({
           />
         </Row>
         <Row className="mt-2 items-center">
-          Mod note: {''}
+          Mod note:&nbsp;
           <EditableModNote
             reportId={report.report_id}
             initialNote={modNotes[report.report_id] || ''}

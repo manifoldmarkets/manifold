@@ -6,20 +6,21 @@ export const getModReports: APIHandler<'get-mod-reports'> = async () => {
   const pg = createSupabaseDirectClient()
 
   const reports = await pg.many<ModReport>(`
-    SELECT 
+    select 
       mr.*, 
-      cc.data->>'content' AS comment_content, 
-      c.question AS contract_question, 
-      c.slug AS contract_slug, 
-      creator.username AS creator_username,
-      owner.data->>'username' AS owner_username,
-      owner.data->>'avatarUrl' AS owner_avatarUrl, 
-      (owner.data->>'isBannedFromPosting')::boolean AS owner_isBannedFromPosting
-    FROM mod_reports mr
-    JOIN contract_comments cc ON cc.comment_id = mr.comment_id
-    JOIN contracts c ON c.id = mr.contract_id
-    JOIN users creator ON creator.id = c.creator_id
-    JOIN users owner ON owner.id = mr.user_id
+      cc.data->>'content' as comment_content, 
+      c.question as contract_question, 
+      c.slug as contract_slug, 
+      creator.username as creator_username,
+      owner.data->>'username' as owner_username,
+      owner.data->>'avatarUrl' as owner_avatar_url, 
+      owner.data->>'name' as owner_name,
+      (owner.data->>'isBannedFromPosting')::boolean as owner_is_banned_from_posting
+    from mod_reports mr
+    join contract_comments cc on cc.comment_id = mr.comment_id
+    join contracts c on c.id = mr.contract_id
+    join users creator on creator.id = c.creator_id
+    join users owner on owner.id = mr.user_id
   `)
 
   return { status: 'success', reports }
