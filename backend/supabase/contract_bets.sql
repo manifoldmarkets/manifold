@@ -1,40 +1,41 @@
 create table if not exists
-    contract_bets (
-                      contract_id text not null,
-                      bet_id text not null,
-                      user_id text not null,
-                      answer_id text,
-                      created_time timestamptz not null,
-                      amount numeric,
-                      shares numeric,
-                      outcome text,
-                      prob_before numeric,
-                      prob_after numeric,
-                      is_ante boolean,
-                      is_api boolean,
-                      is_redemption boolean,
-                      is_challenge boolean,
-                      visibility text,
-                      data jsonb not null,
-                      fs_updated_time timestamp not null,
-                      primary key (contract_id, bet_id)
-);
+  contract_bets (
+    contract_id text not null,
+    bet_id text not null default random_alphanumeric (12),
+    user_id text not null,
+    answer_id text,
+    created_time timestamptz not null default now(),
+    amount numeric,
+    shares numeric,
+    outcome text,
+    prob_before numeric,
+    prob_after numeric,
+    is_ante boolean,
+    is_api boolean,
+    is_redemption boolean,
+    is_challenge boolean,
+    visibility text,
+    data jsonb not null,
+    fs_updated_time timestamp,
+    primary key (contract_id, bet_id)
+  );
 
 alter table contract_bets enable row level security;
 
 drop policy if exists "public read" on contract_bets;
 
 create policy "public read" on contract_bets for
-    select
-    using (true);
+select
+  using (true);
 
 create
-    or replace function contract_bet_populate_cols () returns trigger language plpgsql as $$
+or replace function contract_bet_populate_cols () returns trigger language plpgsql as $$
 begin
+    if new.bet_id is not null then
+        new.data := new.data || jsonb_build_object('id', new.bet_id);
+    end if;
     if new.data is not null then
         new.user_id := (new.data) ->> 'userId';
-        new.created_time :=
-                case when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint) else null end;
         new.amount := ((new.data) ->> 'amount')::numeric;
         new.shares := ((new.data) ->> 'shares')::numeric;
         new.outcome := ((new.data) ->> 'outcome');
@@ -52,8 +53,8 @@ end
 $$;
 
 create trigger contract_bet_populate before insert
-    or
-    update on contract_bets for each row
+or
+update on contract_bets for each row
 execute function contract_bet_populate_cols ();
 
 /* serves bets API pagination */
@@ -71,37 +72,34 @@ create index if not exists contract_bets_contract_user_id on contract_bets (cont
 /* serving the user bets API */
 create index if not exists contract_bets_user_id on contract_bets (user_id, created_time desc);
 
-create index if not exists contract_bets_answer_id_created_time
-    on contract_bets (answer_id, created_time desc);
+create index if not exists contract_bets_answer_id_created_time on contract_bets (answer_id, created_time desc);
 
 create index if not exists contract_bets_user_outstanding_limit_orders on contract_bets (
-                                                                                         user_id,
-                                                                                         ((data -> 'isFilled')::boolean),
-                                                                                         ((data -> 'isCancelled')::boolean)
-    );
+  user_id,
+  ((data -> 'isFilled')::boolean),
+  ((data -> 'isCancelled')::boolean)
+);
 
 -- Interim index to use until we have our own, firestore-independent, updated_time column
-create index concurrently if not exists contract_bets_user_updated_time
-    on contract_bets (user_id, fs_updated_time desc);
-
+create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, fs_updated_time desc);
 
 alter table contract_bets
-    cluster on contract_bets_created_time;
+cluster on contract_bets_created_time;
 
 drop policy if exists "Enable read access for non private bets" on public.contract_bets;
 
 create policy "Enable read access for non private bets" on public.contract_bets for
-    select
-    using ((visibility <> 'private'::text));
+select
+  using ((visibility <> 'private'::text));
 
 create or replace view
-    public.contract_bets_rbac as
+  public.contract_bets_rbac as
 select
-    *
+  *
 from
-    contract_bets
+  contract_bets
 where
-    (visibility <> 'private')
-   or (
+  (visibility <> 'private')
+  or (
     can_access_private_contract (contract_id, firebase_uid ())
-    )
+  )

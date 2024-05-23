@@ -1,7 +1,5 @@
 import * as admin from 'firebase-admin'
-
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { Bet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { onCreateBets } from 'api/on-create-bet'
 import {
@@ -14,6 +12,7 @@ import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import { convertBet } from 'common/supabase/bets'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -35,7 +34,6 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
   const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
     const contractDoc = firestore.doc(`contracts/${contractId}`)
 
-    const betsQ = contractDoc.collection('bets').where('userId', '==', uid)
     log(
       `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
     )
@@ -47,14 +45,9 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
     if ('resolution' in answersToSell && answersToSell.resolution)
       throw new APIError(403, 'Answer is resolved and cannot be bet on')
 
-    const userBetsSnap = await Promise.all(
-      answersToSell.map(async (answer) =>
-        fbTrans.get(betsQ.where('answerId', '==', answer.id))
-      )
-    )
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, fbTrans, contractDoc, answer.id)
+        getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answer.id)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
@@ -62,9 +55,13 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
     unfilledBetsAndBalances.forEach((b) => {
       balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
     })
-    const userBets = userBetsSnap.flatMap((snap) =>
-      snap.docs.map((doc) => doc.data() as Bet)
+
+    const userBets = await pgTrans.map(
+      `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
+      [uid, answersToSell.map((a) => a.id)],
+      convertBet
     )
+
     const loanAmountByAnswerId = mapValues(
       groupBy(userBets, 'answerId'),
       (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)

@@ -14,7 +14,6 @@ import {
   getCpmmProbability,
 } from 'common/calculate-cpmm'
 import { isAdminId } from 'common/envs/constants'
-import { Bet } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
@@ -28,6 +27,13 @@ import {
 } from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
+import { convertBet } from 'common/supabase/bets'
+import { convertAnswer } from 'common/supabase/contracts'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -299,7 +305,7 @@ async function createAnswerAndSumAnswersToOne(
     updatedOtherAnswer,
   ]
   const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(pgTrans, fbTrans, contractDoc)
+    await getUnfilledBetsAndUserBalances(pgTrans, contractDoc)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
@@ -356,16 +362,16 @@ async function createAnswerAndSumAnswersToOne(
 
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
-    const betDoc = contractDoc.collection('bets').doc()
-    fbTrans.create(betDoc, {
-      id: betDoc.id,
-      userId: user.id,
-      userAvatarUrl: user.avatarUrl,
-      userUsername: user.username,
-      userName: user.name,
-      isApi: false,
-      ...bet,
-    })
+
+    const betRow = await insertBet(
+      {
+        userId: user.id,
+        isApi: false,
+        ...bet,
+      },
+      pgTrans
+    )
+
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
@@ -380,19 +386,17 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
-    for (const bet of ordersToCancel) {
-      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-        isCancelled: true,
-      })
-    }
+    await updateMakers(makers, betRow.bet_id, pgTrans)
+    await cancelLimitOrders(
+      pgTrans,
+      ordersToCancel.map((b) => b.id)
+    )
   }
 
-  for (const bet of unfilledBetsOnOther) {
-    fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-      isCancelled: true,
-    })
-  }
+  await cancelLimitOrders(
+    pgTrans,
+    unfilledBetsOnOther.map((b) => b.id)
+  )
 }
 
 const firestore = admin.firestore()
@@ -401,22 +405,27 @@ async function convertOtherAnswerShares(
   contractId: string,
   newAnswerId: string
 ) {
+  const pg = createSupabaseDirectClient()
   // Run as transaction to prevent race conditions.
-  const { answers, betsByUserId, newAnswer, otherAnswer } =
-    await firestore.runTransaction(async (transaction) => {
+  const { answers, betsByUserId, newAnswer, otherAnswer } = await pg.tx(
+    async (tx) => {
       const now = Date.now()
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-      const answersSnap = await transaction.get(
-        contractDoc.collection('answersCpmm').orderBy('index')
+
+      const answers = await tx.map(
+        `select * from answers where contract_id = $1 order by index`,
+        [contractId],
+        convertAnswer
       )
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+
       const newAnswer = answers.find((a) => a.id === newAnswerId)!
       const otherAnswer = answers.find((a) => a.isOther)!
 
-      const betsSnap = await transaction.get(
-        contractDoc.collection('bets').where('answerId', '==', otherAnswer.id)
+      const bets = await pg.map(
+        `select * from contract_bets where contract_id = $1 and answer_id = $2`,
+        [contractId, otherAnswer.id],
+        convertBet
       )
-      const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+
       const betsByUserId = groupBy(bets, (b) => b.userId)
 
       // Gain YES shares in new answer for each YES share in Other.
@@ -426,12 +435,9 @@ async function convertOtherAnswerShares(
           (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
         )
         if (!floatingEqual(position, 0) && position > 0) {
-          const betDoc = contractDoc.collection('bets').doc()
           const freeYesSharesBet: CandidateBet & {
-            id: string
             userId: string
           } = {
-            id: betDoc.id,
             contractId,
             userId,
             answerId: newAnswer.id,
@@ -451,86 +457,77 @@ async function convertOtherAnswerShares(
             visibility: bets[0].visibility,
             isApi: false,
           }
-          transaction.create(betDoc, freeYesSharesBet)
+          await insertBet(freeYesSharesBet, tx)
         }
       }
 
       return { answers, betsByUserId, newAnswer, otherAnswer }
-    })
-
-  await Promise.all(
-    // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
-    Object.entries(betsByUserId).map(async ([userId, bets]) => {
-      // Run each in a separate transaction so we don't hit 500 doc limit.
-      await firestore.runTransaction(async (transaction) => {
-        const now = Date.now()
-        const contractDoc = firestore.doc(`contracts/${contractId}`)
-        const noPosition = sumBy(
-          bets,
-          (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
-        )
-        if (!floatingEqual(noPosition, 0) && noPosition > 0) {
-          const betDoc = contractDoc.collection('bets').doc()
-          const convertNoSharesBet: CandidateBet & {
-            id: string
-            userId: string
-          } = {
-            id: betDoc.id,
-            contractId,
-            userId,
-            answerId: otherAnswer.id,
-            outcome: 'NO',
-            shares: -noPosition,
-            amount: 0,
-            isCancelled: false,
-            isFilled: true,
-            loanAmount: 0,
-            probBefore: otherAnswer.prob,
-            probAfter: otherAnswer.prob,
-            createdTime: now,
-            fees: noFees,
-            isAnte: false,
-            isRedemption: true,
-            isChallenge: false,
-            visibility: bets[0].visibility,
-            isApi: false,
-          }
-          transaction.create(betDoc, convertNoSharesBet)
-
-          const previousAnswers = answers.filter(
-            (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
-          )
-          for (const answer of previousAnswers) {
-            const betDoc = contractDoc.collection('bets').doc()
-            const gainYesSharesBet: CandidateBet & {
-              id: string
-              userId: string
-            } = {
-              id: betDoc.id,
-              contractId,
-              userId,
-              answerId: answer.id,
-              outcome: 'YES',
-              shares: noPosition,
-              amount: 0,
-              isCancelled: false,
-              isFilled: true,
-              loanAmount: 0,
-              probBefore: answer.prob,
-              probAfter: answer.prob,
-              createdTime: now,
-              fees: noFees,
-              isAnte: false,
-              isRedemption: true,
-              isChallenge: false,
-              visibility: bets[0].visibility,
-              isApi: false,
-            }
-            transaction.create(betDoc, gainYesSharesBet)
-          }
-        }
-      })
-    })
+    }
   )
+
+  // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
+  const newBets: (CandidateBet & { userId: string })[] = []
+  for (const [userId, bets] of Object.entries(betsByUserId)) {
+    const now = Date.now()
+    const noPosition = sumBy(
+      bets,
+      (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
+    )
+    if (!floatingEqual(noPosition, 0) && noPosition > 0) {
+      const convertNoSharesBet: CandidateBet & {
+        userId: string
+      } = {
+        contractId,
+        userId,
+        answerId: otherAnswer.id,
+        outcome: 'NO',
+        shares: -noPosition,
+        amount: 0,
+        isCancelled: false,
+        isFilled: true,
+        loanAmount: 0,
+        probBefore: otherAnswer.prob,
+        probAfter: otherAnswer.prob,
+        createdTime: now,
+        fees: noFees,
+        isAnte: false,
+        isRedemption: true,
+        isChallenge: false,
+        visibility: bets[0].visibility,
+        isApi: false,
+      }
+      newBets.push(convertNoSharesBet)
+
+      const previousAnswers = answers.filter(
+        (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
+      )
+      for (const answer of previousAnswers) {
+        const gainYesSharesBet: CandidateBet & {
+          userId: string
+        } = {
+          contractId,
+          userId,
+          answerId: answer.id,
+          outcome: 'YES',
+          shares: noPosition,
+          amount: 0,
+          isCancelled: false,
+          isFilled: true,
+          loanAmount: 0,
+          probBefore: answer.prob,
+          probAfter: answer.prob,
+          createdTime: now,
+          fees: noFees,
+          isAnte: false,
+          isRedemption: true,
+          isChallenge: false,
+          visibility: bets[0].visibility,
+          isApi: false,
+        }
+        newBets.push(gainYesSharesBet)
+      }
+    }
+  }
+  await bulkInsertBets(newBets)
   return answers
 }

@@ -1,9 +1,6 @@
 import * as functions from 'firebase-functions'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { LimitBet } from 'common/bet'
-import * as admin from 'firebase-admin'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { secrets } from 'common/secrets'
-const firestore = admin.firestore()
 
 export const expireLimitOrdersScheduler = functions
   .runWith({
@@ -14,29 +11,16 @@ export const expireLimitOrdersScheduler = functions
   .onRun(expireLimitOrders)
 
 export async function expireLimitOrders() {
-  // get all unfilled limit order bets
-  const db = createSupabaseClient()
-  const { data } = await db
-    .from('contract_bets')
-    .select('data')
-    .eq('data->>isFilled', false)
-    .eq('data->>isCancelled', false)
-    .lt('data->>expiresAt', Date.now())
-  if (!data) {
-    console.log('no bets to cancel')
-    return
-  }
-  console.log('cancelling', data.length, 'bets')
-  // for each bet, cancel it
-  await Promise.all(
-    data.map(async (datum) => {
-      const bet = datum.data as LimitBet
-      return await firestore
-        .collection(`contracts/${bet.contractId}/bets`)
-        .doc(bet.id)
-        .update({
-          isCancelled: true,
-        })
-    })
-  )
+  const pg = createSupabaseDirectClient()
+
+  const { count } = await pg.one(`
+    update contract_bets
+    set data = data || '{"isCancelled": true}'
+    where data->>'isFilled' = false
+    and data->>'isCancelled' = false
+    and data->>'expiresAt' < ts_to_millis(now())
+    returning count(*)
+  `)
+
+  console.log(`Expired ${count} limit orders`)
 }

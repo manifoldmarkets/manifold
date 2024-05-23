@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
 import { mapValues, groupBy, sum, sumBy, chunk } from 'lodash'
-
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -23,7 +22,6 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
-import { Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
@@ -36,6 +34,7 @@ import {
 } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
+import { convertBet } from 'common/supabase/bets'
 
 export type ResolutionParams = {
   outcome: string
@@ -296,6 +295,8 @@ export const getDataAndPayoutInfo = async (
         liquidityDocs.filter((l) => !l.isAnte)
       : liquidityDocs
 
+  const pg = createSupabaseDirectClient()
+
   let bets: Bet[]
   if (
     unresolvedContract.mechanism === 'cpmm-multi-1' &&
@@ -303,24 +304,22 @@ export const getDataAndPayoutInfo = async (
   ) {
     // Load bets from supabase as an optimization.
     // This type of multi choice generates a lot of extra bets that have shares = 0.
-    const pg = createSupabaseDirectClient()
     bets = await pg.map(
       `select * from contract_bets
       where contract_id = $1
       and (shares != 0 or (data->>'loanAmount')::numeric != 0)
       `,
       [contractId],
-      (row) => row.data
+      convertBet
     )
   } else {
-    let betsQuery: Query<any> = firestore.collection(
-      `contracts/${contractId}/bets`
+    bets = await pg.map(
+      `select * from contract_bets
+      where contract_id = $1
+      ${answerId ? `and data->>'answerId' = $2` : ''}`,
+      [contractId, answerId],
+      convertBet
     )
-    if (answerId) {
-      betsQuery = betsQuery.where('answerId', '==', answerId)
-    }
-    const betsSnap = await betsQuery.get()
-    bets = betsSnap.docs.map((doc) => doc.data() as Bet)
   }
 
   const resolutionProbability =

@@ -1,6 +1,7 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import {
   createSupabaseDirectClient,
+  pgp,
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
@@ -101,19 +102,22 @@ export const requestloan: APIHandler<'request-loan'> = async (_, auth) => {
     await payUserLoan(user.id, payout, tx)
     await createLoanIncomeNotification(user, payout)
 
-    const userBetUpdates = updates.map((update) => ({
-      doc: firestore
-        .collection('contracts')
-        .doc(update.contractId)
-        .collection('bets')
-        .doc(update.betId),
-      fields: {
-        loanAmount: update.loanTotal,
-      },
-    }))
+    const values = updates.map((update) =>
+      pgp.as.format(`($1, $2, $3)`, [
+        update.contractId,
+        update.betId,
+        update.loanTotal,
+      ])
+    )
 
-    const betUpdates = userBetUpdates.flat()
-    await writeAsync(firestore, betUpdates)
+    await tx.none(
+      `update users u
+       set 
+        data = u.data || '{"loanAmount": $2}',
+      from (values ${values}) as v(contract_id, bet_id, loan_total)
+      where u.contract_id = v.contract_id and u.bet_id = v.bet_id`
+    )
+
     log(`Paid out ${payout} to user ${user.id}.`)
 
     return { payout }

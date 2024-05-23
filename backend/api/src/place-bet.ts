@@ -1,7 +1,6 @@
 import * as admin from 'firebase-admin'
-import { DocumentReference, Query, Transaction } from 'firebase-admin/firestore'
+import { DocumentReference, Transaction } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
-
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
 import { User } from 'common/user'
@@ -25,6 +24,8 @@ import { formatMoneyWithDecimals } from 'common/util/format'
 import { SupabaseTransaction } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import { convertBet } from 'common/supabase/bets'
+import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -95,7 +96,7 @@ export const placeBetMain = async (
           `Checking for limit orders in placebet for user ${uid} on contract id ${contractId}.`
         )
         const { unfilledBets, balanceByUserId } =
-          await getUnfilledBetsAndUserBalances(pgTrans, fbTrans, contractDoc)
+          await getUnfilledBetsAndUserBalances(pgTrans, contractDoc)
 
         return getBinaryCpmmBetInfo(
           contract,
@@ -137,7 +138,6 @@ export const placeBetMain = async (
         const { unfilledBets, balanceByUserId } =
           await getUnfilledBetsAndUserBalances(
             pgTrans,
-            fbTrans,
             contractDoc,
             // Fetch all limit orders if answers should sum to one.
             shouldAnswersSumToOne ? undefined : answerId
@@ -205,30 +205,20 @@ export const placeBetMain = async (
 
 const firestore = admin.firestore()
 
-const getUnfilledBetsQuery = (
-  contractDoc: DocumentReference,
-  answerId?: string
-) => {
-  const q = contractDoc
-    .collection('bets')
-    .where('isFilled', '==', false)
-    .where('isCancelled', '==', false) as Query<LimitBet>
-  if (answerId) {
-    return q.where('answerId', '==', answerId)
-  }
-  return q
-}
-
 export const getUnfilledBetsAndUserBalances = async (
   pgTrans: SupabaseTransaction,
-  fbTrans: Transaction,
   contractDoc: DocumentReference,
   answerId?: string
 ) => {
-  const unfilledBetsSnap = await fbTrans.get(
-    getUnfilledBetsQuery(contractDoc, answerId)
+  const unfilledBets = await pgTrans.map(
+    `select * from contract_bets
+    where contract_id = $1
+    and (data->'isFilled')::boolean = false
+    and (data->'isCancelled')::boolean = false
+    ${answerId ? `and answer_id = $2` : ''}`,
+    [contractDoc.id, answerId],
+    (r) => convertBet(r) as LimitBet
   )
-  const unfilledBets = unfilledBetsSnap.docs.map((doc) => doc.data())
 
   // Get balance of all users with open limit orders.
   const userIds = uniq(unfilledBets.map((bet) => bet.userId))
@@ -240,6 +230,7 @@ export const getUnfilledBetsAndUserBalances = async (
 
   return { unfilledBets, balanceByUserId }
 }
+
 export type NewBetResult = BetInfo & {
   makers?: maker[]
   ordersToCancel?: LimitBet[]
@@ -330,32 +321,25 @@ export const processNewBetResult = async (
     }
   }
 
-  const betDoc = contractDoc.collection('bets').doc()
-
   const fullBet = removeUndefinedProps({
-    id: betDoc.id,
     userId: user.id,
-    userAvatarUrl: user.avatarUrl,
-    userUsername: user.username,
-    userName: user.name,
     isApi,
     replyToCommentId,
     betGroupId,
     ...newBet,
   })
-  fbTrans.create(betDoc, fullBet)
-  fullBets.push(fullBet)
-  log(`Created new bet document for ${user.username} - auth ${user.id}.`)
+  const { bet_id } = await insertBet(fullBet, pgTrans)
+
+  log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
+    await updateMakers(makers, bet_id, pgTrans)
   }
   if (ordersToCancel) {
-    for (const bet of ordersToCancel) {
-      fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-        isCancelled: true,
-      })
-    }
+    await cancelLimitOrders(
+      pgTrans,
+      ordersToCancel.map((o) => o.id)
+    )
     allOrdersToCancel.push(...ordersToCancel)
   }
 
@@ -408,6 +392,7 @@ export const processNewBetResult = async (
     }
 
     if (otherBetResults) {
+      // TODO: do in a single query as a bulk update
       for (const result of otherBetResults) {
         const { answer, bet, cpmmState, makers, ordersToCancel } = result
         const { probBefore, probAfter } = bet
@@ -417,9 +402,7 @@ export const processNewBetResult = async (
           Math.abs(probAfter - probBefore) < 0.00001
 
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
-          const betDoc = contractDoc.collection('bets').doc()
           const fullBet = removeUndefinedProps({
-            id: betDoc.id,
             userId: user.id,
             userAvatarUrl: user.avatarUrl,
             userUsername: user.username,
@@ -428,8 +411,8 @@ export const processNewBetResult = async (
             betGroupId,
             ...bet,
           })
-          fbTrans.create(betDoc, fullBet)
-          fullBets.push(fullBet)
+          const betRow = await insertBet(fullBet, pgTrans)
+          fullBets.push(convertBet(betRow))
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
           fbTrans.update(
@@ -441,21 +424,22 @@ export const processNewBetResult = async (
             })
           )
         }
-        await updateMakers(makers, betDoc.id, contractDoc, pgTrans, fbTrans)
-        for (const bet of ordersToCancel) {
-          fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-            isCancelled: true,
-          })
-        }
+        await updateMakers(makers, bet_id, pgTrans)
+        await cancelLimitOrders(
+          pgTrans,
+          ordersToCancel.map((o) => o.id)
+        )
+
         allOrdersToCancel.push(...ordersToCancel)
       }
     }
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
   }
+
   return {
     newBet,
-    betId: betDoc.id,
+    betId: bet_id,
     contract,
     makers,
     allOrdersToCancel,
@@ -519,10 +503,9 @@ export type maker = {
 export const updateMakers = async (
   makers: maker[],
   takerBetId: string,
-  contractDoc: DocumentReference,
-  pgTrans: SupabaseTransaction,
-  fbTrans: Transaction
+  pgTrans: SupabaseTransaction
 ) => {
+  // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
     const bet = makers[0].bet
@@ -535,13 +518,16 @@ export const updateMakers = async (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Updated a matched limit order.')
-    fbTrans.update(contractDoc.collection('bets').doc(bet.id), {
-      fills,
-      isFilled,
-      amount: totalAmount,
-      shares: totalShares,
-    })
+    log('Update a matched limit order.')
+    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
+      JSON.stringify({
+        fills,
+        isFilled,
+        amount: totalAmount,
+        shares: totalShares,
+      }),
+      bet.id,
+    ])
   }
 
   // Deduct balance of makers.
