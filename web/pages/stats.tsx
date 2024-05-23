@@ -187,9 +187,9 @@ export function CustomAnalytics(props: {
           </div>
         </Row>
         <Row className="justify-between">
-          <div className="text-ink-700">Spice balances</div>
+          <div className="text-ink-700">Prize point balances</div>
           <div className="text-ink-700 font-semibold">
-            SP{formatWithCommas(manaSupply.spiceBalance)}
+            ₽{formatWithCommas(manaSupply.spiceBalance)}
           </div>
         </Row>
         <Row className="justify-between">
