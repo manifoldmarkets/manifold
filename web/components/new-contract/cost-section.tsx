@@ -1,4 +1,4 @@
-import { CreateableOutcomeType, Visibility } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -11,19 +11,9 @@ import { AddFundsModal } from 'web/components/add-funds-modal'
 export const CostSection = (props: {
   balance: number
   outcomeType: CreateableOutcomeType
-  visibility: Visibility
   amountSuppliedByUser: number
-  isMulti: boolean
-  isPartner: boolean
 }) => {
-  const {
-    balance,
-    outcomeType,
-    visibility,
-    amountSuppliedByUser,
-    isMulti,
-    isPartner,
-  } = props
+  const { balance, outcomeType, amountSuppliedByUser } = props
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   return (

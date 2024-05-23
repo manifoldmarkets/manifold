@@ -14,7 +14,6 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { marketCreationCosts } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
@@ -50,7 +49,6 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcastNewContract } from './websockets/helpers'
-import { updateUser } from 'shared/supabase/users'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -155,28 +153,13 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
-      user,
-      ante,
-      !!specialLiquidityPerAnswer
-    )
-
-    if (amountSuppliedByUser > user.balance)
-      throw new APIError(
-        403,
-        `Balance must be at least ${amountSuppliedByUser}.`
-      )
+    if (ante > user.balance)
+      throw new APIError(403, `Balance must be at least ${ante}.`)
 
     let answerLoverUserIds: string[] = []
     if (isLove && answers) {
       answerLoverUserIds = await getLoveAnswerUserIds(answers)
       console.log('answerLoverUserIds', answerLoverUserIds)
-    }
-
-    if (amountSuppliedByHouse > 0) {
-      await updateUser(tx, user.id, {
-        freeQuestionsCreated: (user.freeQuestionsCreated ?? 0) + 1,
-      })
     }
 
     const contract = await firestore.runTransaction(async (trans) => {
@@ -228,8 +211,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     await runCreateMarketTxn({
       contractId: contract.id,
       userId,
-      amountSuppliedByUser,
-      amountSuppliedByHouse,
+      amountSuppliedByUser: ante,
+      amountSuppliedByHouse: 0,
       transaction: tx,
     })
 

@@ -15,8 +15,6 @@ import {
   Visibility,
 } from 'common/contract'
 import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
-import { PARTNER_USER_IDS } from 'common/envs/constants'
-import { formatMoney } from 'common/util/format'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -30,12 +28,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
-import {
-  freeQuestionRemaining,
-  getAvailableBalancePerQuestion,
-  marketCreationCosts,
-  User,
-} from 'common/user'
+import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -63,7 +56,6 @@ import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-nu
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
-import { useAdminOrMod } from 'web/hooks/use-admin'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -184,7 +176,6 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
 
-  const isPartner = PARTNER_USER_IDS.includes(creator.id)
   const ante = getAnte(outcomeType, numAnswers)
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
@@ -216,18 +207,12 @@ export function ContractParamsForm(props: {
     `is-auto-bounty` + paramsKey
   )
 
-  const balance = getAvailableBalancePerQuestion(creator)
-  const { amountSuppliedByUser, amountSuppliedByHouse } = marketCreationCosts(
-    creator,
-    outcomeType !== 'BOUNTIED_QUESTION'
-      ? ante
-      : freeQuestionRemaining(
-          creator.freeQuestionsCreated,
-          creator.createdTime
-        ) > 0
-      ? 250
-      : bountyAmount ?? defaultBountyAmount
-  )
+  const { balance } = creator
+
+  const anteOrBounty =
+    outcomeType === 'BOUNTIED_QUESTION'
+      ? bountyAmount ?? defaultBountyAmount
+      : ante
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -269,7 +254,6 @@ export function ContractParamsForm(props: {
   }, [outcomeType])
 
   const isValidQuestion = question.length > 0
-  const isMod = useAdminOrMod()
   const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
@@ -393,8 +377,7 @@ export function ContractParamsForm(props: {
         shouldAnswersSumToOne,
         visibility,
         utcOffset: new Date().getTimezoneOffset(),
-        totalBounty:
-          amountSuppliedByHouse > 0 ? amountSuppliedByHouse : bountyAmount,
+        totalBounty: bountyAmount,
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
@@ -509,20 +492,14 @@ export function ContractParamsForm(props: {
             <span className="mb-1 mr-1">Bounty</span>
             <InfoTooltip text="The award you give good answers. You can divide this amongst answers however you'd like." />
           </label>
-          {amountSuppliedByHouse === 0 ? (
-            <BuyAmountInput
-              minimumAmount={MINIMUM_BOUNTY}
-              amount={bountyAmount}
-              onChange={(newAmount) => setBountyAmount(newAmount)}
-              error={bountyError}
-              setError={setBountyError}
-              quickButtonValues="large"
-            />
-          ) : (
-            <div className="text-ink-700 pl-1 text-sm">
-              {formatMoney(amountSuppliedByHouse)} (Supplied by the house)
-            </div>
-          )}
+          <BuyAmountInput
+            minimumAmount={MINIMUM_BOUNTY}
+            amount={bountyAmount}
+            onChange={(newAmount) => setBountyAmount(newAmount)}
+            error={bountyError}
+            setError={setBountyError}
+            quickButtonValues="large"
+          />
           <Row className="mt-2 items-center gap-2">
             <span>
               Auto-award bounty{' '}
@@ -601,11 +578,8 @@ export function ContractParamsForm(props: {
       />
       <CostSection
         balance={balance}
-        amountSuppliedByUser={amountSuppliedByUser}
+        amountSuppliedByUser={anteOrBounty}
         outcomeType={outcomeType}
-        isMulti={isMulti}
-        isPartner={isPartner}
-        visibility={visibility}
       />
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button
