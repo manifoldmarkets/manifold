@@ -47,7 +47,7 @@ export const awardBounty = async (props: {
     )
   }
 
-  if (contract.creatorId !== contractId) {
+  if (contract.creatorId !== fromUserId) {
     throw new APIError(
       403,
       'A bounty can only be given by the creator of the question'
