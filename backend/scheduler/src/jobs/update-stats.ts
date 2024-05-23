@@ -30,7 +30,7 @@ import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
 import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
 
-const numberOfDays = 365 * 2
+const numberOfDays = 365
 
 interface StatEvent {
   id: string
@@ -203,7 +203,6 @@ export const updateStatsCore = async () => {
   const midnightLastNight = dayjs()
     .tz('America/Los_Angeles')
     .startOf('day')
-    .subtract(1, 'second')
     .valueOf()
 
   const start = dayjs(midnightLastNight)
