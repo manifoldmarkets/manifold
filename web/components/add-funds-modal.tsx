@@ -96,7 +96,7 @@ export function BuyManaTab(props: { onClose: () => void }) {
   useEffect(() => setUrl(window.location.href), [])
 
   const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 1000
+  const pastLimit = totalPurchased >= 2500
 
   return (
     <>
@@ -272,6 +272,6 @@ const use24hrUsdPurchases = (userId: string) => {
       purchases
         .filter((t) => t.createdTime > Date.now() - DAY_MS)
         .map((t) => t.amount)
-    ) / 100
+    ) / 1000
   )
 }
