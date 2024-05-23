@@ -31,6 +31,9 @@ select
 create
 or replace function contract_bet_populate_cols () returns trigger language plpgsql as $$
 begin
+    if new.bet_id is not null then
+        new.data := new.data || jsonb_build_object('id', new.bet_id);
+    end if;
     if new.data is not null then
         new.user_id := (new.data) ->> 'userId';
         new.amount := ((new.data) ->> 'amount')::numeric;
