@@ -8,6 +8,7 @@ import { User } from 'common/user'
 
 import { buildArray } from 'common/util/array'
 import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
+import { removeUndefinedProps } from 'common/util/object'
 export const CREATOR_UPDATE_FREQUENCY = 13
 export async function updateCreatorMetricsCore() {
   const now = Date.now()
@@ -84,7 +85,6 @@ export async function updateCreatorMetricsCore() {
     .filter((u) => Object.keys(creatorTraders).includes(u.id))
     .map((user) => ({
       ...user,
-
       creatorTraders: {
         ...creatorTraders[user.id],
         allTime:
@@ -106,7 +106,10 @@ export async function updateCreatorMetricsCore() {
         pg,
         'users',
         ['id'],
-        userUpdates.map((u) => ({ id: u.id, data: u }))
+        userUpdates.map((u) => ({
+          id: u.id,
+          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+        }))
       )
         .catch((e) => log.error('Error bulk writing user updates', e))
         .then(() => log('Committed Firestore writes.'))
