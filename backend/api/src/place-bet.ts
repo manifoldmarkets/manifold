@@ -330,7 +330,7 @@ export const processNewBetResult = async (
   })
   const { bet_id } = await insertBet(fullBet, pgTrans)
 
-  log(`Created new bet document for ${user.username} - auth ${user.id}.`)
+  log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
     await updateMakers(makers, bet_id, pgTrans)
@@ -392,6 +392,7 @@ export const processNewBetResult = async (
     }
 
     if (otherBetResults) {
+      // TODO: do in a single query as a bulk update
       for (const result of otherBetResults) {
         const { answer, bet, cpmmState, makers, ordersToCancel } = result
         const { probBefore, probAfter } = bet
@@ -504,6 +505,7 @@ export const updateMakers = async (
   takerBetId: string,
   pgTrans: SupabaseTransaction
 ) => {
+  // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
     const bet = makers[0].bet
@@ -516,8 +518,8 @@ export const updateMakers = async (
     const totalAmount = sumBy(fills, 'amount')
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
-    log('Updated a matched limit order.')
-    await pgTrans.none(`update bets set data = data || $1 where bet_id = $2`, [
+    log('Update a matched limit order.')
+    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
       JSON.stringify({
         fills,
         isFilled,

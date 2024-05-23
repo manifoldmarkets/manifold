@@ -34,7 +34,6 @@ export const getBetsRepliedToComment = async (
   )
 }
 
-// does not do finance
 export const insertBet = async (
   bet: Omit<Bet, 'id'>,
   pg: SupabaseDirectClient = createSupabaseDirectClient()
@@ -45,21 +44,25 @@ export const bulkInsertBets = async (
   bets: Omit<Bet, 'id'>[],
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
+  if (bets.length > 0) {
+    return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
+  }
 }
 
 const betToRow = (bet: Omit<Bet, 'id'>) => ({
   contract_id: bet.contractId,
   user_id: bet.userId,
-  data: removeUndefinedProps(bet),
+  data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
 })
 
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
   limitOrderIds: string[]
 ) => {
-  await pg.none(
-    `update contract_bets set data = data || '{"isCancelled":true}' where bet_id in ($1:list)`,
-    [limitOrderIds]
-  )
+  if (limitOrderIds.length > 0) {
+    await pg.none(
+      `update contract_bets set data = data || '{"isCancelled":true}' where bet_id in ($1:list)`,
+      [limitOrderIds]
+    )
+  }
 }
