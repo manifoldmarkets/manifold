@@ -200,7 +200,7 @@ export const onCreateBets = async (
   )
 
   // New users in last month.
-  if (originalBettor.createdTime > Date.now() - MONTH_MS) {
+  if (originalBettor.createdTime > Date.now() - MONTH_MS && bets.length > 0) {
     const bet = bets[0]
 
     const otherBetToday = await pg.oneOrNone(
@@ -209,7 +209,7 @@ export const onCreateBets = async (
           and DATE(created_time) = DATE($2)
           and bet_id != $3
           limit 1`,
-      [originalBettor.id, new Date(bets[0].createdTime).toISOString(), bet.id]
+      [originalBettor.id, new Date(bet.createdTime).toISOString(), bet.id]
     )
     if (!otherBetToday) {
       const numBetDays = await pg.one<number>(
