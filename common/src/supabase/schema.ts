@@ -3238,52 +3238,61 @@ export type Database = {
       public_contract_bets: {
         Row: {
           amount: number | null
+          answer_id: string | null
           bet_id: string | null
           contract_id: string | null
           created_time: string | null
           data: Json | null
           fs_updated_time: string | null
           is_ante: boolean | null
+          is_api: boolean | null
           is_challenge: boolean | null
           is_redemption: boolean | null
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
           shares: number | null
+          updated_time: string | null
           user_id: string | null
           visibility: string | null
         }
         Insert: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string | null
           user_id?: string | null
           visibility?: string | null
         }
         Update: {
           amount?: number | null
+          answer_id?: string | null
           bet_id?: string | null
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
           fs_updated_time?: string | null
           is_ante?: boolean | null
+          is_api?: boolean | null
           is_challenge?: boolean | null
           is_redemption?: boolean | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
+          updated_time?: string | null
           user_id?: string | null
           visibility?: string | null
         }
