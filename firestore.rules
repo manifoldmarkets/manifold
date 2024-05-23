@@ -21,39 +21,6 @@ service cloud.firestore {
       ]
     }
 
-    match /users/{userId} {
-      allow read;
-      allow update: if isAdmin();
-      allow update:
-      if userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['bio', 'website', 'twitterHandle', 'discordHandle', 'shouldShowWelcome', 'hasSeenContractFollowModal', 'homeSections', 'optOutBetWarnings', 'hasSeenLoanModal', 'isAdvancedTrader']);
-      // delete user rules
-      allow update: if userId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userDeleted', 'isBannedFromPosting'])
-        && request.resource.data.userDeleted == true
-        && request.resource.data.isBannedFromPosting == true;
-      // User referral rules
-      allow update: if userId == request.auth.uid
-                         && request.resource.data.diff(resource.data).affectedKeys()
-                          .hasOnly(['referredByUserId', 'referredByContractId', 'referredByGroupId'])
-                          // only one referral allowed per user
-                          && !("referredByUserId" in resource.data)
-                          // user can't refer themselves
-                          && !(userId == request.resource.data.referredByUserId);
-                          // quid pro quos enabled (only once though so nbd) - bc I can't make this work:
-                          // && (get(/databases/$(database)/documents/users/$(request.resource.data.referredByUserId)).referredByUserId == resource.data.id);
-      match /events/{eventId} {
-        allow create: if (request.auth == null && userId == 'NO_USER') || userId == request.auth.uid;
-        allow read: if userId == request.auth.uid || userId == '_';
-      }
-
-    }
-
-  	match /{somePath=**}/portfolioHistory/{portfolioHistoryId} {
-      allow read;
-    }
-
     match /private-users/{userId} {
       allow read: if userId == request.auth.uid || isAdmin();
       allow update: if (userId == request.auth.uid || isAdmin())
@@ -79,23 +46,11 @@ service cloud.firestore {
       allow delete: if request.resource.data.creatorId == request.auth.uid || isAdmin();
     }
 
-    match /{somePath=**}/bets/{betId} {
-      allow read;
-    }
-
     match /{somePath=**}/liquidity/{liquidityId} {
       allow read;
     }
 
-    match /{somePath=**}/answers/{answerId} {
-      allow read;
-    }
-
     match /{somePath=**}/answersCpmm/{answerId} {
-      allow read;
-    }
-
-    match /txns/{txnId} {
       allow read;
     }
 
