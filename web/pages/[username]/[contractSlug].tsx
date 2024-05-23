@@ -1,5 +1,10 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { mergeWith, uniqBy, sortBy } from 'lodash'
+import Head from 'next/head'
+import Image from 'next/image'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
 import { Answer } from 'common/answer'
 import { unserializeBase64Multi } from 'common/chart'
 import {
@@ -11,10 +16,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { mergeWith, uniqBy } from 'lodash'
-import Head from 'next/head'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPoints } from 'web/components/charts/contract/choice'
@@ -45,11 +46,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { useAnswersCpmm } from 'web/hooks/use-answers'
-import {
-  useBets,
-  useRealtimeBets,
-  useSubscribeNewBets,
-} from 'web/hooks/use-bets-supabase'
+import { useBets, useSubscribeNewBets } from 'web/hooks/use-bets-supabase'
 import {
   useFirebasePublicContract,
   useIsPrivateContractMember,
@@ -225,14 +222,12 @@ export function ContractPageContent(props: ContractParams) {
   useSaveContractVisitsLocally(user === null, contract.id)
 
   const isNumber = contract.outcomeType === 'NUMBER'
-  const isMultipleChoice = contract.outcomeType === 'MULTIPLE_CHOICE'
 
   const newBets = useSubscribeNewBets(contract.id, {
     afterTime: lastBetTime ?? 0,
-    includeRedemptions: isMultipleChoice || isNumber,
+    includeRedemptions: true,
   })
 
-  const stringifiedNewBets = JSON.stringify(newBets)
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
     props.totalBets +
@@ -241,8 +236,9 @@ export function ContractPageContent(props: ContractParams) {
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
     () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
-    [stringifiedNewBets]
+    [newBets.length]
   )
+  const yourNewBets = newBets.filter((bet) => bet.userId === user?.id)
 
   const betPoints = useMemo(() => {
     if (
@@ -260,13 +256,13 @@ export function ContractPageContent(props: ContractParams) {
       )
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
-      const newPoints = newBets.map((bet) => ({
+      const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
       }))
       return [...points, ...newPoints]
     }
-  }, [pointsString, stringifiedNewBets])
+  }, [pointsString, newBets.length])
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } = contract
 
@@ -495,7 +491,7 @@ export function ContractPageContent(props: ContractParams) {
                 />
               )}
 
-              <YourTrades contract={contract} />
+              <YourTrades contract={contract} yourNewBets={yourNewBets} />
             </Col>
             {showRelatedMarketsBelowBet && (
               <RelatedContractsGrid
@@ -645,19 +641,20 @@ function PrivateContractAdminTag(props: { contract: Contract; user: User }) {
   )
 }
 
-function YourTrades(props: { contract: Contract }) {
-  const { contract } = props
+function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
+  const { contract, yourNewBets } = props
   const user = useUser()
 
-  const betFilterOptions = {
+  const staticBets = useBets({
     contractId: contract.id,
-    userId: user === undefined ? 'loading' : user?.id ?? '_',
+    userId: !user ? 'loading' : user.id,
     filterAntes: true,
     order: 'asc',
-  } as const
-  const staticBets = useBets(betFilterOptions)
-  const { rows } = useRealtimeBets(betFilterOptions)
-  const userBets = rows ?? staticBets ?? []
+  })
+  const userBets = sortBy(
+    uniqBy([...(staticBets ?? []), ...yourNewBets], 'id'),
+    'createdTime'
+  )
 
   const visibleUserBets = userBets.filter(
     (bet) => !bet.isRedemption && bet.amount !== 0
