@@ -1,7 +1,5 @@
-import * as admin from 'firebase-admin'
 import { groupBy, mapValues, maxBy, min, sum, sumBy } from 'lodash'
 
-import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import {

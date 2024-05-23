@@ -3,7 +3,6 @@ import {
   log,
   getContractSupabase,
   revalidateContractStaticProps,
-  processPaginated,
 } from 'shared/utils'
 import * as admin from 'firebase-admin'
 import { trackPublicEvent } from 'shared/analytics'
@@ -17,7 +16,6 @@ import { isAdminId } from 'common/envs/constants'
 import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
 import { broadcastUpdatedContract } from './websockets/helpers'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 

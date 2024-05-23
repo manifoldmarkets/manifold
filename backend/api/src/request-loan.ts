@@ -7,7 +7,7 @@ import {
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { User } from 'common/user'
 import { Contract } from 'common/contract'
-import { log, writeAsync } from 'shared/utils'
+import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { groupBy, uniq } from 'lodash'
