@@ -7,6 +7,7 @@ import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { broadcastNewSubsidy } from './websockets/helpers'
+import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -50,7 +51,7 @@ export const addContractLiquidity = async (
       fromType: 'USER',
     })
 
-    return await firestore.runTransaction(async (transaction) => {
+    const liquidity = await firestore.runTransaction(async (transaction) => {
       const contractDoc = firestore.doc(`contracts/${contractId}`)
 
       const newLiquidityProvisionDoc = firestore
@@ -77,6 +78,11 @@ export const addContractLiquidity = async (
       broadcastNewSubsidy(contract, subsidyAmount)
       return newLiquidityProvision
     })
+
+    return {
+      result: liquidity,
+      continue: () => onCreateLiquidityProvision(liquidity),
+    }
   })
 }
 
