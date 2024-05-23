@@ -875,6 +875,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
             </linearGradient>
           </defs>
         )}
+        {data.length > 0 && (
         <AreaWithTopStroke
           color={typeof color === 'string' ? color : `url(#${gradientId})`}
           data={data}
@@ -884,7 +885,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
           curve={curve}
           className={areaClassName}
           onClick={onGraphClick}
-        />
+        />)}
         {mouse && (
           <SliceMarker color="#5BCEFF" x={mouse.x} y0={py0} y1={mouse.y} />
         )}
