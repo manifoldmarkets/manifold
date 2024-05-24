@@ -1406,6 +1406,84 @@ export type Database = {
         }
         Relationships: []
       }
+      txn_summary_stats: {
+        Row: {
+          category: string
+          created_time: string
+          end_time: string
+          from_type: string
+          id: number
+          quest_type: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Insert: {
+          category: string
+          created_time?: string
+          end_time: string
+          from_type: string
+          id?: never
+          quest_type?: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Update: {
+          category?: string
+          created_time?: string
+          end_time?: string
+          from_type?: string
+          id?: never
+          quest_type?: string | null
+          start_time?: string
+          to_type?: string
+          token?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      mana_supply_stats: {
+        Row: {
+          amm_liquidity: number
+          balance: number
+          created_time: string
+          end_time: string
+          id: number
+          investment_value: number
+          loan_total: number
+          spice_balance: number
+          start_time: string
+          total_value: number
+        }
+        Insert: {
+          amm_liquidity: number
+          balance: number
+          created_time?: string
+          end_time: string
+          id?: never
+          investment_value: number
+          loan_total: number
+          spice_balance: number
+          start_time: string
+          total_value: number
+        }
+        Update: {
+          amm_liquidity?: number
+          balance?: number
+          created_time?: string
+          end_time?: string
+          id?: never
+          investment_value?: number
+          loan_total?: number
+          spice_balance?: number
+          start_time?: string
+          total_value?: number
+        }
+        Relationships: []
+      }
       manachan_tweets: {
         Row: {
           cost: number | null

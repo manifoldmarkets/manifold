@@ -1217,6 +1217,19 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { status: string; reports: ModReport[] },
+  'get-mana-summary-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as Row<'txn_summary_stats'>[],
+    props: z
+      .object({
+        ignoreCategories: z.array(z.string()).optional(),
+        fromType: z.string().optional(),
+        toType: z.string().optional(),
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
   },
 } as const)
 
