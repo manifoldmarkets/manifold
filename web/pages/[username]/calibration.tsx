@@ -14,8 +14,10 @@ import { Row } from 'web/components/layout/row'
 import clsx from 'clsx'
 import { CalibrationChart } from 'web/components/charts/calibration'
 import { SizedContainer } from 'web/components/sized-container'
-import { DisplayUser, getUserByUsername } from 'web/lib/supabase/users'
+import { getFullUserByUsername } from 'web/lib/supabase/users'
 import Custom404 from '../404'
+import { DeletedUser } from '.'
+import { User } from 'web/lib/firebase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -23,7 +25,7 @@ export const getStaticProps = async (props: {
   }
 }) => {
   const { username } = props.params
-  const user = await getUserByUsername(username)
+  const user = await getFullUserByUsername(username)
 
   const bets = user
     ? await getUserBetsFromResolvedContracts(user.id, 10000)
@@ -54,7 +56,7 @@ export async function getStaticPaths() {
 }
 
 export default function CalibrationPage(props: {
-  user: DisplayUser | null
+  user: User | null
   yesPoints: { x: number; y: number }[]
   noPoints: { x: number; y: number }[]
   yesBetsBuckets: Record<number, [Contract, Bet][]>
@@ -65,6 +67,10 @@ export default function CalibrationPage(props: {
 
   if (!user) {
     return <Custom404 />
+  }
+
+  if (user.userDeleted) {
+    return <DeletedUser />
   }
 
   return (
