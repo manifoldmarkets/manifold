@@ -1,39 +1,54 @@
 import { useEffect } from 'react'
+import { uniq, uniqBy, sortBy } from 'lodash'
+
 import { Bet, LimitBet } from 'common/bet'
 import { usePollUserBalances } from './use-user'
-import { uniq } from 'lodash'
 import { db } from 'web/lib/supabase/db'
 import { getBets } from 'common/supabase/bets'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { useLiveUpdates } from './use-persistent-supabase-polling'
+import { useApiSubscription } from './use-api-subscription'
 
 export const useUnfilledBets = (
   contractId: string,
   options?: {
-    waitUntilAdvancedTrader: boolean
+    enabled?: boolean
   }
 ) => {
+  const { enabled = true } = options ?? {}
+
   const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
     undefined,
     `unfilled-bets-${contractId}`
   )
 
-  const pollBets = useLiveUpdates(
-    () => getBets(db, { contractId, isOpenLimitOrder: true }),
-    {
-      listen: !options?.waitUntilAdvancedTrader,
-    }
-  )
+  const addBets = (newBets: LimitBet[]) => {
+    setBets((bets) => {
+      return sortBy(
+        uniqBy([...newBets, ...(bets ?? [])], 'id'),
+        'createdTime'
+      ).filter(
+        (bet) =>
+          !bet.isFilled &&
+          !bet.isCancelled &&
+          (!bet.expiresAt || bet.expiresAt > Date.now())
+      )
+    })
+  }
 
   useEffect(() => {
-    if (pollBets) {
-      setBets(
-        (pollBets as LimitBet[]).filter(
-          (bet) => !bet.expiresAt || bet.expiresAt > Date.now()
-        )
+    if (enabled)
+      getBets(db, { contractId, isOpenLimitOrder: true }).then((bets) =>
+        addBets(bets as LimitBet[])
       )
-    }
-  }, [pollBets])
+  }, [enabled, contractId])
+
+  useApiSubscription({
+    enabled,
+    topics: [`contract/${contractId}/orders`],
+    onBroadcast: ({ data }) => {
+      addBets(data.bets as LimitBet[])
+    },
+  })
 
   return bets
 }

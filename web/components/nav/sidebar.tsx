@@ -39,6 +39,8 @@ import { DAY_MS } from 'common/util/time'
 import { LiveTVIcon } from '../tv-icon'
 import { useTVisActive } from '../tv/tv-schedule'
 import { PiRobotBold, PiTelevisionSimpleBold } from 'react-icons/pi'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { ReportsIcon } from '../reports-icon'
 
 export default function Sidebar(props: {
   className?: string
@@ -49,6 +51,7 @@ export default function Sidebar(props: {
   const currentPage = usePathname() ?? undefined
 
   const user = useUser()
+  const isAdminOrMod = useAdminOrMod()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
@@ -65,8 +68,13 @@ export default function Sidebar(props: {
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
         isNewUser,
         isLiveTV,
+        isAdminOrMod: isAdminOrMod,
       })
-    : getDesktopNav(!!user, () => setIsModalOpen(true), { isNewUser, isLiveTV })
+    : getDesktopNav(!!user, () => setIsModalOpen(true), {
+        isNewUser,
+        isLiveTV,
+        isAdminOrMod: isAdminOrMod,
+      })
 
   const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
 
@@ -124,7 +132,7 @@ export default function Sidebar(props: {
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean }
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
   if (loggedIn)
     return buildArray(
@@ -158,6 +166,11 @@ const getDesktopNav = (
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
+      },
+      options.isAdminOrMod && {
+        name: 'Reports',
+        href: '/reports',
+        icon: ReportsIcon,
       }
       // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
@@ -185,9 +198,9 @@ const getDesktopNav = (
 // No sidebar when signed out
 const getMobileNav = (
   toggleModal: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean }
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
-  const { isNewUser, isLiveTV } = options
+  const { isNewUser, isLiveTV, isAdminOrMod } = options
 
   return buildArray<NavItem>(
     { name: 'Get mana', icon: CashIcon, onClick: toggleModal },
@@ -211,6 +224,11 @@ const getMobileNav = (
       name: 'Messages',
       href: '/messages',
       icon: PrivateMessagesIcon,
+    },
+    isAdminOrMod && {
+      name: 'Reports',
+      href: '/reports',
+      icon: ReportsIcon,
     },
     !isNewUser && {
       name: 'Dashboards',

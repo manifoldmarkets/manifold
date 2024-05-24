@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin'
 import { Transaction as FirebaseTransaction } from 'firebase-admin/firestore'
 import {
   SupabaseTransaction,
-  createSupabaseDirectClient,
   SERIAL,
+  createShortTimeoutDirectClient,
 } from 'shared/supabase/init'
 import { log } from './utils'
 
@@ -14,10 +14,10 @@ export const runEvilTransaction = async <T>(
     fbTrans: FirebaseTransaction
   ) => Promise<T>
 ) => {
-  const pg = createSupabaseDirectClient()
+  const pg = createShortTimeoutDirectClient()
   let fbSuccess = false
   try {
-    return pg.tx({ mode: SERIAL }, async (pgTrans) => {
+    return await pg.tx({ mode: SERIAL }, async (pgTrans) => {
       const ret = await firestore.runTransaction(
         (fbTrans) => callback(pgTrans, fbTrans),
         { maxAttempts: 1 }

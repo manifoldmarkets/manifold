@@ -30,7 +30,7 @@ function appendQuery(url: string, props: Record<string, any>) {
   const params = new URLSearchParams(query)
   forEach(removeUndefinedProps(props ?? {}), (v, k) => {
     if (Array.isArray(v)) {
-      v.forEach((item) => params.append(k, item))
+      v.forEach((item) => params.append(k + '[]', item))
     } else {
       params.set(k, v)
     }

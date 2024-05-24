@@ -13,7 +13,7 @@ import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
 import { incrementBalance } from 'shared/supabase/users'
-import { SERIAL, createSupabaseDirectClient } from 'shared/supabase/init'
+import { SERIAL, createShortTimeoutDirectClient } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { bulkInsertBets } from 'shared/supabase/bets'
 
@@ -21,7 +21,7 @@ export const redeemShares = async (
   userId: string,
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
 ) => {
-  const pg = createSupabaseDirectClient()
+  const pg = createShortTimeoutDirectClient()
   const { id: contractId } = contract
 
   return await pg.tx({ mode: SERIAL }, async (tx) => {

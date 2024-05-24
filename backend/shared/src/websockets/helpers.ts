@@ -1,5 +1,5 @@
-import { broadcastMulti } from './server'
-import { Bet } from 'common/bet'
+import { broadcast, broadcastMulti } from './server'
+import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractComment } from 'common/comment'
 import { User } from 'common/user'
@@ -11,6 +11,15 @@ export function broadcastNewBets(contract: Contract, bets: Bet[]) {
   if (contract.visibility === 'public') {
     broadcastMulti(['global', 'global/new-bet'], { contract, bets })
   }
+
+  const newOrders = bets.filter((b) => b.limitProb && !b.isFilled) as LimitBet[]
+  broadcastOrders(newOrders)
+}
+
+export function broadcastOrders(bets: LimitBet[]) {
+  if (bets.length === 0) return
+  const { contractId } = bets[0]
+  broadcast(`contract/${contractId}/orders`, { bets })
 }
 
 export function broadcastNewComment(

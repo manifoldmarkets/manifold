@@ -29,6 +29,7 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
 import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
+import { calculateManaStats } from 'shared/calculate-mana-stats'
 
 const numberOfDays = 365
 
@@ -202,16 +203,26 @@ export const updateStatsCore = async () => {
   // We run the script at 4am, but we want data from the start of each day up until last midnight.
   const midnightLastNight = dayjs()
     .tz('America/Los_Angeles')
-    .startOf('day')
+    .subtract(1, 'day')
+    .endOf('day')
     .valueOf()
 
   const start = dayjs(midnightLastNight)
-    .subtract(numberOfDays, 'day')
+    .subtract(numberOfDays - 1, 'day')
+    .tz('America/Los_Angeles')
+    .startOf('day')
+    .valueOf()
+
+  const startOfDayAgo = dayjs(midnightLastNight)
     .tz('America/Los_Angeles')
     .startOf('day')
     .valueOf()
 
   log('Fetching data for stats update...')
+  await calculateManaStats(
+    start,
+    Math.round(dayjs(midnightLastNight).diff(startOfDayAgo, 'hour') / 24)
+  )
   const [
     dailyBets,
     dailyContracts,

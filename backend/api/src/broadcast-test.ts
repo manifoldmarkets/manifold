@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { jsonEndpoint, validate } from './helpers/endpoint'
-import { broadcast } from 'api/websockets/server'
+import { broadcast } from 'shared/websockets/server'
 
 const bodySchema = z.object({
   topic: z.string(),

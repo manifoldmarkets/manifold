@@ -41,6 +41,7 @@ import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { ModReport } from '../mod-report'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1190,6 +1191,57 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
+  },
+  'update-mod-report': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        reportId: z.number(),
+        updates: z
+          .object({
+            status: z
+              .enum(['new', 'under review', 'resolved', 'needs admin'])
+              .optional(),
+            mod_note: z.string().optional(),
+          })
+          .partial(),
+      })
+      .strict(),
+    returns: {} as { status: string; report: ModReport },
+  },
+  'get-mod-reports': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { status: string; reports: ModReport[] },
+  },
+  'get-txn-summary-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as Row<'txn_summary_stats'>[],
+    props: z
+      .object({
+        ignoreCategories: z.array(z.string()).optional(),
+        fromType: z.string().optional(),
+        toType: z.string().optional(),
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-mana-summary-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as Row<'mana_supply_stats'>[],
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
   },
 } as const)
 

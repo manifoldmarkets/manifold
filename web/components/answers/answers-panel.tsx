@@ -181,7 +181,7 @@ export function AnswersPanel(props: {
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
     usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
   const unfilledBets = useUnfilledBets(contract.id, {
-    waitUntilAdvancedTrader: !isAdvancedTrader || !shouldShowLimitOrderChart,
+    enabled: isAdvancedTrader && shouldShowLimitOrderChart,
   })
 
   const moreCount = answers.length - answersToShow.length
