@@ -69,6 +69,15 @@ export const SORTS = [
 
 export type SortType = (typeof SORTS)[number]['value']
 
+export type MarketTierType = 'basic' | 'plus' | 'premium' | 'crystal'
+
+export const MARKET_TIER_MULTIPLES = {
+  'basic' : 1,
+  'plus' : 10,
+  'premium' : 100,
+  'crystal' : 1000
+}
+
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -322,6 +331,12 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'POLL',
   'NUMBER',
 ] as const
+
+export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
+  'POLL',
+  'BOUNTIED_QUESTION'
+]
+
 export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
 
 export const renderResolution = (resolution: string, prob?: number) => {

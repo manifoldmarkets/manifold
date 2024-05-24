@@ -8,6 +8,7 @@ import {
   Contract,
   contractPath,
   CreateableOutcomeType,
+  MarketTierType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
@@ -63,6 +64,9 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, outcomeType } = props
+  const [marketTier, setMarketTier] = useState<MarketTierType>(
+    outcomeType === 'NUMBER' ? 'plus' : 'basic'
+  )
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
@@ -580,6 +584,8 @@ export function ContractParamsForm(props: {
         balance={balance}
         amountSuppliedByUser={anteOrBounty}
         outcomeType={outcomeType}
+        marketTier={marketTier}
+        setMarketTier={setMarketTier}
       />
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button

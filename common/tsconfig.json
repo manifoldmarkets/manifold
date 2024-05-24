@@ -14,5 +14,8 @@
       "common/*": ["./src/*", "../lib/*"]
     }
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/**/*.ts",
+    "../web/components/new-contract/create-contract-types.tsx"
+  ]
 }

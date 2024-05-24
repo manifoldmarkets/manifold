@@ -1,4 +1,4 @@
-import { CreateableOutcomeType } from 'common/contract'
+import { CreateableOutcomeType, MarketTierType } from 'common/contract'
 import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -7,13 +7,20 @@ import { formatMoney } from 'common/util/format'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { Button } from 'web/components/buttons/button'
 import { AddFundsModal } from 'web/components/add-funds-modal'
+import { Row } from '../layout/row'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { CoinNumber } from '../widgets/manaCoinNumber'
+import { CrystalTier, PlusTier, PremiumTier } from 'web/public/custom-components/tiers'
+import { getTieredCost } from 'common/economy'
 
 export const CostSection = (props: {
   balance: number
   outcomeType: CreateableOutcomeType
   amountSuppliedByUser: number
+  marketTier: MarketTierType
+  setMarketTier: (tier: MarketTierType) => void
 }) => {
-  const { balance, outcomeType, amountSuppliedByUser } = props
+  const { balance, outcomeType, amountSuppliedByUser, marketTier, setMarketTier } = props
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
 
   return (
@@ -31,7 +38,7 @@ export const CostSection = (props: {
         />
       </label>
 
-      <div className="text-ink-700 pl-1 text-sm">
+      {/* <div className="text-ink-700 pl-1 text-sm">
         {amountSuppliedByUser === 0 ? (
           <span className="text-teal-500">FREE </span>
         ) : outcomeType !== 'BOUNTIED_QUESTION' && outcomeType !== 'POLL' ? (
@@ -44,7 +51,53 @@ export const CostSection = (props: {
           </span>
         )}
       </div>
-      <div className="text-ink-500 pl-1"></div>
+      <div className="text-ink-500 pl-1"></div> */}
+
+      <Row>
+        <Col>
+          Basic
+          <CoinNumber
+            amount={getTieredCost(
+              amountSuppliedByUser,
+              'basic',
+              outcomeType
+            )}
+          />
+        </Col>
+        <Col>
+          <PlusTier />
+          Plus
+          <CoinNumber
+            amount={getTieredCost(
+              amountSuppliedByUser,
+              'plus',
+              outcomeType
+            )}
+          />
+        </Col>
+        <Col>
+          <PremiumTier />
+          Premium
+          <CoinNumber
+            amount={getTieredCost(
+              amountSuppliedByUser,
+              'premium',
+              outcomeType
+            )}
+          />
+        </Col>
+        <Col>
+          <CrystalTier />
+          Crystal
+          <CoinNumber
+            amount={getTieredCost(
+              amountSuppliedByUser,
+              'crystal',
+              outcomeType
+            )}
+          />
+        </Col>
+      </Row>
 
       {amountSuppliedByUser > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
