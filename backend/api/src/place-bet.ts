@@ -321,19 +321,19 @@ export const processNewBetResult = async (
     }
   }
 
-  const fullBet = removeUndefinedProps({
+  const candidateBet = removeUndefinedProps({
     userId: user.id,
     isApi,
     replyToCommentId,
     betGroupId,
     ...newBet,
   })
-  const { bet_id } = await insertBet(fullBet, pgTrans)
-
+  const betRow = await insertBet(candidateBet, pgTrans)
+  fullBets.push(convertBet(betRow))
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, pgTrans)
   }
   if (ordersToCancel) {
     await cancelLimitOrders(
@@ -402,16 +402,13 @@ export const processNewBetResult = async (
           Math.abs(probAfter - probBefore) < 0.00001
 
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
-          const fullBet = removeUndefinedProps({
+          const candidateBet = removeUndefinedProps({
             userId: user.id,
-            userAvatarUrl: user.avatarUrl,
-            userUsername: user.username,
-            userName: user.name,
             isApi,
             betGroupId,
             ...bet,
           })
-          const betRow = await insertBet(fullBet, pgTrans)
+          const betRow = await insertBet(candidateBet, pgTrans)
           fullBets.push(convertBet(betRow))
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
@@ -424,7 +421,7 @@ export const processNewBetResult = async (
             })
           )
         }
-        await updateMakers(makers, bet_id, pgTrans)
+        await updateMakers(makers, betRow.bet_id, pgTrans)
         await cancelLimitOrders(
           pgTrans,
           ordersToCancel.map((o) => o.id)
@@ -439,13 +436,12 @@ export const processNewBetResult = async (
 
   return {
     newBet,
-    betId: bet_id,
+    betId: betRow.bet_id,
     contract,
     makers,
     allOrdersToCancel,
     fullBets,
     user,
-    fullBet,
     betGroupId,
   }
 }
@@ -519,15 +515,18 @@ export const updateMakers = async (
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
     log('Update a matched limit order.')
-    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
-      JSON.stringify({
-        fills,
-        isFilled,
-        amount: totalAmount,
-        shares: totalShares,
-      }),
-      bet.id,
-    ])
+    await pgTrans.none(
+      `update contract_bets set data = data || $1 where bet_id = $2`,
+      [
+        JSON.stringify({
+          fills,
+          isFilled,
+          amount: totalAmount,
+          shares: totalShares,
+        }),
+        bet.id,
+      ]
+    )
   }
 
   // Deduct balance of makers.
