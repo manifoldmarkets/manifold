@@ -582,7 +582,7 @@ export function ContractParamsForm(props: {
       />
       <CostSection
         balance={balance}
-        amountSuppliedByUser={anteOrBounty}
+        baseCost={anteOrBounty}
         outcomeType={outcomeType}
         marketTier={marketTier}
         setMarketTier={setMarketTier}
