@@ -1,4 +1,4 @@
-import { Bet } from 'common/bet'
+import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
 import { removeUndefinedProps } from 'common/util/object'
@@ -7,6 +7,7 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkInsert, insert } from 'shared/supabase/utils'
+import { broadcastOrders } from 'shared/websockets/helpers'
 
 export const getBetsDirect = async (
   pg: SupabaseDirectClient,
@@ -60,9 +61,15 @@ export const cancelLimitOrders = async (
   limitOrderIds: string[]
 ) => {
   if (limitOrderIds.length > 0) {
-    await pg.none(
-      `update contract_bets set data = data || '{"isCancelled":true}' where bet_id in ($1:list)`,
-      [limitOrderIds]
+    const bets = await pg.map<LimitBet>(
+      `update contract_bets
+      set data = data || '{"isCancelled":true}'
+      where bet_id in ($1:list)
+      returning data`,
+      [limitOrderIds],
+      (r) => r.data
     )
+
+    broadcastOrders(bets)
   }
 }

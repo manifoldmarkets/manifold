@@ -14,10 +14,8 @@ import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
 import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
-import { broadcastUpdatedContract } from './websockets/helpers'
-import {
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { broadcastUpdatedContract } from 'shared/websockets/helpers'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,

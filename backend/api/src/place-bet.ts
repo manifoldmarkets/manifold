@@ -26,6 +26,7 @@ import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import { broadcastOrders } from 'shared/websockets/helpers'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -192,6 +193,7 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
+  log(`hellooooooooooo`)
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
@@ -501,6 +503,7 @@ export const updateMakers = async (
   takerBetId: string,
   pgTrans: SupabaseTransaction
 ) => {
+  const updatedLimitBets: LimitBet[] = []
   // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
@@ -515,8 +518,11 @@ export const updateMakers = async (
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
     log('Update a matched limit order.')
-    await pgTrans.none(
-      `update contract_bets set data = data || $1 where bet_id = $2`,
+    const newData = await pgTrans.one<LimitBet>(
+      `update contract_bets
+      set data = data || $1
+      where bet_id = $2
+      returning data`,
       [
         JSON.stringify({
           fills,
@@ -525,9 +531,14 @@ export const updateMakers = async (
           shares: totalShares,
         }),
         bet.id,
-      ]
+      ],
+      (r) => r.data
     )
+
+    updatedLimitBets.push(newData)
   }
+
+  broadcastOrders(updatedLimitBets)
 
   // Deduct balance of makers.
   const spentByUser = mapValues(

@@ -69,7 +69,7 @@ import { track } from 'shared/analytics'
 import { FLAT_TRADE_FEE, Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { bulkIncrementBalances, updateUser } from 'shared/supabase/users'
-import { broadcastNewBets } from './websockets/helpers'
+import { broadcastNewBets } from 'shared/websockets/helpers'
 
 const firestore = admin.firestore()
 

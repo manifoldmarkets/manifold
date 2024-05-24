@@ -251,15 +251,8 @@ export const BuyPanelBody = (props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(false)
 
   const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
-
-  useEffect(() => {
-    if (user) {
-      setAdvancedTraderMode(user.isAdvancedTrader ?? false)
-    }
-  }, [user])
 
   useEffect(() => {
     if (!isIOS() && !isAndroid()) {
@@ -717,16 +710,14 @@ export const BuyPanelBody = (props: {
             <button
               className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
               onClick={() => {
-                const tradingMode = !advancedTraderMode
-                setAdvancedTraderMode(tradingMode)
-                if (!tradingMode) {
+                if (!isAdvancedTrader) {
                   setBetType('Market')
                 }
-                api('me/update', { isAdvancedTrader: tradingMode })
+                api('me/update', { isAdvancedTrader: !isAdvancedTrader })
               }}
             >
               <span className="hover:underline">
-                {advancedTraderMode ? 'Default' : 'Advanced'}
+                {isAdvancedTrader ? 'Basic' : 'Advanced'}
               </span>
               <ChevronDownIcon className="ml-1 h-3 w-3" />
             </button>
@@ -747,7 +738,7 @@ export const BuyPanelBody = (props: {
           bets={unfilledBets as LimitBet[]}
         />
       )}
-      {advancedTraderMode && (
+      {isAdvancedTrader && (
         <OrderBookPanel
           contract={contract}
           limitBets={unfilledBets.filter(
