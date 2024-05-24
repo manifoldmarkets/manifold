@@ -42,10 +42,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const [userBets, { unfilledBets, balanceByUserId }] = await Promise.all([
       pgTrans.map(
-        `select * from contract_bets where user_id = $1 ${
-          answerId ? 'and answer_id = $2' : ''
-        }`,
-        [auth.uid, answerId],
+        `select * from contract_bets where user_id = $1 
+        and contract_id = $2
+        ${answerId ? 'and answer_id = $3' : ''}`,
+        [auth.uid, contract.id, answerId],
         convertBet
       ),
       getUnfilledBetsAndUserBalances(
