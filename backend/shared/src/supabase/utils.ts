@@ -31,14 +31,14 @@ export async function bulkInsert<
   T extends TableName,
   ColumnValues extends Tables[T]['Insert']
 >(db: SupabaseDirectClient, table: T, values: ColumnValues[]) {
-  if (values.length) {
-    const columnNames = Object.keys(values[0])
-    const cs = new pgp.helpers.ColumnSet(columnNames, { table })
-    const query = pgp.helpers.insert(values, cs)
-    // Hack to properly cast jsonb values.
-    const q = query.replace(/::jsonb'/g, "'::jsonb")
-    await db.none(q)
-  }
+  if (!values.length) return []
+
+  const columnNames = Object.keys(values[0])
+  const cs = new pgp.helpers.ColumnSet(columnNames, { table })
+  const query = pgp.helpers.insert(values, cs)
+  // Hack to properly cast jsonb values.
+  const q = query.replace(/::jsonb'/g, "'::jsonb")
+  return await db.manyOrNone<Row<T>>(q + ` returning *`)
 }
 
 export async function bulkUpdate<

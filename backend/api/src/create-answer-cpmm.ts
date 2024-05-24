@@ -7,7 +7,11 @@ import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { ANSWER_COST } from 'common/economy'
 import { randomString } from 'common/util/random'
-import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
+import {
+  AllMakers,
+  getUnfilledBetsAndUserBalances,
+  updateMakers,
+} from './place-bet'
 import { FieldValue } from 'firebase-admin/firestore'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
@@ -34,6 +38,8 @@ import {
 } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { convertAnswer } from 'common/supabase/contracts'
+import { LimitBet } from 'common/bet'
+import { buildArray } from 'common/util/array'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -361,16 +367,7 @@ async function createAnswerAndSumAnswersToOne(
   )
 
   for (const result of betResults) {
-    const { answer, bet, makers, ordersToCancel } = result
-
-    const betRow = await insertBet(
-      {
-        userId: user.id,
-        isApi: false,
-        ...bet,
-      },
-      pgTrans
-    )
+    const { answer } = result
 
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
@@ -386,16 +383,29 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    await updateMakers(makers, betRow.bet_id, pgTrans)
-    await cancelLimitOrders(
-      pgTrans,
-      ordersToCancel.map((b) => b.id)
-    )
   }
 
+  const bets = betResults.map((r) => ({
+    userId: user.id,
+    isApi: false,
+    ...r.bet,
+  }))
+
+  const betRows = await bulkInsertBets(bets, pgTrans)
+
+  await updateMakers(
+    betRows.map((r, i) => ({
+      makers: betResults[i].makers,
+      takerBetId: r.bet_id,
+    })),
+    pgTrans
+  )
   await cancelLimitOrders(
     pgTrans,
-    unfilledBetsOnOther.map((b) => b.id)
+    buildArray(
+      betResults.flatMap((r) => r.ordersToCancel.map((o) => o.id)),
+      unfilledBetsOnOther.map((b) => b.id)
+    )
   )
 }
 

@@ -15,7 +15,11 @@ import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
-import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
@@ -209,21 +213,16 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const isApi = auth.creds.kind === 'key'
 
-    const fullBet = {
+    const betCandidate = {
       userId: user.id,
       isApi,
       ...newBet,
       betGroupId,
     }
-    const bet = await insertBet(fullBet, pgTrans)
+    const bet = await insertBet(betCandidate, pgTrans)
     fullBets.push(convertBet(bet))
 
-    await updateMakers(makers, bet.bet_id, pgTrans)
-
-    await cancelLimitOrders(
-      pgTrans,
-      ordersToCancel.map((o) => o.id)
-    )
+    await updateMakers([{ makers, takerBetId: bet.bet_id }], pgTrans)
 
     allOrdersToCancel.push(...ordersToCancel)
 
@@ -249,21 +248,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       )
     }
 
-    for (const {
-      answer,
-      bet,
-      cpmmState,
-      makers,
-      ordersToCancel,
-    } of otherResultsWithBet) {
-      const fullBet = {
-        userId: user.id,
-        isApi,
-        ...bet,
-        betGroupId,
-      }
-      const betRow = await insertBet(fullBet, pgTrans)
-      fullBets.push(convertBet(betRow))
+    for (const { answer, cpmmState, ordersToCancel } of otherResultsWithBet) {
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
       fbTrans.update(
@@ -274,13 +259,33 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
           prob,
         })
       )
-      await updateMakers(makers, betRow.bet_id, pgTrans)
-      await cancelLimitOrders(
-        pgTrans,
-        ordersToCancel.map((o) => o.id)
-      )
+
       allOrdersToCancel.push(...ordersToCancel)
     }
+
+    const betRows = await bulkInsertBets(
+      otherResultsWithBet.map((r) => ({
+        userId: user.id,
+        isApi,
+        ...r.bet,
+        betGroupId,
+      })),
+      pgTrans
+    )
+    fullBets.push(...betRows.map(convertBet))
+
+    await updateMakers(
+      betRows.map((r, i) => ({
+        makers: otherResultsWithBet[i].makers,
+        takerBetId: r.bet_id,
+      })),
+      pgTrans
+    )
+
+    await cancelLimitOrders(
+      pgTrans,
+      allOrdersToCancel.map((o) => o.id)
+    )
 
     return {
       newBet,
