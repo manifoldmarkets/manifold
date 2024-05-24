@@ -5,9 +5,9 @@ import { Tabs } from 'web/components/layout/tabs'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
 import { getStats } from 'web/lib/supabase/stats'
-import { Stats, ManaSupply } from 'common/stats'
+import { Stats } from 'common/stats'
 import { PLURAL_BETS } from 'common/user'
-import { capitalize } from 'lodash'
+import { capitalize, last } from 'lodash'
 import { formatLargeNumber, formatMoney } from 'common/util/format'
 import { formatWithCommas } from 'common/util/format'
 import { SEO } from 'web/components/SEO'
@@ -15,26 +15,29 @@ import { useAdmin } from 'web/hooks/use-admin'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { api } from '../lib/firebase/api'
-import { Row } from 'web/components/layout/row'
 import { Row as rowfor } from 'common/supabase/utils'
 import { BonusSummary } from 'web/components/stats/bonus-summary'
+import { ManaSupplySummary } from 'web/components/stats/mana-summary'
+import { Row } from 'web/components/layout/row'
 
 export const getStaticProps = async () => {
   try {
     const stats = await getStats()
-    const manaSupply = await api('get-mana-supply', {})
-    const fromBankSummary = await api('get-mana-summary-stats', {
+    const manaSupplyOverTime = await api('get-mana-summary-stats', {
+      limitDays: 100,
+    })
+    const fromBankSummary = await api('get-txn-summary-stats', {
       ignoreCategories: ['RECLAIM_MANA', 'AIR_DROP', 'EXTRA_PURCHASED_MANA'],
       fromType: 'BANK',
       limitDays: 100,
     })
-    const toBankSummary = await api('get-mana-summary-stats', {
+    const toBankSummary = await api('get-txn-summary-stats', {
       toType: 'BANK',
       ignoreCategories: ['RECLAIM_MANA'],
       limitDays: 100,
     })
     return {
-      props: { stats, manaSupply, fromBankSummary, toBankSummary },
+      props: { stats, fromBankSummary, toBankSummary, manaSupplyOverTime },
       revalidate: 60 * 60, // One hour
     }
   } catch (err) {
@@ -45,11 +48,11 @@ export const getStaticProps = async () => {
 
 export default function Analytics(props: {
   stats: Stats | null
-  manaSupply: ManaSupply
+  manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
-  const { stats, manaSupply, fromBankSummary, toBankSummary } = props
+  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
   if (!stats) {
     return null
   }
@@ -62,7 +65,7 @@ export default function Analytics(props: {
       />
       <CustomAnalytics
         stats={stats}
-        manaSupply={manaSupply}
+        manaSupplyOverTime={manaSupplyOverTime}
         fromBankSummary={fromBankSummary}
         toBankSummary={toBankSummary}
       />
@@ -72,7 +75,7 @@ export default function Analytics(props: {
 
 export function CustomAnalytics(props: {
   stats: Stats
-  manaSupply: ManaSupply
+  manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
@@ -107,8 +110,9 @@ export function CustomAnalytics(props: {
     d1Bet3DayAverage,
   } = props.stats
 
-  const { manaSupply, fromBankSummary, toBankSummary } = props
+  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
 
+  const manaSupply = last(manaSupplyOverTime)!
   const startDate = props.stats.startDate[0]
 
   const dailyDividedByWeekly = dailyActiveUsers.map(
@@ -201,7 +205,8 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
 
       <Title>Mana supply</Title>
-      <Col className="max-w-sm gap-2">
+      <Col className="mb-6 max-w-sm gap-2">
+        Supply Today
         <Row className="justify-between">
           <div className="text-ink-700">Balances</div>
           <div className="text-ink-700 font-semibold">
@@ -211,13 +216,13 @@ export function CustomAnalytics(props: {
         <Row className="justify-between">
           <div className="text-ink-700">Prize point balances</div>
           <div className="text-ink-700 font-semibold">
-            ₽{formatWithCommas(manaSupply.spiceBalance)}
+            ₽{formatWithCommas(manaSupply.spice_balance)}
           </div>
         </Row>
         <Row className="justify-between">
           <div className="text-ink-700">Investment</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.investmentValue)}
+            {formatMoney(manaSupply.investment_value)}
           </div>
         </Row>
         {/* <Row className="justify-between">
@@ -229,16 +234,19 @@ export function CustomAnalytics(props: {
         <Row className="justify-between">
           <div className="text-ink-700">AMM liquidity</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.ammLiquidity)}
+            {formatMoney(manaSupply.amm_liquidity)}
           </div>
         </Row>
         <Row className="mt-6 justify-between">
           <div className="text-ink-700">Total</div>
           <div className="text-ink-700 font-semibold">
-            {formatMoney(manaSupply.totalValue)}
+            {formatMoney(manaSupply.total_value)}
           </div>
         </Row>
       </Col>
+
+      <Title>Mana supply over time</Title>
+      <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
 
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>

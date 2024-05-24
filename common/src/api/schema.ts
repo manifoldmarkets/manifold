@@ -1191,7 +1191,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
   },
-  'get-mana-summary-stats': {
+  'get-txn-summary-stats': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
@@ -1201,6 +1201,17 @@ export const API = (_apiTypeCheck = {
         ignoreCategories: z.array(z.string()).optional(),
         fromType: z.string().optional(),
         toType: z.string().optional(),
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-mana-summary-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as Row<'mana_supply_stats'>[],
+    props: z
+      .object({
         limitDays: z.coerce.number(),
       })
       .strict(),
