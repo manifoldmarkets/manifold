@@ -111,9 +111,10 @@ export function useLiveUpdates<T>(
   opts?: {
     frequency?: number
     listen?: boolean
+    keys?: any[]
   }
 ) {
-  const { frequency = 500, listen = true } = opts ?? {}
+  const { frequency = 500, listen = true, keys = [] } = opts ?? {}
 
   const state = useRef<PollingState>({ state: 'waiting', version: 0 })
 
@@ -148,7 +149,7 @@ export function useLiveUpdates<T>(
           timeout: setTimeout(fetchRows, ms),
         }
       })
-  }, [listen])
+  }, [listen, ...keys])
 
   useEffect(() => {
     if (listen) fetchRows()
@@ -158,7 +159,7 @@ export function useLiveUpdates<T>(
       }
       state.current = { state: 'waiting', version: state.current.version + 1 }
     }
-  }, [listen])
+  }, [listen, ...keys])
 
   return results
 }

@@ -369,14 +369,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       <div ref={endOfMessagesRef} />
       <ContractCommentInput
         replyTo={replyTo}
-        replyToUserInfo={
-          replyTo && 'userUsername' in replyTo
-            ? {
-                username: replyTo.userUsername,
-                id: replyTo.userId,
-              }
-            : undefined
-        }
         className="mb-4 mr-px mt-px"
         contract={contract}
         clearReply={clearReply}
@@ -604,28 +596,26 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   return (
     <>
       <Col className="mb-4 items-start gap-7" ref={scrollRef}>
-        {shouldLoadMore ? (
-          <LoadingIndicator />
-        ) : (
-          pageItems.map((item) =>
-            item.type === 'bet' ? (
-              <FeedBet
-                onReply={setReplyToBet}
-                key={item.id}
-                contract={contract}
-                bet={item.bet}
-              />
-            ) : item.type === 'betGroup' ? (
-              <MultiNumericBetGroup
-                key={item.id}
-                contract={contract as CPMMNumericContract}
-                bets={item.bets}
-              />
-            ) : (
-              <FeedLiquidity key={item.id} liquidity={item.lp} />
-            )
+        {pageItems.map((item) =>
+          item.type === 'bet' ? (
+            <FeedBet
+              onReply={setReplyToBet}
+              key={item.id}
+              contract={contract}
+              bet={item.bet}
+            />
+          ) : item.type === 'betGroup' ? (
+            <MultiNumericBetGroup
+              key={item.id}
+              contract={contract as CPMMNumericContract}
+              bets={item.bets}
+            />
+          ) : (
+            <FeedLiquidity key={item.id} liquidity={item.lp} />
           )
         )}
+        {/* TODO: skeleton */}
+        {shouldLoadMore && <LoadingIndicator />}
       </Col>
       <Pagination
         page={page}

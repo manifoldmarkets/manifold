@@ -39,5 +39,4 @@ export type ManaSupply = {
   loanTotal: number
   ammLiquidity: number
   totalValue: number
-  totalUsdValue: number
 }

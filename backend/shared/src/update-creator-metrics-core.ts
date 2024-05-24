@@ -6,21 +6,16 @@ import {
 import { log } from 'shared/utils'
 import { User } from 'common/user'
 
-import { buildArray, filterDefined } from 'common/util/array'
-import { hasChanges, removeUndefinedProps } from 'common/util/object'
-import { bulkInsert } from 'shared/supabase/utils'
-import * as admin from 'firebase-admin'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { buildArray } from 'common/util/array'
+import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
+import { removeUndefinedProps } from 'common/util/object'
 export const CREATOR_UPDATE_FREQUENCY = 13
 export async function updateCreatorMetricsCore() {
-  const firestore = admin.firestore()
   const now = Date.now()
   const yesterday = now - DAY_MS
   const weekAgo = now - DAY_MS * 7
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
-  const writer = new SafeBulkWriter(undefined, firestore)
-
   log('Loading active creators...')
   // TODO: Once we've computed scores for all old market creators, we could focus just on the ones with open markets
   const allActiveUserIds = await pg.map(
@@ -89,24 +84,14 @@ export async function updateCreatorMetricsCore() {
   const userUpdates = activeUsers
     .filter((u) => Object.keys(creatorTraders).includes(u.id))
     .map((user) => ({
-      user,
-      fields: removeUndefinedProps({
-        creatorTraders: {
-          ...creatorTraders[user.id],
-          allTime:
-            creatorPortfolioUpdates.find((c) => c.user_id === user.id)
-              ?.unique_bettors ?? 0,
-        },
-      }),
+      ...user,
+      creatorTraders: {
+        ...creatorTraders[user.id],
+        allTime:
+          creatorPortfolioUpdates.find((c) => c.user_id === user.id)
+            ?.unique_bettors ?? 0,
+      },
     }))
-
-  log('Writing user updates...')
-  for (const { user, fields } of filterDefined(userUpdates)) {
-    if (hasChanges(user, fields)) {
-      writer.update(firestore.collection('users').doc(user.id), fields)
-    }
-  }
-  log('Finished user updates.')
 
   log('Writing updates and inserts...')
   await Promise.all(
@@ -117,8 +102,15 @@ export async function updateCreatorMetricsCore() {
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
-      writer
-        .close()
+      bulkUpdate(
+        pg,
+        'users',
+        ['id'],
+        userUpdates.map((u) => ({
+          id: u.id,
+          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
+        }))
+      )
         .catch((e) => log.error('Error bulk writing user updates', e))
         .then(() => log('Committed Firestore writes.'))
     )

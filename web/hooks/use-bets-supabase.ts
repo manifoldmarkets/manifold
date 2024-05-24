@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import { maxBy, orderBy, uniqBy, sortBy } from 'lodash'
+
 import { Bet, BetFilter } from 'common/bet'
 import { db } from 'web/lib/supabase/db'
 import { useEvent } from 'web/hooks/use-event'
@@ -10,10 +13,10 @@ import {
 } from 'common/supabase/bets'
 import { Filter } from 'common/supabase/realtime'
 import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { maxBy, orderBy } from 'lodash'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
+import { useApiSubscription } from './use-api-subscription'
 
 function getFilteredQuery(filteredParam: string, filterId?: string) {
   if (filteredParam === 'contractId' && filterId) {
@@ -143,4 +146,46 @@ export function useRealtimeBetsPolling(
   return results
     ? orderBy(results.map(convertBet), 'createdTime', 'desc')
     : undefined
+}
+
+export const useSubscribeNewBets = (
+  contractId: string,
+  params?: { afterTime?: number; includeRedemptions?: boolean }
+) => {
+  const { afterTime = Date.now(), includeRedemptions = false } = params ?? {}
+
+  const [newBets, setNewBets] = usePersistentInMemoryState<Bet[]>(
+    [],
+    `${contractId}-new-bets`
+  )
+
+  const addBets = (bets: Bet[]) => {
+    setNewBets((currentBets) => {
+      const uniqueBets = sortBy(
+        uniqBy([...currentBets, ...bets], 'id'),
+        'createdTime'
+      )
+      return uniqueBets.filter(
+        (b) =>
+          b.createdTime > afterTime && (includeRedemptions || !b.isRedemption)
+      )
+    })
+  }
+
+  useEffect(() => {
+    getBets(db, {
+      contractId,
+      afterTime,
+      filterRedemptions: !includeRedemptions,
+    }).then(addBets)
+  }, [contractId, afterTime])
+
+  useApiSubscription({
+    topics: [`contract/${contractId}/new-bet`],
+    onBroadcast: (msg) => {
+      addBets(msg.data.bets as Bet[])
+    },
+  })
+
+  return newBets
 }

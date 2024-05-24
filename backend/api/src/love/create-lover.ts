@@ -1,11 +1,14 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { log, getUser } from 'shared/utils'
 import { HOUR_MS } from 'common/util/time'
-import * as admin from 'firebase-admin'
 import { removePinnedUrlFromPhotoUrls } from 'shared/love/parse-photos'
 import { getIp, track } from 'shared/analytics'
+import { updateUser } from 'shared/supabase/users'
 const genderType = z.union([
   z.literal('male'),
   z.literal('female'),
@@ -48,6 +51,8 @@ export const baseLoversSchema = z.object({
 export const createlover = authEndpoint(async (req, auth) => {
   const parsedBody = validate(baseLoversSchema, req.body)
   const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+
   const { data: existingUser } = await db
     .from('lovers')
     .select('id')
@@ -62,10 +67,7 @@ export const createlover = authEndpoint(async (req, auth) => {
   if (!user) throw new APIError(401, 'Your account was not found')
   if (user.createdTime > Date.now() - HOUR_MS) {
     // If they just signed up for manifold via manifold.love, set their avatar to be their pinned photo
-    const firestore = admin.firestore()
-    await firestore.doc('users/' + auth.uid).update({
-      avatarUrl: parsedBody.pinned_url,
-    })
+    updateUser(pg, auth.uid, { avatarUrl: parsedBody.pinned_url })
   }
 
   const { data, error } = await db

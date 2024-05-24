@@ -1,5 +1,5 @@
 import { isVerified, User } from 'common/user'
-import { STARTING_BALANCE } from 'common/economy'
+import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
@@ -22,7 +22,7 @@ export const VerifyPhoneNumberBanner = (props: {
       <span>
         Verify your phone number to collect{' '}
         <span className={'font-bold text-teal-500'}>
-          {formatMoney(STARTING_BALANCE)}
+          {formatMoney(PHONE_VERIFICATION_BONUS)}
         </span>
         .{' '}
         <span className={'italic'}>
@@ -33,7 +33,7 @@ export const VerifyPhoneNumberBanner = (props: {
         className={'whitespace-nowrap'}
         onClick={() => setShowVerifyPhone(true)}
       >
-        Claim {formatMoney(STARTING_BALANCE)}
+        Claim {formatMoney(PHONE_VERIFICATION_BONUS)}
       </Button>
       <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
     </Col>

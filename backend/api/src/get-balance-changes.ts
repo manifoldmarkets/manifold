@@ -1,4 +1,4 @@
-import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
 import { Contract } from 'common/contract'
@@ -6,9 +6,6 @@ import { orderBy } from 'lodash'
 import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
-import { STARTING_BALANCE } from 'common/economy'
-import { getUser } from 'shared/utils'
-import { User } from 'common/user'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
 
@@ -17,11 +14,9 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
   const { after, userId } = props
-  const user = await getUser(userId)
-  if (!user) throw new APIError(404, 'User not found')
   const [betBalanceChanges, txnBalanceChanges] = await Promise.all([
     getBetBalanceChanges(after, userId),
-    getTxnBalanceChanges(after, userId, user),
+    getTxnBalanceChanges(after, userId),
   ])
   return orderBy(
     [...betBalanceChanges, ...txnBalanceChanges],
@@ -30,22 +25,9 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   )
 }
 
-const getTxnBalanceChanges = async (
-  after: number,
-  userId: string,
-  user: User
-) => {
+const getTxnBalanceChanges = async (after: number, userId: string) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
-  if (user.createdTime > after) {
-    balanceChanges.push({
-      key: 'starting-balance',
-      type: 'STARTING_BALANCE',
-      amount: STARTING_BALANCE,
-      createdTime: user.createdTime,
-      token: 'M$',
-    })
-  }
 
   const txns = await pg.map(
     `
@@ -53,7 +35,7 @@ const getTxnBalanceChanges = async (
     from txns
     where created_time > millis_to_ts($1)
       and (to_id = $2 or from_id = $2)
-    order by created_time asc;
+    order by created_time;
     `,
     [after, userId],
     convertTxn

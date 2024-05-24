@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { isVerified, MINUTES_ALLOWED_TO_REFER, User } from 'common/user'
+import { isVerified, MINUTES_ALLOWED_TO_REFER } from 'common/user'
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -8,13 +8,13 @@ import { createReferralNotification } from 'shared/create-notification'
 import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
-import * as admin from 'firebase-admin'
-import { log, getContractSupabase, getUserFirebase } from 'shared/utils'
+import { log, getContractSupabase, getUser } from 'shared/utils'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { convertTxn } from 'common/supabase/txns'
+import { updateUser } from 'shared/supabase/users'
 
 const bodySchema = z
   .object({
@@ -43,9 +43,9 @@ export const referuser = authEndpoint(async (req, auth) => {
       `User ${referredByUsername} is banned from posting, not eligible for referral bonus`
     )
   }
-  const newUser = await getUserFirebase(auth.uid)
+  const newUser = await getUser(auth.uid)
   if (!newUser) {
-    throw new APIError(403, `User ${auth.uid} not found`)
+    throw new APIError(401, `User ${auth.uid} not found`)
   }
   if (!isVerified(newUser)) {
     throw new APIError(403, 'You must verify your phone number first.')
@@ -72,25 +72,19 @@ async function handleReferral(
   referredByUserId: string,
   referredByContract?: Contract
 ) {
-  const firestore = admin.firestore()
-
-  const userDoc = firestore.doc(`users/${newUserId}`)
-  const userSnap = await userDoc.get()
-  if (!userSnap.exists) {
-    throw new APIError(404, `User ${newUserId} not found`)
-  }
-  const user = userSnap.data() as User
-  if (user.referredByUserId || user.referredByContractId) {
-    throw new APIError(400, `User ${user.id} already has referral details`)
-  }
-  if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
-    throw new APIError(400, `User ${user.id} is too old to be referred`)
-  }
-
   const pg = createSupabaseDirectClient()
-
   log(`referredByUserId: ${referredByUserId}`)
-  const txn = await pg.tx(async (tx) => {
+  const { txn, user } = await pg.tx(async (tx) => {
+    const user = await getUser(newUserId, tx)
+    if (!user) throw new APIError(500, `User ${newUserId} not found`)
+
+    if (user.referredByUserId || user.referredByContractId) {
+      throw new APIError(400, `User ${user.id} already has referral details`)
+    }
+    if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
+      throw new APIError(400, `User ${user.id} is too old to be referred`)
+    }
+
     const txns = await tx.map(
       `select * from txns where to_id = $1 and category = 'REFERRAL'`,
       [referredByUserId],
@@ -120,14 +114,16 @@ async function handleReferral(
 
     const txn = await runTxnFromBank(tx, txnData)
 
-    userDoc.update(
+    await updateUser(
+      tx,
+      newUserId,
       removeUndefinedProps({
         referredByUserId,
         referredByContractId: referredByContract?.id,
       })
     )
 
-    return txn
+    return { txn, user }
   })
 
   await createReferralNotification(

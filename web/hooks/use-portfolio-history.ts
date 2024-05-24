@@ -22,7 +22,6 @@ export const usePortfolioHistory = (userId: string, period: Period) => {
 
     api('get-user-portfolio-history', { userId, period })
       .then((portfolioHistory) => {
-        console.log('got portfolio history', portfolioHistory)
         setPortfolioHistories((prev) => ({
           ...prev,
           [cutoff]: portfolioHistory,

@@ -110,7 +110,10 @@ export const PortfolioValueSection = memo(
 
     const first = portfolioHistory?.[0]
     const firstProfit = first
-      ? first.balance + first.investmentValue - first.totalDeposits
+      ? first.spiceBalance +
+        first.balance +
+        first.investmentValue -
+        first.totalDeposits
       : 0
 
     const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
@@ -185,6 +188,7 @@ export const PortfolioValueSection = memo(
 
     const { balance, investmentValue, totalDeposits, spiceBalance } =
       lastPortfolioMetrics
+
     const totalValue =
       balance + investmentValue + spiceBalance * SPICE_TO_MANA_CONVERSION_RATE
 
@@ -274,7 +278,6 @@ function PortfolioValueSkeleton(props: {
     switcherColor,
     userId,
     disabled,
-    placement,
     className,
     hideAddFundsButton,
     onlyShowProfit,
@@ -309,32 +312,30 @@ function PortfolioValueSkeleton(props: {
 
   return (
     <Col>
-      <Row className="justify-between">
-        <Row className={clsx('grow items-start gap-0')}>
-          <PortfolioTab
-            onClick={() => setGraphMode('portfolio')}
-            isSelected={graphMode == 'portfolio'}
-            title="Portfolio"
-          >
-            <CoinNumber
-              amount={portfolioValues?.net ?? undefined}
-              className="text-primary-600 text-xs sm:text-sm"
-              numberType="short"
-            />
-          </PortfolioTab>
+      <Row className={clsx('grow items-start gap-0')}>
+        <PortfolioTab
+          onClick={() => setGraphMode('portfolio')}
+          isSelected={graphMode == 'portfolio'}
+          title="Portfolio"
+        >
+          <CoinNumber
+            amount={portfolioValues?.net ?? undefined}
+            className="text-primary-600 text-xs sm:text-sm"
+            numberType="short"
+          />
+        </PortfolioTab>
 
-          <PortfolioTab
-            onClick={() => setGraphMode('profit')}
-            isSelected={graphMode == 'profit'}
-            title={profitLabel}
-          >
-            <CoinNumber
-              amount={portfolioValues?.profit ?? undefined}
-              className="text-primary-600 text-xs sm:text-sm"
-              numberType="short"
-            />
-          </PortfolioTab>
-        </Row>
+        <PortfolioTab
+          onClick={() => setGraphMode('profit')}
+          isSelected={graphMode == 'profit'}
+          title={profitLabel}
+        >
+          <CoinNumber
+            amount={portfolioValues?.profit ?? undefined}
+            className="text-primary-600 text-xs sm:text-sm"
+            numberType="short"
+          />
+        </PortfolioTab>
       </Row>
       <Col
         className={clsx(
@@ -344,8 +345,8 @@ function PortfolioValueSkeleton(props: {
         <div>
           {graphMode == 'portfolio' && (
             <Col className="w-full">
-              <Row className="w-full justify-between gap-2 ">
-                <Col className="grow justify-end">
+              <Row className="w-full justify-between gap-2">
+                <Col>
                   <span
                     className={clsx(
                       'cursor-pointer select-none transition-opacity',
@@ -361,7 +362,7 @@ function PortfolioValueSkeleton(props: {
                         portfolioValues?.net
                       )}
                       className={clsx(
-                        'text-ink-1000 text-2xl font-bold transition-all sm:text-4xl'
+                        'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl'
                       )}
                       isInline
                       coinClassName="top-[0.25rem] sm:top-[0.1rem]"
@@ -374,6 +375,49 @@ function PortfolioValueSkeleton(props: {
                       net worth
                     </span>
                   </span>
+                  <Row className="mt-2 gap-2">
+                    <PortfolioGraphNumber
+                      numberType={'balance'}
+                      descriptor="balance"
+                      portfolioFocus={portfolioFocus}
+                      portfolioHoveredGraph={portfolioHoveredGraph}
+                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                      displayedAmount={displayAmounts(
+                        graphValues.balance,
+                        portfolioValues?.balance
+                      )}
+                      color={BALANCE_COLOR}
+                      onClick={() => togglePortfolioFocus('balance')}
+                    />
+                    <PortfolioGraphNumber
+                      numberType={'investment'}
+                      descriptor="invested"
+                      portfolioFocus={portfolioFocus}
+                      portfolioHoveredGraph={portfolioHoveredGraph}
+                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                      displayedAmount={displayAmounts(
+                        graphValues.invested,
+                        portfolioValues?.invested
+                      )}
+                      color={INVESTMENT_COLOR}
+                      onClick={() => togglePortfolioFocus('investment')}
+                    />
+
+                    <PortfolioGraphNumber
+                      numberType={'spice'}
+                      descriptor={SPICE_NAME.toLowerCase() + 's'}
+                      portfolioFocus={portfolioFocus}
+                      portfolioHoveredGraph={portfolioHoveredGraph}
+                      setPortfolioHoveredGraph={setPortfolioHoveredGraph}
+                      displayedAmount={displayAmounts(
+                        graphValues.spice,
+                        user.spiceBalance
+                      )}
+                      color={SPICE_COLOR}
+                      onClick={() => togglePortfolioFocus('spice')}
+                      isSpice
+                    />
+                  </Row>
                 </Col>
                 {!hideAddFundsButton && (
                   <Col className="hidden gap-1 sm:flex">
@@ -388,49 +432,6 @@ function PortfolioValueSkeleton(props: {
                     />
                   </Col>
                 )}
-              </Row>
-              <Row className="mt-2 gap-2">
-                <PortfolioGraphNumber
-                  numberType={'balance'}
-                  descriptor="balance"
-                  portfolioFocus={portfolioFocus}
-                  portfolioHoveredGraph={portfolioHoveredGraph}
-                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                  displayedAmount={displayAmounts(
-                    graphValues.balance,
-                    portfolioValues?.balance
-                  )}
-                  color={BALANCE_COLOR}
-                  onClick={() => togglePortfolioFocus('balance')}
-                />
-                <PortfolioGraphNumber
-                  numberType={'investment'}
-                  descriptor="invested"
-                  portfolioFocus={portfolioFocus}
-                  portfolioHoveredGraph={portfolioHoveredGraph}
-                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                  displayedAmount={displayAmounts(
-                    graphValues.invested,
-                    portfolioValues?.invested
-                  )}
-                  color={INVESTMENT_COLOR}
-                  onClick={() => togglePortfolioFocus('investment')}
-                />
-
-                <PortfolioGraphNumber
-                  numberType={'spice'}
-                  descriptor={SPICE_NAME.toLowerCase() + 's'}
-                  portfolioFocus={portfolioFocus}
-                  portfolioHoveredGraph={portfolioHoveredGraph}
-                  setPortfolioHoveredGraph={setPortfolioHoveredGraph}
-                  displayedAmount={displayAmounts(
-                    graphValues.spice,
-                    user.spiceBalance
-                  )}
-                  color={SPICE_COLOR}
-                  onClick={() => togglePortfolioFocus('spice')}
-                  isSpice
-                />
               </Row>
             </Col>
           )}
@@ -488,7 +489,7 @@ function PortfolioValueSkeleton(props: {
             toggleClassName="grow justify-center"
           />
         )}
-        {!hideAddFundsButton && graphMode === 'portfolio' && (
+        {!hideAddFundsButton && (
           <Row className="mt-4 w-full gap-1 sm:hidden">
             <AddFundsButton
               userId={userId}

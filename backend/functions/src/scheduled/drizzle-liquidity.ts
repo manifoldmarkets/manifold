@@ -13,6 +13,7 @@ import {
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { Answer } from 'common/answer'
 import { FieldValue } from 'firebase-admin/firestore'
+import { shuffle } from 'lodash'
 
 const firestore = admin.firestore()
 
@@ -22,7 +23,7 @@ export const drizzleLiquidity = async () => {
     .where('subsidyPool', '>', 1e-7)
     .get()
 
-  const contractIds = snap.docs.map((doc) => doc.id)
+  const contractIds = shuffle(snap.docs.map((doc) => doc.id))
   console.log('found', contractIds.length, 'markets to drizzle')
   console.log()
 
@@ -44,8 +45,9 @@ export const drizzleLiquidity = async () => {
   )
 }
 
-export const drizzleLiquidityScheduler = functions.pubsub
-  .schedule('*/7 * * * *')
+export const drizzleLiquidityScheduler = functions
+  .runWith({ memory: '1GB', timeoutSeconds: 540 })
+  .pubsub.schedule('*/7 * * * *')
   .onRun(drizzleLiquidity)
 
 const drizzleMarket = async (contractId: string) => {

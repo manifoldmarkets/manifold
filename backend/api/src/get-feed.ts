@@ -38,16 +38,18 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     DEBUG_TOPIC_INTERESTS && DEBUG_USER_ID
       ? DEBUG_USER_ID
       : DEBUG_TOPIC_INTERESTS
-      ? await pg.one(
+      ? (await pg.oneOrNone(
           `select user_id from user_contract_interactions
             where created_time > now() - interval $1
             order by random() limit 1`,
           [DEBUG_TIME_FRAME],
-          (r) => r.user_id as string
-        )
+          (r) => r?.user_id as string | undefined
+        )) ?? props.userId
       : props.userId
 
-  if (userIdsToAverageTopicConversionScores[userId] === undefined) {
+  if (
+    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
+  ) {
     await buildUserInterestsCache(userId)
   }
   const privateUser = await pg.one(
@@ -64,7 +66,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const blockedIds = blockedUserIds.concat(blockedByUserIds)
 
   // If they don't follow any topics and have no recorded topic activity, show them top trending markets
-  if (userIdsToAverageTopicConversionScores[userId] === undefined) {
+  if (
+    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
+  ) {
+    log('no topic interests for user', userId)
     const defaultContracts = await pg.map(
       `select data, importance_score, conversion_score, freshness_score, view_count from contracts
                 order by importance_score desc 
@@ -242,6 +247,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           topicConversionScore: r.topic_conversion_score as number,
         } as contractAndMore)
     ),
+    // TODO: we should add reposts for non-followed users in interesting contracts
     pg.map(
       `select
          contracts.data as contract_data,
@@ -262,6 +268,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
             and posts.created_time > coalesce(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
             and posts.created_time > now() - interval '1 week'
             and contracts.close_time > now()
+            and coalesce((contract_comments.data->'hidden')::boolean, false) = false
         order by posts.created_time desc
         offset $2 limit $3
 `,
@@ -279,14 +286,16 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           ...rest
         } = r as any
         const timeDelta = Date.now() - new Date(r.created_time).getTime()
-        const daysDelta = Math.max(Math.round(timeDelta / DAY_MS), 1)
+        const daysDelta = Math.max(Math.floor(timeDelta / DAY_MS), 1)
+        const diminishingAgeFactor = 1 / Math.cbrt(daysDelta)
 
         return {
           contract: convertContract({
             data: contract_data,
-            importance_score: (importance_score + comment_likes) / daysDelta,
+            importance_score:
+              (importance_score + comment_likes) * diminishingAgeFactor,
             view_count,
-            freshness_score: (freshness_score + 1) / daysDelta,
+            freshness_score: (freshness_score + 1) * diminishingAgeFactor,
             conversion_score,
           }),
           comment: {

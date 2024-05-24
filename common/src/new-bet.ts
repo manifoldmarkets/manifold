@@ -19,7 +19,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import { CREATOR_FEE_FRAC, getTakerFee, noFees } from './fees'
+import { getFeesSplit, getTakerFee, noFees } from './fees'
 import { addObjects, removeUndefinedProps } from './util/object'
 import {
   floatingEqual,
@@ -35,20 +35,11 @@ import {
 } from './calculate-cpmm-arbitrage'
 import { APIError } from 'common/api/utils'
 
-export type CandidateBet<T extends Bet = Bet> = Omit<
-  T,
-  'id' | 'userId' | 'userAvatarUrl' | 'userName' | 'userUsername'
->
-export type NormalizedBet<T extends Bet = Bet> = Omit<
-  T,
-  'userAvatarUrl' | 'userName' | 'userUsername'
->
+export type CandidateBet<T extends Bet = Bet> = Omit<T, 'id' | 'userId'>
 
 export type BetInfo = {
   newBet: CandidateBet
   newPool?: { [outcome: string]: number }
-  newTotalShares?: { [outcome: string]: number }
-  newTotalBets?: { [outcome: string]: number }
   newTotalLiquidity?: number
   newP?: number
 }
@@ -111,7 +102,11 @@ const computeFill = (
       outcome,
       freeFees
     )
-    const newState = { pool: newPool, p: newP }
+    const newState = {
+      pool: newPool,
+      p: newP,
+      collectedFees: addObjects(fees, cpmmState.collectedFees),
+    }
 
     return {
       maker: {
@@ -153,9 +148,7 @@ const computeFill = (
   const shares = Math.min(maxTakerShares, maxMakerShares)
 
   const takerFee = freeFees ? 0 : getTakerFee(shares, takerPrice)
-  const creatorFee = CREATOR_FEE_FRAC * takerFee
-  const platformFee = (1 - CREATOR_FEE_FRAC) * takerFee
-  const fees = { creatorFee, platformFee, liquidityFee: 0 }
+  const fees = getFeesSplit(takerFee, cpmmState.collectedFees)
 
   const maker = {
     bet: matchedBet,
@@ -220,7 +213,7 @@ export const computeFills = (
   const ordersToCancel: LimitBet[] = []
 
   let amount = betAmount
-  let cpmmState = { pool: state.pool, p: state.p }
+  let cpmmState = { ...state }
   let totalFees = noFees
   const currentBalanceByUserId = { ...balanceByUserId }
 
@@ -318,7 +311,8 @@ export const computeCpmmBet = (
     makers,
     ordersToCancel,
     fees: totalFees,
-    ...afterCpmmState,
+    pool: afterCpmmState.pool,
+    p: afterCpmmState.p,
   }
 }
 
@@ -331,7 +325,11 @@ export const getBinaryCpmmBetInfo = (
   balanceByUserId: { [userId: string]: number },
   expiresAt?: number
 ) => {
-  const cpmmState = { pool: contract.pool, p: contract.p }
+  const cpmmState = {
+    pool: contract.pool,
+    p: contract.p,
+    collectedFees: contract.collectedFees,
+  }
   const {
     orderAmount,
     amount,
@@ -414,7 +412,7 @@ export const getNewMultiCpmmBetInfo = (
 
   const { poolYes, poolNo } = answer
   const pool = { YES: poolYes, NO: poolNo }
-  const cpmmState = { pool, p: 0.5 }
+  const cpmmState = { pool, p: 0.5, collectedFees: contract.collectedFees }
 
   const answerUnfilledBets = unfilledBets.filter(
     (b) => b.answerId === answer.id
@@ -517,7 +515,8 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       betAmount,
       limitProb,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      contract.collectedFees
     )
     newBetResults.push(...([newBetResult] as ArbitrageBetArray))
     if (otherBetResults.length > 0)
@@ -530,7 +529,8 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       betAmount,
       limitProb,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      contract.collectedFees
     )
     newBetResults.push(...multiRes.newBetResults)
     otherBetsResults.push(...multiRes.otherBetResults)
@@ -629,7 +629,8 @@ export const getBetDownToOneMultiBetInfo = (
   const { noBetResults, extraMana } = buyNoSharesUntilAnswersSumToOne(
     answers,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    contract.collectedFees
   )
 
   const now = Date.now()

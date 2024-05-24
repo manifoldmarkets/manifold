@@ -1,21 +1,12 @@
 import { Expo } from 'expo-server-sdk'
-import { PushTicket } from 'common/push-ticket'
-import { isProd, log } from 'shared/utils'
 import * as admin from 'firebase-admin'
-import { removeUndefinedProps } from 'common/util/object'
-import * as functions from 'firebase-functions'
-const firestore = admin.firestore()
-
-export const checkPushNotificationReceiptsScheduled = functions
-  .runWith({ memory: isProd() ? '4GB' : '256MB' })
-  // every minute on Monday for 2 hours starting at 12pm PT (UTC -07:00)
-  .pubsub.schedule('every 30 minutes')
-  .onRun(async () => {
-    await checkPushNotificationReceipts()
-  })
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { convertPushTicket } from 'common/push-ticket'
+import { log } from 'shared/monitoring/log'
 
 export const checkPushNotificationReceipts = async () => {
   const expo = new Expo()
+  const firestore = admin.firestore()
   // Later, after the Expo push notification service has delivered the
   // notifications to Apple or Google (usually quickly, but allow the service
   // up to 30 minutes when under load), a "receipt" for each notification is
@@ -31,14 +22,13 @@ export const checkPushNotificationReceipts = async () => {
   // notifications to devices that have blocked notifications or have uninstalled
   // your app. Expo does not control this policy and sends back the feedback from
   // Apple and Google so you can handle it appropriately.
-  const tickets = (
-    await firestore
-      .collectionGroup('pushNotificationTickets')
-      .where('receiptStatus', '==', 'not-checked')
-      // .where('createdTime', '>', Date.now() - MINUTE_MS * 30)
-      .get()
-  ).docs.map((doc) => doc.data() as PushTicket)
-
+  const pg = createSupabaseDirectClient()
+  const tickets = await pg.map(
+    `select * from push_notification_tickets
+    where receipt_status = 'not-checked'`,
+    [],
+    (row) => convertPushTicket(row)
+  )
   const receiptIds = tickets.map((ticket) => ticket.id)
 
   const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds)
@@ -57,8 +47,8 @@ export const checkPushNotificationReceipts = async () => {
           }
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore
-          const { status, message, details } = receipts[receiptId]
-          let error: string | undefined
+          const { status, message, details } = receipt
+          let error: string | null = null
           if (status === 'error') {
             log(`There was an error sending a notification: ${message}`)
             if (details && details.error) {
@@ -77,15 +67,14 @@ export const checkPushNotificationReceipts = async () => {
               }
             }
           }
-          await firestore
-            .collection(`users/${ticket.userId}/pushNotificationTickets`)
-            .doc(ticket.id)
-            .update(
-              removeUndefinedProps({
-                receiptStatus: receipt.status,
-                receiptError: error,
-              })
-            )
+          await pg.none(
+            `
+            update push_notification_tickets
+            set receipt_status = $1, receipt_error = $2
+            where id = $3
+            `,
+            [status, error, receiptId]
+          )
         })
       )
     } catch (error) {

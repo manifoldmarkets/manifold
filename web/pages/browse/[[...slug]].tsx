@@ -23,7 +23,6 @@ import {
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
 import { SupabaseSearch } from 'web/components/supabase-search'
-import { BrowseTopicPills } from 'web/components/topics/browse-topic-pills'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
@@ -142,7 +141,6 @@ export function GroupPageContent(props: {
   const privateUser = usePrivateUser()
 
   useSaveReferral(user)
-
   const shouldFilterDestiny = false // useShouldBlockDestiny(user?.id)
 
   const trendingTopics = useTrendingTopics(
@@ -193,6 +191,12 @@ export function GroupPageContent(props: {
   const { ref, headerStuck } = useHeaderIsStuck()
   const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
 
+  const [isForYouSelected, setIsForYouSelected] =
+    usePersistentInMemoryState<boolean>(
+      topicSlug === 'for-you',
+      'for-you-selected'
+    )
+
   const searchComponent = (
     <SupabaseSearch
       persistPrefix="search"
@@ -214,8 +218,16 @@ export function GroupPageContent(props: {
       setTopics={setTopicResults}
       topicSlug={topicSlug}
       defaultFilter={
-        !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+        // !topicSlug || NON_GROUP_SLUGS.includes(topicSlug) ? 'open' : 'all'
+        'all'
       }
+      shownTopics={shownTopics}
+      setTopicSlug={(slug) => {
+        if (slug === 'for-you') {
+          setIsForYouSelected(!(topicSlug === 'for-you'))
+        }
+        setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
+      }}
     />
   )
 
@@ -230,14 +242,7 @@ export function GroupPageContent(props: {
             user={user}
             setTopicSlug={setTopicSlugClearQuery}
             ref={ref}
-          />
-          <BrowseTopicPills
-            className={'relative w-full py-1 pl-1'}
-            topics={shownTopics}
-            currentTopicSlug={topicSlug}
-            setTopicSlug={(slug) =>
-              setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
-            }
+            isForYouSelected={isForYouSelected}
           />
           <div className="flex md:contents">
             <Col className={clsx('relative col-span-8 mx-auto w-full')}>

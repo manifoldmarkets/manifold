@@ -93,6 +93,18 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
   )
 }
 
+export function DowntimeBanner() {
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
+      link="https://status.manifold.markets/"
+    >
+      ⚠️ Manifold will be down at 7PM PT for about 10 minutes, as we upgrade our
+      financial infrastructure.
+    </Banner>
+  )
+}
+
 export const useBanner = (name: string) => {
   const [bannerSeen, setBannerSeen] = usePersistentLocalState<number>(
     0,

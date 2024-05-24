@@ -1,8 +1,8 @@
-import { type User } from 'common/user'
-import * as admin from 'firebase-admin'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { type TxnData, insertTxns } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUser } from 'shared/utils'
+import { incrementBalance } from 'shared/supabase/users'
 
 export const convertSpiceToMana: APIHandler<'convert-sp-to-mana'> = async (
   { amount },
@@ -11,20 +11,17 @@ export const convertSpiceToMana: APIHandler<'convert-sp-to-mana'> = async (
   const pg = createSupabaseDirectClient()
 
   // check if user has enough spice
-  await firestore.runTransaction(async (trans) => {
-    const userDoc = firestore.doc(`users/${auth.uid}`)
-    const userSnap = await trans.get(userDoc)
-    if (!userSnap.exists) throw new APIError(401, 'Your account was not found')
-    const user = userSnap.data() as User
+  await pg.tx(async (tx) => {
+    const user = await getUser(auth.uid, tx)
+    if (!user) throw new APIError(401, 'Your account was not found')
 
     if (user.spiceBalance < amount) {
       throw new APIError(403, 'Not enough balance')
     }
 
-    // convert
-    trans.update(userDoc, {
-      spiceBalance: admin.firestore.FieldValue.increment(-amount),
-      balance: admin.firestore.FieldValue.increment(amount),
+    await incrementBalance(tx, auth.uid, {
+      spiceBalance: -amount,
+      balance: +amount,
     })
   })
 
@@ -59,5 +56,3 @@ export const convertSpiceToMana: APIHandler<'convert-sp-to-mana'> = async (
 
   await pg.tx((tx) => insertTxns(tx, [toBank, toYou]))
 }
-
-const firestore = admin.firestore()

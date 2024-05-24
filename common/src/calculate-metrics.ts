@@ -1,7 +1,7 @@
-import { Dictionary, first, sumBy, uniq } from 'lodash'
+import { Dictionary, sumBy, uniq } from 'lodash'
 import { calculatePayout, getContractBetMetricsPerAnswer } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMContract } from './contract'
+import { Contract, CPMMContract, getAdjustedProfit } from './contract'
 import { User } from './user'
 import { computeFills } from './new-bet'
 import { getCpmmProbability } from './calculate-cpmm'
@@ -9,6 +9,8 @@ import { removeUndefinedProps } from './util/object'
 import { logit } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from 'common/answer'
+import { noFees } from './fees'
+import { DisplayUser } from './api/user-types'
 
 export const computeInvestmentValue = (
   bets: Bet[],
@@ -96,6 +98,7 @@ export const computeBinaryCpmmElasticity = (
   const cpmmState = {
     pool: contract.pool,
     p: contract.p,
+    collectedFees: contract.collectedFees,
   }
 
   const {
@@ -141,6 +144,7 @@ export const computeBinaryCpmmElasticityFromAnte = (
   const cpmmState = {
     pool,
     p,
+    collectedFees: noFees,
   }
 
   const {
@@ -194,26 +198,33 @@ export const calculateMetricsByContractAndAnswer = (
 export const calculateUserMetrics = (
   contract: Contract,
   bets: Bet[],
-  user?: User,
+  user: DisplayUser,
   answers?: Answer[]
 ) => {
   const useDenormalizedAnswers =
     contract.mechanism === 'cpmm-multi-1' && !answers
+  const answersToUse = useDenormalizedAnswers ? contract.answers : answers
   // ContractMetrics will have an answerId for every answer, and a null for the overall metrics.
   const currentMetrics = getContractBetMetricsPerAnswer(
     contract,
     bets,
-    useDenormalizedAnswers ? contract.answers : answers
+    answersToUse
   )
-  const bet = first(bets)
+
   return currentMetrics.map((current) => {
     return removeUndefinedProps({
       ...current,
       contractId: contract.id,
-      userName: user?.name ?? bet?.userName,
-      userId: user?.id ?? bet?.userId,
-      userUsername: user?.username ?? bet?.userUsername,
-      userAvatarUrl: user?.avatarUrl ?? bet?.userAvatarUrl,
+      userName: user.name,
+      userId: user.id,
+      userUsername: user.username,
+      userAvatarUrl: user.avatarUrl,
+      profitAdjustment: getAdjustedProfit(
+        contract,
+        current.profit,
+        answersToUse,
+        current.answerId
+      ),
     } as ContractMetric)
   })
 }

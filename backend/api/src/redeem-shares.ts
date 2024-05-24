@@ -1,8 +1,5 @@
-import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import { groupBy, mapValues, maxBy, min, sum, sumBy } from 'lodash'
 
-import { Bet } from 'common/bet'
 import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
 import { floatingEqual } from 'common/util/math'
 import {
@@ -15,17 +12,25 @@ import { log } from 'shared/utils'
 import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
+import { incrementBalance } from 'shared/supabase/users'
+import { SERIAL, createShortTimeoutDirectClient } from 'shared/supabase/init'
+import { convertBet } from 'common/supabase/bets'
+import { bulkInsertBets } from 'shared/supabase/bets'
 
 export const redeemShares = async (
   userId: string,
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
 ) => {
-  return await firestore.runTransaction(async (trans) => {
-    const { id: contractId } = contract
+  const pg = createShortTimeoutDirectClient()
+  const { id: contractId } = contract
 
-    const betsColl = firestore.collection(`contracts/${contractId}/bets`)
-    const betsSnap = await trans.get(betsColl.where('userId', '==', userId))
-    const bets = betsSnap.docs.map((doc) => doc.data() as Bet)
+  return await pg.tx({ mode: SERIAL }, async (tx) => {
+    const bets = await tx.map(
+      `select * from contract_bets where contract_id = $1 and user_id = $2`,
+      [contractId, userId],
+      convertBet
+    )
+
     log(
       `Loaded ${bets.length} bets for user ${userId} on contract ${contractId} to redeem shares`
     )
@@ -52,6 +57,7 @@ export const redeemShares = async (
         const saleBets = getSellAllRedemptionPreliminaryBets(
           contract.answers,
           minShares,
+          contract.collectedFees,
           Date.now()
         )
 
@@ -65,22 +71,23 @@ export const redeemShares = async (
             loanAmountByAnswerId
           )
         )
-        const betGroupId = crypto.randomBytes(12).toString('hex')
-        for (const sale of sellBetCandidates) {
-          const doc = betsColl.doc()
-          trans.create(doc, {
-            id: doc.id,
-            userId,
-            ...sale.newBet,
-            betGroupId,
-          })
-        }
+
         const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
         const loanPaid = sum(Object.values(loanAmountByAnswerId))
-        const userDoc = firestore.collection('users').doc(userId)
-        trans.update(userDoc, {
-          balance: FieldValue.increment(saleValue - loanPaid),
+
+        await incrementBalance(tx, userId, {
+          balance: saleValue - loanPaid,
         })
+
+        const betGroupId = crypto.randomBytes(12).toString('hex')
+        await bulkInsertBets(
+          sellBetCandidates.map((b) => ({
+            userId,
+            ...b.newBet,
+            betGroupId,
+          }))
+        )
+
         log('cpmm-multi-1 redeemed', {
           shares: minShares,
           totalAmount: saleValue,
@@ -115,11 +122,12 @@ export const redeemShares = async (
         lastProb,
         answerId === 'undefined' ? undefined : answerId
       )
-      const yesDoc = betsColl.doc()
-      const noDoc = betsColl.doc()
-
-      trans.create(yesDoc, { id: yesDoc.id, userId, ...yesBet })
-      trans.create(noDoc, { id: noDoc.id, userId, ...noBet })
+      await bulkInsertBets(
+        [yesBet, noBet].map((b) => ({
+          userId,
+          ...b,
+        }))
+      )
 
       log('redeemed', {
         shares,
@@ -127,11 +135,8 @@ export const redeemShares = async (
       })
     }
 
-    const userDoc = firestore.collection('users').doc(userId)
-    trans.update(userDoc, { balance: FieldValue.increment(totalAmount) })
+    await incrementBalance(tx, userId, { balance: totalAmount })
 
     return { status: 'success' }
   })
 }
-
-const firestore = admin.firestore()

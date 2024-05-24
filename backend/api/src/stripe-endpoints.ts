@@ -2,13 +2,13 @@ import * as admin from 'firebase-admin'
 import Stripe from 'stripe'
 import { Request, Response } from 'express'
 
-import { getPrivateUser, isProd, log } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { sendThankYouEmail } from 'shared/emails'
 import { trackPublicEvent } from 'shared/analytics'
 import { APIError } from 'common/api/utils'
-import { runTxnFromBank } from 'shared/txn/run-txn'
-import { User } from 'common/user'
+import { runTxn } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateUser } from 'shared/supabase/users'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -40,9 +40,9 @@ const manticDollarStripePrice = isProd()
       100000: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
     }
   : {
-      1399: 'price_1K8bC1GdoFKoCJW76k3g5MJk',
-      2999: 'price_1K8bDSGdoFKoCJW7avAwpV0e',
-      10999: 'price_1K8bEiGdoFKoCJW7Us4UkRHE',
+      1399: 'price_1PJ2h0GdoFKoCJW7U1HE1SHZ',
+      2999: 'price_1PJ2itGdoFKoCJW7QqWKG7YW',
+      10999: 'price_1PJ2ffGdoFKoCJW70A20kUY7',
       100000: 'price_1N0Td3GdoFKoCJW7rbQYmwho',
     }
 
@@ -167,35 +167,35 @@ const issueMoneys = async (session: StripeSession) => {
     amount: deposit,
     token: 'M$',
     category: 'MANA_PURCHASE',
-    data: { stripeTransactionId: id, type: 'stripe' },
-    description: `Deposit M$${deposit} from BANK for mana purchase`,
+    data: { stripeTransactionId: id, type: 'stripe', paidInCents: price },
+    description: `Deposit for mana purchase`,
   } as const
 
   let success = false
   try {
-    await pg.tx((tx) => runTxnFromBank(tx, manaPurchaseTxn))
+    await pg.tx(async (tx) => {
+      await runTxn(tx, manaPurchaseTxn)
+      await updateUser(tx, userId, {
+        purchasedMana: true,
+      })
+    })
     success = true
   } catch (e) {
-    console.error(
+    log.error(
       'Must reconcile stripe-transactions with purchase txns. User may not have received mana!'
     )
     if (e instanceof APIError) {
-      console.error('APIError in runTxnFromBank.', e)
+      log.error('APIError in runTxn: ' + e.message)
     }
-    console.error('Unknown error in runTxnFromBank', e)
+    log.error('Unknown error in runTxnFromBank' + e)
   }
 
   if (success) {
     log('user', userId, 'paid M$', deposit)
-    const userRef = firestore.collection('users').doc(userId)
-    const userSnap = await userRef.get()
-    if (!userSnap.exists) {
+    const user = await getUser(userId)
+    if (!user) {
       throw new APIError(500, 'User not found')
     }
-    const user = userSnap.data() as User
-    await userRef.update({
-      purchasedMana: true,
-    })
 
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) throw new APIError(500, 'Private user not found')

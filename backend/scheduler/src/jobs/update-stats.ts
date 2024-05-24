@@ -28,8 +28,9 @@ import { saveCalibrationData } from 'shared/calculate-calibration'
 import { ManaPurchaseTxn } from 'common/txn'
 import { isUserLikelySpammer } from 'common/user'
 import { convertTxn } from 'common/supabase/txns'
+import { MANA_PURCHASE_RATE_CHANGE_DATE } from 'common/envs/constants'
 
-const numberOfDays = 365 * 2
+const numberOfDays = 365
 
 interface StatEvent {
   id: string
@@ -185,7 +186,8 @@ export async function getSales(
   const salesByDay = range(0, numberOfDays).map(() => [] as any[])
   for (const sale of sales) {
     const ts = sale.createdTime
-    const amount = sale.amount / 100 // convert to dollars
+    const rate = ts < MANA_PURCHASE_RATE_CHANGE_DATE.getTime() ? 100 : 1000
+    const amount = sale.amount / rate // convert to dollars
     const userId = sale.toId
     const id = sale.id
     const dayIndex = Math.floor((ts - startTime) / DAY_MS)
@@ -197,8 +199,13 @@ export async function getSales(
 
 export const updateStatsCore = async () => {
   const pg = createSupabaseDirectClient()
+  // We run the script at 4am, but we want data from the start of each day up until last midnight.
+  const midnightLastNight = dayjs()
+    .tz('America/Los_Angeles')
+    .startOf('day')
+    .valueOf()
 
-  const start = dayjs()
+  const start = dayjs(midnightLastNight)
     .subtract(numberOfDays, 'day')
     .tz('America/Los_Angeles')
     .startOf('day')
@@ -554,8 +561,7 @@ export const updateStatsCore = async () => {
   }))
 
   // Write to postgres
-  for (const row of rows)
-    await bulkUpsert(pg, 'stats', 'title', [row])
+  for (const row of rows) await bulkUpsert(pg, 'stats', 'title', [row])
   log('Wrote', rows.length, ' rows to stats table')
   await revalidateStaticProps(`/stats`)
   await saveCalibrationData(pg)

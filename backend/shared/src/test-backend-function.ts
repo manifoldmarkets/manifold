@@ -22,7 +22,7 @@ export async function testBackendFunction() {
     // await backfillUserTopicInterests(pg)
     // await calculateImportanceScore(db, pg)
     // await updateContractMetricsCore()
-    // await updateUserMetricsCore()
+    await updateUserMetricsCore(['AJwLWoo3xue32XIiAVrL5SyR1WB2'], true)
     // await updateCreatorMetricsCore()
   } catch (e) {
     console.error(e)

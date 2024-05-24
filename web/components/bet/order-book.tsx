@@ -37,6 +37,7 @@ import { api } from 'web/lib/firebase/api'
 import { UserHovercard } from '../user/user-hovercard'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { Answer } from 'common/answer'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function YourOrders(props: {
   contract:
@@ -168,6 +169,7 @@ function OrderRow(props: {
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
+  const user = useDisplayUserById(bet.userId)
 
   const [isCancelling, setIsCancelling] = useState(false)
 
@@ -179,14 +181,14 @@ function OrderRow(props: {
 
   return (
     <tr>
-      {!isYou && (
+      {!isYou && user && (
         <td>
-          <a href={`/${bet.userUsername}`}>
+          <a href={`/${user.username}`}>
             <UserHovercard userId={bet.userId}>
               <Avatar
                 size={'sm'}
-                avatarUrl={bet.userAvatarUrl}
-                username={bet.userUsername}
+                avatarUrl={user.avatarUrl}
+                username={user.username}
                 noLink={true}
               />
             </UserHovercard>

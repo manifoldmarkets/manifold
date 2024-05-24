@@ -9,7 +9,7 @@ import {
   calculateCpmmMultiSumsToOneSale,
   getCpmmProbability,
 } from './calculate-cpmm'
-import { getFeeTotal, getTakerFee } from './fees'
+import { getFeeTotal, getTakerFee, noFees } from './fees'
 import { getMultiNumericAnswerBucketRanges } from './multi-numeric'
 import { getNewSellBetInfo } from './sell-bet'
 import { Bet } from './bet'
@@ -28,7 +28,8 @@ describe('calculateCpmmMultiArbitrageBet', () => {
       10,
       undefined,
       [],
-      { user1: 100, user2: 100, user3: 100 }
+      { user1: 100, user2: 100, user3: 100 },
+      noFees
     )
     const { newBetResult, otherBetResults } = result
     const pools = [
@@ -55,7 +56,8 @@ describe('calculateCpmmMultiArbitrageBet', () => {
       betAmount,
       undefined,
       [],
-      { user1: 100, user2: 100, user3: 100 }
+      { user1: 100, user2: 100, user3: 100 },
+      noFees
     )
     const { newBetResult, otherBetResults } = result
 
@@ -101,7 +103,8 @@ describe('calculateCpmmMultiSumsToOneSale', () => {
       'YES',
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResult, otherBetResults } = result
 
@@ -146,7 +149,8 @@ describe('calculateCpmmMultiSumsToOneSale', () => {
       'NO',
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResult, otherBetResults } = result
 
@@ -188,7 +192,8 @@ describe('calculateCpmmMultiSumsToOneSale', () => {
       'YES',
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResult, otherBetResults, buyAmount } = result
     const sellFee =
@@ -218,7 +223,8 @@ describe('calculateCpmmMultiSumsToOneSale', () => {
       'NO',
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResult, otherBetResults, buyAmount } = result
     const sellFee =
@@ -239,7 +245,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       30,
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResults, otherBetResults } = result
     const pools = [
@@ -260,7 +267,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       betAmount,
       undefined,
       [],
-      {}
+      {},
+      noFees
     )
     const { newBetResults, otherBetResults, updatedAnswers } = result
 
@@ -300,7 +308,8 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       updatedAnswers,
       groupBy(bets, 'answerId'),
       [],
-      {}
+      {},
+      noFees
     )
     const afterSaleAnswerYesShares = convertAnswerPoolsToYesPools(
       saleResults.updatedAnswers

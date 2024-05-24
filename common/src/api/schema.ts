@@ -312,6 +312,18 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({ id: z.string() }),
   },
+  'group/:slug/block': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ slug: z.string() }),
+  },
+  'group/:slug/unblock': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ slug: z.string() }),
+  },
   groups: {
     method: 'GET',
     visibility: 'public',
@@ -380,6 +392,7 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
+    returns: {} as { message: string },
     props: resolveMarketProps,
   },
   'market/:contractId/add-liquidity': {
@@ -443,6 +456,18 @@ export const API = (_apiTypeCheck = {
         text: z.string().min(1).max(MAX_ANSWER_LENGTH),
       })
       .strict(),
+  },
+  'market/:contractId/block': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ contractId: z.string() }).strict(),
+  },
+  'market/:contractId/unblock': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ contractId: z.string() }).strict(),
   },
   unresolve: {
     method: 'POST',
@@ -660,6 +685,18 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as DisplayUser,
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'user/by-id/:id/block': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'user/by-id/:id/unblock': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
     props: z.object({ id: z.string() }).strict(),
   },
   users: {

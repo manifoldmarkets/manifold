@@ -42,6 +42,7 @@ export const getCpmmSellBetInfo = (
       : {
           pool: { YES: answer!.poolYes, NO: answer!.poolNo },
           p: 0.5,
+          collectedFees: contract.collectedFees,
         }
 
   const { cpmmState, fees, makers, takers, ordersToCancel } = calculateCpmmSale(
@@ -118,7 +119,8 @@ export const getCpmmMultiSellBetInfo = (
     outcome,
     limitProb,
     unfilledBets,
-    balanceByUserId
+    balanceByUserId,
+    contract.collectedFees
   )
 
   const { cpmmState, makers, takers, ordersToCancel, totalFees } = newBetResult!
@@ -204,7 +206,8 @@ export const getCpmmMultiSellSharesInfo = (
       answers,
       userBetsByAnswerIdToSell,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      contract.collectedFees
     )
 
   const now = Date.now()

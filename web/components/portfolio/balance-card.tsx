@@ -575,7 +575,7 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'MARKET_BOOST_REDEEM':
       return 'Claim boost'
     case 'SIGNUP_BONUS':
-      return 'Question exploration bonus'
+      return change.description ?? 'Signup bonus'
     case 'CONSUME_SPICE':
     case 'CONSUME_SPICE_DONE':
       return `Redeem prize points for mana`
@@ -598,7 +598,7 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'BETTING_STREAK_BONUS':
       return 'Quests'
     case 'SIGNUP_BONUS':
-      return 'Quests'
+      return 'New user bonuses'
     case 'QUEST_REWARD':
       return 'Quests'
     case 'CONTRACT_UNDO_PRODUCE_SPICE':
@@ -608,8 +608,6 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CONSUME_SPICE_DONE':
       return ''
     case 'STARTING_BALANCE':
-      return ''
-    case 'MARKET_BOOST_REDEEM':
       return ''
     case 'ADD_SUBSIDY':
       return 'Subsidy'

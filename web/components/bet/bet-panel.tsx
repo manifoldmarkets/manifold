@@ -219,7 +219,7 @@ export const BuyPanelBody = (props: {
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
 
-  const initialBetAmount = 10
+  const initialBetAmount = 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -355,7 +355,8 @@ export const BuyPanelBody = (props: {
       betAmount ?? 0,
       undefined,
       unfilledBets,
-      balanceByUserId
+      balanceByUserId,
+      contract.collectedFees
     )
     const { pool, p } = newBetResult.cpmmState
     currentPayout = sumBy(newBetResult.takers, 'shares')
@@ -378,8 +379,13 @@ export const BuyPanelBody = (props: {
             NO: multiProps!.answerToBuy.poolNo,
           },
           p: 0.5,
+          collectedFees: contract.collectedFees,
         }
-      : { pool: contract.pool, p: contract.p }
+      : {
+          pool: contract.pool,
+          p: contract.p,
+          collectedFees: contract.collectedFees,
+        }
 
     const result = computeCpmmBet(
       cpmmState,
@@ -702,12 +708,7 @@ export const BuyPanelBody = (props: {
 
         {betType !== 'Limit' && (
           <div className="text-ink-700 mt-1 text-sm">
-            Fees{' '}
-            <FeeDisplay
-              amount={betAmount}
-              totalFees={fees}
-              isMultiSumsToOne={shouldAnswersSumToOne}
-            />
+            Fees <FeeDisplay amount={betAmount} totalFees={fees} />
           </div>
         )}
 

@@ -3,7 +3,7 @@ import { MAX_COMMENT_JSON_LENGTH } from 'api/create-comment'
 import { z } from 'zod'
 import { contentSchema } from 'common/api/zod-types'
 import { JSONContent } from '@tiptap/core'
-import { getPrivateUser, getUser, getUserFirebase } from 'shared/utils'
+import { getPrivateUser, getUser } from 'shared/utils'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -69,7 +69,7 @@ const validateComment = async (
   creatorId: string,
   content: JSONContent
 ) => {
-  const creator = await getUserFirebase(creatorId)
+  const creator = await getUser(creatorId)
 
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')

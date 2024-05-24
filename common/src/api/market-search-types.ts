@@ -51,5 +51,11 @@ export const searchProps = z
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     isPolitics: z.coerce.boolean().optional(),
+    isPrizeMarket: z
+      .union([
+        z.literal('true'),
+        z.literal('false'),
+      ])
+      .default('false'),
   })
   .strict()

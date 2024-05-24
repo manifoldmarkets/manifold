@@ -17,7 +17,7 @@ import {
 } from './increment-button'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { User, verifiedPhone } from 'common/user'
-import { STARTING_BALANCE } from 'common/economy'
+import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
@@ -209,7 +209,7 @@ export function BuyAmountInput(props: {
 
   const portfolio = useCurrentPortfolio(user?.id)
   const hasLotsOfMana =
-    !!portfolio && portfolio.balance + portfolio.investmentValue > 2000
+    !!portfolio && portfolio.balance + portfolio.investmentValue > 10000
 
   const amountWithDefault = amount ?? 0
 
@@ -221,8 +221,10 @@ export function BuyAmountInput(props: {
   }
 
   const isAdvancedTrader = useIsAdvancedTrader()
-  const advancedIncrementValues = hasLotsOfMana ? [10, 50, 250] : [1, 10, 50]
-  const defaultIncrementValues = hasLotsOfMana ? [10, 100] : [1, 10]
+  const advancedIncrementValues = hasLotsOfMana
+    ? [50, 250, 1000]
+    : [10, 50, 250]
+  const defaultIncrementValues = hasLotsOfMana ? [50, 250] : [10, 100]
 
   const incrementValues =
     quickButtonValues === 'large'
@@ -321,7 +323,7 @@ const BuyMoreFunds = (props: { user: User | null | undefined }) => {
           className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
           onClick={() => setShowVerifyPhone(true)}
         >
-          Verify your phone number for {formatMoney(STARTING_BALANCE)}
+          Verify your phone number for {formatMoney(PHONE_VERIFICATION_BONUS)}
         </button>
       )}
       <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />

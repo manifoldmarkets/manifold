@@ -3,6 +3,7 @@ export type ContractMetric = {
   contractId: string
   from:
     | {
+        // Monthly is not updated atm bc it's not used
         [period: string]: {
           profit: number
           profitPercent: number
@@ -30,6 +31,7 @@ export type ContractMetric = {
   userAvatarUrl: string
   lastBetTime: number
   answerId: string | null
+  profitAdjustment?: number
 }
 
 export type ContractMetricsByOutcome = Record<string, ContractMetric[]>

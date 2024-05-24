@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import { Transaction } from 'firebase-admin/firestore'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   add_answers_mode,
@@ -14,7 +14,6 @@ import {
 import { getAnte } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { marketCreationCosts, User } from 'common/user'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { getCloseDate } from 'shared/helpers/openai-utils'
@@ -49,7 +48,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { broadcast } from './websockets/server'
+import { broadcastNewContract } from './websockets/helpers'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -149,31 +148,22 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const pg = createSupabaseDirectClient()
 
-  const { contract, amountSuppliedByUser, amountSuppliedByHouse } =
-    await firestore.runTransaction(async (trans) => {
-      const userDoc = await trans.get(firestore.collection('users').doc(userId))
-      if (!userDoc.exists) throw new APIError(401, 'Your account was not found')
+  const contract = await pg.tx(async (tx) => {
+    const user = await getUser(userId, tx)
+    if (!user) throw new APIError(401, 'Your account was not found')
+    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      const user = userDoc.data() as User
+    if (ante > user.balance)
+      throw new APIError(403, `Balance must be at least ${ante}.`)
 
-      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+    let answerLoverUserIds: string[] = []
+    if (isLove && answers) {
+      answerLoverUserIds = await getLoveAnswerUserIds(answers)
+      console.log('answerLoverUserIds', answerLoverUserIds)
+    }
 
-      const { amountSuppliedByUser, amountSuppliedByHouse } =
-        marketCreationCosts(user, ante, !!specialLiquidityPerAnswer)
-
-      if (amountSuppliedByUser > user.balance)
-        throw new APIError(
-          403,
-          `Balance must be at least ${amountSuppliedByUser}.`
-        )
-
+    const contract = await firestore.runTransaction(async (trans) => {
       const slug = await getSlug(trans, question)
-
-      let answerLoverUserIds: string[] = []
-      if (isLove && answers) {
-        answerLoverUserIds = await getLoveAnswerUserIds(answers)
-        console.log('answerLoverUserIds', answerLoverUserIds)
-      }
 
       const contract = getNewContract(
         removeUndefinedProps({
@@ -213,23 +203,20 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         })
       )
 
-      if (amountSuppliedByHouse > 0)
-        trans.update(userDoc.ref, {
-          freeQuestionsCreated: FieldValue.increment(1),
-        })
-
       trans.create(contractRef, contract)
-      return { contract, amountSuppliedByUser, amountSuppliedByHouse }
+
+      return contract
     })
 
-  await pg.tx(async (tx) => {
     await runCreateMarketTxn({
       contractId: contract.id,
       userId,
-      amountSuppliedByUser,
-      amountSuppliedByHouse,
+      amountSuppliedByUser: ante,
+      amountSuppliedByHouse: 0,
       transaction: tx,
     })
+
+    return contract
   })
 
   log('created contract ', {
@@ -254,7 +241,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   await generateContractEmbeddings(contract, pg)
 
-  broadcast('global/new-contract', { contractId: contract.id })
+  broadcastNewContract(contract, user)
   return contract
 }
 

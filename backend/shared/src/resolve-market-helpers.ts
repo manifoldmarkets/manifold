@@ -1,6 +1,5 @@
 import * as admin from 'firebase-admin'
 import { mapValues, groupBy, sum, sumBy, chunk } from 'lodash'
-
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -23,7 +22,6 @@ import {
 } from './utils'
 import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
 import { APIError } from 'common//api/utils'
-import { FieldValue, Query } from 'firebase-admin/firestore'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { createSupabaseDirectClient } from './supabase/init'
@@ -35,6 +33,8 @@ import {
   isModId,
 } from 'common/envs/constants'
 import { convertTxn } from 'common/supabase/txns'
+import { bulkIncrementBalances } from './supabase/users'
+import { convertBet } from 'common/supabase/bets'
 
 export type ResolutionParams = {
   outcome: string
@@ -146,6 +146,22 @@ export const resolveMarketHelper = async (
             : a
         ),
       } as Partial<CPMMMultiContract>
+    } else if (
+      unresolvedContract.mechanism === 'cpmm-multi-1' &&
+      updatedContractAttrs.isResolved
+    ) {
+      updateAnswerAttrs = removeUndefinedProps({
+        resolutionTime,
+        resolverId: resolver.id,
+      }) as Partial<Answer>
+      // We have to update the denormalized answer data on the contract for the updateContractMetrics call
+      updatedContractAttrs = {
+        ...(updatedContractAttrs ?? {}),
+        answers: unresolvedContract.answers.map((a) => ({
+          ...a,
+          ...updateAnswerAttrs,
+        })),
+      } as Partial<CPMMMultiContract>
     }
 
     const contract = {
@@ -184,11 +200,21 @@ export const resolveMarketHelper = async (
       await contractDoc.update(updatedContractAttrs)
       log('contract resolved')
     }
-    if (updateAnswerAttrs) {
+    if (updateAnswerAttrs && answerId) {
       const answerDoc = firestore.doc(
         `contracts/${contractId}/answersCpmm/${answerId}`
       )
       await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+    } else if (
+      updateAnswerAttrs &&
+      unresolvedContract.mechanism === 'cpmm-multi-1'
+    ) {
+      for (const answer of unresolvedContract.answers) {
+        const answerDoc = firestore.doc(
+          `contracts/${contractId}/answersCpmm/${answer.id}`
+        )
+        await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+      }
     }
     log('processing payouts', { payouts })
     await payUsersTransactions(
@@ -269,6 +295,8 @@ export const getDataAndPayoutInfo = async (
         liquidityDocs.filter((l) => !l.isAnte)
       : liquidityDocs
 
+  const pg = createSupabaseDirectClient()
+
   let bets: Bet[]
   if (
     unresolvedContract.mechanism === 'cpmm-multi-1' &&
@@ -276,24 +304,22 @@ export const getDataAndPayoutInfo = async (
   ) {
     // Load bets from supabase as an optimization.
     // This type of multi choice generates a lot of extra bets that have shares = 0.
-    const pg = createSupabaseDirectClient()
     bets = await pg.map(
       `select * from contract_bets
       where contract_id = $1
       and (shares != 0 or (data->>'loanAmount')::numeric != 0)
       `,
       [contractId],
-      (row) => row.data
+      convertBet
     )
   } else {
-    let betsQuery: Query<any> = firestore.collection(
-      `contracts/${contractId}/bets`
+    bets = await pg.map(
+      `select * from contract_bets
+      where contract_id = $1
+      ${answerId ? `and data->>'answerId' = $2` : ''}`,
+      [contractId, answerId],
+      convertBet
     )
-    if (answerId) {
-      betsQuery = betsQuery.where('answerId', '==', answerId)
-    }
-    const betsSnap = await betsQuery.get()
-    bets = betsSnap.docs.map((doc) => doc.data() as Bet)
   }
 
   const resolutionProbability =
@@ -399,73 +425,77 @@ export const payUsersTransactions = async (
   payoutSpice: boolean
 ) => {
   const pg = createSupabaseDirectClient()
-  const firestore = admin.firestore()
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutChunks = chunk(mergedPayouts, 250)
   const payoutStartTime = Date.now()
 
   for (const payoutChunk of payoutChunks) {
+    const balanceUpdates: {
+      id: string
+      balance?: number
+      spiceBalance?: number
+      totalDeposits: number
+    }[] = []
     const txns: TxnData[] = []
-    let error = false
-    await firestore
-      .runTransaction(async (transaction) => {
-        payoutChunk.forEach(({ userId, payout, deposit }) => {
-          if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
-            const toDoc = firestore.doc(`users/${userId}`)
-            transaction.update(toDoc, {
-              spiceBalance: FieldValue.increment(payout),
-              totalDeposits: FieldValue.increment(deposit ?? 0),
-            })
 
-            txns.push({
-              category: 'PRODUCE_SPICE',
-              fromType: 'CONTRACT',
-              fromId: contractId,
-              toType: 'USER',
-              toId: userId,
-              amount: payout,
-              token: 'SPICE',
-              data: removeUndefinedProps({
-                deposit: deposit ?? 0,
-                payoutStartTime,
-                answerId,
-              }),
-              description: 'Contract payout for resolution',
-            })
-          } else {
-            const toDoc = firestore.doc(`users/${userId}`)
-            transaction.update(toDoc, {
-              balance: FieldValue.increment(payout),
-              totalDeposits: FieldValue.increment(deposit ?? 0),
-            })
-
-            txns.push({
-              category: 'CONTRACT_RESOLUTION_PAYOUT',
-              fromType: 'CONTRACT',
-              fromId: contractId,
-              toType: 'USER',
-              toId: userId,
-              amount: payout,
-              token: 'M$',
-              data: removeUndefinedProps({
-                deposit: deposit ?? 0,
-                payoutStartTime,
-                answerId,
-              }),
-              description: 'Contract payout for resolution: ' + contractId,
-            })
-          }
+    payoutChunk.forEach(async ({ userId, payout, deposit }) => {
+      if (SPICE_PRODUCTION_ENABLED && payoutSpice) {
+        balanceUpdates.push({
+          id: userId,
+          spiceBalance: payout,
+          totalDeposits: deposit ?? 0,
         })
-      })
-      .catch(() => {
-        // don't rethrow error without undoing previous payouts
-        log('Error running payout chunk transaction', { error, payoutChunk })
-        error = true
-      })
 
-    if (!error) {
-      await pg.tx((tx) => insertTxns(tx, txns))
-    }
+        txns.push({
+          category: 'PRODUCE_SPICE',
+          fromType: 'CONTRACT',
+          fromId: contractId,
+          toType: 'USER',
+          toId: userId,
+          amount: payout,
+          token: 'SPICE',
+          data: removeUndefinedProps({
+            deposit: deposit ?? 0,
+            payoutStartTime,
+            answerId,
+          }),
+          description: 'Contract payout for resolution',
+        })
+      } else {
+        balanceUpdates.push({
+          id: userId,
+          balance: payout,
+          totalDeposits: deposit ?? 0,
+        })
+
+        txns.push({
+          category: 'CONTRACT_RESOLUTION_PAYOUT',
+          fromType: 'CONTRACT',
+          fromId: contractId,
+          toType: 'USER',
+          toId: userId,
+          amount: payout,
+          token: 'M$',
+          data: removeUndefinedProps({
+            deposit: deposit ?? 0,
+            payoutStartTime,
+            answerId,
+          }),
+          description: 'Contract payout for resolution: ' + contractId,
+        })
+      }
+    })
+
+    await pg
+      .tx(async (tx) => {
+        await bulkIncrementBalances(tx, balanceUpdates)
+        await insertTxns(tx, txns)
+      })
+      .catch((e) => {
+        // don't rethrow error without undoing previous payouts
+        log.error(e)
+        log.error('Error running payout chunk transaction', { payoutChunk })
+      })
   }
 }
 

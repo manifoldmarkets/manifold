@@ -11,6 +11,7 @@ const LIVE_TOPICS = [
   'global/new-bet',
   'global/new-contract',
   'global/new-comment',
+  'global/new-subsidy',
 ] as const
 type LiveTopic = (typeof LIVE_TOPICS)[number]
 

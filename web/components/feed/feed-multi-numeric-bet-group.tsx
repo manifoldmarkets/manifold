@@ -11,6 +11,7 @@ import { formatMoney } from 'common/util/format'
 import { UserLink } from 'web/components/widgets/user-link'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export const MultiNumericBetGroup = memo(function FeedBet(props: {
   contract: CPMMNumericContract
@@ -19,7 +20,9 @@ export const MultiNumericBetGroup = memo(function FeedBet(props: {
   className?: string
 }) {
   const { contract, bets, avatarSize, className } = props
-  const { userAvatarUrl, userUsername, userId } = bets[0]
+  const { userId } = bets[0]
+
+  const first = useDisplayUserById(userId)
 
   return (
     <Col className={'w-full'}>
@@ -28,8 +31,8 @@ export const MultiNumericBetGroup = memo(function FeedBet(props: {
           <UserHovercard userId={userId}>
             <Avatar
               size={avatarSize}
-              avatarUrl={userAvatarUrl}
-              username={userUsername}
+              avatarUrl={first?.avatarUrl}
+              username={first?.username}
             />
           </UserHovercard>
           <BetGroupStatusText
@@ -56,7 +59,11 @@ function BetGroupStatusText(props: {
     expectedValueBefore,
     expectedValueAfter,
   } = groupMultiNumericBets(bets, contract)
+
+  const user = useDisplayUserById(bet?.userId ?? '')
+
   if (!bet) return null
+
   const { amount, isApi, shares } = bet
   const bought = shares >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
@@ -64,16 +71,11 @@ function BetGroupStatusText(props: {
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
-      <UserHovercard userId={bet.userId}>
-        <UserLink
-          user={{
-            id: bet.userId,
-            name: bet.userName,
-            username: bet.userUsername,
-          }}
-          className={'font-semibold'}
-        />
-      </UserHovercard>
+      {user && (
+        <UserHovercard userId={bet.userId}>
+          <UserLink user={user} className={'font-semibold'} />
+        </UserHovercard>
+      )}
       <>
         {' '}
         {bought} {money} of {lowerRange} - {higherRange}{' '}

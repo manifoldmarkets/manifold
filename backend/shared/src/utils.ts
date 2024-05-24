@@ -1,18 +1,16 @@
 import { generateJSON } from '@tiptap/html'
 import { getCloudRunServiceUrl } from 'common//api/utils'
 import { Contract, contractPath } from 'common/contract'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
 import {
   CollectionGroup,
   CollectionReference,
   DocumentData,
-  FieldValue,
   Query,
   QueryDocumentSnapshot,
   QuerySnapshot,
-  Transaction,
 } from 'firebase-admin/firestore'
 import { first, groupBy, mapValues, sumBy } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
@@ -259,22 +257,21 @@ export const getContractFromSlugSupabase = async (contractSlug: string) => {
   return first(res)
 }
 
-export const getUserFirebase = (userId: string) => {
-  return getDoc<User>('users', userId)
-}
-
-export const getUser = async (userId: string) => {
-  const pg = createSupabaseDirectClient()
-  const res = await pg.map(
-    `select * from users where id = $1`,
+export const getUser = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from users where id = $1 limit 1`,
     [userId],
-    (row) => convertUser(row)
+    convertUser
   )
-  return first(res)
 }
 
-export const getUsers = async (userIds: string[]) => {
-  const pg = createSupabaseDirectClient()
+export const getUsers = async (
+  userIds: string[],
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
   const res = await pg.map(
     `select * from users where id = any($1)`,
     [userIds],
@@ -314,39 +311,16 @@ export const getPrivateUsersNotSent = async (
   )
 }
 
-export const getUserByUsername = async (username: string) => {
-  const pg = createSupabaseDirectClient()
+export const getUserByUsername = async (
+  username: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
   const res = await pg.oneOrNone<Row<'users'>>(
     `select * from users where username = $1`,
     username
   )
 
   return res ? convertUser(res) : null
-}
-
-const updateUserBalance = (
-  transaction: Transaction,
-  userId: string,
-  balanceDelta: number,
-  depositDelta: number
-) => {
-  const firestore = admin.firestore()
-  const userDoc = firestore.doc(`users/${userId}`)
-
-  // Note: Balance is allowed to go negative.
-  transaction.update(userDoc, {
-    balance: FieldValue.increment(balanceDelta),
-    totalDeposits: FieldValue.increment(depositDelta),
-  })
-}
-
-export const payUser = (userId: string, payout: number, isDeposit = false) => {
-  if (!isFinite(payout)) throw new Error('Payout is not finite: ' + payout)
-
-  const firestore = admin.firestore()
-  return firestore.runTransaction(async (transaction) => {
-    updateUserBalance(transaction, userId, payout, isDeposit ? payout : 0)
-  })
 }
 
 export const checkAndMergePayouts = (
@@ -373,21 +347,6 @@ export const checkAndMergePayouts = (
       deposit: sumBy(payouts, (p) => p.deposit ?? 0),
     }))
   )
-}
-
-// Max 500 users in one transaction.
-export const payUsers = (
-  transaction: Transaction,
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
-  const mergedPayouts = checkAndMergePayouts(payouts)
-  for (const { userId, payout, deposit } of mergedPayouts) {
-    updateUserBalance(transaction, userId, payout, deposit)
-  }
 }
 
 export function contractUrl(contract: Contract) {

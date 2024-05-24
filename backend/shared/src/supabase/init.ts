@@ -106,3 +106,23 @@ export function createSupabaseDirectClient(
   }, METRICS_INTERVAL_MS)
   return (pgpDirect = client)
 }
+
+let shortTimeoutPgpClient: IDatabase<{}, IClient> | null = null
+export const createShortTimeoutDirectClient = () => {
+  if (shortTimeoutPgpClient) return shortTimeoutPgpClient
+  shortTimeoutPgpClient = pgp({
+    host: `db.${getInstanceHostname(getInstanceId())}`,
+    port: 5432,
+    user: `postgres`,
+    password: process.env.SUPABASE_PASSWORD,
+    query_timeout: 1000 * 30,
+    max: 20,
+  })
+  return shortTimeoutPgpClient
+}
+
+export const SERIAL = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.serializable,
+  readOnly: false,
+  deferrable: false,
+})

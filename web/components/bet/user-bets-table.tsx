@@ -48,7 +48,6 @@ type BetSort =
   | 'value'
   | 'day'
   | 'week'
-  | 'month'
   | 'probChangeDay'
   | 'profitPercent'
   | 'dayPercent'
@@ -326,7 +325,6 @@ function BetsTable(props: {
     dayPercent: (c) =>
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
-    month: (c) => -(metricsByContractId[c.id].from?.month.profit ?? 0),
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
       (filter === 'open' ? -1 : 1) *

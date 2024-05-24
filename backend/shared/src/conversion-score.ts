@@ -11,13 +11,13 @@ export async function calculateConversionScore() {
   log('Loading contract data...')
   const contractIds = await pg.map(
     `select distinct contract_id from user_view_events
-        where created_time > now() - interval '1 week'`,
+        where created_time > now() - interval '1 hour'`,
     [],
     (c) => c.contract_id
   )
-  const chunks = chunk(contractIds, 1000)
+  const chunks = chunk(contractIds, 100)
   log(
-    `Processing ${contractIds.length} contracts in ${chunks.length} chunks...`
+    `Processing conversion scores for ${contractIds.length} contracts in ${chunks.length} chunks...`
   )
   let processed = 0
   for (const chunk of chunks) {
@@ -125,7 +125,7 @@ export async function calculateConversionScore() {
         return null
       })
     processed += chunk.length
-    log(`Finished processing ${processed} contracts.`)
+    log(`Finished processing conversion scores for ${processed} contracts.`)
   }
   log('Done.')
 }

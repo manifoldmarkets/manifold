@@ -1,5 +1,3 @@
-import * as admin from 'firebase-admin'
-
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Answer } from 'common/answer'
@@ -13,6 +11,7 @@ import {
 } from 'api/place-bet'
 import { log } from 'shared/utils'
 import * as crypto from 'crypto'
+import { runEvilTransaction } from 'shared/evil-transaction'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -27,12 +26,13 @@ export const placeMultiBetMain = async (
 ) => {
   const { amount, contractId } = body
 
-  const results = await firestore.runTransaction(async (trans) => {
-    const { user, contract, contractDoc, userDoc } = await validateBet(
+  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
+    const { user, contract, contractDoc } = await validateBet(
       uid,
       amount,
       contractId,
-      trans,
+      pgTrans,
+      fbTrans,
       isApi
     )
 
@@ -47,7 +47,7 @@ export const placeMultiBetMain = async (
     const { answerIds, limitProb, expiresAt } = body
     if (expiresAt && expiresAt < Date.now())
       throw new APIError(403, 'Bet cannot expire in the past.')
-    const answersSnap = await trans.get(contractDoc.collection('answersCpmm'))
+    const answersSnap = await fbTrans.get(contractDoc.collection('answersCpmm'))
     const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
@@ -63,7 +63,7 @@ export const placeMultiBetMain = async (
     const unfilledBetsAndBalances = await Promise.all(
       answerIds.map(
         async (answerId) =>
-          await getUnfilledBetsAndUserBalances(trans, contractDoc, answerId)
+          await getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answerId)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
@@ -86,17 +86,19 @@ export const placeMultiBetMain = async (
 
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
     const betGroupId = crypto.randomBytes(12).toString('hex')
-    return newBetResults.map((newBetResult) =>
-      processNewBetResult(
-        newBetResult,
-        contractDoc,
-        contract,
-        userDoc,
-        user,
-        isApi,
-        trans,
-        undefined,
-        betGroupId
+    return await Promise.all(
+      newBetResults.map((newBetResult) =>
+        processNewBetResult(
+          newBetResult,
+          contractDoc,
+          contract,
+          user,
+          isApi,
+          pgTrans,
+          fbTrans,
+          undefined,
+          betGroupId
+        )
       )
     )
   })
@@ -123,5 +125,3 @@ export const placeMultiBetMain = async (
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()

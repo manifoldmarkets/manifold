@@ -1,5 +1,4 @@
 import { toUserAPIResponse } from 'common/api/user-types'
-import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { RESERVED_PATHS } from 'common/envs/constants'
@@ -11,10 +10,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import * as admin from 'firebase-admin'
+import { updateUser } from 'shared/supabase/users'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
-  const firestore = admin.firestore()
-
   const update = cloneDeep(props)
 
   const user = await getUser(auth.uid)
@@ -34,9 +32,24 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
     update.username = cleanedUsername
   }
 
-  await firestore.doc(`users/${auth.uid}`).update(removeUndefinedProps(update))
-  const { name, username, avatarUrl } = update
+  const pg = createSupabaseDirectClient()
+
+  const { name, username, avatarUrl, ...rest } = update
+  await updateUser(pg, auth.uid, removeUndefinedProps(rest))
   if (name || username || avatarUrl) {
+    if (name) {
+      await pg.none(`update users set name = $1 where id = $2`, [
+        name,
+        auth.uid,
+      ])
+    }
+    if (username) {
+      await pg.none(`update users set username = $1 where id = $2`, [
+        username,
+        auth.uid,
+      ])
+    }
+
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
 
@@ -89,26 +102,6 @@ const updateUserDenormalizedFields = async (
     (row) => row.comment_id
   )
   log(`Updated ${commentIds.length} comments.`)
-
-  log('Updating denormalized user data on bets...')
-  const betRows = await pg.manyOrNone(
-    `select contract_id, bet_id from contract_bets where user_id = $1`,
-    [userId]
-  )
-  const betUpdate: Partial<Bet> = removeUndefinedProps({
-    userName: update.name,
-    userUsername: update.username,
-    userAvatarUrl: update.avatarUrl,
-  })
-  for (const row of betRows) {
-    const ref = firestore
-      .collection('contracts')
-      .doc(row.contract_id)
-      .collection('bets')
-      .doc(row.bet_id)
-    bulkWriter.update(ref, betUpdate)
-  }
-  log(`Updated ${betRows.length} bets.`)
 
   await bulkWriter.flush()
   log('Done denormalizing!')

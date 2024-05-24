@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast'
 import 'react-international-phone/style.css'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
-import { STARTING_BALANCE } from 'common/economy'
+import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
 
@@ -64,7 +64,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
           <span className={'mb-2 mt-2 text-center text-xl'}>
             Verify your phone number to collect a{' '}
             <span className={'font-bold text-teal-500'}>
-              {formatMoney(STARTING_BALANCE)}
+              {formatMoney(PHONE_VERIFICATION_BONUS)}
             </span>{' '}
             signup bonus.
             <br />
@@ -123,7 +123,7 @@ export function VerifyPhone(props: { onClose: () => void }) {
               loading={loading}
               onClick={verifyPhone}
             >
-              Verify & claim {formatMoney(STARTING_BALANCE)}
+              Verify & claim {formatMoney(PHONE_VERIFICATION_BONUS)}
             </Button>
           </Row>
         </Col>

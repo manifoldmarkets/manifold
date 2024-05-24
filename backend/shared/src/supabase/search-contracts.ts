@@ -2,16 +2,16 @@ import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
+  groupBy,
   join,
+  leftJoin,
   limit as sqlLimit,
+  limit as lim,
+  orderBy,
   renderSql,
   select,
   where,
-  orderBy,
-  limit as lim,
   withClause,
-  groupBy,
-  leftJoin,
 } from 'shared/supabase/sql-builder'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
@@ -24,14 +24,33 @@ import {
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 
+let importanceScoreThreshold: number | undefined = undefined
+let freshnessScoreThreshold: number | undefined = undefined
+const DEFAULT_THRESHOLD = 1000
+const DEBUG = false
+
 export async function getForYouSQL(
   userId: string,
   filter: string,
   contractType: string,
   limit: number,
   offset: number,
-  privateUser?: PrivateUser
+  sort: 'score' | 'freshness-score',
+  isPrizeMarket: boolean,
+  privateUser?: PrivateUser,
+  threshold: number = DEFAULT_THRESHOLD
 ) {
+  if (
+    importanceScoreThreshold === undefined ||
+    freshnessScoreThreshold === undefined
+  )
+    await loadScoreThresholds(threshold)
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
+  if (DEBUG && process.platform === 'darwin') {
+    userId = await loadRandomUser()
+    log('Searching for random user id:', userId)
+  }
+
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
@@ -61,12 +80,13 @@ export async function getForYouSQL(
         `data, importance_score, conversion_score, freshness_score, view_count`
       ),
       from('contracts'),
-      orderBy(`importance_score desc`),
+      orderBy(`${sortByScore} desc`),
       getSearchContractWhereSQL({
         filter,
         contractType,
         uid: userId,
         hideStonks: true,
+        isPrizeMarket
       }),
       blockedIds.length > 0 &&
         where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
@@ -114,15 +134,24 @@ export async function getForYouSQL(
         contractType,
         uid: userId,
         hideStonks: true,
+        isPrizeMarket
       }),
+      offset <= threshold / 2 &&
+        sort === 'score' &&
+        importanceScoreThreshold &&
+        where(`contracts.importance_score > $1`, [importanceScoreThreshold]),
+      offset <= threshold / 2 &&
+        sort === 'freshness-score' &&
+        freshnessScoreThreshold &&
+        where(`contracts.freshness_score > $1`, [freshnessScoreThreshold]),
       lim(limit, offset),
       groupBy('contracts.id'),
       // If user has contract-topic scores, use ONLY the defined topic scores when ranking
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, 1),0.75) * contracts.importance_score)
-      else avg(contracts.importance_score)
+      then avg(power(coalesce(uti.avg_conversion_score, 1),0.75) * contracts.${sortByScore})
+      else avg(contracts.${sortByScore})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
       else 0.0
@@ -166,6 +195,7 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPolitics?: boolean
+  isPrizeMarket?: boolean
 }) {
   const {
     term,
@@ -176,8 +206,8 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
+    isPrizeMarket,
   } = args
-
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
 
@@ -246,6 +276,7 @@ function getSearchContractWhereSQL(args: {
   hasGroupAccess?: boolean
   hideStonks?: boolean
   hideLove?: boolean
+  isPrizeMarket?: boolean
 }) {
   const {
     filter,
@@ -257,6 +288,7 @@ function getSearchContractWhereSQL(args: {
     hasGroupAccess,
     hideStonks,
     hideLove,
+    isPrizeMarket
   } = args
 
   type FilterSQL = Record<string, string>
@@ -294,6 +326,8 @@ function getSearchContractWhereSQL(args: {
 
   const deletedFilter = `deleted = false`
 
+   const isPrizeMarketFilter =  isPrizeMarket ? 'is_spice_payout = true':''
+
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -303,6 +337,7 @@ function getSearchContractWhereSQL(args: {
     where(visibilitySQL),
     where(creatorFilter),
     where(deletedFilter),
+    where(isPrizeMarketFilter)
   ]
 }
 
@@ -389,4 +424,43 @@ export const sortFields: SortFields = {
 }
 function getSearchContractSortSQL(sort: string) {
   return `${sortFields[sort].sql} ${sortFields[sort].order}`
+}
+
+const loadScoreThresholds = async (threshold: number) => {
+  const pg = createSupabaseDirectClient()
+  importanceScoreThreshold = await pg.one(
+    `
+        with ranked_contracts as (select importance_score,
+                                         row_number() over (order by importance_score desc) as rn
+                                  from contracts)
+        select importance_score
+        from ranked_contracts
+        where rn = $1;`,
+    [threshold],
+    (r) => r.importance_score as number
+  )
+  freshnessScoreThreshold = await pg.one(
+    `
+        with ranked_contracts as (select freshness_score,
+                                         row_number() over (order by freshness_score desc) as rn
+                                  from contracts)
+        select freshness_score
+        from ranked_contracts
+        where rn = $1;`,
+    [threshold],
+    (r) => r.freshness_score as number
+  )
+  log('Loaded importance score threshold:', importanceScoreThreshold)
+  log('Loaded freshness score threshold:', freshnessScoreThreshold)
+}
+
+const loadRandomUser = async () => {
+  const pg = createSupabaseDirectClient()
+  return await pg.one(
+    `SELECT user_id AS id FROM user_contract_interactions
+    WHERE created_time > now() - interval '1 week' and created_time < now() - interval '5 days'
+    ORDER BY random() LIMIT 1`,
+    [],
+    (r) => r.id as string
+  )
 }

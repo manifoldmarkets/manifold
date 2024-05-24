@@ -13,9 +13,6 @@ export type ChartPosition = {
   probAfter: number
   probBefore: number
   userId: string
-  userAvatarUrl: string
-  userUsername: string
-  userName: string
   answerId: string | undefined
   outcome: string
   bets: Bet[]

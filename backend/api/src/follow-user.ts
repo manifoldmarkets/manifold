@@ -16,6 +16,15 @@ export const followUser = authEndpoint(async (req, auth) => {
   const { userId: them, follow } = schema.parse(req.body)
   const me = auth.uid
 
+  await followUserInternal(me, them, follow)
+  return { success: true }
+})
+
+export const followUserInternal = async (
+  me: string,
+  them: string,
+  follow: boolean
+) => {
   const db = createSupabaseClient()
 
   const query = follow
@@ -55,4 +64,4 @@ export const followUser = authEndpoint(async (req, auth) => {
   }
 
   return { success: true }
-})
+}

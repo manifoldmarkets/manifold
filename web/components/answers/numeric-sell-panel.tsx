@@ -159,7 +159,8 @@ export const NumericSellPanel = (props: {
         contract.answers,
         userBetsToSellByAnswerId,
         unfilledBets,
-        balanceByUserId
+        balanceByUserId,
+        contract.collectedFees
       )
     const potentialPayout = sumBy(
       newBetResults.flatMap((r) => r.takers),
@@ -289,11 +290,7 @@ export const NumericSellPanel = (props: {
             )}
           </div>
           <span className="text-ink-700">{formatMoney(netProceeds)}</span>
-          <FeeDisplay
-            totalFees={totalFee}
-            amount={potentialPayout}
-            isMultiSumsToOne={true}
-          />
+          <FeeDisplay totalFees={totalFee} amount={potentialPayout} />
         </Col>
       </Row>
       <Row className={'justify-between sm:gap-36 md:justify-center'}>

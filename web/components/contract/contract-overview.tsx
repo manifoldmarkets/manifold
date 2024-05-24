@@ -81,6 +81,7 @@ import { FaChartArea } from 'react-icons/fa'
 import { filterDefined } from 'common/util/array'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
+import { useIsClient } from 'web/hooks/use-is-client'
 
 export const ContractOverview = memo(
   (props: {
@@ -387,6 +388,7 @@ const ChartAnnotation = (props: {
   } = annotation
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const isClient = useIsClient()
 
   const scrollIntoView = useEvent(() => {
     const card = ref.current
@@ -465,10 +467,11 @@ const ChartAnnotation = (props: {
               </Row>
             )}
             <span className={'ml-1 shrink-0 text-xs'}>
-              {new Date(event_time).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })}
+              {isClient &&
+                new Date(event_time).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })}
             </span>
           </Row>
         </div>

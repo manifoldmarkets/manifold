@@ -73,7 +73,7 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetrics(contract, bets).find((cm) => !cm.answerId)
+        ? calculateUserMetrics(contract, bets, user).find((cm) => !cm.answerId)
         : undefined
     })
 
