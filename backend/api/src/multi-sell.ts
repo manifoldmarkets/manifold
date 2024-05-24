@@ -31,89 +31,96 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const results = await runEvilTransaction(
+    contract.id,
+    async (pgTrans, fbTrans) => {
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
 
-    log(
-      `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
-    )
-
-    const answersSnap = await fbTrans.get(contractDoc.collection('answersCpmm'))
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-    const answersToSell = answers.filter((a) => answerIds.includes(a.id))
-    if (!answersToSell) throw new APIError(404, 'Answers not found')
-    if ('resolution' in answersToSell && answersToSell.resolution)
-      throw new APIError(403, 'Answer is resolved and cannot be bet on')
-
-    const unfilledBetsAndBalances = await Promise.all(
-      answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answer.id)
-      )
-    )
-    const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
-    let balancesByUserId: Record<string, number> = {}
-    unfilledBetsAndBalances.forEach((b) => {
-      balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
-    })
-
-    const userBets = await pgTrans.map(
-      `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
-      [uid, answersToSell.map((a) => a.id)],
-      convertBet
-    )
-
-    const loanAmountByAnswerId = mapValues(
-      groupBy(userBets, 'answerId'),
-      (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
-    )
-    const nonRedemptionBetsByAnswerId = groupBy(
-      userBets.filter((bet) => bet.shares !== 0),
-      (bet) => bet.answerId
-    )
-    const sharesByAnswerId = mapValues(nonRedemptionBetsByAnswerId, (bets) =>
-      sumBy(bets, (b) => b.shares)
-    )
-    const minShares = Math.min(...Object.values(sharesByAnswerId))
-
-    if (minShares === 0)
-      throw new APIError(
-        400,
-        `You specified an answer to sell in which you have 0 shares.`
+      log(
+        `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
       )
 
-    const betGroupId = crypto.randomBytes(12).toString('hex')
-    const betResults = getCpmmMultiSellSharesInfo(
-      contract,
-      answers,
-      nonRedemptionBetsByAnswerId,
-      unfilledBets,
-      balancesByUserId,
-      loanAmountByAnswerId
-    )
-    log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-    const bets = await Promise.all(
-      betResults.map((newBetResult) =>
-        processNewBetResult(
-          newBetResult,
-          contractDoc,
-          contract,
-          user,
-          isApi,
-          pgTrans,
-          fbTrans,
-          undefined,
-          betGroupId
+      const answersSnap = await fbTrans.get(
+        contractDoc.collection('answersCpmm')
+      )
+      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const answersToSell = answers.filter((a) => answerIds.includes(a.id))
+      if (!answersToSell) throw new APIError(404, 'Answers not found')
+      if ('resolution' in answersToSell && answersToSell.resolution)
+        throw new APIError(403, 'Answer is resolved and cannot be bet on')
+
+      const unfilledBetsAndBalances = await Promise.all(
+        answersToSell.map((answer) =>
+          getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answer.id)
         )
       )
-    )
-    const loanPaid = sum(Object.values(loanAmountByAnswerId))
-    if (loanPaid > 0 && bets.length > 0) {
-      await incrementBalance(pgTrans, uid, {
-        balance: -loanPaid,
+      const unfilledBets = unfilledBetsAndBalances.flatMap(
+        (b) => b.unfilledBets
+      )
+      let balancesByUserId: Record<string, number> = {}
+      unfilledBetsAndBalances.forEach((b) => {
+        balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
       })
+
+      const userBets = await pgTrans.map(
+        `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
+        [uid, answersToSell.map((a) => a.id)],
+        convertBet
+      )
+
+      const loanAmountByAnswerId = mapValues(
+        groupBy(userBets, 'answerId'),
+        (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
+      )
+      const nonRedemptionBetsByAnswerId = groupBy(
+        userBets.filter((bet) => bet.shares !== 0),
+        (bet) => bet.answerId
+      )
+      const sharesByAnswerId = mapValues(nonRedemptionBetsByAnswerId, (bets) =>
+        sumBy(bets, (b) => b.shares)
+      )
+      const minShares = Math.min(...Object.values(sharesByAnswerId))
+
+      if (minShares === 0)
+        throw new APIError(
+          400,
+          `You specified an answer to sell in which you have 0 shares.`
+        )
+
+      const betGroupId = crypto.randomBytes(12).toString('hex')
+      const betResults = getCpmmMultiSellSharesInfo(
+        contract,
+        answers,
+        nonRedemptionBetsByAnswerId,
+        unfilledBets,
+        balancesByUserId,
+        loanAmountByAnswerId
+      )
+      log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
+      const bets = await Promise.all(
+        betResults.map((newBetResult) =>
+          processNewBetResult(
+            newBetResult,
+            contractDoc,
+            contract,
+            user,
+            isApi,
+            pgTrans,
+            fbTrans,
+            undefined,
+            betGroupId
+          )
+        )
+      )
+      const loanPaid = sum(Object.values(loanAmountByAnswerId))
+      if (loanPaid > 0 && bets.length > 0) {
+        await incrementBalance(pgTrans, uid, {
+          balance: -loanPaid,
+        })
+      }
+      return bets
     }
-    return bets
-  })
+  )
 
   log(`Main transaction finished - auth ${uid}.`)
 

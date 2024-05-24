@@ -101,6 +101,7 @@ export const createAnswerCpmmMain = async (
     }
 
     const { newAnswerId } = await runEvilTransaction(
+      contractId,
       async (pgTrans, fbTrans) => {
         const contractDoc = firestore.doc(`contracts/${contractId}`)
         // const contractSnap = await transaction.get(contractDoc)

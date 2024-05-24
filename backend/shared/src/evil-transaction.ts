@@ -6,9 +6,11 @@ import {
   createShortTimeoutDirectClient,
 } from 'shared/supabase/init'
 import { log } from './utils'
+import { acquireLock, releaseLock } from './firestore-lock'
 
 /** Avoid using */
 export const runEvilTransaction = async <T>(
+  lockKey: string,
   callback: (
     pgTrans: SupabaseTransaction,
     fbTrans: FirebaseTransaction
@@ -16,8 +18,12 @@ export const runEvilTransaction = async <T>(
 ) => {
   const pg = createShortTimeoutDirectClient()
   let fbSuccess = false
+  const acquired = await acquireLock(lockKey)
+  if (!acquired) {
+    throw new Error(`Error: Please try again! Failed to acquire lock ${lockKey}`)
+  }
   try {
-    return pg.tx({ mode: SERIAL }, async (pgTrans) => {
+    return await pg.tx({ mode: SERIAL }, async (pgTrans) => {
       const ret = await firestore.runTransaction(
         (fbTrans) => callback(pgTrans, fbTrans),
         { maxAttempts: 1 }
@@ -32,6 +38,8 @@ export const runEvilTransaction = async <T>(
       )
     }
     throw e
+  } finally {
+    await releaseLock(lockKey)
   }
 }
 

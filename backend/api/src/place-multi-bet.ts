@@ -26,7 +26,7 @@ export const placeMultiBetMain = async (
 ) => {
   const { amount, contractId } = body
 
-  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
+  const results = await runEvilTransaction(contractId, async (pgTrans, fbTrans) => {
     const { user, contract, contractDoc } = await validateBet(
       uid,
       amount,
