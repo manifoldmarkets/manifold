@@ -160,6 +160,8 @@ import { getFeed } from 'api/get-feed'
 import { getManaSupply } from './get-mana-supply'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
 import { deleteMe } from './delete-me'
+import { updateModReport } from './update-mod-report'
+import { getModReports } from './get-mod-reports'
 import { searchContractPositions } from 'api/search-contract-positions'
 import { blockUser, unblockUser } from './block-user'
 import { blockGroup, unblockGroup } from './block-group'
@@ -326,6 +328,8 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'multi-sell': multiSell,
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
+  'update-mod-report': updateModReport,
+  'get-mod-reports': getModReports,
   'search-contract-positions': searchContractPositions,
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,

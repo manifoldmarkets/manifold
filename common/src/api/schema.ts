@@ -41,6 +41,7 @@ import { Repost } from 'common/repost'
 import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
+import { ModReport } from '../mod-report'
 
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
@@ -1190,6 +1191,32 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
+  },
+  'update-mod-report': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        reportId: z.number(),
+        updates: z
+          .object({
+            status: z
+              .enum(['new', 'under review', 'resolved', 'needs admin'])
+              .optional(),
+            mod_note: z.string().optional(),
+          })
+          .partial(),
+      })
+      .strict(),
+    returns: {} as { status: string; report: ModReport },
+  },
+  'get-mod-reports': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { status: string; reports: ModReport[] },
   },
   'get-txn-summary-stats': {
     method: 'GET',

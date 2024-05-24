@@ -1648,39 +1648,24 @@ export type Database = {
       mod_reports: {
         Row: {
           comment_id: string
-          content: Json
           contract_id: string
-          contract_question: string
-          contract_slug: string
           created_time: string
-          creator_username: string
-          mod_note: string | null
           report_id: number
           status: Database['public']['Enums']['status_type']
           user_id: string
         }
         Insert: {
           comment_id: string
-          content: Json
           contract_id: string
-          contract_question: string
-          contract_slug: string
           created_time?: string
-          creator_username: string
-          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id: string
         }
         Update: {
           comment_id?: string
-          content?: Json
           contract_id?: string
-          contract_question?: string
-          contract_slug?: string
           created_time?: string
-          creator_username?: string
-          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id?: string
@@ -4981,6 +4966,7 @@ export type Database = {
     Enums: {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
+
     CompositeTypes: {
       contract_ids: {
         contract_id: string
