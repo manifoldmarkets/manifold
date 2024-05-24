@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { ModReport, ReportStatus } from 'common/mod-report'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
+import { parseJsonContentToText } from 'common/util/parse'
 
 interface ReportItemProps {
   report: ModReport
@@ -29,47 +30,7 @@ const ModReportItem: React.FC<ReportItemProps> = ({
   handleStatusChange,
   handleNoteSave,
 }) => {
-  const extractTextFromJSONContent = (content: any): string => {
-    if (!content) {
-      console.warn('No content provided')
-      return ''
-    }
-
-    if (!Array.isArray(content)) {
-      console.warn('Content is not an array', content)
-      return ''
-    }
-
-    let text = ''
-    content.forEach((node: any) => {
-      if (node.type === 'text') {
-        text += node.text
-      } else if (node.type === 'mention' && node.attrs) {
-        text += `@${node.attrs.label} `
-      } else if (node.type === 'paragraph' && node.content) {
-        text += extractTextFromJSONContent(node.content) + '\n'
-      } else if (node.content) {
-        text += extractTextFromJSONContent(node.content)
-      } else {
-        console.warn('Unknown node type or missing content', node)
-      }
-    })
-    return text.trim()
-  }
-
-  const parseCommentContent = (commentContent: any) => {
-    if (typeof commentContent === 'string') {
-      try {
-        return JSON.parse(commentContent)
-      } catch (error) {
-        console.error('Failed to parse comment content', error)
-        return null
-      }
-    }
-    return commentContent
-  }
-
-  const parsedContent = parseCommentContent(report.comment_content)
+  const parsedContent = parseJsonContentToText(report.comment_content)
 
   const owner = {
     id: report.user_id,
@@ -107,9 +68,7 @@ const ModReportItem: React.FC<ReportItemProps> = ({
             className="text-primary-700 hover:text-primary-500 hover:underline"
             href={`/${report.creator_username}/${report.contract_slug}#${report.comment_id}`}
           >
-            {parsedContent
-              ? extractTextFromJSONContent(parsedContent.content)
-              : 'Invalid comment content'}
+            {parsedContent || 'Invalid comment content'}
           </Link>
         </Row>
         <Row className="mt-2">Market: {report.contract_question}</Row>

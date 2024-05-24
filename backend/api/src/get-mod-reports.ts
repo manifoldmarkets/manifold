@@ -8,7 +8,7 @@ export const getModReports: APIHandler<'get-mod-reports'> = async () => {
   const reports = await pg.many<ModReport>(`
     select 
       mr.*, 
-      cc.data->>'content' as comment_content, 
+      cc.data->'content' as comment_content, 
       c.question as contract_question, 
       c.slug as contract_slug, 
       creator.username as creator_username,

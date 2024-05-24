@@ -18,13 +18,11 @@ export const useModReports = () => {
       if (response && response.status === 'success') {
         const newReports = response.reports
 
-        const sortedReports = newReports
-          .filter((report: ModReport) => report.created_time)
-          .sort(
-            (a: ModReport, b: ModReport) =>
-              new Date(b.created_time ?? 0).getTime() -
-              new Date(a.created_time ?? 0).getTime()
-          )
+        const sortedReports = newReports.sort(
+          (a: ModReport, b: ModReport) =>
+            new Date(b.created_time).getTime() -
+            new Date(a.created_time).getTime()
+        )
 
         setReports(sortedReports)
 

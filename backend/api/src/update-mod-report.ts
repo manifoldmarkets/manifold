@@ -1,6 +1,7 @@
 import { ModReport } from 'common/mod-report'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
+import { removeUndefinedProps } from 'common/util/object'
 
 export const updateModReport: APIHandler<'update-mod-report'> = async (
   props
@@ -8,17 +9,7 @@ export const updateModReport: APIHandler<'update-mod-report'> = async (
   const { reportId, updates } = props
   const db = createSupabaseClient()
 
-  const updateData: {
-    status?: 'new' | 'under review' | 'resolved' | 'needs admin'
-    mod_note?: string
-  } = {}
-
-  if (updates.status) {
-    updateData.status = updates.status
-  }
-  if (updates.mod_note !== undefined) {
-    updateData.mod_note = updates.mod_note
-  }
+  const updateData = removeUndefinedProps(updates)
 
   const { data, error } = await db
     .from('mod_reports')
