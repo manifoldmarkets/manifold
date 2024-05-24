@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { listenForLiquidity } from 'web/lib/firebase/liquidity'
+import { useEffect, useState } from 'react'
+import { getLiquidtyDocs } from 'web/lib/supabase/liquidity'
+import { useApiSubscription } from './use-api-subscription'
 
 export const useLiquidity = (contractId: string) => {
   const [liquidities, setLiquidities] = useState<
@@ -8,8 +9,15 @@ export const useLiquidity = (contractId: string) => {
   >(undefined)
 
   useEffect(() => {
-    return listenForLiquidity(contractId, setLiquidities)
+    getLiquidtyDocs(contractId).then(setLiquidities)
   }, [contractId])
+
+  useApiSubscription({
+    topics: [`contract/${contractId}/new-subsidy`],
+    onBroadcast: () => {
+      getLiquidtyDocs(contractId).then(setLiquidities)
+    },
+  })
 
   return liquidities
 }
