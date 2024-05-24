@@ -29,8 +29,7 @@ import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  throw new APIError(500, 'This endpoint is disabled.')
-  // return await placeBetMain(props, auth.uid, isApi)
+  return await placeBetMain(props, auth.uid, isApi)
 }
 
 // Note: this returns a continuation function that should be run for consistency.
@@ -520,18 +519,15 @@ export const updateMakers = async (
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
     log('Update a matched limit order.')
-    await pgTrans.none(
-      `update contract_bets set data = data || $1 where bet_id = $2`,
-      [
-        JSON.stringify({
-          fills,
-          isFilled,
-          amount: totalAmount,
-          shares: totalShares,
-        }),
-        bet.id,
-      ]
-    )
+    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
+      JSON.stringify({
+        fills,
+        isFilled,
+        amount: totalAmount,
+        shares: totalShares,
+      }),
+      bet.id,
+    ])
   }
 
   // Deduct balance of makers.

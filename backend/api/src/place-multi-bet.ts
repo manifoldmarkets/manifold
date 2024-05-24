@@ -14,7 +14,8 @@ import * as crypto from 'crypto'
 import { runEvilTransaction } from 'shared/evil-transaction'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
-  throw new APIError(500, 'This endpoint is disabled.')
+  const isApi = auth.creds.kind === 'key'
+  return await placeMultiBetMain(props, auth.uid, isApi)
 }
 
 // Note: this returns a continuation function that should be run for consistency.
