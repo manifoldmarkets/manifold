@@ -26,10 +26,11 @@ import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import { enqueueFn } from './queue'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(props, auth.uid, isApi)
+  return await enqueueFn(() => placeBetMain(props, auth.uid, isApi))
 }
 
 // Note: this returns a continuation function that should be run for consistency.
