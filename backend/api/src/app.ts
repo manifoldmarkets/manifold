@@ -164,6 +164,7 @@ import { searchContractPositions } from 'api/search-contract-positions'
 import { blockUser, unblockUser } from './block-user'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
+import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 
 const allowCorsUnrestricted: RequestHandler = cors({})
 
@@ -325,6 +326,7 @@ const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-feed': getFeed,
   'get-mana-supply': getManaSupply,
   'search-contract-positions': searchContractPositions,
+  'get-mana-summary-stats': getManaSummaryStats,
 }
 
 Object.entries(handlers).forEach(([path, handler]) => {

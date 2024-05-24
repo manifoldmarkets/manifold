@@ -16,13 +16,25 @@ import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { api } from '../lib/firebase/api'
 import { Row } from 'web/components/layout/row'
+import { Row as rowfor } from 'common/supabase/utils'
+import { BonusSummary } from 'web/components/stats/bonus-summary'
 
 export const getStaticProps = async () => {
   try {
     const stats = await getStats()
     const manaSupply = await api('get-mana-supply', {})
+    const fromBankSummary = await api('get-mana-summary-stats', {
+      ignoreCategories: ['RECLAIM_MANA', 'AIR_DROP', 'EXTRA_PURCHASED_MANA'],
+      fromType: 'BANK',
+      limitDays: 100,
+    })
+    const toBankSummary = await api('get-mana-summary-stats', {
+      toType: 'BANK',
+      ignoreCategories: ['RECLAIM_MANA'],
+      limitDays: 100,
+    })
     return {
-      props: { stats, manaSupply },
+      props: { stats, manaSupply, fromBankSummary, toBankSummary },
       revalidate: 60 * 60, // One hour
     }
   } catch (err) {
@@ -34,8 +46,10 @@ export const getStaticProps = async () => {
 export default function Analytics(props: {
   stats: Stats | null
   manaSupply: ManaSupply
+  fromBankSummary: rowfor<'txn_summary_stats'>[]
+  toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
-  const { stats, manaSupply } = props
+  const { stats, manaSupply, fromBankSummary, toBankSummary } = props
   if (!stats) {
     return null
   }
@@ -46,7 +60,12 @@ export default function Analytics(props: {
         description="See site-wide usage statistics."
         url="/stats"
       />
-      <CustomAnalytics stats={stats} manaSupply={manaSupply} />
+      <CustomAnalytics
+        stats={stats}
+        manaSupply={manaSupply}
+        fromBankSummary={fromBankSummary}
+        toBankSummary={toBankSummary}
+      />
     </Page>
   )
 }
@@ -54,6 +73,8 @@ export default function Analytics(props: {
 export function CustomAnalytics(props: {
   stats: Stats
   manaSupply: ManaSupply
+  fromBankSummary: rowfor<'txn_summary_stats'>[]
+  toBankSummary: rowfor<'txn_summary_stats'>[]
 }) {
   const {
     dailyActiveUsers,
@@ -85,7 +106,8 @@ export function CustomAnalytics(props: {
     d1BetAverage,
     d1Bet3DayAverage,
   } = props.stats
-  const { manaSupply } = props
+
+  const { manaSupply, fromBankSummary, toBankSummary } = props
 
   const startDate = props.stats.startDate[0]
 
@@ -218,6 +240,15 @@ export function CustomAnalytics(props: {
         </Row>
       </Col>
 
+      <Spacer h={8} />
+      <Title>Transactions from Manifold</Title>
+      <BonusSummary txnSummaryStats={fromBankSummary} />
+
+      <Spacer h={8} />
+
+      <Title>Transactions to Manifold</Title>
+      <span className={'text-ink-700'}>(Ignores mana purchases)</span>
+      <BonusSummary txnSummaryStats={toBankSummary} />
       <Spacer h={8} />
 
       <Title>Mana sales</Title>

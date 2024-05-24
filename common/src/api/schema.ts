@@ -1191,6 +1191,20 @@ export const API = (_apiTypeCheck = {
     returns: {} as ManaSupply,
     props: z.object({}).strict(),
   },
+  'get-mana-summary-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as Row<'txn_summary_stats'>[],
+    props: z
+      .object({
+        ignoreCategories: z.array(z.string()).optional(),
+        fromType: z.string().optional(),
+        toType: z.string().optional(),
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
