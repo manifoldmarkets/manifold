@@ -77,7 +77,7 @@ function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeTyp
         <Tier
           baseCost={baseCost}
           tier="basic"
-          icon={<ManaCoin />}
+          icon={<></>}
           outcomeType={outcomeType}
           currentTier={currentTier}
           setMarketTier={setMarketTier}
@@ -114,13 +114,31 @@ function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeTyp
 function Tier(props:{baseCost: number, icon: ReactNode, tier: MarketTierType, outcomeType: CreateableOutcomeType, currentTier: MarketTierType, setMarketTier: (tier: MarketTierType) => void}) {
   const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } = props
   return (
-    <Col className={clsx(currentTier == tier ?
-      tier=='basic'?'outline outline-ink-500': 
-      tier=='plus' ? 'outline outline-purple-500': 
-      tier=='premium' ? 'outline outline-fuchsia-400':
-      tier == 'crystal' ? 'outline outline-pink-500':'' :'','bg-canvas-50 hover:bg-canvas-0','items-center  w-full p-4 rounded')} onClick={()=>setMarketTier(tier)}>
-      <div className="text-4xl">{icon}</div>
-      {capitalize(tier)}
+    <Col
+      className={clsx(
+        currentTier == tier
+          ? tier == 'basic'
+            ? 'outline-ink-500'
+            : tier == 'plus'
+            ? 'outline-purple-500'
+            : tier == 'premium'
+            ? 'outline-fuchsia-400'
+            : 'outline-pink-500'
+          : tier == 'basic'
+          ? 'hover:outline-ink-500/50'
+          : tier == 'plus'
+          ? 'hover:outline-purple-500/50'
+          : tier == 'premium'
+          ? 'hover:outline-fuchsia-400/50'
+          : 'hover:outline-pink-500/50',
+        'outline outline-transparent bg-canvas-50 w-full  items-center rounded p-4'
+      )}
+      onClick={() => setMarketTier(tier)}
+    >
+      <Row className="items-center gap-1">
+        {icon}
+        {capitalize(tier)}
+      </Row>
       <CoinNumber
         amount={getTieredCost(baseCost, tier, outcomeType)}
         numberType="short"
