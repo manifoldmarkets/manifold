@@ -182,7 +182,6 @@ export const MOD_IDS = [
   'eSqS9cD5mzYcP2o7FrST8aC5IWn2', // PlasmaBallin (previously JosephNoonan)
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
-  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
   'jO7sUhIDTQbAJ3w86akzncTlpRG2', // MichaelWheatley
   'lkkqZxiWCpOgtJ9ztJcAKz4d9y33', // NathanpmYoung
   'fSrex43BDjeneNZ4ZLfxllSb8b42', // NcyRocks
