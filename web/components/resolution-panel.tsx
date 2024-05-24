@@ -348,8 +348,8 @@ export const ResolutionExplainer = (props: {
         </>
       )}
       If you need help, ask in the comments section below; mention{' '}
-      <span className="font-semibold">@mods</span> in your comment if you
-      want to cancel the {answerOrQuestion}. Or, ask in our{' '}
+      <span className="font-semibold">@mods</span> in your comment if you want
+      to cancel the {answerOrQuestion}. Or, ask in our{' '}
       <Link
         onClick={(e) => {
           e.stopPropagation()
