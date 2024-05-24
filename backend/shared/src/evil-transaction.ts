@@ -17,7 +17,7 @@ export const runEvilTransaction = async <T>(
   const pg = createShortTimeoutDirectClient()
   let fbSuccess = false
   try {
-    return pg.tx({ mode: SERIAL }, async (pgTrans) => {
+    return await pg.tx({ mode: SERIAL }, async (pgTrans) => {
       const ret = await firestore.runTransaction(
         (fbTrans) => callback(pgTrans, fbTrans),
         { maxAttempts: 1 }
