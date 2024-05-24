@@ -33,7 +33,6 @@
     "**/*.tsx",
     "../common/src/**/*.ts",
     ".next/types/**/*.ts",
-    "components/new-contract/create-contract-types.tsx"
   ],
   "exclude": ["node_modules"]
 }

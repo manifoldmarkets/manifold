@@ -15,7 +15,6 @@
     }
   },
   "include": [
-    "src/**/*.ts",
-    "../web/components/new-contract/create-contract-types.tsx"
+    "src/**/*.ts"
   ]
 }
