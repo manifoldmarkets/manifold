@@ -412,19 +412,19 @@ export type Database = {
         Row: {
           contract_id: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time: string | null
           liquidity_id: string
         }
         Insert: {
           contract_id: string
           data: Json
-          fs_updated_time: string
+          fs_updated_time?: string | null
           liquidity_id: string
         }
         Update: {
           contract_id?: string
           data?: Json
-          fs_updated_time?: string
+          fs_updated_time?: string | null
           liquidity_id?: string
         }
         Relationships: []

@@ -4,7 +4,7 @@ create table if not exists
                            contract_id text not null,
                            liquidity_id text not null,
                            data jsonb not null,
-                           fs_updated_time timestamp not null,
+                           fs_updated_time timestamp,
                            primary key (contract_id, liquidity_id)
 );
 

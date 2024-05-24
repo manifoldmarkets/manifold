@@ -11,7 +11,6 @@ export const getNewLiquidityProvision = (
   userId: string,
   amount: number,
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  newLiquidityProvisionId: string,
   answerId?: string
 ) => {
   const { totalLiquidity, subsidyPool } = contract
@@ -29,16 +28,16 @@ export const getNewLiquidityProvision = (
     liquidity = newTotalLiquidity
   }
 
-  const newLiquidityProvision: LiquidityProvision = removeUndefinedProps({
-    id: newLiquidityProvisionId,
-    userId: userId,
-    contractId: contract.id,
-    answerId,
-    amount,
-    pool,
-    liquidity,
-    createdTime: Date.now(),
-  })
+  const newLiquidityProvision: Omit<LiquidityProvision, 'id'> =
+    removeUndefinedProps({
+      userId: userId,
+      contractId: contract.id,
+      answerId,
+      amount,
+      pool,
+      liquidity,
+      createdTime: Date.now(),
+    })
 
   return { newLiquidityProvision, newTotalLiquidity, newSubsidyPool }
 }
