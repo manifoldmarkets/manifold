@@ -3,10 +3,10 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row } from 'common/supabase/utils'
 import * as dayjs from 'dayjs'
 
-export const getManaSummaryStats: APIHandler<'get-mana-summary-stats'> = async (
+export const getTxnSummaryStats: APIHandler<'get-txn-summary-stats'> = async (
   props
 ) => {
-  const { limitDays } = props
+  const { ignoreCategories, fromType, toType, limitDays } = props
   const start = dayjs()
     .tz('America/Los_Angeles')
     .subtract(limitDays, 'day')
@@ -16,11 +16,14 @@ export const getManaSummaryStats: APIHandler<'get-mana-summary-stats'> = async (
   const pg = createSupabaseDirectClient()
   return await pg.map(
     `
-    select * from mana_supply_stats
-     where start_time >= $1
+    select * from txn_summary_stats
+     where ($1 is null or from_type = $1)
+     and ($2 is null or category not in ($2:list))
+     and ($3 is null or to_type = $3)
+     and start_time >= $4
     order by start_time
   `,
-    [start],
-    (row) => row as Row<'mana_supply_stats'>
+    [fromType, ignoreCategories ?? null, toType, start],
+    (row) => row as Row<'txn_summary_stats'>
   )
 }
