@@ -209,16 +209,16 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const isApi = auth.creds.kind === 'key'
 
-    const fullBet = {
+    const candidateBet = {
       userId: user.id,
       isApi,
       ...newBet,
       betGroupId,
     }
-    const bet = await insertBet(fullBet, pgTrans)
-    fullBets.push(convertBet(bet))
+    const betRow = await insertBet(candidateBet, pgTrans)
+    fullBets.push(convertBet(betRow))
 
-    await updateMakers(makers, bet.bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, pgTrans)
 
     await cancelLimitOrders(
       pgTrans,
@@ -256,13 +256,13 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       makers,
       ordersToCancel,
     } of otherResultsWithBet) {
-      const fullBet = {
+      const candidateBet = {
         userId: user.id,
         isApi,
         ...bet,
         betGroupId,
       }
-      const betRow = await insertBet(fullBet, pgTrans)
+      const betRow = await insertBet(candidateBet, pgTrans)
       fullBets.push(convertBet(betRow))
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
@@ -286,7 +286,7 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
       newBet,
       user,
       fullBets,
-      betId: bet.bet_id,
+      betId: betRow.bet_id,
       makers,
       maxShares,
       soldShares,
