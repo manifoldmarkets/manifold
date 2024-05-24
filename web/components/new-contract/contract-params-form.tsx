@@ -65,7 +65,7 @@ export function ContractParamsForm(props: {
 }) {
   const { creator, params, outcomeType } = props
   const [marketTier, setMarketTier] = useState<MarketTierType>(
-    outcomeType === 'NUMBER' ? 'plus' : 'basic'
+  'plus'
   )
   const paramsKey =
     (params?.q ?? '') +
@@ -354,6 +354,7 @@ export function ContractParamsForm(props: {
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
     setPrecision(1)
+    setMarketTier('plus')
   }
 
   const [submitState, setSubmitState] = useState<
@@ -385,6 +386,7 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
+        marketTier,
       })
       const newContract = await api('market', createProps as any)
 

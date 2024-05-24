@@ -7,11 +7,12 @@ import {
   CPMMBinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MarketTierType,
   MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
 } from 'common/contract'
-import { getAnte } from 'common/economy'
+import { getAnte, getTieredCost } from 'common/economy'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { randomString } from 'common/util/random'
@@ -49,9 +50,11 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcastNewContract } from 'shared/websockets/helpers'
+import { addContractLiquidity } from './add-subsidy'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
+  marketTier?: MarketTierType
 }
 
 const firestore = admin.firestore()
@@ -94,6 +97,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     isLove,
     visibility,
     specialLiquidityPerAnswer,
+    marketTier,
   } = validateMarketBody(body)
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -239,6 +243,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   await generateAntes(userId, contract, outcomeType, ante)
 
+    if (marketTier && marketTier !== 'basic' && !(outcomeType=='NUMBER' && marketTier == 'plus')) {
+
+      const drizzledAmount = getTieredCost(ante, marketTier, outcomeType) - ante 
+      if (drizzledAmount > 0) {
+        await addContractLiquidity(contract.id, drizzledAmount, userId)
+    }
+   
+
   await generateContractEmbeddings(contract, pg)
 
   broadcastNewContract(contract, user)
@@ -336,6 +348,7 @@ function validateMarketBody(body: Body) {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -461,6 +474,7 @@ function validateMarketBody(body: Body) {
     matchCreatorId,
     isLove,
     specialLiquidityPerAnswer,
+    marketTier,
   }
 }
 

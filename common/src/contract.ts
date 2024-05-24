@@ -152,6 +152,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
+  marketTier?: MarketTierType
 } & T
 
 export type CPMMContract = Contract & CPMM
