@@ -33,7 +33,7 @@ export function Page(props: {
   } = props
 
   // Force enable maintainance banner.
-  const maintainanceBannerEnabled = false
+  const maintainanceBannerEnabled = true
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
@@ -80,8 +80,8 @@ export function Page(props: {
           {maintainanceBannerEnabled && showBanner && user && (
             <Banner className="mb-3" setShowBanner={setShowBanner}>
               <div className="flex flex-col items-start">
-                🛠️ Site maintaince in progress for the next ~15 minutes! Sorry
-                for the inconvenience.
+                🛠️ Trading has been turned off, while we fix issues with the
+                site. Sorry for the inconvenience.
               </div>
             </Banner>
           )}
