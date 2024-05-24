@@ -21,11 +21,15 @@ import { onCreateBets } from 'api/on-create-bet'
 import { BLESSED_BANNED_USER_IDS } from 'common/envs/constants'
 import * as crypto from 'crypto'
 import { formatMoneyWithDecimals } from 'common/util/format'
-import { SupabaseTransaction } from 'shared/supabase/init'
+import { SupabaseTransaction, pgp } from 'shared/supabase/init'
 import { bulkIncrementBalances, incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
-import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -333,7 +337,7 @@ export const processNewBetResult = async (
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, bet_id, pgTrans)
+    await updateMakers([{ makers, takerBetId: bet_id }], pgTrans)
   }
   if (ordersToCancel) {
     await cancelLimitOrders(
@@ -392,9 +396,12 @@ export const processNewBetResult = async (
     }
 
     if (otherBetResults) {
-      // TODO: do in a single query as a bulk update
+      const bets: Omit<Bet, 'id'>[] = []
+      const allMakers = []
       for (const result of otherBetResults) {
         const { answer, bet, cpmmState, makers, ordersToCancel } = result
+        allOrdersToCancel.push(...ordersToCancel)
+
         const { probBefore, probAfter } = bet
         const smallEnoughToIgnore =
           probBefore < 0.001 &&
@@ -404,15 +411,11 @@ export const processNewBetResult = async (
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
           const fullBet = removeUndefinedProps({
             userId: user.id,
-            userAvatarUrl: user.avatarUrl,
-            userUsername: user.username,
-            userName: user.name,
             isApi,
             betGroupId,
             ...bet,
           })
-          const betRow = await insertBet(fullBet, pgTrans)
-          fullBets.push(convertBet(betRow))
+          bets.push(fullBet)
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
           fbTrans.update(
@@ -424,18 +427,21 @@ export const processNewBetResult = async (
             })
           )
         }
-        await updateMakers(makers, bet_id, pgTrans)
-        await cancelLimitOrders(
-          pgTrans,
-          ordersToCancel.map((o) => o.id)
-        )
-
-        allOrdersToCancel.push(...ordersToCancel)
+        allMakers.push({ makers, takerBetId: bet_id })
       }
+
+      await updateMakers(allMakers, pgTrans)
+      const betRows = await bulkInsertBets(bets, pgTrans)
+      fullBets.push(...betRows.map(convertBet))
     }
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
   }
+
+  await cancelLimitOrders(
+    pgTrans,
+    allOrdersToCancel.map((o) => o.id)
+  )
 
   return {
     newBet,
@@ -500,39 +506,60 @@ export type maker = {
   shares: number
   timestamp: number
 }
+
+export type AllMakers = {
+  makers: maker[]
+  takerBetId: string
+}[]
+
 export const updateMakers = async (
-  makers: maker[],
-  takerBetId: string,
+  allMakers: AllMakers,
   pgTrans: SupabaseTransaction
 ) => {
-  // TODO: do this in a single query as a bulk update
-  const makersByBet = groupBy(makers, (maker) => maker.bet.id)
-  for (const makers of Object.values(makersByBet)) {
-    const bet = makers[0].bet
-    const newFills = makers.map((maker) => {
-      const { amount, shares, timestamp } = maker
-      return { amount, shares, matchedBetId: takerBetId, timestamp }
-    })
-    const fills = [...bet.fills, ...newFills]
-    const totalShares = sumBy(fills, 'shares')
-    const totalAmount = sumBy(fills, 'amount')
-    const isFilled = floatingEqual(totalAmount, bet.orderAmount)
+  const updates: any[] = []
 
-    log('Update a matched limit order.')
-    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
-      JSON.stringify({
-        fills,
-        isFilled,
-        amount: totalAmount,
-        shares: totalShares,
-      }),
-      bet.id,
-    ])
+  for (const { makers, takerBetId } of allMakers) {
+    const makersByBet = groupBy(makers, (maker) => maker.bet.id)
+    for (const makers of Object.values(makersByBet)) {
+      const bet = makers[0].bet
+      const newFills = makers.map((maker) => {
+        const { amount, shares, timestamp } = maker
+        return { amount, shares, matchedBetId: takerBetId, timestamp }
+      })
+      const fills = [...bet.fills, ...newFills]
+      const totalShares = sumBy(fills, 'shares')
+      const totalAmount = sumBy(fills, 'amount')
+      const isFilled = floatingEqual(totalAmount, bet.orderAmount)
+
+      updates.push([
+        {
+          fills,
+          isFilled,
+          amount: totalAmount,
+          shares: totalShares,
+        },
+        bet.id,
+      ])
+    }
   }
 
   // Deduct balance of makers.
+  const values = updates.map((data, id) =>
+    pgp.as.format(`($1, $2)`, [JSON.stringify(data), id])
+  )
+
+  await pgTrans.none(
+    `update contract_bets c
+    set c.data = c.data || v.data
+    from (values ${values} as v(data, id))
+    where bet_id = $2`
+  )
+
   const spentByUser = mapValues(
-    groupBy(makers, (maker) => maker.bet.userId),
+    groupBy(
+      allMakers.flatMap((a) => a.makers),
+      (maker) => maker.bet.userId
+    ),
     (makers) => sumBy(makers, (maker) => maker.amount)
   )
 
@@ -543,8 +570,6 @@ export const updateMakers = async (
       balance: -spent,
     }))
   )
-
-  // TODO: figure out LOGGING
 }
 
 export const getRoundedLimitProb = (limitProb: number | undefined) => {

@@ -44,9 +44,7 @@ export const bulkInsertBets = async (
   bets: Omit<Bet, 'id'>[],
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  if (bets.length > 0) {
-    return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
-  }
+  return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))
 }
 
 const betToRow = (bet: Omit<Bet, 'id'>) => ({
