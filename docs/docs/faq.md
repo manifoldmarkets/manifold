@@ -193,7 +193,7 @@ If a market closes and there won’t be a resolution in the foreseeable future, 
 
 ### What does resolving to N/A do?
 
-Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectationt that an N/A resolution will be possible.
+Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectation that an N/A resolution will be possible.
 
 This means that:
 
