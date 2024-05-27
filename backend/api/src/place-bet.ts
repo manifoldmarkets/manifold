@@ -27,6 +27,7 @@ import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
+import { FLAT_TRADE_FEE } from 'common/fees'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -193,7 +194,6 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
-  log(`hellooooooooooo`)
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
@@ -345,8 +345,9 @@ export const processNewBetResult = async (
     allOrdersToCancel.push(...ordersToCancel)
   }
 
+  const apiFee = isApi ? FLAT_TRADE_FEE : 0
   await incrementBalance(pgTrans, user.id, {
-    balance: -newBet.amount,
+    balance: -newBet.amount - apiFee,
   })
   log(`Updated user ${user.username} balance - auth ${user.id}.`)
 

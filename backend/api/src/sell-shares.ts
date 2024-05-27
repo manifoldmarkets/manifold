@@ -17,6 +17,7 @@ import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
+import { FLAT_TRADE_FEE } from 'common/fees'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -186,8 +187,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const allOrdersToCancel = []
     const fullBets = []
 
+    const isApi = auth.creds.kind === 'key'
+    const apiFee = isApi ? FLAT_TRADE_FEE : 0
     await incrementBalance(pgTrans, user.id, {
-      balance: -newBet.amount + (newBet.loanAmount ?? 0),
+      balance: -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
     })
 
     const totalCreatorFee =
@@ -206,8 +209,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         }.`
       )
     }
-
-    const isApi = auth.creds.kind === 'key'
 
     const candidateBet = {
       userId: user.id,
