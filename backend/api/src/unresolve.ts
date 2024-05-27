@@ -60,7 +60,7 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
   return {
     success: true,
     continue: async () => {
-      await setAdjustProfitFromResolvedMarkets(contract.id)
+      await setAdjustProfitFromResolvedMarkets(contractId)
     },
   }
 }
