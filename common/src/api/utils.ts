@@ -8,6 +8,7 @@ type ErrorCode =
   | 404 // we can't find it
   | 429 // you're too much for us
   | 500 // we fucked up
+  | 503 // we're too busy to handle your request
 
 export class APIError extends Error {
   code: ErrorCode

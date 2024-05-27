@@ -22,7 +22,6 @@ if (LOCAL_DEV) {
 METRIC_WRITER.start()
 
 import { app } from './app'
-import { initFnQueue } from './queue'
 
 const credentials = LOCAL_DEV
   ? getServiceAccountCredentials(getLocalEnv())
@@ -41,6 +40,4 @@ loadSecretsToEnv(credentials).then(async () => {
   })
 
   webSocketListen(httpServer, '/ws')
-
-  initFnQueue()
 })
