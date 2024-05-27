@@ -1,3 +1,4 @@
+import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
 import { Answer } from 'common/answer'
@@ -10,12 +11,14 @@ import {
   validateBet,
 } from 'api/place-bet'
 import { log } from 'shared/utils'
-import * as crypto from 'crypto'
 import { runEvilTransaction } from 'shared/evil-transaction'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeMultiBetMain(props, auth.uid, isApi)
+  return await betsQueue.enqueueFn(() =>
+    placeMultiBetMain(props, auth.uid, isApi)
+  )
 }
 
 // Note: this returns a continuation function that should be run for consistency.

@@ -34,13 +34,16 @@ import {
 } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { convertAnswer } from 'common/supabase/contracts'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
 ) => {
   const { contractId, text } = props
-  return await createAnswerCpmmMain(contractId, text, auth!.uid)
+  return await betsQueue.enqueueFn(() =>
+    createAnswerCpmmMain(contractId, text, auth!.uid)
+  )
 }
 
 export const createAnswerCpmmMain = async (

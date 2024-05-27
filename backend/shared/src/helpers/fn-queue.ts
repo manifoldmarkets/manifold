@@ -20,7 +20,7 @@ export const createFnQueue = (props?: { timeout?: number }) => {
         reject,
         timestamp: Date.now(),
       })
-      runFnQueue()
+      run()
     })
   }
 
@@ -39,7 +39,7 @@ export const createFnQueue = (props?: { timeout?: number }) => {
 
   let queueRunning = false
 
-  const runFnQueue = async () => {
+  const run = async () => {
     if (queueRunning) return
     queueRunning = true
 
