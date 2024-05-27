@@ -27,6 +27,7 @@ import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { enqueueFn } from './queue'
+import { broadcastOrders } from 'shared/websockets/helpers'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -193,6 +194,7 @@ export const placeBetMain = async (
 
   log(`Main transaction finished - auth ${uid}.`)
   metrics.inc('app/bet_count', { contract_id: contractId })
+  log(`hellooooooooooo`)
 
   const continuation = async () => {
     await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
@@ -322,19 +324,19 @@ export const processNewBetResult = async (
     }
   }
 
-  const fullBet = removeUndefinedProps({
+  const candidateBet = removeUndefinedProps({
     userId: user.id,
     isApi,
     replyToCommentId,
     betGroupId,
     ...newBet,
   })
-  const { bet_id } = await insertBet(fullBet, pgTrans)
-
+  const betRow = await insertBet(candidateBet, pgTrans)
+  fullBets.push(convertBet(betRow))
   log(`Inserted bet for ${user.username} - auth ${user.id}.`)
 
   if (makers) {
-    await updateMakers(makers, bet_id, pgTrans)
+    await updateMakers(makers, betRow.bet_id, pgTrans)
   }
   if (ordersToCancel) {
     await cancelLimitOrders(
@@ -403,16 +405,13 @@ export const processNewBetResult = async (
           Math.abs(probAfter - probBefore) < 0.00001
 
         if (!smallEnoughToIgnore || Math.random() < 0.01) {
-          const fullBet = removeUndefinedProps({
+          const candidateBet = removeUndefinedProps({
             userId: user.id,
-            userAvatarUrl: user.avatarUrl,
-            userUsername: user.username,
-            userName: user.name,
             isApi,
             betGroupId,
             ...bet,
           })
-          const betRow = await insertBet(fullBet, pgTrans)
+          const betRow = await insertBet(candidateBet, pgTrans)
           fullBets.push(convertBet(betRow))
           const { YES: poolYes, NO: poolNo } = cpmmState.pool
           const prob = getCpmmProbability(cpmmState.pool, 0.5)
@@ -425,7 +424,7 @@ export const processNewBetResult = async (
             })
           )
         }
-        await updateMakers(makers, bet_id, pgTrans)
+        await updateMakers(makers, betRow.bet_id, pgTrans)
         await cancelLimitOrders(
           pgTrans,
           ordersToCancel.map((o) => o.id)
@@ -440,13 +439,12 @@ export const processNewBetResult = async (
 
   return {
     newBet,
-    betId: bet_id,
+    betId: betRow.bet_id,
     contract,
     makers,
     allOrdersToCancel,
     fullBets,
     user,
-    fullBet,
     betGroupId,
   }
 }
@@ -506,6 +504,7 @@ export const updateMakers = async (
   takerBetId: string,
   pgTrans: SupabaseTransaction
 ) => {
+  const updatedLimitBets: LimitBet[] = []
   // TODO: do this in a single query as a bulk update
   const makersByBet = groupBy(makers, (maker) => maker.bet.id)
   for (const makers of Object.values(makersByBet)) {
@@ -520,16 +519,27 @@ export const updateMakers = async (
     const isFilled = floatingEqual(totalAmount, bet.orderAmount)
 
     log('Update a matched limit order.')
-    await pgTrans.none(`update contract_bets set data = data || $1 where bet_id = $2`, [
-      JSON.stringify({
-        fills,
-        isFilled,
-        amount: totalAmount,
-        shares: totalShares,
-      }),
-      bet.id,
-    ])
+    const newData = await pgTrans.one<LimitBet>(
+      `update contract_bets
+      set data = data || $1
+      where bet_id = $2
+      returning data`,
+      [
+        JSON.stringify({
+          fills,
+          isFilled,
+          amount: totalAmount,
+          shares: totalShares,
+        }),
+        bet.id,
+      ],
+      (r) => r.data
+    )
+
+    updatedLimitBets.push(newData)
   }
+
+  broadcastOrders(updatedLimitBets)
 
   // Deduct balance of makers.
   const spentByUser = mapValues(

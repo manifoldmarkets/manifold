@@ -3,8 +3,6 @@ import { getShareUrl } from 'common/util/share'
 import { TweetButton } from '../buttons/tweet-button'
 import { GradientContainer } from '../widgets/gradient-container'
 import { BoostButton } from './boost-button'
-import { formatMoney } from 'common/util/format'
-import { REFERRAL_AMOUNT, UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { Button } from '../buttons/button'
 import { LinkIcon } from '@heroicons/react/outline'
 import { getIsNative } from 'web/lib/native/is-native'
@@ -41,14 +39,6 @@ export function CreatorShareBoostPanel(props: { contract: Contract }) {
           <CancelBountyButton contract={contract} />
         )}
       </div>
-
-      {contract.outcomeType !== 'POLL' &&
-        contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-          <div className="text-ink-500 text-base">
-            Earn {formatMoney(REFERRAL_AMOUNT)} for each sign up and{' '}
-            {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
-          </div>
-        )}
     </GradientContainer>
   )
 }

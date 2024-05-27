@@ -26,7 +26,7 @@ const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
 
-  const contract = await getContractSupabase(contractId)
+  let contract = await getContractSupabase(contractId)
 
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   await verifyUserCanUnresolve(contract, auth.uid, answerId)
@@ -39,7 +39,16 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
       `Contract ${contract.id} is already being resolved/unresolved (failed to acquire lock)`
     )
   }
+
   try {
+    // Fetch fresh contract & verify within lock.
+    const contractSnap = await firestore
+      .collection('contracts')
+      .doc(contract.id)
+      .get()
+    contract = contractSnap.data() as Contract
+    await verifyUserCanUnresolve(contract, auth.uid, answerId)
+
     await trackPublicEvent(auth.uid, 'unresolve market', {
       contractId,
     })
@@ -51,7 +60,7 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
   return {
     success: true,
     continue: async () => {
-      await setAdjustProfitFromResolvedMarkets(contract.id)
+      await setAdjustProfitFromResolvedMarkets(contractId)
     },
   }
 }

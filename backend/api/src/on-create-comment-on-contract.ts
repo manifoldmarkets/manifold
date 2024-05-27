@@ -15,6 +15,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { insertModReport } from 'shared/create-mod-report'
 
 const firestore = admin.firestore()
 
@@ -103,7 +104,10 @@ export const handleCommentNotifications = async (
 ) => {
   const replyInfo = await getReplyInfo(pg, comment, contract)
 
+  const modsId = 'WQJ92QkoqDPuyj6DAZ5lR6g1x573'
   const mentionedUsers = compact(parseMentions(comment.content))
+  const mentionedMods = mentionedUsers.includes(modsId)
+
   const repliedUsers: replied_users_info = {}
   if (replyInfo) {
     const {
@@ -135,6 +139,9 @@ export const handleCommentNotifications = async (
         }
       })
     }
+  }
+  if (mentionedMods) {
+    await insertModReport(comment)
   }
 
   await createCommentOnContractNotification(

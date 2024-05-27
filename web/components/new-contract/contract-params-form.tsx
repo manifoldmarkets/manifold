@@ -89,7 +89,7 @@ export function ContractParamsForm(props: {
     'new-init-value' + paramsKey
   )
   const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
-    (params?.visibility ?? 'public') as Visibility,
+    'public' as Visibility,
     `new-visibility` + paramsKey
   )
 

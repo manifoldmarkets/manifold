@@ -17,7 +17,7 @@ import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
 import { runTxn } from 'shared/txn/run-txn'
 import { DisplayUser } from 'common/api/user-types'
-import { broadcastNewComment } from './websockets/helpers'
+import { broadcastNewComment } from 'shared/websockets/helpers'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
