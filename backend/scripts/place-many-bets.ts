@@ -1,7 +1,8 @@
+import { DEV_CONFIG } from 'common/envs/dev'
 import { initAdmin } from 'shared/init-admin'
 
 async function placeManyBets(apiKey: string, count: number) {
-  const url = 'https://placebet-w3txbmd3ba-uc.a.run.app'
+  const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet` //'https://placebet-w3txbmd3ba-uc.a.run.app'
 
   const betData = {
     contractId: 'pdcWgwpzV4RsJjQGVq9v', // https://dev.manifold.markets/IanPhilips/beeeep-bop
@@ -28,15 +29,18 @@ async function placeManyBets(apiKey: string, count: number) {
       .then(async (resp) => {
         const json = await resp.json()
         if (resp.status === 200) {
+          console.log('Success')
           success++
         } else {
           errorMessage[json.message] = errorMessage[json.message]
             ? errorMessage[json.message] + 1
             : 1
           failure++
+          console.log('Error code', json)
         }
       })
-      .catch(() => {
+      .catch((e) => {
+        console.log('Error:', e)
         failure++
       })
     promises.push(resp)
