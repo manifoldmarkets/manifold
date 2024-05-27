@@ -5,12 +5,16 @@ const DEFAULT_QUEUE_TIME_LIMIT = 5000
 export const createFnQueue = (props?: { timeout?: number }) => {
   const { timeout = DEFAULT_QUEUE_TIME_LIMIT } = props || {}
 
-  const fnQueue: {
-    fn: () => Promise<any>
-    resolve: (value: any) => void
-    reject: (reason: any) => void
-    timestamp: number
-  }[] = []
+  const state = {
+    queueRunning: false,
+    fnQueue: [] as {
+      fn: () => Promise<any>
+      resolve: (value: any) => void
+      reject: (reason: any) => void
+      timestamp: number
+    }[],
+  }
+  const { fnQueue } = state
 
   const enqueueFn = async <T>(fn: () => Promise<T>) => {
     return await new Promise<T>((resolve, reject) => {
@@ -37,11 +41,9 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     return expiredItems
   }
 
-  let queueRunning = false
-
   const run = async () => {
-    if (queueRunning) return
-    queueRunning = true
+    if (state.queueRunning) return
+    state.queueRunning = true
 
     while (fnQueue.length > 0) {
       const expiredItems = spliceExpiredItems(fnQueue)
@@ -64,7 +66,7 @@ export const createFnQueue = (props?: { timeout?: number }) => {
         }
       }
     }
-    queueRunning = false
+    state.queueRunning = false
   }
 
   return { enqueueFn }
