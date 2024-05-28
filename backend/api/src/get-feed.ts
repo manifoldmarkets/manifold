@@ -27,6 +27,7 @@ import {
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
+import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 
 const DEBUG_USER_ID = undefined
 
@@ -57,14 +58,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     [userId],
     (r) => r.data as PrivateUser
   )
-  const {
-    blockedByUserIds,
-    blockedContractIds,
-    blockedUserIds,
-    blockedGroupSlugs,
-  } = privateUser
-  const blockedIds = blockedUserIds.concat(blockedByUserIds)
-
   // If they don't follow any topics and have no recorded topic activity, show them top trending markets
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
@@ -95,14 +88,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     from(`user_contract_views ucv`),
     where(`ucv.user_id = $1`, [userId]),
     groupBy(`contract_id`)
-  )
-
-  const blockedGroupsQuery = renderSql(
-    select('1'),
-    from(`group_contracts gc`),
-    join(`groups g on gc.group_id = g.id`),
-    where(`gc.contract_id = contracts.id`),
-    where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
   )
 
   const claimedAdsQuery = renderSql(
@@ -163,12 +148,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       ),
       (ignoreContractIds?.length ?? 0) > 0 &&
         where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
-      blockedIds.length > 0 &&
-        where(`contracts.creator_id <> all(array[$1])`, [blockedIds]),
-      blockedContractIds.length > 0 &&
-        where(`contracts.id <> all(array[$1])`, [blockedContractIds]),
-      blockedGroupSlugs.length > 0 &&
-        where(`not exists (${blockedGroupsQuery})`),
+      privateUserBlocksSql(privateUser),
       lim(limit, offset),
       !boosts && groupBy(`contracts.id, cv.latest_seen_time`)
     )
