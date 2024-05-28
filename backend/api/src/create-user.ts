@@ -88,11 +88,12 @@ export const createuser: APIHandler<'createuser'> = async (
   let username = cleanUsername(name)
 
   // Check username case-insensitive
-  const countDupe = await pg.one<number>(
+  const dupes = await pg.one<number>(
     `select count(*) from users where username ilike $1`,
-    [username]
+    [username],
+    (r) => r.count
   )
-  const usernameExists = countDupe > 0
+  const usernameExists = dupes > 0
   const isReservedName = RESERVED_PATHS.includes(username)
   if (usernameExists || isReservedName) username += randomString(4)
 

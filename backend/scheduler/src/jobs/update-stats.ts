@@ -219,10 +219,7 @@ export const updateStatsCore = async () => {
     .valueOf()
 
   log('Fetching data for stats update...')
-  await calculateManaStats(
-    start,
-    Math.round(dayjs(midnightLastNight).diff(startOfDayAgo, 'hour') / 24)
-  )
+  await calculateManaStats(startOfDayAgo, 1)
   const [
     dailyBets,
     dailyContracts,

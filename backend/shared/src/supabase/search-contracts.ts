@@ -56,20 +56,6 @@ export async function getForYouSQL(
   ) {
     await buildUserInterestsCache(userId)
   }
-  const {
-    blockedByUserIds,
-    blockedContractIds,
-    blockedUserIds,
-    blockedGroupSlugs,
-  } = privateUser ?? {}
-  const blockedGroupsQuery = renderSql(
-    select('1'),
-    from(`group_contracts gc`),
-    join(`groups g on gc.group_id = g.id`),
-    where(`gc.contract_id = contracts.id`),
-    where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
-  )
-  const blockedIds = [...(blockedByUserIds ?? []), ...(blockedUserIds ?? [])]
   // Still no topic interests, return default search
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
@@ -86,14 +72,9 @@ export async function getForYouSQL(
         contractType,
         uid: userId,
         hideStonks: true,
-        isPrizeMarket
+        isPrizeMarket,
       }),
-      blockedIds.length > 0 &&
-        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
-      (blockedContractIds ?? []).length > 0 &&
-        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
-      (blockedGroupSlugs ?? []).length > 0 &&
-        where(`not exists (${blockedGroupsQuery})`),
+      privateUserBlocksSql(privateUser),
       lim(limit, offset)
     )
   }
@@ -119,12 +100,7 @@ export async function getForYouSQL(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
       ),
-      blockedIds.length > 0 &&
-        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
-      (blockedContractIds ?? []).length > 0 &&
-        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
-      (blockedGroupSlugs ?? []).length > 0 &&
-        where(`not exists (${blockedGroupsQuery})`),
+      privateUserBlocksSql(privateUser),
       withClause(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
         [userId]
@@ -134,7 +110,7 @@ export async function getForYouSQL(
         contractType,
         uid: userId,
         hideStonks: true,
-        isPrizeMarket
+        isPrizeMarket,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -206,7 +182,6 @@ export function getSearchContractSQL(args: {
     creatorId,
     searchType,
     isPolitics,
-    isPrizeMarket,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -288,7 +263,7 @@ function getSearchContractWhereSQL(args: {
     hasGroupAccess,
     hideStonks,
     hideLove,
-    isPrizeMarket
+    isPrizeMarket,
   } = args
 
   type FilterSQL = Record<string, string>
@@ -326,7 +301,7 @@ function getSearchContractWhereSQL(args: {
 
   const deletedFilter = `deleted = false`
 
-   const isPrizeMarketFilter =  isPrizeMarket ? 'is_spice_payout = true':''
+  const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
 
   return [
     where(filterSQL[filter]),
@@ -337,7 +312,7 @@ function getSearchContractWhereSQL(args: {
     where(visibilitySQL),
     where(creatorFilter),
     where(deletedFilter),
-    where(isPrizeMarketFilter)
+    where(isPrizeMarketFilter),
   ]
 }
 
@@ -462,5 +437,34 @@ const loadRandomUser = async () => {
     ORDER BY random() LIMIT 1`,
     [],
     (r) => r.id as string
+  )
+}
+
+export const privateUserBlocksSql = (privateUser?: PrivateUser) => {
+  const {
+    blockedByUserIds,
+    blockedContractIds,
+    blockedUserIds,
+    blockedGroupSlugs,
+  } = privateUser ?? {
+    blockedByUserIds: [] as string[],
+    blockedContractIds: [] as string[],
+    blockedUserIds: [] as string[],
+    blockedGroupSlugs: [] as string[],
+  }
+  const blockedIds = blockedUserIds.concat(blockedByUserIds)
+  const blockedGroupsQuery = renderSql(
+    select('1'),
+    from(`group_contracts gc`),
+    join(`groups g on gc.group_id = g.id`),
+    where(`gc.contract_id = contracts.id`),
+    where(`g.slug = any(array[$1])`, [blockedGroupSlugs])
+  )
+  return buildArray(
+    blockedIds.length > 0 &&
+      where(`contracts.creator_id <> all(array[$1])`, [blockedIds]),
+    blockedContractIds.length > 0 &&
+      where(`contracts.id <> all(array[$1])`, [blockedContractIds]),
+    blockedGroupSlugs.length > 0 && where(`not exists (${blockedGroupsQuery})`)
   )
 }

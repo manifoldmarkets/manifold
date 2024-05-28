@@ -17,8 +17,21 @@ import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { FLAT_TRADE_FEE } from 'common/fees'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
+  props,
+  auth,
+  req
+) => {
+  return await betsQueue.enqueueFn(
+    () => sellSharesMain(props, auth, req),
+    [props.contractId, auth.uid]
+  )
+}
+
+const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   props,
   auth
 ) => {
@@ -42,10 +55,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
 
     const [userBets, { unfilledBets, balanceByUserId }] = await Promise.all([
       pgTrans.map(
-        `select * from contract_bets where user_id = $1 ${
-          answerId ? 'and answer_id = $2' : ''
-        }`,
-        [auth.uid, answerId],
+        `select * from contract_bets where user_id = $1 
+        and contract_id = $2
+        ${answerId ? 'and answer_id = $3' : ''}`,
+        [auth.uid, contract.id, answerId],
         convertBet
       ),
       getUnfilledBetsAndUserBalances(
@@ -186,8 +199,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
     const allOrdersToCancel = []
     const fullBets = []
 
+    const isApi = auth.creds.kind === 'key'
+    const apiFee = isApi ? FLAT_TRADE_FEE : 0
     await incrementBalance(pgTrans, user.id, {
-      balance: -newBet.amount + (newBet.loanAmount ?? 0),
+      balance: -newBet.amount + (newBet.loanAmount ?? 0) - apiFee,
     })
 
     const totalCreatorFee =
@@ -206,8 +221,6 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
         }.`
       )
     }
-
-    const isApi = auth.creds.kind === 'key'
 
     const candidateBet = {
       userId: user.id,

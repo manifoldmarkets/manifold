@@ -27,6 +27,11 @@ export const EditableModNote = ({
     setEditing(false)
   }
 
+  const handleCancel = () => {
+    setModNote(initialNote)
+    setEditing(false)
+  }
+
   return isEditing ? (
     <Row className=" items-center gap-2">
       <Input
@@ -40,7 +45,7 @@ export const EditableModNote = ({
       <IconButton onClick={handleSave} className="p-1">
         <CheckIcon className="h-4 w-4 text-teal-600" />
       </IconButton>
-      <IconButton onClick={() => setEditing(false)} className="p-1">
+      <IconButton onClick={handleCancel} className="p-1">
         <XIcon className="text-scarlet-400 h-4 w-4" />
       </IconButton>
     </Row>

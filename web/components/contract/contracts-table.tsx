@@ -28,6 +28,7 @@ import { sortAnswers } from 'common/answer'
 import { removeEmojis } from 'common/util/string'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { track } from 'web/lib/service/analytics'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -85,7 +86,10 @@ function ContractRow(props: {
     <Link
       href={contractPath(contract)}
       onClick={(e) => {
-        if (!onClick) return
+        if (!onClick) {
+          track('click browse contract', { slug: contract.slug })
+          return
+        }
         onClick()
         e.preventDefault()
       }}

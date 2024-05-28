@@ -377,19 +377,6 @@ export function editAnswerCpmm(params: {
   return call(getApiUrl('edit-answer-cpmm'), 'POST', params)
 }
 
-export function searchLocation(params: { term: string; limit?: number }) {
-  return call(getApiUrl('searchlocation'), 'POST', params)
-}
-
-export function searchNearCity(params: { cityId: string; radius: number }) {
-  if (params.radius < 1 || params.radius > 500) {
-    throw new Error('Your radius is out of bounds!')
-  }
-  return call(getApiUrl('searchnearcity'), 'POST', params)
-}
-
-// vercel api
-
 export function createChartAnnotation(params: {
   eventTime: number
   contractId: string
