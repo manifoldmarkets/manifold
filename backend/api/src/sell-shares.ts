@@ -17,9 +17,21 @@ import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
+  props,
+  auth,
+  req
+) => {
+  return await betsQueue.enqueueFn(
+    () => sellSharesMain(props, auth, req),
+    [props.contractId, auth.uid]
+  )
+}
+
+const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   props,
   auth
 ) => {

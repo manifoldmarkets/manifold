@@ -27,12 +27,16 @@ import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import { redeemShares } from './redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await placeBetMain(props, auth.uid, isApi)
+  return await betsQueue.enqueueFn(
+    () => placeBetMain(props, auth.uid, isApi),
+    [props.contractId, auth.uid]
+  )
 }
 
 // Note: this returns a continuation function that should be run for consistency.

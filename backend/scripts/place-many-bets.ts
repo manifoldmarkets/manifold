@@ -1,42 +1,54 @@
+import { DEV_CONFIG } from 'common/envs/dev'
 import { initAdmin } from 'shared/init-admin'
 
 async function placeManyBets(apiKey: string, count: number) {
-  const url = 'https://placebet-w3txbmd3ba-uc.a.run.app'
+  const url = `https://${DEV_CONFIG.apiEndpoint}/v0/bet` //'https://placebet-w3txbmd3ba-uc.a.run.app'
 
+  const apiKey2 = 'ad55b4c6-794a-4eef-94dc-d80a7438319d' // Manifold Markets
   const betData = {
     contractId: 'pdcWgwpzV4RsJjQGVq9v', // https://dev.manifold.markets/IanPhilips/beeeep-bop
     amount: 10,
     outcome: 'NO',
+  }
+  const betData2 = {
+    contractId: 'Y9C5Hb9yS8D3C3KRwRYC', // https://dev.manifold.markets/DavidChee/will-sirsalty-hit-infinity-by-this
+    amount: 10,
+    outcome: 'YES',
   }
   let success = 0
   let failure = 0
   const promises = []
   const start = Date.now()
   console.log(
-    `Placing ${count} bets  at ${url} on contract ${betData.contractId}.`
+    `Placing ${count} bets  at ${url} on contracts ${betData.contractId} and ${betData2.contractId}.`
   )
   const errorMessage: { [key: string]: number } = {}
   for (let i = 0; i < count; i++) {
+    const chosenBet = Math.random() > 0.5 ? betData : betData2
+    const chosenAPIKey= Math.random() > 0.5 ? apiKey : apiKey2
     const resp = fetch(url, {
       method: 'POST',
       headers: {
-        Authorization: `Key ${apiKey}`,
+        Authorization: `Key ${chosenAPIKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(betData),
+      body: JSON.stringify(chosenBet),
     })
       .then(async (resp) => {
         const json = await resp.json()
         if (resp.status === 200) {
+          console.log('Success')
           success++
         } else {
           errorMessage[json.message] = errorMessage[json.message]
             ? errorMessage[json.message] + 1
             : 1
           failure++
+          console.log('Error code', json)
         }
       })
-      .catch(() => {
+      .catch((e) => {
+        console.log('Error:', e)
         failure++
       })
     promises.push(resp)

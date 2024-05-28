@@ -1,0 +1,97 @@
+import { remove } from 'lodash'
+import { APIError } from 'common/api/utils'
+
+const DEFAULT_QUEUE_TIME_LIMIT = 5000
+
+type WorkItem = {
+  fn: () => Promise<any>
+  dependencies: string[]
+  resolve: (value: any) => void
+  reject: (reason: any) => void
+  timestamp: number
+}
+
+export const createFnQueue = (props?: { timeout?: number }) => {
+  const { timeout = DEFAULT_QUEUE_TIME_LIMIT } = props || {}
+
+  const state = {
+    queueRunning: false,
+    fnQueue: [] as WorkItem[],
+    activeItems: [] as WorkItem[],
+  }
+  const { fnQueue, activeItems } = state
+
+  const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
+    return await new Promise<T>((resolve, reject) => {
+      fnQueue.push({
+        fn,
+        resolve,
+        reject,
+        dependencies,
+        timestamp: Date.now(),
+      })
+      run()
+    })
+  }
+
+  const spliceExpiredItems = (queue: typeof fnQueue) => {
+    // Queue is sorted with oldest first.
+    // Find the first item that has not expired, and splice everything before it.
+    const now = Date.now()
+    const expiredBeforeIndex = queue.findIndex(
+      (item) => now - item.timestamp < timeout
+    )
+    const expiredCount =
+      expiredBeforeIndex === -1 ? queue.length : expiredBeforeIndex
+    const expiredItems = queue.splice(0, expiredCount)
+    return expiredItems
+  }
+
+  const runItem = async (item: WorkItem) => {
+    const { fn, resolve, reject } = item
+
+    activeItems.push(item)
+
+    try {
+      const result = await fn()
+      resolve(result)
+    } catch (e) {
+      reject(e)
+    } finally {
+      remove(activeItems, (i) => i === item)
+      run()
+    }
+  }
+
+  const run = () => {
+    const expiredItems = spliceExpiredItems(fnQueue)
+    for (const item of expiredItems) {
+      item.reject(
+        new APIError(503, 'High volume of requests. Please try again later.')
+      )
+    }
+
+    const cumulativeDependencies = new Set<string>(
+      activeItems.flatMap((item) => item.dependencies)
+    )
+    const toRun = []
+    for (const item of fnQueue) {
+      const { dependencies } = item
+      if (!dependencies.some((d) => cumulativeDependencies.has(d))) {
+        toRun.push(item)
+      }
+      dependencies.forEach((d) => cumulativeDependencies.add(d))
+    }
+
+    const runSet = new Set(toRun)
+    remove(fnQueue, (item) => runSet.has(item))
+
+    for (const item of toRun) {
+      runItem(item)
+    }
+  }
+
+  return { enqueueFn }
+}
+
+export const betsQueue = createFnQueue()

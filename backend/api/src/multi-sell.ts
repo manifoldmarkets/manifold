@@ -1,4 +1,6 @@
 import * as admin from 'firebase-admin'
+import * as crypto from 'crypto'
+
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { Answer } from 'common/answer'
 import { onCreateBets } from 'api/on-create-bet'
@@ -7,17 +9,24 @@ import {
   processNewBetResult,
 } from 'api/place-bet'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import * as crypto from 'crypto'
 import { groupBy, mapValues, sum, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { convertBet } from 'common/supabase/bets'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
-export const multiSell: APIHandler<'multi-sell'> = async (props, auth) => {
-  const isApi = auth.creds.kind === 'key'
+export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
+  return await betsQueue.enqueueFn(
+    () => multiSellMain(props, auth, req),
+    [props.contractId, auth.uid]
+  )
+}
+
+const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
   const { contractId, answerIds } = props
   const { uid } = auth
+  const isApi = auth.creds.kind === 'key'
 
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
