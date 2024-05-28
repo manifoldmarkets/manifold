@@ -67,7 +67,7 @@ const getLoanTotal = (
   })
 }
 
-export const ELASTICITY_BET_AMOUNT = 1000 // readjust with platform volume
+export const ELASTICITY_BET_AMOUNT = 10000 // readjust with platform volume
 
 export const computeElasticity = (
   unfilledBets: LimitBet[],
