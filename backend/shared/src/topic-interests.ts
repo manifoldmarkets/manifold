@@ -64,9 +64,9 @@ export const buildUserInterestsCache = async (userId?: string) => {
           const groupScore =
             userIdsToAverageTopicConversionScores[userId][groupId]
           if (groupScore === undefined) {
-            userIdsToAverageTopicConversionScores[userId][groupId] = 1.25
+            userIdsToAverageTopicConversionScores[userId][groupId] = 2.0
           } else {
-            userIdsToAverageTopicConversionScores[userId][groupId] += 0.25
+            userIdsToAverageTopicConversionScores[userId][groupId] += 0.5
           }
         }
       }),
