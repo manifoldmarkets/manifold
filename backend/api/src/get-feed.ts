@@ -145,7 +145,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           Object.values(userIdsToAverageTopicConversionScores[userId]),
         ]
       ),
-      join(`groups on groups.id = uti.group_id`),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
       // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
@@ -161,11 +160,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         [userId]
       ),
       (ignoreContractIds?.length ?? 0) > 0 &&
-        where(`contracts.id <> any(array[$1])`, [ignoreContractIds]),
+        where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
       blockedIds.length > 0 &&
-        where(`contracts.creator_id <> any(array[$1])`, [blockedIds]),
+        where(`contracts.creator_id <> all(array[$1])`, [blockedIds]),
       blockedContractIds.length > 0 &&
-        where(`contracts.id <> any(array[$1])`, [blockedContractIds]),
+        where(`contracts.id <> all(array[$1])`, [blockedContractIds]),
       blockedGroupSlugs.length > 0 &&
         where(`not exists (${blockedGroupsQuery})`),
       lim(limit, offset),
