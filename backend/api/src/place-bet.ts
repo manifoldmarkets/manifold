@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin'
 import { DocumentReference, Transaction } from 'firebase-admin/firestore'
 import { groupBy, mapValues, sumBy, uniq } from 'lodash'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { Contract, CPMM_MIN_POOL_QTY } from 'common/contract'
+import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
 import {
   BetInfo,
@@ -28,6 +28,7 @@ import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { FLAT_TRADE_FEE } from 'common/fees'
+import { redeemShares } from './redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -248,7 +249,7 @@ export type NewBetResult = BetInfo & {
 export const processNewBetResult = async (
   newBetResult: NewBetResult,
   contractDoc: DocumentReference,
-  contract: Contract,
+  contract: MarketContract,
   user: User,
   isApi: boolean,
   pgTrans: SupabaseTransaction,
@@ -435,6 +436,16 @@ export const processNewBetResult = async (
     }
 
     log(`Updated contract ${contract.slug} properties - auth ${user.id}.`)
+
+    const userIds = uniq([
+      user.id,
+      ...(makers?.map((maker) => maker.bet.userId) ?? []),
+    ])
+    log('Redeeming shares for users:', userIds)
+    await Promise.all(
+      userIds.map((userId) => redeemShares(pgTrans, userId, contract))
+    )
+    log('Share redemption transaction finished.')
   }
 
   return {
@@ -461,7 +472,7 @@ export const validateBet = async (
   const contractDoc = firestore.doc(`contracts/${contractId}`)
   const contractSnap = await fbTrans.get(contractDoc)
   if (!contractSnap.exists) throw new APIError(404, 'Contract not found.')
-  const contract = contractSnap.data() as Contract
+  const contract = contractSnap.data() as MarketContract
 
   const user = await getUser(uid, pgTrans)
   if (!user) throw new APIError(404, 'User not found.')

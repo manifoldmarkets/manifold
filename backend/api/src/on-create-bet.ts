@@ -28,7 +28,6 @@ import {
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { maker } from 'api/place-bet'
-import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
@@ -81,18 +80,6 @@ export const onCreateBets = async (
   makers: maker[] | undefined
 ) => {
   broadcastNewBets(contract, bets)
-
-  const { mechanism } = contract
-  if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
-    const userIds = uniq([
-      originalBettor.id,
-      ...(makers?.map((maker) => maker.bet.userId) ?? []),
-    ])
-    await Promise.all(
-      userIds.map(async (userId) => redeemShares(userId, contract))
-    )
-    log('Share redemption transaction finished.')
-  }
 
   if (ordersToCancel) {
     await Promise.all(
