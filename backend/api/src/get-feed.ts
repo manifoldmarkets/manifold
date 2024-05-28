@@ -154,7 +154,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ),
         where(`cv.latest_seen_time is null`),
       ],
-      where(`contracts.close_time > now() and contracts.visibility = 'public'`),
+      where(`contracts.close_time > now()`),
+      where(`contracts.outcome_type != 'STONK'`),
+      where(`contracts.visibility = 'public'`),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
