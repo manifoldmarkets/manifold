@@ -204,6 +204,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answerLoverUserIds,
           specialLiquidityPerAnswer,
           isAutoBounty,
+          marketTier,
         })
       )
 
@@ -242,13 +243,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   }
 
   await generateAntes(userId, contract, outcomeType, ante)
+  console.log('MARKET TIER', marketTier)
 
-    if (marketTier && marketTier !== 'basic' && !(outcomeType=='NUMBER' && marketTier == 'plus')) {
-
+    if (marketTier && marketTier !== 'basic') {
       const drizzledAmount = getTieredCost(ante, marketTier, outcomeType) - ante 
+      console.log('DRIZZLED',drizzledAmount)
       if (drizzledAmount > 0) {
         await addContractLiquidity(contract.id, drizzledAmount, userId)
     }
+  }
    
 
   await generateContractEmbeddings(contract, pg)
