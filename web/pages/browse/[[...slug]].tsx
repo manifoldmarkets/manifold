@@ -32,7 +32,6 @@ import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-s
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getDisplayUsers } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
@@ -229,9 +228,6 @@ export function GroupPageContent(props: {
         }
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}
-      onContractClick={(c) =>
-        track('click browse contract', { slug: c.slug, id: c.id })
-      }
     />
   )
 
