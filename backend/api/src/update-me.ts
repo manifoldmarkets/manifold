@@ -49,6 +49,9 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
         auth.uid,
       ])
     }
+    if (avatarUrl) {
+      await updateUser(pg, auth.uid, { avatarUrl })
+    }
 
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
