@@ -41,8 +41,9 @@ export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   auth
 ) => {
   const { contractId, text } = props
-  return await betsQueue.enqueueFn(() =>
-    createAnswerCpmmMain(contractId, text, auth!.uid)
+  return await betsQueue.enqueueFn(
+    () => createAnswerCpmmMain(contractId, text, auth.uid),
+    [contractId, auth.uid]
   )
 }
 

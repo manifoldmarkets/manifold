@@ -17,7 +17,10 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
-  return await betsQueue.enqueueFn(() => multiSellMain(props, auth, req))
+  return await betsQueue.enqueueFn(
+    () => multiSellMain(props, auth, req),
+    [props.contractId, auth.uid]
+  )
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {

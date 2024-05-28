@@ -16,8 +16,9 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await betsQueue.enqueueFn(() =>
-    placeMultiBetMain(props, auth.uid, isApi)
+  return await betsQueue.enqueueFn(
+    () => placeMultiBetMain(props, auth.uid, isApi),
+    [props.contractId, auth.uid]
   )
 }
 

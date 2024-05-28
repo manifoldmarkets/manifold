@@ -25,7 +25,10 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   auth,
   req
 ) => {
-  return await betsQueue.enqueueFn(() => sellSharesMain(props, auth, req))
+  return await betsQueue.enqueueFn(
+    () => sellSharesMain(props, auth, req),
+    [props.contractId, auth.uid]
+  )
 }
 
 const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (

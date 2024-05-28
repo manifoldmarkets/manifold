@@ -33,7 +33,10 @@ import { redeemShares } from './redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
-  return await betsQueue.enqueueFn(() => placeBetMain(props, auth.uid, isApi))
+  return await betsQueue.enqueueFn(
+    () => placeBetMain(props, auth.uid, isApi),
+    [props.contractId, auth.uid]
+  )
 }
 
 // Note: this returns a continuation function that should be run for consistency.
