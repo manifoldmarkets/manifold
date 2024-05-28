@@ -1,4 +1,3 @@
-import { getCpmmLiquidity } from './calculate-cpmm'
 import {
   CPMMContract,
   CPMMMultiContract,
@@ -13,19 +12,9 @@ export const getNewLiquidityProvision = (
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
   answerId?: string
 ) => {
-  const { totalLiquidity, subsidyPool } = contract
-
-  const newTotalLiquidity = (totalLiquidity ?? 0) + amount
-  // If answerId is defined, amount will be added to the answer's subsidy pool
-  const newSubsidyPool = (subsidyPool ?? 0) + (answerId ? 0 : amount)
-
   let pool: { [outcome: string]: number } | undefined
-  let liquidity: number | undefined
   if (contract.mechanism === 'cpmm-1') {
     pool = contract.pool
-    liquidity = getCpmmLiquidity(pool, contract.p)
-  } else {
-    liquidity = newTotalLiquidity
   }
 
   const newLiquidityProvision: Omit<LiquidityProvision, 'id'> =
@@ -35,9 +24,8 @@ export const getNewLiquidityProvision = (
       answerId,
       amount,
       pool,
-      liquidity,
       createdTime: Date.now(),
     })
 
-  return { newLiquidityProvision, newTotalLiquidity, newSubsidyPool }
+  return newLiquidityProvision
 }

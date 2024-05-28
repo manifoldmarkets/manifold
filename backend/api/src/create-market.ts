@@ -21,6 +21,7 @@ import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
+  SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -49,6 +50,7 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcastNewContract } from 'shared/websockets/helpers'
+import { insertLiquidity } from 'shared/supabase/liquidity'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -237,7 +239,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  await generateAntes(userId, contract, outcomeType, ante)
+  await generateAntes(pg, userId, contract, outcomeType, ante)
 
   await generateContractEmbeddings(contract, pg)
 
@@ -582,6 +584,7 @@ async function getLoveAnswerUserIds(answers: string[]) {
 }
 
 async function generateAntes(
+  pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
   outcomeType: string,
@@ -595,18 +598,16 @@ async function generateAntes(
     const { answers } = contract
     for (const answer of answers) {
       const ante = Math.sqrt(answer.poolYes * answer.poolNo)
-      const liquidityDoc = firestore
-        .collection(`contracts/${contract.id}/liquidity`)
-        .doc()
+
       const lp = getCpmmInitialLiquidity(
         providerId,
         contract,
-        liquidityDoc.id,
         ante,
         contract.createdTime,
         answer.id
       )
-      await liquidityDoc.set(lp)
+
+      await insertLiquidity(pg, lp)
     }
   } else if (
     outcomeType === 'BINARY' ||
@@ -615,18 +616,13 @@ async function generateAntes(
     outcomeType === 'MULTIPLE_CHOICE' ||
     outcomeType === 'NUMBER'
   ) {
-    const liquidityDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
-
     const lp = getCpmmInitialLiquidity(
       providerId,
       contract as CPMMBinaryContract | CPMMMultiContract,
-      liquidityDoc.id,
       ante,
       contract.createdTime
     )
 
-    await liquidityDoc.set(lp)
+    await insertLiquidity(pg, lp)
   }
 }

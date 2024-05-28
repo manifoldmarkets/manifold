@@ -10,6 +10,7 @@ import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
+import { FieldValue } from 'firebase-admin/firestore'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -55,16 +56,19 @@ export const addContractLiquidity = async (
 
     const subsidyAmount = (1 - SUBSIDY_FEE) * amount
 
-    const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
-      getNewLiquidityProvision(userId, subsidyAmount, contract)
+    const newLiquidityProvision = getNewLiquidityProvision(
+      userId,
+      subsidyAmount,
+      contract
+    )
 
     const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
     const liquidity = convertLiquidity(liquidityRow)
 
     await firestore.doc(`contracts/${contractId}`).update({
-      subsidyPool: newSubsidyPool,
-      totalLiquidity: newTotalLiquidity,
-    } as Partial<CPMMContract>)
+      subsidyPool: FieldValue.increment(subsidyAmount),
+      totalLiquidity: FieldValue.increment(subsidyAmount),
+    })
 
     broadcastNewSubsidy(contract, subsidyAmount)
 

@@ -1,5 +1,4 @@
 import { CPMMBinaryContract, CPMMMultiContract } from './contract'
-import { LiquidityProvision } from './liquidity-provision'
 import { removeUndefinedProps } from './util/object'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
@@ -8,7 +7,6 @@ export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' //
 export function getCpmmInitialLiquidity(
   providerId: string,
   contract: CPMMBinaryContract | CPMMMultiContract,
-  anteId: string,
   amount: number,
   createdTime: number,
   answerId?: string
@@ -17,8 +15,7 @@ export function getCpmmInitialLiquidity(
 
   const pool = mechanism === 'cpmm-1' ? { YES: 0, NO: 0 } : undefined
 
-  const lp: LiquidityProvision = removeUndefinedProps({
-    id: anteId,
+  const lp = removeUndefinedProps({
     userId: providerId,
     contractId: contract.id,
     isAnte: true,
