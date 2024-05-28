@@ -28,7 +28,6 @@ import {
 } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
 import { maker } from 'api/place-bet'
-import { redeemShares } from 'api/redeem-shares'
 import { BOT_USERNAMES, PARTNER_USER_IDS } from 'common/envs/constants'
 import { addUserToContractFollowers } from 'shared/follow-market'
 import { updateUserInterestEmbedding } from 'shared/helpers/embeddings'
@@ -66,9 +65,9 @@ import {
 import { debounce } from 'api/helpers/debounce'
 import { MONTH_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { FLAT_TRADE_FEE, Fees } from 'common/fees'
+import { Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
-import { bulkIncrementBalances, updateUser } from 'shared/supabase/users'
+import { updateUser } from 'shared/supabase/users'
 import { broadcastNewBets } from 'shared/websockets/helpers'
 
 const firestore = admin.firestore()
@@ -81,18 +80,6 @@ export const onCreateBets = async (
   makers: maker[] | undefined
 ) => {
   broadcastNewBets(contract, bets)
-
-  const { mechanism } = contract
-  if (mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1') {
-    const userIds = uniq([
-      originalBettor.id,
-      ...(makers?.map((maker) => maker.bet.userId) ?? []),
-    ])
-    await Promise.all(
-      userIds.map(async (userId) => redeemShares(userId, contract))
-    )
-    log('Share redemption transaction finished.')
-  }
 
   if (ordersToCancel) {
     await Promise.all(
@@ -155,18 +142,6 @@ export const onCreateBets = async (
     bets.filter((bet) => !bet.isRedemption),
     'userId'
   )
-
-  // assess flat fee for bots
-  // TODO: make part of FEES so creator can get some!
-  // TODO: charge for known bots no matter what
-  const botFeeUpdates = uniqueNonRedemptionBetsByUserId
-    .filter((bet) => bet.isApi)
-    .map((bet) => ({
-      id: bet.userId,
-      balance: -FLAT_TRADE_FEE,
-      totalDeposits: -FLAT_TRADE_FEE,
-    }))
-  await bulkIncrementBalances(pg, botFeeUpdates)
 
   // NOTE: if place-multi-bet is added for any MULTIPLE_CHOICE question, this won't give multiple bonuses for every answer
   // as it only runs the following once per unique user. This is intentional behavior for NUMBER markets

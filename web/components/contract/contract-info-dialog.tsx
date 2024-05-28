@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { sum } from 'lodash'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
@@ -8,7 +9,7 @@ import {
   isModId,
 } from 'common/envs/constants'
 import { BETTORS, User } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
 import { capitalize, sumBy } from 'lodash'
 import { toast } from 'react-hot-toast'
 import { TiVolumeMute } from 'react-icons/ti'
@@ -193,6 +194,18 @@ export const Stats = (props: {
                 <InfoTooltip text="Total amount bought or sold" />
               </td>
               <td>{formatMoney(contract.volume)}</td>
+            </tr>
+
+            <tr>
+              <td>
+                <span className="mr-1">Collected fees</span>
+                <InfoTooltip text="Includes both platform and creator fees" />
+              </td>
+              <td>
+                {formatMoneyWithDecimals(
+                  sum(Object.values(contract.collectedFees))
+                )}
+              </td>
             </tr>
 
             <tr>

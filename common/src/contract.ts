@@ -148,6 +148,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMMultiNumeric
+export type MarketContract = CPMMContract | CPMMMultiContract | CPMMNumericContract
 
 export type BinaryContract = Contract & Binary
 export type CPMMBinaryContract = BinaryContract & CPMM

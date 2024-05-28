@@ -67,16 +67,22 @@ const getLoanTotal = (
   })
 }
 
-export const ELASTICITY_BET_AMOUNT = 1000 // readjust with platform volume
+export const ELASTICITY_BET_AMOUNT = 10000 // readjust with platform volume
 
 export const computeElasticity = (
   unfilledBets: LimitBet[],
   contract: Contract,
   betAmount = ELASTICITY_BET_AMOUNT
 ) => {
-  switch (contract.mechanism) {
+  const { mechanism, isResolved } = contract
+
+  switch (mechanism) {
     case 'cpmm-1':
-      return computeBinaryCpmmElasticity(unfilledBets, contract, betAmount)
+      return computeBinaryCpmmElasticity(
+        isResolved ? [] : unfilledBets, // only consider limit orders for open markets
+        contract,
+        betAmount
+      )
     default: // there are some contracts on the dev DB with crazy mechanisms
       return 1
   }

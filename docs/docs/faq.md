@@ -22,7 +22,7 @@ Consider a prediction market on a question like: "Will Democrats win the 2024 US
 
 If the market is currently displaying a probability of 50%, but you believe that the true chance is higher, you can purchase shares at a cost $0.50/share that will pay out $1 if the Democrats win. Suppose the true probability is 60%, then you will make $0.10 for each share you purchase in expectation.
 
-Now, you or I could be mistaken and overshooting the true probability one way or another. If so, there's now a monetary incentive for someone else to bet and correct it! Over time, the implied probability will converge to the [market's best estimate](https://en.wikipedia.org/wiki/Efficient-market_hypothesis).
+Now, you or I could be mistaken and overshoot the true probability one way or another. If so, there's now a monetary incentive for someone else to bet and correct it! Over time, the implied probability will converge to the [market's best estimate](https://en.wikipedia.org/wiki/Efficient-market_hypothesis).
 
 [![Explainer video](https://ruittinten.nl/wp-content/uploads/youtube-placeholder.png)](https://youtu.be/xA27x7GRMZQ)
 
@@ -32,7 +32,7 @@ Yes! Manifold has consistently proven its validity and efficacy as a leading pre
 
 Beyond our platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
 
-Traders in a play-money environment are competing for social prestige and a sense of progression that come from predicting and trading well. Manifold also has prizes available in some regions.
+Traders in a play-money environment are competing for social prestige and a sense of progression that comes from predicting and trading well. Manifold also has prizes available in some regions.
 
 ## Using Manifold
 
@@ -54,7 +54,7 @@ In addition, you can [purchase more mana](https://manifold.markets/add-funds).
 
 ### What are prize points
 
-- When a prize points enabled question or multiple choice answer resolves, you recieve prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only recieve mana. Of course, if you hold to the end but the market resolves against you, you recieve nothing. See resolution and payouts sections below for more details.
+- When a prize points enabled question or multiple choice answer resolves, you receive prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only receive mana. Of course, if you hold to the end but the market resolves against you, you receive nothing. See resolution and payouts sections below for more details.
 - You may convert prize points back into mana
 - Prize points can be [redeemed for charity donations](#how-can-i-donate-to-charity) at a rate of $0.95 per 1,000 points
 
@@ -86,7 +86,7 @@ You can find all other available quests by navigating to your profile page and c
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
 
-Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not compy with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-39739056690b46f49b3573378eb484eb)
+Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-39739056690b46f49b3573378eb484eb)
 
 Here are some of the top use cases for our markets, with corresponding examples.
 
@@ -178,7 +178,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
-- Markets creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
+- Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
 - Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
 
 ### How should I resolve a market?
@@ -193,7 +193,7 @@ If a market closes and there won’t be a resolution in the foreseeable future, 
 
 ### What does resolving to N/A do?
 
-Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectationt that an N/A resolution will be possible.
+Resolving a market to N/A effectively cancels the market. This feature is limited to moderators or staff, and you should not create markets with the expectation that an N/A resolution will be possible.
 
 This means that:
 

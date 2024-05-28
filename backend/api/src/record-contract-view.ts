@@ -57,8 +57,8 @@ const processViewQueue = async () => {
         const { userId, kind, contractId } = viewEvent
         const [ts_column, count_column] = VIEW_COLUMNS[kind]
 
-        // Ignores consecutive views by the same user on same contract within 1 minute
-        const userPageViews = await pg.oneOrNone(
+        // Returning count ensures we ignore consecutive views by the same user on same contract within 1 minute
+        const count = await pg.oneOrNone(
           `insert into user_contract_views as ucv (user_id, contract_id, $3:name, $4:name)
              values ($1, $2, now(), 1)
              on conflict (user_id, contract_id) do update set $3:name = excluded.$3:name,
@@ -66,19 +66,19 @@ const processViewQueue = async () => {
              where $1 is null
                 or ucv.$3:name is null
                 or ucv.$3:name < now() - interval '1 minute'
-                returning page_views
-                `,
+                returning $4:name as count`,
           [userId ?? null, contractId, ts_column, count_column],
-          (r) => r?.page_views
+          (r) => r?.count
         )
-        if (userId && userPageViews) {
+        if (!count) return
+        if (userId) {
           await pg.none(
             `insert into user_view_events(user_id, contract_id, name)
              values ($1, $2, $3)`,
             [userId, contractId, kind]
           )
         }
-        if (userPageViews && kind === 'page') {
+        if (kind === 'page') {
           await pg.none(
             `update contracts set view_count = view_count + 1 where id = $1`,
             [contractId]

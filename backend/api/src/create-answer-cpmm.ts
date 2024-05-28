@@ -21,10 +21,7 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import {
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import {
@@ -33,14 +30,17 @@ import {
   insertBet,
 } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
-import { convertAnswer } from 'common/supabase/contracts'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
 ) => {
   const { contractId, text } = props
-  return await createAnswerCpmmMain(contractId, text, auth!.uid)
+  return await betsQueue.enqueueFn(
+    () => createAnswerCpmmMain(contractId, text, auth.uid),
+    [contractId, auth.uid]
+  )
 }
 
 export const createAnswerCpmmMain = async (
@@ -83,124 +83,112 @@ export const createAnswerCpmmMain = async (
   }
 
   // Run as transaction to prevent race conditions.
-  const pg = createSupabaseDirectClient()
+  const { newAnswerId, user } = await runEvilTransaction(
+    async (pgTrans, fbTrans) => {
+      const user = await getUser(creatorId, pgTrans)
+      if (!user) throw new APIError(401, 'Your account was not found')
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-  const { newAnswerId, user } = await pg.tx(async (tx) => {
-    const user = await getUser(creatorId, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+      if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
+        throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
 
-    if (user.balance < ANSWER_COST && !specialLiquidityPerAnswer)
-      throw new APIError(403, 'Insufficient balance, need M' + ANSWER_COST)
-
-    if (!specialLiquidityPerAnswer) {
-      await incrementBalance(tx, user.id, {
-        balance: -ANSWER_COST,
-        totalDeposits: -ANSWER_COST,
-      })
-    }
-
-    const { newAnswerId } = await runEvilTransaction(
-      async (pgTrans, fbTrans) => {
-        const contractDoc = firestore.doc(`contracts/${contractId}`)
-        // const contractSnap = await transaction.get(contractDoc)
-        // if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-        // const contract = contractSnap.data() as Contract
-
-        const answersSnap = await fbTrans.get(
-          firestore.collection(`contracts/${contractId}/answersCpmm`)
-        )
-        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
-        const unresolvedAnswers = answers.filter((a) => !a.resolution)
-        const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
-        if (unresolvedAnswers.length >= maxAnswers) {
-          throw new APIError(
-            403,
-            `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
-          )
-        }
-
-        let poolYes = ANSWER_COST
-        let poolNo = ANSWER_COST
-        let totalLiquidity = ANSWER_COST
-        let prob = 0.5
-
-        if (specialLiquidityPerAnswer) {
-          if (shouldAnswersSumToOne)
-            throw new APIError(
-              500,
-              "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
-            )
-          prob = 0.02
-          poolYes = specialLiquidityPerAnswer
-          poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-          totalLiquidity = specialLiquidityPerAnswer
-        }
-
-        const id = randomString()
-        const n = answers.length
-        const createdTime = Date.now()
-        const newAnswer: Answer = removeUndefinedProps({
-          id,
-          index: n,
-          contractId,
-          createdTime,
-          userId: user.id,
-          text,
-          isOther: false,
-          poolYes,
-          poolNo,
-          prob,
-          totalLiquidity,
-          subsidyPool: 0,
-          probChanges: { day: 0, week: 0, month: 0 },
-          loverUserId,
+      if (!specialLiquidityPerAnswer) {
+        await incrementBalance(pgTrans, user.id, {
+          balance: -ANSWER_COST,
+          totalDeposits: -ANSWER_COST,
         })
-
-        if (shouldAnswersSumToOne) {
-          await createAnswerAndSumAnswersToOne(
-            pgTrans,
-            fbTrans,
-            user,
-            contract,
-            answers,
-            newAnswer
-          )
-        } else {
-          const newAnswerDoc = contractDoc
-            .collection('answersCpmm')
-            .doc(newAnswer.id)
-          fbTrans.create(newAnswerDoc, newAnswer)
-        }
-
-        if (!specialLiquidityPerAnswer) {
-          fbTrans.update(contractDoc, {
-            totalLiquidity: FieldValue.increment(ANSWER_COST),
-          })
-          const liquidityDoc = firestore
-            .collection(`contracts/${contract.id}/liquidity`)
-            .doc()
-          const lp = getCpmmInitialLiquidity(
-            user.id,
-            contract,
-            liquidityDoc.id,
-            ANSWER_COST,
-            createdTime,
-            newAnswer.id
-          )
-          fbTrans.create(liquidityDoc, lp)
-        }
-
-        return { newAnswerId: newAnswer.id }
       }
-    )
 
-    if (shouldAnswersSumToOne) {
-      await convertOtherAnswerShares(contractId, newAnswerId)
+      const contractDoc = firestore.doc(`contracts/${contractId}`)
+
+      const answersSnap = await fbTrans.get(
+        firestore.collection(`contracts/${contractId}/answersCpmm`)
+      )
+      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const unresolvedAnswers = answers.filter((a) => !a.resolution)
+      const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
+      if (unresolvedAnswers.length >= maxAnswers) {
+        throw new APIError(
+          403,
+          `Cannot add an answer: Maximum number (${maxAnswers}) of open answers reached.`
+        )
+      }
+
+      let poolYes = ANSWER_COST
+      let poolNo = ANSWER_COST
+      let totalLiquidity = ANSWER_COST
+      let prob = 0.5
+
+      if (specialLiquidityPerAnswer) {
+        if (shouldAnswersSumToOne)
+          throw new APIError(
+            500,
+            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
+          )
+        prob = 0.02
+        poolYes = specialLiquidityPerAnswer
+        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
+        totalLiquidity = specialLiquidityPerAnswer
+      }
+
+      const id = randomString()
+      const n = answers.length
+      const createdTime = Date.now()
+      const newAnswer: Answer = removeUndefinedProps({
+        id,
+        index: n,
+        contractId,
+        createdTime,
+        userId: user.id,
+        text,
+        isOther: false,
+        poolYes,
+        poolNo,
+        prob,
+        totalLiquidity,
+        subsidyPool: 0,
+        probChanges: { day: 0, week: 0, month: 0 },
+        loverUserId,
+      })
+
+      if (shouldAnswersSumToOne) {
+        const updatedAnswers = await createAnswerAndSumAnswersToOne(
+          pgTrans,
+          fbTrans,
+          user,
+          contract,
+          answers,
+          newAnswer
+        )
+        await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
+      } else {
+        const newAnswerDoc = contractDoc
+          .collection('answersCpmm')
+          .doc(newAnswer.id)
+        fbTrans.create(newAnswerDoc, newAnswer)
+      }
+
+      if (!specialLiquidityPerAnswer) {
+        fbTrans.update(contractDoc, {
+          totalLiquidity: FieldValue.increment(ANSWER_COST),
+        })
+        const liquidityDoc = firestore
+          .collection(`contracts/${contract.id}/liquidity`)
+          .doc()
+        const lp = getCpmmInitialLiquidity(
+          user.id,
+          contract,
+          liquidityDoc.id,
+          ANSWER_COST,
+          createdTime,
+          newAnswer.id
+        )
+        fbTrans.create(liquidityDoc, lp)
+      }
+
+      return { newAnswerId: newAnswer.id, user }
     }
-
-    return { newAnswerId, user }
-  })
+  )
 
   const continuation = async () => {
     await createNewAnswerOnContractNotification(
@@ -360,6 +348,7 @@ async function createAnswerAndSumAnswersToOne(
     extraMana
   )
 
+  const updatedAnswers: Answer[] = []
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
 
@@ -386,6 +375,8 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
+    updatedAnswers.push({ ...answer, poolYes, poolNo, prob })
+
     await updateMakers(makers, betRow.bet_id, pgTrans)
     await cancelLimitOrders(
       pgTrans,
@@ -397,73 +388,63 @@ async function createAnswerAndSumAnswersToOne(
     pgTrans,
     unfilledBetsOnOther.map((b) => b.id)
   )
+
+  return updatedAnswers
 }
 
 const firestore = admin.firestore()
 
 async function convertOtherAnswerShares(
-  contractId: string,
+  pgTrans: SupabaseDirectClient,
+  answers: Answer[],
   newAnswerId: string
 ) {
-  const pg = createSupabaseDirectClient()
-  // Run as transaction to prevent race conditions.
-  const { answers, betsByUserId, newAnswer, otherAnswer } = await pg.tx(
-    async (tx) => {
-      const now = Date.now()
+  const now = Date.now()
 
-      const answers = await tx.map(
-        `select * from answers where contract_id = $1 order by index`,
-        [contractId],
-        convertAnswer
-      )
+  const contractId = answers[0].contractId
+  const newAnswer = answers.find((a) => a.id === newAnswerId)!
+  const otherAnswer = answers.find((a) => a.isOther)!
 
-      const newAnswer = answers.find((a) => a.id === newAnswerId)!
-      const otherAnswer = answers.find((a) => a.isOther)!
-
-      const bets = await pg.map(
-        `select * from contract_bets where contract_id = $1 and answer_id = $2`,
-        [contractId, otherAnswer.id],
-        convertBet
-      )
-
-      const betsByUserId = groupBy(bets, (b) => b.userId)
-
-      // Gain YES shares in new answer for each YES share in Other.
-      for (const [userId, bets] of Object.entries(betsByUserId)) {
-        const position = sumBy(
-          bets,
-          (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
-        )
-        if (!floatingEqual(position, 0) && position > 0) {
-          const freeYesSharesBet: CandidateBet & {
-            userId: string
-          } = {
-            contractId,
-            userId,
-            answerId: newAnswer.id,
-            outcome: 'YES',
-            shares: position,
-            amount: 0,
-            isCancelled: false,
-            isFilled: true,
-            loanAmount: 0,
-            probBefore: newAnswer.prob,
-            probAfter: newAnswer.prob,
-            createdTime: now,
-            fees: noFees,
-            isAnte: false,
-            isRedemption: true,
-            isChallenge: false,
-            visibility: bets[0].visibility,
-            isApi: false,
-          }
-          await insertBet(freeYesSharesBet, tx)
-        }
-      }
-
-      return { answers, betsByUserId, newAnswer, otherAnswer }
-    }
+  const bets = await pgTrans.map(
+    `select * from contract_bets where contract_id = $1 and answer_id = $2`,
+    [contractId, otherAnswer.id],
+    convertBet
   )
+
+  const betsByUserId = groupBy(bets, (b) => b.userId)
+
+  // Gain YES shares in new answer for each YES share in Other.
+  for (const [userId, bets] of Object.entries(betsByUserId)) {
+    const position = sumBy(
+      bets,
+      (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
+    )
+    if (!floatingEqual(position, 0) && position > 0) {
+      const freeYesSharesBet: CandidateBet & {
+        userId: string
+      } = {
+        contractId,
+        userId,
+        answerId: newAnswer.id,
+        outcome: 'YES',
+        shares: position,
+        amount: 0,
+        isCancelled: false,
+        isFilled: true,
+        loanAmount: 0,
+        probBefore: newAnswer.prob,
+        probAfter: newAnswer.prob,
+        createdTime: now,
+        fees: noFees,
+        isAnte: false,
+        isRedemption: true,
+        isChallenge: false,
+        visibility: bets[0].visibility,
+        isApi: false,
+      }
+      await insertBet(freeYesSharesBet, pgTrans)
+    }
+  }
 
   // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
   const newBets: (CandidateBet & { userId: string })[] = []
@@ -528,6 +509,6 @@ async function convertOtherAnswerShares(
       }
     }
   }
-  await bulkInsertBets(newBets)
+  await bulkInsertBets(newBets, pgTrans)
   return answers
 }

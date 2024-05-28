@@ -2,10 +2,7 @@ import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
 import { removeUndefinedProps } from 'common/util/object'
-import {
-  SupabaseDirectClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, insert } from 'shared/supabase/utils'
 import { broadcastOrders } from 'shared/websockets/helpers'
 
@@ -37,13 +34,13 @@ export const getBetsRepliedToComment = async (
 
 export const insertBet = async (
   bet: Omit<Bet, 'id'>,
-  pg: SupabaseDirectClient = createSupabaseDirectClient()
+  pg: SupabaseDirectClient
 ) => {
   return await insert(pg, 'contract_bets', betToRow(bet))
 }
 export const bulkInsertBets = async (
   bets: Omit<Bet, 'id'>[],
-  pg: SupabaseDirectClient = createSupabaseDirectClient()
+  pg: SupabaseDirectClient
 ) => {
   if (bets.length > 0) {
     return await bulkInsert(pg, 'contract_bets', bets.map(betToRow))

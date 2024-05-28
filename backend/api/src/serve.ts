@@ -38,5 +38,6 @@ loadSecretsToEnv(credentials).then(async () => {
   const httpServer = app.listen(PORT, () => {
     log.info(`Serving API on port ${PORT}.`)
   })
+
   webSocketListen(httpServer, '/ws')
 })

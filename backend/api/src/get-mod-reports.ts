@@ -5,7 +5,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 export const getModReports: APIHandler<'get-mod-reports'> = async () => {
   const pg = createSupabaseDirectClient()
 
-  const reports = await pg.many<ModReport>(`
+  const reports = await pg.manyOrNone<ModReport>(`
     select 
       mr.*, 
       cc.data->'content' as comment_content, 

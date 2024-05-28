@@ -68,6 +68,17 @@ export const resolveMarketHelper = async (
   }
 
   try {
+    // Fetch fresh contract & check if resolved within lock.
+    const contractSnap = await firestore
+      .collection('contracts')
+      .doc(unresolvedContract.id)
+      .get()
+    unresolvedContract = contractSnap.data() as Contract
+
+    if (unresolvedContract.isResolved) {
+      throw new APIError(403, 'Contract is already resolved')
+    }
+
     const { closeTime, id: contractId, outcomeType } = unresolvedContract
 
     const resolutionTime = Date.now()

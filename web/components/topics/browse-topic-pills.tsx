@@ -8,6 +8,7 @@ import { SORT_KEY } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { MAX_SHOWN, MAX_SHOWN_MOBILE } from '../search/user-results'
+import { removeEmojis } from 'common/topics'
 
 export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
@@ -34,7 +35,7 @@ export const BrowseTopicPills = (props: {
             className="bg-ink-200 hover:bg-ink-300 rounded p-1"
           >
             <span className="text-ink-400">#</span>
-            {g.name}
+            {removeEmojis(g.name)}
           </button>
         ))}
         {topics.length > MAX_INIT_TOPICS && (

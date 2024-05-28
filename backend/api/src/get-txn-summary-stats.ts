@@ -2,6 +2,7 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row } from 'common/supabase/utils'
 import * as dayjs from 'dayjs'
+import { sortBy } from 'lodash'
 
 export const getTxnSummaryStats: APIHandler<'get-txn-summary-stats'> = async (
   props
@@ -14,16 +15,19 @@ export const getTxnSummaryStats: APIHandler<'get-txn-summary-stats'> = async (
     .toISOString()
 
   const pg = createSupabaseDirectClient()
-  return await pg.map(
-    `
+  return sortBy(
+    await pg.map(
+      `
     select * from txn_summary_stats
      where ($1 is null or from_type = $1)
      and ($2 is null or category not in ($2:list))
      and ($3 is null or to_type = $3)
      and start_time >= $4
-    order by start_time
+    order by start_time desc 
   `,
-    [fromType, ignoreCategories ?? null, toType, start],
-    (row) => row as Row<'txn_summary_stats'>
+      [fromType, ignoreCategories ?? null, toType, start],
+      (row) => row as Row<'txn_summary_stats'>
+    ),
+    'start_time'
   )
 }
