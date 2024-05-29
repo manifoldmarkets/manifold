@@ -9,7 +9,7 @@ import { chunk } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
-import { log, getContractSupabase } from 'shared/utils'
+import { log } from 'shared/utils'
 import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -18,6 +18,7 @@ import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { bulkIncrementBalances } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { assert } from 'common/util/assert'
 
 const firestore = admin.firestore()
 
@@ -37,17 +38,14 @@ export const unresolve: APIHandler<'unresolve'> = async (
 const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
 
-  let contract = await getContractSupabase(contractId)
-
-  if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
-  await verifyUserCanUnresolve(contract, auth.uid, answerId)
-
   // Fetch fresh contract & verify within lock.
   const contractSnap = await firestore
     .collection('contracts')
-    .doc(contract.id)
+    .doc(contractId)
     .get()
-  contract = contractSnap.data() as Contract
+  const contract = contractSnap.data() as Contract
+  if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
+
   await verifyUserCanUnresolve(contract, auth.uid, answerId)
 
   await trackPublicEvent(auth.uid, 'unresolve market', {
@@ -71,7 +69,71 @@ const verifyUserCanUnresolve = async (
   const isMod = isModId(userId) || isAdminId(userId)
   const pg = createSupabaseDirectClient()
 
-  if (contract.creatorId === userId && !isMod) {
+  const { creatorId, mechanism } = contract
+
+  let resolutionTime: number
+  if (
+    mechanism === 'cpmm-1' ||
+    (mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
+  ) {
+    if (answerId !== undefined) {
+      throw new APIError(
+        400,
+        `Specifying answerId is not allowed for unresolving this contract`
+      )
+    }
+    if (!contract.isResolved || !contract.resolutionTime)
+      throw new APIError(400, `Contract ${contract.id} is not resolved`)
+
+    resolutionTime = contract.resolutionTime
+  } else {
+    // Is independent multi.
+    assert(
+      mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne,
+      'Invalid contract mechanism'
+    )
+
+    if (!answerId) {
+      throw new APIError(
+        400,
+        `answerId is required for cpmm-multi-1 contracts with shouldAnswersSumToOne = false`
+      )
+    }
+
+    const answerResolutionTime = await pg.oneOrNone(
+      `select data->'resolutionTime' as resolution_time
+         from answers
+         where id= $1
+         limit 1`,
+      [answerId],
+      (r) => r.resolution_time as number | null
+    )
+    if (!answerResolutionTime)
+      throw new APIError(400, `Answer ${answerId} is not resolved`)
+
+    resolutionTime = answerResolutionTime
+  }
+
+  if (resolutionTime < TXNS_PR_MERGED_ON)
+    throw new APIError(
+      400,
+      `Contract ${contract.id} was resolved before payouts were unresolvable transactions.`
+    )
+
+  if (
+    !isMod &&
+    creatorId === userId &&
+    resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
+  ) {
+    throw new APIError(
+      400,
+      `${
+        answerId ? 'Answer' : 'Contract'
+      } was resolved more than ${MINUTES_ALLOWED_TO_UNRESOLVE} minutes ago.`
+    )
+  }
+
+  if (creatorId === userId && !isMod) {
     // Check if last resolution was by admin or mod, and if so, don't allow unresolution
     const lastResolution = await pg.oneOrNone(
       `select *
@@ -86,73 +148,8 @@ const verifyUserCanUnresolve = async (
       throw new APIError(400, `Contract most recently resolved by a mod.`)
     }
   }
-  const resolutionTime = contract.resolutionTime
-  if (
-    contract.mechanism !== 'cpmm-multi-1' ||
-    (contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne)
-  ) {
-    if (answerId) {
-      throw new APIError(
-        400,
-        `Specifying answerId is not allowed for unresolving shouldAnswersSumToOne contracts.`
-      )
-    }
-    if (!contract.isResolved || !resolutionTime)
-      throw new APIError(400, `Contract ${contract.id} is not resolved`)
 
-    if (resolutionTime < TXNS_PR_MERGED_ON)
-      throw new APIError(
-        400,
-        `Contract ${contract.id} was resolved before payouts were unresolvable transactions.`
-      )
-
-    if (!isMod) {
-      // if (SPICE_PRODUCTION_ENABLED) {
-      //   throw new APIError(403, `Only mods can unresolve`)
-      // }
-
-      if (
-        contract.creatorId === userId &&
-        resolutionTime < Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
-      ) {
-        throw new APIError(
-          400,
-          `Contract was resolved more than 10 minutes ago.`
-        )
-      }
-    }
-  } else if (contract.mechanism === 'cpmm-multi-1') {
-    if (!answerId) {
-      throw new APIError(400, `answerId is required for cpmm-multi-1 contracts`)
-    }
-
-    const answerResolutionTime = await pg.oneOrNone(
-      `select data->'resolutionTime' as resolution_time
-         from answers
-         where id= $1
-         limit 1`,
-      [answerId],
-      (r) => r.resolution_time as number | null
-    )
-    if (!answerResolutionTime)
-      throw new APIError(400, `Answer ${answerId} is not resolved`)
-
-    if (!isMod) {
-      // if (SPICE_PRODUCTION_ENABLED) {
-      //   throw new APIError(403, `Only mods can unresolve`)
-      // }
-
-      if (
-        contract.creatorId === userId &&
-        answerResolutionTime <
-          Date.now() - MINUTES_ALLOWED_TO_UNRESOLVE * MINUTE_MS
-      ) {
-        throw new APIError(400, `Answer was resolved more than 10 minutes ago.`)
-      }
-    }
-  }
-
-  if (contract.creatorId !== userId && !isMod)
+  if (creatorId !== userId && !isMod)
     throw new APIError(403, `User ${userId} must be a mod to unresolve.`)
 }
 
