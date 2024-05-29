@@ -243,7 +243,7 @@ function FilterModal(props: {
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS, 'text-ink-600 text-sm')}>
         {!hideFilter && (
-          <Col className="gap-1">
+          <Col className="gap-2">
             <Row className="items-center gap-1 font-semibold">
               <FaFilter className="h-4 w-4" />
               Filters
@@ -281,7 +281,7 @@ function FilterModal(props: {
             </Row>
           </Col>
         )}
-        <Col className="gap-1">
+        <Col className="gap-2">
           <Row className="items-center gap-1 font-semibold">
             <FaSortAmountDownAlt className="h-4 w-4" />
             Sorts
@@ -305,7 +305,7 @@ function FilterModal(props: {
             ))}
           </Row>
         </Col>
-        <Col className="gap-1">
+        <Col className="gap-2">
           <Row className="items-center gap-1 font-semibold">
             <FaFileContract className="h-4 w-4" />
             Market Type
