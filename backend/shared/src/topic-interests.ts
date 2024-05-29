@@ -3,34 +3,20 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { filterDefined } from 'common/util/array'
 import { chunk } from 'lodash'
-import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 
 export const userIdsToAverageTopicConversionScores: {
   [userId: string]: { [groupId: string]: number }
 } = {}
-
-export const buildUserInterestsCache = async (userId?: string) => {
-  const timeFrame = DEBUG_TOPIC_INTERESTS ? DEBUG_TIME_FRAME : '3 month'
+export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
   const pg = createSupabaseDirectClient()
-  const userIdsToCacheInterests = filterDefined([userId])
-
-  if (userId && userIdsToAverageTopicConversionScores[userId]) {
+  if (userIds.every((uid) => userIdsToAverageTopicConversionScores[uid])) {
     return
-  } else if (Object.keys(userIdsToAverageTopicConversionScores).length === 0) {
-    const activeUserIdsToCacheInterests = await pg.map(
-      `select distinct user_id from user_contract_interactions
-              where created_time > now() - interval $1`,
-      [timeFrame],
-      (r) => r.user_id as string
-    )
-    userIdsToCacheInterests.push(...activeUserIdsToCacheInterests)
   }
 
-  log('building cache for users: ', userIdsToCacheInterests.length)
-  const chunks = chunk(userIdsToCacheInterests, 1000)
+  log('building cache for users: ', userIds.length)
+  const chunks = chunk(userIds, 1000)
   for (const userIds of chunks) {
     await Promise.all([
       ...userIds.map(async (userId) => {

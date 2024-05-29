@@ -26,7 +26,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
+import { DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 
 const DEBUG_USER_ID = undefined
@@ -41,9 +41,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       : DEBUG_TOPIC_INTERESTS
       ? (await pg.oneOrNone(
           `select user_id from user_contract_interactions
-            where created_time > now() - interval $1
+            where created_time > now() - interval '1 days'
             order by random() limit 1`,
-          [DEBUG_TIME_FRAME],
+          [],
           (r) => r?.user_id as string | undefined
         )) ?? props.userId
       : props.userId
@@ -51,7 +51,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    await buildUserInterestsCache(userId)
+    await buildUserInterestsCache([userId])
   }
   const privateUser = await pg.one(
     `select data from private_users where id = $1`,

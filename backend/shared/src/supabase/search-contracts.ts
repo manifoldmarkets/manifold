@@ -54,7 +54,7 @@ export async function getForYouSQL(
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    await buildUserInterestsCache(userId)
+    await buildUserInterestsCache([userId])
   }
   // Still no topic interests, return default search
   if (
