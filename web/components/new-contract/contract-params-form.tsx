@@ -7,6 +7,7 @@ import {
   add_answers_mode,
   Contract,
   contractPath,
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
   MarketTierType,
   MAX_DESCRIPTION_LENGTH,
@@ -386,7 +387,7 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
-        marketTier,
+        marketTier: CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) ? undefined : marketTier,
       })
 
       const newContract = await api('market', createProps as any)

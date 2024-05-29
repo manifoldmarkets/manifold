@@ -1,26 +1,26 @@
-import { Contract } from 'common/contract'
-import { Tooltip } from '../widgets/tooltip'
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
+import { Contract } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import {
   formatMoney,
   formatWithCommas,
   shortFormatNumber,
 } from 'common/util/format'
 import { TbDropletFilled } from 'react-icons/tb'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CloseOrResolveTime } from './contract-details'
-import { BountyLeft } from './bountied-question'
 import { Row } from 'web/components/layout/row'
-import { EyeIcon } from '@heroicons/react/solid'
-import { CreatorFeesDisplay } from './creator-fees-display'
 import { useUser } from 'web/hooks/use-user'
+import { TierTooltip } from '../tiers/tier-tooltip'
+import { Tooltip } from '../widgets/tooltip'
+import { BountyLeft } from './bountied-question'
+import { CloseOrResolveTime } from './contract-details'
+import { CreatorFeesDisplay } from './creator-fees-display'
 
 export function ContractSummaryStats(props: {
   contract: Contract
   editable?: boolean
 }) {
   const { contract, editable } = props
-  const { viewCount: views, creatorId } = contract
+  const { viewCount: views, creatorId, marketTier } = contract
   const isCreator = useUser()?.id === creatorId
   return (
     <>
@@ -32,31 +32,17 @@ export function ContractSummaryStats(props: {
         />
       ) : (
         <Row className="gap-4">
+          {contract.outcomeType == 'POLL' && (
           <Tooltip
-            text={
-              contract.outcomeType == 'POLL'
-                ? 'Voters: '
-                : 'Traders: ' +
-                  formatWithCommas(contract.uniqueBettorCount ?? 0)
-            }
+         text={'Voters'}
             placement="bottom"
             noTap
             className="flex flex-row items-center gap-1"
           >
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
-          </Tooltip>
-          {!!views && (
-            <Tooltip
-              text={'Views: ' + formatWithCommas(views)}
-              placement="bottom"
-              noTap
-              className="flex flex-row items-center gap-1"
-            >
-              <EyeIcon className="text-ink-500 h-4 w-4" />
-              <div>{shortFormatNumber(views)}</div>
-            </Tooltip>
-          )}
+          </Tooltip>)}
+          {marketTier && <TierTooltip tier={marketTier} contract={contract} />}
           {!!contract.volume && (
             <Tooltip
               text={`Trading volume: ${formatMoney(contract.volume)}`}
