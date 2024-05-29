@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin'
-import { Transaction } from 'firebase-admin/firestore'
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
 import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   add_answers_mode,
@@ -55,6 +55,7 @@ import { broadcastNewContract } from 'shared/websockets/helpers'
 import { addContractLiquidity } from './add-subsidy'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
+import { convertLiquidity } from 'common/supabase/liquidity'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -657,30 +658,18 @@ async function generateAntes(
               token: 'M$',
               fromType: 'USER',
             })
+                const newLiquidityProvision = getNewLiquidityProvision(
+      providerId,
+      drizzledAmount,
+      contract
+    )
 
-            await firestore.runTransaction(async (transaction) => {
+    await insertLiquidity(tx, newLiquidityProvision)
 
-                  const newLiquidityProvisionDoc = firestore
-                    .collection(`contracts/${contract.id}/liquidity`)
-                    .doc()
-
-                  const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
-                    getNewLiquidityProvision(
-                      providerId,
-                      drizzledAmount,
-                      contract,
-                      newLiquidityProvisionDoc.id
-                    )
-
-                    contractRef.update({
-                      subsidyPool: newSubsidyPool,
-                      totalLiquidity: newTotalLiquidity,
-                    } as Partial<CPMMContract>)
-
-                  transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
-                  return newLiquidityProvision
-                })
-          })
-    }
-
+    contractRef.update({
+      subsidyPool: FieldValue.increment(drizzledAmount),
+      totalLiquidity: FieldValue.increment(drizzledAmount),
+    })
+  })
+}
 }
