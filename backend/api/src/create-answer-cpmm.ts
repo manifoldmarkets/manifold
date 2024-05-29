@@ -31,6 +31,7 @@ import {
 } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { insertLiquidity } from 'shared/supabase/liquidity'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -172,18 +173,16 @@ export const createAnswerCpmmMain = async (
         fbTrans.update(contractDoc, {
           totalLiquidity: FieldValue.increment(ANSWER_COST),
         })
-        const liquidityDoc = firestore
-          .collection(`contracts/${contract.id}/liquidity`)
-          .doc()
+
         const lp = getCpmmInitialLiquidity(
           user.id,
           contract,
-          liquidityDoc.id,
           ANSWER_COST,
           createdTime,
           newAnswer.id
         )
-        fbTrans.create(liquidityDoc, lp)
+
+        await insertLiquidity(pgTrans, lp)
       }
 
       return { newAnswerId: newAnswer.id, user }

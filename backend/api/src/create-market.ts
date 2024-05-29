@@ -23,6 +23,7 @@ import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import {
+  SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -53,6 +54,7 @@ import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcastNewContract } from 'shared/websockets/helpers'
 import { addContractLiquidity } from './add-subsidy'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
+import { insertLiquidity } from 'shared/supabase/liquidity'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -246,6 +248,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
   }
 
   await generateAntes(
+    pg,
     userId,
     contract,
     outcomeType,
@@ -599,6 +602,7 @@ async function getLoveAnswerUserIds(answers: string[]) {
 }
 
 async function generateAntes(
+  pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
   outcomeType: OutcomeType,
@@ -614,18 +618,16 @@ async function generateAntes(
     const { answers } = contract
     for (const answer of answers) {
       const ante = Math.sqrt(answer.poolYes * answer.poolNo)
-      const liquidityDoc = firestore
-        .collection(`contracts/${contract.id}/liquidity`)
-        .doc()
+
       const lp = getCpmmInitialLiquidity(
         providerId,
         contract,
-        liquidityDoc.id,
         ante,
         contract.createdTime,
         answer.id
       )
-      await liquidityDoc.set(lp)
+
+      await insertLiquidity(pg, lp)
     }
   } else if (
     outcomeType === 'BINARY' ||
@@ -634,24 +636,17 @@ async function generateAntes(
     outcomeType === 'MULTIPLE_CHOICE' ||
     outcomeType === 'NUMBER'
   ) {
-    const liquidityDoc = firestore
-      .collection(`contracts/${contract.id}/liquidity`)
-      .doc()
-
     const lp = getCpmmInitialLiquidity(
       providerId,
       contract as CPMMBinaryContract | CPMMMultiContract,
-      liquidityDoc.id,
       ante,
       contract.createdTime
     )
 
-    await liquidityDoc.set(lp)
+    await insertLiquidity(pg, lp)
   }
-
       const drizzledAmount = totalMarketCost - ante 
       if (drizzledAmount > 0) {
-          const pg = createSupabaseDirectClient()
           return await pg.tx(async (tx) => {
             await runTxn(tx, {
               fromId: providerId,

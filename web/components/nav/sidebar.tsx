@@ -139,7 +139,7 @@ const getDesktopNav = (
       { name: 'Home', href: '/home', icon: HomeIcon },
       {
         name: 'Browse',
-        href: '/browse',
+        href: '/browse?fy=1&f=open',
         icon: SearchIcon,
       },
       {

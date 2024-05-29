@@ -1,6 +1,7 @@
-export const randomString = (length = 12) =>
+// max 10 length string. For longer, concat multiple
+export const randomString = (length = 10) =>
   Math.random()
-    .toString(16)
+    .toString(36)
     .substring(2, length + 2)
 
 export function genHash(str: string) {

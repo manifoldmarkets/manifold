@@ -1,19 +1,21 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
-import { Contract } from 'common/contract'
-import { ENV_CONFIG } from 'common/envs/constants'
 import {
   formatMoney,
-  formatWithCommas,
-  shortFormatNumber,
+  shortFormatNumber
 } from 'common/util/format'
+import React from 'react'
 import { TbDropletFilled } from 'react-icons/tb'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
+import { Contract } from '../../lib/firebase/contracts'
+import { shortenNumber } from '../../lib/util/formatNumber'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
+import { ENV_CONFIG } from 'common/envs/constants'
+
 
 export function ContractSummaryStats(props: {
   contract: Contract
@@ -22,6 +24,7 @@ export function ContractSummaryStats(props: {
   const { contract, editable } = props
   const { viewCount: views, creatorId, marketTier } = contract
   const isCreator = useUser()?.id === creatorId
+
   return (
     <>
       {contract.outcomeType == 'BOUNTIED_QUESTION' ? (
@@ -51,7 +54,7 @@ export function ContractSummaryStats(props: {
               className="hidden flex-row items-center gap-1 sm:flex"
             >
               <ChartBarIcon className="text-ink-500 h-4 w-4" />Ṁ
-              {shortFormatNumber(contract.volume)}
+              {shortenNumber(contract.volume)}
             </Tooltip>
           )}
 

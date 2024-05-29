@@ -114,7 +114,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
-            href="/browse"
+            href="/browse?fy=1&f=open"
           />
           <QuestRow
             emoji={'📤'}

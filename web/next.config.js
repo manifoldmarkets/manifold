@@ -125,6 +125,11 @@ module.exports = {
         permanent: true,
       },
       {
+        source: '/browse/for-you',
+        destination: '/browse?fy=1&f=open',
+        permanent: true,
+      },
+      {
         source: '/find',
         destination: '/browse',
         permanent: true,

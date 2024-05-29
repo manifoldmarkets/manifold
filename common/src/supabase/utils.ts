@@ -41,10 +41,8 @@ export type SubcollectionTableMapping = {
 }
 export const subcollectionTables: SubcollectionTableMapping = {
   contracts: {
-    answers: 'contract_answers',
     answersCpmm: 'answers',
     follows: 'contract_follows',
-    liquidity: 'contract_liquidity',
   },
 }
 

@@ -10,7 +10,8 @@ export type LiquidityProvision = {
   answerId?: string
   amount: number // Ṁ quantity
 
-  liquidity: number // change in constant k after provision
+  /** @deprecated change in constant k after provision*/
+  liquidity?: number
 
   // For cpmm-1:
   pool?: { [outcome: string]: number } // pool shares before provision

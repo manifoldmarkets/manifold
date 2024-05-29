@@ -49,13 +49,16 @@ export const searchProps = z
     offset: z.coerce.number().gte(0).default(0),
     limit: z.coerce.number().gt(0).lte(1000).default(100),
     topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+    forYou: z.union([z.literal('1'), z.literal('0')]).default('0'),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     isPolitics: z.coerce.boolean().optional(),
     isPrizeMarket: z
       .union([
         z.literal('true'),
         z.literal('false'),
+        z.literal('1'),
+        z.literal('0'),
       ])
-      .default('false'),
+      .default('0'),
   })
   .strict()
