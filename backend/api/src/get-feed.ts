@@ -82,11 +82,13 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     }
   }
   const viewedContractsQuery = renderSql(
-    select(
-      `contract_id, max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)) AS latest_seen_time`
+    select(`contract_id, max(view_time) AS latest_seen_time`),
+    from(
+      `(select contract_id, last_page_view_ts as view_time from user_contract_views where user_id = $1 union all
+           select contract_id, last_promoted_view_ts as view_time from user_contract_views where user_id = $1 union all
+           select contract_id, last_card_view_ts as view_time from user_contract_views where user_id = $1) as combined_views`,
+      [userId]
     ),
-    from(`user_contract_views ucv`),
-    where(`ucv.user_id = $1`, [userId]),
     groupBy(`contract_id`)
   )
 
