@@ -1,5 +1,4 @@
 import * as admin from 'firebase-admin'
-import { CPMMContract } from 'common/contract'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'

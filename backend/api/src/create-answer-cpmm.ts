@@ -31,7 +31,6 @@ import {
 } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { convertAnswer } from 'common/supabase/contracts'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
