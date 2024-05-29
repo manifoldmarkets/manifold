@@ -228,7 +228,11 @@ const undoResolution = async (
   log('With max payout start time ' + maxManaPayoutStartTime)
   const chunkedManaTxns = chunk(manaTxns, 250)
   for (const chunk of chunkedManaTxns) {
-    const balanceUpdates: any[] = []
+    const balanceUpdates: {
+      balance: number
+      totalDeposits: number
+      id: string
+    }[] = []
     const txns: TxnData[] = []
 
     for (const txnToRevert of chunk) {
@@ -290,6 +294,7 @@ export function getUndoContractPayoutSpice(txnData: ContractProduceSpiceTxn) {
   const balanceUpdate = {
     spiceBalance: -amount,
     totalDeposits: -(deposit ?? 0),
+    id: toId,
   }
 
   const txn: Omit<ContractUndoProduceSpiceTxn, 'id' | 'createdTime'> = {
@@ -315,6 +320,7 @@ export function getUndoOldContractPayout(
   const balanceUpdate = {
     balance: -amount,
     totalDeposits: -(deposit ?? 0),
+    id: toId,
   }
 
   const txn: Omit<ContractUndoOldResolutionPayoutTxn, 'id' | 'createdTime'> = {
