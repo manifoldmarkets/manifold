@@ -8,6 +8,9 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { broadcastNewSubsidy } from 'shared/websockets/helpers'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
+import { insertLiquidity } from 'shared/supabase/liquidity'
+import { convertLiquidity } from 'common/supabase/liquidity'
+import { FieldValue } from 'firebase-admin/firestore'
 
 export const addLiquidity: APIHandler<
   'market/:contractId/add-liquidity'
@@ -51,33 +54,23 @@ export const addContractLiquidity = async (
       fromType: 'USER',
     })
 
-    const liquidity = await firestore.runTransaction(async (transaction) => {
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
+    const subsidyAmount = (1 - SUBSIDY_FEE) * amount
 
-      const newLiquidityProvisionDoc = firestore
-        .collection(`contracts/${contractId}/liquidity`)
-        .doc()
+    const newLiquidityProvision = getNewLiquidityProvision(
+      userId,
+      subsidyAmount,
+      contract
+    )
 
-      const subsidyAmount = (1 - SUBSIDY_FEE) * amount
+    const liquidityRow = await insertLiquidity(tx, newLiquidityProvision)
+    const liquidity = convertLiquidity(liquidityRow)
 
-      const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
-        getNewLiquidityProvision(
-          userId,
-          subsidyAmount,
-          contract,
-          newLiquidityProvisionDoc.id
-        )
-
-      transaction.update(contractDoc, {
-        subsidyPool: newSubsidyPool,
-        totalLiquidity: newTotalLiquidity,
-      } as Partial<CPMMContract>)
-
-      transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
-
-      broadcastNewSubsidy(contract, subsidyAmount)
-      return newLiquidityProvision
+    await firestore.doc(`contracts/${contractId}`).update({
+      subsidyPool: FieldValue.increment(subsidyAmount),
+      totalLiquidity: FieldValue.increment(subsidyAmount),
     })
+
+    broadcastNewSubsidy(contract, subsidyAmount)
 
     return {
       result: liquidity,

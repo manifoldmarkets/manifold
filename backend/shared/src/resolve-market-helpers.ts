@@ -35,6 +35,7 @@ import {
 import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
+import { convertLiquidity } from 'common/supabase/liquidity'
 
 export type ResolutionParams = {
   outcome: string
@@ -290,23 +291,22 @@ export const getDataAndPayoutInfo = async (
   answerId: string | undefined
 ) => {
   const { id: contractId, outcomeType } = unresolvedContract
-  const liquiditiesSnap = await firestore
-    .collection(`contracts/${contractId}/liquidity`)
-    .get()
 
-  const liquidityDocs = liquiditiesSnap.docs.map(
-    (doc) => doc.data() as LiquidityProvision
-  )
+  const pg = createSupabaseDirectClient()
 
-  const liquidities =
+  // Filter out initial liquidity if set up with special liquidity per answer.
+  const filterAnte =
     unresolvedContract.mechanism === 'cpmm-multi-1' &&
     outcomeType !== 'NUMBER' &&
     unresolvedContract.specialLiquidityPerAnswer
-      ? // Filter out initial liquidity if set up with special liquidity per answer.
-        liquidityDocs.filter((l) => !l.isAnte)
-      : liquidityDocs
 
-  const pg = createSupabaseDirectClient()
+  const liquidities = await pg.map<LiquidityProvision>(
+    `select * from contract_liquidity where contract_id = $1 ${
+      filterAnte ? 'and answer_id = $2' : ''
+    }`,
+    [contractId, answerId],
+    convertLiquidity
+  )
 
   let bets: Bet[]
   if (
