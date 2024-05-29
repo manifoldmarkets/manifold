@@ -1,6 +1,6 @@
 import { chunk } from 'lodash'
 
-import { getPrivateUsersNotSent, getUser, log } from 'shared/utils'
+import { getPrivateUsersNotSent, getUser, isProd, log } from 'shared/utils'
 import { sendInterestingMarketsEmail } from 'shared/emails'
 import { PrivateUser } from 'common/user'
 import { getForYouSQL } from 'shared/supabase/search-contracts'
@@ -12,6 +12,7 @@ import { userIdsToAverageTopicConversionScores } from 'shared/topic-interests'
 // Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
 const EMAILS_PER_BATCH = 1000
 export async function sendWeeklyMarketsEmails() {
+  if (!isProd()) return
   const pg = createSupabaseDirectClient()
   const privateUsers = await getPrivateUsersNotSent(
     'trending_markets',

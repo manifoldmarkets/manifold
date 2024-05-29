@@ -3,13 +3,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
 } from 'common/contract'
-import {
-  getPrivateUsersNotSent,
-  getPrivateUser,
-  getUser,
-  isProd,
-  log,
-} from 'shared/utils'
+import { getPrivateUsersNotSent, getUser, isProd, log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { chunk, partition, sortBy, sum, uniq } from 'lodash'
@@ -37,10 +31,13 @@ const WEEKLY_MOVERS_TO_SEND = 6
 // This should work until we have at least ~180k users (1000 * 180)
 export async function sendPortfolioUpdateEmailsToAllUsers() {
   const pg = createSupabaseDirectClient()
+  if (!isProd()) return
 
-  const privateUsers = isProd()
-    ? await getPrivateUsersNotSent('profit_loss_updates', USERS_TO_EMAIL, pg)
-    : filterDefined([await getPrivateUser('6hHpzvRG0pMq8PNJs7RZj2qlZGn2')])
+  const privateUsers = await getPrivateUsersNotSent(
+    'profit_loss_updates',
+    USERS_TO_EMAIL,
+    pg
+  )
 
   await pg.none(
     `update private_users set weekly_portfolio_email_sent = true where id = any($1)`,

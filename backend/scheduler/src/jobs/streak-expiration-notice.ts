@@ -1,8 +1,9 @@
-import { getBettingStreakResetTimeBeforeNow, log } from 'shared/utils'
+import { getBettingStreakResetTimeBeforeNow, isProd, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createBettingStreakExpiringNotification } from 'shared/create-notification'
 
 export const sendStreakExpirationNotification = async () => {
+  if (!isProd()) return
   const mostRecentResetTime = getBettingStreakResetTimeBeforeNow()
   log('Most recent streak reset time', mostRecentResetTime)
   const pg = createSupabaseDirectClient()
