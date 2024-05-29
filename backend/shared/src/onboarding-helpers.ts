@@ -8,7 +8,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getUser, getUsers, log } from 'shared/utils'
+import { getUser, getUsers, isProd, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -37,6 +37,7 @@ D1 send mana bonus email
 [deprecated] D2 send creator guide email
 */
 export async function sendOnboardingNotificationsInternal() {
+  if (!isProd()) return
   const { recentUserIds } = await getRecentNonLoverUserIds()
 
   log(

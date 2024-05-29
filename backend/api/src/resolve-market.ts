@@ -19,8 +19,20 @@ import {
 } from 'common/api/market-types'
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
+  props,
+  auth,
+  request
+) => {
+  return await betsQueue.enqueueFnFirst(
+    () => resolveMarketMain(props, auth, request),
+    [props.contractId, auth.uid]
+  )
+}
+
+const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
   props,
   auth
 ) => {

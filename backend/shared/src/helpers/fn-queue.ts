@@ -15,23 +15,42 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   const { timeout = DEFAULT_QUEUE_TIME_LIMIT } = props || {}
 
   const state = {
-    queueRunning: false,
     fnQueue: [] as WorkItem[],
     activeItems: [] as WorkItem[],
   }
   const { fnQueue, activeItems } = state
 
-  const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
+  const enqueuePrivate = async <T>(
+    fn: () => Promise<T>,
+    dependencies: string[],
+    first: boolean
+  ) => {
     return await new Promise<T>((resolve, reject) => {
-      fnQueue.push({
+      const item = {
         fn,
         resolve,
         reject,
         dependencies,
         timestamp: Date.now(),
-      })
+      }
+      if (first) {
+        fnQueue.unshift(item)
+      } else {
+        fnQueue.push(item)
+      }
       run()
     })
+  }
+
+  const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
+    return await enqueuePrivate(fn, dependencies, false)
+  }
+
+  const enqueueFnFirst = async <T>(
+    fn: () => Promise<T>,
+    dependencies: string[]
+  ) => {
+    return await enqueuePrivate(fn, dependencies, true)
   }
 
   const spliceExpiredItems = (queue: typeof fnQueue) => {
@@ -91,7 +110,7 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     }
   }
 
-  return { enqueueFn }
+  return { enqueueFn, enqueueFnFirst }
 }
 
 export const betsQueue = createFnQueue()

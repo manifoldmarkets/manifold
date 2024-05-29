@@ -26,7 +26,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { DEBUG_TIME_FRAME, DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
+import { DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 
 const DEBUG_USER_ID = undefined
@@ -41,9 +41,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       : DEBUG_TOPIC_INTERESTS
       ? (await pg.oneOrNone(
           `select user_id from user_contract_interactions
-            where created_time > now() - interval $1
+            where created_time > now() - interval '1 days'
             order by random() limit 1`,
-          [DEBUG_TIME_FRAME],
+          [],
           (r) => r?.user_id as string | undefined
         )) ?? props.userId
       : props.userId
@@ -51,7 +51,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    await buildUserInterestsCache(userId)
+    await buildUserInterestsCache([userId])
   }
   const privateUser = await pg.one(
     `select data from private_users where id = $1`,
@@ -82,11 +82,13 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     }
   }
   const viewedContractsQuery = renderSql(
-    select(
-      `contract_id, max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts)) AS latest_seen_time`
+    select(`contract_id, max(view_time) AS latest_seen_time`),
+    from(
+      `(select contract_id, last_page_view_ts as view_time from user_contract_views where user_id = $1 union all
+           select contract_id, last_promoted_view_ts as view_time from user_contract_views where user_id = $1 union all
+           select contract_id, last_card_view_ts as view_time from user_contract_views where user_id = $1) as combined_views`,
+      [userId]
     ),
-    from(`user_contract_views ucv`),
-    where(`ucv.user_id = $1`, [userId]),
     groupBy(`contract_id`)
   )
 
