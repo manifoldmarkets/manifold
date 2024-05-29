@@ -5,9 +5,11 @@ import {
 } from 'shared/supabase/init'
 import { chunk } from 'lodash'
 
+export type TopicToInterestWeights = { [groupId: string]: number }
 export const userIdsToAverageTopicConversionScores: {
-  [userId: string]: { [groupId: string]: number }
+  [userId: string]: TopicToInterestWeights
 } = {}
+
 export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
   const pg = createSupabaseDirectClient()
