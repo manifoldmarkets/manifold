@@ -6,6 +6,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -55,11 +56,17 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   try {
-    for (const contract of contracts) {
-      await resolveMarketHelper(contract, resolver, creator, {
-        outcome: 'CANCEL',
-      })
-    }
+    await Promise.all(
+      contracts.map((contract) =>
+        betsQueue.enqueueFnFirst(
+          () =>
+            resolveMarketHelper(contract, resolver, creator, {
+              outcome: 'CANCEL',
+            }),
+          [contract.id, creator.id]
+        )
+      )
+    )
   } catch (error) {
     console.error('Error resolving contracts:', error)
     throw new APIError(500, 'Failed to update one or more contracts.')

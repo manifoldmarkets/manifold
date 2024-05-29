@@ -14,16 +14,27 @@ import { MINUTE_MS } from 'common/util/time'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { acquireLock, releaseLock } from 'shared/firestore-lock'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { bulkIncrementBalances } from 'shared/supabase/users'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 const firestore = admin.firestore()
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
-export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
+export const unresolve: APIHandler<'unresolve'> = async (
+  props,
+  auth,
+  request
+) => {
+  return await betsQueue.enqueueFnFirst(
+    () => unresolveMain(props, auth, request),
+    [props.contractId, auth.uid]
+  )
+}
+
+const unresolveMain: APIHandler<'unresolve'> = async (props, auth) => {
   const { contractId, answerId } = props
 
   let contract = await getContractSupabase(contractId)
@@ -31,31 +42,18 @@ export const unresolve: APIHandler<'unresolve'> = async (props, auth) => {
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
   await verifyUserCanUnresolve(contract, auth.uid, answerId)
 
-  const lockId = answerId ? `${contract.id}-${answerId}` : contract.id
-  const acquiredLock = await acquireLock(lockId)
-  if (!acquiredLock) {
-    throw new APIError(
-      403,
-      `Contract ${contract.id} is already being resolved/unresolved (failed to acquire lock)`
-    )
-  }
+  // Fetch fresh contract & verify within lock.
+  const contractSnap = await firestore
+    .collection('contracts')
+    .doc(contract.id)
+    .get()
+  contract = contractSnap.data() as Contract
+  await verifyUserCanUnresolve(contract, auth.uid, answerId)
 
-  try {
-    // Fetch fresh contract & verify within lock.
-    const contractSnap = await firestore
-      .collection('contracts')
-      .doc(contract.id)
-      .get()
-    contract = contractSnap.data() as Contract
-    await verifyUserCanUnresolve(contract, auth.uid, answerId)
-
-    await trackPublicEvent(auth.uid, 'unresolve market', {
-      contractId,
-    })
-    await undoResolution(contract, auth.uid, answerId)
-  } finally {
-    await releaseLock(lockId)
-  }
+  await trackPublicEvent(auth.uid, 'unresolve market', {
+    contractId,
+  })
+  await undoResolution(contract, auth.uid, answerId)
 
   return {
     success: true,
