@@ -6,6 +6,7 @@ import { PrivateUser } from 'common/user'
 import { getForYouSQL } from 'shared/supabase/search-contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertContract } from 'common/supabase/contracts'
+import { userIdsToAverageTopicConversionScores } from 'shared/topic-interests'
 
 // Run every minute on Monday for 3 hours starting at 12pm PT.
 // Should scale until at least 1000 * 120 = 120k users signed up for emails (70k at writing)
@@ -47,6 +48,9 @@ const sendEmailToPrivateUser = async (privateUser: PrivateUser) => {
 
   const contractsToSend = await getForYouMarkets(user.id, 6, privateUser)
   await sendInterestingMarketsEmail(user, privateUser, contractsToSend)
+  if (userIdsToAverageTopicConversionScores[user.id]) {
+    delete userIdsToAverageTopicConversionScores[user.id]
+  }
 }
 
 export async function getForYouMarkets(

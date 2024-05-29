@@ -360,9 +360,9 @@ export const sendNewCommentEmail = async (
   let betDescription = ''
   if (bet) {
     const { amount } = bet
-    betDescription = `${
-      amount < 0 ? 'sold' : 'bought'
-    } ${emailMoneyFormat(Math.abs(amount))}`
+    betDescription = `${amount < 0 ? 'sold' : 'bought'} ${emailMoneyFormat(
+      Math.abs(amount)
+    )}`
   }
 
   const subject = `Comment on ${question}`
