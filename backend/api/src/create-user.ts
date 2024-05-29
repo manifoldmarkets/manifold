@@ -68,7 +68,7 @@ export const createuser: APIHandler<'createuser'> = async (
 
   const ip = getIp(req)
   const deviceToken = testUserAKAEmailPasswordUser
-    ? randomString(20)
+    ? randomString() + randomString()
     : preDeviceToken
 
   const fbUser = await admin.auth().getUser(auth.uid)

@@ -1,14 +1,15 @@
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { insert } from './utils'
 import { SupabaseDirectClient } from './init'
-import { randomUUID } from 'crypto'
 import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
 
 export const insertLiquidity = async (
   pg: SupabaseDirectClient,
   liquidity: Omit<LiquidityProvision, 'id'>
 ) => {
-  const doc = { id: randomUUID(), ...liquidity }
+  // TODO: generate ids in supabase instead
+  const doc = { id: randomString(), ...liquidity }
 
   return await insert(pg, 'contract_liquidity', {
     liquidity_id: doc.id,
