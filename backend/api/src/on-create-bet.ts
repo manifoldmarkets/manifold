@@ -68,7 +68,10 @@ import { track } from 'shared/analytics'
 import { Fees } from 'common/fees'
 import { APIError } from 'common/api/utils'
 import { updateUser } from 'shared/supabase/users'
-import { broadcastNewBets } from 'shared/websockets/helpers'
+import {
+  broadcastNewBets,
+  broadcastUpdatedAnswer,
+} from 'shared/websockets/helpers'
 
 const firestore = admin.firestore()
 
@@ -77,9 +80,30 @@ export const onCreateBets = async (
   contract: Contract,
   originalBettor: User,
   ordersToCancel: LimitBet[] | undefined,
-  makers: maker[] | undefined
+  makers: maker[] | undefined,
+  answerId: string | undefined
 ) => {
   broadcastNewBets(contract, bets)
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    if (!contract.shouldAnswersSumToOne && answerId) {
+      const answerDoc = firestore.doc(
+        `contracts/${contract.id}/answersCpmm/${answerId}`
+      )
+      const answerSnap = await answerDoc.get()
+      if (answerSnap.exists) {
+        const answer = answerSnap.data() as Answer
+        broadcastUpdatedAnswer(contract, answer)
+      }
+    } else {
+      const answersCol = firestore.collection(
+        `contracts/${contract.id}/answersCpmm`
+      )
+      const answersSnap = await answersCol.get()
+      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      answers.forEach((answer) => broadcastUpdatedAnswer(contract, answer))
+    }
+  }
 
   if (ordersToCancel) {
     await Promise.all(

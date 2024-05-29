@@ -38,13 +38,7 @@ export const placeMultiBetMain = async (
   const contract = contractSnap.data() as MarketContract
 
   const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const  user = await validateBet(
-      uid,
-      amount,
-      contract,
-      pgTrans,
-      isApi
-    )
+    const user = await validateBet(uid, amount, contract, pgTrans, isApi)
 
     const { closeTime, mechanism } = contract
     if (closeTime && Date.now() > closeTime)
@@ -122,7 +116,14 @@ export const placeMultiBetMain = async (
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      undefined
+    )
   }
 
   return {

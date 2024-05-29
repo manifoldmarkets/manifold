@@ -207,7 +207,14 @@ export const placeBetMain = async (
   metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
-    await onCreateBets(fullBets, contract, user, allOrdersToCancel, makers)
+    await onCreateBets(
+      fullBets,
+      contract,
+      user,
+      allOrdersToCancel,
+      makers,
+      answerId
+    )
   }
 
   return {

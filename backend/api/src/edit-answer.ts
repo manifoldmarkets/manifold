@@ -9,6 +9,7 @@ import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/utils'
+import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 
 const bodySchema = z
   .object({
@@ -73,16 +74,11 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
     !isModId(auth.uid)
   )
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
+
+  const newAnswer = { ...answer, ...removeUndefinedProps({ text, color }) }
+
   const answers = contract.answers.map((answer) =>
-    answer.id === answerId
-      ? {
-          ...answer,
-          ...removeUndefinedProps({
-            text,
-            color,
-          }),
-        }
-      : answer
+    answer.id === answerId ? newAnswer : answer
   )
 
   await answerDoc.update(
@@ -96,6 +92,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   })
 
   await recordContractEdit(contract, auth.uid, ['answers'])
+  broadcastUpdatedAnswer(contract, newAnswer as Answer)
 
   return { status: 'success' }
 })

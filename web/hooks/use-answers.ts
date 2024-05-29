@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Answer } from 'common/answer'
-import { listenForAnswersCpmm } from 'web/lib/firebase/answers'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { getAnswersForContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { useEffectCheckEquality } from './use-effect-check-equality'
 import { getAnswerBettorCount } from 'common/supabase/answers'
+import { useApiSubscription } from './use-api-subscription'
 
 export const useAnswersCpmm = (contractId: string) => {
   const [answers, setAnswers] = usePersistentInMemoryState<
@@ -13,23 +12,31 @@ export const useAnswersCpmm = (contractId: string) => {
   >(undefined, 'answersCpmm-' + contractId)
 
   useEffect(() => {
-    if (contractId) return listenForAnswersCpmm(contractId, setAnswers)
+    getAnswersForContracts(db, [contractId]).then((answers) =>
+      setAnswers(answers[contractId])
+    )
   }, [contractId])
 
-  return answers
-}
+  useApiSubscription({
+    topics: [`contract/${contractId}/new-answer`],
+    onBroadcast: ({ data }) => {
+      setAnswers((answers) => [...(answers ?? []), data.answer as Answer])
+    },
+  })
 
-export const useAnswersForContracts = (contractIds: string[] | undefined) => {
-  const [answersByContractId, setAnswersByContractId] = useState<{
-    [answerId: string]: Answer[]
-  }>()
-  useEffectCheckEquality(() => {
-    if (contractIds)
-      getAnswersForContracts(db, contractIds).then((result) => {
-        setAnswersByContractId(result)
-      })
-  }, [contractIds])
-  return answersByContractId
+  useApiSubscription({
+    topics: [`contract/${contractId}/updated-answer`],
+    onBroadcast: ({ data }) => {
+      const newAnswer = data.answer as Answer
+      setAnswers((answers) =>
+        (answers ?? []).map((answer) =>
+          answer.id === newAnswer.id ? newAnswer : answer
+        )
+      )
+    },
+  })
+
+  return answers
 }
 
 export const useUniqueBettorCountOnAnswer = (

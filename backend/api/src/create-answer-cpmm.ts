@@ -32,6 +32,10 @@ import {
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { insertLiquidity } from 'shared/supabase/liquidity'
+import {
+  broadcastNewAnswer,
+  broadcastUpdatedAnswer,
+} from 'shared/websockets/helpers'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -84,7 +88,7 @@ export const createAnswerCpmmMain = async (
   }
 
   // Run as transaction to prevent race conditions.
-  const { newAnswerId, user } = await runEvilTransaction(
+  const { newAnswer, updatedAnswers, user } = await runEvilTransaction(
     async (pgTrans, fbTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
@@ -152,6 +156,7 @@ export const createAnswerCpmmMain = async (
         loverUserId,
       })
 
+      let updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
         const updatedAnswers = await createAnswerAndSumAnswersToOne(
           pgTrans,
@@ -185,20 +190,23 @@ export const createAnswerCpmmMain = async (
         await insertLiquidity(pgTrans, lp)
       }
 
-      return { newAnswerId: newAnswer.id, user }
+      return { newAnswer, updatedAnswers, user }
     }
   )
 
   const continuation = async () => {
+    broadcastNewAnswer(contract, newAnswer)
+    updatedAnswers.forEach((a) => broadcastUpdatedAnswer(contract, a))
+
     await createNewAnswerOnContractNotification(
-      newAnswerId,
+      newAnswer.id,
       user,
       text,
       contract
     )
     await addUserToContractFollowers(contractId, creatorId)
   }
-  return { result: { newAnswerId }, continue: continuation }
+  return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }
 
 async function createAnswerAndSumAnswersToOne(
