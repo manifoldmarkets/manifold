@@ -94,7 +94,7 @@ export function PublicMarketTopics(props: TopicRowProps) {
     <>
       <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
         {isSpiceMarket && (
-          <Link href="/browse?p=true">
+          <Link href="/browse?p=1&f=open">
             <Tooltip text={SPICE_MARKET_TOOLTIP}>
               <Row className="text-2xs select-none items-center gap-1 whitespace-nowrap rounded-full bg-amber-200 px-1.5 font-semibold text-amber-700 transition-colors hover:bg-amber-300 dark:hover:bg-amber-100">
                 <SpiceCoin /> Prize Market

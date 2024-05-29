@@ -61,12 +61,17 @@ export const buildUserInterestsCache = async (userId?: string) => {
           ),
         ])
         for (const groupId of followedTopics) {
+          const hasFewInterests =
+            Object.keys(userIdsToAverageTopicConversionScores[userId]).length <=
+            25
           const groupScore =
             userIdsToAverageTopicConversionScores[userId][groupId]
           if (groupScore === undefined) {
-            userIdsToAverageTopicConversionScores[userId][groupId] = 2.0
+            userIdsToAverageTopicConversionScores[userId][groupId] =
+              hasFewInterests ? 2 : 1.25
           } else {
-            userIdsToAverageTopicConversionScores[userId][groupId] += 0.5
+            userIdsToAverageTopicConversionScores[userId][groupId] +=
+              hasFewInterests ? 0.5 : 0.25
           }
         }
       }),

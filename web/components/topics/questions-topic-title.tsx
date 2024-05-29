@@ -29,12 +29,10 @@ export const QuestionsTopicTitle = forwardRef(
       topicSlug: string | undefined
       user: User | null | undefined
       setTopicSlug: (topicSlug: string) => void
-      isForYouSelected: boolean
     },
     ref: Ref<HTMLDivElement>
   ) => {
-    const { currentTopic, setTopicSlug, user, topicSlug, isForYouSelected } =
-      props
+    const { currentTopic, setTopicSlug, user } = props
     const yourGroupIds = useRealtimeMemberGroupIds(user?.id)
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -52,7 +50,7 @@ export const QuestionsTopicTitle = forwardRef(
         >
           <Row className={'gap-1 truncate'}>
             <Link
-              href={`/browse${isForYouSelected ? '/for-you' : ''}`}
+              href={`/browse`}
               className="text-ink-600 hover:bg-ink-200 disabled:text-ink-300 font-md text-center' my-auto inline-flex items-center justify-center rounded-md p-2 ring-inset transition-colors disabled:cursor-not-allowed disabled:bg-transparent"
             >
               <ArrowLeftIcon className="h-5 w-5" aria-hidden />

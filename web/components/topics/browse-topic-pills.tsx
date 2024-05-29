@@ -1,26 +1,20 @@
 import clsx from 'clsx'
 import { LiteGroup } from 'common/group'
-import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { SORT_KEY } from 'web/components/supabase-search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useIsAuthorized } from 'web/hooks/use-user'
 import { MAX_SHOWN, MAX_SHOWN_MOBILE } from '../search/user-results'
 import { removeEmojis } from 'common/topics'
 
 export const BrowseTopicPills = (props: {
   topics: LiteGroup[]
   setTopicSlug: (slug: string) => void
-  currentTopicSlug: string | undefined
   className?: string
+  forYouPill: ReactNode
 }) => {
-  const { topics, className, setTopicSlug, currentTopicSlug } = props
-  const isAuth = useIsAuthorized()
+  const { topics, forYouPill, className, setTopicSlug } = props
   const [showMore, setShowMore] = useState<boolean>(false)
-  const router = useRouter()
-  const sort = router.query[SORT_KEY] as string
   const isMobile = useIsMobile()
   const MAX_INIT_TOPICS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
   const shownTopics = showMore ? topics : topics.slice(0, MAX_INIT_TOPICS)
@@ -28,6 +22,7 @@ export const BrowseTopicPills = (props: {
   return (
     <Col className={className}>
       <Row className={clsx('flex-wrap gap-1 text-sm')}>
+        {forYouPill}
         {shownTopics.map((g) => (
           <button
             key={'pill-' + g.slug}

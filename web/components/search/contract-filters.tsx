@@ -37,22 +37,10 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 
 export function ContractFilters(props: {
   className?: string
-  includeProbSorts?: boolean
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
-  topicSlug: string
-  showTopicTag?: boolean
-  setTopicSlug?: (slug: string) => void
 }) {
-  const {
-    className,
-    topicSlug,
-    setTopicSlug,
-    includeProbSorts,
-    params,
-    updateParams,
-    showTopicTag,
-  } = props
+  const { className, params, updateParams } = props
 
   const {
     s: sort,
@@ -97,7 +85,7 @@ export function ContractFilters(props: {
 
   const togglePrizeMarket = () => {
     updateParams({
-      p: isPrizeMarketString == 'true' ? 'false' : 'true',
+      p: isPrizeMarketString == '1' ? '0' : '1',
     })
   }
 
@@ -161,27 +149,18 @@ export function ContractFilters(props: {
           </AdditionalFilterPill>
         )}
         <FilterPill
-          selected={isPrizeMarketString === 'true'}
+          selected={isPrizeMarketString === '1'}
           onSelect={togglePrizeMarket}
           type="spice"
           className="gap-1"
         >
           <div className="flex w-4 items-center">
             <SpiceCoin
-              className={isPrizeMarketString !== 'true' ? 'opacity-50' : ''}
+              className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
             />
           </div>
           Prize
         </FilterPill>
-        {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
-          <FilterPill
-            selected={topicSlug === 'for-you'}
-            onSelect={() => setTopicSlug('for-you')}
-            type="filter"
-          >
-            For you
-          </FilterPill>
-        )}
         {sortItems.map((sortValue) => (
           <FilterPill
             key={sortValue}
@@ -224,8 +203,6 @@ export function ContractFilters(props: {
         selectContractType={selectContractType}
         togglePrizeMarket={togglePrizeMarket}
         hideFilter={hideFilter}
-        setTopicSlug={setTopicSlug}
-        topicSlug={topicSlug}
       />
     </Col>
   )
@@ -240,8 +217,6 @@ function FilterModal(props: {
   selectContractType: (selection: ContractTypeType) => void
   togglePrizeMarket: () => void
   hideFilter: boolean
-  setTopicSlug?: (slug: string) => void
-  topicSlug?: string
 }) {
   const {
     open,
@@ -252,8 +227,6 @@ function FilterModal(props: {
     selectSort,
     togglePrizeMarket,
     hideFilter,
-    setTopicSlug,
-    topicSlug,
   } = props
   const {
     s: sort,
@@ -281,28 +254,17 @@ function FilterModal(props: {
             </Row>
             <Row className="flex-wrap gap-1">
               <FilterPill
-                selected={isPrizeMarketString === 'true'}
+                selected={isPrizeMarketString === '1'}
                 onSelect={togglePrizeMarket}
                 type="spice"
               >
                 <Row className="items-center gap-1">
                   <SpiceCoin
-                    className={
-                      isPrizeMarketString !== 'true' ? 'opacity-50' : ''
-                    }
+                    className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
                   />
                   Prize
                 </Row>
               </FilterPill>
-              {!!setTopicSlug && (!topicSlug || topicSlug == 'for-you') && (
-                <FilterPill
-                  selected={topicSlug === 'for-you'}
-                  onSelect={() => setTopicSlug('for-you')}
-                  type="filter"
-                >
-                  For you
-                </FilterPill>
-              )}
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill

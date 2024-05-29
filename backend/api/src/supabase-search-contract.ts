@@ -42,18 +42,20 @@ const search = async (
     offset,
     limit,
     topicSlug: possibleTopicSlug,
+    forYou,
     creatorId,
     isPolitics,
   } = props
 
-  const isPrizeMarket = props.isPrizeMarket == 'true'
+  const isPrizeMarket =
+    props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
   if (limit === 0) {
     return []
   }
-  const isForYou = possibleTopicSlug === 'for-you'
+  const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
   const topicSlug =
-    possibleTopicSlug && !isForYou && !isRecent ? possibleTopicSlug : undefined
+    possibleTopicSlug && !isRecent ? possibleTopicSlug : undefined
   const pg = createSupabaseDirectClient()
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
@@ -72,7 +74,7 @@ const search = async (
       limit,
       offset,
       sort,
-   isPrizeMarket,
+      isPrizeMarket
     )
     const start = Date.now()
     contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
@@ -114,7 +116,7 @@ const search = async (
           groupAccess,
           searchType,
           isPolitics,
-          isPrizeMarket
+          isPrizeMarket,
         })
         return pg
           .map(searchSQL, null, (r) => ({

@@ -26,7 +26,6 @@ import { SupabaseSearch } from 'web/components/supabase-search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { Content } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
@@ -35,8 +34,6 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { getDisplayUsers } from 'web/lib/supabase/users'
 import Custom404 from 'web/pages/404'
-
-const NON_GROUP_SLUGS = ['for-you', 'recent']
 
 type UserStat = { user: DisplayUser; score: number }
 type TopicParams = {
@@ -60,10 +57,7 @@ const toTopUsers = async (
 
 export async function getStaticProps(props: { params: { slug: string[] } }) {
   const slug = first(props.params.slug)
-  const topic =
-    slug && !NON_GROUP_SLUGS.includes(slug)
-      ? await getGroupFromSlug(slug)
-      : null
+  const topic = slug ? await getGroupFromSlug(slug) : null
 
   if (!topic || topic.privacyStatus === 'private') {
     return {
@@ -110,7 +104,7 @@ export default function BrowseGroupPage(props: {
   staticTopicParams?: TopicParams
 }) {
   const { slug, staticTopicParams } = props
-  if (!staticTopicParams && slug !== null && !NON_GROUP_SLUGS.includes(slug)) {
+  if (!staticTopicParams && slug !== null) {
     return <Custom404 />
   }
 
@@ -188,14 +182,7 @@ export function GroupPageContent(props: {
   const shownTopics = q && topicResults?.length ? topicResults : allTopics
 
   const currentTopic = allTopics.find((t) => t.slug === topicSlug)
-  const { ref, headerStuck } = useHeaderIsStuck()
   const staticTopicIsCurrent = staticTopicParams?.slug === currentTopic?.slug
-
-  const [isForYouSelected, setIsForYouSelected] =
-    usePersistentInMemoryState<boolean>(
-      topicSlug === 'for-you',
-      'for-you-selected'
-    )
 
   const searchComponent = (
     <SupabaseSearch
@@ -213,7 +200,6 @@ export function GroupPageContent(props: {
       }}
       useUrlParams
       isWholePage
-      showTopicTag={headerStuck}
       headerClassName={'pt-0 px-2 mt-2 bg-canvas-50'}
       setTopics={setTopicResults}
       topicSlug={topicSlug}
@@ -223,15 +209,11 @@ export function GroupPageContent(props: {
       }
       shownTopics={shownTopics}
       setTopicSlug={(slug) => {
-        if (slug === 'for-you') {
-          setIsForYouSelected(!(topicSlug === 'for-you'))
-        }
         setTopicSlugClearQuery(slug === topicSlug ? '' : slug)
       }}
     />
   )
 
-  // TODO: Overtly prompt users to follow topic, maybe w/ bottom bar
   return (
     <>
       <Page trackPageView={'questions page'}>
@@ -241,8 +223,6 @@ export function GroupPageContent(props: {
             topicSlug={topicSlug}
             user={user}
             setTopicSlug={setTopicSlugClearQuery}
-            ref={ref}
-            isForYouSelected={isForYouSelected}
           />
           <div className="flex md:contents">
             <Col className={clsx('relative col-span-8 mx-auto w-full')}>
@@ -256,79 +236,77 @@ export function GroupPageContent(props: {
                       content: searchComponent,
                       title: 'Browse',
                     },
-                    currentTopic &&
-                      !NON_GROUP_SLUGS.includes(currentTopic.slug) && [
-                        {
-                          title: 'Leaderboards',
-                          content: (
-                            <Col className={''}>
-                              <div className="text-ink-500 mb-4 mt-2 text-sm">
-                                Updates every 15 minutes
-                              </div>
-                              <Col className="gap-2 ">
-                                <GroupLeaderboard
-                                  topic={currentTopic}
-                                  type={'trader'}
-                                  cachedTopUsers={
-                                    staticTopicIsCurrent
-                                      ? staticTopicParams?.topTraders
-                                      : undefined
-                                  }
-                                />
-                                <GroupLeaderboard
-                                  topic={currentTopic}
-                                  type={'creator'}
-                                  cachedTopUsers={
-                                    staticTopicIsCurrent
-                                      ? staticTopicParams?.topCreators
-                                      : undefined
-                                  }
-                                  noFormatting={true}
-                                />
-                              </Col>
+                    currentTopic && [
+                      {
+                        title: 'Leaderboards',
+                        content: (
+                          <Col className={''}>
+                            <div className="text-ink-500 mb-4 mt-2 text-sm">
+                              Updates every 15 minutes
+                            </div>
+                            <Col className="gap-2 ">
+                              <GroupLeaderboard
+                                topic={currentTopic}
+                                type={'trader'}
+                                cachedTopUsers={
+                                  staticTopicIsCurrent
+                                    ? staticTopicParams?.topTraders
+                                    : undefined
+                                }
+                              />
+                              <GroupLeaderboard
+                                topic={currentTopic}
+                                type={'creator'}
+                                cachedTopUsers={
+                                  staticTopicIsCurrent
+                                    ? staticTopicParams?.topCreators
+                                    : undefined
+                                }
+                                noFormatting={true}
+                              />
                             </Col>
-                          ),
-                        },
-                        {
-                          title: 'About',
-                          content: (
-                            <Col className="w-full">
-                              {currentTopic.bannerUrl && (
-                                <div className="relative h-[200px]">
-                                  <Image
-                                    fill
-                                    src={currentTopic.bannerUrl}
-                                    sizes="100vw"
-                                    className="object-cover"
-                                    alt=""
-                                  />
-                                </div>
-                              )}
-                              <div className="text-ink-500 mb-4 mt-2 text-sm">
-                                {currentTopic.privacyStatus} topic created
-                                {currentTopic.creatorId === user?.id &&
-                                  ' by you'}
-                                <RelativeTimestamp
-                                  time={currentTopic.createdTime}
-                                  className="!text-ink-500"
-                                />{' '}
-                                • {currentTopic.totalMembers ?? 0} followers
-                                {currentTopic.postIds?.length
-                                  ? ` • ${currentTopic.postIds.length} posts`
-                                  : undefined}
+                          </Col>
+                        ),
+                      },
+                      {
+                        title: 'About',
+                        content: (
+                          <Col className="w-full">
+                            {currentTopic.bannerUrl && (
+                              <div className="relative h-[200px]">
+                                <Image
+                                  fill
+                                  src={currentTopic.bannerUrl}
+                                  sizes="100vw"
+                                  className="object-cover"
+                                  alt=""
+                                />
                               </div>
+                            )}
+                            <div className="text-ink-500 mb-4 mt-2 text-sm">
+                              {currentTopic.privacyStatus} topic created
+                              {currentTopic.creatorId === user?.id && ' by you'}
+                              <RelativeTimestamp
+                                time={currentTopic.createdTime}
+                                className="!text-ink-500"
+                              />{' '}
+                              • {currentTopic.totalMembers ?? 0} followers
+                              {currentTopic.postIds?.length
+                                ? ` • ${currentTopic.postIds.length} posts`
+                                : undefined}
+                            </div>
 
-                              {currentTopic.about && (
-                                <Content
-                                  size="lg"
-                                  className="p-4 sm:p-6"
-                                  content={currentTopic.about}
-                                />
-                              )}
-                            </Col>
-                          ),
-                        },
-                      ]
+                            {currentTopic.about && (
+                              <Content
+                                size="lg"
+                                className="p-4 sm:p-6"
+                                content={currentTopic.about}
+                              />
+                            )}
+                          </Col>
+                        ),
+                      },
+                    ]
                   )}
                 />
               )}
