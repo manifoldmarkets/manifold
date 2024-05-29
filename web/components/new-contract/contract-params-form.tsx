@@ -388,6 +388,7 @@ export function ContractParamsForm(props: {
         precision,
         marketTier,
       })
+
       const newContract = await api('market', createProps as any)
 
       // wait for supabase

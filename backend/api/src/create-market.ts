@@ -5,6 +5,7 @@ import {
   add_answers_mode,
   Contract,
   CPMMBinaryContract,
+  CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
   MarketTierType,
@@ -51,10 +52,10 @@ import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { broadcastNewContract } from 'shared/websockets/helpers'
 import { addContractLiquidity } from './add-subsidy'
+import { getNewLiquidityProvision } from 'common/add-liquidity'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
-  marketTier?: MarketTierType
 }
 
 const firestore = admin.firestore()
@@ -152,13 +153,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const pg = createSupabaseDirectClient()
 
+const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType): ante
+
   const contract = await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    if (ante > user.balance)
-      throw new APIError(403, `Balance must be at least ${ante}.`)
+    if (totalMarketCost > user.balance)
+      throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
     let answerLoverUserIds: string[] = []
     if (isLove && answers) {
@@ -242,17 +245,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  await generateAntes(userId, contract, outcomeType, ante)
-  console.log('MARKET TIER', marketTier)
-
-    if (marketTier && marketTier !== 'basic') {
-      const drizzledAmount = getTieredCost(ante, marketTier, outcomeType) - ante 
-      console.log('DRIZZLED',drizzledAmount)
-      if (drizzledAmount > 0) {
-        await addContractLiquidity(contract.id, drizzledAmount, userId)
-    }
-  }
-   
+  await generateAntes(
+    userId,
+    contract,
+    outcomeType,
+    ante,
+    totalMarketCost,
+    contractRef
+  )   
 
   await generateContractEmbeddings(contract, pg)
 
@@ -601,8 +601,10 @@ async function getLoveAnswerUserIds(answers: string[]) {
 async function generateAntes(
   providerId: string,
   contract: Contract,
-  outcomeType: string,
-  ante: number
+  outcomeType: OutcomeType,
+  ante: number,
+  totalMarketCost: number,
+  contractRef: FirebaseFirestore.DocumentReference
 ) {
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -646,4 +648,44 @@ async function generateAntes(
 
     await liquidityDoc.set(lp)
   }
+
+      const drizzledAmount = totalMarketCost - ante 
+      if (drizzledAmount > 0) {
+          const pg = createSupabaseDirectClient()
+          return await pg.tx(async (tx) => {
+            await runTxn(tx, {
+              fromId: providerId,
+              amount: drizzledAmount,
+              toId: contract.id,
+              toType: 'CONTRACT',
+              category: 'ADD_SUBSIDY',
+              token: 'M$',
+              fromType: 'USER',
+            })
+
+            await firestore.runTransaction(async (transaction) => {
+
+                  const newLiquidityProvisionDoc = firestore
+                    .collection(`contracts/${contract.id}/liquidity`)
+                    .doc()
+
+                  const { newLiquidityProvision, newTotalLiquidity, newSubsidyPool } =
+                    getNewLiquidityProvision(
+                      providerId,
+                      drizzledAmount,
+                      contract,
+                      newLiquidityProvisionDoc.id
+                    )
+
+                    contractRef.update({
+                      subsidyPool: newSubsidyPool,
+                      totalLiquidity: newTotalLiquidity,
+                    } as Partial<CPMMContract>)
+
+                  transaction.create(newLiquidityProvisionDoc, newLiquidityProvision)
+                  return newLiquidityProvision
+                })
+          })
+    }
+
 }

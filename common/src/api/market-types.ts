@@ -4,7 +4,9 @@ import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  MARKET_TIER_TYPES,
   MAX_QUESTION_LENGTH,
+  MarketTierType,
   MultiContract,
   RESOLUTIONS,
   VISIBILITIES,
@@ -57,6 +59,7 @@ export type LiteMarket = {
   uniqueBettorCount: number
   lastUpdatedTime?: number
   lastBetTime?: number
+  marketTier?: MarketTierType
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -115,6 +118,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -163,6 +167,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastBetTime,
     lastCommentTime,
     ...numericValues,
+    marketTier,
 
     // Manifold love props.
     loverUserId1,
@@ -314,6 +319,7 @@ export const createMarketProps = z
     loverUserId2: z.string().optional(),
     matchCreatorId: z.string().optional(),
     isLove: z.boolean().optional(),
+    marketTier: z.enum(MARKET_TIER_TYPES).optional(),
   })
   .and(
     z.union([

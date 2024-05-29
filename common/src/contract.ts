@@ -416,6 +416,8 @@ export const MULTI_NUMERIC_CREATION_ENABLED = true
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
+export const MARKET_TIER_TYPES = ['basic', 'plus', 'premium', 'crystal'] as const
+
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
 export function contractPath(contract: Contract) {
