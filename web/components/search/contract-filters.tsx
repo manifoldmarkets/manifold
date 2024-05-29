@@ -116,12 +116,8 @@ export function ContractFilters(props: {
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="gap-1 items-center">
-        <IconButton
-          size="2xs"
-          className="p-1"
-          onClick={() => setOpenFilterModal(true)}
-        >
+      <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
+        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
           <FaSliders className="h-4 w-4" />
         </IconButton>
         {nonDefaultFilter && (
