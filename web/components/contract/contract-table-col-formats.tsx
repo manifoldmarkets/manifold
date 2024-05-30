@@ -5,7 +5,6 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
-import { TierIcon, TierTooltip } from '../tiers/tier-tooltip'
 
 export type ColumnFormat = {
   header: string
