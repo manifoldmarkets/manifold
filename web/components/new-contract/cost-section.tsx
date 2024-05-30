@@ -2,20 +2,16 @@ import { CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES, CreateableOutcomeType, MarketT
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { formatMoney } from 'common/util/format'
 
-import { ENV_CONFIG } from 'common/envs/constants'
-import { Button } from 'web/components/buttons/button'
-import { AddFundsModal } from 'web/components/add-funds-modal'
-import { Row } from '../layout/row'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { CoinNumber } from '../widgets/manaCoinNumber'
-import { CrystalTier, PlusTier, PremiumTier } from 'web/public/custom-components/tiers'
-import { getTieredCost } from 'common/economy'
 import clsx from 'clsx'
-import {capitalize} from 'lodash'
-import { ManifoldLogo } from '../nav/manifold-logo'
+import { getTieredCost } from 'common/economy'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { capitalize } from 'lodash'
+import { AddFundsModal } from 'web/components/add-funds-modal'
+import { Button } from 'web/components/buttons/button'
+import { CrystalTier, PlusTier, PremiumTier } from 'web/public/custom-components/tiers'
 import { LogoIcon } from '../icons/logo-icon'
+import { CoinNumber } from '../widgets/manaCoinNumber'
 
 export const CostSection = (props: {
   balance: number

@@ -16,7 +16,7 @@ import {
   NON_BETTING_OUTCOMES,
   Visibility,
 } from 'common/contract'
-import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
+import { getAnte, getTieredCost, MINIMUM_BOUNTY } from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -332,7 +332,6 @@ export function ContractParamsForm(props: {
       ? JSON.parse(params.description)
       : undefined,
   })
-
   const resetProperties = () => {
     // We would call this:
     // editor?.commands.clearContent(true)
@@ -371,7 +370,6 @@ export function ContractParamsForm(props: {
         outcomeType,
         description: editor?.getJSON(),
         initialProb: 50,
-        ante,
         closeTime,
         min,
         max,
@@ -387,7 +385,7 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
-        marketTier: CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) ? undefined : marketTier,
+        marketTier,
       })
 
       const newContract = await api('market', createProps as any)

@@ -42,14 +42,8 @@ export const getTieredCost = (
   if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
     return baseCost
   }
-  let tieredCost = baseCost
-  if (tier == 'plus') {
-    tieredCost *= MARKET_TIER_MULTIPLES.plus
-  } else if (tier == 'premium') {
-    tieredCost *= MARKET_TIER_MULTIPLES.premium
-  } else if (tier == 'crystal') {
-    tieredCost *= MARKET_TIER_MULTIPLES.crystal
-  }
+  
+  const tieredCost = baseCost * MARKET_TIER_MULTIPLES[tier]
 
   if (outcomeType == 'NUMBER' && tier != 'basic') {
     return tieredCost / 10
