@@ -1,7 +1,4 @@
-import {
-  CreateableOutcomeType,
-  MarketTierType,
-} from 'common/contract'
+import { CreateableOutcomeType, MarketTierType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
