@@ -260,7 +260,7 @@ export const BuyPanelBody = (props: {
       .catch((e) => {
         if (e instanceof APIError) {
           const message = e.message.toString()
-          if (message.includes('cross-transaction contention')) {
+          if (message.includes('could not serialize access')) {
             setError('Error placing bet')
             console.error('Error placing bet', e)
           } else setError(message)
