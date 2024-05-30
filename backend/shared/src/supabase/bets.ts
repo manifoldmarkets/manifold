@@ -1,6 +1,7 @@
 import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { convertBet } from 'common/supabase/bets'
+import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { bulkInsert, insert } from 'shared/supabase/utils'
@@ -50,6 +51,7 @@ export const bulkInsertBets = async (
 const betToRow = (bet: Omit<Bet, 'id'>) => ({
   contract_id: bet.contractId,
   user_id: bet.userId,
+  created_time: millisToTs(bet.createdTime),
   data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
 })
 
