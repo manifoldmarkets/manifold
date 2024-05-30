@@ -9,7 +9,7 @@ import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Contract, CPMM } from 'common/contract'
 import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
-import { groupBy, mapValues } from 'lodash'
+import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 
@@ -19,125 +19,134 @@ export async function updateContractMetricsCore(
   const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const contracts = await pg.map(
+  const allContracts = await pg.map(
     `
     select data from contracts
     where case 
       when $1 = 'multi' then outcome_type = $2 
       else outcome_type != $2 end
-    and (resolution_time is null or resolution_time > now() - interval '1 month')`,
+    and (resolution_time is null or resolution_time > now() - interval '1 month')
+    `,
     [outcomeType, 'MULTIPLE_CHOICE'],
     (r) => r.data as Contract
   )
-  log(`Loaded ${contracts.length} contracts.`)
-  const contractIds = contracts.map((c) => c.id)
-  const answers = await pg.map(
-    `select data from answers where contract_id = any($1)`,
-    [contractIds],
-    (r) => r.data as Answer
-  )
-  log(`Loaded ${answers.length} answers.`)
+  log(`Loaded ${allContracts.length} contracts.`)
+  const chunks = chunk(allContracts, 1000)
+  let i = 0
+  for (const contracts of chunks) {
+    const contractIds = contracts.map((c) => c.id)
+    const answers = await pg.map(
+      `select data
+       from answers
+       where contract_id = any ($1)`,
+      [contractIds],
+      (r) => r.data as Answer
+    )
+    log(`Loaded ${answers.length} answers.`)
 
-  const now = Date.now()
-  const dayAgo = now - DAY_MS
-  const weekAgo = now - WEEK_MS
-  const monthAgo = now - MONTH_MS
+    const now = Date.now()
+    const dayAgo = now - DAY_MS
+    const weekAgo = now - WEEK_MS
+    const monthAgo = now - MONTH_MS
 
-  log('Loading current contract probabilities...')
-  const currentContractProbs = await getCurrentProbs(pg, contractIds)
-  const currentAnswerProbs = Object.fromEntries(
-    answers.map((a) => [
-      a.id,
-      {
-        resTime: a?.resolutionTime ?? null,
-        resProb:
-          a?.resolution === 'YES' ? 1 : a?.resolution === 'NO' ? 0 : null,
-        poolProb: a.prob ?? 0.5,
-      },
-    ])
-  )
-
-  log('Loading historic contract probabilities...')
-  const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
-    [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t, contractIds))
-  )
-
-  log('Loading volume...')
-  const volume = await getVolumeSince(pg, dayAgo, contractIds)
-
-  log('Loading unfilled limits...')
-  const limits = await getUnfilledLimitOrders(pg, contractIds)
-
-  log('Computing metric updates...')
-  const writer = new SafeBulkWriter()
-
-  for (const contract of contracts) {
-    let cpmmFields: Partial<CPMM> = {}
-    if (contract.mechanism === 'cpmm-1') {
-      const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
-      const prob = resProb ?? poolProb
-      const key = `${contract.id} _`
-      const dayAgoProb = dayAgoProbs[key] ?? poolProb
-      const weekAgoProb = weekAgoProbs[key] ?? poolProb
-      const monthAgoProb = monthAgoProbs[key] ?? poolProb
-      cpmmFields = {
-        prob,
-        probChanges: {
-          day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
-          week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
-          month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
+    log('Loading current contract probabilities...')
+    const currentContractProbs = await getCurrentProbs(pg, contractIds)
+    const currentAnswerProbs = Object.fromEntries(
+      answers.map((a) => [
+        a.id,
+        {
+          resTime: a?.resolutionTime ?? null,
+          resProb:
+            a?.resolution === 'YES' ? 1 : a?.resolution === 'NO' ? 0 : null,
+          poolProb: a.prob ?? 0.5,
         },
-      }
-    } else if (contract.mechanism === 'cpmm-multi-1') {
-      const contractAnswers = answers.filter(
-        (a) => a.contractId === contract.id
-      )
-      for (const answer of contractAnswers) {
-        const { poolProb, resProb, resTime } =
-          contract.shouldAnswersSumToOne && contract.resolutions
-            ? {
-                poolProb: currentAnswerProbs[answer.id].poolProb,
-                resProb: (contract.resolutions[answer.id] ?? 0) / 100,
-                resTime: contract.resolutionTime,
-              }
-            : currentAnswerProbs[answer.id]
+      ])
+    )
+
+    log('Loading historic contract probabilities...')
+    const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
+      [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t, contractIds))
+    )
+
+    log('Loading volume...')
+    const volume = await getVolumeSince(pg, dayAgo, contractIds)
+
+    log('Loading unfilled limits...')
+    const limits = await getUnfilledLimitOrders(pg, contractIds)
+
+    log('Computing metric updates...')
+    const writer = new SafeBulkWriter()
+
+    for (const contract of contracts) {
+      let cpmmFields: Partial<CPMM> = {}
+      if (contract.mechanism === 'cpmm-1') {
+        const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
         const prob = resProb ?? poolProb
-        const key = `${contract.id} ${answer.id}`
+        const key = `${contract.id} _`
         const dayAgoProb = dayAgoProbs[key] ?? poolProb
         const weekAgoProb = weekAgoProbs[key] ?? poolProb
         const monthAgoProb = monthAgoProbs[key] ?? poolProb
-        const answerCpmmFields = {
+        cpmmFields = {
+          prob,
           probChanges: {
             day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
             week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
             month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
           },
         }
-        const answerDoc = firestore
-          .collection('contracts')
-          .doc(contract.id)
-          .collection('answersCpmm')
-          .doc(answer.id)
-        if (hasChanges(answer, answerCpmmFields)) {
-          writer.update(answerDoc, answerCpmmFields)
+      } else if (contract.mechanism === 'cpmm-multi-1') {
+        const contractAnswers = answers.filter(
+          (a) => a.contractId === contract.id
+        )
+        for (const answer of contractAnswers) {
+          const { poolProb, resProb, resTime } =
+            contract.shouldAnswersSumToOne && contract.resolutions
+              ? {
+                  poolProb: currentAnswerProbs[answer.id].poolProb,
+                  resProb: (contract.resolutions[answer.id] ?? 0) / 100,
+                  resTime: contract.resolutionTime,
+                }
+              : currentAnswerProbs[answer.id]
+          const prob = resProb ?? poolProb
+          const key = `${contract.id} ${answer.id}`
+          const dayAgoProb = dayAgoProbs[key] ?? poolProb
+          const weekAgoProb = weekAgoProbs[key] ?? poolProb
+          const monthAgoProb = monthAgoProbs[key] ?? poolProb
+          const answerCpmmFields = {
+            probChanges: {
+              day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
+              week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
+              month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
+            },
+          }
+          const answerDoc = firestore
+            .collection('contracts')
+            .doc(contract.id)
+            .collection('answersCpmm')
+            .doc(answer.id)
+          if (hasChanges(answer, answerCpmmFields)) {
+            writer.update(answerDoc, answerCpmmFields)
+          }
         }
       }
-    }
-    const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
-    const update = {
-      volume24Hours: volume[contract.id] ?? 0,
-      elasticity,
-      ...cpmmFields,
+      const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
+      const update = {
+        volume24Hours: volume[contract.id] ?? 0,
+        elasticity,
+        ...cpmmFields,
+      }
+
+      if (hasChanges(contract, update)) {
+        const contractDoc = firestore.collection('contracts').doc(contract.id)
+        writer.update(contractDoc, update)
+      }
     }
 
-    if (hasChanges(contract, update)) {
-      const contractDoc = firestore.collection('contracts').doc(contract.id)
-      writer.update(contractDoc, update)
-    }
+    log('Committing writes...')
+    await writer.close()
+    i += contracts.length
+    log(`Finished ${i}/${allContracts.length} contracts.`)
   }
-
-  log('Committing writes...')
-  await writer.close()
   log('Done.')
 }
 
