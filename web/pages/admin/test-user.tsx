@@ -24,11 +24,7 @@ export default function TestUser() {
   const user = useUser()
   useEffect(() => {
     if (!user) return
-    if (!hasSubmit) {
-      firebaseLogout()
-    } else {
-      router.push('/home')
-    }
+    router.push('/home')
   }, [user])
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,13 +38,11 @@ export default function TestUser() {
   }, [])
 
   const [submitting, setSubmitting] = useState(false)
-  const [hasSubmit, setHasSubmit] = useState(false)
   const [signingIn, setSigningIn] = useState(false)
 
   const create = () => {
     if (!createUserKey) return
     setSubmitting(true)
-    setHasSubmit(true)
     setCookie(KEY, createUserKey)
     const auth = getAuth()
     createUserWithEmailAndPassword(auth, email, password)

@@ -43,6 +43,8 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
+import { isVerified } from 'common/user'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -322,12 +324,32 @@ export function BettingStreakBonusIncomeNotification(props: {
   const [open, setOpen] = useState(false)
   const user = useUser()
   const streakInDays = notification.data?.streak
+  const noBonus = sourceText === '0'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={
+        noBonus && user && !isVerified(user) ? (
+          <span>
+            Verify your phone number to get up to{' '}
+            <CoinNumber
+              amount={BETTING_STREAK_BONUS_MAX}
+              className={'font-bold'}
+              isInline
+            />{' '}
+            per streak day!
+          </span>
+        ) : (
+          noBonus &&
+          user &&
+          isVerified(user) && (
+            <span>Come back and predict again tomorrow for a bonus!</span>
+          )
+        )
+      }
       icon={
         <NotificationIcon
           symbol={'🔥'}
@@ -338,14 +360,21 @@ export function BettingStreakBonusIncomeNotification(props: {
       }
       onClick={() => setOpen(true)}
     >
-      <span className="line-clamp-3">
-        <IncomeNotificationLabel notification={notification} />{' '}
-        {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
-          <span>(max) </span>
-        )}
-        Bonus for your {sourceText && <span>🔥 {streakInDays} day</span>}{' '}
-        <PrimaryNotificationLink text="Prediction Streak" />
-      </span>
+      {noBonus ? (
+        <span className="line-clamp-3">
+          Congrats on your {sourceText && <span>🔥 {streakInDays} day</span>}{' '}
+          <PrimaryNotificationLink text="Prediction Streak" />
+        </span>
+      ) : (
+        <span className="line-clamp-3">
+          <IncomeNotificationLabel notification={notification} />{' '}
+          {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
+            <span>(max) </span>
+          )}
+          Bonus for your {sourceText && <span>🔥 {streakInDays} day</span>}{' '}
+          <PrimaryNotificationLink text="Prediction Streak" />
+        </span>
+      )}
       <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
     </NotificationFrame>
   )

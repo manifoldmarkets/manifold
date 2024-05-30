@@ -7,7 +7,7 @@ import {
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { isVerified, User } from 'common/user'
 import { groupBy, keyBy, sumBy, uniq, uniqBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -383,7 +383,7 @@ const handleBetReplyToComment = async (
 }
 
 const updateBettingStreak = async (
-  user: User,
+  oldUser: User,
   bet: Bet,
   contract: Contract,
   eventId: string
@@ -392,7 +392,7 @@ const updateBettingStreak = async (
 
   const result = await pg.tx(async (tx) => {
     // refetch user to prevent race conditions
-    const bettor = (await getUser(user.id, tx)) ?? user
+    const bettor = (await getUser(oldUser.id, tx)) ?? oldUser
     const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
     const lastBetTime = bettor.lastBetTime ?? 0
 
@@ -407,6 +407,15 @@ const updateBettingStreak = async (
       currentBettingStreak: newBettingStreak,
       lastBetTime: bet.createdTime,
     })
+
+    if (!isVerified(bettor)) {
+      return {
+        status: 'success',
+        bonusAmount: 0,
+        newBettingStreak,
+        txn: { id: bet.id },
+      }
+    }
 
     // Send them the bonus times their streak
     const bonusAmount = Math.min(
@@ -424,7 +433,7 @@ const updateBettingStreak = async (
       'id' | 'createdTime' | 'fromId'
     > = {
       fromType: 'BANK',
-      toId: user.id,
+      toId: bettor.id,
       toType: 'USER',
       amount: bonusAmount,
       token: 'M$',
@@ -460,7 +469,7 @@ const updateBettingStreak = async (
 
   if (result.txn) {
     await createBettingStreakBonusNotification(
-      user,
+      oldUser,
       result.txn.id,
       bet,
       contract,

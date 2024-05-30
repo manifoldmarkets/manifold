@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { VerifyPhone } from 'web/components/verify-phone'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export const VerifyPhoneNumberBanner = (props: {
   user: User | null | undefined
@@ -16,18 +17,17 @@ export const VerifyPhoneNumberBanner = (props: {
   return (
     <Col
       className={
-        'border-ink-400 mx-4 my-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 dark:bg-indigo-700 sm:flex-row'
+        'border-ink-400 m-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700 sm:flex-row'
       }
     >
       <span>
-        Verify your phone number to collect{' '}
-        <span className={'font-bold text-teal-500'}>
-          {formatMoney(PHONE_VERIFICATION_BONUS)}
-        </span>
+        Verify you're not a robot to collect{' '}
+        <CoinNumber
+          amount={PHONE_VERIFICATION_BONUS}
+          className={'font-bold'}
+          isInline
+        />
         .{' '}
-        <span className={'italic'}>
-          (We won't send you any other messages.)
-        </span>
       </span>
       <Button
         className={'whitespace-nowrap'}

@@ -6,9 +6,10 @@ import {
   BETTING_STREAK_RESET_HOUR,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { User } from 'common/user'
+import { isVerified, User } from 'common/user'
 import dayjs from 'dayjs'
 import clsx from 'clsx'
+import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 
 export function BettingStreakModal(props: {
   isOpen: boolean
@@ -42,13 +43,18 @@ export function BettingStreakModal(props: {
           </Col>
         )}
         <span className="text-xl">Daily prediction streaks</span>
+        <VerifyPhoneNumberBanner user={currentUser} />
         <Col className={'gap-2'}>
           <span className={'text-primary-700'}>• What are they?</span>
           <span className={'ml-2'}>
-            You get {formatMoney(BETTING_STREAK_BONUS_AMOUNT)} more for each day
-            of consecutive predicting up to{' '}
-            {formatMoney(BETTING_STREAK_BONUS_MAX)}. The more days you predict
-            in a row, the more you earn!
+            {currentUser && !isVerified(currentUser) ? (
+              <span className={'font-semibold'}>Verified users</span>
+            ) : (
+              'You'
+            )}{' '}
+            get {formatMoney(BETTING_STREAK_BONUS_AMOUNT)} for each consecutive
+            day of predicting, up to {formatMoney(BETTING_STREAK_BONUS_MAX)}.
+            The more days you predict in a row, the more you earn!
           </span>
           <span className={'text-primary-700'}>
             • Where can I check my streak?

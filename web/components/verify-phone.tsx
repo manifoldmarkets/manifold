@@ -11,6 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
+import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
 
 export function VerifyPhone(props: { onClose: () => void }) {
   const { onClose } = props
@@ -63,9 +64,11 @@ export function VerifyPhone(props: { onClose: () => void }) {
         <Col className="items-center justify-center gap-2">
           <span className={'mb-2 mt-2 text-center text-xl'}>
             Verify your phone number to collect a{' '}
-            <span className={'font-bold text-teal-500'}>
-              {formatMoney(PHONE_VERIFICATION_BONUS)}
-            </span>{' '}
+            <CoinNumber
+              amount={PHONE_VERIFICATION_BONUS}
+              className={'font-bold'}
+              isInline
+            />{' '}
             signup bonus.
             <br />
             <br />
