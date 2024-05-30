@@ -661,17 +661,12 @@ async function generateAntes(
     )
 
     await insertLiquidity(tx, newLiquidityProvision)
-    console.log('BEFORE UPDATE REF', contract.totalLiquidity, contract.subsidyPool)
 
     contractRef.update({
       subsidyPool: FieldValue.increment(drizzledAmount),
       totalLiquidity: FieldValue.increment(drizzledAmount),
     })
-    console.log(
-      'AFTER UPDATE REF',
-      contract.totalLiquidity,
-      contract.subsidyPool
-    )
+
   })
 }
 }
