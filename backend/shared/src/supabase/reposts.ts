@@ -35,7 +35,7 @@ export const getFollowedReposts = async (
                 select 1 from user_contract_views ucv
                 where user_id = $1
                 and contract_id = posts.contract_id
-                and posts.created_time < coalesce(ucv.last_page_view_ts, ucv.last_card_view_ts, millis_to_ts(0))
+                and posts.created_time < coalesce(greatest(ucv.last_page_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
             )
             and contracts.close_time > now()
             and posts.created_time > now() - interval '1 week'
@@ -119,7 +119,7 @@ export const getTopicReposts = async (
                 select 1 from user_contract_views ucv
                 where user_id = $3
                 and contract_id = posts.contract_id
-                and posts.created_time < coalesce(ucv.last_page_view_ts, ucv.last_card_view_ts, millis_to_ts(0))
+                and posts.created_time < coalesce(greatest(ucv.last_page_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
               )
              and posts.user_id not in (select follow_id from user_follows where user_id = $3)
              and avg_conversion_score > 1
