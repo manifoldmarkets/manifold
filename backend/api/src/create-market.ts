@@ -189,7 +189,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
                   // default: use a single empty space as the description
                 }) ?? htmlToRichText(`<p> </p>`),
           initialProb: initialProb ?? 50,
-          ante: marketTier ? getTieredCost(ante, marketTier, outcomeType) : ante,
+          ante,
           closeTime,
           visibility,
           isTwitchContract,
@@ -250,7 +250,8 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
     contract,
     outcomeType,
     ante,
-    totalMarketCost
+    totalMarketCost,
+    contractRef
   )   
 
   await generateContractEmbeddings(contract, pg)
@@ -604,6 +605,7 @@ async function generateAntes(
   outcomeType: OutcomeType,
   ante: number,
   totalMarketCost: number,
+  contractRef: FirebaseFirestore.DocumentReference
 ) {
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -659,6 +661,17 @@ async function generateAntes(
     )
 
     await insertLiquidity(tx, newLiquidityProvision)
+    console.log('BEFORE UPDATE REF', contract.totalLiquidity, contract.subsidyPool)
+
+    contractRef.update({
+      subsidyPool: FieldValue.increment(drizzledAmount),
+      totalLiquidity: FieldValue.increment(drizzledAmount),
+    })
+    console.log(
+      'AFTER UPDATE REF',
+      contract.totalLiquidity,
+      contract.subsidyPool
+    )
   })
 }
 }
