@@ -1,8 +1,5 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
-import {
-  formatMoney,
-  shortFormatNumber
-} from 'common/util/format'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
 import React from 'react'
 import { TbDropletFilled } from 'react-icons/tb'
 import { Row } from 'web/components/layout/row'
@@ -15,7 +12,6 @@ import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
 import { CreatorFeesDisplay } from './creator-fees-display'
 import { ENV_CONFIG } from 'common/envs/constants'
-
 
 export function ContractSummaryStats(props: {
   contract: Contract
@@ -36,15 +32,16 @@ export function ContractSummaryStats(props: {
       ) : (
         <Row className="gap-4">
           {contract.outcomeType == 'POLL' && (
-          <Tooltip
-         text={'Voters'}
-            placement="bottom"
-            noTap
-            className="flex flex-row items-center gap-1"
-          >
-            <UserIcon className="text-ink-500 h-4 w-4" />
-            <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
-          </Tooltip>)}
+            <Tooltip
+              text={'Voters'}
+              placement="bottom"
+              noTap
+              className="flex flex-row items-center gap-1"
+            >
+              <UserIcon className="text-ink-500 h-4 w-4" />
+              <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
+            </Tooltip>
+          )}
           {marketTier && <TierTooltip tier={marketTier} contract={contract} />}
           {!!contract.volume && (
             <Tooltip

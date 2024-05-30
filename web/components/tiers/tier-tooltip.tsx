@@ -1,10 +1,14 @@
-import { Contract, MarketTierType } from "common/contract"
-import { Tooltip } from "../widgets/tooltip"
-import { shortenNumber } from "web/lib/util/formatNumber"
-import { getAnte, getTieredCost } from "common/economy"
-import clsx from "clsx"
-import { CrystalTier, PlusTier, PremiumTier } from "web/public/custom-components/tiers"
-import {capitalize} from 'lodash'
+import { Contract, MarketTierType } from 'common/contract'
+import { Tooltip } from '../widgets/tooltip'
+import { shortenNumber } from 'web/lib/util/formatNumber'
+import { getAnte, getTieredCost } from 'common/economy'
+import clsx from 'clsx'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
+import { capitalize } from 'lodash'
 
 export function TierTooltip(props: {
   tier: MarketTierType
@@ -51,7 +55,7 @@ export function TierTooltip(props: {
             : tier == 'premium'
             ? 'text-fuchsia-500 dark:text-fuchsia-400'
             : tier == 'crystal'
-            ? 'bg-gradient-to-r dark:from-purple-400 dark:to-pink-300 from-purple-500 to-pink-500 bg-clip-text text-transparent'
+            ? 'bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-300'
             : ''
         )}
       >

@@ -1,4 +1,8 @@
-import { CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES, CreateableOutcomeType, MarketTierType } from 'common/contract'
+import {
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
+  CreateableOutcomeType,
+  MarketTierType,
+} from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -9,7 +13,11 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
-import { CrystalTier, PlusTier, PremiumTier } from 'web/public/custom-components/tiers'
+import {
+  CrystalTier,
+  PlusTier,
+  PremiumTier,
+} from 'web/public/custom-components/tiers'
 import { LogoIcon } from '../icons/logo-icon'
 import { CoinNumber } from '../widgets/manaCoinNumber'
 
@@ -38,7 +46,12 @@ export const CostSection = (props: {
         />
       </label>
 
-      <PriceSection baseCost={baseCost} outcomeType={outcomeType} currentTier = {marketTier} setMarketTier={setMarketTier}/>
+      <PriceSection
+        baseCost={baseCost}
+        outcomeType={outcomeType}
+        currentTier={marketTier}
+        setMarketTier={setMarketTier}
+      />
 
       {currentCost > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
@@ -57,18 +70,23 @@ export const CostSection = (props: {
   )
 }
 
-
-function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeType, currentTier: MarketTierType | undefined, setMarketTier: (tier: MarketTierType) => void}) {
+function PriceSection(props: {
+  baseCost: number
+  outcomeType: CreateableOutcomeType
+  currentTier: MarketTierType | undefined
+  setMarketTier: (tier: MarketTierType) => void
+}) {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
   if (!currentTier) {
     return <CoinNumber amount={getTieredCost(baseCost, 'basic', outcomeType)} />
   }
   return (
-    <Col className="gap-2 w-full">
-    <div className="text-sm text-ink-600">
-    Choose a tier to determine the cost of creating your question. Higher tiers offer more rewards, which will attract more bettors!
-    </div>
+    <Col className="w-full gap-2">
+      <div className="text-ink-600 text-sm">
+        Choose a tier to determine the cost of creating your question. Higher
+        tiers offer more rewards, which will attract more bettors!
+      </div>
       <div
         className={clsx(
           'grid w-full gap-2',
@@ -119,10 +137,18 @@ function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeTyp
       </div>
     </Col>
   )
-} 
+}
 
-function Tier(props:{baseCost: number, icon: ReactNode, tier: MarketTierType, outcomeType: CreateableOutcomeType, currentTier: MarketTierType, setMarketTier: (tier: MarketTierType) => void}) {
-  const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } = props
+function Tier(props: {
+  baseCost: number
+  icon: ReactNode
+  tier: MarketTierType
+  outcomeType: CreateableOutcomeType
+  currentTier: MarketTierType
+  setMarketTier: (tier: MarketTierType) => void
+}) {
+  const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } =
+    props
   return (
     <div
       className={clsx(
@@ -142,7 +168,7 @@ function Tier(props:{baseCost: number, icon: ReactNode, tier: MarketTierType, ou
           ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
           : 'opacity-50 outline-transparent hover:outline-pink-500/50',
         'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
-        'flex flex-row sm:flex-col gap-2 sm:gap-0'
+        'flex flex-row gap-2 sm:flex-col sm:gap-0'
       )}
       onClick={() => setMarketTier(tier)}
     >

@@ -1,10 +1,9 @@
-import clsx from "clsx"
-import { Contract, MarketTierType } from "common/contract";
-import { Tooltip } from "web/components/widgets/tooltip";
+import clsx from 'clsx'
+import { Contract, MarketTierType } from 'common/contract'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { capitalize } from 'lodash'
-import { getAnte, getTieredCost } from "common/economy";
-import { shortenNumber } from "web/lib/util/formatNumber";
-
+import { getAnte, getTieredCost } from 'common/economy'
+import { shortenNumber } from 'web/lib/util/formatNumber'
 
 export function PlusTier(props: { className?: string }) {
   const { className } = props
@@ -53,5 +52,3 @@ export function CrystalTier(props: { className?: string }) {
     />
   )
 }
-
-
