@@ -69,6 +69,15 @@ export const SORTS = [
 
 export type SortType = (typeof SORTS)[number]['value']
 
+export type MarketTierType = 'basic' | 'plus' | 'premium' | 'crystal'
+
+export const MARKET_TIER_MULTIPLES = {
+  'basic' : 1,
+  'plus' : 10,
+  'premium' : 100,
+  'crystal' : 1000
+}
+
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -143,6 +152,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   viewCount: number
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
+  marketTier?: MarketTierType
 } & T
 
 export type CPMMContract = Contract & CPMM
@@ -323,6 +333,12 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'POLL',
   'NUMBER',
 ] as const
+
+export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
+  'POLL',
+  'BOUNTIED_QUESTION'
+]
+
 export type CreateableOutcomeType = (typeof CREATEABLE_OUTCOME_TYPES)[number]
 
 export const renderResolution = (resolution: string, prob?: number) => {
@@ -399,6 +415,8 @@ export const MULTI_NUMERIC_CREATION_ENABLED = true
 
 export type Visibility = 'public' | 'unlisted' | 'private'
 export const VISIBILITIES = ['public', 'unlisted'] as const
+
+export const MARKET_TIER_TYPES = ['basic', 'plus', 'premium', 'crystal'] as const
 
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 

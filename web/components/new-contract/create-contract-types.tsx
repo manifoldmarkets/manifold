@@ -3,7 +3,7 @@ import {
   BsFillXCircleFill,
   BsUiChecks,
 } from 'react-icons/bs'
-import { Col } from '../layout/col'
+import { Col } from 'web/components/layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'
 import { OutcomeType } from 'common/contract'

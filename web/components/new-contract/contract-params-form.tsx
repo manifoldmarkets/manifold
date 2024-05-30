@@ -7,14 +7,16 @@ import {
   add_answers_mode,
   Contract,
   contractPath,
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
+  MarketTierType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
   MULTI_NUMERIC_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
   Visibility,
 } from 'common/contract'
-import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
+import { getAnte, getTieredCost, MINIMUM_BOUNTY } from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -63,6 +65,10 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, outcomeType } = props
+  const [marketTier, setMarketTier] = useState<MarketTierType|undefined>(
+    CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) ? undefined :
+  'plus'
+  )
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
@@ -327,7 +333,6 @@ export function ContractParamsForm(props: {
       ? JSON.parse(params.description)
       : undefined,
   })
-
   const resetProperties = () => {
     // We would call this:
     // editor?.commands.clearContent(true)
@@ -350,6 +355,11 @@ export function ContractParamsForm(props: {
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
     setPrecision(1)
+    setMarketTier(
+      CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
+        ? undefined
+        : 'plus'
+    )
   }
 
   const [submitState, setSubmitState] = useState<
@@ -365,7 +375,6 @@ export function ContractParamsForm(props: {
         outcomeType,
         description: editor?.getJSON(),
         initialProb: 50,
-        ante,
         closeTime,
         min,
         max,
@@ -381,7 +390,9 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
+        marketTier,
       })
+
       const newContract = await api('market', createProps as any)
 
       // wait for supabase
@@ -578,8 +589,10 @@ export function ContractParamsForm(props: {
       />
       <CostSection
         balance={balance}
-        amountSuppliedByUser={anteOrBounty}
+        baseCost={anteOrBounty}
         outcomeType={outcomeType}
+        marketTier={marketTier}
+        setMarketTier={setMarketTier}
       />
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button

@@ -1,4 +1,9 @@
-import { OutcomeType } from 'common/contract'
+import {
+  OutcomeType,
+  MarketTierType,
+  MARKET_TIER_MULTIPLES,
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
+} from 'common/contract'
 
 export const FIXED_ANTE = 1000
 export const ANSWER_COST = FIXED_ANTE / 4
@@ -29,6 +34,24 @@ export const getAnte = (
   return ante
 }
 
+export const getTieredCost = (
+  baseCost: number,
+  tier: MarketTierType | undefined,
+  outcomeType: OutcomeType
+) => {
+  if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
+    return baseCost
+  }
+  
+  const tieredCost = tier ? baseCost * MARKET_TIER_MULTIPLES[tier] : baseCost
+
+  if (outcomeType == 'NUMBER' && tier != 'basic') {
+    return tieredCost / 10
+  }
+
+  return tieredCost
+}
+
 export const STARTING_BALANCE = 100
 export const PHONE_VERIFICATION_BONUS = 1000
 
@@ -39,7 +62,6 @@ export const MARKET_VISIT_BONUS_TOTAL = 500
 export const SUS_STARTING_BALANCE = 10
 
 export const REFERRAL_AMOUNT = 1000
-
 
 // bonuses disabled
 export const UNIQUE_BETTOR_BONUS_AMOUNT = 5

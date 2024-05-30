@@ -1,38 +1,6 @@
-import * as admin from 'firebase-admin'
-import { Transaction } from 'firebase-admin/firestore'
+import { onCreateMarket } from 'api/helpers/on-create-market'
+import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import {
-  add_answers_mode,
-  Contract,
-  CPMMBinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MULTI_NUMERIC_CREATION_ENABLED,
-  NO_CLOSE_TIME_TYPES,
-  OutcomeType,
-} from 'common/contract'
-import { getAnte } from 'common/economy'
-import { getNewContract } from 'common/new-contract'
-import { getPseudoProbability } from 'common/pseudo-numeric'
-import { randomString } from 'common/util/random'
-import { slugify } from 'common/util/slugify'
-import { getCloseDate } from 'shared/helpers/openai-utils'
-import { log, getUser, getUserByUsername, htmlToRichText } from 'shared/utils'
-import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
-import { STONK_INITIAL_PROB } from 'common/stonk'
-import {
-  SupabaseDirectClient,
-  SupabaseTransaction,
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import {
-  addGroupToContract,
-  canUserAddGroupToMarket,
-} from 'shared/update-group-contracts-internal'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
-import { manifoldLoveUserId } from 'common/love/constants'
-import { ValidatedAPIParams } from 'common/api/schema'
 import {
   createBinarySchema,
   createBountySchema,
@@ -42,15 +10,48 @@ import {
   createPollSchema,
   toLiteMarket,
 } from 'common/api/market-types'
-import { z } from 'zod'
+import { ValidatedAPIParams } from 'common/api/schema'
+import {
+  CPMMBinaryContract,
+  CPMMMultiContract,
+  CPMMNumericContract,
+  Contract,
+  MULTI_NUMERIC_CREATION_ENABLED,
+  NO_CLOSE_TIME_TYPES,
+  OutcomeType,
+  add_answers_mode
+} from 'common/contract'
+import { getAnte, getTieredCost } from 'common/economy'
+import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import { manifoldLoveUserId } from 'common/love/constants'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { getNewContract } from 'common/new-contract'
+import { getPseudoProbability } from 'common/pseudo-numeric'
+import { STONK_INITIAL_PROB } from 'common/stonk'
+import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
+import { slugify } from 'common/util/slugify'
+import * as admin from 'firebase-admin'
+import { FieldValue, Transaction } from 'firebase-admin/firestore'
+import { getCloseDate } from 'shared/helpers/openai-utils'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
-import { removeUndefinedProps } from 'common/util/object'
-import { onCreateMarket } from 'api/helpers/on-create-market'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
-import { MAX_GROUPS_PER_MARKET } from 'common/group'
+import {
+  addGroupToContract,
+  canUserAddGroupToMarket,
+} from 'shared/update-group-contracts-internal'
+import { getUser, getUserByUsername, htmlToRichText, log } from 'shared/utils'
 import { broadcastNewContract } from 'shared/websockets/helpers'
-import { insertLiquidity } from 'shared/supabase/liquidity'
+import { z } from 'zod'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 
 type Body = ValidatedAPIParams<'market'> & {
   specialLiquidityPerAnswer?: number
@@ -96,6 +97,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     isLove,
     visibility,
     specialLiquidityPerAnswer,
+    marketTier,
   } = validateMarketBody(body)
 
   if (outcomeType === 'BOUNTIED_QUESTION') {
@@ -150,13 +152,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   const pg = createSupabaseDirectClient()
 
+const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType): ante
+
   const contract = await pg.tx(async (tx) => {
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    if (ante > user.balance)
-      throw new APIError(403, `Balance must be at least ${ante}.`)
+    if (totalMarketCost > user.balance)
+      throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
     let answerLoverUserIds: string[] = []
     if (isLove && answers) {
@@ -185,7 +189,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
                   // default: use a single empty space as the description
                 }) ?? htmlToRichText(`<p> </p>`),
           initialProb: initialProb ?? 50,
-          ante,
+          ante: marketTier ? getTieredCost(ante, marketTier, outcomeType) : ante,
           closeTime,
           visibility,
           isTwitchContract,
@@ -202,6 +206,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answerLoverUserIds,
           specialLiquidityPerAnswer,
           isAutoBounty,
+          marketTier,
         })
       )
 
@@ -239,7 +244,15 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  await generateAntes(pg, userId, contract, outcomeType, ante)
+  await generateAntes(
+    pg,
+    userId,
+    contract,
+    outcomeType,
+    ante,
+    totalMarketCost,
+    contractRef
+  )   
 
   await generateContractEmbeddings(contract, pg)
 
@@ -338,6 +351,7 @@ function validateMarketBody(body: Body) {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -463,6 +477,7 @@ function validateMarketBody(body: Body) {
     matchCreatorId,
     isLove,
     specialLiquidityPerAnswer,
+    marketTier,
   }
 }
 
@@ -587,8 +602,10 @@ async function generateAntes(
   pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
-  outcomeType: string,
-  ante: number
+  outcomeType: OutcomeType,
+  ante: number,
+  totalMarketCost: number,
+  contractRef: FirebaseFirestore.DocumentReference
 ) {
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -625,4 +642,30 @@ async function generateAntes(
 
     await insertLiquidity(pg, lp)
   }
+      const drizzledAmount = totalMarketCost - ante 
+      if (drizzledAmount > 0 && (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')) {
+          return await pg.tx(async (tx) => {
+            await runTxn(tx, {
+              fromId: providerId,
+              amount: drizzledAmount,
+              toId: contract.id,
+              toType: 'CONTRACT',
+              category: 'ADD_SUBSIDY',
+              token: 'M$',
+              fromType: 'USER',
+            })
+                const newLiquidityProvision = getNewLiquidityProvision(
+      providerId,
+      drizzledAmount,
+      contract
+    )
+
+    await insertLiquidity(tx, newLiquidityProvision)
+
+    contractRef.update({
+      subsidyPool: FieldValue.increment(drizzledAmount),
+      totalLiquidity: FieldValue.increment(drizzledAmount),
+    })
+  })
+}
 }

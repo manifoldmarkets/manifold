@@ -13,6 +13,7 @@ import {
   Stonk,
   Visibility,
   CPMMMultiNumeric,
+  MarketTierType,
 } from './contract'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
@@ -58,6 +59,7 @@ export function getNewContract(props: {
   specialLiquidityPerAnswer: number | undefined
 
   isAutoBounty: boolean | undefined
+  marketTier?: MarketTierType
 }) {
   const {
     id,
@@ -85,6 +87,7 @@ export function getNewContract(props: {
     specialLiquidityPerAnswer,
     answerLoverUserIds,
     isAutoBounty,
+    marketTier
   } = props
   const createdTime = Date.now()
 
@@ -154,6 +157,7 @@ export function getNewContract(props: {
     loverUserId2,
     matchCreatorId,
     isLove,
+    marketTier,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id
