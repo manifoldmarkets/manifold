@@ -34,9 +34,6 @@ begin
     if new.bet_id is not null then
         new.data := new.data || jsonb_build_object('id', new.bet_id);
     end if;
-    if new.created_time is not null then
-        new.data := new.data || jsonb_build_object('createdTime', ts_to_millis(new.created_time));
-    end if;
     if new.updated_time is null and new.created_time is not null then
         new.updated_time := new.created_time;
     end if;
