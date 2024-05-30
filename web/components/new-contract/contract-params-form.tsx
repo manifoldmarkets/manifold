@@ -65,7 +65,8 @@ export function ContractParamsForm(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params, outcomeType } = props
-  const [marketTier, setMarketTier] = useState<MarketTierType>(
+  const [marketTier, setMarketTier] = useState<MarketTierType|undefined>(
+    CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) ? undefined :
   'plus'
   )
   const paramsKey =
