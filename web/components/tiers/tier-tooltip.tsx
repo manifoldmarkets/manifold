@@ -55,7 +55,7 @@ export function TierTooltip(props: {
             : tier == 'premium'
             ? 'text-fuchsia-500 dark:text-fuchsia-400'
             : tier == 'crystal'
-            ? 'bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent dark:from-purple-400 dark:to-pink-300'
+            ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300'
             : ''
         )}
       >
