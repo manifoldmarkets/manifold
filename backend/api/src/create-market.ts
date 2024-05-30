@@ -250,8 +250,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
     contract,
     outcomeType,
     ante,
-    totalMarketCost,
-    contractRef
+    totalMarketCost
   )   
 
   await generateContractEmbeddings(contract, pg)
@@ -605,7 +604,6 @@ async function generateAntes(
   outcomeType: OutcomeType,
   ante: number,
   totalMarketCost: number,
-  contractRef: FirebaseFirestore.DocumentReference
 ) {
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -661,11 +659,6 @@ async function generateAntes(
     )
 
     await insertLiquidity(tx, newLiquidityProvision)
-
-    contractRef.update({
-      subsidyPool: FieldValue.increment(drizzledAmount),
-      totalLiquidity: FieldValue.increment(drizzledAmount),
-    })
   })
 }
 }
