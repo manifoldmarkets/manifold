@@ -132,7 +132,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
      select json_agg(cb.data) as bets, c.data as contract
      from contract_bets cb
               join contracts c on cb.contract_id = c.id
-     where cb.fs_updated_time > millis_to_ts($1)
+     where cb.updated_time > millis_to_ts($1)
         and cb.user_id = $2
      group by c.id;
     `,
