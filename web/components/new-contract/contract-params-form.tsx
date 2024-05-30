@@ -355,7 +355,11 @@ export function ContractParamsForm(props: {
     setSimilarContracts([])
     setDismissedSimilarContractTitles([])
     setPrecision(1)
-    setMarketTier('plus')
+    setMarketTier(
+      CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
+        ? undefined
+        : 'plus'
+    )
   }
 
   const [submitState, setSubmitState] = useState<

@@ -36,14 +36,14 @@ export const getAnte = (
 
 export const getTieredCost = (
   baseCost: number,
-  tier: MarketTierType,
+  tier: MarketTierType | undefined,
   outcomeType: OutcomeType
 ) => {
   if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
     return baseCost
   }
   
-  const tieredCost = baseCost * MARKET_TIER_MULTIPLES[tier]
+  const tieredCost = tier ? baseCost * MARKET_TIER_MULTIPLES[tier] : baseCost
 
   if (outcomeType == 'NUMBER' && tier != 'basic') {
     return tieredCost / 10

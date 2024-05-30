@@ -17,7 +17,7 @@ export const CostSection = (props: {
   balance: number
   outcomeType: CreateableOutcomeType
   baseCost: number
-  marketTier: MarketTierType
+  marketTier: MarketTierType | undefined
   setMarketTier: (tier: MarketTierType) => void
 }) => {
   const { balance, outcomeType, baseCost, marketTier, setMarketTier } = props
@@ -58,10 +58,10 @@ export const CostSection = (props: {
 }
 
 
-function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeType, currentTier: MarketTierType, setMarketTier: (tier: MarketTierType) => void}) {
+function PriceSection(props:{baseCost: number, outcomeType: CreateableOutcomeType, currentTier: MarketTierType | undefined, setMarketTier: (tier: MarketTierType) => void}) {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
-  if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
+  if (!currentTier) {
     return <CoinNumber amount={getTieredCost(baseCost, 'basic', outcomeType)} />
   }
   return (
