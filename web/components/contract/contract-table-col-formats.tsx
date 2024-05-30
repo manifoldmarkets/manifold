@@ -5,10 +5,12 @@ import { shortenNumber } from 'web/lib/util/formatNumber'
 import { Row } from '../layout/row'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
+import { TierIcon, TierTooltip } from '../tiers/tier-tooltip'
 
 export type ColumnFormat = {
   header: string
   content: (c: Contract) => JSX.Element
+  width: string
 }
 
 export const traderColumn = {
@@ -20,12 +22,13 @@ export const traderColumn = {
       </div>
     ) : (
       <div className="text-ink-700 h-min align-top">
-        <Row className="align-center shrink-0 items-center gap-0.5">
-          <UserIcon className="h-4 w-4" />
+        <Row className="align-center shrink-0 items-center gap-0.5 h-full">
+          <UserIcon className="h-4 w-4 text-ink-400" />
           {shortenNumber(contract.uniqueBettorCount ?? 0)}
         </Row>
       </div>
     ),
+  width: 'w-16',
 }
 
 export const probColumn = {
@@ -38,12 +41,15 @@ export const probColumn = {
       />
     </div>
   ),
+  width: 'w-16',
 }
 
 export const actionColumn = {
   header: 'Action',
   content: (contract: Contract) => <Action contract={contract} />,
+  width: 'w-12'
 }
+
 
 function BountiedContractComments(props: { contractId: string }) {
   const { contractId } = props

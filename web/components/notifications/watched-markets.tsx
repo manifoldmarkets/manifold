@@ -98,6 +98,7 @@ export const UserWatchedContractsButton = memo(
                         Unwatch
                       </Button>
                     ),
+                    width: 'w-16',
                   },
                 ]}
               />

@@ -29,6 +29,7 @@ import { removeEmojis } from 'common/util/string'
 import { useABTest } from 'web/hooks/use-ab-test'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { track } from 'web/lib/service/analytics'
+import { TierTooltip } from '../tiers/tier-tooltip'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -113,7 +114,7 @@ function ContractRow(props: {
               key={contract.id + column.header}
               className={clsx(
                 faded && 'text-ink-500',
-                column.header == 'Action' ? 'w-12' : 'w-16'
+column.width
               )}
             >
               {column.content(contract)}
@@ -259,15 +260,18 @@ function ContractQuestion(props: {
           />
         </UserHovercard>
       )}
-      <div>
-        <VisibilityIcon contract={contract} className="mr-1" />
+      <Row className="gap-1">
+        <VisibilityIcon contract={contract}/>
         {!!contract.isSpicePayout && (
-          <Tooltip text={SPICE_MARKET_TOOLTIP} className="mr-1">
+          <Tooltip text={SPICE_MARKET_TOOLTIP}>
             <SpiceCoin />
           </Tooltip>
         )}
+        {!!contract.marketTier && (
+          <TierTooltip placement={'top'} tier={contract.marketTier} contract={contract} noTitle/>
+        )}
         {removeEmojis(contract.question)}
-      </div>
+      </Row>
     </Row>
   )
 }
