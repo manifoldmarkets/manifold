@@ -13,7 +13,12 @@ export const userIdsToAverageTopicConversionScores: {
 export const buildUserInterestsCache = async (userIds: string[]) => {
   log('Starting user topic interests cache build process')
   const pg = createSupabaseDirectClient()
-  if (userIds.every((uid) => userIdsToAverageTopicConversionScores[uid])) {
+  if (
+    userIds.every(
+      (uid) =>
+        Object.keys(userIdsToAverageTopicConversionScores[uid] ?? {}).length > 0
+    )
+  ) {
     return
   }
 
