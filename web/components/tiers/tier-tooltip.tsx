@@ -18,7 +18,7 @@ export function TierTooltip(props: {
   noTitle?: boolean
   placement?: Placement
 }) {
-  const { tier, contract, className, noTitle, placement='bottom' } = props
+  const { tier, contract, className, noTitle, placement = 'bottom' } = props
   const { outcomeType } = contract
   let numAnswers = undefined
   if ('answers' in contract) {
@@ -44,27 +44,28 @@ export function TierTooltip(props: {
         className
       )}
     >
-      <TierIcon tier={tier}/>
+      <TierIcon tier={tier} />
       {!noTitle && (
-      <div
-        className={clsx(
-          tier == 'plus'
-            ? 'text-purple-600 dark:text-purple-500'
-            : tier == 'premium'
-            ? 'text-fuchsia-500 dark:text-fuchsia-400'
-            : tier == 'crystal'
-            ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300'
-            : ''
-        )}
-      >
-        {capitalize(tier)}
-      </div>)}
+        <div
+          className={clsx(
+            tier == 'plus'
+              ? 'text-purple-600 dark:text-purple-500'
+              : tier == 'premium'
+              ? 'text-fuchsia-500 dark:text-fuchsia-400'
+              : tier == 'crystal'
+              ? 'bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300'
+              : ''
+          )}
+        >
+          {capitalize(tier)}
+        </div>
+      )}
     </Tooltip>
   )
 }
 
 export function TierIcon(props: { tier: MarketTierType }) {
-  const {tier} = props
+  const { tier } = props
   if (tier == 'plus') {
     return <PlusTier />
   }
@@ -74,5 +75,5 @@ export function TierIcon(props: { tier: MarketTierType }) {
   if (tier == 'crystal') {
     return <CrystalTier />
   }
-return <></>
+  return <></>
 }

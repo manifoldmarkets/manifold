@@ -22,8 +22,8 @@ export const traderColumn = {
       </div>
     ) : (
       <div className="text-ink-700 h-min align-top">
-        <Row className="align-center shrink-0 items-center gap-0.5 h-full">
-          <UserIcon className="h-4 w-4 text-ink-400" />
+        <Row className="align-center h-full shrink-0 items-center gap-0.5">
+          <UserIcon className="text-ink-400 h-4 w-4" />
           {shortenNumber(contract.uniqueBettorCount ?? 0)}
         </Row>
       </div>
@@ -47,9 +47,8 @@ export const probColumn = {
 export const actionColumn = {
   header: 'Action',
   content: (contract: Contract) => <Action contract={contract} />,
-  width: 'w-12'
+  width: 'w-12',
 }
-
 
 function BountiedContractComments(props: { contractId: string }) {
   const { contractId } = props

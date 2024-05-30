@@ -112,10 +112,7 @@ function ContractRow(props: {
           {columns.map((column) => (
             <div
               key={contract.id + column.header}
-              className={clsx(
-                faded && 'text-ink-500',
-column.width
-              )}
+              className={clsx(faded && 'text-ink-500', column.width)}
             >
               {column.content(contract)}
             </div>
@@ -261,14 +258,19 @@ function ContractQuestion(props: {
         </UserHovercard>
       )}
       <Row className="gap-1">
-        <VisibilityIcon contract={contract}/>
+        <VisibilityIcon contract={contract} />
         {!!contract.isSpicePayout && (
           <Tooltip text={SPICE_MARKET_TOOLTIP}>
             <SpiceCoin />
           </Tooltip>
         )}
         {!!contract.marketTier && (
-          <TierTooltip placement={'top'} tier={contract.marketTier} contract={contract} noTitle/>
+          <TierTooltip
+            placement={'top'}
+            tier={contract.marketTier}
+            contract={contract}
+            noTitle
+          />
         )}
         {removeEmojis(contract.question)}
       </Row>

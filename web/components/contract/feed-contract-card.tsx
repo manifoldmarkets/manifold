@@ -96,7 +96,7 @@ export function FeedContractCard(props: {
     creatorAvatarUrl,
     outcomeType,
     mechanism,
-    marketTier
+    marketTier,
   } = contract
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
@@ -219,15 +219,17 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {marketTier && marketTier !=='basic' ? (
-<TierTooltip tier={marketTier} contract={contract}/>
-            ): feedReason ? (
+            {marketTier && marketTier !== 'basic' ? (
+              <TierTooltip tier={marketTier} contract={contract} />
+            ) : feedReason ? (
               <CardReason
                 reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
               />
-            ):<></>}
+            ) : (
+              <></>
+            )}
             {hide && (
               <FeedDropdown
                 contract={contract}
