@@ -17,6 +17,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useEvent } from 'web/hooks/use-event'
+import { APIError } from 'common/api/utils'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -80,7 +81,9 @@ export function CommentInput(props: {
       onClearInput?.()
     } catch (e) {
       console.error(e)
-      toast.error('Error submitting. Try again?')
+      if (e instanceof APIError) {
+        toast.error(e.message)
+      } else toast.error('Error submitting. Try again?')
     } finally {
       setIsSubmitting(false)
     }

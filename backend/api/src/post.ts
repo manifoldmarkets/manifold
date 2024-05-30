@@ -9,6 +9,7 @@ import { createCommentOnContractInternal } from 'api/create-comment'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
+import { JSONContent } from '@tiptap/core'
 
 export const post: APIHandler<'post'> = async (props, auth) => {
   const { contractId, content, betId: passedBetId, commentId } = props
@@ -29,6 +30,7 @@ export const post: APIHandler<'post'> = async (props, auth) => {
   } else if (content && commentId) {
     throw new APIError(400, 'Cannot specify both content and commentId')
   } else if (content) {
+    checkForNaughtyEmbeds(content)
     const { result, continue: commentContinue } =
       await createCommentOnContractInternal(
         contractId,
@@ -49,21 +51,22 @@ export const post: APIHandler<'post'> = async (props, auth) => {
     if (existingComment.userId !== auth.uid) {
       const commenter = await getUser(existingComment.userId)
       if (commenter?.isBannedFromPosting || commenter?.userDeleted)
-        throw new APIError(404, 'Cannot post deleted/banned user comments')
+        throw new APIError(400, 'Cannot post deleted/banned user comments')
     }
     if (existingComment.hidden)
-      throw new APIError(404, 'Cannot post hidden comments')
+      throw new APIError(400, 'Cannot post hidden comments')
     if (existingComment.replyToCommentId) {
       const parentComment = await getComment(
         db,
         existingComment.replyToCommentId
       )
       if (parentComment.hidden)
-        throw new APIError(404, 'Cannot post replies to hidden comments')
+        throw new APIError(400, 'Cannot post replies to hidden comments')
     }
     comment = existingComment
   }
   if (comment.betId) betId = comment.betId
+  checkForNaughtyEmbeds(comment.content)
 
   log('Received post', {
     contractId,
@@ -113,5 +116,20 @@ export const post: APIHandler<'post'> = async (props, auth) => {
     continue: async () => {
       await commentContinuation()
     },
+  }
+}
+
+const checkForNaughtyEmbeds = (content: JSONContent) => {
+  if (
+    (content.content?.filter((c) => c.type === 'iframe').length ?? 0) > 1 ||
+    !!content.content?.find((c) => c.type === 'gridCardsComponent') ||
+    !!content.content?.find(
+      (c) => c.type === 'iframe' && c.attrs?.src.includes('manifold.markets')
+    )
+  ) {
+    throw new APIError(
+      400,
+      'Reposting comments with embedded markets or multiple iframes is not allowed.'
+    )
   }
 }
