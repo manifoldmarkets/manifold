@@ -13,7 +13,7 @@ export const CONTRACT_BET_FILTER: BetFilter = {
 
 export const convertBet = (row: Row<'contract_bets'>) =>
   convertSQLtoTS<'contract_bets', Bet>(row, {
-    fs_updated_time: false,
+    updated_time: false,
     created_time: tsToMillis as any,
     answer_id: (a) => (a != null ? a : undefined),
   })

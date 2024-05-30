@@ -221,7 +221,6 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string | null
           is_ante: boolean | null
           is_api: boolean | null
           is_challenge: boolean | null
@@ -241,7 +240,6 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -261,7 +259,6 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -2999,7 +2996,6 @@ export type Database = {
           contract_id: string | null
           created_time: string | null
           data: Json | null
-          fs_updated_time: string | null
           is_ante: boolean | null
           is_api: boolean | null
           is_challenge: boolean | null
@@ -3019,7 +3015,6 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -3039,7 +3034,6 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -3306,7 +3300,6 @@ export type Database = {
           contract_id: string | null
           created_time: string | null
           data: Json | null
-          fs_updated_time: string | null
           is_ante: boolean | null
           is_api: boolean | null
           is_challenge: boolean | null
@@ -3326,7 +3319,6 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
@@ -3346,7 +3338,6 @@ export type Database = {
           contract_id?: string | null
           created_time?: string | null
           data?: Json | null
-          fs_updated_time?: string | null
           is_ante?: boolean | null
           is_api?: boolean | null
           is_challenge?: boolean | null
