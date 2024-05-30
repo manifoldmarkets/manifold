@@ -9,13 +9,16 @@ import {
   PremiumTier,
 } from 'web/public/custom-components/tiers'
 import { capitalize } from 'lodash'
+import { Placement } from '@floating-ui/react'
 
 export function TierTooltip(props: {
   tier: MarketTierType
   contract: Contract
   className?: string
+  noTitle?: boolean
+  placement?: Placement
 }) {
-  const { tier, contract, className } = props
+  const { tier, contract, className, noTitle, placement='bottom' } = props
   const { outcomeType } = contract
   let numAnswers = undefined
   if ('answers' in contract) {
@@ -34,20 +37,15 @@ export function TierTooltip(props: {
           contract.outcomeType
         )
       )} liquidity`}
-      placement="bottom"
+      placement={placement}
       noTap
       className={clsx(
         'flex flex-row items-center gap-0.5 font-semibold',
         className
       )}
     >
-      {tier == 'plus' ? (
-        <PlusTier />
-      ) : tier == 'premium' ? (
-        <PremiumTier />
-      ) : tier == 'crystal' ? (
-        <CrystalTier />
-      ) : null}
+      <TierIcon tier={tier}/>
+      {!noTitle && (
       <div
         className={clsx(
           tier == 'plus'
@@ -60,7 +58,21 @@ export function TierTooltip(props: {
         )}
       >
         {capitalize(tier)}
-      </div>
+      </div>)}
     </Tooltip>
   )
+}
+
+export function TierIcon(props: { tier: MarketTierType }) {
+  const {tier} = props
+  if (tier == 'plus') {
+    return <PlusTier />
+  }
+  if (tier == 'premium') {
+    return <PremiumTier />
+  }
+  if (tier == 'crystal') {
+    return <CrystalTier />
+  }
+return <></>
 }
