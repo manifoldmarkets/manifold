@@ -49,6 +49,7 @@ import { removeEmojis } from 'common/util/string'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { TierTooltip } from '../tiers/tier-tooltip'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -95,6 +96,7 @@ export function FeedContractCard(props: {
     creatorAvatarUrl,
     outcomeType,
     mechanism,
+    marketTier
   } = contract
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
@@ -217,13 +219,15 @@ export function FeedContractCard(props: {
                 Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
               </div>
             )}
-            {feedReason && (
+            {marketTier && marketTier !=='basic' ? (
+<TierTooltip tier={marketTier} contract={contract}/>
+            ): feedReason ? (
               <CardReason
                 reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
               />
-            )}
+            ):<></>}
             {hide && (
               <FeedDropdown
                 contract={contract}
