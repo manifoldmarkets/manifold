@@ -1,6 +1,5 @@
 import { ChartBarIcon, UserIcon } from '@heroicons/react/solid'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
-import React from 'react'
 import { TbDropletFilled } from 'react-icons/tb'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'

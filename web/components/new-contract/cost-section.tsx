@@ -1,5 +1,4 @@
 import {
-  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
   MarketTierType,
 } from 'common/contract'

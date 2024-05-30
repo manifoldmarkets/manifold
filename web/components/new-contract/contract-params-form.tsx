@@ -16,7 +16,7 @@ import {
   NON_BETTING_OUTCOMES,
   Visibility,
 } from 'common/contract'
-import { getAnte, getTieredCost, MINIMUM_BOUNTY } from 'common/economy'
+import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
