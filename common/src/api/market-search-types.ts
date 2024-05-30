@@ -24,6 +24,7 @@ export const searchProps = z
         z.literal('24-hour-vol'),
         z.literal('most-popular'),
         z.literal('liquidity'),
+        z.literal('subsidy'),
         z.literal('last-updated'),
         z.literal('close-date'),
         z.literal('resolve-date'),

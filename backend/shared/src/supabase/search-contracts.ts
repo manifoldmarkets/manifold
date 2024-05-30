@@ -24,10 +24,11 @@ import {
 import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 
-let importanceScoreThreshold: number | undefined = undefined
-let freshnessScoreThreshold: number | undefined = undefined
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
+
+let importanceScoreThreshold: number | undefined = undefined
+let freshnessScoreThreshold: number | undefined = undefined
 
 export async function getForYouSQL(
   userId: string,
@@ -351,6 +352,15 @@ export const sortFields: SortFields = {
     sortCallback: (c: Contract) => c.elasticity,
     order: 'ASC',
   },
+  subsidy: {
+    sql: "COALESCE((data->>'totalLiquidity')::numeric, 0)",
+    sortCallback: (c: Contract) =>
+      c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+        ? c.totalLiquidity
+        : 0,
+    order: 'DESC',
+  },
+
   'last-updated': {
     sql: "(data->>'lastUpdatedTime')::numeric",
     sortCallback: (c: Contract) => c.lastUpdatedTime,
