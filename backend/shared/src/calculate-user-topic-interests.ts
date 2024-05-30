@@ -3,8 +3,6 @@ import { groupBy, mapValues, sum, uniq } from 'lodash'
 import { DAY_MS } from 'common/util/time'
 import { log } from 'shared/utils'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { Bet } from 'common/bet'
-import { getTakerFee } from 'common/fees'
 import { bulkInsert } from 'shared/supabase/utils'
 import { filterDefined } from 'common/util/array'
 import {
@@ -36,6 +34,7 @@ export async function calculateUserTopicInterests(
          join group_contracts gc on c.id = gc.contract_id
            where uci.created_time > $1
            and uci.created_time < $2
+           and c.visibility = 'public'
            and uci.name not in ('page bet', 'card bet') -- we use bets from contract_bets
            and ($3 is null or user_id = $3)
            and gc.group_id not in ($4:list)
@@ -86,28 +85,19 @@ export async function calculateUserTopicInterests(
 
   await pg.map(
     `
-        select cb.user_id, gc.group_id, cb.data from contract_bets cb
-               join contracts c on cb.contract_id = c.id
-               join group_contracts gc on c.id = gc.contract_id
+        select distinct on (cb.created_time, cb.user_id, gc.group_id)
+        cb.user_id, gc.group_id from contract_bets cb
+           join contracts c on cb.contract_id = c.id
+           join group_contracts gc on c.id = gc.contract_id
         where cb.created_time > $1
           and cb.created_time < $2
           and is_redemption = false
-          and (amount != 0 or cb.data->>'orderAmount' != '0')
+          and c.visibility = 'public'
           and ($3 is null or user_id = $3)
         `,
     [start, end, testUserId],
     (row) => {
-      const bet = row.data as Bet
-      const { amount, outcome, limitProb, orderAmount } = bet
-      const prob = bet.shares === 0 ? limitProb : Math.abs(amount / bet.shares)
-      if (prob === undefined) return
-      const probForOutcome = outcome === 'YES' ? prob : 1 - prob
-      const probForSale = amount < 0 ? 1 - probForOutcome : probForOutcome
-      const shares = Math.abs(
-        (limitProb && orderAmount ? orderAmount : amount) / probForSale
-      )
-      const fees = getTakerFee(shares, probForSale)
-      addWeight(row.user_id, row.group_id, Math.log10(fees + 1))
+      addWeight(row.user_id, row.group_id, 1)
     }
   )
   const userViewedGroupIds = await pg.map(
@@ -117,6 +107,7 @@ export async function calculateUserTopicInterests(
          join group_contracts gc on c.id = gc.contract_id
          where uve.created_time > $1
          and uve.created_time < $2
+         and c.visibility = 'public'
          and ($3 is null or user_id = $3)
          and gc.group_id not in ($4:list)
     `,
@@ -147,12 +138,17 @@ export async function calculateUserTopicInterests(
         allGroupIds.map((groupId) => [
           groupId,
           {
-            conversionScore: Math.max(
-              1 +
-                (myGroupWeights[groupId] ?? 0) -
-                (viewedGroupIds.filter((id) => id === groupId).length || 1) *
-                  VIEW_COST,
-              0
+            // Clamp scores between [0, 10]
+            conversionScore: Math.min(
+              Math.max(
+                1 +
+                  ((myGroupWeights[groupId] ?? 0) -
+                    (viewedGroupIds.filter((id) => id === groupId).length ||
+                      1) *
+                      VIEW_COST),
+                0
+              ),
+              10
             ),
           },
         ])
@@ -171,6 +167,7 @@ export async function calculateUserTopicInterests(
         log.error('Skipping conversion score writes for user: ' + userId)
         return undefined
       }
+
       return {
         user_id: userId,
         group_ids_to_activity: groupIdsToConversionScore,
