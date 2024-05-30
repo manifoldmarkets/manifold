@@ -19,6 +19,8 @@ import Router from 'next/router'
 import { Col } from 'web/components/layout/col'
 import { User } from 'common/user'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { useABTest } from 'web/hooks/use-ab-test'
+import { useEffect, useState } from 'react'
 
 export async function getStaticProps() {
   try {
@@ -59,14 +61,29 @@ export default function Home(props: { headlines: Headline[] }) {
   )
 }
 
-export function HomeContent(props: { user: User | undefined | null }) {
+export function HomeContent(props: { user: User }) {
   const { user } = props
-
-  const welcomeTopicsEnabled = (user?.createdTime ?? 0) > Date.now() - DAY_MS
+  const welcomeABTest = useABTest('show welcome topics', ['show', 'hide'])
+  const [prevShouldShowWelcome, _] = useState(user.shouldShowWelcome)
+  const [reload, setReload] = useState(false)
+  const welcomeTopicsEnabled =
+    welcomeABTest === 'show' && (user?.createdTime ?? 0) > Date.now() - DAY_MS
   const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(
     user,
     welcomeTopicsEnabled
   )
+  useEffect(() => {
+    if (
+      !welcomeTopicsEnabled &&
+      prevShouldShowWelcome &&
+      !user.shouldShowWelcome
+    ) {
+      setReload(true)
+      setTimeout(() => {
+        setReload(false)
+      }, 200)
+    }
+  }, [user.shouldShowWelcome])
 
   if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
     return <LoadingIndicator />
@@ -88,7 +105,7 @@ export function HomeContent(props: { user: User | undefined | null }) {
             />
           )}
 
-          <LiveGeneratedFeed userId={user.id} />
+          <LiveGeneratedFeed userId={user.id} reload={reload} />
         </Col>
       )}
       <button

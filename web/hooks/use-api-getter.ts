@@ -19,7 +19,7 @@ export const useAPIGetter = <P extends APIPath>(
 
   const [data, setData] = usePersistentInMemoryState<
     APIResponse<P> | undefined
-  >(undefined, `${path}-${propsString}`)
+  >(undefined, `${path}`)
 
   const key = `${path}-${propsString}-error`
   const [error, setError] = usePersistentInMemoryState<APIError | undefined>(
@@ -45,7 +45,7 @@ export const useAPIGetter = <P extends APIPath>(
     refresh()
   }, [propsStringToTriggerRefresh])
 
-  return { data, error, refresh }
+  return { data, error, refresh, setData }
 }
 
 function deepCopyWithoutKeys(obj: any, keysToRemove: string[]): any {

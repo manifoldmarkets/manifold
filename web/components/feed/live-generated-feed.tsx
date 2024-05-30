@@ -19,41 +19,48 @@ import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
 
-export function LiveGeneratedFeed(props: { userId: string }) {
-  const { userId } = props
+const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
+  contracts: [],
+  comments: [],
+  idsToReason: {},
+  bets: [],
+  reposts: [],
+  ads: [],
+  offset: 0,
+}
+
+export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
+  const { userId, reload } = props
   const user = useUser()
-  const [offset, setOffset] = usePersistentInMemoryState(
-    0,
-    `feed-offset-${userId}`
-  )
+
   const limit = 5
   const [feedData, setFeedData] = usePersistentInMemoryState(
-    {
-      contracts: [],
-      comments: [],
-      idsToReason: {},
-      bets: [],
-      reposts: [],
-      ads: [],
-    } as APIResponse<'get-feed'>,
+    defaultValue,
     `feed-data-${userId}`
   )
   const ignoreContractIds = feedData.contracts.map((c) => c.id)
-  const { data, error } = useAPIGetter(
+  const { data, error, refresh, setData } = useAPIGetter(
     'get-feed',
     {
       userId,
-      offset,
+      offset: feedData.offset,
       limit,
       ignoreContractIds,
     },
-    ['ignoreContractIds']
+    ['ignoreContractIds', 'offset']
   )
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    setLoading(false)
-  }, [feedData.contracts.length])
+    if (reload) {
+      setData(undefined)
+      setFeedData(defaultValue)
+      setLoading(true)
+      setTimeout(async () => {
+        refresh()
+      }, 100)
+    }
+  }, [reload])
 
   if (error) {
     console.error(error.message)
@@ -68,11 +75,19 @@ export function LiveGeneratedFeed(props: { userId: string }) {
       bets: uniqBy(feedData.bets.concat(data.bets), 'id'),
       reposts: uniqBy(feedData.reposts.concat(data.reposts), 'id'),
       ads: uniqBy(feedData.ads.concat(data.ads), (a) => a.contract.id),
+      offset: feedData.offset + limit,
     })
+    setTimeout(() => {
+      setLoading(false)
+    }, 50)
   }, [data])
   const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
 
-  if (data === undefined && contracts.length === 0) return <LoadingIndicator />
+  if (
+    (data === undefined && contracts.length === 0) ||
+    (contracts.length === 0 && loading)
+  )
+    return <LoadingIndicator />
 
   return (
     <Col className={clsx('relative w-full gap-4')}>
@@ -115,7 +130,7 @@ export function LiveGeneratedFeed(props: { userId: string }) {
           onVisibilityUpdated={(visible) => {
             if (visible) {
               setLoading(true)
-              setOffset(offset + limit)
+              refresh()
             }
           }}
         />

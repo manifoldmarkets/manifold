@@ -21,21 +21,20 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { DEBUG_TOPIC_INTERESTS } from 'shared/init-caches'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
 import { FeedContract } from 'common/feed'
 
 const DEBUG_USER_ID = undefined
-
+const DEBUG_FEED = process.platform === 'darwin'
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
   // Use random user ids so that postgres doesn't cache the query:
   const userId =
-    DEBUG_TOPIC_INTERESTS && DEBUG_USER_ID
+    DEBUG_FEED && DEBUG_USER_ID
       ? DEBUG_USER_ID
-      : DEBUG_TOPIC_INTERESTS
+      : DEBUG_FEED
       ? (await pg.oneOrNone(
           `select user_id from user_contract_interactions
             where created_time > now() - interval '1 days'
@@ -177,7 +176,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     renderSql(...baseQueryArray(), order(orderQ))
   )
 
-  if (DEBUG_TOPIC_INTERESTS) {
+  if (DEBUG_FEED) {
     const explain = await pg.many(`explain analyze ${sortQueries[0]}`, [])
     log('explain:', explain.map((q) => q['QUERY PLAN']).join('\n'))
   }
