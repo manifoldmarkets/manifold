@@ -15,6 +15,7 @@ import { Input } from 'web/components/widgets/input'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogout } from 'web/lib/firebase/users'
+import { withTracking } from 'web/lib/service/analytics'
 
 const KEY = 'TEST_CREATE_USER_KEY'
 
@@ -82,6 +83,14 @@ export default function TestUser() {
   return (
     <Col className={'text-ink-600 items-center justify-items-center gap-1'}>
       <Title>Test New User Creation</Title>
+      <Button
+        color={'red-outline'}
+        onClick={() => {
+          withTracking(firebaseLogout, 'sign out')()
+        }}
+      >
+        Signout
+      </Button>
       <Row className={'text-ink-600 text-sm'}>
         Set TEST_CREATE_USER_KEY to{' '}
         <a
