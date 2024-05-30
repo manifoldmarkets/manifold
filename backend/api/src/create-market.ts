@@ -189,7 +189,7 @@ const totalMarketCost = marketTier ? getTieredCost(ante, marketTier, outcomeType
                   // default: use a single empty space as the description
                 }) ?? htmlToRichText(`<p> </p>`),
           initialProb: initialProb ?? 50,
-          ante: marketTier ? getTieredCost(ante, marketTier, outcomeType) : ante,
+          ante,
           closeTime,
           visibility,
           isTwitchContract,
@@ -666,6 +666,7 @@ async function generateAntes(
       subsidyPool: FieldValue.increment(drizzledAmount),
       totalLiquidity: FieldValue.increment(drizzledAmount),
     })
+
   })
 }
 }
