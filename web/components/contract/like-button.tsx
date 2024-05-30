@@ -82,9 +82,9 @@ export const LikeButton = memo(function LikeButton(props: {
           itemId: contentId,
           location: trackingLocation,
           contractId:
-            contractId ?? contentType === 'contract' ? contentId : undefined,
+            contractId ?? (contentType === 'contract' ? contentId : undefined),
           commentId:
-            commentId ?? contentType === 'comment' ? contentId : undefined,
+            commentId ?? (contentType === 'comment' ? contentId : undefined),
           feedReason,
         })
       )
