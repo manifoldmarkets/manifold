@@ -16,7 +16,7 @@ create table if not exists
     is_challenge boolean,
     visibility text,
     data jsonb not null,
-    fs_updated_time timestamp,
+    updated_time timestamptz not null default now(),
     primary key (contract_id, bet_id)
   );
 
@@ -37,6 +37,9 @@ begin
     if new.created_time is not null then
         new.data := new.data || jsonb_build_object('createdTime', ts_to_millis(new.created_time));
     end if;
+    if new.updated_time is not null then
+        new.updated_time := new.created_time;
+    end if;
     if new.data is not null then
         new.user_id := (new.data) ->> 'userId';
         new.amount := ((new.data) ->> 'amount')::numeric;
@@ -55,10 +58,27 @@ begin
 end
 $$;
 
-create trigger contract_bet_populate before insert
+create or replace trigger contract_bet_populate before insert
 or
 update on contract_bets for each row
 execute function contract_bet_populate_cols ();
+
+create or replace function contract_bet_set_updated_time()
+    returns trigger
+    language plpgsql
+as $$
+begin
+    new.updated_time = now();
+    return new;
+end;
+$$;
+
+create or replace trigger contract_bet_update
+    after update
+    on contract_bets
+    for each row
+execute function contract_bet_set_updated_time();
+
 
 /* serves bets API pagination */
 create index if not exists contract_bets_bet_id on contract_bets (bet_id);
@@ -83,8 +103,7 @@ create index if not exists contract_bets_user_outstanding_limit_orders on contra
   ((data -> 'isCancelled')::boolean)
 );
 
--- Interim index to use until we have our own, firestore-independent, updated_time column
-create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, fs_updated_time desc);
+create index concurrently if not exists contract_bets_user_updated_time on contract_bets (user_id, updated_time desc);
 
 alter table contract_bets
 cluster on contract_bets_created_time;
