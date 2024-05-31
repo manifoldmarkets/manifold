@@ -307,6 +307,17 @@ export const processNewBetResult = async (
     throw new APIError(403, 'Trade too large for current liquidity pool.')
   }
 
+  if (
+    !isFinite(newBet.amount) ||
+    !isFinite(newBet.shares) ||
+    !isFinite(newBet.probAfter)
+  ) {
+    throw new APIError(
+      500,
+      'Bet calculation produced invalid number, please try again later.'
+    )
+  }
+
   // Special case for relationship markets.
   if (
     contract.isLove &&
