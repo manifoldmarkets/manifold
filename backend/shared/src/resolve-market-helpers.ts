@@ -35,6 +35,7 @@ import { convertTxn } from 'common/supabase/txns'
 import { bulkIncrementBalances } from './supabase/users'
 import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
+import { updateAnswer } from './supabase/answers'
 
 export type ResolutionParams = {
   outcome: string
@@ -50,6 +51,8 @@ export const resolveMarketHelper = async (
   creator: User,
   { value, resolutions, probabilityInt, outcome, answerId }: ResolutionParams
 ) => {
+  const pg = createSupabaseDirectClient()
+
   // Fetch fresh contract & check if resolved within lock.
   const contractSnap = await firestore
     .collection('contracts')
@@ -194,19 +197,14 @@ export const resolveMarketHelper = async (
     log('contract resolved')
   }
   if (updateAnswerAttrs && answerId) {
-    const answerDoc = firestore.doc(
-      `contracts/${contractId}/answersCpmm/${answerId}`
-    )
-    await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+    // contractId, answerId
+    await updateAnswer(pg, answerId, removeUndefinedProps(updateAnswerAttrs))
   } else if (
     updateAnswerAttrs &&
     unresolvedContract.mechanism === 'cpmm-multi-1'
   ) {
     for (const answer of unresolvedContract.answers) {
-      const answerDoc = firestore.doc(
-        `contracts/${contractId}/answersCpmm/${answer.id}`
-      )
-      await answerDoc.update(removeUndefinedProps(updateAnswerAttrs))
+      await updateAnswer(pg, answer.id, removeUndefinedProps(updateAnswerAttrs))
     }
   }
   log('processing payouts', { payouts })

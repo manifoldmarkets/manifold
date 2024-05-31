@@ -21,9 +21,13 @@ import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import {
+  SERIAL,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
 import {
   bulkInsertBets,
   cancelLimitOrders,
@@ -32,6 +36,11 @@ import {
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { insertLiquidity } from 'shared/supabase/liquidity'
+import {
+  getAnswersForContract,
+  insertAnswer,
+  updateAnswer,
+} from 'shared/supabase/answers'
 
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
@@ -83,9 +92,11 @@ export const createAnswerCpmmMain = async (
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }
 
-  // Run as transaction to prevent race conditions.
-  const { newAnswerId, user } = await runEvilTransaction(
-    async (pgTrans, fbTrans) => {
+  const pg = createSupabaseDirectClient()
+
+  let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
+  const { newAnswerId, user } = await pg
+    .tx({ mode: SERIAL }, async (pgTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
@@ -100,12 +111,7 @@ export const createAnswerCpmmMain = async (
         })
       }
 
-      const contractDoc = firestore.doc(`contracts/${contractId}`)
-
-      const answersSnap = await fbTrans.get(
-        firestore.collection(`contracts/${contractId}/answersCpmm`)
-      )
-      const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+      const answers = await getAnswersForContract(pgTrans, contractId)
       const unresolvedAnswers = answers.filter((a) => !a.resolution)
       const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
       if (unresolvedAnswers.length >= maxAnswers) {
@@ -155,7 +161,6 @@ export const createAnswerCpmmMain = async (
       if (shouldAnswersSumToOne) {
         const updatedAnswers = await createAnswerAndSumAnswersToOne(
           pgTrans,
-          fbTrans,
           user,
           contract,
           answers,
@@ -163,16 +168,14 @@ export const createAnswerCpmmMain = async (
         )
         await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
       } else {
-        const newAnswerDoc = contractDoc
-          .collection('answersCpmm')
-          .doc(newAnswer.id)
-        fbTrans.create(newAnswerDoc, newAnswer)
+        await insertAnswer(pgTrans, newAnswer)
       }
 
       if (!specialLiquidityPerAnswer) {
-        fbTrans.update(contractDoc, {
+        await firestore.doc(`contracts/${contractId}`).update({
           totalLiquidity: FieldValue.increment(ANSWER_COST),
         })
+        needToDoSketchyFirebaseRevert = true
 
         const lp = getCpmmInitialLiquidity(
           user.id,
@@ -186,8 +189,23 @@ export const createAnswerCpmmMain = async (
       }
 
       return { newAnswerId: newAnswer.id, user }
-    }
-  )
+    })
+    // end of pgTrans
+    .catch(async (e) => {
+      if (needToDoSketchyFirebaseRevert) {
+        try {
+          await firestore.doc(`contracts/${contractId}`).update({
+            totalLiquidity: FieldValue.increment(-ANSWER_COST),
+          })
+        } catch (e) {
+          log.error(
+            `Failed to revert contract liquidity by ${ANSWER_COST}. Must manually reconcile!`
+          )
+          throw e
+        }
+      }
+      throw e
+    })
 
   const continuation = async () => {
     await createNewAnswerOnContractNotification(
@@ -203,7 +221,6 @@ export const createAnswerCpmmMain = async (
 
 async function createAnswerAndSumAnswersToOne(
   pgTrans: SupabaseTransaction,
-  fbTrans: FirebaseFirestore.Transaction,
   user: User,
   contract: CPMMMultiContract,
   answers: Answer[],
@@ -222,7 +239,6 @@ async function createAnswerAndSumAnswersToOne(
   }
 
   const contractDoc = firestore.doc(`contracts/${contract.id}`)
-  const newAnswerDoc = contractDoc.collection('answersCpmm').doc(newAnswer.id)
 
   // 1. Create a mana budget including ANSWER_COST, and shares from Other.
   // 2. Keep track of excess Yes and No shares of Other. Other has been divided
@@ -319,11 +335,9 @@ async function createAnswerAndSumAnswersToOne(
     ),
   })
 
-  fbTrans.create(newAnswerDoc, newAnswer)
-  fbTrans.update(
-    contractDoc.collection('answersCpmm').doc(otherAnswer.id),
-    updatedOtherAnswerProps
-  )
+  await insertAnswer(pgTrans, newAnswer)
+
+  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
 
   const poolsByAnswer = Object.fromEntries(
     betResults.map((r) => [
@@ -369,7 +383,7 @@ async function createAnswerAndSumAnswersToOne(
       poolNo,
       prob,
     })
-    fbTrans.update(contractDoc.collection('answersCpmm').doc(answer.id), {
+    await updateAnswer(pgTrans, answer.id, {
       poolYes,
       poolNo,
       prob,

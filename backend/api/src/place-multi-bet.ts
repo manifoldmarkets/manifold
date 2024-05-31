@@ -2,7 +2,6 @@ import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
-import { Answer } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
 import {
@@ -15,6 +14,7 @@ import { log } from 'shared/utils'
 import { runEvilTransaction } from 'shared/evil-transaction'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { MarketContract } from 'common/contract'
+import { getAnswersForContract } from 'shared/supabase/answers'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -57,8 +57,8 @@ export const placeMultiBetMain = async (
     const { answerIds, limitProb, expiresAt } = body
     if (expiresAt && expiresAt < Date.now())
       throw new APIError(403, 'Bet cannot expire in the past.')
-    const answersSnap = await fbTrans.get(contractDoc.collection('answersCpmm'))
-    const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+
+    const answers = await getAnswersForContract(pgTrans, contract.id)
     const betOnAnswers = answers.filter((a) => answerIds.includes(a.id))
     if (!betOnAnswers) throw new APIError(404, 'Answers not found')
     if ('resolution' in betOnAnswers && betOnAnswers.resolution)

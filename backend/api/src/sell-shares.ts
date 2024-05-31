@@ -7,7 +7,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
 import { removeUserFromContractFollowers } from 'shared/follow-market'
-import { Answer } from 'common/answer'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { onCreateBets } from 'api/on-create-bet'
 import { getUser, log } from 'shared/utils'
@@ -19,6 +18,11 @@ import { cancelLimitOrders, insertBet } from 'shared/supabase/bets'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { FLAT_TRADE_FEE } from 'common/fees'
+import {
+  getAnswer,
+  getAnswersForContract,
+  updateAnswer,
+} from 'shared/supabase/answers'
 
 export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   props,
@@ -134,10 +138,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       ) {
         let answer
         if (answerId) {
-          const answerSnap = await fbTrans.get(
-            contractDoc.collection('answersCpmm').doc(answerId)
-          )
-          answer = answerSnap.data() as Answer
+          answer = await getAnswer(pgTrans, answerId)
           if (!answer) {
             throw new APIError(404, 'Answer not found')
           }
@@ -158,10 +159,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
           ),
         }
       } else {
-        const answersSnap = await fbTrans.get(
-          contractDoc.collection('answersCpmm')
-        )
-        const answers = answersSnap.docs.map((doc) => doc.data() as Answer)
+        const answers = await getAnswersForContract(pgTrans, contractId)
         const answer = answers.find((a) => a.id === answerId)
         if (!answer) throw new APIError(404, 'Answer not found')
         if (answers.length < 2)
@@ -252,8 +250,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     } else if (newBet.answerId) {
       const prob = getCpmmProbability(newPool, 0.5)
       const { YES: poolYes, NO: poolNo } = newPool
-      fbTrans.update(
-        contractDoc.collection('answersCpmm').doc(newBet.answerId),
+
+      await updateAnswer(
+        pgTrans,
+        newBet.answerId,
         removeUndefinedProps({
           poolYes,
           poolNo,
@@ -279,13 +279,10 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       fullBets.push(convertBet(betRow))
       const { YES: poolYes, NO: poolNo } = cpmmState.pool
       const prob = getCpmmProbability(cpmmState.pool, 0.5)
-      fbTrans.update(
-        contractDoc.collection('answersCpmm').doc(answer.id),
-        removeUndefinedProps({
-          poolYes,
-          poolNo,
-          prob,
-        })
+      await updateAnswer(
+        pgTrans,
+        answer.id,
+        removeUndefinedProps({ poolYes, poolNo, prob })
       )
       await updateMakers(makers, betRow.bet_id, pgTrans)
       await cancelLimitOrders(

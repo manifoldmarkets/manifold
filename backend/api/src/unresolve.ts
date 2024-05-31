@@ -259,26 +259,20 @@ const undoResolution = async (
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
-    const updatedAttrs = {
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolverId: admin.firestore.FieldValue.delete(),
-    }
-    for (const answer of contract.answers) {
-      const answerDoc = firestore.doc(
-        `contracts/${contractId}/answersCpmm/${answer.id}`
-      )
-      await answerDoc.update(updatedAttrs)
-    }
+    // remove resolutionTime and resolverId from all answers in the contract
+    await pg.none(
+      `update answers
+      set data = data - 'resolutionTime' - 'resolverId'
+      where contract_id = $1`,
+      [contractId]
+    )
   } else if (answerId) {
-    const updatedAttrs = {
-      resolution: admin.firestore.FieldValue.delete(),
-      resolutionTime: admin.firestore.FieldValue.delete(),
-      resolutionProbability: admin.firestore.FieldValue.delete(),
-      resolverId: admin.firestore.FieldValue.delete(),
-    }
-    await firestore
-      .doc(`contracts/${contractId}/answersCpmm/${answerId}`)
-      .update(updatedAttrs)
+    await pg.none(
+      `update answers
+      set data = data - '{resolution,resolutionTime,resolutionProbability,resolverId}'::text[]
+      where id = $1`,
+      [answerId]
+    )
   }
 
   log('updated contract')
