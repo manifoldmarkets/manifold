@@ -11,9 +11,9 @@ if [ -z "$1" ]; then
 fi
 
 SERVICE_NAME="api"
-SERVICE_GROUP="${SERVICE_NAME}-group"
-REGION="us-central1"
-ZONE="us-central1-a"
+SERVICE_GROUP="${SERVICE_NAME}-group-east"
+REGION="us-east4" # Ashburn, Virginia
+ZONE="us-east4-a"
 ENV=${1:-dev}
 
 case $ENV in
@@ -51,14 +51,14 @@ if [ -z "${MANIFOLD_CLOUD_BUILD}" ]; then
        echo "Docker not found. You should install Docker for local builds. https://docs.docker.com/engine/install/"
        echo
        echo "After installing docker, run:"
-       echo "  gcloud auth configure-docker us-central1-docker.pkg.dev"
+       echo "  gcloud auth configure-docker ${REGION}-docker.pkg.dev"
        echo "to authenticate Docker to push to Google Artifact Registry."
        echo
        echo "If you really don't want to figure out how to install Docker, you can set MANIFOLD_CLOUD_BUILD=1."
        echo "Then it will do remote builds like before, at the cost of it being slow, like before."
        exit 1
     fi
-    IMAGE_NAME="us-central1-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
+    IMAGE_NAME="us-east4-docker.pkg.dev/${GCLOUD_PROJECT}/builds/${SERVICE_NAME}"
     IMAGE_URL="${IMAGE_NAME}:${IMAGE_TAG}"
     docker build . --tag ${IMAGE_URL} --platform linux/amd64
     docker push ${IMAGE_URL}

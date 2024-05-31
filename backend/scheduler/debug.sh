@@ -12,7 +12,7 @@ if [ -z "$1" ]; then
 fi
 
 SERVICE_NAME="scheduler"
-ZONE="us-central1-a"
+ZONE="us-east4-a"
 ENV=${1:-dev}
 
 case $ENV in
