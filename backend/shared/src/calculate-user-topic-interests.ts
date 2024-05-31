@@ -14,9 +14,16 @@ import { isAdminId, isModId } from 'common/envs/constants'
 type groupIdsToConversionScore = {
   [groupId: string]: { conversionScore: number }
 }
-const BETS_ONLY_FOR_SCORE = [UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID]
+const IGNORE_GROUP_IDS = [
+  'Lokp5JWIA0BDlEPePSfS', // testing group
+]
+const BETS_ONLY_FOR_SCORE = [
+  UNSUBSIDIZED_GROUP_ID,
+  UNRANKED_GROUP_ID,
+  ...IGNORE_GROUP_IDS,
+]
 const VIEW_COST = 0.02
-const CLICK_BENEFIT = 0.05
+const PAGE_VIEW_OR_CLICK_BENEFIT = 0.05
 export async function calculateUserTopicInterests(
   startTime?: number,
   readOnly?: boolean,
@@ -71,7 +78,7 @@ export async function calculateUserTopicInterests(
           case 'page comment':
             return isAdminId(userId) || isModId(userId) ? 0.1 : 0.2
           case 'card click':
-            return CLICK_BENEFIT
+            return PAGE_VIEW_OR_CLICK_BENEFIT
           case 'promoted click':
             return VIEW_COST
           default:
@@ -94,8 +101,9 @@ export async function calculateUserTopicInterests(
           and is_redemption = false
           and c.visibility = 'public'
           and ($3 is null or user_id = $3)
+          and gc.group_id not in ($4:list)
         `,
-    [start, end, testUserId],
+    [start, end, testUserId, IGNORE_GROUP_IDS],
     (row) => {
       addWeight(row.user_id, row.group_id, 1)
     }
@@ -111,10 +119,13 @@ export async function calculateUserTopicInterests(
          and ($3 is null or user_id = $3)
          and gc.group_id not in ($4:list)
     `,
-    [start, end, testUserId, BETS_ONLY_FOR_SCORE],
+    [start, end, testUserId, IGNORE_GROUP_IDS],
     (row) => {
       const { name, user_id, group_id } = row
-      if (name === 'page') addWeight(user_id, group_id, CLICK_BENEFIT)
+      // Unranked page views are assumed to be a cost. Bets are the only way to add weight.
+      if (name === 'page' && !BETS_ONLY_FOR_SCORE.includes(group_id)) {
+        addWeight(user_id, group_id, PAGE_VIEW_OR_CLICK_BENEFIT)
+      }
       return [user_id, group_id]
     }
   )
